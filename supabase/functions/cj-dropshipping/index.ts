@@ -63,21 +63,48 @@ interface CJProductDetail {
 // Pet Supplies category ID from CJ Dropshipping website
 const PET_CATEGORY_ID = '2409110611570657700';
 
+// Pet subcategory keywords for better filtering
+const PET_SUBCATEGORIES: Record<string, string[]> = {
+  'Pet Toys': ['toy', 'toys', 'ball', 'chew', 'squeaky', 'plush', 'rope', 'frisbee', 'fetch', 'puzzle', 'interactive', 'teaser', 'wand'],
+  'Pet Food & Treats': ['food', 'treat', 'treats', 'snack', 'bowl', 'feeder', 'feeding', 'water', 'fountain', 'dispenser'],
+  'Pet Beds & Furniture': ['bed', 'beds', 'sofa', 'couch', 'mat', 'blanket', 'cushion', 'pillow', 'house', 'cave', 'nest', 'sleeping'],
+  'Pet Clothing': ['clothes', 'clothing', 'sweater', 'jacket', 'coat', 'costume', 'dress', 'shirt', 'hoodie', 'raincoat', 'vest'],
+  'Pet Collars & Leashes': ['collar', 'leash', 'harness', 'lead', 'chain', 'tag', 'name', 'id'],
+  'Pet Grooming': ['brush', 'comb', 'grooming', 'shampoo', 'nail', 'clipper', 'trimmer', 'bath', 'towel', 'dryer', 'deshedding'],
+  'Pet Carriers': ['carrier', 'bag', 'backpack', 'transport', 'travel', 'cage', 'crate', 'kennel', 'stroller'],
+  'Cat Supplies': ['cat', 'kitten', 'scratching', 'scratcher', 'litter', 'catnip', 'climbing', 'tree', 'tower', 'perch'],
+  'Dog Supplies': ['dog', 'puppy', 'canine', 'paw', 'muzzle', 'training', 'potty', 'pad'],
+  'Small Pet Supplies': ['hamster', 'rabbit', 'guinea', 'bird', 'fish', 'aquarium', 'turtle', 'reptile', 'wheel', 'hideout'],
+};
+
+// Helper function to check if product matches subcategory keywords
+function productMatchesKeywords(productName: string, keywords: string[]): boolean {
+  const lowerName = productName.toLowerCase();
+  return keywords.some(keyword => lowerName.includes(keyword.toLowerCase()));
+}
+
+// Filter products by subcategory keywords
+function filterProductsBySubcategory(products: CJProductDetail[], subcategory: string): CJProductDetail[] {
+  const keywords = PET_SUBCATEGORIES[subcategory];
+  if (!keywords) return products;
+  
+  return products.filter(p => productMatchesKeywords(p.productNameEn, keywords));
+}
+
 // Search for pet products from US warehouse using the correct category endpoint
 async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSize = 50, keyword?: string) {
+  // Fetch more products to allow for filtering
+  const fetchSize = pageSize * 4; // Fetch 4x to ensure enough after filtering
+  
   const params: Record<string, string> = {
-    pageNum: pageNum.toString(),
-    pageSize: pageSize.toString(),
+    pageNum: '1', // Always fetch from page 1 for client-side pagination
+    pageSize: fetchSize.toString(),
     categoryId: PET_CATEGORY_ID,
     countryCode: 'US',
   };
 
-  if (keyword && keyword !== 'pet') {
-    params.productNameEn = keyword;
-  }
-
   const queryString = new URLSearchParams(params).toString();
-  console.log(`Fetching pet products from US warehouse, page ${pageNum}, size ${pageSize}, category: ${PET_CATEGORY_ID}`);
+  console.log(`Fetching pet products from US warehouse, size ${fetchSize}, category: ${PET_CATEGORY_ID}, filter keyword: ${keyword}`);
 
   const response = await fetch(`${CJ_API_BASE}/product/list?${queryString}`, {
     method: 'GET',
@@ -89,6 +116,37 @@ async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSiz
 
   const data = await response.json();
   console.log('CJ Pet products response:', JSON.stringify(data).substring(0, 500));
+  
+  // If we have a keyword filter, apply client-side filtering
+  if (data.result && data.data?.list && keyword && keyword !== 'pet' && keyword !== 'all') {
+    const originalList = data.data.list;
+    const originalTotal = data.data.total || originalList.length;
+    
+    // Check if keyword is a subcategory name
+    if (PET_SUBCATEGORIES[keyword]) {
+      data.data.list = filterProductsBySubcategory(originalList, keyword);
+    } else {
+      // General keyword search - match against product name
+      const lowerKeyword = keyword.toLowerCase();
+      const searchTerms = lowerKeyword.split(/\s+/).filter(t => t.length > 2);
+      
+      data.data.list = originalList.filter((p: CJProductDetail) => {
+        const name = p.productNameEn.toLowerCase();
+        // Match if ALL search terms are found in the name
+        return searchTerms.every(term => name.includes(term));
+      });
+    }
+    
+    // Apply pagination to filtered results
+    const startIndex = (pageNum - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const filteredTotal = data.data.list.length;
+    data.data.list = data.data.list.slice(startIndex, endIndex);
+    data.data.total = filteredTotal;
+    data.data.originalTotal = originalTotal;
+    
+    console.log(`Filtered from ${originalTotal} to ${filteredTotal} products for keyword: ${keyword}`);
+  }
   
   return data;
 }
