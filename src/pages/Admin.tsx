@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil } from "lucide-react";
+import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
+import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -50,6 +52,8 @@ const Admin = () => {
   const [catalogPage, setCatalogPage] = useState(1);
   const [catalogKeyword, setCatalogKeyword] = useState("pet");
   const [isRateLimited, setIsRateLimited] = useState(false);
+  const [editProduct, setEditProduct] = useState<Tables<"products"> | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Redirect if not admin
@@ -813,7 +817,7 @@ const Admin = () => {
               {existingProducts && existingProducts.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {existingProducts.map((product) => (
-                    <Card key={product.id}>
+                    <Card key={product.id} className="group">
                       <CardContent className="p-4">
                         <div className="relative">
                           <img
@@ -826,6 +830,19 @@ const Admin = () => {
                               {product.images.length} images
                             </Badge>
                           )}
+                          {/* Edit button overlay */}
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {
+                              setEditProduct(product);
+                              setEditDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
                         </div>
                         <h3 className="font-medium text-sm line-clamp-2 mb-2">
                           {product.name}
@@ -863,6 +880,13 @@ const Admin = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Product Edit Dialog */}
+        <ProductEditDialog
+          product={editProduct}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+        />
       </div>
     </Layout>
   );
