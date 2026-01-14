@@ -65,9 +65,9 @@ const ProductDetail = () => {
     return (
       <Layout>
         <div className="container px-4 md:px-6 py-16 text-center">
-          <h1 className="text-2xl font-bold mb-4">Product niet gevonden</h1>
+          <h1 className="text-2xl font-bold mb-4">Product not found</h1>
           <Link to="/products">
-            <Button>Terug naar Producten</Button>
+            <Button>Back to Products</Button>
           </Link>
         </div>
       </Layout>
@@ -83,7 +83,7 @@ const ProductDetail = () => {
         image: product.image_url || '/placeholder.svg',
       });
     }
-    toast.success(`${quantity}x ${product.name} toegevoegd aan winkelwagen!`);
+    toast.success(`${quantity}x ${product.name} added to cart!`);
   };
 
   const discount = product.compare_at_price
@@ -105,7 +105,7 @@ const ProductDetail = () => {
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          Terug naar Producten
+          Back to Products
         </Link>
 
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
@@ -149,14 +149,14 @@ const ProductDetail = () => {
             {/* Price */}
             <div className="flex items-center gap-3">
               <span className="text-3xl font-bold text-primary">
-                €{Number(product.price).toFixed(2)}
+                ${Number(product.price).toFixed(2)}
               </span>
               {product.compare_at_price && (
                 <>
                   <span className="text-xl text-muted-foreground line-through">
-                    €{Number(product.compare_at_price).toFixed(2)}
+                    ${Number(product.compare_at_price).toFixed(2)}
                   </span>
-                  <Badge variant="destructive">Bespaar {discount}%</Badge>
+                  <Badge variant="destructive">Save {discount}%</Badge>
                 </>
               )}
             </div>
@@ -170,14 +170,14 @@ const ProductDetail = () => {
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${inStock ? 'bg-green-500' : 'bg-red-500'}`} />
               <span className="text-sm font-medium">
-                {inStock ? `Op voorraad (${product.stock})` : 'Uitverkocht'}
+                {inStock ? `In Stock (${product.stock})` : 'Out of Stock'}
               </span>
             </div>
 
             {/* Shipping Time */}
             {product.shipping_time && (
               <p className="text-sm text-muted-foreground">
-                Verwachte levertijd: {product.shipping_time}
+                Estimated delivery: {product.shipping_time}
               </p>
             )}
 
@@ -208,13 +208,13 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                In Winkelwagen
+                Add to Cart
               </Button>
 
               <Button 
                 variant="outline" 
                 size="lg"
-                onClick={() => toast.info('Toegevoegd aan wishlist!')}
+                onClick={() => toast.info('Added to wishlist!')}
               >
                 <Heart className="w-5 h-5" />
               </Button>
@@ -227,8 +227,8 @@ const ProductDetail = () => {
                   <Truck className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-sm">Gratis Verzending</p>
-                  <p className="text-xs text-muted-foreground">Boven €50</p>
+                  <p className="font-medium text-sm">Free Shipping</p>
+                  <p className="text-xs text-muted-foreground">On orders over $50</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -236,8 +236,8 @@ const ProductDetail = () => {
                   <Shield className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-sm">30 Dagen Retour</p>
-                  <p className="text-xs text-muted-foreground">Zorgeloos</p>
+                  <p className="font-medium text-sm">30-Day Returns</p>
+                  <p className="text-xs text-muted-foreground">Hassle-free</p>
                 </div>
               </div>
             </div>
@@ -248,20 +248,20 @@ const ProductDetail = () => {
         <div className="mt-12">
           <Tabs defaultValue="description">
             <TabsList>
-              <TabsTrigger value="description">Beschrijving</TabsTrigger>
-              <TabsTrigger value="shipping">Verzending</TabsTrigger>
+              <TabsTrigger value="description">Description</TabsTrigger>
+              <TabsTrigger value="shipping">Shipping</TabsTrigger>
             </TabsList>
             <TabsContent value="description" className="mt-4">
               <p className="text-muted-foreground">
-                {product.description || 'Geen beschrijving beschikbaar.'}
+                {product.description || 'No description available.'}
               </p>
             </TabsContent>
             <TabsContent value="shipping" className="mt-4">
               <div className="space-y-3 text-muted-foreground">
-                <p>🇳🇱 Verzending vanuit Nederland/Europa</p>
-                <p>📦 Standaard verzending: 5-10 werkdagen</p>
-                <p>🚀 Express verzending: 3-5 werkdagen</p>
-                <p>✨ Gratis verzending bij bestellingen boven €50</p>
+                <p>🇺🇸 Ships from our US warehouse</p>
+                <p>📦 Standard shipping: 5-7 business days</p>
+                <p>🚀 Express shipping: 2-3 business days</p>
+                <p>✨ Free shipping on orders over $50</p>
               </div>
             </TabsContent>
           </Tabs>
@@ -270,7 +270,7 @@ const ProductDetail = () => {
         {/* Related Products */}
         {relatedProducts && relatedProducts.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-2xl font-bold mb-6">Dit Vind Je Misschien Ook Leuk</h2>
+            <h2 className="text-2xl font-bold mb-6">You May Also Like</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((relatedProduct) => (
                 <ProductCard key={relatedProduct.id} product={relatedProduct} />

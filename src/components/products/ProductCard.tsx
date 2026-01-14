@@ -42,7 +42,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       price: Number(product.price),
       image: product.image_url || '/placeholder.svg',
     });
-    toast.success(`${product.name} toegevoegd aan winkelwagen!`);
+    toast.success(`${product.name} added to cart!`);
   };
 
   const discount = product.compare_at_price
@@ -77,7 +77,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               className="rounded-full bg-background/80 backdrop-blur-sm hover:bg-background"
               onClick={(e) => {
                 e.preventDefault();
-                toast.info('Toegevoegd aan wishlist!');
+                toast.info('Added to wishlist!');
               }}
             >
               <Heart className="w-4 h-4" />
@@ -91,7 +91,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               onClick={handleAddToCart}
             >
               <ShoppingCart className="w-4 h-4" />
-              In Winkelwagen
+              Add to Cart
             </Button>
           </div>
         </div>
@@ -110,11 +110,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           {/* Price */}
           <div className="flex items-center gap-2 mt-2">
             <span className="text-lg font-bold text-primary">
-              €{Number(product.price).toFixed(2)}
+              ${Number(product.price).toFixed(2)}
             </span>
             {product.compare_at_price && (
               <span className="text-sm text-muted-foreground line-through">
-                €{Number(product.compare_at_price).toFixed(2)}
+                ${Number(product.compare_at_price).toFixed(2)}
               </span>
             )}
           </div>
@@ -122,11 +122,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           {/* Stock indicator */}
           {product.stock !== null && product.stock !== undefined && product.stock < 10 && product.stock > 0 && (
             <p className="text-xs text-orange-600 mt-1">
-              Nog {product.stock} op voorraad
+              Only {product.stock} left in stock
             </p>
           )}
           {product.stock === 0 && (
-            <p className="text-xs text-destructive mt-1">Uitverkocht</p>
+            <p className="text-xs text-destructive mt-1">Out of Stock</p>
           )}
         </div>
       </div>
