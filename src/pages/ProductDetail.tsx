@@ -146,9 +146,22 @@ const ProductDetail = () => {
     ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
     : null;
 
-  const images = product.images && product.images.length > 0 
-    ? product.images 
-    : [product.image_url || '/placeholder.svg'];
+  // Flatten images array (handle nested arrays from database) and filter valid URLs
+  const rawImages = product.images && product.images.length > 0 
+    ? product.images.flat().filter((img): img is string => 
+        typeof img === 'string' && 
+        img.startsWith('http') && 
+        !img.includes('undefined')
+      )
+    : [];
+  
+  // Use image_url as fallback if no valid images
+  const images = rawImages.length > 0 
+    ? rawImages 
+    : (product.image_url ? [product.image_url] : ['/placeholder.svg']);
+
+  // Check if description contains HTML
+  const descriptionHasHtml = product.description?.includes('<') && product.description?.includes('>');
 
   const inStock = product.stock !== null && product.stock > 0;
 
@@ -263,9 +276,14 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {/* Description */}
-            {product.description && (
+            {/* Short Description */}
+            {product.description && !descriptionHasHtml && (
               <p className="text-muted-foreground">{product.description}</p>
+            )}
+            {product.description && descriptionHasHtml && (
+              <p className="text-muted-foreground line-clamp-3">
+                {product.description.replace(/<[^>]*>/g, '').substring(0, 200)}...
+              </p>
             )}
 
             {/* Variants */}
@@ -401,9 +419,16 @@ const ProductDetail = () => {
               )}
             </TabsList>
             <TabsContent value="description" className="mt-4">
-              <p className="text-muted-foreground">
-                {product.description || 'No description available.'}
-              </p>
+              {descriptionHasHtml ? (
+                <div 
+                  className="prose prose-sm max-w-none text-muted-foreground [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-3 [&_h3]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_li]:my-1 [&_img]:rounded-lg [&_img]:my-4"
+                  dangerouslySetInnerHTML={{ __html: product.description || '' }}
+                />
+              ) : (
+                <p className="text-muted-foreground">
+                  {product.description || 'No description available.'}
+                </p>
+              )}
             </TabsContent>
             <TabsContent value="shipping" className="mt-4">
               <div className="space-y-3 text-muted-foreground">

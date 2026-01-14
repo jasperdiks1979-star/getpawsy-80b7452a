@@ -213,8 +213,11 @@ const Admin = () => {
         // Find full details for this product
         const fullDetail = fullDetailsResponse?.find((d: { pid: string; success: boolean; data?: { description?: string }; images?: string[]; variants?: unknown; totalStock?: number }) => d.pid === p.pid && d.success);
         
-        // Get all images
-        const images = fullDetail?.images || [p.productImage];
+        // Get all images - ensure flat array of valid URLs
+        const rawImages = fullDetail?.images || [p.productImage];
+        const images = rawImages.flat().filter((img: unknown): img is string => 
+          typeof img === 'string' && img.startsWith('http')
+        );
         
         // Get stock from full details or default
         const stock = fullDetail?.totalStock ?? 100;
@@ -350,11 +353,17 @@ const Admin = () => {
           continue;
         }
 
+        // Flatten and filter images
+        const rawImages = fullDetail.images || product.images || [];
+        const flatImages = (Array.isArray(rawImages) ? rawImages : [rawImages])
+          .flat()
+          .filter((img: unknown): img is string => typeof img === 'string' && img.startsWith('http'));
+
         // Update product with new images and variants
         const { error: updateError } = await supabase
           .from("products")
           .update({
-            images: fullDetail.images || product.images,
+            images: flatImages,
             variants: fullDetail.variants || product.variants,
             stock: fullDetail.totalStock ?? product.stock,
             updated_at: new Date().toISOString(),
