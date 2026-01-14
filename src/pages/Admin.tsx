@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RateLimitTimer } from "@/components/RateLimitTimer";
+import { calculateSellingPrice } from "@/lib/pricing";
 
 interface CJProduct {
   pid: string;
@@ -47,7 +48,6 @@ const Admin = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
-  const [priceMultiplier, setPriceMultiplier] = useState("2.5");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [catalogPage, setCatalogPage] = useState(1);
   const [catalogKeyword, setCatalogKeyword] = useState("pet");
@@ -166,9 +166,9 @@ const Admin = () => {
   });
 
   // Import products mutation - fetches full details including all images, variants, and stock
+  // Uses dynamic pricing with shipping included and psychological price rounding
   const importMutation = useMutation({
     mutationFn: async (products: CJProduct[]) => {
-      const multiplier = parseFloat(priceMultiplier);
       const productIds = products.map(p => p.pid);
       
       // Show loading toast
@@ -189,7 +189,7 @@ const Admin = () => {
 
       toast.dismiss("import-loading");
       
-      // Map full details to database format
+      // Map full details to database format with dynamic pricing
       const productsToInsert = products.map((p) => {
         // Find full details for this product
         const fullDetail = fullDetailsResponse?.find((d: { pid: string; success: boolean; data?: { description?: string }; images?: string[]; variants?: unknown; totalStock?: number }) => d.pid === p.pid && d.success);
@@ -205,6 +205,11 @@ const Admin = () => {
         
         // Get variants data
         const variants = fullDetail?.variants || null;
+        
+        // Calculate price using dynamic pricing with shipping included
+        const costPrice = Number(p.sellPrice) || 0;
+        const weight = p.productWeight || 200; // Default weight if not specified
+        const pricing = calculateSellingPrice(costPrice, weight);
 
         return {
           cj_product_id: p.pid,
@@ -213,15 +218,16 @@ const Admin = () => {
           category: selectedCategory === "auto" ? p.categoryName : (selectedCategory || p.categoryName),
           image_url: p.productImage,
           images: images, // Store all images
-          price: Math.round(Number(p.sellPrice) * multiplier * 100) / 100,
-          cost_price: Number(p.sellPrice) || 0,
-          compare_at_price: Math.round(Number(p.sellPrice) * multiplier * 1.3 * 100) / 100,
+          price: pricing.sellingPrice, // Psychological price with shipping included
+          cost_price: pricing.totalCost, // Cost + shipping for accurate profit calculation
+          compare_at_price: pricing.compareAtPrice, // Strikethrough price
           sku: p.productSku,
           weight: p.productWeight,
           stock: stock, // Real stock from CJ
           variants: variants, // Store variant data
           is_active: true,
           supplier_name: "CJ Dropshipping",
+          shipping_time: "Free Shipping", // Shipping is included in price
         };
       });
 
@@ -237,7 +243,7 @@ const Admin = () => {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`${data?.length || 0} products imported with full details!`);
+      toast.success(`${data?.length || 0} products imported with optimized pricing!`);
       setSelectedProducts(new Set());
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
     },
@@ -441,22 +447,13 @@ const Admin = () => {
                       </Button>
                     </div>
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <label className="text-sm text-muted-foreground mb-1 block">
-                      Profit Margin
+                      Pricing
                     </label>
-                    <Select value={priceMultiplier} onValueChange={setPriceMultiplier}>
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1.5">1.5x</SelectItem>
-                        <SelectItem value="2">2x</SelectItem>
-                        <SelectItem value="2.5">2.5x</SelectItem>
-                        <SelectItem value="3">3x</SelectItem>
-                        <SelectItem value="4">4x</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Badge variant="outline" className="text-xs">
+                      Dynamic pricing + Free Shipping included
+                    </Badge>
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-1 block">
@@ -526,7 +523,7 @@ const Admin = () => {
                         const isSelected = selectedProducts.has(product.pid);
                         const isImported = isAlreadyImported(product.pid);
                         const costPrice = Number(product.sellPrice) || 0;
-                        const retailPrice = costPrice * parseFloat(priceMultiplier);
+                        const pricing = calculateSellingPrice(costPrice, product.productWeight || 200);
 
                         return (
                           <Card
@@ -559,7 +556,7 @@ const Admin = () => {
                                 )}
                                 <Badge className="absolute bottom-2 left-2" variant="default">
                                   <PawPrint className="w-3 h-3 mr-1" />
-                                  US Ship
+                                  Free Shipping
                                 </Badge>
                               </div>
                               <h3 className="font-medium text-sm line-clamp-2 mb-2">
@@ -568,14 +565,17 @@ const Admin = () => {
                               <div className="flex justify-between items-center text-sm">
                                 <div>
                                   <span className="text-muted-foreground">Cost: </span>
-                                  <span className="font-medium">${costPrice.toFixed(2)}</span>
+                                  <span className="font-medium">${pricing.totalCost.toFixed(2)}</span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">Retail: </span>
                                   <span className="font-bold text-primary">
-                                    ${retailPrice.toFixed(2)}
+                                    ${pricing.sellingPrice.toFixed(2)}
                                   </span>
                                 </div>
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {pricing.multiplier.toFixed(1)}x markup
                               </div>
                               <Badge variant="outline" className="mt-2 text-xs">
                                 {product.categoryName}
@@ -656,22 +656,13 @@ const Admin = () => {
                 <CardContent className="pt-6">
                   <div className="flex flex-wrap gap-4 items-center justify-between">
                     <div className="flex gap-4 items-center">
-                      <div>
+                      <div className="flex-1">
                         <label className="text-sm text-muted-foreground mb-1 block">
-                          Profit Margin
+                          Pricing
                         </label>
-                        <Select value={priceMultiplier} onValueChange={setPriceMultiplier}>
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1.5">1.5x</SelectItem>
-                            <SelectItem value="2">2x</SelectItem>
-                            <SelectItem value="2.5">2.5x</SelectItem>
-                            <SelectItem value="3">3x</SelectItem>
-                            <SelectItem value="4">4x</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Badge variant="outline" className="text-xs">
+                          Dynamic pricing + Free Shipping included
+                        </Badge>
                       </div>
                       <div>
                         <label className="text-sm text-muted-foreground mb-1 block">
@@ -727,7 +718,7 @@ const Admin = () => {
                     const isSelected = selectedProducts.has(product.pid);
                     const isImported = isAlreadyImported(product.pid);
                     const costPrice = Number(product.sellPrice) || 0;
-                    const retailPrice = costPrice * parseFloat(priceMultiplier);
+                    const pricing = calculateSellingPrice(costPrice, product.productWeight || 200);
 
                     return (
                       <Card
@@ -758,6 +749,9 @@ const Admin = () => {
                                 Already imported
                               </Badge>
                             )}
+                            <Badge className="absolute bottom-2 left-2" variant="default">
+                              Free Shipping
+                            </Badge>
                           </div>
                           <h3 className="font-medium text-sm line-clamp-2 mb-2">
                             {product.productNameEn}
@@ -765,14 +759,17 @@ const Admin = () => {
                           <div className="flex justify-between items-center text-sm">
                             <div>
                               <span className="text-muted-foreground">Cost: </span>
-                              <span className="font-medium">${costPrice.toFixed(2)}</span>
+                              <span className="font-medium">${pricing.totalCost.toFixed(2)}</span>
                             </div>
                             <div>
                               <span className="text-muted-foreground">Retail: </span>
                               <span className="font-bold text-primary">
-                                ${retailPrice.toFixed(2)}
+                                ${pricing.sellingPrice.toFixed(2)}
                               </span>
                             </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {pricing.multiplier.toFixed(1)}x markup
                           </div>
                           <Badge variant="outline" className="mt-2 text-xs">
                             {product.categoryName}
