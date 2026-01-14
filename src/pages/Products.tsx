@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Filter, Grid3X3, List, SlidersHorizontal } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Filter, SlidersHorizontal, Loader2 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -8,97 +9,120 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { products, categories } from '@/data/products';
+import { supabase } from '@/integrations/supabase/client';
 
 const sortOptions = [
-  { value: 'featured', label: 'Featured' },
-  { value: 'price-asc', label: 'Price: Low to High' },
-  { value: 'price-desc', label: 'Price: High to Low' },
-  { value: 'rating', label: 'Highest Rated' },
-  { value: 'newest', label: 'Newest' },
+  { value: 'newest', label: 'Nieuwste' },
+  { value: 'price-asc', label: 'Prijs: Laag naar Hoog' },
+  { value: 'price-desc', label: 'Prijs: Hoog naar Laag' },
+  { value: 'name', label: 'Naam: A-Z' },
 ];
 
 const Products = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get('category');
   
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     categoryParam ? [categoryParam] : []
   );
-  const [sortBy, setSortBy] = useState('featured');
+  const [sortBy, setSortBy] = useState('newest');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Fetch products from database
+  const { data: products, isLoading: productsLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch categories from database
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const filteredProducts = useMemo(() => {
+    if (!products) return [];
     let result = [...products];
 
     // Filter by search
     if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       result = result.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase())
+        p.name.toLowerCase().includes(query) ||
+        (p.description?.toLowerCase().includes(query))
       );
     }
 
     // Filter by category
     if (selectedCategories.length > 0) {
-      result = result.filter(p => selectedCategories.includes(p.category));
+      result = result.filter(p => 
+        p.category && selectedCategories.includes(p.category)
+      );
     }
 
     // Sort
     switch (sortBy) {
       case 'price-asc':
-        result.sort((a, b) => a.price - b.price);
+        result.sort((a, b) => Number(a.price) - Number(b.price));
         break;
       case 'price-desc':
-        result.sort((a, b) => b.price - a.price);
+        result.sort((a, b) => Number(b.price) - Number(a.price));
         break;
-      case 'rating':
-        result.sort((a, b) => b.rating - a.rating);
+      case 'name':
+        result.sort((a, b) => a.name.localeCompare(b.name));
         break;
-      case 'featured':
+      case 'newest':
       default:
-        result.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+        result.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
     }
 
     return result;
-  }, [searchQuery, selectedCategories, sortBy]);
+  }, [products, searchQuery, selectedCategories, sortBy]);
 
-  const toggleCategory = (categoryId: string) => {
+  const toggleCategory = (categoryName: string) => {
     setSelectedCategories(prev =>
-      prev.includes(categoryId)
-        ? prev.filter(c => c !== categoryId)
-        : [...prev, categoryId]
+      prev.includes(categoryName)
+        ? prev.filter(c => c !== categoryName)
+        : [...prev, categoryName]
     );
   };
 
   const FilterContent = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="font-semibold mb-3">Categories</h3>
+        <h3 className="font-semibold mb-3">Categorieën</h3>
         <div className="space-y-2">
-          {categories.map((category) => (
+          {categories?.map((category) => (
             <label
               key={category.id}
               className="flex items-center gap-2 cursor-pointer"
             >
               <Checkbox
-                checked={selectedCategories.includes(category.id)}
-                onCheckedChange={() => toggleCategory(category.id)}
+                checked={selectedCategories.includes(category.name)}
+                onCheckedChange={() => toggleCategory(category.name)}
               />
-              <span className="text-sm">
-                {category.icon} {category.name}
-              </span>
+              <span className="text-sm">{category.name}</span>
             </label>
           ))}
-        </div>
-      </div>
-
-      <div>
-        <h3 className="font-semibold mb-3">Price Range</h3>
-        <div className="flex items-center gap-2">
-          <Input type="number" placeholder="Min" className="w-20" />
-          <span>-</span>
-          <Input type="number" placeholder="Max" className="w-20" />
         </div>
       </div>
 
@@ -107,10 +131,12 @@ const Products = () => {
         className="w-full"
         onClick={() => setSelectedCategories([])}
       >
-        Clear Filters
+        Filters wissen
       </Button>
     </div>
   );
+
+  const isLoading = productsLoading || categoriesLoading;
 
   return (
     <Layout>
@@ -118,12 +144,10 @@ const Products = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            {categoryParam
-              ? categories.find(c => c.id === categoryParam)?.name || 'Products'
-              : 'All Products'}
+            {categoryParam || 'Alle Producten'}
           </h1>
           <p className="text-muted-foreground">
-            {filteredProducts.length} products found
+            {filteredProducts.length} producten gevonden
           </p>
         </div>
 
@@ -164,7 +188,7 @@ const Products = () => {
               {/* Search */}
               <div className="flex-1 max-w-xs">
                 <Input
-                  placeholder="Search products..."
+                  placeholder="Zoek producten..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -173,7 +197,7 @@ const Products = () => {
               {/* Sort */}
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sort by" />
+                  <SelectValue placeholder="Sorteer op" />
                 </SelectTrigger>
                 <SelectContent>
                   {sortOptions.map((option) => (
@@ -185,25 +209,41 @@ const Products = () => {
               </Select>
             </div>
 
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            )}
+
             {/* Products */}
-            {filteredProducts.length > 0 ? (
+            {!isLoading && filteredProducts.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
-            ) : (
+            )}
+
+            {/* Empty State */}
+            {!isLoading && filteredProducts.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-lg text-muted-foreground">No products found</p>
-                <Button
-                  variant="link"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedCategories([]);
-                  }}
-                >
-                  Clear all filters
-                </Button>
+                <p className="text-lg text-muted-foreground">
+                  {products?.length === 0 
+                    ? 'Nog geen producten. Importeer producten via de admin pagina.'
+                    : 'Geen producten gevonden'}
+                </p>
+                {products && products.length > 0 && (
+                  <Button
+                    variant="link"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedCategories([]);
+                    }}
+                  >
+                    Filters wissen
+                  </Button>
+                )}
               </div>
             )}
           </div>

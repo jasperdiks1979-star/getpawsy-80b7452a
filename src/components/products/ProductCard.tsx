@@ -1,10 +1,31 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Star, Heart } from 'lucide-react';
-import { Product } from '@/data/products';
+import { ShoppingCart, Heart } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+
+export interface Product {
+  id: string;
+  cj_product_id?: string | null;
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  image_url?: string | null;
+  images?: string[] | null;
+  price: number;
+  cost_price?: number | null;
+  compare_at_price?: number | null;
+  sku?: string | null;
+  variants?: unknown;
+  stock?: number | null;
+  is_active?: boolean | null;
+  weight?: number | null;
+  shipping_time?: string | null;
+  supplier_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 interface ProductCardProps {
   product: Product;
@@ -18,14 +39,14 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price,
-      image: product.image,
+      price: Number(product.price),
+      image: product.image_url || '/placeholder.svg',
     });
-    toast.success(`${product.name} added to cart!`);
+    toast.success(`${product.name} toegevoegd aan winkelwagen!`);
   };
 
-  const discount = product.comparePrice
-    ? Math.round((1 - product.price / product.comparePrice) * 100)
+  const discount = product.compare_at_price
+    ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
     : null;
 
   return (
@@ -34,20 +55,17 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         {/* Image */}
         <div className="relative aspect-square overflow-hidden bg-muted">
           <img
-            src={product.image}
+            src={product.image_url || '/placeholder.svg'}
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
           
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
-            {discount && (
+            {discount && discount > 0 && (
               <Badge className="bg-destructive text-destructive-foreground">
                 -{discount}%
               </Badge>
-            )}
-            {product.featured && (
-              <Badge variant="secondary">Featured</Badge>
             )}
           </div>
 
@@ -59,7 +77,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               className="rounded-full bg-background/80 backdrop-blur-sm hover:bg-background"
               onClick={(e) => {
                 e.preventDefault();
-                toast.info('Added to wishlist!');
+                toast.info('Toegevoegd aan wishlist!');
               }}
             >
               <Heart className="w-4 h-4" />
@@ -73,36 +91,43 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               onClick={handleAddToCart}
             >
               <ShoppingCart className="w-4 h-4" />
-              Add to Cart
+              In Winkelwagen
             </Button>
           </div>
         </div>
 
         {/* Content */}
         <div className="p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-            {product.category}
-          </p>
+          {product.category && (
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+              {product.category}
+            </p>
+          )}
           <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
             {product.name}
           </h3>
-          
-          {/* Rating */}
-          <div className="flex items-center gap-1 mt-2">
-            <Star className="w-4 h-4 fill-accent text-accent" />
-            <span className="text-sm font-medium">{product.rating}</span>
-            <span className="text-sm text-muted-foreground">({product.reviews})</span>
-          </div>
 
           {/* Price */}
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-lg font-bold text-primary">${product.price}</span>
-            {product.comparePrice && (
+            <span className="text-lg font-bold text-primary">
+              €{Number(product.price).toFixed(2)}
+            </span>
+            {product.compare_at_price && (
               <span className="text-sm text-muted-foreground line-through">
-                ${product.comparePrice}
+                €{Number(product.compare_at_price).toFixed(2)}
               </span>
             )}
           </div>
+
+          {/* Stock indicator */}
+          {product.stock !== null && product.stock !== undefined && product.stock < 10 && product.stock > 0 && (
+            <p className="text-xs text-orange-600 mt-1">
+              Nog {product.stock} op voorraad
+            </p>
+          )}
+          {product.stock === 0 && (
+            <p className="text-xs text-destructive mt-1">Uitverkocht</p>
+          )}
         </div>
       </div>
     </Link>

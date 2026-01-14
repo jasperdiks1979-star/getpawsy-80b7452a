@@ -1,35 +1,73 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Truck, Shield, HeartHandshake, Sparkles } from 'lucide-react';
+import { ArrowRight, Truck, Shield, HeartHandshake, Sparkles, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
-import { categories, getFeaturedProducts } from '@/data/products';
+import { supabase } from '@/integrations/supabase/client';
 
 const features = [
   {
     icon: Truck,
-    title: 'Free US Shipping',
-    description: 'Free shipping on orders over $50',
+    title: 'Gratis Verzending',
+    description: 'Bij bestellingen boven €50',
   },
   {
     icon: Shield,
-    title: '30-Day Returns',
-    description: 'Hassle-free returns guaranteed',
+    title: '30 Dagen Retour',
+    description: 'Zorgeloos retourneren',
   },
   {
     icon: HeartHandshake,
-    title: 'Pet-Safe Products',
-    description: 'All products are vet-approved',
+    title: 'Dierenvriendelijk',
+    description: 'Veilige producten',
   },
   {
     icon: Sparkles,
-    title: 'Premium Quality',
-    description: 'Only the best for your pets',
+    title: 'Premium Kwaliteit',
+    description: 'Alleen het beste',
   },
 ];
 
 const Index = () => {
-  const featuredProducts = getFeaturedProducts();
+  // Fetch featured products from database
+  const { data: featuredProducts, isLoading: productsLoading } = useQuery({
+    queryKey: ['featured-products'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(4);
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch categories from database
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const categoryIcons: Record<string, string> = {
+    'Honden': '🐕',
+    'Katten': '🐱',
+    'Speelgoed': '🎾',
+    'Voeding': '🦴',
+    'Verzorging': '🧴',
+    'Accessoires': '🎀',
+  };
 
   return (
     <Layout>
@@ -40,26 +78,26 @@ const Index = () => {
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
                 <Sparkles className="w-4 h-4" />
-                New arrivals just dropped!
+                Nieuwe collectie beschikbaar!
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-                Happy Pets,{' '}
-                <span className="text-primary">Happy Life</span>
+                Blije Huisdieren,{' '}
+                <span className="text-primary">Blij Leven</span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-md">
-                Premium pet products delivered to your door. From cozy beds to tasty treats, 
-                we've got everything your furry friends need.
+                Premium huisdierproducten bezorgd aan je deur. Van knusse bedjes tot lekkere snacks, 
+                wij hebben alles wat je harige vrienden nodig hebben.
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link to="/products">
                   <Button size="lg" className="gap-2">
-                    Shop Now
+                    Shop Nu
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
-                <Link to="/products?category=dogs">
+                <Link to="/products?category=Honden">
                   <Button size="lg" variant="outline">
-                    Shop for Dogs 🐕
+                    Shop voor Honden 🐕
                   </Button>
                 </Link>
               </div>
@@ -67,12 +105,12 @@ const Index = () => {
             <div className="relative">
               <img
                 src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=80"
-                alt="Happy dog with toy"
+                alt="Blije hond met speeltje"
                 className="rounded-2xl shadow-2xl"
               />
               <div className="absolute -bottom-4 -left-4 bg-card p-4 rounded-xl shadow-lg">
-                <p className="text-sm font-medium">🇺🇸 Ships from USA</p>
-                <p className="text-xs text-muted-foreground">Fast & reliable delivery</p>
+                <p className="text-sm font-medium">🇳🇱 Verzending vanuit NL</p>
+                <p className="text-xs text-muted-foreground">Snelle & betrouwbare levering</p>
               </div>
             </div>
           </div>
@@ -102,17 +140,19 @@ const Index = () => {
       <section className="py-16">
         <div className="container px-4 md:px-6">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold mb-3">Shop by Category</h2>
-            <p className="text-muted-foreground">Find exactly what your pet needs</p>
+            <h2 className="text-3xl font-bold mb-3">Shop per Categorie</h2>
+            <p className="text-muted-foreground">Vind precies wat je huisdier nodig heeft</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map((category) => (
+            {categories?.map((category) => (
               <Link
                 key={category.id}
-                to={`/products?category=${category.id}`}
+                to={`/products?category=${category.name}`}
                 className="group p-6 bg-card rounded-xl shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 text-center"
               >
-                <span className="text-4xl block mb-3">{category.icon}</span>
+                <span className="text-4xl block mb-3">
+                  {categoryIcons[category.name] || '🐾'}
+                </span>
                 <h3 className="font-semibold group-hover:text-primary transition-colors">
                   {category.name}
                 </h3>
@@ -127,21 +167,41 @@ const Index = () => {
         <div className="container px-4 md:px-6">
           <div className="flex items-center justify-between mb-10">
             <div>
-              <h2 className="text-3xl font-bold mb-2">Featured Products</h2>
-              <p className="text-muted-foreground">Top picks for your furry friends</p>
+              <h2 className="text-3xl font-bold mb-2">Uitgelichte Producten</h2>
+              <p className="text-muted-foreground">Top keuzes voor je harige vrienden</p>
             </div>
             <Link to="/products">
               <Button variant="outline" className="gap-2">
-                View All
+                Bekijk Alles
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          
+          {productsLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          )}
+          
+          {!productsLoading && featuredProducts && featuredProducts.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+
+          {!productsLoading && (!featuredProducts || featuredProducts.length === 0) && (
+            <div className="text-center py-12 bg-card rounded-xl">
+              <p className="text-muted-foreground mb-4">
+                Nog geen producten beschikbaar. Importeer producten via de admin pagina.
+              </p>
+              <Link to="/admin">
+                <Button>Ga naar Admin</Button>
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
@@ -150,20 +210,20 @@ const Index = () => {
         <div className="container px-4 md:px-6">
           <div className="bg-primary rounded-2xl p-8 md:p-12 text-center text-primary-foreground">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Join the Pawsy Family! 🐾
+              Word lid van de Pawsy Familie! 🐾
             </h2>
             <p className="text-lg opacity-90 mb-6 max-w-2xl mx-auto">
-              Subscribe to our newsletter and get 15% off your first order, 
-              plus exclusive deals and pet care tips.
+              Schrijf je in voor onze nieuwsbrief en krijg 15% korting op je eerste bestelling, 
+              plus exclusieve aanbiedingen en verzorgingstips.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Voer je e-mail in"
                 className="flex-1 px-4 py-3 rounded-lg bg-white/10 border border-white/20 placeholder:text-white/60 text-white focus:outline-none focus:ring-2 focus:ring-white/30"
               />
               <Button variant="secondary" size="lg">
-                Subscribe
+                Inschrijven
               </Button>
             </div>
           </div>
