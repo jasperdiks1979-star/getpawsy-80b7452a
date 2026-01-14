@@ -152,7 +152,7 @@ const Admin = () => {
         cj_product_id: p.pid,
         name: p.productNameEn,
         description: p.description || "",
-        category: selectedCategory || p.categoryName,
+        category: selectedCategory === "auto" ? p.categoryName : (selectedCategory || p.categoryName),
         image_url: p.productImage,
         price: Math.round(p.sellPrice * multiplier * 100) / 100,
         cost_price: p.sellPrice,
@@ -379,7 +379,7 @@ const Admin = () => {
                         <SelectValue placeholder="Auto-detect" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Auto-detect</SelectItem>
+                        <SelectItem value="auto">Auto-detect</SelectItem>
                         {categories?.map((cat) => (
                           <SelectItem key={cat.id} value={cat.name}>
                             {cat.name}
@@ -593,7 +593,7 @@ const Admin = () => {
                             <SelectValue placeholder="Auto-detect" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Auto-detect</SelectItem>
+                            <SelectItem value="auto">Auto-detect</SelectItem>
                             {categories?.map((cat) => (
                               <SelectItem key={cat.id} value={cat.name}>
                                 {cat.name}
