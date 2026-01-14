@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -239,6 +239,27 @@ const Admin = () => {
     },
     onError: (error) => {
       toast.error(`Import failed: ${error.message}`);
+    },
+  });
+
+  // Stock sync mutation
+  const syncStockMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("cj-dropshipping", {
+        body: {
+          action: "sync-stock",
+        },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Stock synced! ${data?.synced || 0} products updated.`);
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+    },
+    onError: (error) => {
+      toast.error(`Stock sync failed: ${error.message}`);
     },
   });
 
@@ -764,30 +785,66 @@ const Admin = () => {
           {/* My Products Tab */}
           <TabsContent value="products" className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Package className="w-5 h-5" />
-                Store Products ({existingProducts?.length || 0})
-              </h2>
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Package className="w-5 h-5" />
+                  Store Products ({existingProducts?.length || 0})
+                </h2>
+                <div className="flex gap-2 items-center">
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Auto-sync daily at 05:00 NL time
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => syncStockMutation.mutate()}
+                    disabled={syncStockMutation.isPending}
+                  >
+                    {syncStockMutation.isPending ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <CloudDownload className="w-4 h-4 mr-2" />
+                    )}
+                    Sync Stock Now
+                  </Button>
+                </div>
+              </div>
               {existingProducts && existingProducts.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {existingProducts.map((product) => (
                     <Card key={product.id}>
                       <CardContent className="p-4">
-                        <img
-                          src={product.image_url || "/placeholder.svg"}
-                          alt={product.name}
-                          className="w-full h-40 object-cover rounded-lg mb-3"
-                        />
+                        <div className="relative">
+                          <img
+                            src={product.image_url || "/placeholder.svg"}
+                            alt={product.name}
+                            className="w-full h-40 object-cover rounded-lg mb-3"
+                          />
+                          {product.images && Array.isArray(product.images) && product.images.length > 1 && (
+                            <Badge variant="secondary" className="absolute top-2 right-2 text-xs">
+                              {product.images.length} images
+                            </Badge>
+                          )}
+                        </div>
                         <h3 className="font-medium text-sm line-clamp-2 mb-2">
                           {product.name}
                         </h3>
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center mb-2">
                           <span className="font-bold text-primary">
                             ${Number(product.price).toFixed(2)}
                           </span>
                           <Badge variant={product.is_active ? "default" : "secondary"}>
                             {product.is_active ? "Active" : "Inactive"}
                           </Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-xs text-muted-foreground">
+                          <span>Stock: {product.stock ?? 0}</span>
+                          {product.variants && (
+                            <span>
+                              {Array.isArray(product.variants) ? product.variants.length : 0} variants
+                            </span>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
