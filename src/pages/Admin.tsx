@@ -50,7 +50,7 @@ const Admin = () => {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [catalogPage, setCatalogPage] = useState(1);
-  const [catalogKeyword, setCatalogKeyword] = useState("pet");
+  const [catalogKeyword, setCatalogKeyword] = useState("all");
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [editProduct, setEditProduct] = useState<Tables<"products"> | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -533,18 +533,21 @@ const Admin = () => {
                         setCatalogKeyword(v);
                         setCatalogPage(1);
                       }}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-48">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pet">All Pets</SelectItem>
-                          <SelectItem value="dog">Dogs</SelectItem>
-                          <SelectItem value="cat">Cats</SelectItem>
-                          <SelectItem value="pet toy">Pet Toys</SelectItem>
-                          <SelectItem value="pet bed">Pet Beds</SelectItem>
-                          <SelectItem value="pet collar">Collars & Leashes</SelectItem>
-                          <SelectItem value="pet bowl">Bowls & Feeders</SelectItem>
-                          <SelectItem value="pet grooming">Grooming</SelectItem>
+                          <SelectItem value="all">All Pet Products</SelectItem>
+                          <SelectItem value="Pet Toys">🎾 Pet Toys</SelectItem>
+                          <SelectItem value="Pet Beds & Furniture">🛏️ Beds & Furniture</SelectItem>
+                          <SelectItem value="Pet Food & Treats">🍖 Food & Treats</SelectItem>
+                          <SelectItem value="Pet Collars & Leashes">🦮 Collars & Leashes</SelectItem>
+                          <SelectItem value="Pet Clothing">👕 Pet Clothing</SelectItem>
+                          <SelectItem value="Pet Grooming">✂️ Grooming</SelectItem>
+                          <SelectItem value="Pet Carriers">🎒 Carriers & Travel</SelectItem>
+                          <SelectItem value="Cat Supplies">🐱 Cat Supplies</SelectItem>
+                          <SelectItem value="Dog Supplies">🐕 Dog Supplies</SelectItem>
+                          <SelectItem value="Small Pet Supplies">🐹 Small Pets</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button 
