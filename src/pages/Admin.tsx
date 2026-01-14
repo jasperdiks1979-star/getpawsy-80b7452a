@@ -172,9 +172,9 @@ const Admin = () => {
         description: p.description || "",
         category: selectedCategory === "auto" ? p.categoryName : (selectedCategory || p.categoryName),
         image_url: p.productImage,
-        price: Math.round(p.sellPrice * multiplier * 100) / 100,
-        cost_price: p.sellPrice,
-        compare_at_price: Math.round(p.sellPrice * multiplier * 1.3 * 100) / 100,
+        price: Math.round(Number(p.sellPrice) * multiplier * 100) / 100,
+        cost_price: Number(p.sellPrice) || 0,
+        compare_at_price: Math.round(Number(p.sellPrice) * multiplier * 1.3 * 100) / 100,
         sku: p.productSku,
         weight: p.productWeight,
         stock: 100,
@@ -461,7 +461,8 @@ const Admin = () => {
                       {petCatalogProducts.map((product: CJProduct) => {
                         const isSelected = selectedProducts.has(product.pid);
                         const isImported = isAlreadyImported(product.pid);
-                        const retailPrice = product.sellPrice * parseFloat(priceMultiplier);
+                        const costPrice = Number(product.sellPrice) || 0;
+                        const retailPrice = costPrice * parseFloat(priceMultiplier);
 
                         return (
                           <Card
@@ -503,7 +504,7 @@ const Admin = () => {
                               <div className="flex justify-between items-center text-sm">
                                 <div>
                                   <span className="text-muted-foreground">Cost: </span>
-                                  <span className="font-medium">${product.sellPrice.toFixed(2)}</span>
+                                  <span className="font-medium">${costPrice.toFixed(2)}</span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">Retail: </span>
@@ -661,7 +662,8 @@ const Admin = () => {
                   {cjProducts.map((product) => {
                     const isSelected = selectedProducts.has(product.pid);
                     const isImported = isAlreadyImported(product.pid);
-                    const retailPrice = product.sellPrice * parseFloat(priceMultiplier);
+                    const costPrice = Number(product.sellPrice) || 0;
+                    const retailPrice = costPrice * parseFloat(priceMultiplier);
 
                     return (
                       <Card
@@ -699,7 +701,7 @@ const Admin = () => {
                           <div className="flex justify-between items-center text-sm">
                             <div>
                               <span className="text-muted-foreground">Cost: </span>
-                              <span className="font-medium">${product.sellPrice.toFixed(2)}</span>
+                              <span className="font-medium">${costPrice.toFixed(2)}</span>
                             </div>
                             <div>
                               <span className="text-muted-foreground">Retail: </span>
