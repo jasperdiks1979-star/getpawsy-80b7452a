@@ -99,7 +99,6 @@ export const ProductEditDialog = ({
           productName: formData.name,
           category: product?.category || "",
           currentDescription: formData.description,
-          language: "nl",
         },
       });
 
@@ -110,11 +109,11 @@ export const ProductEditDialog = ({
     onSuccess: (data) => {
       if (data?.description) {
         setFormData((prev) => ({ ...prev, description: data.description }));
-        toast.success("SEO tekst gegenereerd!");
+        toast.success("SEO text generated!");
       }
     },
     onError: (error) => {
-      toast.error(`Genereren mislukt: ${error.message}`);
+      toast.error(`Generation failed: ${error.message}`);
     },
   });
 
