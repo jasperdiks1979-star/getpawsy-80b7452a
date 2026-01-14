@@ -110,7 +110,10 @@ const Admin = () => {
         throw new Error(`CJ API error: ${response.code}`);
       }
       
-      return response.data?.list || [];
+      // Filter out already imported products
+      const allProducts = response.data?.list || [];
+      const importedIds = new Set(existingProducts?.map(p => p.cj_product_id) || []);
+      return allProducts.filter((p: CJProduct) => !importedIds.has(p.pid));
     },
     enabled: false,
   });
@@ -154,10 +157,15 @@ const Admin = () => {
         throw new Error(`CJ API error: ${response.code}`);
       }
       
+      // Filter out already imported products
+      const allProducts = response.data?.list || [];
+      const importedIds = new Set(existingProducts?.map(p => p.cj_product_id) || []);
+      const filteredProducts = allProducts.filter((p: CJProduct) => !importedIds.has(p.pid));
+      
       return {
-        products: response.data?.list || [],
-        total: response.data?.total || 0,
-        originalTotal: response.data?.originalTotal || response.data?.total || 0,
+        products: filteredProducts,
+        total: filteredProducts.length,
+        originalTotal: response.data?.total || 0,
       };
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
@@ -165,8 +173,18 @@ const Admin = () => {
     refetchOnWindowFocus: false, // Prevent refetch on window focus
   });
 
+  // Generate SEO text for a product
+  const generateSeoForProduct = async (productName: string, category: string) => {
+    const { data, error } = await supabase.functions.invoke("generate-seo-text", {
+      body: { productName, category },
+    });
+    if (error) throw error;
+    return data?.description || "";
+  };
+
   // Import products mutation - fetches full details including all images, variants, and stock
   // Uses dynamic pricing with shipping included and psychological price rounding
+  // Now also generates SEO descriptions automatically
   const importMutation = useMutation({
     mutationFn: async (products: CJProduct[]) => {
       const productIds = products.map(p => p.pid);
@@ -188,9 +206,10 @@ const Admin = () => {
       }
 
       toast.dismiss("import-loading");
+      toast.loading(`Generating SEO descriptions for ${products.length} products...`, { id: "seo-loading" });
       
       // Map full details to database format with dynamic pricing
-      const productsToInsert = products.map((p) => {
+      const productsToInsert = await Promise.all(products.map(async (p) => {
         // Find full details for this product
         const fullDetail = fullDetailsResponse?.find((d: { pid: string; success: boolean; data?: { description?: string }; images?: string[]; variants?: unknown; totalStock?: number }) => d.pid === p.pid && d.success);
         
@@ -200,8 +219,18 @@ const Admin = () => {
         // Get stock from full details or default
         const stock = fullDetail?.totalStock ?? 100;
         
-        // Get description from full details
-        const description = fullDetail?.data?.description || p.description || "";
+        // Get description from full details (fallback for SEO generation)
+        const originalDescription = fullDetail?.data?.description || p.description || "";
+        
+        // Generate SEO description
+        let seoDescription = originalDescription;
+        try {
+          const category = selectedCategory === "auto" ? p.categoryName : (selectedCategory || p.categoryName);
+          seoDescription = await generateSeoForProduct(p.productNameEn, category);
+        } catch (err) {
+          console.error("SEO generation failed for", p.productNameEn, err);
+          // Keep original description if SEO generation fails
+        }
         
         // Get variants data
         const variants = fullDetail?.variants || null;
@@ -214,7 +243,7 @@ const Admin = () => {
         return {
           cj_product_id: p.pid,
           name: p.productNameEn,
-          description: description,
+          description: seoDescription,
           category: selectedCategory === "auto" ? p.categoryName : (selectedCategory || p.categoryName),
           image_url: p.productImage,
           images: images, // Store all images
@@ -229,7 +258,9 @@ const Admin = () => {
           supplier_name: "CJ Dropshipping",
           shipping_time: "Free Shipping", // Shipping is included in price
         };
-      });
+      }));
+
+      toast.dismiss("seo-loading");
 
       const { data, error } = await supabase
         .from("products")
@@ -243,9 +274,12 @@ const Admin = () => {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`${data?.length || 0} products imported with optimized pricing!`);
+      toast.success(`${data?.length || 0} products imported with SEO descriptions!`);
       setSelectedProducts(new Set());
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      // Refetch catalog to update filtered list
+      queryClient.invalidateQueries({ queryKey: ["pet-catalog"] });
+      queryClient.invalidateQueries({ queryKey: ["cj-search"] });
     },
     onError: (error) => {
       toast.error(`Import failed: ${error.message}`);
@@ -310,9 +344,6 @@ const Admin = () => {
     importMutation.mutate(productsToImport);
   };
 
-  const isAlreadyImported = (pid: string) => {
-    return existingProducts?.some((p) => p.cj_product_id === pid);
-  };
 
   // Loading state
   if (authLoading) {
@@ -521,7 +552,6 @@ const Admin = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {petCatalogProducts.map((product: CJProduct) => {
                         const isSelected = selectedProducts.has(product.pid);
-                        const isImported = isAlreadyImported(product.pid);
                         const costPrice = Number(product.sellPrice) || 0;
                         const pricing = calculateSellingPrice(costPrice, product.productWeight || 200);
 
@@ -531,11 +561,9 @@ const Admin = () => {
                             className={`cursor-pointer transition-all ${
                               isSelected
                                 ? "ring-2 ring-primary bg-primary/5"
-                                : isImported
-                                ? "opacity-60"
                                 : "hover:shadow-lg"
                             }`}
-                            onClick={() => !isImported && toggleProduct(product.pid)}
+                            onClick={() => toggleProduct(product.pid)}
                           >
                             <CardContent className="p-4">
                               <div className="relative">
@@ -548,11 +576,6 @@ const Admin = () => {
                                   <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
                                     <Check className="w-4 h-4" />
                                   </div>
-                                )}
-                                {isImported && (
-                                  <Badge className="absolute top-2 left-2" variant="secondary">
-                                    Already imported
-                                  </Badge>
                                 )}
                                 <Badge className="absolute bottom-2 left-2" variant="default">
                                   <PawPrint className="w-3 h-3 mr-1" />
@@ -716,7 +739,6 @@ const Admin = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {cjProducts.map((product) => {
                     const isSelected = selectedProducts.has(product.pid);
-                    const isImported = isAlreadyImported(product.pid);
                     const costPrice = Number(product.sellPrice) || 0;
                     const pricing = calculateSellingPrice(costPrice, product.productWeight || 200);
 
@@ -726,11 +748,9 @@ const Admin = () => {
                         className={`cursor-pointer transition-all ${
                           isSelected
                             ? "ring-2 ring-primary bg-primary/5"
-                            : isImported
-                            ? "opacity-60"
                             : "hover:shadow-lg"
                         }`}
-                        onClick={() => !isImported && toggleProduct(product.pid)}
+                        onClick={() => toggleProduct(product.pid)}
                       >
                         <CardContent className="p-4">
                           <div className="relative">
@@ -743,11 +763,6 @@ const Admin = () => {
                               <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
                                 <Check className="w-4 h-4" />
                               </div>
-                            )}
-                            {isImported && (
-                              <Badge className="absolute top-2 left-2" variant="secondary">
-                                Already imported
-                              </Badge>
                             )}
                             <Badge className="absolute bottom-2 left-2" variant="default">
                               Free Shipping
