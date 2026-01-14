@@ -1,22 +1,35 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Menu, X, Search, PawPrint } from 'lucide-react';
+import { ShoppingCart, Menu, Search, PawPrint, User, LogOut, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Shop All' },
-  { href: '/products?category=dogs', label: 'Dogs' },
-  { href: '/products?category=cats', label: 'Cats' },
+  { href: '/products?category=Dogs', label: 'Dogs' },
+  { href: '/products?category=Cats', label: 'Cats' },
 ];
 
 export const Navbar = () => {
   const { totalItems } = useCart();
+  const { user, isAdmin, signOut } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -68,6 +81,49 @@ export const Navbar = () => {
             </Button>
           </Link>
 
+          {/* Account */}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium truncate">{user.email}</p>
+                  {isAdmin && (
+                    <Badge variant="secondary" className="mt-1 text-xs">
+                      Admin
+                    </Badge>
+                  )}
+                </div>
+                <DropdownMenuSeparator />
+                {isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
+                      <Shield className="h-4 w-4" />
+                      Admin Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem 
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 cursor-pointer text-destructive"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link to="/auth">
+              <Button variant="outline" size="sm">
+                Sign In
+              </Button>
+            </Link>
+          )}
+
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild className="md:hidden">
@@ -86,6 +142,32 @@ export const Navbar = () => {
                     {link.label}
                   </Link>
                 ))}
+                {user ? (
+                  <>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        className="text-lg font-medium hover:text-primary transition-colors flex items-center gap-2"
+                      >
+                        <Shield className="h-5 w-5" />
+                        Admin
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleSignOut}
+                      className="text-lg font-medium text-destructive hover:text-destructive/80 transition-colors text-left"
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    to="/auth"
+                    className="text-lg font-medium hover:text-primary transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                )}
               </div>
             </SheetContent>
           </Sheet>
