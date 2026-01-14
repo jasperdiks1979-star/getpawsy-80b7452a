@@ -8,9 +8,14 @@ const corsHeaders = {
 
 const CJ_API_BASE = 'https://developers.cjdropshipping.com/api2.0/v1';
 
+// Token cache to avoid rate limiting (CJ allows 1 auth request per 300 seconds)
+let cachedToken: string | null = null;
+let tokenExpiry: number | null = null;
+
 interface CJAuthResponse {
   result: boolean;
   code: number;
+  message?: string;
   data: {
     accessToken: string;
     accessTokenExpiryDate: string;
@@ -45,8 +50,14 @@ interface CJOrderRequest {
   fromCountryCode?: string;
 }
 
-// Get access token from CJ API
+// Get access token from CJ API with caching
 async function getAccessToken(): Promise<string> {
+  // Check if we have a valid cached token
+  if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
+    console.log('Using cached CJ access token');
+    return cachedToken;
+  }
+
   const apiKey = Deno.env.get('CJ_API_KEY');
   const email = Deno.env.get('CJ_EMAIL');
 
@@ -54,6 +65,8 @@ async function getAccessToken(): Promise<string> {
     throw new Error('CJ_API_KEY or CJ_EMAIL not configured');
   }
 
+  console.log('Requesting new CJ access token...');
+  
   const response = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
     method: 'POST',
     headers: {
@@ -69,10 +82,21 @@ async function getAccessToken(): Promise<string> {
   
   if (!data.result) {
     console.error('CJ Auth failed:', data);
-    throw new Error(`CJ Authentication failed: ${data.code}`);
+    // If rate limited, suggest waiting
+    if (data.code === 1600200) {
+      throw new Error('CJ API rate limited - please wait 5 minutes before trying again');
+    }
+    throw new Error(`CJ Authentication failed: ${data.code} - ${data.message || 'Unknown error'}`);
   }
 
-  return data.data.accessToken;
+  // Cache the token - set expiry 5 minutes before actual expiry for safety
+  cachedToken = data.data.accessToken;
+  const expiryDate = new Date(data.data.accessTokenExpiryDate).getTime();
+  tokenExpiry = expiryDate - (5 * 60 * 1000); // 5 minutes buffer
+  
+  console.log('New CJ access token obtained, expires:', data.data.accessTokenExpiryDate);
+
+  return cachedToken;
 }
 
 // Fetch products from CJ Dropshipping
