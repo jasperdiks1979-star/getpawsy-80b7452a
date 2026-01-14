@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Sparkles } from "lucide-react";
 import { ProductImageManager } from "./ProductImageManager";
 import { Tables } from "@/integrations/supabase/types";
 
@@ -91,6 +91,33 @@ export const ProductEditDialog = ({
     },
   });
 
+  // AI SEO Text Generator
+  const generateSeoMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("generate-seo-text", {
+        body: {
+          productName: formData.name,
+          category: product?.category || "",
+          currentDescription: formData.description,
+          language: "nl",
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.description) {
+        setFormData((prev) => ({ ...prev, description: data.description }));
+        toast.success("SEO tekst gegenereerd!");
+      }
+    },
+    onError: (error) => {
+      toast.error(`Genereren mislukt: ${error.message}`);
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateMutation.mutate(formData);
@@ -129,14 +156,32 @@ export const ProductEditDialog = ({
             </div>
 
             <div className="md:col-span-2">
-              <Label htmlFor="description">Description</Label>
+              <div className="flex items-center justify-between mb-1">
+                <Label htmlFor="description">Description</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateSeoMutation.mutate()}
+                  disabled={generateSeoMutation.isPending || !formData.name}
+                  className="h-7 text-xs"
+                >
+                  {generateSeoMutation.isPending ? (
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3 h-3 mr-1" />
+                  )}
+                  Generate SEO Text
+                </Button>
+              </div>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, description: e.target.value }))
                 }
-                rows={4}
+                rows={6}
+                placeholder="Product description..."
               />
             </div>
           </div>
