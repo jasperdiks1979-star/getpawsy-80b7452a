@@ -52,6 +52,30 @@ export type Database = {
           },
         ]
       }
+      cj_token_cache: {
+        Row: {
+          access_token: string
+          created_at: string
+          id: string
+          token_expiry: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          id?: string
+          token_expiry: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          id?: string
+          token_expiry?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string | null
