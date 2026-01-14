@@ -29,26 +29,29 @@ interface CJProductListRequest {
   countryCode?: string;
 }
 
-// Pet-related category IDs from CJ Dropshipping
-const PET_CATEGORY_IDS = [
-  '15BF0FA6-2C59-4495-8D7F-F0430C48B20A', // Pet Products main category
-];
+// Pet Supplies category ID from CJ Dropshipping website
+// From: https://cjdropshipping.com/list/wholesale-pet-supplies-l-2409110611570657700.html
+const PET_CATEGORY_ID = '2409110611570657700';
 
-// Search for pet products that can ship from US warehouse
+// Search for pet products from US warehouse using the correct category endpoint
 async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSize = 50, keyword?: string) {
-  const params = new URLSearchParams({
+  // Build query params for category-based search with US warehouse filter
+  const params: Record<string, string> = {
     pageNum: pageNum.toString(),
     pageSize: pageSize.toString(),
-  });
+    categoryId: PET_CATEGORY_ID,
+    countryCode: 'US', // Filter for US warehouse shipping
+  };
 
-  // Add keyword if provided
-  if (keyword) {
-    params.append('productNameEn', keyword);
+  // Add keyword search if provided
+  if (keyword && keyword !== 'pet') {
+    params.productNameEn = keyword;
   }
 
-  console.log(`Searching pet products from US, page ${pageNum}, size ${pageSize}`);
+  const queryString = new URLSearchParams(params).toString();
+  console.log(`Fetching pet products from US warehouse, page ${pageNum}, size ${pageSize}, category: ${PET_CATEGORY_ID}`);
 
-  const response = await fetch(`${CJ_API_BASE}/product/list?${params}`, {
+  const response = await fetch(`${CJ_API_BASE}/product/list?${queryString}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -59,42 +62,7 @@ async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSiz
   const data = await response.json();
   console.log('CJ Pet products response:', JSON.stringify(data).substring(0, 500));
   
-  if (!data.result || !data.data?.list) {
-    return data;
-  }
-
-  // Filter products that have US warehouse shipping
-  const filteredProducts = data.data.list.filter((product: any) => {
-    // Check if product has variants with US warehouse
-    const hasUSWarehouse = product.productWeight !== undefined; // Products in API are generally available
-    
-    // Check if category is pet-related (case-insensitive check on category name)
-    const categoryName = (product.categoryName || '').toLowerCase();
-    const productName = (product.productNameEn || '').toLowerCase();
-    
-    const isPetRelated = 
-      categoryName.includes('pet') ||
-      categoryName.includes('dog') ||
-      categoryName.includes('cat') ||
-      categoryName.includes('animal') ||
-      productName.includes('pet') ||
-      productName.includes('dog') ||
-      productName.includes('cat') ||
-      productName.includes('puppy') ||
-      productName.includes('kitten');
-    
-    return isPetRelated;
-  });
-
-  return {
-    ...data,
-    data: {
-      ...data.data,
-      list: filteredProducts,
-      total: filteredProducts.length,
-      originalTotal: data.data.total,
-    }
-  };
+  return data;
 }
 
 // Get product shipping info to verify US warehouse availability
@@ -112,13 +80,10 @@ async function getProductShipping(accessToken: string, productId: string, countr
   return data;
 }
 
-// Bulk search for pet products with pagination
+// Fetch pet catalog directly using category ID - no keyword filtering needed
 async function fetchPetCatalog(accessToken: string, pageNum = 1, pageSize = 50) {
-  // Search for various pet-related keywords and combine results
-  const petKeywords = ['pet', 'dog', 'cat', 'puppy'];
-  const keyword = petKeywords[0]; // Start with 'pet' as main keyword
-  
-  return await searchPetProductsFromUS(accessToken, pageNum, pageSize, keyword);
+  console.log(`Fetching pet catalog page ${pageNum} with ${pageSize} items per page`);
+  return await searchPetProductsFromUS(accessToken, pageNum, pageSize);
 }
 
 interface CJOrderRequest {
