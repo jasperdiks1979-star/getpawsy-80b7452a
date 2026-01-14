@@ -19,6 +19,23 @@ export function RateLimitTimer({
 }: RateLimitTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [expiryTime, setExpiryTime] = useState<number | null>(null);
+  const [showTimer, setShowTimer] = useState(false);
+
+  // On mount, check if there's an existing rate limit in localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(RATE_LIMIT_KEY);
+    if (stored) {
+      const storedExpiry = parseInt(stored, 10);
+      const now = Date.now();
+      if (storedExpiry > now) {
+        setExpiryTime(storedExpiry);
+        setShowTimer(true);
+      } else {
+        // Expired, clean up
+        localStorage.removeItem(RATE_LIMIT_KEY);
+      }
+    }
+  }, []);
 
   // When rate limited, store the expiry time
   useEffect(() => {
@@ -31,6 +48,7 @@ export function RateLimitTimer({
         // If stored expiry is still in the future, use it
         if (storedExpiry > now) {
           setExpiryTime(storedExpiry);
+          setShowTimer(true);
           return;
         }
       }
@@ -39,6 +57,7 @@ export function RateLimitTimer({
       const newExpiry = now + (rateLimitDuration * 1000);
       localStorage.setItem(RATE_LIMIT_KEY, newExpiry.toString());
       setExpiryTime(newExpiry);
+      setShowTimer(true);
     }
   }, [isRateLimited, rateLimitDuration]);
 
@@ -52,6 +71,7 @@ export function RateLimitTimer({
       setTimeRemaining(remaining);
 
       if (remaining <= 0) {
+        // Timer expired, but keep showing so user can click retry
         localStorage.removeItem(RATE_LIMIT_KEY);
       }
     };
@@ -62,8 +82,8 @@ export function RateLimitTimer({
     return () => clearInterval(interval);
   }, [expiryTime]);
 
-  // Don't show if not rate limited and no time remaining
-  if (!isRateLimited && timeRemaining <= 0) {
+  // Don't show if not showing timer
+  if (!showTimer && !isRateLimited) {
     return null;
   }
 
@@ -76,6 +96,7 @@ export function RateLimitTimer({
     localStorage.removeItem(RATE_LIMIT_KEY);
     setExpiryTime(null);
     setTimeRemaining(0);
+    setShowTimer(false);
     onRetry();
   };
 
