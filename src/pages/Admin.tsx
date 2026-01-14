@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/layout/Layout";
@@ -7,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, X } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Select,
   SelectContent,
@@ -37,11 +39,20 @@ interface CJResponse {
 }
 
 const Admin = () => {
+  const { user, isLoading: authLoading, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [priceMultiplier, setPriceMultiplier] = useState("2.5");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const queryClient = useQueryClient();
+
+  // Redirect if not admin
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [authLoading, user, navigate]);
 
   // Fetch categories
   const { data: categories } = useQuery({
@@ -128,12 +139,12 @@ const Admin = () => {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`${data?.length || 0} producten geïmporteerd!`);
+      toast.success(`${data?.length || 0} products imported!`);
       setSelectedProducts(new Set());
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
     },
     onError: (error) => {
-      toast.error(`Import mislukt: ${error.message}`);
+      toast.error(`Import failed: ${error.message}`);
     },
   });
 
@@ -168,7 +179,7 @@ const Admin = () => {
     if (!cjProducts) return;
     const productsToImport = cjProducts.filter((p) => selectedProducts.has(p.pid));
     if (productsToImport.length === 0) {
-      toast.error("Selecteer eerst producten om te importeren");
+      toast.error("Please select products to import");
       return;
     }
     importMutation.mutate(productsToImport);
@@ -177,6 +188,38 @@ const Admin = () => {
   const isAlreadyImported = (pid: string) => {
     return existingProducts?.some((p) => p.cj_product_id === pid);
   };
+
+  // Loading state
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+        </div>
+      </Layout>
+    );
+  }
+
+  // Not logged in
+  if (!user) {
+    return null;
+  }
+
+  // Not admin
+  if (!isAdmin) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <ShieldAlert className="w-16 h-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+          <p className="text-muted-foreground mb-6">
+            You do not have permission to access this page. Admin access required.
+          </p>
+          <Button onClick={() => navigate('/')}>Go to Home</Button>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -190,7 +233,7 @@ const Admin = () => {
           </div>
           <Badge variant="secondary" className="text-lg px-4 py-2">
             <Package className="w-4 h-4 mr-2" />
-            {existingProducts?.length || 0} producten
+            {existingProducts?.length || 0} products
           </Badge>
         </div>
 
@@ -199,13 +242,13 @@ const Admin = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="w-5 h-5" />
-              Zoek CJ Producten
+              Search CJ Products
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSearch} className="flex gap-4 flex-wrap">
               <Input
-                placeholder="Zoek producten (bijv. 'pet toy', 'dog collar')..."
+                placeholder="Search products (e.g. 'pet toy', 'dog collar')..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-1 min-w-[250px]"
@@ -216,7 +259,7 @@ const Admin = () => {
                 ) : (
                   <Search className="w-4 h-4 mr-2" />
                 )}
-                Zoeken
+                Search
               </Button>
             </form>
           </CardContent>
@@ -230,7 +273,7 @@ const Admin = () => {
                 <div className="flex gap-4 items-center">
                   <div>
                     <label className="text-sm text-muted-foreground mb-1 block">
-                      Winstmarge
+                      Profit Margin
                     </label>
                     <Select value={priceMultiplier} onValueChange={setPriceMultiplier}>
                       <SelectTrigger className="w-32">
@@ -247,7 +290,7 @@ const Admin = () => {
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-1 block">
-                      Categorie
+                      Category
                     </label>
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                       <SelectTrigger className="w-48">
@@ -266,10 +309,10 @@ const Admin = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={selectAll}>
-                    Selecteer alles
+                    Select All
                   </Button>
                   <Button variant="outline" size="sm" onClick={deselectAll}>
-                    Deselecteer
+                    Deselect
                   </Button>
                   <Button 
                     onClick={handleImport} 
@@ -280,7 +323,7 @@ const Admin = () => {
                     ) : (
                       <Plus className="w-4 h-4 mr-2" />
                     )}
-                    Importeer ({selectedProducts.size})
+                    Import ({selectedProducts.size})
                   </Button>
                 </div>
               </div>
@@ -292,7 +335,7 @@ const Admin = () => {
         {cjProducts && cjProducts.length > 0 && (
           <div className="mb-12">
             <h2 className="text-xl font-semibold mb-4">
-              CJ Dropshipping Resultaten ({cjProducts.length})
+              CJ Dropshipping Results ({cjProducts.length})
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {cjProducts.map((product) => {
@@ -326,7 +369,7 @@ const Admin = () => {
                         )}
                         {isImported && (
                           <Badge className="absolute top-2 left-2" variant="secondary">
-                            Al geïmporteerd
+                            Already imported
                           </Badge>
                         )}
                       </div>
@@ -335,13 +378,13 @@ const Admin = () => {
                       </h3>
                       <div className="flex justify-between items-center text-sm">
                         <div>
-                          <span className="text-muted-foreground">Kost: </span>
-                          <span className="font-medium">€{product.sellPrice.toFixed(2)}</span>
+                          <span className="text-muted-foreground">Cost: </span>
+                          <span className="font-medium">${product.sellPrice.toFixed(2)}</span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Verkoop: </span>
+                          <span className="text-muted-foreground">Retail: </span>
                           <span className="font-bold text-primary">
-                            €{retailPrice.toFixed(2)}
+                            ${retailPrice.toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -360,7 +403,7 @@ const Admin = () => {
         <div>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Package className="w-5 h-5" />
-            Winkel Producten ({existingProducts?.length || 0})
+            Store Products ({existingProducts?.length || 0})
           </h2>
           {existingProducts && existingProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -377,10 +420,10 @@ const Admin = () => {
                     </h3>
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-primary">
-                        €{Number(product.price).toFixed(2)}
+                        ${Number(product.price).toFixed(2)}
                       </span>
                       <Badge variant={product.is_active ? "default" : "secondary"}>
-                        {product.is_active ? "Actief" : "Inactief"}
+                        {product.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                   </CardContent>
@@ -392,7 +435,7 @@ const Admin = () => {
               <CardContent className="py-12 text-center">
                 <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">
-                  Nog geen producten. Zoek en importeer producten van CJ Dropshipping.
+                  No products yet. Search and import products from CJ Dropshipping.
                 </p>
               </CardContent>
             </Card>
