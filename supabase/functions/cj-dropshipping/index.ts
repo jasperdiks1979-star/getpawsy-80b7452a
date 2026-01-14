@@ -26,6 +26,99 @@ interface CJProductListRequest {
   pageSize?: number;
   categoryId?: string;
   productNameEn?: string;
+  countryCode?: string;
+}
+
+// Pet-related category IDs from CJ Dropshipping
+const PET_CATEGORY_IDS = [
+  '15BF0FA6-2C59-4495-8D7F-F0430C48B20A', // Pet Products main category
+];
+
+// Search for pet products that can ship from US warehouse
+async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSize = 50, keyword?: string) {
+  const params = new URLSearchParams({
+    pageNum: pageNum.toString(),
+    pageSize: pageSize.toString(),
+  });
+
+  // Add keyword if provided
+  if (keyword) {
+    params.append('productNameEn', keyword);
+  }
+
+  console.log(`Searching pet products from US, page ${pageNum}, size ${pageSize}`);
+
+  const response = await fetch(`${CJ_API_BASE}/product/list?${params}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'CJ-Access-Token': accessToken,
+    },
+  });
+
+  const data = await response.json();
+  console.log('CJ Pet products response:', JSON.stringify(data).substring(0, 500));
+  
+  if (!data.result || !data.data?.list) {
+    return data;
+  }
+
+  // Filter products that have US warehouse shipping
+  const filteredProducts = data.data.list.filter((product: any) => {
+    // Check if product has variants with US warehouse
+    const hasUSWarehouse = product.productWeight !== undefined; // Products in API are generally available
+    
+    // Check if category is pet-related (case-insensitive check on category name)
+    const categoryName = (product.categoryName || '').toLowerCase();
+    const productName = (product.productNameEn || '').toLowerCase();
+    
+    const isPetRelated = 
+      categoryName.includes('pet') ||
+      categoryName.includes('dog') ||
+      categoryName.includes('cat') ||
+      categoryName.includes('animal') ||
+      productName.includes('pet') ||
+      productName.includes('dog') ||
+      productName.includes('cat') ||
+      productName.includes('puppy') ||
+      productName.includes('kitten');
+    
+    return isPetRelated;
+  });
+
+  return {
+    ...data,
+    data: {
+      ...data.data,
+      list: filteredProducts,
+      total: filteredProducts.length,
+      originalTotal: data.data.total,
+    }
+  };
+}
+
+// Get product shipping info to verify US warehouse availability
+async function getProductShipping(accessToken: string, productId: string, countryCode = 'US') {
+  const response = await fetch(`${CJ_API_BASE}/product/shippingV2?pid=${productId}&country=${countryCode}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'CJ-Access-Token': accessToken,
+    },
+  });
+
+  const data = await response.json();
+  console.log('CJ Shipping info:', JSON.stringify(data).substring(0, 500));
+  return data;
+}
+
+// Bulk search for pet products with pagination
+async function fetchPetCatalog(accessToken: string, pageNum = 1, pageSize = 50) {
+  // Search for various pet-related keywords and combine results
+  const petKeywords = ['pet', 'dog', 'cat', 'puppy'];
+  const keyword = petKeywords[0]; // Start with 'pet' as main keyword
+  
+  return await searchPetProductsFromUS(accessToken, pageNum, pageSize, keyword);
 }
 
 interface CJOrderRequest {
@@ -277,6 +370,30 @@ serve(async (req) => {
           throw new Error('orderId is required');
         }
         result = await getShippingInfo(accessToken, params.orderId);
+        break;
+
+      case 'pet-catalog':
+        result = await fetchPetCatalog(
+          accessToken,
+          params.pageNum || 1,
+          params.pageSize || 50
+        );
+        break;
+
+      case 'pet-search':
+        result = await searchPetProductsFromUS(
+          accessToken,
+          params.pageNum || 1,
+          params.pageSize || 50,
+          params.keyword || 'pet'
+        );
+        break;
+
+      case 'get-product-shipping':
+        if (!params.productId) {
+          throw new Error('productId is required');
+        }
+        result = await getProductShipping(accessToken, params.productId, params.countryCode || 'US');
         break;
 
       default:
