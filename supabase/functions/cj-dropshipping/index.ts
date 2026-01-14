@@ -51,6 +51,7 @@ interface CJProductDetail {
   productNameEn: string;
   productSku: string;
   productImage: string;
+  productImageSet?: string[]; // Array of all product images
   productWeight: number;
   categoryName: string;
   sellPrice: number;
@@ -469,13 +470,25 @@ async function getProductsForImport(accessToken: string, productIds: string[]) {
 
       const product = detailResponse.data as CJProductDetail;
       
-      // Collect all images (main image + variant images)
+      // Collect all images - prioritize productImageSet (full image array from CJ)
       const images: string[] = [];
-      if (product.productImage) {
-        images.push(product.productImage);
+      
+      // First, add all images from productImageSet (this is the main image array from CJ)
+      if (product.productImageSet && Array.isArray(product.productImageSet)) {
+        for (const img of product.productImageSet) {
+          if (img && !images.includes(img)) {
+            images.push(img);
+          }
+        }
+        console.log(`Found ${product.productImageSet.length} images in productImageSet for ${pid}`);
       }
       
-      // Add variant images
+      // Fallback: add main productImage if not already in list
+      if (product.productImage && !images.includes(product.productImage)) {
+        images.unshift(product.productImage); // Add to front as main image
+      }
+      
+      // Add variant images (these are often different color/style variants)
       if (product.variants) {
         for (const variant of product.variants) {
           if (variant.variantImage && !images.includes(variant.variantImage)) {
@@ -483,6 +496,8 @@ async function getProductsForImport(accessToken: string, productIds: string[]) {
           }
         }
       }
+      
+      console.log(`Total ${images.length} images collected for product ${pid}`);
 
       // Calculate total stock from variants
       let totalStock = 0;
