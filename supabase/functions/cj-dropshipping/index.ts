@@ -29,21 +29,48 @@ interface CJProductListRequest {
   countryCode?: string;
 }
 
+interface CJVariant {
+  vid: string;
+  pid: string;
+  variantNameEn: string;
+  variantSku: string;
+  variantImage?: string;
+  variantKey: string;
+  variantWeight: number;
+  variantSellPrice: number;
+  inventories?: Array<{
+    countryCode: string;
+    totalInventory: number;
+    cjInventory: number;
+    factoryInventory: number;
+  }>;
+}
+
+interface CJProductDetail {
+  pid: string;
+  productNameEn: string;
+  productSku: string;
+  productImage: string;
+  productWeight: number;
+  categoryName: string;
+  sellPrice: number;
+  description?: string;
+  productVideo?: string[];
+  variants?: CJVariant[];
+}
+
 // Pet Supplies category ID from CJ Dropshipping website
-// From: https://cjdropshipping.com/list/wholesale-pet-supplies-l-2409110611570657700.html
 const PET_CATEGORY_ID = '2409110611570657700';
 
 // Search for pet products from US warehouse using the correct category endpoint
 async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSize = 50, keyword?: string) {
-  // Build query params for category-based search with US warehouse filter
   const params: Record<string, string> = {
     pageNum: pageNum.toString(),
     pageSize: pageSize.toString(),
     categoryId: PET_CATEGORY_ID,
-    countryCode: 'US', // Filter for US warehouse shipping
+    countryCode: 'US',
   };
 
-  // Add keyword search if provided
   if (keyword && keyword !== 'pet') {
     params.productNameEn = keyword;
   }
@@ -80,7 +107,7 @@ async function getProductShipping(accessToken: string, productId: string, countr
   return data;
 }
 
-// Fetch pet catalog directly using category ID - no keyword filtering needed
+// Fetch pet catalog directly using category ID
 async function fetchPetCatalog(accessToken: string, pageNum = 1, pageSize = 50) {
   console.log(`Fetching pet catalog page ${pageNum} with ${pageSize} items per page`);
   return await searchPetProductsFromUS(accessToken, pageNum, pageSize);
@@ -107,12 +134,10 @@ interface CJOrderRequest {
 
 // Get access token from CJ API with database-backed caching
 async function getAccessToken(): Promise<string> {
-  // Create Supabase client with service role to access token cache
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // Check for cached token in database
   const { data: cachedData, error: cacheError } = await supabase
     .from('cj_token_cache')
     .select('access_token, token_expiry')
@@ -158,7 +183,6 @@ async function getAccessToken(): Promise<string> {
     throw new Error(`CJ Authentication failed: ${data.code} - ${data.message || 'Unknown error'}`);
   }
 
-  // Cache the token in database - set expiry 5 minutes before actual expiry
   const expiryDate = new Date(data.data.accessTokenExpiryDate);
   const safeExpiry = new Date(expiryDate.getTime() - (5 * 60 * 1000));
   
@@ -195,7 +219,29 @@ async function fetchProducts(accessToken: string, params: CJProductListRequest) 
   return data;
 }
 
-// Get product details by ID
+// Get FULL product details by ID - includes all images, variants, and inventory
+async function getProductDetails(accessToken: string, productId: string, countryCode = 'US') {
+  // Use features to get full details including inventory and videos
+  const params = new URLSearchParams({
+    pid: productId,
+    features: 'enable_inventory,enable_video',
+    countryCode: countryCode,
+  });
+
+  const response = await fetch(`${CJ_API_BASE}/product/query?${params}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'CJ-Access-Token': accessToken,
+    },
+  });
+
+  const data = await response.json();
+  console.log('CJ Product full details response:', JSON.stringify(data).substring(0, 800));
+  return data;
+}
+
+// Get product details by ID (legacy - simpler version)
 async function getProductById(accessToken: string, productId: string) {
   const response = await fetch(`${CJ_API_BASE}/product/query?pid=${productId}`, {
     method: 'GET',
@@ -207,6 +253,36 @@ async function getProductById(accessToken: string, productId: string) {
 
   const data = await response.json();
   console.log('CJ Product detail response:', JSON.stringify(data).substring(0, 500));
+  return data;
+}
+
+// Get inventory for a product by product ID
+async function getProductInventory(accessToken: string, productId: string) {
+  const response = await fetch(`${CJ_API_BASE}/product/stock/getInventoryByPid?pid=${productId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'CJ-Access-Token': accessToken,
+    },
+  });
+
+  const data = await response.json();
+  console.log('CJ Inventory response:', JSON.stringify(data).substring(0, 500));
+  return data;
+}
+
+// Get inventory by SKU
+async function getInventoryBySku(accessToken: string, sku: string) {
+  const response = await fetch(`${CJ_API_BASE}/product/stock/queryBySku?sku=${sku}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'CJ-Access-Token': accessToken,
+    },
+  });
+
+  const data = await response.json();
+  console.log('CJ Inventory by SKU response:', JSON.stringify(data).substring(0, 500));
   return data;
 }
 
@@ -277,6 +353,191 @@ async function getShippingInfo(accessToken: string, orderId: string) {
   return data;
 }
 
+// Sync stock for all products with CJ product IDs
+async function syncAllProductStock(accessToken: string) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  console.log('Starting stock sync for all products...');
+
+  // Get all products that have CJ product IDs
+  const { data: products, error: fetchError } = await supabase
+    .from('products')
+    .select('id, cj_product_id, sku, name')
+    .not('cj_product_id', 'is', null);
+
+  if (fetchError) {
+    console.error('Error fetching products:', fetchError);
+    throw new Error(`Failed to fetch products: ${fetchError.message}`);
+  }
+
+  if (!products || products.length === 0) {
+    console.log('No products with CJ product IDs found');
+    return { synced: 0, errors: 0 };
+  }
+
+  console.log(`Found ${products.length} products to sync`);
+
+  let synced = 0;
+  let errors = 0;
+  const results: Array<{ id: string; name: string; stock: number | null; error?: string }> = [];
+
+  for (const product of products) {
+    try {
+      // Get inventory by product ID
+      const inventoryResponse = await getProductInventory(accessToken, product.cj_product_id);
+      
+      if (!inventoryResponse.result) {
+        console.error(`Failed to get inventory for ${product.name}:`, inventoryResponse);
+        errors++;
+        results.push({ id: product.id, name: product.name, stock: null, error: inventoryResponse.message });
+        continue;
+      }
+
+      // Calculate total US warehouse stock (we're targeting US customers)
+      let totalStock = 0;
+      const inventoryData = inventoryResponse.data;
+      
+      if (Array.isArray(inventoryData)) {
+        for (const inv of inventoryData) {
+          // Prefer US warehouse, but also count China warehouse as backup
+          if (inv.countryCode === 'US') {
+            totalStock += inv.totalInventoryNum || 0;
+          } else if (inv.countryCode === 'CN' && totalStock === 0) {
+            // Use China warehouse stock if no US stock
+            totalStock = inv.totalInventoryNum || 0;
+          }
+        }
+      }
+
+      // Update product stock in database
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({ 
+          stock: totalStock,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', product.id);
+
+      if (updateError) {
+        console.error(`Failed to update stock for ${product.name}:`, updateError);
+        errors++;
+        results.push({ id: product.id, name: product.name, stock: null, error: updateError.message });
+      } else {
+        console.log(`Updated stock for ${product.name}: ${totalStock}`);
+        synced++;
+        results.push({ id: product.id, name: product.name, stock: totalStock });
+      }
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 200));
+    } catch (err) {
+      console.error(`Error syncing ${product.name}:`, err);
+      errors++;
+      results.push({ id: product.id, name: product.name, stock: null, error: String(err) });
+    }
+  }
+
+  console.log(`Stock sync completed. Synced: ${synced}, Errors: ${errors}`);
+  return { synced, errors, results };
+}
+
+// Get full product details for import (all images, variants, stock)
+async function getProductsForImport(accessToken: string, productIds: string[]) {
+  const results: Array<{
+    pid: string;
+    success: boolean;
+    data?: CJProductDetail;
+    images?: string[];
+    variants?: CJVariant[];
+    totalStock?: number;
+    error?: string;
+  }> = [];
+
+  for (const pid of productIds) {
+    try {
+      console.log(`Fetching full details for product ${pid}...`);
+      
+      // Get full product details with inventory
+      const detailResponse = await getProductDetails(accessToken, pid, 'US');
+      
+      if (!detailResponse.result) {
+        results.push({ pid, success: false, error: detailResponse.message });
+        continue;
+      }
+
+      const product = detailResponse.data as CJProductDetail;
+      
+      // Collect all images (main image + variant images)
+      const images: string[] = [];
+      if (product.productImage) {
+        images.push(product.productImage);
+      }
+      
+      // Add variant images
+      if (product.variants) {
+        for (const variant of product.variants) {
+          if (variant.variantImage && !images.includes(variant.variantImage)) {
+            images.push(variant.variantImage);
+          }
+        }
+      }
+
+      // Calculate total stock from variants
+      let totalStock = 0;
+      if (product.variants) {
+        for (const variant of product.variants) {
+          if (variant.inventories) {
+            for (const inv of variant.inventories) {
+              if (inv.countryCode === 'US') {
+                totalStock += inv.totalInventory || 0;
+              } else if (inv.countryCode === 'CN' && totalStock === 0) {
+                totalStock = inv.totalInventory || 0;
+              }
+            }
+          }
+        }
+      }
+
+      // If no stock from variants, try getting inventory separately
+      if (totalStock === 0) {
+        try {
+          const inventoryResponse = await getProductInventory(accessToken, pid);
+          if (inventoryResponse.result && Array.isArray(inventoryResponse.data)) {
+            for (const inv of inventoryResponse.data) {
+              if (inv.countryCode === 'US') {
+                totalStock += inv.totalInventoryNum || 0;
+              } else if (inv.countryCode === 'CN' && totalStock === 0) {
+                totalStock = inv.totalInventoryNum || 0;
+              }
+            }
+          }
+        } catch (invErr) {
+          console.log(`Could not fetch separate inventory for ${pid}:`, invErr);
+        }
+      }
+
+      results.push({
+        pid,
+        success: true,
+        data: product,
+        images,
+        variants: product.variants,
+        totalStock,
+      });
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } catch (err) {
+      console.error(`Error fetching product ${pid}:`, err);
+      results.push({ pid, success: false, error: String(err) });
+    }
+  }
+
+  return results;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -302,6 +563,34 @@ serve(async (req) => {
           throw new Error('productId is required');
         }
         result = await getProductById(accessToken, params.productId);
+        break;
+
+      case 'get-product-details':
+        if (!params.productId) {
+          throw new Error('productId is required');
+        }
+        result = await getProductDetails(accessToken, params.productId, params.countryCode || 'US');
+        break;
+
+      case 'get-products-for-import':
+        if (!params.productIds || !Array.isArray(params.productIds)) {
+          throw new Error('productIds array is required');
+        }
+        result = await getProductsForImport(accessToken, params.productIds);
+        break;
+
+      case 'get-product-inventory':
+        if (!params.productId) {
+          throw new Error('productId is required');
+        }
+        result = await getProductInventory(accessToken, params.productId);
+        break;
+
+      case 'get-inventory-by-sku':
+        if (!params.sku) {
+          throw new Error('sku is required');
+        }
+        result = await getInventoryBySku(accessToken, params.sku);
         break;
 
       case 'search-products':
@@ -359,6 +648,10 @@ serve(async (req) => {
           throw new Error('productId is required');
         }
         result = await getProductShipping(accessToken, params.productId, params.countryCode || 'US');
+        break;
+
+      case 'sync-stock':
+        result = await syncAllProductStock(accessToken);
         break;
 
       default:
