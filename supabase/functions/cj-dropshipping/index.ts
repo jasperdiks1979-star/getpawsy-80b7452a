@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,10 +8,6 @@ const corsHeaders = {
 };
 
 const CJ_API_BASE = 'https://developers.cjdropshipping.com/api2.0/v1';
-
-// Token cache to avoid rate limiting (CJ allows 1 auth request per 300 seconds)
-let cachedToken: string | null = null;
-let tokenExpiry: number | null = null;
 
 interface CJAuthResponse {
   result: boolean;
@@ -50,12 +47,27 @@ interface CJOrderRequest {
   fromCountryCode?: string;
 }
 
-// Get access token from CJ API with caching
+// Get access token from CJ API with database-backed caching
 async function getAccessToken(): Promise<string> {
-  // Check if we have a valid cached token
-  if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
-    console.log('Using cached CJ access token');
-    return cachedToken;
+  // Create Supabase client with service role to access token cache
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  // Check for cached token in database
+  const { data: cachedData, error: cacheError } = await supabase
+    .from('cj_token_cache')
+    .select('access_token, token_expiry')
+    .eq('id', 'singleton')
+    .single();
+
+  if (!cacheError && cachedData) {
+    const tokenExpiry = new Date(cachedData.token_expiry).getTime();
+    if (Date.now() < tokenExpiry) {
+      console.log('Using cached CJ access token from database');
+      return cachedData.access_token;
+    }
+    console.log('Cached token expired, requesting new one...');
   }
 
   const apiKey = Deno.env.get('CJ_API_KEY');
@@ -82,21 +94,32 @@ async function getAccessToken(): Promise<string> {
   
   if (!data.result) {
     console.error('CJ Auth failed:', data);
-    // If rate limited, suggest waiting
     if (data.code === 1600200) {
       throw new Error('CJ API rate limited - please wait 5 minutes before trying again');
     }
     throw new Error(`CJ Authentication failed: ${data.code} - ${data.message || 'Unknown error'}`);
   }
 
-  // Cache the token - set expiry 5 minutes before actual expiry for safety
-  cachedToken = data.data.accessToken;
-  const expiryDate = new Date(data.data.accessTokenExpiryDate).getTime();
-  tokenExpiry = expiryDate - (5 * 60 * 1000); // 5 minutes buffer
+  // Cache the token in database - set expiry 5 minutes before actual expiry
+  const expiryDate = new Date(data.data.accessTokenExpiryDate);
+  const safeExpiry = new Date(expiryDate.getTime() - (5 * 60 * 1000));
   
-  console.log('New CJ access token obtained, expires:', data.data.accessTokenExpiryDate);
+  const { error: upsertError } = await supabase
+    .from('cj_token_cache')
+    .upsert({
+      id: 'singleton',
+      access_token: data.data.accessToken,
+      token_expiry: safeExpiry.toISOString(),
+      updated_at: new Date().toISOString()
+    });
 
-  return cachedToken;
+  if (upsertError) {
+    console.error('Failed to cache token:', upsertError);
+  } else {
+    console.log('New CJ access token cached, expires:', safeExpiry.toISOString());
+  }
+
+  return data.data.accessToken;
 }
 
 // Fetch products from CJ Dropshipping
