@@ -11,37 +11,33 @@ serve(async (req) => {
   }
 
   try {
-    const { productName, category, currentDescription, language = "nl" } = await req.json();
+    const { productName, category, currentDescription } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const languageInstructions = language === "nl" 
-      ? "Schrijf in het Nederlands. Gebruik een vriendelijke, professionele toon die past bij een moderne webshop."
-      : "Write in English. Use a friendly, professional tone suitable for a modern webshop.";
+    const systemPrompt = `You are an expert SEO copywriter for e-commerce, specializing in the American market. You write compelling, SEO-optimized product descriptions that:
 
-    const systemPrompt = `Je bent een expert SEO copywriter voor e-commerce. Je schrijft overtuigende, SEO-geoptimaliseerde productbeschrijvingen die:
+1. Hook readers with an attention-grabbing opening line
+2. Highlight key product features and benefits
+3. Naturally incorporate relevant keywords for US search engines
+4. Use emotional triggers that encourage purchases
+5. Create clear, scannable text with short paragraphs
+6. End with a subtle call-to-action
 
-1. De aandacht trekken met een pakkende openingszin
-2. Belangrijke productkenmerken en voordelen benadrukken
-3. Relevante zoekwoorden natuurlijk verwerken
-4. Emotionele triggers gebruiken die aanzetten tot aankoop
-5. Duidelijke, scanbare tekst met korte alinea's
-6. Eindig met een subtiele call-to-action
+Write in American English. Use a friendly, professional tone suitable for a modern US-based online store. Consider American consumer preferences and shopping habits.
 
-${languageInstructions}
+Keep the description between 150-250 words. Avoid unnecessary filler words or overly salesy marketing language.`;
 
-Houd de beschrijving tussen 150-250 woorden. Gebruik geen onnodige vulwoorden of overdreven marketingtaal.`;
-
-    const userPrompt = `Schrijf een SEO-geoptimaliseerde productbeschrijving voor:
+    const userPrompt = `Write an SEO-optimized product description for:
 
 Product: ${productName}
-Categorie: ${category || "Algemeen"}
-${currentDescription ? `Huidige beschrijving (ter referentie): ${currentDescription}` : ""}
+Category: ${category || "General"}
+${currentDescription ? `Current description (for reference): ${currentDescription}` : ""}
 
-Genereer een nieuwe, unieke en overtuigende productbeschrijving.`;
+Generate a new, unique, and compelling product description for the American market.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -61,13 +57,13 @@ Genereer een nieuwe, unieke en overtuigende productbeschrijving.`;
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Te veel verzoeken, probeer het later opnieuw." }),
+          JSON.stringify({ error: "Too many requests, please try again later." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "Geen credits meer beschikbaar. Voeg credits toe aan je workspace." }),
+          JSON.stringify({ error: "Out of credits. Please add credits to your workspace." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
