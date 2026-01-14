@@ -307,6 +307,79 @@ const Admin = () => {
     },
   });
 
+  // Refresh all products - fetch missing images and data from CJ
+  const refreshAllProductsMutation = useMutation({
+    mutationFn: async () => {
+      // Get all products that have CJ product IDs
+      const productsWithCJ = existingProducts?.filter(p => p.cj_product_id) || [];
+      
+      if (productsWithCJ.length === 0) {
+        throw new Error("No CJ products to refresh");
+      }
+
+      toast.loading(`Refreshing ${productsWithCJ.length} products from CJ...`, { id: "refresh-loading" });
+
+      const productIds = productsWithCJ.map(p => p.cj_product_id!);
+      
+      // Fetch full details from CJ
+      const { data: fullDetailsResponse, error: detailsError } = await supabase.functions.invoke("cj-dropshipping", {
+        body: {
+          action: "get-products-for-import",
+          productIds: productIds,
+        },
+      });
+
+      if (detailsError) {
+        toast.dismiss("refresh-loading");
+        throw detailsError;
+      }
+
+      toast.dismiss("refresh-loading");
+
+      // Update each product with new data
+      let updated = 0;
+      let errors = 0;
+
+      for (const product of productsWithCJ) {
+        const fullDetail = fullDetailsResponse?.find((d: { pid: string; success: boolean }) => 
+          d.pid === product.cj_product_id && d.success
+        );
+
+        if (!fullDetail) {
+          errors++;
+          continue;
+        }
+
+        // Update product with new images and variants
+        const { error: updateError } = await supabase
+          .from("products")
+          .update({
+            images: fullDetail.images || product.images,
+            variants: fullDetail.variants || product.variants,
+            stock: fullDetail.totalStock ?? product.stock,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", product.id);
+
+        if (updateError) {
+          console.error(`Failed to update ${product.name}:`, updateError);
+          errors++;
+        } else {
+          updated++;
+        }
+      }
+
+      return { updated, errors, total: productsWithCJ.length };
+    },
+    onSuccess: (data) => {
+      toast.success(`Refreshed ${data.updated}/${data.total} products! ${data.errors > 0 ? `(${data.errors} errors)` : ''}`);
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+    },
+    onError: (error) => {
+      toast.error(`Refresh failed: ${error.message}`);
+    },
+  });
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
@@ -806,11 +879,24 @@ const Admin = () => {
                   <Package className="w-5 h-5" />
                   Store Products ({existingProducts?.length || 0})
                 </h2>
-                <div className="flex gap-2 items-center">
+                <div className="flex flex-wrap gap-2 items-center">
                   <div className="text-xs text-muted-foreground flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     Auto-sync daily at 05:00 NL time
                   </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => refreshAllProductsMutation.mutate()}
+                    disabled={refreshAllProductsMutation.isPending}
+                  >
+                    {refreshAllProductsMutation.isPending ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    Refresh All Images & Data
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -822,7 +908,7 @@ const Admin = () => {
                     ) : (
                       <CloudDownload className="w-4 h-4 mr-2" />
                     )}
-                    Sync Stock Now
+                    Sync Stock
                   </Button>
                 </div>
               </div>

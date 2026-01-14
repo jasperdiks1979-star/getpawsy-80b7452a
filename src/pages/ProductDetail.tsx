@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
@@ -11,11 +11,23 @@ import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+interface ProductVariant {
+  vid: string;
+  pid: string;
+  variantNameEn: string;
+  variantSku: string;
+  variantImage?: string;
+  variantKey: string;
+  variantWeight: number;
+  variantSellPrice: number;
+}
+
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
 
   // Fetch product from database
   const { data: product, isLoading } = useQuery({
@@ -51,6 +63,50 @@ const ProductDetail = () => {
     enabled: !!product?.category,
   });
 
+  // Parse variants from JSON
+  const variants: ProductVariant[] = product?.variants && Array.isArray(product.variants) 
+    ? (product.variants as unknown as ProductVariant[])
+    : [];
+
+  // Group variants by property (e.g., color, size)
+  const variantGroups = variants.reduce((groups, variant) => {
+    // Parse variant key to get property name and value
+    // Format is typically "Color:Red" or "Size:Large"
+    const parts = variant.variantNameEn?.split(':') || [];
+    const groupName = parts[0] || 'Option';
+    const value = parts.slice(1).join(':') || variant.variantNameEn;
+    
+    if (!groups[groupName]) {
+      groups[groupName] = [];
+    }
+    
+    // Avoid duplicates
+    if (!groups[groupName].find(v => v.variantNameEn === variant.variantNameEn)) {
+      groups[groupName].push(variant);
+    }
+    
+    return groups;
+  }, {} as Record<string, ProductVariant[]>);
+
+  // Reset selected image when product changes
+  useEffect(() => {
+    setSelectedImage(0);
+    setSelectedVariant(null);
+  }, [id]);
+
+  // Update selected image when variant is selected
+  useEffect(() => {
+    if (selectedVariant?.variantImage) {
+      const images = product?.images && product.images.length > 0 
+        ? product.images 
+        : [product?.image_url || '/placeholder.svg'];
+      const variantImageIndex = images.findIndex(img => img === selectedVariant.variantImage);
+      if (variantImageIndex !== -1) {
+        setSelectedImage(variantImageIndex);
+      }
+    }
+  }, [selectedVariant, product]);
+
   if (isLoading) {
     return (
       <Layout>
@@ -78,9 +134,9 @@ const ProductDetail = () => {
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
-        name: product.name,
+        name: product.name + (selectedVariant ? ` - ${selectedVariant.variantNameEn}` : ''),
         price: Number(product.price),
-        image: product.image_url || '/placeholder.svg',
+        image: selectedVariant?.variantImage || product.image_url || '/placeholder.svg',
       });
     }
     toast.success(`${quantity}x ${product.name} added to cart!`);
@@ -95,6 +151,14 @@ const ProductDetail = () => {
     : [product.image_url || '/placeholder.svg'];
 
   const inStock = product.stock !== null && product.stock > 0;
+
+  const handlePrevImage = () => {
+    setSelectedImage(prev => prev === 0 ? images.length - 1 : prev - 1);
+  };
+
+  const handleNextImage = () => {
+    setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
+  };
 
   return (
     <Layout>
@@ -111,26 +175,64 @@ const ProductDetail = () => {
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
           {/* Images */}
           <div className="space-y-4">
-            <div className="aspect-square rounded-xl overflow-hidden bg-muted">
+            {/* Main Image with Navigation */}
+            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
               <img
                 src={images[selectedImage]}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
-            </div>
-            {images.length > 1 && (
-              <div className="flex gap-2">
-                {images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedImage(idx)}
-                    className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedImage === idx ? 'border-primary' : 'border-transparent'
-                    }`}
+              
+              {/* Navigation Arrows */}
+              {images.length > 1 && (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handlePrevImage}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handleNextImage}
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </Button>
+                  
+                  {/* Image Counter */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 text-white text-sm px-3 py-1 rounded-full">
+                    {selectedImage + 1} / {images.length}
+                  </div>
+                </>
+              )}
+            </div>
+            
+            {/* Thumbnail Carousel */}
+            {images.length > 1 && (
+              <div className="relative">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  {images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedImage(idx)}
+                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                        selectedImage === idx 
+                          ? 'border-primary ring-2 ring-primary/20' 
+                          : 'border-transparent hover:border-muted-foreground/30'
+                      }`}
+                    >
+                      <img 
+                        src={img} 
+                        alt={`Product image ${idx + 1}`} 
+                        className="w-full h-full object-cover" 
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -166,6 +268,48 @@ const ProductDetail = () => {
               <p className="text-muted-foreground">{product.description}</p>
             )}
 
+            {/* Variants */}
+            {Object.keys(variantGroups).length > 0 && (
+              <div className="space-y-4">
+                {Object.entries(variantGroups).map(([groupName, groupVariants]) => (
+                  <div key={groupName}>
+                    <label className="text-sm font-medium mb-2 block">
+                      {groupName}: {selectedVariant?.variantNameEn?.includes(groupName) 
+                        ? selectedVariant.variantNameEn.split(':')[1] 
+                        : 'Select'}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {groupVariants.map((variant) => {
+                        const isSelected = selectedVariant?.vid === variant.vid;
+                        const displayValue = variant.variantNameEn?.split(':').slice(1).join(':') || variant.variantNameEn;
+                        
+                        return (
+                          <button
+                            key={variant.vid}
+                            onClick={() => setSelectedVariant(isSelected ? null : variant)}
+                            className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                              isSelected
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            {variant.variantImage && (
+                              <img 
+                                src={variant.variantImage} 
+                                alt={displayValue}
+                                className="w-8 h-8 rounded object-cover inline-block mr-2"
+                              />
+                            )}
+                            <span className="text-sm font-medium">{displayValue}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Stock */}
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${inStock ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -177,7 +321,9 @@ const ProductDetail = () => {
             {/* Shipping Time */}
             {product.shipping_time && (
               <p className="text-sm text-muted-foreground">
-                Estimated delivery: {product.shipping_time}
+                {product.shipping_time === 'Free Shipping' 
+                  ? '🚚 Free Shipping included' 
+                  : `Estimated delivery: ${product.shipping_time}`}
               </p>
             )}
 
@@ -228,7 +374,7 @@ const ProductDetail = () => {
                 </div>
                 <div>
                   <p className="font-medium text-sm">Free Shipping</p>
-                  <p className="text-xs text-muted-foreground">On orders over $50</p>
+                  <p className="text-xs text-muted-foreground">Included in price</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -250,6 +396,9 @@ const ProductDetail = () => {
             <TabsList>
               <TabsTrigger value="description">Description</TabsTrigger>
               <TabsTrigger value="shipping">Shipping</TabsTrigger>
+              {variants.length > 0 && (
+                <TabsTrigger value="variants">Variants ({variants.length})</TabsTrigger>
+              )}
             </TabsList>
             <TabsContent value="description" className="mt-4">
               <p className="text-muted-foreground">
@@ -261,9 +410,43 @@ const ProductDetail = () => {
                 <p>🇺🇸 Ships from our US warehouse</p>
                 <p>📦 Standard shipping: 5-7 business days</p>
                 <p>🚀 Express shipping: 2-3 business days</p>
-                <p>✨ Free shipping on orders over $50</p>
+                <p>✨ Free shipping included in price</p>
               </div>
             </TabsContent>
+            {variants.length > 0 && (
+              <TabsContent value="variants" className="mt-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {variants.map((variant) => (
+                    <button
+                      key={variant.vid}
+                      onClick={() => {
+                        setSelectedVariant(variant);
+                        if (variant.variantImage) {
+                          const idx = images.findIndex(img => img === variant.variantImage);
+                          if (idx !== -1) setSelectedImage(idx);
+                        }
+                      }}
+                      className={`p-3 rounded-lg border-2 text-center transition-all ${
+                        selectedVariant?.vid === variant.vid
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      {variant.variantImage && (
+                        <img 
+                          src={variant.variantImage} 
+                          alt={variant.variantNameEn}
+                          className="w-full aspect-square rounded object-cover mb-2"
+                        />
+                      )}
+                      <p className="text-sm font-medium line-clamp-2">
+                        {variant.variantNameEn}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
         </div>
 
