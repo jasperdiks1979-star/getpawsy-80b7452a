@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RateLimitTimer } from "@/components/RateLimitTimer";
 
 interface CJProduct {
   pid: string;
@@ -48,6 +49,7 @@ const Admin = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [catalogPage, setCatalogPage] = useState(1);
   const [catalogKeyword, setCatalogKeyword] = useState("pet");
+  const [isRateLimited, setIsRateLimited] = useState(false);
   const queryClient = useQueryClient();
 
   // Redirect if not admin
@@ -114,7 +116,8 @@ const Admin = () => {
     data: petCatalogData, 
     isLoading: isCatalogLoading, 
     refetch: refetchCatalog,
-    isError: catalogError
+    isError: catalogError,
+    error: catalogErrorData
   } = useQuery({
     queryKey: ["pet-catalog", catalogPage, catalogKeyword],
     queryFn: async () => {
@@ -129,8 +132,21 @@ const Admin = () => {
 
       if (error) throw error;
       
+      // Check for rate limit error
+      if (data?.error?.includes("rate limit")) {
+        setIsRateLimited(true);
+        throw new Error(data.error);
+      }
+      
+      // Clear rate limit if successful
+      setIsRateLimited(false);
+      
       const response = data as CJResponse & { data: { originalTotal?: number } };
       if (!response.result) {
+        // Check if error message indicates rate limit
+        if (response.code === 1600200 || data?.error?.includes("rate limit")) {
+          setIsRateLimited(true);
+        }
         throw new Error(`CJ API error: ${response.code}`);
       }
       
@@ -318,6 +334,12 @@ const Admin = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Rate Limit Timer */}
+                <RateLimitTimer 
+                  isRateLimited={isRateLimited || (catalogError && (catalogErrorData as Error)?.message?.includes("rate limit"))}
+                  onRetry={() => refetchCatalog()}
+                />
+
                 <div className="flex flex-wrap gap-4 items-center mb-6">
                   <div>
                     <label className="text-sm text-muted-foreground mb-1 block">
