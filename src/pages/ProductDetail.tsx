@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ImageLightbox } from '@/components/ui/image-lightbox';
 
 interface ProductVariant {
   vid: string;
@@ -28,6 +29,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Fetch product from database
   const { data: product, isLoading } = useQuery({
@@ -189,12 +191,20 @@ const ProductDetail = () => {
           {/* Images */}
           <div className="space-y-4">
             {/* Main Image with Navigation */}
-            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
+            <div 
+              className="relative aspect-square rounded-xl overflow-hidden bg-muted group cursor-zoom-in"
+              onClick={() => setLightboxOpen(true)}
+            >
               <img
                 src={images[selectedImage]}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
+              
+              {/* Zoom indicator */}
+              <div className="absolute top-3 right-3 bg-black/60 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                <ZoomIn className="w-5 h-5" />
+              </div>
               
               {/* Navigation Arrows */}
               {images.length > 1 && (
@@ -203,7 +213,10 @@ const ProductDetail = () => {
                     variant="secondary"
                     size="icon"
                     className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={handlePrevImage}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePrevImage();
+                    }}
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </Button>
@@ -211,7 +224,10 @@ const ProductDetail = () => {
                     variant="secondary"
                     size="icon"
                     className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={handleNextImage}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleNextImage();
+                    }}
                   >
                     <ChevronRight className="w-5 h-5" />
                   </Button>
@@ -487,6 +503,15 @@ const ProductDetail = () => {
           </div>
         )}
       </div>
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={images}
+        initialIndex={selectedImage}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        alt={product.name}
+      />
     </Layout>
   );
 };
