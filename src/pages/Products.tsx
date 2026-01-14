@@ -12,10 +12,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { supabase } from '@/integrations/supabase/client';
 
 const sortOptions = [
-  { value: 'newest', label: 'Nieuwste' },
-  { value: 'price-asc', label: 'Prijs: Laag naar Hoog' },
-  { value: 'price-desc', label: 'Prijs: Hoog naar Laag' },
-  { value: 'name', label: 'Naam: A-Z' },
+  { value: 'newest', label: 'Newest' },
+  { value: 'price-asc', label: 'Price: Low to High' },
+  { value: 'price-desc', label: 'Price: High to Low' },
+  { value: 'name', label: 'Name: A-Z' },
 ];
 
 const Products = () => {
@@ -109,7 +109,7 @@ const Products = () => {
   const FilterContent = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="font-semibold mb-3">Categorieën</h3>
+        <h3 className="font-semibold mb-3">Categories</h3>
         <div className="space-y-2">
           {categories?.map((category) => (
             <label
@@ -131,7 +131,7 @@ const Products = () => {
         className="w-full"
         onClick={() => setSelectedCategories([])}
       >
-        Filters wissen
+        Clear Filters
       </Button>
     </div>
   );
@@ -144,10 +144,10 @@ const Products = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            {categoryParam || 'Alle Producten'}
+            {categoryParam || 'All Products'}
           </h1>
           <p className="text-muted-foreground">
-            {filteredProducts.length} producten gevonden
+            {filteredProducts.length} products found
           </p>
         </div>
 
@@ -188,7 +188,7 @@ const Products = () => {
               {/* Search */}
               <div className="flex-1 max-w-xs">
                 <Input
-                  placeholder="Zoek producten..."
+                  placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -197,7 +197,7 @@ const Products = () => {
               {/* Sort */}
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sorteer op" />
+                  <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
                   {sortOptions.map((option) => (
@@ -230,8 +230,8 @@ const Products = () => {
               <div className="text-center py-12">
                 <p className="text-lg text-muted-foreground">
                   {products?.length === 0 
-                    ? 'Nog geen producten. Importeer producten via de admin pagina.'
-                    : 'Geen producten gevonden'}
+                    ? 'No products yet. Import products via the admin page.'
+                    : 'No products found'}
                 </p>
                 {products && products.length > 0 && (
                   <Button
@@ -241,7 +241,7 @@ const Products = () => {
                       setSelectedCategories([]);
                     }}
                   >
-                    Filters wissen
+                    Clear all filters
                   </Button>
                 )}
               </div>
