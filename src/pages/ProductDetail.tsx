@@ -1,29 +1,73 @@
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Star, Truck, Shield, ArrowLeft, Minus, Plus } from 'lucide-react';
+import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCart } from '@/contexts/CartContext';
-import { getProductById, products } from '@/data/products';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const product = getProductById(id || '');
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+
+  // Fetch product from database
+  const { data: product, isLoading } = useQuery({
+    queryKey: ['product', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Fetch related products
+  const { data: relatedProducts } = useQuery({
+    queryKey: ['related-products', product?.category],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .eq('category', product?.category || '')
+        .neq('id', id || '')
+        .limit(4);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!product?.category,
+  });
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container px-4 md:px-6 py-16 text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!product) {
     return (
       <Layout>
         <div className="container px-4 md:px-6 py-16 text-center">
-          <h1 className="text-2xl font-bold mb-4">Product not found</h1>
+          <h1 className="text-2xl font-bold mb-4">Product niet gevonden</h1>
           <Link to="/products">
-            <Button>Back to Products</Button>
+            <Button>Terug naar Producten</Button>
           </Link>
         </div>
       </Layout>
@@ -35,20 +79,22 @@ const ProductDetail = () => {
       addItem({
         id: product.id,
         name: product.name,
-        price: product.price,
-        image: product.image,
+        price: Number(product.price),
+        image: product.image_url || '/placeholder.svg',
       });
     }
-    toast.success(`${quantity}x ${product.name} added to cart!`);
+    toast.success(`${quantity}x ${product.name} toegevoegd aan winkelwagen!`);
   };
 
-  const relatedProducts = products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
-
-  const discount = product.comparePrice
-    ? Math.round((1 - product.price / product.comparePrice) * 100)
+  const discount = product.compare_at_price
+    ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
     : null;
+
+  const images = product.images && product.images.length > 0 
+    ? product.images 
+    : [product.image_url || '/placeholder.svg'];
+
+  const inStock = product.stock !== null && product.stock > 0;
 
   return (
     <Layout>
@@ -59,7 +105,7 @@ const ProductDetail = () => {
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Products
+          Terug naar Producten
         </Link>
 
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
@@ -67,14 +113,14 @@ const ProductDetail = () => {
           <div className="space-y-4">
             <div className="aspect-square rounded-xl overflow-hidden bg-muted">
               <img
-                src={product.images[selectedImage]}
+                src={images[selectedImage]}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
             </div>
-            {product.images.length > 1 && (
+            {images.length > 1 && (
               <div className="flex gap-2">
-                {product.images.map((img, idx) => (
+                {images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
@@ -92,53 +138,48 @@ const ProductDetail = () => {
           {/* Details */}
           <div className="space-y-6">
             <div>
-              <p className="text-sm text-muted-foreground uppercase tracking-wider mb-2">
-                {product.category}
-              </p>
+              {product.category && (
+                <p className="text-sm text-muted-foreground uppercase tracking-wider mb-2">
+                  {product.category}
+                </p>
+              )}
               <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-              
-              {/* Rating */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-5 h-5 ${
-                        i < Math.floor(product.rating)
-                          ? 'fill-accent text-accent'
-                          : 'text-muted'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="font-medium">{product.rating}</span>
-                <span className="text-muted-foreground">({product.reviews} reviews)</span>
-              </div>
             </div>
 
             {/* Price */}
             <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold text-primary">${product.price}</span>
-              {product.comparePrice && (
+              <span className="text-3xl font-bold text-primary">
+                €{Number(product.price).toFixed(2)}
+              </span>
+              {product.compare_at_price && (
                 <>
                   <span className="text-xl text-muted-foreground line-through">
-                    ${product.comparePrice}
+                    €{Number(product.compare_at_price).toFixed(2)}
                   </span>
-                  <Badge variant="destructive">Save {discount}%</Badge>
+                  <Badge variant="destructive">Bespaar {discount}%</Badge>
                 </>
               )}
             </div>
 
             {/* Description */}
-            <p className="text-muted-foreground">{product.description}</p>
+            {product.description && (
+              <p className="text-muted-foreground">{product.description}</p>
+            )}
 
             {/* Stock */}
             <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${product.inStock ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div className={`w-2 h-2 rounded-full ${inStock ? 'bg-green-500' : 'bg-red-500'}`} />
               <span className="text-sm font-medium">
-                {product.inStock ? 'In Stock' : 'Out of Stock'}
+                {inStock ? `Op voorraad (${product.stock})` : 'Uitverkocht'}
               </span>
             </div>
+
+            {/* Shipping Time */}
+            {product.shipping_time && (
+              <p className="text-sm text-muted-foreground">
+                Verwachte levertijd: {product.shipping_time}
+              </p>
+            )}
 
             {/* Quantity & Add to Cart */}
             <div className="flex flex-wrap items-center gap-4">
@@ -164,13 +205,17 @@ const ProductDetail = () => {
                 size="lg"
                 className="flex-1 gap-2"
                 onClick={handleAddToCart}
-                disabled={!product.inStock}
+                disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart
+                In Winkelwagen
               </Button>
 
-              <Button variant="outline" size="lg">
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={() => toast.info('Toegevoegd aan wishlist!')}
+              >
                 <Heart className="w-5 h-5" />
               </Button>
             </div>
@@ -182,8 +227,8 @@ const ProductDetail = () => {
                   <Truck className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-sm">Free Shipping</p>
-                  <p className="text-xs text-muted-foreground">On orders over $50</p>
+                  <p className="font-medium text-sm">Gratis Verzending</p>
+                  <p className="text-xs text-muted-foreground">Boven €50</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -191,8 +236,8 @@ const ProductDetail = () => {
                   <Shield className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-sm">30-Day Returns</p>
-                  <p className="text-xs text-muted-foreground">Hassle-free</p>
+                  <p className="font-medium text-sm">30 Dagen Retour</p>
+                  <p className="text-xs text-muted-foreground">Zorgeloos</p>
                 </div>
               </div>
             </div>
@@ -203,36 +248,32 @@ const ProductDetail = () => {
         <div className="mt-12">
           <Tabs defaultValue="description">
             <TabsList>
-              <TabsTrigger value="description">Description</TabsTrigger>
-              <TabsTrigger value="shipping">Shipping</TabsTrigger>
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
+              <TabsTrigger value="description">Beschrijving</TabsTrigger>
+              <TabsTrigger value="shipping">Verzending</TabsTrigger>
             </TabsList>
             <TabsContent value="description" className="mt-4">
-              <p className="text-muted-foreground">{product.description}</p>
+              <p className="text-muted-foreground">
+                {product.description || 'Geen beschrijving beschikbaar.'}
+              </p>
             </TabsContent>
             <TabsContent value="shipping" className="mt-4">
               <div className="space-y-3 text-muted-foreground">
-                <p>🇺🇸 Ships from our US warehouse</p>
-                <p>📦 Standard shipping: 5-7 business days</p>
-                <p>🚀 Express shipping: 2-3 business days</p>
-                <p>✨ Free shipping on orders over $50</p>
+                <p>🇳🇱 Verzending vanuit Nederland/Europa</p>
+                <p>📦 Standaard verzending: 5-10 werkdagen</p>
+                <p>🚀 Express verzending: 3-5 werkdagen</p>
+                <p>✨ Gratis verzending bij bestellingen boven €50</p>
               </div>
-            </TabsContent>
-            <TabsContent value="reviews" className="mt-4">
-              <p className="text-muted-foreground">
-                {product.reviews} customers have reviewed this product with an average rating of {product.rating} stars.
-              </p>
             </TabsContent>
           </Tabs>
         </div>
 
         {/* Related Products */}
-        {relatedProducts.length > 0 && (
+        {relatedProducts && relatedProducts.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-2xl font-bold mb-6">You May Also Like</h2>
+            <h2 className="text-2xl font-bold mb-6">Dit Vind Je Misschien Ook Leuk</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {relatedProducts.map((relatedProduct) => (
+                <ProductCard key={relatedProduct.id} product={relatedProduct} />
               ))}
             </div>
           </div>
