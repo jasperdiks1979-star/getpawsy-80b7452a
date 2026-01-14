@@ -161,26 +161,65 @@ const Admin = () => {
     refetchOnWindowFocus: false, // Prevent refetch on window focus
   });
 
-  // Import products mutation
+  // Import products mutation - fetches full details including all images, variants, and stock
   const importMutation = useMutation({
     mutationFn: async (products: CJProduct[]) => {
       const multiplier = parseFloat(priceMultiplier);
+      const productIds = products.map(p => p.pid);
       
-      const productsToInsert = products.map((p) => ({
-        cj_product_id: p.pid,
-        name: p.productNameEn,
-        description: p.description || "",
-        category: selectedCategory === "auto" ? p.categoryName : (selectedCategory || p.categoryName),
-        image_url: p.productImage,
-        price: Math.round(Number(p.sellPrice) * multiplier * 100) / 100,
-        cost_price: Number(p.sellPrice) || 0,
-        compare_at_price: Math.round(Number(p.sellPrice) * multiplier * 1.3 * 100) / 100,
-        sku: p.productSku,
-        weight: p.productWeight,
-        stock: 100,
-        is_active: true,
-        supplier_name: "CJ Dropshipping",
-      }));
+      // Show loading toast
+      toast.loading("Fetching full product details from CJ...", { id: "import-loading" });
+      
+      // Fetch full product details (all images, variants, stock) from CJ
+      const { data: fullDetailsResponse, error: detailsError } = await supabase.functions.invoke("cj-dropshipping", {
+        body: {
+          action: "get-products-for-import",
+          productIds: productIds,
+        },
+      });
+
+      if (detailsError) {
+        toast.dismiss("import-loading");
+        throw detailsError;
+      }
+
+      toast.dismiss("import-loading");
+      
+      // Map full details to database format
+      const productsToInsert = products.map((p) => {
+        // Find full details for this product
+        const fullDetail = fullDetailsResponse?.find((d: { pid: string; success: boolean; data?: { description?: string }; images?: string[]; variants?: unknown; totalStock?: number }) => d.pid === p.pid && d.success);
+        
+        // Get all images
+        const images = fullDetail?.images || [p.productImage];
+        
+        // Get stock from full details or default
+        const stock = fullDetail?.totalStock ?? 100;
+        
+        // Get description from full details
+        const description = fullDetail?.data?.description || p.description || "";
+        
+        // Get variants data
+        const variants = fullDetail?.variants || null;
+
+        return {
+          cj_product_id: p.pid,
+          name: p.productNameEn,
+          description: description,
+          category: selectedCategory === "auto" ? p.categoryName : (selectedCategory || p.categoryName),
+          image_url: p.productImage,
+          images: images, // Store all images
+          price: Math.round(Number(p.sellPrice) * multiplier * 100) / 100,
+          cost_price: Number(p.sellPrice) || 0,
+          compare_at_price: Math.round(Number(p.sellPrice) * multiplier * 1.3 * 100) / 100,
+          sku: p.productSku,
+          weight: p.productWeight,
+          stock: stock, // Real stock from CJ
+          variants: variants, // Store variant data
+          is_active: true,
+          supplier_name: "CJ Dropshipping",
+        };
+      });
 
       const { data, error } = await supabase
         .from("products")
@@ -194,7 +233,7 @@ const Admin = () => {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`${data?.length || 0} products imported!`);
+      toast.success(`${data?.length || 0} products imported with full details!`);
       setSelectedProducts(new Set());
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
     },
