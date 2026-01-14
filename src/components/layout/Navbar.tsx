@@ -1,0 +1,110 @@
+import { Link } from 'react-router-dom';
+import { ShoppingCart, Menu, X, Search, PawPrint } from 'lucide-react';
+import { useState } from 'react';
+import { useCart } from '@/contexts/CartContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
+
+const navLinks = [
+  { href: '/', label: 'Home' },
+  { href: '/products', label: 'Shop All' },
+  { href: '/products?category=dogs', label: 'Dogs' },
+  { href: '/products?category=cats', label: 'Cats' },
+];
+
+export const Navbar = () => {
+  const { totalItems } = useCart();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 font-bold text-xl">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground">
+            <PawPrint className="w-6 h-6" />
+          </div>
+          <span className="font-['Poppins'] text-foreground">
+            Get<span className="text-primary">Pawsy</span>
+          </span>
+        </Link>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-6">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              to={link.href}
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          {/* Search */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:flex"
+            onClick={() => setIsSearchOpen(!isSearchOpen)}
+          >
+            <Search className="h-5 w-5" />
+          </Button>
+
+          {/* Cart */}
+          <Link to="/cart">
+            <Button variant="ghost" size="icon" className="relative">
+              <ShoppingCart className="h-5 w-5" />
+              {totalItems > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                  {totalItems}
+                </Badge>
+              )}
+            </Button>
+          </Link>
+
+          {/* Mobile Menu */}
+          <Sheet>
+            <SheetTrigger asChild className="md:hidden">
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px]">
+              <div className="flex flex-col gap-4 mt-8">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    className="text-lg font-medium hover:text-primary transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      {isSearchOpen && (
+        <div className="container px-4 md:px-6 pb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search products..."
+              className="pl-10"
+              autoFocus
+            />
+          </div>
+        </div>
+      )}
+    </header>
+  );
+};
