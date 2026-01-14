@@ -141,6 +141,8 @@ const Admin = () => {
       };
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    retry: false, // Don't auto-retry on rate limit errors
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
   });
 
   // Import products mutation
