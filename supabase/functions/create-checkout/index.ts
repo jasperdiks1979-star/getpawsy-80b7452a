@@ -45,6 +45,17 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    // Create Supabase clients
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
+
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
     // Parse request body
     const { items, customerEmail, shippingAddress }: CheckoutRequest = await req.json();
 
@@ -54,18 +65,15 @@ serve(async (req) => {
 
     // Try to get authenticated user (optional for guest checkout)
     let userEmail = customerEmail;
+    let userId: string | null = null;
     const authHeader = req.headers.get("Authorization");
     
     if (authHeader) {
-      const supabaseClient = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-      );
-      
       const token = authHeader.replace("Bearer ", "");
       const { data } = await supabaseClient.auth.getUser(token);
       if (data.user?.email) {
         userEmail = data.user.email;
+        userId = data.user.id;
       }
     }
 
@@ -97,11 +105,15 @@ serve(async (req) => {
       quantity: item.quantity,
     }));
 
+    // Calculate totals
+    const totalAmount = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
+
     // Calculate order metadata for analytics
     const orderMetadata = {
       items: JSON.stringify(items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity }))),
-      total_items: items.reduce((sum, i) => sum + i.quantity, 0).toString(),
-      total_value: items.reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2),
+      total_items: totalItems.toString(),
+      total_value: totalAmount.toFixed(2),
     };
 
     // Create Stripe checkout session
@@ -119,6 +131,26 @@ serve(async (req) => {
     });
 
     console.log("[CREATE-CHECKOUT] Session created:", session.id);
+
+    // Create pending order in database using service role
+    const { error: orderError } = await supabaseAdmin
+      .from("orders")
+      .insert({
+        user_id: userId,
+        stripe_session_id: session.id,
+        status: "pending",
+        total_amount: totalAmount,
+        currency: "eur",
+        customer_email: userEmail,
+        items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
+      });
+
+    if (orderError) {
+      console.error("[CREATE-CHECKOUT] Error creating order:", orderError);
+      // Don't fail the checkout, just log the error
+    } else {
+      console.log("[CREATE-CHECKOUT] Pending order created for session:", session.id);
+    }
 
     return new Response(
       JSON.stringify({ 
