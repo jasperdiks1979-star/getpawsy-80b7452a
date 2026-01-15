@@ -111,13 +111,21 @@ serve(async (req) => {
         );
       }
 
-      // Generate a magic link token for passwordless sign-in
+      // Create a session directly using admin API
+      console.log("Creating session for user:", userData.user.email);
+      
+      // Use signInWithPassword approach - but we need to create a custom token
+      // Instead, we'll use the admin API to create a session
+      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createUser({
+        email: userData.user.email!,
+        email_confirm: true,
+        // This won't create a new user, just return the existing one with session info
+      });
+
+      // The better approach is to generate a one-time sign-in link and return the token_hash
       const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
         type: "magiclink",
         email: userData.user.email!,
-        options: {
-          redirectTo: `${req.headers.get("origin")}/`,
-        },
       });
 
       if (linkError || !linkData) {
@@ -128,16 +136,14 @@ serve(async (req) => {
         );
       }
 
-      // Extract the token from the link
-      const url = new URL(linkData.properties.action_link);
-      const token = url.searchParams.get("token");
-      const type = url.searchParams.get("type");
+      console.log("Generated link properties:", linkData.properties);
 
+      // The hashed_token is what we need for verifyOtp
       return new Response(
         JSON.stringify({
           success: true,
-          token,
-          type,
+          token: linkData.properties.hashed_token,
+          type: "magiclink",
           email: userData.user.email,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
