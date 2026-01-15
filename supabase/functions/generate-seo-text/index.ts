@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -6,17 +7,32 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log("generate-seo-text function called");
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { productName, category, currentDescription } = await req.json();
+    const body = await req.json();
+    console.log("Request body:", JSON.stringify(body));
+    
+    const { productName, category, currentDescription } = body;
+
+    if (!productName) {
+      console.error("Missing productName in request");
+      return new Response(
+        JSON.stringify({ error: "Product name is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY is not configured");
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+    console.log("LOVABLE_API_KEY is configured");
 
     const systemPrompt = `You are an expert SEO copywriter for e-commerce, specializing in the American market. You write compelling, SEO-optimized product descriptions that:
 
@@ -39,6 +55,8 @@ ${currentDescription ? `Current description (for reference): ${currentDescriptio
 
 Generate a new, unique, and compelling product description for the American market.`;
 
+    console.log("Calling AI gateway...");
+    
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -46,7 +64,7 @@ Generate a new, unique, and compelling product description for the American mark
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -54,7 +72,12 @@ Generate a new, unique, and compelling product description for the American mark
       }),
     });
 
+    console.log("AI gateway response status:", response.status);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("AI gateway error:", response.status, errorText);
+      
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Too many requests, please try again later." }),
@@ -67,14 +90,20 @@ Generate a new, unique, and compelling product description for the American mark
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error("AI gateway error");
+      throw new Error(`AI gateway error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log("AI gateway response received");
+    
     const generatedText = data.choices?.[0]?.message?.content || "";
 
+    if (!generatedText) {
+      console.error("No content generated from AI");
+      throw new Error("No content generated from AI");
+    }
+
+    console.log("Successfully generated SEO text");
     return new Response(
       JSON.stringify({ description: generatedText }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
