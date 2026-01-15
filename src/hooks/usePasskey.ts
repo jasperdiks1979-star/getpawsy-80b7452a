@@ -230,18 +230,24 @@ export const usePasskey = () => {
       if (authError) throw authError;
 
       // Use the token to sign in
-      if (authData.token && authData.type) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({
+      if (authData.token) {
+        console.log("Verifying OTP with token_hash:", authData.token.substring(0, 20) + "...");
+        
+        const { data: sessionData, error: verifyError } = await supabase.auth.verifyOtp({
           token_hash: authData.token,
-          type: authData.type,
+          type: 'magiclink',
         });
 
-        if (verifyError) throw verifyError;
+        if (verifyError) {
+          console.error("OTP verification error:", verifyError);
+          throw verifyError;
+        }
 
+        console.log("Session created:", sessionData.session ? "success" : "failed");
         return { success: true };
       }
 
-      throw new Error('Failed to authenticate');
+      throw new Error('Failed to authenticate - no token received');
     } catch (error: any) {
       console.error('Passkey authentication error:', error);
       throw error;
