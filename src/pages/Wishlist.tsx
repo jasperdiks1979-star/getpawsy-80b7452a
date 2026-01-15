@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingCart, Trash2, ArrowLeft, ArrowUpDown, Filter } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import {
@@ -255,69 +256,76 @@ const Wishlist = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {sortedProducts.map((product) => (
-              <div
-                key={product.id}
-                className="bg-card rounded-xl overflow-hidden shadow-card group"
-              >
-                {/* Image */}
-                <Link to={`/product/${product.id}`}>
-                  <div className="relative aspect-square overflow-hidden bg-muted">
-                    <img
-                      src={product.image_url || '/placeholder.svg'}
-                      alt={product.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                  </div>
-                </Link>
-
-                {/* Content */}
-                <div className="p-4">
+            <AnimatePresence mode="popLayout">
+              {sortedProducts.map((product) => (
+                <motion.div
+                  key={product.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-card rounded-xl overflow-hidden shadow-card group"
+                >
+                  {/* Image */}
                   <Link to={`/product/${product.id}`}>
-                    {product.category && (
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                        {product.category}
-                      </p>
-                    )}
-                    <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                      {product.name}
-                    </h3>
+                    <div className="relative aspect-square overflow-hidden bg-muted">
+                      <img
+                        src={product.image_url || '/placeholder.svg'}
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    </div>
                   </Link>
 
-                  {/* Price */}
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-lg font-bold text-primary">
-                      ${Number(product.price).toFixed(2)}
-                    </span>
-                    {product.compare_at_price && (
-                      <span className="text-sm text-muted-foreground line-through">
-                        ${Number(product.compare_at_price).toFixed(2)}
-                      </span>
-                    )}
-                  </div>
+                  {/* Content */}
+                  <div className="p-4">
+                    <Link to={`/product/${product.id}`}>
+                      {product.category && (
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                          {product.category}
+                        </p>
+                      )}
+                      <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                        {product.name}
+                      </h3>
+                    </Link>
 
-                  {/* Actions */}
-                  <div className="flex gap-2 mt-4">
-                    <Button
-                      className="flex-1 gap-2"
-                      size="sm"
-                      onClick={() => handleAddToCart(product)}
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      Toevoegen
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => handleRemove(product.id, product.name)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {/* Price */}
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-lg font-bold text-primary">
+                        ${Number(product.price).toFixed(2)}
+                      </span>
+                      {product.compare_at_price && (
+                        <span className="text-sm text-muted-foreground line-through">
+                          ${Number(product.compare_at_price).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        className="flex-1 gap-2"
+                        size="sm"
+                        onClick={() => handleAddToCart(product)}
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        Toevoegen
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleRemove(product.id, product.name)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
 
