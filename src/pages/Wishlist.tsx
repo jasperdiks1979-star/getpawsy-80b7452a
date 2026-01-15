@@ -49,6 +49,20 @@ const Wishlist = () => {
     toast.success(`${product.name} toegevoegd aan winkelwagen!`);
   };
 
+  const handleAddAllToCart = () => {
+    if (!products || products.length === 0) return;
+    
+    products.forEach((product) => {
+      addItem({
+        id: product.id,
+        name: product.name,
+        price: Number(product.price),
+        image: product.image_url || '/placeholder.svg',
+      });
+    });
+    toast.success(`${products.length} ${products.length === 1 ? 'product' : 'producten'} toegevoegd aan winkelwagen!`);
+  };
+
   const handleRemove = (productId: string, productName: string) => {
     removeFromWishlist(productId);
     toast.success(`${productName} verwijderd uit wishlist`);
@@ -90,6 +104,15 @@ const Wishlist = () => {
               </p>
             </div>
           </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              className="gap-2"
+              onClick={handleAddAllToCart}
+              disabled={isLoading || !products?.length}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Alles toevoegen aan winkelwagen
+            </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -121,6 +144,7 @@ const Wishlist = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          </div>
         </div>
 
         {isLoading ? (
