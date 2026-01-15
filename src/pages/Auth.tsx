@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import { PasskeyButton } from '@/components/auth/PasskeyButton';
 import logoIcon from '@/assets/logo-getpawsy.png';
 
 const emailSchema = z.string().email('Please enter a valid email address');
@@ -121,7 +123,25 @@ const Auth = () => {
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="login" className="mt-6">
+              <TabsContent value="login" className="mt-6 space-y-4">
+                <PasskeyButton 
+                  email={loginEmail} 
+                  variant="login" 
+                  onSuccess={() => {
+                    toast.success('Welkom terug!');
+                    navigate('/');
+                  }} 
+                />
+                
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator className="w-full" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">Of met wachtwoord</span>
+                  </div>
+                </div>
+
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
