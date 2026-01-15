@@ -26,7 +26,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const shipping = totalPrice >= 50 ? 0 : 4.99;
+  const shipping = 0; // Free shipping on all orders
   const tax = totalPrice * 0.08;
   const total = totalPrice + shipping + tax;
 
@@ -200,13 +200,7 @@ const Checkout = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span>
-                      {shipping === 0 ? (
-                        <span className="text-green-600">Free</span>
-                      ) : (
-                        `$${shipping.toFixed(2)}`
-                      )}
-                    </span>
+                    <span className="text-green-600">Free</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tax</span>
