@@ -708,7 +708,7 @@ const Admin = () => {
                 </div>
 
                 {petCatalogProducts.length > 0 && (
-                  <div className="flex flex-wrap gap-2 items-center justify-between mb-4 pb-4 border-b">
+                <div className="flex flex-wrap gap-2 items-center justify-between mb-4 pb-4 border-b">
                     <div className="text-sm text-muted-foreground">
                       Showing {petCatalogProducts.length} pet products
                       {petCatalogData?.originalTotal && petCatalogData.originalTotal !== petCatalogData.total && (
@@ -716,6 +716,28 @@ const Admin = () => {
                       )}
                     </div>
                     <div className="flex gap-2">
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        onClick={() => {
+                          // Select first 15 unselected products and import immediately
+                          const unselectedProducts = petCatalogProducts.filter((p: CJProduct) => !selectedProducts.has(p.pid));
+                          const toImport = unselectedProducts.slice(0, MAX_BATCH_SIZE);
+                          if (toImport.length === 0) {
+                            toast.error("Geen nieuwe producten om te importeren");
+                            return;
+                          }
+                          importMutation.mutate(toImport);
+                        }}
+                        disabled={importMutation.isPending || petCatalogProducts.length === 0}
+                      >
+                        {importMutation.isPending ? (
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <CloudDownload className="w-4 h-4 mr-2" />
+                        )}
+                        Import {MAX_BATCH_SIZE}
+                      </Button>
                       <Button variant="outline" size="sm" onClick={selectAllCatalog}>
                         Select All
                       </Button>
