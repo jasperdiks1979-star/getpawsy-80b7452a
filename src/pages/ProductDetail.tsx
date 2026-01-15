@@ -8,6 +8,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
@@ -40,7 +41,6 @@ const ProductDetail = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Minimum swipe distance (in px)
@@ -178,7 +178,6 @@ const ProductDetail = () => {
   useEffect(() => {
     setSelectedImage(0);
     setSelectedVariant(null);
-    setImageLoaded(false);
     
     // Add current product to recently viewed
     if (id) {
@@ -211,10 +210,6 @@ const ProductDetail = () => {
     }
   }, [selectedImage]);
 
-  // Reset image loaded state when image changes
-  useEffect(() => {
-    setImageLoaded(false);
-  }, [selectedImage]);
 
   if (isLoading) {
     return (
@@ -352,23 +347,24 @@ const ProductDetail = () => {
               onTouchMove={onTouchMove}
               onTouchEnd={() => onTouchEnd(images.length)}
             >
-              {/* Loading skeleton */}
-              {!imageLoaded && (
-                <div className="absolute inset-0 bg-muted animate-pulse" />
-              )}
-              
+              {/* Optimized image with blur placeholder */}
               <AnimatePresence mode="wait">
-                <motion.img
+                <motion.div
                   key={selectedImage}
-                  src={images[selectedImage]}
-                  alt={product.name}
-                  className="absolute inset-0 w-full h-full object-contain"
+                  className="absolute inset-0"
                   initial={{ opacity: 0, scale: 1.05 }}
-                  animate={{ opacity: imageLoaded ? 1 : 0, scale: 1 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
-                  onLoad={() => setImageLoaded(true)}
-                />
+                >
+                  <OptimizedImage
+                    src={images[selectedImage]}
+                    alt={product.name}
+                    className="object-contain"
+                    containerClassName="w-full h-full"
+                    priority={selectedImage === 0}
+                  />
+                </motion.div>
               </AnimatePresence>
               
               {/* Zoom indicator */}
@@ -469,10 +465,11 @@ const ProductDetail = () => {
                             : 'opacity-60 hover:opacity-100'
                         }`}
                       >
-                        <img 
-                          src={img} 
-                          alt={`Product image ${idx + 1}`} 
-                          className="w-full h-full object-cover" 
+                        <OptimizedImage
+                          src={img}
+                          alt={`Product image ${idx + 1}`}
+                          aspectRatio="square"
+                          className="group-hover:scale-110"
                         />
                       </motion.button>
                     ))}
