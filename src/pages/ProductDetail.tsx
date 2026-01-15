@@ -443,16 +443,13 @@ const ProductDetail = () => {
 
                 {/* Thumbnails */}
                 <div 
-                  className="flex-1 overflow-hidden relative"
-                  onTouchStart={onTouchStart}
-                  onTouchMove={onTouchMove}
-                  onTouchEnd={() => onTouchEnd(images.length)}
+                  className="flex-1 overflow-hidden relative touch-pan-x"
                 >
                   {/* Fade edges */}
                   <div className="absolute left-0 top-0 bottom-2 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
                   <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
                   
-                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory touch-pan-x px-2">
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory px-2" style={{ WebkitOverflowScrolling: 'touch' }}>
                     {images.map((img, idx) => (
                       <motion.button
                         key={idx}
