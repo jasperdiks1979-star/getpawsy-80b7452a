@@ -5,6 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { z } from 'zod';
+
+const emailSchema = z.string().trim().email({ message: 'Ongeldig e-mailadres' }).max(255);
 
 export const Footer = () => {
   const [email, setEmail] = useState('');
@@ -12,17 +16,36 @@ export const Footer = () => {
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      toast.error('Vul je e-mailadres in');
+    
+    const result = emailSchema.safeParse(email);
+    if (!result.success) {
+      toast.error(result.error.errors[0].message);
       return;
     }
     
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast.success('Bedankt voor je aanmelding! 🎉');
-    setEmail('');
-    setIsSubmitting(false);
+    
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert({ email: result.data });
+      
+      if (error) {
+        if (error.code === '23505') {
+          toast.info('Je bent al aangemeld voor onze nieuwsbrief! 📬');
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success('Bedankt voor je aanmelding! 🎉');
+      }
+      setEmail('');
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      toast.error('Er ging iets mis. Probeer het later opnieuw.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const currentYear = new Date().getFullYear();
