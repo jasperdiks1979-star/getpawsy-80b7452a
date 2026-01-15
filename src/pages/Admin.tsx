@@ -306,7 +306,7 @@ const Admin = () => {
           cost_price: pricing.totalCost,
           compare_at_price: pricing.compareAtPrice,
           sku: p.productSku,
-          weight: p.productWeight,
+          weight: weight,
           stock: stock,
           variants: variants,
           is_active: true,
@@ -736,7 +736,7 @@ const Admin = () => {
                         variant="default" 
                         size="sm" 
                         onClick={() => {
-                          // Select first 15 unselected products and import immediately
+                          // Select first batch of unselected products and import immediately
                           const unselectedProducts = petCatalogProducts.filter((p: CJProduct) => !selectedProducts.has(p.pid));
                           const toImport = unselectedProducts.slice(0, MAX_BATCH_SIZE);
                           if (toImport.length === 0) {
@@ -752,7 +752,7 @@ const Admin = () => {
                         ) : (
                           <CloudDownload className="w-4 h-4 mr-2" />
                         )}
-                        Import {MAX_BATCH_SIZE}
+                        Quick {MAX_BATCH_SIZE}
                       </Button>
                       <Button variant="outline" size="sm" onClick={selectAllCatalog}>
                         Select All
