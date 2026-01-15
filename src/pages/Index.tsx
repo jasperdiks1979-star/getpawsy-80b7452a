@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Truck, Shield, HeartHandshake, Sparkles, Loader2, Star, Leaf } from 'lucide-react';
+import { ArrowRight, Truck, Shield, HeartHandshake, Sparkles, Loader2, Star, Leaf, Quote } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
 import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useCallback } from 'react';
+import type { CarouselApi } from '@/components/ui/carousel';
 
 const features = [
   {
@@ -34,23 +37,37 @@ const testimonials = [
   {
     name: 'Sarah M.',
     pet: 'Golden Retriever Owner',
-    text: 'My dog absolutely loves the organic treats! Great quality and fast shipping.',
+    text: 'My dog absolutely loves the organic treats! Great quality and fast shipping. The delivery was super quick and the packaging was eco-friendly too!',
     rating: 5,
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80',
   },
   {
     name: 'Michael T.',
     pet: 'Cat Parent',
-    text: 'Finally found a store that cares about pet health as much as I do. Highly recommend!',
+    text: 'Finally found a store that cares about pet health as much as I do. Highly recommend! My cats have never been happier with their new toys.',
     rating: 5,
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
   },
   {
     name: 'Emma L.',
     pet: 'Multi-Pet Household',
-    text: 'Beautiful products, amazing customer service. Our pets are so happy!',
+    text: 'Beautiful products, amazing customer service. Our pets are so happy! The variety is incredible and everything arrives in perfect condition.',
     rating: 5,
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80',
+  },
+  {
+    name: 'David K.',
+    pet: 'Labrador Owner',
+    text: 'The quality of products here is unmatched. My Lab loves every single treat and toy we have ordered. Will definitely keep coming back!',
+    rating: 5,
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80',
+  },
+  {
+    name: 'Lisa R.',
+    pet: 'Persian Cat Mom',
+    text: 'As a picky cat owner, I was impressed by the premium grooming supplies. My Persian has never looked better. Excellent products!',
+    rating: 5,
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80',
   },
 ];
 
@@ -74,6 +91,37 @@ const itemVariants = {
 };
 
 const Index = () => {
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [slideCount, setSlideCount] = useState(0);
+
+  const onSelect = useCallback(() => {
+    if (!carouselApi) return;
+    setCurrentSlide(carouselApi.selectedScrollSnap());
+  }, [carouselApi]);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    setSlideCount(carouselApi.scrollSnapList().length);
+    onSelect();
+    carouselApi.on('select', onSelect);
+    return () => {
+      carouselApi.off('select', onSelect);
+    };
+  }, [carouselApi, onSelect]);
+
+  // Auto-play for testimonials carousel
+  useEffect(() => {
+    if (!carouselApi) return;
+    const interval = setInterval(() => {
+      if (carouselApi.canScrollNext()) {
+        carouselApi.scrollNext();
+      } else {
+        carouselApi.scrollTo(0);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [carouselApi]);
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
     queryKey: ['featured-products'],
     queryFn: async () => {
@@ -387,7 +435,7 @@ const Index = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20">
+      <section className="py-20 overflow-hidden">
         <div className="container px-4 md:px-6">
           <motion.div 
             className="text-center mb-12"
@@ -400,38 +448,84 @@ const Index = () => {
             <p className="text-muted-foreground text-lg">See what our community has to say</p>
           </motion.div>
 
-          <motion.div 
-            className="grid md:grid-cols-3 gap-6"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="relative"
           >
-            {testimonials.map((testimonial, index) => (
-              <motion.div 
-                key={index}
-                className="bg-card p-8 rounded-3xl shadow-soft"
-                variants={itemVariants}
-              >
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-warning text-warning" />
-                  ))}
-                </div>
-                <p className="text-foreground mb-6 leading-relaxed">"{testimonial.text}"</p>
-                <div className="flex items-center gap-3">
-                  <img 
-                    src={testimonial.avatar} 
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="font-semibold">{testimonial.name}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.pet}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+            <Carousel
+              setApi={setCarouselApi}
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-4">
+                {testimonials.map((testimonial, index) => (
+                  <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                    <div className="bg-card p-8 rounded-3xl shadow-soft h-full relative group hover:shadow-soft-lg transition-shadow duration-300">
+                      {/* Quote icon */}
+                      <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-md">
+                        <Quote className="w-5 h-5 text-primary-foreground fill-primary-foreground" />
+                      </div>
+                      
+                      {/* Rating stars */}
+                      <div className="flex items-center gap-1 mb-4 pt-2">
+                        {[...Array(testimonial.rating)].map((_, i) => (
+                          <Star key={i} className="w-4 h-4 fill-warning text-warning" />
+                        ))}
+                      </div>
+                      
+                      {/* Testimonial text */}
+                      <p className="text-foreground mb-6 leading-relaxed text-base">
+                        "{testimonial.text}"
+                      </p>
+                      
+                      {/* Author info */}
+                      <div className="flex items-center gap-3 mt-auto">
+                        <div className="relative">
+                          <img 
+                            src={testimonial.avatar} 
+                            alt={testimonial.name}
+                            className="w-12 h-12 rounded-full object-cover ring-2 ring-secondary"
+                          />
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-success flex items-center justify-center">
+                            <span className="text-white text-xs">✓</span>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-semibold">{testimonial.name}</p>
+                          <p className="text-sm text-muted-foreground">{testimonial.pet}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              
+              {/* Navigation buttons */}
+              <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+              <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+            </Carousel>
+
+            {/* Pagination dots */}
+            <div className="flex justify-center gap-2 mt-8">
+              {Array.from({ length: slideCount }).map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => carouselApi?.scrollTo(index)}
+                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                    currentSlide === index 
+                      ? 'bg-primary w-8' 
+                      : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
           </motion.div>
         </div>
       </section>
