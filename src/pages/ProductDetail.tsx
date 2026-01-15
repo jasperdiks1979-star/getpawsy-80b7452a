@@ -279,7 +279,7 @@ const ProductDetail = () => {
                     <button
                       key={idx}
                       onClick={() => setSelectedImage(idx)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all ${
                         selectedImage === idx 
                           ? 'border-primary ring-2 ring-primary/20' 
                           : 'border-transparent hover:border-muted-foreground/30'
@@ -298,14 +298,14 @@ const ProductDetail = () => {
           </div>
 
           {/* Details */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <div>
               {product.category && (
-                <p className="text-sm text-muted-foreground uppercase tracking-wider mb-2">
+                <p className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-1 md:mb-2">
                   {product.category}
                 </p>
               )}
-              <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
+              <h1 className="text-xl md:text-3xl font-bold mb-2">{product.name}</h1>
             </div>
 
             {/* Price */}
@@ -321,13 +321,13 @@ const ProductDetail = () => {
                 : null;
               
               return (
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-3xl font-bold text-primary">
+                <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+                  <span className="text-2xl md:text-3xl font-bold text-primary">
                     ${displayPrice.toFixed(2)}
                   </span>
                   {originalPrice && originalPrice > displayPrice && (
                     <>
-                      <span className="text-xl text-muted-foreground line-through">
+                      <span className="text-lg md:text-xl text-muted-foreground line-through">
                         ${originalPrice.toFixed(2)}
                       </span>
                       {currentDiscount && currentDiscount > 0 && (
@@ -346,10 +346,10 @@ const ProductDetail = () => {
 
             {/* Short Description */}
             {product.description && !descriptionHasHtml && (
-              <p className="text-muted-foreground">{product.description}</p>
+              <p className="text-sm md:text-base text-muted-foreground">{product.description}</p>
             )}
             {product.description && descriptionHasHtml && (
-              <p className="text-muted-foreground line-clamp-3">
+              <p className="text-sm md:text-base text-muted-foreground line-clamp-3">
                 {product.description.replace(/<[^>]*>/g, '').substring(0, 200)}...
               </p>
             )}
