@@ -776,15 +776,26 @@ const Admin = () => {
                 {importProgress && (
                   <Card className="mb-4 border-primary/20 bg-primary/5">
                     <CardContent className="pt-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-medium">Importing Products...</span>
-                          <span className="text-muted-foreground">
-                            {importProgress.current} / {importProgress.total}
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Producten importeren...
+                          </span>
+                          <div className="text-right">
+                            <span className="text-lg font-bold text-primary">
+                              {importProgress.current}
+                            </span>
+                            <span className="text-muted-foreground"> / {importProgress.total}</span>
+                          </div>
+                        </div>
+                        <Progress value={(importProgress.current / importProgress.total) * 100} className="h-3" />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>{importProgress.status}</span>
+                          <span className="font-medium">
+                            Nog {importProgress.total - importProgress.current} te gaan
                           </span>
                         </div>
-                        <Progress value={(importProgress.current / importProgress.total) * 100} />
-                        <p className="text-xs text-muted-foreground">{importProgress.status}</p>
                       </div>
                     </CardContent>
                   </Card>
