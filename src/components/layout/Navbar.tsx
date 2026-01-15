@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Menu, Search, PawPrint, User, LogOut, Shield } from 'lucide-react';
+import { ShoppingCart, Menu, Search, PawPrint, User, LogOut, Shield, Heart } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -25,6 +26,7 @@ const navLinks = [
 export const Navbar = () => {
   const { totalItems } = useCart();
   const { user, isAdmin, signOut } = useAuth();
+  const { wishlist } = useWishlist();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -72,6 +74,18 @@ export const Navbar = () => {
           >
             <Search className="h-5 w-5" />
           </Button>
+
+          {/* Wishlist */}
+          <Link to="/wishlist">
+            <Button variant="ghost" size="icon" className="relative">
+              <Heart className={`h-5 w-5 ${wishlist.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+              {wishlist.length > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                  {wishlist.length}
+                </Badge>
+              )}
+            </Button>
+          </Link>
 
           {/* Cart */}
           <Link to="/cart">
