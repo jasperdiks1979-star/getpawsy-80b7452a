@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock, MessageSquare, Ruler, Weight, Box, Info } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { ReviewForm } from '@/components/reviews/ReviewForm';
 import { ReviewsList } from '@/components/reviews/ReviewsList';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface ProductVariant {
   vid: string;
@@ -857,7 +858,7 @@ const ProductDetail = () => {
                 {descriptionHasHtml ? (
                   <div 
                     className="prose prose-sm max-w-none text-muted-foreground [&_h2]:text-lg [&_h2]:font-display [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-4 [&_h3]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-3 [&_li]:my-1.5 [&_img]:rounded-xl [&_img]:my-4 [&_p]:leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: product.description || '' }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description || '') }}
                   />
                 ) : (
                   <p className="text-muted-foreground leading-relaxed">
