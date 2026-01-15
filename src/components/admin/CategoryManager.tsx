@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, FolderTree, Loader2, Save, X, ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, FolderTree, Loader2, Save, X, ImageIcon, Download } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -55,9 +56,11 @@ export const CategoryManager = () => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
     slug: '',
@@ -172,6 +175,27 @@ export const CategoryManager = () => {
     },
   });
 
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success(`${selectedIds.size} categorieën succesvol verwijderd`);
+      setIsBulkDeleteDialogOpen(false);
+      setSelectedIds(new Set());
+    },
+    onError: (error) => {
+      toast.error(`Fout bij verwijderen: ${error.message}`);
+    },
+  });
+
   const generateSlug = (name: string) => {
     return name
       .toLowerCase()
@@ -230,12 +254,70 @@ export const CategoryManager = () => {
     }
   };
 
+  const handleBulkDelete = () => {
+    bulkDeleteMutation.mutate(Array.from(selectedIds));
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredCategories.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredCategories.map(c => c.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const exportToCSV = () => {
+    const categoriesToExport = selectedIds.size > 0
+      ? filteredCategories.filter(c => selectedIds.has(c.id))
+      : filteredCategories;
+
+    if (categoriesToExport.length === 0) {
+      toast.error('Geen categorieën om te exporteren');
+      return;
+    }
+
+    const headers = ['Naam', 'Slug', 'Beschrijving', 'Afbeelding URL', 'Producten', 'Aangemaakt'];
+    const rows = categoriesToExport.map(cat => [
+      cat.name,
+      cat.slug,
+      cat.description || '',
+      cat.image_url || '',
+      productCounts?.[cat.name] || 0,
+      new Date(cat.created_at).toLocaleDateString('nl-NL'),
+    ]);
+
+    const csvContent = [
+      headers.join(';'),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))
+    ].join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `categorieen_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+
+    toast.success(`${categoriesToExport.length} categorieën geëxporteerd`);
+  };
+
   const filteredCategories = categories?.filter(cat =>
     cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cat.slug.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const allSelected = filteredCategories.length > 0 && selectedIds.size === filteredCategories.length;
 
   return (
     <Card>
@@ -245,21 +327,48 @@ export const CategoryManager = () => {
             <FolderTree className="w-5 h-5" />
             Categorieën Beheren
           </CardTitle>
-          <Button onClick={openCreateDialog} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Nieuwe Categorie
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={exportToCSV} className="gap-2">
+              <Download className="w-4 h-4" />
+              {selectedIds.size > 0 ? `Export (${selectedIds.size})` : 'Export CSV'}
+            </Button>
+            <Button onClick={openCreateDialog} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Nieuwe Categorie
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        {/* Search */}
-        <div className="mb-6">
+        {/* Search and Bulk Actions */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <Input
             placeholder="Zoek categorieën..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
           />
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{selectedIds.size} geselecteerd</Badge>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setIsBulkDeleteDialogOpen(true)}
+                className="gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Verwijderen
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Deselecteren
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Loading State */}
@@ -275,6 +384,13 @@ export const CategoryManager = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={allSelected}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Selecteer alles"
+                    />
+                  </TableHead>
                   <TableHead>Afbeelding</TableHead>
                   <TableHead>Naam</TableHead>
                   <TableHead>Slug</TableHead>
@@ -286,13 +402,20 @@ export const CategoryManager = () => {
               <TableBody>
                 {filteredCategories.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Geen categorieën gevonden
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredCategories.map((category) => (
-                    <TableRow key={category.id}>
+                    <TableRow key={category.id} className={selectedIds.has(category.id) ? 'bg-muted/50' : ''}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(category.id)}
+                          onCheckedChange={() => toggleSelect(category.id)}
+                          aria-label={`Selecteer ${category.name}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         {category.image_url ? (
                           <img
@@ -459,6 +582,35 @@ export const CategoryManager = () => {
                 <Trash2 className="w-4 h-4 mr-2" />
               )}
               Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Meerdere Categorieën Verwijderen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je {selectedIds.size} categorieën wilt verwijderen?
+              <span className="block mt-2 text-destructive font-medium">
+                Let op: Dit kan niet ongedaan worden gemaakt.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleteMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
+              {selectedIds.size} Verwijderen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
