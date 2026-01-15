@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingCart, Trash2, ArrowLeft, ArrowUpDown } from 'lucide-react';
+import { Heart, ShoppingCart, Trash2, ArrowLeft, ArrowUpDown, Filter } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ const Wishlist = () => {
   const { wishlist, removeFromWishlist, clearWishlist, getAddedAt } = useWishlist();
   const { addItem } = useCart();
   const [sortBy, setSortBy] = useState<SortOption>('added-desc');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['wishlist-products', wishlist],
@@ -50,10 +51,26 @@ const Wishlist = () => {
     enabled: wishlist.length > 0,
   });
 
+  // Get unique categories from products
+  const categories = useMemo(() => {
+    if (!products) return [];
+    const cats = products
+      .map(p => p.category)
+      .filter((cat): cat is string => !!cat);
+    return [...new Set(cats)].sort();
+  }, [products]);
+
   const sortedProducts = useMemo(() => {
     if (!products) return [];
     
-    return [...products].sort((a, b) => {
+    // First filter by category
+    let filtered = [...products];
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(p => p.category === categoryFilter);
+    }
+    
+    // Then sort
+    return filtered.sort((a, b) => {
       switch (sortBy) {
         case 'price-asc':
           return Number(a.price) - Number(b.price);
@@ -72,7 +89,7 @@ const Wishlist = () => {
         }
       }
     });
-  }, [products, sortBy, getAddedAt]);
+  }, [products, sortBy, categoryFilter, getAddedAt]);
 
   const handleAddToCart = (product: any) => {
     addItem({
@@ -182,20 +199,46 @@ const Wishlist = () => {
           </div>
         </div>
 
-        {/* Sort */}
-        <div className="flex items-center justify-end gap-2 mb-6">
-          <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
-          <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Sorteer op" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="added-desc">Laatst toegevoegd</SelectItem>
-              <SelectItem value="added-asc">Eerst toegevoegd</SelectItem>
-              <SelectItem value="price-asc">Prijs: laag naar hoog</SelectItem>
-              <SelectItem value="price-desc">Prijs: hoog naar laag</SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Filter & Sort */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          {/* Category Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Alle categorieën" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle categorieën</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {categoryFilter !== 'all' && (
+              <span className="text-sm text-muted-foreground">
+                ({sortedProducts.length} {sortedProducts.length === 1 ? 'product' : 'producten'})
+              </span>
+            )}
+          </div>
+
+          {/* Sort */}
+          <div className="flex items-center gap-2">
+            <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Sorteer op" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="added-desc">Laatst toegevoegd</SelectItem>
+                <SelectItem value="added-asc">Eerst toegevoegd</SelectItem>
+                <SelectItem value="price-asc">Prijs: laag naar hoog</SelectItem>
+                <SelectItem value="price-desc">Prijs: hoog naar laag</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {isLoading ? (
