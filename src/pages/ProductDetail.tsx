@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OptimizedImage } from '@/components/ui/optimized-image';
+import { PinchZoomImage } from '@/components/ui/pinch-zoom-image';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
@@ -365,13 +366,27 @@ const ProductDetail = () => {
                     exit={{ opacity: 0, x: dragX > 0 ? 100 : -100 }}
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   >
-                    <OptimizedImage
-                      src={images[selectedImage]}
-                      alt={product.name}
-                      className="object-contain pointer-events-none"
-                      containerClassName="w-full h-full"
-                      priority={selectedImage === 0}
-                    />
+                    {/* Desktop: Regular optimized image */}
+                    <div className="hidden md:block w-full h-full">
+                      <OptimizedImage
+                        src={images[selectedImage]}
+                        alt={product.name}
+                        className="object-contain pointer-events-none"
+                        containerClassName="w-full h-full"
+                        priority={selectedImage === 0}
+                      />
+                    </div>
+                    
+                    {/* Mobile: Pinch-to-zoom image */}
+                    <div className="md:hidden w-full h-full">
+                      <PinchZoomImage
+                        src={images[selectedImage]}
+                        alt={product.name}
+                        className="object-contain"
+                        containerClassName="w-full h-full"
+                        onTap={() => setLightboxOpen(true)}
+                      />
+                    </div>
                   </motion.div>
                 </AnimatePresence>
 
