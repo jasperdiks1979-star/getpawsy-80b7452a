@@ -243,7 +243,7 @@ const ProductDetail = () => {
                 key={selectedImage}
                 src={images[selectedImage]}
                 alt={product.name}
-                className="w-full h-full object-contain animate-[fadeZoomIn_0.3s_ease-out] group-hover:scale-105 transition-transform duration-300"
+                className="w-full h-full object-contain animate-slideIn group-hover:scale-105 transition-transform duration-300"
               />
               
               {/* Zoom indicator */}
