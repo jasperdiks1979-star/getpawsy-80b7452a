@@ -160,6 +160,13 @@ export const Navbar = () => {
                     {link.label}
                   </Link>
                 ))}
+                <Link
+                  to="/wishlist"
+                  className="text-lg font-medium hover:text-primary transition-colors flex items-center gap-2"
+                >
+                  <Heart className={`h-5 w-5 ${wishlist.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                  Wishlist {wishlist.length > 0 && `(${wishlist.length})`}
+                </Link>
                 {user ? (
                   <>
                     {isAdmin && (
