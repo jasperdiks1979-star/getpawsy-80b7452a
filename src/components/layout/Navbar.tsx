@@ -332,6 +332,23 @@ export const Navbar = () => {
                         </SheetClose>
                       ))}
                       
+                      {/* Admin link - prominent in main nav for admins */}
+                      {isAdmin && (
+                        <SheetClose asChild>
+                          <Link
+                            to="/admin"
+                            className={`px-4 py-3 text-lg font-medium rounded-xl transition-colors flex items-center gap-3 ${
+                              isActive('/admin')
+                                ? 'text-primary bg-primary/10'
+                                : 'hover:bg-muted'
+                            }`}
+                          >
+                            <Shield className="h-5 w-5" />
+                            Admin Dashboard
+                          </Link>
+                        </SheetClose>
+                      )}
+                      
                       {/* Mobile Categories */}
                       <div className="mt-4 mb-2">
                         <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
