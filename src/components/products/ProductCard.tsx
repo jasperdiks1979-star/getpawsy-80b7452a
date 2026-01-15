@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Heart, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
+import { useCartAnimation } from '@/contexts/CartAnimationContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,12 +38,21 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   const { addItem } = useCart();
+  const { triggerAddToCart } = useCartAnimation();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const inWishlist = isInWishlist(product.id);
   const [isAnimating, setIsAnimating] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
+    
+    // Trigger flying animation
+    triggerAddToCart(
+      product.image_url || '/placeholder.svg',
+      e.currentTarget as HTMLElement
+    );
+    
     addItem({
       id: product.id,
       name: product.name,

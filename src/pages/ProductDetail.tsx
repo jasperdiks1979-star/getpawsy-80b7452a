@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { PinchZoomImage } from '@/components/ui/pinch-zoom-image';
 import { useCart } from '@/contexts/CartContext';
+import { useCartAnimation } from '@/contexts/CartAnimationContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useHaptic } from '@/hooks/useHaptic';
@@ -35,8 +36,10 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { addItem } = useCart();
+  const { triggerAddToCart } = useCartAnimation();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { addToRecentlyViewed, getRecentlyViewedIds } = useRecentlyViewed();
+  const addToCartButtonRef = useRef<HTMLButtonElement>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
@@ -252,6 +255,13 @@ const ProductDetail = () => {
 
   const handleAddToCart = () => {
     haptic.success(); // Success haptic on add to cart
+    
+    // Trigger flying animation
+    triggerAddToCart(
+      selectedVariant?.variantImage || product.image_url || '/placeholder.svg',
+      addToCartButtonRef.current
+    );
+    
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
@@ -745,6 +755,7 @@ const ProductDetail = () => {
 
               {/* Add to Cart */}
               <Button
+                ref={addToCartButtonRef}
                 size="lg"
                 className="flex-1 h-12 gap-2 btn-organic text-base font-semibold"
                 onClick={handleAddToCart}
