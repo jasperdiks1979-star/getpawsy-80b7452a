@@ -220,7 +220,7 @@ const ProductDetail = () => {
           <div className="space-y-4">
             {/* Main Image with Navigation and Swipe */}
             <div 
-              className="relative aspect-square rounded-xl overflow-hidden bg-muted group cursor-zoom-in touch-pan-y"
+              className="relative aspect-square max-h-[60vh] md:max-h-none w-full rounded-xl overflow-hidden bg-muted group cursor-zoom-in touch-pan-y"
               onClick={() => setLightboxOpen(true)}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -229,7 +229,7 @@ const ProductDetail = () => {
               <img
                 src={images[selectedImage]}
                 alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                className="w-full h-full object-contain md:object-cover transition-transform duration-300 group-hover:scale-105"
               />
               
               {/* Zoom indicator */}
