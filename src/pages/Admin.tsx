@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree } from "lucide-react";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
+import { CategoryManager } from "@/components/admin/CategoryManager";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -615,6 +616,11 @@ const Admin = () => {
               <span className="hidden sm:inline">Nieuwsbrief</span>
               <span className="sm:hidden">Mail</span>
             </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-2">
+              <FolderTree className="w-4 h-4" />
+              <span className="hidden sm:inline">Categorieën</span>
+              <span className="sm:hidden">Cat.</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Pet Catalog Tab */}
@@ -1171,6 +1177,11 @@ const Admin = () => {
           {/* Newsletter Tab */}
           <TabsContent value="newsletter">
             <NewsletterSubscribers />
+          </TabsContent>
+
+          {/* Categories Tab */}
+          <TabsContent value="categories">
+            <CategoryManager />
           </TabsContent>
         </Tabs>
 
