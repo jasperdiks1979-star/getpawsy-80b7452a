@@ -275,3 +275,53 @@
     padding-bottom: 3rem !important;
   }
 }
+
+/* Ultrawide screen optimizations (21:9 and wider) */
+@media (min-width: 2560px) {
+  /* Larger typography for ultrawide */
+  h1 {
+    font-size: 4rem !important;
+    line-height: 1.1 !important;
+  }
+
+  h2 {
+    font-size: 2.5rem !important;
+    line-height: 1.2 !important;
+  }
+
+  h3 {
+    font-size: 1.75rem !important;
+  }
+
+  /* More generous spacing */
+  section {
+    padding-top: 6rem !important;
+    padding-bottom: 6rem !important;
+  }
+
+  /* Larger product cards grid */
+  .grid.grid-cols-2.md\:grid-cols-3.lg\:grid-cols-4 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* Super ultrawide (32:9 and similar) */
+@media (min-width: 3440px) {
+  h1 {
+    font-size: 5rem !important;
+  }
+
+  h2 {
+    font-size: 3rem !important;
+  }
+
+  /* Even more columns for product grids */
+  .grid.grid-cols-2.md\:grid-cols-3.lg\:grid-cols-4 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  /* Limit max content width for readability */
+  .container {
+    max-width: 2200px;
+  }
+}

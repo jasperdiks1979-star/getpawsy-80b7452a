@@ -319,7 +319,7 @@ const ProductDetail = () => {
         <div className="absolute bottom-40 -left-40 w-80 h-80 bg-secondary/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="container px-4 md:px-6 py-8 max-w-full overflow-hidden">
+      <div className="container px-4 md:px-6 3xl:px-8 py-8 3xl:py-12 max-w-full overflow-hidden ultrawide:max-w-[1800px] ultrawide:mx-auto">
         {/* Breadcrumb */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -328,14 +328,14 @@ const ProductDetail = () => {
         >
           <Link
             to="/products"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-6 group"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-6 3xl:mb-8 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span>Back to Products</span>
           </Link>
         </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 3xl:gap-24 ultrawide:gap-32">
           {/* Image Gallery */}
           <motion.div 
             initial={{ opacity: 0, x: -30 }}
@@ -345,8 +345,8 @@ const ProductDetail = () => {
           >
             {/* Main Image */}
             <div 
-              className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft"
-              style={{ aspectRatio: '1/1', maxHeight: 'min(80vw, 500px)' }}
+              className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft 3xl:rounded-[2rem]"
+              style={{ aspectRatio: '1/1', maxHeight: 'clamp(300px, 80vw, 700px)' }}
               onClick={() => setLightboxOpen(true)}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
