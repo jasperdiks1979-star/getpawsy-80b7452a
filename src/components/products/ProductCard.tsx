@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Heart } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -33,6 +34,8 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   const { addItem } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  const inWishlist = isInWishlist(product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -43,6 +46,12 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       image: product.image_url || '/placeholder.svg',
     });
     toast.success(`${product.name} added to cart!`);
+  };
+
+  const handleToggleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toggleWishlist(product.id);
+    toast.success(inWishlist ? 'Removed from wishlist!' : 'Added to wishlist!');
   };
 
   const discount = product.compare_at_price
@@ -75,12 +84,9 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               variant="secondary"
               size="icon"
               className="rounded-full bg-background/80 backdrop-blur-sm hover:bg-background"
-              onClick={(e) => {
-                e.preventDefault();
-                toast.info('Added to wishlist!');
-              }}
+              onClick={handleToggleWishlist}
             >
-              <Heart className="w-4 h-4" />
+              <Heart className={`w-4 h-4 transition-colors ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
             </Button>
           </div>
 
@@ -133,12 +139,9 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               variant="outline"
               size="icon"
               className="h-9 w-9 flex-shrink-0"
-              onClick={(e) => {
-                e.preventDefault();
-                toast.info('Added to wishlist!');
-              }}
+              onClick={handleToggleWishlist}
             >
-              <Heart className="w-4 h-4" />
+              <Heart className={`w-4 h-4 transition-colors ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
             </Button>
           </div>
 
