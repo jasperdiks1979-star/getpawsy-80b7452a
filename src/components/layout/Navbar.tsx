@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Menu, Search, User, LogOut, Shield, Heart, X, ChevronDown, Dog, Cat, Bone, Sparkles, Gift, Truck, ArrowRight } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { SearchSuggestions } from '@/components/search/SearchSuggestions';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -66,8 +67,21 @@ export const Navbar = () => {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Handle scroll effect
   useEffect(() => {
@@ -94,7 +108,14 @@ export const Navbar = () => {
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       setIsSearchOpen(false);
+      setShowSuggestions(false);
     }
+  };
+
+  const handleSelectSuggestion = () => {
+    setSearchQuery('');
+    setIsSearchOpen(false);
+    setShowSuggestions(false);
   };
 
   const isActive = (href: string) => {
@@ -367,25 +388,36 @@ export const Navbar = () => {
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  placeholder="Waar ben je naar op zoek?"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-12 pl-12 pr-12 rounded-2xl border-2 border-border/50 bg-muted/30 focus-visible:ring-primary focus-visible:border-primary"
-                  autoFocus
+              <div ref={searchRef} className="relative max-w-2xl mx-auto">
+                <form onSubmit={handleSearch}>
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
+                  <Input
+                    placeholder="Waar ben je naar op zoek?"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    className="h-12 pl-12 pr-12 rounded-2xl border-2 border-border/50 bg-muted/30 focus-visible:ring-primary focus-visible:border-primary"
+                    autoFocus
+                  />
+                  <Button 
+                    type="button"
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 rounded-xl z-10"
+                    onClick={() => setIsSearchOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </form>
+                <SearchSuggestions
+                  query={searchQuery}
+                  onSelect={handleSelectSuggestion}
+                  isVisible={showSuggestions}
                 />
-                <Button 
-                  type="button"
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 rounded-xl"
-                  onClick={() => setIsSearchOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </form>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
