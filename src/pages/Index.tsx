@@ -144,7 +144,7 @@ const Index = () => {
     queryKey: ['featured-products'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
@@ -177,7 +177,7 @@ const Index = () => {
     queryFn: async () => {
       if (recentlyViewedIds.length === 0) return [];
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .in('id', recentlyViewedIds)
         .eq('is_active', true);
