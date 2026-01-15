@@ -319,7 +319,7 @@ const ProductDetail = () => {
         <div className="absolute bottom-40 -left-40 w-80 h-80 bg-secondary/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="container px-4 md:px-6 py-8">
+      <div className="container px-4 md:px-6 py-8 max-w-full overflow-hidden">
         {/* Breadcrumb */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
