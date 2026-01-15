@@ -69,8 +69,8 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             )}
           </div>
 
-          {/* Quick Actions */}
-          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Quick Actions - hidden on mobile to prevent double-tap */}
+          <div className="absolute top-3 right-3 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
               variant="secondary"
               size="icon"
@@ -84,8 +84,8 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             </Button>
           </div>
 
-          {/* Add to Cart Button */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+          {/* Add to Cart Button - hidden on mobile to prevent double-tap */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 hidden md:block translate-y-full group-hover:translate-y-0 transition-transform duration-300">
             <Button
               className="w-full gap-2"
               onClick={handleAddToCart}
