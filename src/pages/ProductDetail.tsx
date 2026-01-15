@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star } from 'lucide-react';
+import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
@@ -29,6 +30,7 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { addItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { addToRecentlyViewed, getRecentlyViewedIds } = useRecentlyViewed();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
@@ -98,6 +100,31 @@ const ProductDetail = () => {
     enabled: !!product?.category,
   });
 
+  // Get recently viewed product IDs (excluding current product)
+  const recentlyViewedIds = getRecentlyViewedIds(id);
+
+  // Fetch recently viewed products
+  const { data: recentlyViewedProducts } = useQuery({
+    queryKey: ['recently-viewed-products', recentlyViewedIds],
+    queryFn: async () => {
+      if (recentlyViewedIds.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .in('id', recentlyViewedIds);
+      
+      if (error) throw error;
+      
+      // Sort by the order in recentlyViewedIds
+      return data?.sort((a, b) => 
+        recentlyViewedIds.indexOf(a.id) - recentlyViewedIds.indexOf(b.id)
+      ) || [];
+    },
+    enabled: recentlyViewedIds.length > 0,
+  });
+
   // Parse variants from JSON
   const variants: ProductVariant[] = product?.variants && Array.isArray(product.variants) 
     ? (product.variants as unknown as ProductVariant[])
@@ -119,12 +146,17 @@ const ProductDetail = () => {
     return groups;
   }, {} as Record<string, ProductVariant[]>);
 
-  // Reset selected image when product changes
+  // Reset selected image when product changes and add to recently viewed
   useEffect(() => {
     setSelectedImage(0);
     setSelectedVariant(null);
     setImageLoaded(false);
-  }, [id]);
+    
+    // Add current product to recently viewed
+    if (id) {
+      addToRecentlyViewed(id);
+    }
+  }, [id, addToRecentlyViewed]);
 
   // Update selected image when variant is selected
   useEffect(() => {
@@ -817,6 +849,40 @@ const ProductDetail = () => {
                   transition={{ delay: 0.7 + idx * 0.1 }}
                 >
                   <ProductCard product={relatedProduct} />
+                </motion.div>
+              ))}
+            </div>
+          </motion.section>
+        )}
+
+        {/* Recently Viewed Products */}
+        {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
+          <motion.section 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="mt-16"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-secondary/20 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-secondary-foreground" />
+              </div>
+              <div>
+                <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
+                  Recent bekeken
+                </h2>
+                <p className="text-sm text-muted-foreground">Producten die je eerder hebt bekeken</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {recentlyViewedProducts.slice(0, 4).map((recentProduct, idx) => (
+                <motion.div
+                  key={recentProduct.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 + idx * 0.1 }}
+                >
+                  <ProductCard product={recentProduct} />
                 </motion.div>
               ))}
             </div>
