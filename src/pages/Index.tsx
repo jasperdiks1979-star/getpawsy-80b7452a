@@ -283,21 +283,44 @@ const Index = () => {
             viewport={{ once: true }}
           >
             {categories?.map((category) => (
-              <motion.div key={category.id} variants={itemVariants}>
+              <motion.div 
+                key={category.id} 
+                variants={itemVariants}
+                whileHover={{ y: -8 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              >
                 <Link
                   to={`/products?category=${category.name}`}
-                  className="group block relative overflow-hidden rounded-2xl aspect-square"
+                  className="group block relative overflow-hidden rounded-2xl aspect-square shadow-soft hover:shadow-soft-lg transition-shadow duration-300"
                 >
+                  {/* Image with zoom effect */}
                   <img 
-                    src={categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}
+                    src={category.image_url || categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}
                     alt={category.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-115"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h3 className="font-display font-semibold text-lg text-white group-hover:translate-y-0 transition-transform">
+                  
+                  {/* Gradient overlay with enhanced hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/30 to-transparent transition-all duration-300 group-hover:from-primary/90 group-hover:via-primary/30" />
+                  
+                  {/* Shine effect on hover */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+                  </div>
+                  
+                  {/* Content with slide-up animation */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300">
+                    <h3 className="font-display font-semibold text-lg text-white mb-1 transform translate-y-0 group-hover:-translate-y-1 transition-transform duration-300">
                       {category.name}
                     </h3>
+                    <p className="text-white/0 text-sm group-hover:text-white/80 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75">
+                      Bekijk producten →
+                    </p>
+                  </div>
+                  
+                  {/* Corner accent */}
+                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-0 group-hover:scale-100 transition-all duration-300">
+                    <ArrowRight className="w-4 h-4 text-white" />
                   </div>
                 </Link>
               </motion.div>
