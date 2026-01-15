@@ -169,6 +169,11 @@ const ProductDetail = () => {
     return groups;
   }, {} as Record<string, ProductVariant[]>);
 
+  // Scroll to top when navigating to product page
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
   // Reset selected image when product changes and add to recently viewed
   useEffect(() => {
     setSelectedImage(0);
@@ -340,7 +345,7 @@ const ProductDetail = () => {
           >
             {/* Main Image */}
             <div 
-              className="relative w-full h-auto min-h-[200px] max-h-[45vh] md:aspect-square md:max-h-none rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft flex items-center justify-center"
+              className="relative w-full aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft"
               onClick={() => setLightboxOpen(true)}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -352,11 +357,11 @@ const ProductDetail = () => {
               )}
               
               <AnimatePresence mode="wait">
-              <motion.img
+                <motion.img
                   key={selectedImage}
                   src={images[selectedImage]}
                   alt={product.name}
-                  className="w-auto h-auto max-w-full max-h-[45vh] md:w-full md:h-full md:max-h-none object-contain"
+                  className="w-full h-full object-contain"
                   initial={{ opacity: 0, scale: 1.05 }}
                   animate={{ opacity: imageLoaded ? 1 : 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
