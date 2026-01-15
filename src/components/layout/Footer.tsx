@@ -82,15 +82,15 @@ export const Footer = () => {
   ];
 
   return (
-    <footer className="relative mt-auto overflow-hidden">
+    <footer className="relative mt-auto w-full max-w-[100vw] overflow-x-hidden">
       {/* Decorative top wave */}
       <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-background to-transparent pointer-events-none" />
       
       {/* Newsletter Section */}
-      <div className="bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-16 relative">
+      <div className="bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-16 relative w-full">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM5QzkyQUMiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
         
-        <div className="container px-4 md:px-6 relative">
+        <div className="container px-4 md:px-6 relative max-w-full">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -142,8 +142,8 @@ export const Footer = () => {
       </div>
 
       {/* Main Footer */}
-      <div className="bg-foreground text-background">
-        <div className="container px-4 md:px-6 py-16">
+      <div className="bg-foreground text-background w-full">
+        <div className="container px-4 md:px-6 py-16 max-w-full">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12">
             {/* Brand Column */}
             <div className="col-span-2 md:col-span-2 space-y-6">

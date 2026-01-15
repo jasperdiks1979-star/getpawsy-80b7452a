@@ -313,13 +313,13 @@ const ProductDetail = () => {
 
   return (
     <Layout>
-      {/* Decorative background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+      {/* Decorative background - hidden on mobile to prevent overflow */}
+      <div className="hidden md:block fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-40 -right-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-40 -left-40 w-80 h-80 bg-secondary/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="container px-4 md:px-6 3xl:px-8 py-8 3xl:py-12 max-w-full overflow-hidden ultrawide:max-w-[1800px] ultrawide:mx-auto">
+      <div className="w-full max-w-[100vw] px-4 md:px-6 3xl:px-8 py-8 3xl:py-12 mx-auto md:container ultrawide:max-w-[1800px]">
         {/* Breadcrumb */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -335,18 +335,18 @@ const ProductDetail = () => {
           </Link>
         </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 3xl:gap-24 ultrawide:gap-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-16 3xl:gap-24 ultrawide:gap-32 w-full">
           {/* Image Gallery */}
           <motion.div 
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="space-y-4"
+            className="space-y-4 w-full max-w-full"
           >
             {/* Main Image */}
             <div 
-              className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft 3xl:rounded-[2rem]"
-              style={{ aspectRatio: '1/1', maxHeight: 'clamp(300px, 80vw, 700px)' }}
+              className="relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft 3xl:rounded-[2rem]"
+              style={{ aspectRatio: '1/1' }}
               onClick={() => setLightboxOpen(true)}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -497,7 +497,7 @@ const ProductDetail = () => {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="space-y-6"
+            className="space-y-6 w-full max-w-full overflow-hidden"
           >
             {/* Category & Title */}
             <div>
@@ -510,7 +510,7 @@ const ProductDetail = () => {
                   {product.category}
                 </motion.p>
               )}
-              <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight">
+              <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
                 {product.name}
               </h1>
               
@@ -574,13 +574,13 @@ const ProductDetail = () => {
 
             {/* Short Description */}
             {product.description && (
-              <div className="text-muted-foreground leading-relaxed">
+              <div className="text-muted-foreground leading-relaxed break-words overflow-hidden">
                 {descriptionHasHtml ? (
-                  <p className="line-clamp-3">
+                  <p className="line-clamp-3 break-words">
                     {product.description.replace(/<[^>]*>/g, '').substring(0, 200)}...
                   </p>
                 ) : (
-                  <p>{product.description}</p>
+                  <p className="break-words">{product.description}</p>
                 )}
               </div>
             )}
@@ -1012,7 +1012,7 @@ const ProductDetail = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.55 }}
-          className="mt-16"
+          className="mt-16 w-full max-w-full overflow-hidden"
           id="reviews"
         >
           <div className="flex items-center gap-3 mb-8">
@@ -1029,7 +1029,7 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 w-full">
             {/* Review Form */}
             <div className="lg:col-span-1">
               <ReviewForm 
@@ -1054,7 +1054,7 @@ const ProductDetail = () => {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="mt-20"
+            className="mt-20 w-full max-w-full overflow-hidden"
           >
             <div className="text-center mb-10">
               <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-2">
@@ -1083,7 +1083,7 @@ const ProductDetail = () => {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="mt-16"
+            className="mt-16 w-full max-w-full overflow-hidden"
           >
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 rounded-xl bg-secondary/20 flex items-center justify-center">

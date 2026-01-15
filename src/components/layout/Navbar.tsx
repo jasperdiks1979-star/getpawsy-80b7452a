@@ -144,13 +144,13 @@ export const Navbar = () => {
   return (
     <>
       <header 
-        className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+        className={`sticky top-0 z-50 w-full max-w-[100vw] overflow-x-hidden transition-all duration-300 ${
           isScrolled 
             ? 'bg-background/95 backdrop-blur-xl shadow-soft border-b border-border/50' 
             : 'bg-background/80 backdrop-blur-lg'
         }`}
       >
-        <div className="container flex h-18 items-center justify-between px-4 md:px-6 py-3">
+        <div className="container flex h-18 items-center justify-between px-4 md:px-6 py-3 max-w-full">
           {/* Logo */}
           <Link 
             to="/" 
