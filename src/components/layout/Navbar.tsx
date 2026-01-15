@@ -343,8 +343,8 @@ export const Navbar = () => {
                         </SheetClose>
                       ))}
                       
-                      {/* Admin link - TODO: Remove true || to restore admin-only visibility */}
-                      {(true || isAdmin) && (
+                      {/* Admin link - only visible for admins */}
+                      {isAdmin && (
                         <SheetClose asChild>
                           <Link
                             to="/admin"
