@@ -278,19 +278,40 @@ const ProductDetail = () => {
             </div>
 
             {/* Price */}
-            <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold text-primary">
-                ${Number(product.price).toFixed(2)}
-              </span>
-              {product.compare_at_price && (
-                <>
-                  <span className="text-xl text-muted-foreground line-through">
-                    ${Number(product.compare_at_price).toFixed(2)}
+            {(() => {
+              const displayPrice = selectedVariant?.variantSellPrice 
+                ? Number(selectedVariant.variantSellPrice) 
+                : Number(product.price);
+              const originalPrice = product.compare_at_price 
+                ? Number(product.compare_at_price) 
+                : (selectedVariant?.variantSellPrice ? Number(product.price) : null);
+              const currentDiscount = originalPrice 
+                ? Math.round((1 - displayPrice / originalPrice) * 100) 
+                : null;
+              
+              return (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-3xl font-bold text-primary">
+                    ${displayPrice.toFixed(2)}
                   </span>
-                  <Badge variant="destructive">Save {discount}%</Badge>
-                </>
-              )}
-            </div>
+                  {originalPrice && originalPrice > displayPrice && (
+                    <>
+                      <span className="text-xl text-muted-foreground line-through">
+                        ${originalPrice.toFixed(2)}
+                      </span>
+                      {currentDiscount && currentDiscount > 0 && (
+                        <Badge variant="destructive">Save {currentDiscount}%</Badge>
+                      )}
+                    </>
+                  )}
+                  {selectedVariant && (
+                    <Badge variant="outline" className="ml-2">
+                      {selectedVariant.variantKey}
+                    </Badge>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Short Description */}
             {product.description && !descriptionHasHtml && (
