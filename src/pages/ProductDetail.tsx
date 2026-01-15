@@ -271,15 +271,20 @@ const ProductDetail = () => {
               )}
             </div>
             
-            {/* Thumbnail Carousel */}
+            {/* Thumbnail Carousel with Swipe */}
             {images.length > 1 && (
-              <div className="relative">
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              <div 
+                className="relative overflow-hidden"
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={() => onTouchEnd(images.length)}
+              >
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory touch-pan-x">
                   {images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImage(idx)}
-                      className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all snap-start ${
                         selectedImage === idx 
                           ? 'border-primary ring-2 ring-primary/20' 
                           : 'border-transparent hover:border-muted-foreground/30'
