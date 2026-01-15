@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle } from "lucide-react";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,8 +21,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { RateLimitTimer } from "@/components/RateLimitTimer";
 import { calculateSellingPrice } from "@/lib/pricing";
+
+// Maximum number of products that can be imported at once
+const MAX_BATCH_SIZE = 15;
 
 interface CJProduct {
   pid: string;
@@ -57,6 +70,8 @@ const Admin = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [refreshProgress, setRefreshProgress] = useState<{ current: number; total: number; status: string } | null>(null);
   const [importProgress, setImportProgress] = useState<{ current: number; total: number; status: string } | null>(null);
+  const [batchWarningOpen, setBatchWarningOpen] = useState(false);
+  const [pendingImportProducts, setPendingImportProducts] = useState<CJProduct[]>([]);
   const queryClient = useQueryClient();
 
   // Redirect if not admin
@@ -485,7 +500,23 @@ const Admin = () => {
       toast.error("Please select products to import");
       return;
     }
+    
+    // Check if too many products selected
+    if (productsToImport.length > MAX_BATCH_SIZE) {
+      setPendingImportProducts(productsToImport);
+      setBatchWarningOpen(true);
+      return;
+    }
+    
     importMutation.mutate(productsToImport);
+  };
+
+  // Confirm batch import with first N products
+  const handleConfirmBatchImport = () => {
+    const limitedProducts = pendingImportProducts.slice(0, MAX_BATCH_SIZE);
+    importMutation.mutate(limitedProducts);
+    setBatchWarningOpen(false);
+    setPendingImportProducts([]);
   };
 
 
@@ -530,6 +561,14 @@ const Admin = () => {
       toast.error("Please select products to import");
       return;
     }
+    
+    // Check if too many products selected
+    if (productsToImport.length > MAX_BATCH_SIZE) {
+      setPendingImportProducts(productsToImport);
+      setBatchWarningOpen(true);
+      return;
+    }
+    
     importMutation.mutate(productsToImport);
   };
 
@@ -671,13 +710,16 @@ const Admin = () => {
                       <Button 
                         onClick={handleCatalogImport} 
                         disabled={selectedProducts.size === 0 || importMutation.isPending}
+                        variant={selectedProducts.size > MAX_BATCH_SIZE ? "destructive" : "default"}
                       >
                         {importMutation.isPending ? (
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        ) : selectedProducts.size > MAX_BATCH_SIZE ? (
+                          <AlertTriangle className="w-4 h-4 mr-2" />
                         ) : (
                           <Plus className="w-4 h-4 mr-2" />
                         )}
-                        Import ({selectedProducts.size})
+                        Import ({selectedProducts.size}{selectedProducts.size > MAX_BATCH_SIZE ? ` / max ${MAX_BATCH_SIZE}` : ''})
                       </Button>
                     </div>
                   </div>
@@ -881,13 +923,16 @@ const Admin = () => {
                       <Button 
                         onClick={handleImport} 
                         disabled={selectedProducts.size === 0 || importMutation.isPending}
+                        variant={selectedProducts.size > MAX_BATCH_SIZE ? "destructive" : "default"}
                       >
                         {importMutation.isPending ? (
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        ) : selectedProducts.size > MAX_BATCH_SIZE ? (
+                          <AlertTriangle className="w-4 h-4 mr-2" />
                         ) : (
                           <Plus className="w-4 h-4 mr-2" />
                         )}
-                        Import ({selectedProducts.size})
+                        Import ({selectedProducts.size}{selectedProducts.size > MAX_BATCH_SIZE ? ` / max ${MAX_BATCH_SIZE}` : ''})
                       </Button>
                     </div>
                   </div>
@@ -1121,6 +1166,39 @@ const Admin = () => {
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
         />
+
+        {/* Batch Import Warning Dialog */}
+        <AlertDialog open={batchWarningOpen} onOpenChange={setBatchWarningOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                Too Many Products Selected
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                <p>
+                  You have selected <strong>{pendingImportProducts.length}</strong> products, 
+                  but the maximum batch size is <strong>{MAX_BATCH_SIZE}</strong> products.
+                </p>
+                <p>
+                  Importing too many products at once can cause timeouts and failures. 
+                  Would you like to import the first {MAX_BATCH_SIZE} products now?
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setBatchWarningOpen(false);
+                setPendingImportProducts([]);
+              }}>
+                Cancel & Adjust Selection
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmBatchImport}>
+                Import First {MAX_BATCH_SIZE} Products
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );
