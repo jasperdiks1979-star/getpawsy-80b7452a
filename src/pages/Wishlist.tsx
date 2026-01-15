@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const Wishlist = () => {
-  const { wishlist, removeFromWishlist } = useWishlist();
+  const { wishlist, removeFromWishlist, clearWishlist } = useWishlist();
   const { addItem } = useCart();
 
   const { data: products, isLoading } = useQuery({
@@ -69,14 +69,27 @@ const Wishlist = () => {
     <Layout>
       <div className="container px-4 md:px-6 py-8">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <Heart className="w-8 h-8 text-primary fill-primary" />
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Mijn Wishlist</h1>
-            <p className="text-muted-foreground">
-              {wishlist.length} {wishlist.length === 1 ? 'product' : 'producten'} opgeslagen
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <Heart className="w-8 h-8 text-primary fill-primary" />
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold">Mijn Wishlist</h1>
+              <p className="text-muted-foreground">
+                {wishlist.length} {wishlist.length === 1 ? 'product' : 'producten'} opgeslagen
+              </p>
+            </div>
           </div>
+          <Button
+            variant="outline"
+            className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => {
+              clearWishlist();
+              toast.success('Wishlist geleegd');
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+            Leeg wishlist
+          </Button>
         </div>
 
         {isLoading ? (
