@@ -26,37 +26,37 @@ const navLinks = [
 const categoryItems = [
   { 
     href: '/products?category=Dogs', 
-    label: 'Honden', 
+    label: 'Dogs', 
     icon: Dog,
-    description: 'Alles voor je trouwe viervoeter',
+    description: 'Everything for your loyal companion',
     color: 'bg-amber-100 text-amber-600'
   },
   { 
     href: '/products?category=Cats', 
-    label: 'Katten', 
+    label: 'Cats', 
     icon: Cat,
-    description: 'Premium producten voor katten',
+    description: 'Premium products for cats',
     color: 'bg-purple-100 text-purple-600'
   },
   { 
     href: '/products?category=Toys', 
-    label: 'Speelgoed', 
+    label: 'Toys', 
     icon: Bone,
-    description: 'Uren speelplezier gegarandeerd',
+    description: 'Hours of fun guaranteed',
     color: 'bg-pink-100 text-pink-600'
   },
   { 
     href: '/products?category=Care', 
-    label: 'Verzorging', 
+    label: 'Grooming', 
     icon: Sparkles,
-    description: 'Gezondheid & welzijn',
+    description: 'Health & wellness',
     color: 'bg-emerald-100 text-emerald-600'
   },
 ];
 
 const promoItems = [
-  { label: 'Gratis verzending', icon: Truck, href: '/products' },
-  { label: 'Nieuwe collectie', icon: Gift, href: '/products?sort=newest' },
+  { label: 'Free Shipping', icon: Truck, href: '/products' },
+  { label: 'New Arrivals', icon: Gift, href: '/products?sort=newest' },
 ];
 
 export const Navbar = () => {
@@ -177,7 +177,7 @@ export const Navbar = () => {
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
-              Categorieën
+              Categories
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
             </button>
           </nav>
@@ -255,14 +255,14 @@ export const Navbar = () => {
                     className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
                   >
                     <LogOut className="h-4 w-4" />
-                    Uitloggen
+                    Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <Link to="/auth" className="hidden sm:block">
                 <Button variant="default" size="sm" className="rounded-full px-5 btn-organic">
-                  Inloggen
+                  Sign In
                 </Button>
               </Link>
             )}
@@ -288,7 +288,7 @@ export const Navbar = () => {
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                          placeholder="Zoek producten..."
+                          placeholder="Search products..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           className="pl-10 rounded-xl"
@@ -316,7 +316,7 @@ export const Navbar = () => {
                       {/* Mobile Categories */}
                       <div className="mt-4 mb-2">
                         <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                          Categorieën
+                          Categories
                         </p>
                       </div>
                       {categoryItems.map((item) => (
@@ -340,7 +340,7 @@ export const Navbar = () => {
                         className="mt-4 px-4 py-3 text-lg font-medium rounded-xl hover:bg-muted transition-colors flex items-center gap-3"
                       >
                         <Heart className={`h-5 w-5 ${wishlist.length > 0 ? 'fill-accent text-accent' : ''}`} />
-                        Verlanglijst {wishlist.length > 0 && `(${wishlist.length})`}
+                        Wishlist {wishlist.length > 0 && `(${wishlist.length})`}
                       </Link>
                     </div>
                   </nav>
@@ -363,12 +363,12 @@ export const Navbar = () => {
                           className="w-full justify-start gap-2 text-destructive hover:text-destructive rounded-xl"
                         >
                           <LogOut className="h-4 w-4" />
-                          Uitloggen
+                          Sign Out
                         </Button>
                       </div>
                     ) : (
                       <Link to="/auth" className="block">
-                        <Button className="w-full rounded-xl btn-organic">Inloggen</Button>
+                        <Button className="w-full rounded-xl btn-organic">Sign In</Button>
                       </Link>
                     )}
                   </div>
@@ -392,7 +392,7 @@ export const Navbar = () => {
                 <form onSubmit={handleSearch}>
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
                   <Input
-                    placeholder="Waar ben je naar op zoek?"
+                    placeholder="What are you looking for?"
                     value={searchQuery}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);

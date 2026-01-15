@@ -240,10 +240,10 @@ const ProductDetail = () => {
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
               <Package className="w-10 h-10 text-muted-foreground" />
             </div>
-            <h1 className="text-2xl font-display font-bold mb-4">Product niet gevonden</h1>
-            <p className="text-muted-foreground mb-6">Dit product bestaat niet of is niet meer beschikbaar.</p>
+            <h1 className="text-2xl font-display font-bold mb-4">Product not found</h1>
+            <p className="text-muted-foreground mb-6">This product doesn't exist or is no longer available.</p>
             <Link to="/products">
-              <Button className="btn-organic">Bekijk alle producten</Button>
+              <Button className="btn-organic">Browse All Products</Button>
             </Link>
           </motion.div>
         </div>
@@ -260,16 +260,16 @@ const ProductDetail = () => {
         image: selectedVariant?.variantImage || product.image_url || '/placeholder.svg',
       });
     }
-    toast.success(`${quantity}x ${product.name} toegevoegd aan winkelwagen!`);
+    toast.success(`${quantity}x ${product.name} added to cart!`);
   };
 
   const handleWishlistToggle = () => {
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
-      toast.info('Verwijderd uit verlanglijst');
+      toast.info('Removed from wishlist');
     } else {
       addToWishlist(product.id);
-      toast.success('Toegevoegd aan verlanglijst!');
+      toast.success('Added to wishlist!');
     }
   };
 
@@ -326,7 +326,7 @@ const ProductDetail = () => {
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-6 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Terug naar producten</span>
+            <span>Back to Products</span>
           </Link>
         </motion.div>
 
@@ -468,7 +468,7 @@ const ProductDetail = () => {
                       >
                         <img 
                           src={img} 
-                          alt={`Product afbeelding ${idx + 1}`} 
+                          alt={`Product image ${idx + 1}`} 
                           className="w-full h-full object-cover" 
                         />
                       </motion.button>
@@ -518,7 +518,7 @@ const ProductDetail = () => {
                     <Star key={i} className={`w-4 h-4 ${i < 4 ? 'text-warning fill-warning' : 'text-muted'}`} />
                   ))}
                 </div>
-                <span className="text-sm text-muted-foreground">(24 beoordelingen)</span>
+                <span className="text-sm text-muted-foreground">(24 reviews)</span>
               </div>
             </div>
 
@@ -543,16 +543,16 @@ const ProductDetail = () => {
                 return (
                   <div className="flex items-baseline gap-3 flex-wrap">
                     <span className="text-3xl md:text-4xl font-display font-bold text-primary">
-                      €{displayPrice.toFixed(2)}
+                      ${displayPrice.toFixed(2)}
                     </span>
                     {originalPrice && originalPrice > displayPrice && (
                       <>
                         <span className="text-xl text-muted-foreground line-through">
-                          €{originalPrice.toFixed(2)}
+                          ${originalPrice.toFixed(2)}
                         </span>
                         {currentDiscount && currentDiscount > 0 && (
                           <Badge className="bg-accent/20 text-accent-foreground border-accent/30">
-                            Bespaar {currentDiscount}%
+                            Save {currentDiscount}%
                           </Badge>
                         )}
                       </>
@@ -591,12 +591,12 @@ const ProductDetail = () => {
                 className="space-y-3"
               >
                 <label className="text-sm font-semibold text-foreground">
-                  Kies een optie: <span className="text-primary">{selectedVariant ? selectedVariant.variantKey : 'Selecteer'}</span>
+                  Choose an option: <span className="text-primary">{selectedVariant ? selectedVariant.variantKey : 'Select'}</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {variants.map((variant) => {
                     const isSelected = selectedVariant?.vid === variant.vid;
-                    const displayValue = variant.variantKey || variant.variantNameEn || 'Optie';
+                    const displayValue = variant.variantKey || variant.variantNameEn || 'Option';
                     
                     return (
                       <motion.button
@@ -620,7 +620,7 @@ const ProductDetail = () => {
                         <span className="text-sm font-medium">{displayValue}</span>
                         {variant.variantSellPrice && variant.variantSellPrice !== Number(product.price) && (
                           <span className="ml-2 text-xs text-muted-foreground">
-                            €{Number(variant.variantSellPrice).toFixed(2)}
+                            ${Number(variant.variantSellPrice).toFixed(2)}
                           </span>
                         )}
                       </motion.button>
@@ -634,7 +634,7 @@ const ProductDetail = () => {
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${inStock ? 'bg-success animate-pulse' : 'bg-destructive'}`} />
               <span className="font-medium text-foreground">
-                {inStock ? `Op voorraad (${product.stock} beschikbaar)` : 'Niet op voorraad'}
+                {inStock ? `In Stock (${product.stock} available)` : 'Out of Stock'}
               </span>
             </div>
 
@@ -644,8 +644,8 @@ const ProductDetail = () => {
                 <Truck className="w-4 h-4" />
                 <span className="text-sm">
                   {product.shipping_time === 'Free Shipping' 
-                    ? 'Gratis verzending inbegrepen' 
-                    : `Levertijd: ${product.shipping_time}`}
+                    ? 'Free shipping included' 
+                    : `Delivery: ${product.shipping_time}`}
                 </span>
               </div>
             )}
@@ -686,7 +686,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Toevoegen aan winkelwagen
+                Add to Cart
               </Button>
 
               {/* Wishlist */}
@@ -708,10 +708,10 @@ const ProductDetail = () => {
               className="grid grid-cols-2 gap-4 pt-6 border-t border-border/50"
             >
               {[
-                { icon: Truck, title: 'Gratis verzending', subtitle: 'Bij alle bestellingen' },
-                { icon: Shield, title: '30 dagen retour', subtitle: 'Niet goed? Geld terug!' },
-                { icon: RotateCcw, title: 'Makkelijk ruilen', subtitle: 'Gratis omruilen' },
-                { icon: Award, title: 'Kwaliteitsgarantie', subtitle: '100% tevreden' },
+                { icon: Truck, title: 'Free Shipping', subtitle: 'On all orders' },
+                { icon: Shield, title: '30-Day Returns', subtitle: 'Not happy? Money back!' },
+                { icon: RotateCcw, title: 'Easy Exchanges', subtitle: 'Free exchanges' },
+                { icon: Award, title: 'Quality Guarantee', subtitle: '100% satisfied' },
               ].map((feature, idx) => (
                 <motion.div 
                   key={feature.title}
@@ -746,13 +746,13 @@ const ProductDetail = () => {
                 value="description" 
                 className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
               >
-                Beschrijving
+                Description
               </TabsTrigger>
               <TabsTrigger 
                 value="shipping"
                 className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
               >
-                Verzending
+                Shipping
               </TabsTrigger>
               {variants.length > 0 && (
                 <TabsTrigger 
@@ -773,7 +773,7 @@ const ProductDetail = () => {
                   />
                 ) : (
                   <p className="text-muted-foreground leading-relaxed">
-                    {product.description || 'Geen beschrijving beschikbaar.'}
+                    {product.description || 'No description available.'}
                   </p>
                 )}
               </div>
@@ -783,10 +783,10 @@ const ProductDetail = () => {
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
                 <div className="grid md:grid-cols-2 gap-6">
                   {[
-                    { emoji: '🇳🇱', text: 'Verzending vanuit Nederland/EU' },
-                    { emoji: '📦', text: 'Standaard verzending: 5-7 werkdagen' },
-                    { emoji: '🚀', text: 'Express verzending: 2-3 werkdagen' },
-                    { emoji: '✨', text: 'Gratis verzending bij alle bestellingen' },
+                    { emoji: '🇺🇸', text: 'Ships from USA' },
+                    { emoji: '📦', text: 'Standard shipping: 5-7 business days' },
+                    { emoji: '🚀', text: 'Express shipping: 2-3 business days' },
+                    { emoji: '✨', text: 'Free shipping on all orders' },
                   ].map((item, idx) => (
                     <motion.div 
                       key={idx}
@@ -837,7 +837,7 @@ const ProductDetail = () => {
                         </p>
                         {variant.variantSellPrice && (
                           <p className="text-xs text-primary mt-1 font-semibold">
-                            €{Number(variant.variantSellPrice).toFixed(2)}
+                            ${Number(variant.variantSellPrice).toFixed(2)}
                           </p>
                         )}
                       </motion.button>
@@ -863,10 +863,10 @@ const ProductDetail = () => {
             </div>
             <div>
               <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
-                Klantreviews
+                Customer Reviews
               </h2>
               <p className="text-sm text-muted-foreground">
-                {reviews.length} review{reviews.length !== 1 ? 's' : ''} van onze klanten
+                {reviews.length} review{reviews.length !== 1 ? 's' : ''} from our customers
               </p>
             </div>
           </div>
@@ -900,9 +900,9 @@ const ProductDetail = () => {
           >
             <div className="text-center mb-10">
               <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-2">
-                Misschien vind je dit ook leuk
+                You May Also Like
               </h2>
-              <p className="text-muted-foreground">Ontdek meer geweldige producten</p>
+              <p className="text-muted-foreground">Discover more great products</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((relatedProduct, idx) => (
@@ -932,10 +932,10 @@ const ProductDetail = () => {
                 <Clock className="w-5 h-5 text-secondary-foreground" />
               </div>
               <div>
-                <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
-                  Recent bekeken
-                </h2>
-                <p className="text-sm text-muted-foreground">Producten die je eerder hebt bekeken</p>
+              <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
+                Recently Viewed
+              </h2>
+              <p className="text-sm text-muted-foreground">Products you viewed earlier</p>
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
