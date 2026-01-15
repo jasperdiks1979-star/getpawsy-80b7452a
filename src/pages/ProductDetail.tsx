@@ -297,14 +297,17 @@ const ProductDetail = () => {
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
 
-                {/* Thumbnails */}
+                {/* Thumbnails with Fade Effect */}
                 <div 
-                  className="flex-1 overflow-hidden"
+                  className="flex-1 overflow-hidden relative"
                   onTouchStart={onTouchStart}
                   onTouchMove={onTouchMove}
                   onTouchEnd={() => onTouchEnd(images.length)}
                 >
-                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory touch-pan-x">
+                  {/* Left fade */}
+                  <div className="absolute left-0 top-0 bottom-2 w-6 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+                  
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory touch-pan-x px-1">
                     {images.map((img, idx) => (
                       <button
                         key={idx}
@@ -324,6 +327,9 @@ const ProductDetail = () => {
                       </button>
                     ))}
                   </div>
+                  
+                  {/* Right fade */}
+                  <div className="absolute right-0 top-0 bottom-2 w-6 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
                 </div>
 
                 {/* Right Arrow */}
