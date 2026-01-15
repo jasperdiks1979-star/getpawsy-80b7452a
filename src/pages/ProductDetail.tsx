@@ -240,9 +240,10 @@ const ProductDetail = () => {
               onTouchEnd={() => onTouchEnd(images.length)}
             >
               <img
+                key={selectedImage}
                 src={images[selectedImage]}
                 alt={product.name}
-                className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                className="w-full h-full object-contain animate-[fadeZoomIn_0.3s_ease-out] group-hover:scale-105 transition-transform duration-300"
               />
               
               {/* Zoom indicator */}

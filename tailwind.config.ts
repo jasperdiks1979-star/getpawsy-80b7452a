@@ -84,11 +84,16 @@ export default {
           "0%, 100%": { transform: "rotate(-3deg)" },
           "50%": { transform: "rotate(3deg)" },
         },
+        fadeZoomIn: {
+          "0%": { opacity: "0", transform: "scale(0.95)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         wiggle: "wiggle 0.3s ease-in-out infinite",
+        fadeZoomIn: "fadeZoomIn 0.3s ease-out",
       },
     },
   },
