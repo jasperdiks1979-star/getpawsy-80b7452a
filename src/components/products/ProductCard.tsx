@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Heart } from 'lucide-react';
+import { ShoppingCart, Heart, Eye } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const inWishlist = isInWishlist(product.id);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -63,41 +65,66 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     : null;
 
   return (
-    <Link to={`/product/${product.id}`} className="group">
-      <div className="relative bg-card rounded-xl overflow-hidden shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1">
-        {/* Image */}
+    <Link to={`/product/${product.id}`} className="group block">
+      <motion.div 
+        className="relative bg-card rounded-2xl overflow-hidden shadow-card transition-shadow duration-300 hover:shadow-card-hover"
+        whileHover={{ y: -4 }}
+        transition={{ duration: 0.2 }}
+      >
+        {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-muted">
+          {/* Skeleton loader */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 bg-muted animate-pulse" />
+          )}
+          
           <img
             src={product.image_url || '/placeholder.svg'}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setImageLoaded(true)}
           />
+          
+          {/* Gradient overlay on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
             {discount && discount > 0 && (
-              <Badge className="bg-destructive text-destructive-foreground">
+              <Badge className="bg-destructive text-destructive-foreground shadow-soft">
                 -{discount}%
+              </Badge>
+            )}
+            {product.stock !== null && product.stock !== undefined && product.stock < 5 && product.stock > 0 && (
+              <Badge variant="secondary" className="shadow-soft">
+                Low stock
               </Badge>
             )}
           </div>
 
-          {/* Quick Actions - hidden on mobile to prevent double-tap */}
-          <div className="absolute top-3 right-3 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Quick Actions - Desktop */}
+          <div className="absolute top-3 right-3 hidden md:flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
             <Button
               variant="secondary"
               size="icon"
-              className="rounded-full bg-background/80 backdrop-blur-sm hover:bg-background"
+              className="rounded-full bg-card/90 backdrop-blur-sm hover:bg-card shadow-soft h-10 w-10"
               onClick={handleToggleWishlist}
             >
-              <Heart className={`w-4 h-4 transition-colors ${inWishlist ? 'fill-red-500 text-red-500' : ''} ${isAnimating ? 'animate-heartPop' : ''}`} />
+              <Heart className={`w-4 h-4 transition-all ${inWishlist ? 'fill-destructive text-destructive scale-110' : ''} ${isAnimating ? 'animate-heartPop' : ''}`} />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              className="rounded-full bg-card/90 backdrop-blur-sm hover:bg-card shadow-soft h-10 w-10"
+            >
+              <Eye className="w-4 h-4" />
             </Button>
           </div>
 
-          {/* Add to Cart Button - hidden on mobile to prevent double-tap */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 hidden md:block translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+          {/* Add to Cart Button - Desktop */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 hidden md:block translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
             <Button
-              className="w-full gap-2"
+              className="w-full gap-2 rounded-full shadow-soft"
               onClick={handleAddToCart}
             >
               <ShoppingCart className="w-4 h-4" />
@@ -107,19 +134,19 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-5">
           {product.category && (
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+            <p className="text-xs text-primary font-medium uppercase tracking-wider mb-2">
               {product.category}
             </p>
           )}
-          <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+          <h3 className="font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-lg leading-snug">
             {product.name}
           </h3>
 
           {/* Price */}
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-lg font-bold text-primary">
+          <div className="flex items-center gap-2 mt-3">
+            <span className="text-xl font-bold text-primary">
               ${Number(product.price).toFixed(2)}
             </span>
             {product.compare_at_price && (
@@ -129,37 +156,32 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             )}
           </div>
 
-          {/* Mobile Add to Cart & Wishlist Buttons */}
-          <div className="flex gap-2 mt-3 md:hidden">
+          {/* Mobile Actions */}
+          <div className="flex gap-2 mt-4 md:hidden">
             <Button
-              className="flex-1 gap-2"
+              className="flex-1 gap-2 rounded-full"
               size="sm"
               onClick={handleAddToCart}
             >
               <ShoppingCart className="w-4 h-4" />
-              Toevoegen
+              Add
             </Button>
             <Button
               variant="outline"
               size="icon"
-              className="h-9 w-9 flex-shrink-0"
+              className="h-9 w-9 flex-shrink-0 rounded-full"
               onClick={handleToggleWishlist}
             >
-              <Heart className={`w-4 h-4 transition-colors ${inWishlist ? 'fill-red-500 text-red-500' : ''} ${isAnimating ? 'animate-heartPop' : ''}`} />
+              <Heart className={`w-4 h-4 transition-colors ${inWishlist ? 'fill-destructive text-destructive' : ''} ${isAnimating ? 'animate-heartPop' : ''}`} />
             </Button>
           </div>
 
           {/* Stock indicator */}
-          {product.stock !== null && product.stock !== undefined && product.stock < 10 && product.stock > 0 && (
-            <p className="text-xs text-orange-600 mt-2">
-              Only {product.stock} left in stock
-            </p>
-          )}
           {product.stock === 0 && (
-            <p className="text-xs text-destructive mt-2">Out of Stock</p>
+            <p className="text-xs text-destructive mt-3 font-medium">Out of Stock</p>
           )}
         </div>
-      </div>
+      </motion.div>
     </Link>
   );
 };
