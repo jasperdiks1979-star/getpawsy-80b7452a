@@ -213,4 +213,10 @@
   .mask-fade-bottom {
     mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
   }
+
+  /* Enhanced scale for category cards */
+  .group-hover\:scale-115:hover {
+    --tw-scale-x: 1.15;
+    --tw-scale-y: 1.15;
+  }
 }
