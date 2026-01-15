@@ -13,6 +13,7 @@ import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -54,6 +55,7 @@ const Admin = () => {
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [editProduct, setEditProduct] = useState<Tables<"products"> | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState<{ current: number; total: number; status: string } | null>(null);
   const queryClient = useQueryClient();
 
   // Redirect if not admin
@@ -319,7 +321,7 @@ const Admin = () => {
     },
   });
 
-  // Refresh all products - fetch missing images and data from CJ
+  // Refresh all products - fetch missing images and data from CJ in batches
   const refreshAllProductsMutation = useMutation({
     mutationFn: async () => {
       // Get all products that have CJ product IDs
@@ -329,83 +331,105 @@ const Admin = () => {
         throw new Error("No CJ products to refresh");
       }
 
-      toast.loading(`Refreshing ${productsWithCJ.length} products from CJ...`, { id: "refresh-loading" });
-
-      const productIds = productsWithCJ.map(p => p.cj_product_id!);
-      
-      // Fetch full details from CJ
-      const { data: fullDetailsResponse, error: detailsError } = await supabase.functions.invoke("cj-dropshipping", {
-        body: {
-          action: "get-products-for-import",
-          productIds: productIds,
-        },
-      });
-
-      if (detailsError) {
-        toast.dismiss("refresh-loading");
-        throw detailsError;
-      }
-
-      toast.dismiss("refresh-loading");
-
-      // Update each product with new data
+      const total = productsWithCJ.length;
+      const BATCH_SIZE = 5; // Process 5 products at a time to avoid timeout
       let updated = 0;
       let errors = 0;
 
-      for (const product of productsWithCJ) {
-        const fullDetail = fullDetailsResponse?.find((d: { pid: string; success: boolean }) => 
-          d.pid === product.cj_product_id && d.success
-        );
+      setRefreshProgress({ current: 0, total, status: "Starting..." });
 
-        if (!fullDetail) {
-          console.log(`No details found for ${product.name} (${product.cj_product_id})`);
-          errors++;
+      // Process in batches
+      for (let i = 0; i < productsWithCJ.length; i += BATCH_SIZE) {
+        const batch = productsWithCJ.slice(i, i + BATCH_SIZE);
+        const batchIds = batch.map(p => p.cj_product_id!);
+        
+        setRefreshProgress({ 
+          current: i, 
+          total, 
+          status: `Fetching batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(total / BATCH_SIZE)}...` 
+        });
+
+        // Fetch full details for this batch from CJ
+        const { data: fullDetailsResponse, error: detailsError } = await supabase.functions.invoke("cj-dropshipping", {
+          body: {
+            action: "get-products-for-import",
+            productIds: batchIds,
+          },
+        });
+
+        if (detailsError) {
+          console.error(`Batch error:`, detailsError);
+          errors += batch.length;
           continue;
         }
 
-        // Deep flatten and deduplicate images - handles nested arrays like [["url1"], "url2"]
-        const rawImages = fullDetail.images || product.images || [];
-        const flattenDeep = (arr: unknown[]): string[] => {
-          const result: string[] = [];
-          for (const item of arr) {
-            if (Array.isArray(item)) {
-              result.push(...flattenDeep(item));
-            } else if (typeof item === 'string' && item.startsWith('http')) {
-              result.push(item);
-            }
+        // Update each product in this batch
+        for (const product of batch) {
+          const fullDetail = fullDetailsResponse?.find((d: { pid: string; success: boolean }) => 
+            d.pid === product.cj_product_id && d.success
+          );
+
+          setRefreshProgress({ 
+            current: updated + errors, 
+            total, 
+            status: `Updating: ${product.name.substring(0, 30)}...` 
+          });
+
+          if (!fullDetail) {
+            console.log(`No details found for ${product.name} (${product.cj_product_id})`);
+            errors++;
+            continue;
           }
-          return result;
-        };
-        const flatImages = [...new Set(flattenDeep(Array.isArray(rawImages) ? rawImages : [rawImages]))];
-        
-        console.log(`Updating ${product.name}: ${flatImages.length} images, ${fullDetail.variants?.length || 0} variants`);
 
-        // Update product with new images and variants
-        const { error: updateError } = await supabase
-          .from("products")
-          .update({
-            images: flatImages,
-            variants: fullDetail.variants || product.variants,
-            stock: fullDetail.totalStock ?? product.stock,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", product.id);
+          // Deep flatten and deduplicate images
+          const rawImages = fullDetail.images || product.images || [];
+          const flattenDeep = (arr: unknown[]): string[] => {
+            const result: string[] = [];
+            for (const item of arr) {
+              if (Array.isArray(item)) {
+                result.push(...flattenDeep(item));
+              } else if (typeof item === 'string' && item.startsWith('http')) {
+                result.push(item);
+              }
+            }
+            return result;
+          };
+          const flatImages = [...new Set(flattenDeep(Array.isArray(rawImages) ? rawImages : [rawImages]))];
+          
+          console.log(`Updating ${product.name}: ${flatImages.length} images, ${fullDetail.variants?.length || 0} variants`);
 
-        if (updateError) {
-          console.error(`Failed to update ${product.name}:`, updateError);
-          errors++;
-        } else {
-          updated++;
+          // Update product with new images and variants
+          const { error: updateError } = await supabase
+            .from("products")
+            .update({
+              images: flatImages,
+              variants: fullDetail.variants || product.variants,
+              stock: fullDetail.totalStock ?? product.stock,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", product.id);
+
+          if (updateError) {
+            console.error(`Failed to update ${product.name}:`, updateError);
+            errors++;
+          } else {
+            updated++;
+          }
         }
+
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      return { updated, errors, total: productsWithCJ.length };
+      setRefreshProgress(null);
+      return { updated, errors, total };
     },
     onSuccess: (data) => {
       toast.success(`Refreshed ${data.updated}/${data.total} products! ${data.errors > 0 ? `(${data.errors} errors)` : ''}`);
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
     },
     onError: (error) => {
+      setRefreshProgress(null);
       toast.error(`Refresh failed: ${error.message}`);
     },
   });
@@ -945,6 +969,32 @@ const Admin = () => {
                   </Button>
                 </div>
               </div>
+              
+              {/* Refresh Progress Indicator */}
+              {refreshProgress && (
+                <Card className="mb-4 border-primary/20 bg-primary/5">
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-4 mb-2">
+                      <RefreshCw className="w-5 h-5 animate-spin text-primary" />
+                      <div className="flex-1">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="font-medium">Refreshing Products...</span>
+                          <span className="text-muted-foreground">
+                            {refreshProgress.current}/{refreshProgress.total} completed
+                          </span>
+                        </div>
+                        <Progress 
+                          value={(refreshProgress.current / refreshProgress.total) * 100} 
+                          className="h-2"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          {refreshProgress.status}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               {existingProducts && existingProducts.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {existingProducts.map((product) => (
