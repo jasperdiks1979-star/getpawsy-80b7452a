@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -300,17 +300,18 @@ export const Navbar = () => {
                   <nav className="flex-1 p-4 overflow-y-auto">
                     <div className="flex flex-col gap-1">
                       {navLinks.map((link) => (
-                        <Link
-                          key={link.href}
-                          to={link.href}
-                          className={`px-4 py-3 text-lg font-medium rounded-xl transition-colors ${
-                            isActive(link.href)
-                              ? 'text-primary bg-primary/10'
-                              : 'hover:bg-muted'
-                          }`}
-                        >
-                          {link.label}
-                        </Link>
+                        <SheetClose asChild key={link.href}>
+                          <Link
+                            to={link.href}
+                            className={`px-4 py-3 text-lg font-medium rounded-xl transition-colors ${
+                              isActive(link.href)
+                                ? 'text-primary bg-primary/10'
+                                : 'hover:bg-muted'
+                            }`}
+                          >
+                            {link.label}
+                          </Link>
+                        </SheetClose>
                       ))}
                       
                       {/* Mobile Categories */}
@@ -320,28 +321,31 @@ export const Navbar = () => {
                         </p>
                       </div>
                       {categoryItems.map((item) => (
-                        <Link
-                          key={item.href}
-                          to={item.href}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors"
-                        >
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.color}`}>
-                            <item.icon className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{item.label}</p>
-                            <p className="text-xs text-muted-foreground">{item.description}</p>
-                          </div>
-                        </Link>
+                        <SheetClose asChild key={item.href}>
+                          <Link
+                            to={item.href}
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors"
+                          >
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.color}`}>
+                              <item.icon className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{item.label}</p>
+                              <p className="text-xs text-muted-foreground">{item.description}</p>
+                            </div>
+                          </Link>
+                        </SheetClose>
                       ))}
                       
-                      <Link
-                        to="/wishlist"
-                        className="mt-4 px-4 py-3 text-lg font-medium rounded-xl hover:bg-muted transition-colors flex items-center gap-3"
-                      >
-                        <Heart className={`h-5 w-5 ${wishlist.length > 0 ? 'fill-accent text-accent' : ''}`} />
-                        Wishlist {wishlist.length > 0 && `(${wishlist.length})`}
-                      </Link>
+                      <SheetClose asChild>
+                        <Link
+                          to="/wishlist"
+                          className="mt-4 px-4 py-3 text-lg font-medium rounded-xl hover:bg-muted transition-colors flex items-center gap-3"
+                        >
+                          <Heart className={`h-5 w-5 ${wishlist.length > 0 ? 'fill-accent text-accent' : ''}`} />
+                          Wishlist {wishlist.length > 0 && `(${wishlist.length})`}
+                        </Link>
+                      </SheetClose>
                     </div>
                   </nav>
                   
@@ -350,26 +354,32 @@ export const Navbar = () => {
                       <div className="space-y-2">
                         <p className="text-sm text-muted-foreground px-2 truncate">{user.email}</p>
                         {isAdmin && (
-                          <Link to="/admin" className="block">
-                            <Button variant="outline" className="w-full justify-start gap-2 rounded-xl">
-                              <Shield className="h-4 w-4" />
-                              Admin Dashboard
-                            </Button>
-                          </Link>
+                          <SheetClose asChild>
+                            <Link to="/admin" className="block">
+                              <Button variant="outline" className="w-full justify-start gap-2 rounded-xl">
+                                <Shield className="h-4 w-4" />
+                                Admin Dashboard
+                              </Button>
+                            </Link>
+                          </SheetClose>
                         )}
-                        <Button
-                          variant="ghost"
-                          onClick={handleSignOut}
-                          className="w-full justify-start gap-2 text-destructive hover:text-destructive rounded-xl"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          Sign Out
-                        </Button>
+                        <SheetClose asChild>
+                          <Button
+                            variant="ghost"
+                            onClick={handleSignOut}
+                            className="w-full justify-start gap-2 text-destructive hover:text-destructive rounded-xl"
+                          >
+                            <LogOut className="h-4 w-4" />
+                            Sign Out
+                          </Button>
+                        </SheetClose>
                       </div>
                     ) : (
-                      <Link to="/auth" className="block">
-                        <Button className="w-full rounded-xl btn-organic">Sign In</Button>
-                      </Link>
+                      <SheetClose asChild>
+                        <Link to="/auth" className="block">
+                          <Button className="w-full rounded-xl btn-organic">Sign In</Button>
+                        </Link>
+                      </SheetClose>
                     )}
                   </div>
                 </div>
