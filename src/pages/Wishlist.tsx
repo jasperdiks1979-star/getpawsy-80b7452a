@@ -99,7 +99,7 @@ const Wishlist = () => {
       price: Number(product.price),
       image: product.image_url || '/placeholder.svg',
     });
-    toast.success(`${product.name} toegevoegd aan winkelwagen!`);
+    toast.success(`${product.name} added to cart!`);
   };
 
   const handleAddAllToCart = () => {
@@ -113,12 +113,12 @@ const Wishlist = () => {
         image: product.image_url || '/placeholder.svg',
       });
     });
-    toast.success(`${products.length} ${products.length === 1 ? 'product' : 'producten'} toegevoegd aan winkelwagen!`);
+    toast.success(`${products.length} ${products.length === 1 ? 'item' : 'items'} added to cart!`);
   };
 
   const handleRemove = (productId: string, productName: string) => {
     removeFromWishlist(productId);
-    toast.success(`${productName} verwijderd uit wishlist`);
+    toast.success(`${productName} removed from wishlist`);
   };
 
   if (wishlist.length === 0) {
@@ -127,14 +127,14 @@ const Wishlist = () => {
         <div className="container px-4 md:px-6 py-16 text-center">
           <div className="max-w-md mx-auto">
             <Heart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Je wishlist is leeg</h1>
+            <h1 className="text-2xl font-bold mb-2">Your wishlist is empty</h1>
             <p className="text-muted-foreground mb-6">
-              Voeg producten toe aan je wishlist door op het hartje te klikken.
+              Add products to your wishlist by clicking the heart icon.
             </p>
             <Link to="/products">
               <Button className="gap-2">
                 <ArrowLeft className="w-4 h-4" />
-                Bekijk producten
+                Browse Products
               </Button>
             </Link>
           </div>
@@ -151,9 +151,9 @@ const Wishlist = () => {
           <div className="flex items-center gap-3">
             <Heart className="w-8 h-8 text-primary fill-primary" />
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Mijn Wishlist</h1>
+              <h1 className="text-2xl md:text-3xl font-bold">My Wishlist</h1>
               <p className="text-muted-foreground">
-                {wishlist.length} {wishlist.length === 1 ? 'product' : 'producten'} opgeslagen
+                {wishlist.length} {wishlist.length === 1 ? 'item' : 'items'} saved
               </p>
             </div>
           </div>
@@ -164,7 +164,7 @@ const Wishlist = () => {
               disabled={isLoading || !products?.length}
             >
               <ShoppingCart className="w-4 h-4" />
-              Alles toevoegen aan winkelwagen
+              Add All to Cart
             </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -172,27 +172,27 @@ const Wishlist = () => {
                 variant="outline"
                 className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
               >
-                <Trash2 className="w-4 h-4" />
-                Leeg wishlist
+              <Trash2 className="w-4 h-4" />
+              Clear Wishlist
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Wishlist legen?</AlertDialogTitle>
+                <AlertDialogTitle>Clear wishlist?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Weet je zeker dat je alle {wishlist.length} producten uit je wishlist wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+                  Are you sure you want to remove all {wishlist.length} items from your wishlist? This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   onClick={() => {
                     clearWishlist();
-                    toast.success('Wishlist geleegd');
+                    toast.success('Wishlist cleared');
                   }}
                 >
-                  Ja, leeg wishlist
+                  Yes, clear wishlist
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -210,7 +210,7 @@ const Wishlist = () => {
                 <SelectValue placeholder="Alle categorieën" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle categorieën</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
@@ -220,7 +220,7 @@ const Wishlist = () => {
             </Select>
             {categoryFilter !== 'all' && (
               <span className="text-sm text-muted-foreground">
-                ({sortedProducts.length} {sortedProducts.length === 1 ? 'product' : 'producten'})
+                ({sortedProducts.length} {sortedProducts.length === 1 ? 'item' : 'items'})
               </span>
             )}
           </div>
@@ -233,10 +233,10 @@ const Wishlist = () => {
                 <SelectValue placeholder="Sorteer op" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="added-desc">Laatst toegevoegd</SelectItem>
-                <SelectItem value="added-asc">Eerst toegevoegd</SelectItem>
-                <SelectItem value="price-asc">Prijs: laag naar hoog</SelectItem>
-                <SelectItem value="price-desc">Prijs: hoog naar laag</SelectItem>
+                <SelectItem value="added-desc">Recently Added</SelectItem>
+                <SelectItem value="added-asc">First Added</SelectItem>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -311,7 +311,7 @@ const Wishlist = () => {
                         onClick={() => handleAddToCart(product)}
                       >
                         <ShoppingCart className="w-4 h-4" />
-                        Toevoegen
+                        Add to Cart
                       </Button>
                       <Button
                         variant="outline"
@@ -334,7 +334,7 @@ const Wishlist = () => {
           <Link to="/products">
             <Button variant="outline" className="gap-2">
               <ArrowLeft className="w-4 h-4" />
-              Verder winkelen
+              Continue Shopping
             </Button>
           </Link>
         </div>

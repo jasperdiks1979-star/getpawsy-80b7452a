@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
-const emailSchema = z.string().trim().email({ message: 'Ongeldig e-mailadres' }).max(255);
+const emailSchema = z.string().trim().email({ message: 'Invalid email address' }).max(255);
 
 export const Footer = () => {
   const [email, setEmail] = useState('');
@@ -32,17 +32,17 @@ export const Footer = () => {
       
       if (error) {
         if (error.code === '23505') {
-          toast.info('Je bent al aangemeld voor onze nieuwsbrief! 📬');
+          toast.info("You're already subscribed to our newsletter! 📬");
         } else {
           throw error;
         }
       } else {
-        toast.success('Bedankt voor je aanmelding! 🎉');
+        toast.success('Thanks for subscribing! 🎉');
       }
       setEmail('');
     } catch (error) {
       console.error('Newsletter subscription error:', error);
-      toast.error('Er ging iets mis. Probeer het later opnieuw.');
+      toast.error('Something went wrong. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
@@ -52,23 +52,23 @@ export const Footer = () => {
 
   const footerLinks = {
     shop: [
-      { label: 'Alle Producten', href: '/products' },
-      { label: 'Honden', href: '/products?category=dogs' },
-      { label: 'Katten', href: '/products?category=cats' },
-      { label: 'Speelgoed', href: '/products?category=toys' },
-      { label: 'Verzorging', href: '/products?category=care' },
+      { label: 'All Products', href: '/products' },
+      { label: 'Dogs', href: '/products?category=dogs' },
+      { label: 'Cats', href: '/products?category=cats' },
+      { label: 'Toys', href: '/products?category=toys' },
+      { label: 'Grooming', href: '/products?category=care' },
     ],
     support: [
       { label: 'Contact', href: '/contact' },
-      { label: 'Verzending', href: '/shipping' },
-      { label: 'Retourneren', href: '/returns' },
-      { label: 'Veelgestelde vragen', href: '/faq' },
-      { label: 'Track & Trace', href: '/track' },
+      { label: 'Shipping', href: '/shipping' },
+      { label: 'Returns', href: '/returns' },
+      { label: 'FAQ', href: '/faq' },
+      { label: 'Track Order', href: '/track' },
     ],
     company: [
-      { label: 'Over ons', href: '/about' },
+      { label: 'About Us', href: '/about' },
       { label: 'Blog', href: '/blog' },
-      { label: 'Vacatures', href: '/careers' },
+      { label: 'Careers', href: '/careers' },
       { label: 'Partners', href: '/partners' },
     ],
   };
@@ -100,17 +100,17 @@ export const Footer = () => {
               <Mail className="w-8 h-8 text-primary" />
             </div>
             <h3 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-3">
-              Blijf op de hoogte
+              Stay in the Loop
             </h3>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Ontvang exclusieve aanbiedingen, tips voor je huisdier en als eerste toegang tot nieuwe producten.
+              Get exclusive deals, pet care tips, and early access to new products.
             </p>
             
             <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
               <div className="relative flex-1">
                 <Input
                   type="email"
-                  placeholder="Je e-mailadres"
+                  placeholder="Your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-12 pl-4 pr-4 rounded-xl border-2 border-border/50 bg-background/80 backdrop-blur-sm focus:border-primary"
@@ -123,10 +123,10 @@ export const Footer = () => {
                 className="h-12 px-6 btn-organic gap-2 font-semibold"
               >
                 {isSubmitting ? (
-                  'Aanmelden...'
+                  'Subscribing...'
                 ) : (
                   <>
-                    Aanmelden
+                    Subscribe
                     <Send className="w-4 h-4" />
                   </>
                 )}
@@ -134,7 +134,7 @@ export const Footer = () => {
             </form>
             
             <p className="text-xs text-muted-foreground mt-4">
-              Door je aan te melden ga je akkoord met onze privacyvoorwaarden. Afmelden kan altijd.
+              By subscribing you agree to our privacy policy. Unsubscribe anytime.
             </p>
           </motion.div>
         </div>
@@ -155,8 +155,8 @@ export const Footer = () => {
                 </span>
               </Link>
               <p className="text-background/70 leading-relaxed max-w-sm">
-                Premium producten voor je huisdier, met liefde geselecteerd. 
-                Wij maken staarten blij sinds 2024.
+                Premium products for your pet, lovingly curated. 
+                Making tails wag since 2024.
               </p>
               
               {/* Social Links */}
@@ -183,13 +183,13 @@ export const Footer = () => {
                   <Mail className="w-4 h-4" />
                   <span>support@getpawsy.pet</span>
                 </a>
-                <a href="tel:+31201234567" className="flex items-center gap-3 text-sm text-background/70 hover:text-primary transition-colors">
+                <a href="tel:+18001234567" className="flex items-center gap-3 text-sm text-background/70 hover:text-primary transition-colors">
                   <Phone className="w-4 h-4" />
-                  <span>+31 20 123 4567</span>
+                  <span>+1 (800) 123-4567</span>
                 </a>
                 <div className="flex items-center gap-3 text-sm text-background/70">
                   <MapPin className="w-4 h-4" />
-                  <span>Verzending vanuit Nederland 🇳🇱</span>
+                  <span>Ships from USA 🇺🇸</span>
                 </div>
               </div>
             </div>
@@ -214,7 +214,7 @@ export const Footer = () => {
 
             {/* Support Links */}
             <div>
-              <h4 className="font-display font-semibold text-lg mb-5">Klantenservice</h4>
+              <h4 className="font-display font-semibold text-lg mb-5">Customer Service</h4>
               <ul className="space-y-3">
                 {footerLinks.support.map((link) => (
                   <li key={link.href}>
@@ -232,7 +232,7 @@ export const Footer = () => {
 
             {/* Company Links */}
             <div>
-              <h4 className="font-display font-semibold text-lg mb-5">Bedrijf</h4>
+              <h4 className="font-display font-semibold text-lg mb-5">Company</h4>
               <ul className="space-y-3">
                 {footerLinks.company.map((link) => (
                   <li key={link.href}>
@@ -255,24 +255,24 @@ export const Footer = () => {
           <div className="container px-4 md:px-6 py-6">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-sm text-background/50 flex items-center gap-1">
-                © {currentYear} GetPawsy. Gemaakt met <Heart className="w-3.5 h-3.5 text-accent fill-accent" /> voor huisdieren.
+                © {currentYear} GetPawsy. Made with <Heart className="w-3.5 h-3.5 text-accent fill-accent" /> for pets.
               </p>
               
               <div className="flex flex-wrap justify-center gap-6 text-sm text-background/50">
                 <Link to="/privacy" className="hover:text-primary transition-colors">
-                  Privacybeleid
+                  Privacy Policy
                 </Link>
                 <Link to="/terms" className="hover:text-primary transition-colors">
-                  Algemene voorwaarden
+                  Terms of Service
                 </Link>
                 <Link to="/cookies" className="hover:text-primary transition-colors">
-                  Cookiebeleid
+                  Cookie Policy
                 </Link>
               </div>
 
               {/* Payment methods placeholder */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-background/40">Betaalmethodes:</span>
+                <span className="text-xs text-background/40">Payment methods:</span>
                 <div className="flex gap-1">
                   {['💳', '🏦', '📱'].map((icon, idx) => (
                     <span key={idx} className="text-lg">{icon}</span>
