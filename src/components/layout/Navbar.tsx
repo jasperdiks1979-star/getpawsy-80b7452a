@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SearchSuggestions } from '@/components/search/SearchSuggestions';
 import { AnimatedHamburger } from '@/components/ui/animated-hamburger';
+import logoIcon from '@/assets/logo-getpawsy.png';
+import logoFull from '@/assets/logo-getpawsy-full.png';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -156,11 +158,11 @@ export const Navbar = () => {
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
             <motion.div 
-              className="flex items-center justify-center w-11 h-11 rounded-2xl bg-primary text-primary-foreground shadow-soft"
+              className="flex items-center justify-center w-11 h-11 rounded-2xl overflow-hidden shadow-soft"
               whileHover={{ scale: 1.05, rotate: -5 }}
               whileTap={{ scale: 0.95 }}
             >
-              <span className="text-xl">🐾</span>
+              <img src={logoIcon} alt="GetPawsy" className="w-full h-full object-cover" />
             </motion.div>
             <span className="font-display text-foreground text-2xl hidden sm:block">
               Get<span className="text-primary">Pawsy</span>
