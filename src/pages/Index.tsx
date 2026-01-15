@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Truck, Shield, HeartHandshake, Sparkles, Loader2, Star, Leaf, Quote } from 'lucide-react';
+import { ArrowRight, Truck, Shield, HeartHandshake, Sparkles, Loader2, Star, Leaf, Quote, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
@@ -9,6 +9,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect, useCallback } from 'react';
 import type { CarouselApi } from '@/components/ui/carousel';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 
 const features = [
   {
@@ -165,6 +166,29 @@ const Index = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Recently viewed products
+  const { getRecentlyViewedIds } = useRecentlyViewed();
+  const recentlyViewedIds = getRecentlyViewedIds();
+
+  const { data: recentlyViewedProducts } = useQuery({
+    queryKey: ['recently-viewed-products', recentlyViewedIds],
+    queryFn: async () => {
+      if (recentlyViewedIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .in('id', recentlyViewedIds)
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      // Sort by recently viewed order
+      return recentlyViewedIds
+        .map(id => data?.find(p => p.id === id))
+        .filter(Boolean);
+    },
+    enabled: recentlyViewedIds.length > 0,
   });
 
   const categoryImages: Record<string, string> = {
@@ -560,6 +584,57 @@ const Index = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Recently Viewed Products */}
+      {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
+        <section className="py-20 bg-muted/30">
+          <div className="container px-4 md:px-6">
+            <motion.div 
+              className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-secondary-foreground" />
+                </div>
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-display font-bold">Recently Viewed</h2>
+                  <p className="text-muted-foreground text-lg">Pick up where you left off</p>
+                </div>
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <Carousel
+                opts={{
+                  align: "start",
+                  loop: false,
+                  dragFree: true,
+                }}
+                className="w-full cursor-grab active:cursor-grabbing"
+              >
+                <CarouselContent className="-ml-4">
+                  {recentlyViewedProducts.map((product) => (
+                    <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
+                      <ProductCard product={product} />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+                <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+              </Carousel>
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="py-20">
