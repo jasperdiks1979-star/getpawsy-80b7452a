@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { Button } from './button';
+import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip';
 import { cn } from '@/lib/utils';
 
 export const ScrollToTop = () => {
@@ -34,19 +35,26 @@ export const ScrollToTop = () => {
   };
 
   return (
-    <Button
-      onClick={scrollToTop}
-      size="icon"
-      className={cn(
-        'fixed bottom-6 right-6 z-50 rounded-full shadow-lg transition-all duration-300',
-        'bg-primary hover:bg-primary/90 hover:animate-wiggle',
-        'h-14 w-14 md:h-10 md:w-10',
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none',
-        shouldPulse && 'animate-bounce'
-      )}
-      aria-label="Scroll naar boven"
-    >
-      <ArrowUp className="h-6 w-6 md:h-5 md:w-5" />
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          onClick={scrollToTop}
+          size="icon"
+          className={cn(
+            'fixed bottom-6 right-6 z-50 rounded-full shadow-lg transition-all duration-300',
+            'bg-primary hover:bg-primary/90 hover:animate-wiggle',
+            'h-14 w-14 md:h-10 md:w-10',
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none',
+            shouldPulse && 'animate-bounce'
+          )}
+          aria-label="Scroll naar boven"
+        >
+          <ArrowUp className="h-6 w-6 md:h-5 md:w-5" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="left">
+        <p>Terug naar boven</p>
+      </TooltipContent>
+    </Tooltip>
   );
 };
