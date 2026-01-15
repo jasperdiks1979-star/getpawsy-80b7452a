@@ -340,7 +340,7 @@ const ProductDetail = () => {
           >
             {/* Main Image */}
             <div 
-              className="relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft"
+              className="relative aspect-square w-full max-h-[50vh] md:max-h-none rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft"
               onClick={() => setLightboxOpen(true)}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
