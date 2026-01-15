@@ -345,7 +345,8 @@ const ProductDetail = () => {
           >
             {/* Main Image */}
             <div 
-              className="relative w-full aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft"
+              className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft"
+              style={{ aspectRatio: '1/1', maxHeight: 'min(80vw, 500px)' }}
               onClick={() => setLightboxOpen(true)}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -361,7 +362,7 @@ const ProductDetail = () => {
                   key={selectedImage}
                   src={images[selectedImage]}
                   alt={product.name}
-                  className="w-full h-full object-contain"
+                  className="absolute inset-0 w-full h-full object-contain"
                   initial={{ opacity: 0, scale: 1.05 }}
                   animate={{ opacity: imageLoaded ? 1 : 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
