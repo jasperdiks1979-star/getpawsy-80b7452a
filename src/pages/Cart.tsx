@@ -8,7 +8,7 @@ import { useCart } from '@/contexts/CartContext';
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
 
-  const shipping = totalPrice >= 50 ? 0 : 4.99;
+  const shipping = 0; // Free shipping on all orders
   const tax = totalPrice * 0.08;
   const total = totalPrice + shipping + tax;
 
@@ -121,13 +121,7 @@ const Cart = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span className="font-medium">
-                    {shipping === 0 ? (
-                      <span className="text-green-600">Free</span>
-                    ) : (
-                      `$${shipping.toFixed(2)}`
-                    )}
-                  </span>
+                  <span className="font-medium text-green-600">Free</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tax (estimated)</span>
@@ -142,11 +136,6 @@ const Cart = () => {
                 <span className="text-primary">${total.toFixed(2)}</span>
               </div>
 
-              {totalPrice < 50 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Add ${(50 - totalPrice).toFixed(2)} more for free shipping!
-                </p>
-              )}
 
               <Link to="/checkout" className="block mt-6">
                 <Button size="lg" className="w-full gap-2">
