@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { PasskeyButton } from '@/components/auth/PasskeyButton';
 import logoIcon from '@/assets/logo-getpawsy.png';
+import { trackLogin, trackSignUp } from '@/lib/analytics';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -61,6 +62,7 @@ const Auth = () => {
         toast.error(error.message);
       }
     } else {
+      trackLogin('email');
       toast.success('Welcome back!');
       navigate('/');
     }
@@ -90,6 +92,7 @@ const Auth = () => {
         toast.error(error.message);
       }
     } else {
+      trackSignUp('email');
       toast.success('Account created successfully!');
       navigate('/');
     }

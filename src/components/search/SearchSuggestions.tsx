@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ArrowRight, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { trackSearch } from '@/lib/analytics';
 
 interface Product {
   id: string;
@@ -21,6 +22,7 @@ interface SearchSuggestionsProps {
 export const SearchSuggestions = ({ query, onSelect, isVisible }: SearchSuggestionsProps) => {
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const lastTrackedQuery = useRef<string>('');
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -40,6 +42,12 @@ export const SearchSuggestions = ({ query, onSelect, isVisible }: SearchSuggesti
 
         if (error) throw error;
         setSuggestions(data || []);
+        
+        // Track search after debounce (only once per unique query)
+        if (query.trim().length >= 3 && query !== lastTrackedQuery.current) {
+          trackSearch(query.trim());
+          lastTrackedQuery.current = query;
+        }
       } catch (error) {
         console.error('Error fetching suggestions:', error);
         setSuggestions([]);

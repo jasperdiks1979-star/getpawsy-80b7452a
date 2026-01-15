@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 
 export interface CartItem {
   id: string;
@@ -43,9 +44,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return [...prev, { ...newItem, quantity: 1 }];
     });
+    trackAddToCart(newItem.id, newItem.name, newItem.price, 1);
   };
 
   const removeItem = (id: string) => {
+    const item = items.find(i => i.id === id);
+    if (item) {
+      trackRemoveFromCart(id, item.name, item.price, item.quantity);
+    }
     setItems(prev => prev.filter(item => item.id !== id));
   };
 
