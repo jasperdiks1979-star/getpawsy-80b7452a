@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import logoIcon from '@/assets/logo-getpawsy.png';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -105,6 +106,9 @@ const Auth = () => {
 
         <Card>
           <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <img src={logoIcon} alt="GetPawsy" className="w-16 h-16 rounded-2xl shadow-soft" />
+            </div>
             <CardTitle className="text-2xl">Welcome to GetPawsy</CardTitle>
             <CardDescription>
               Sign in to your account or create a new one
