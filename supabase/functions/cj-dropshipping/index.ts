@@ -510,6 +510,7 @@ async function syncAllProductStock(accessToken: string) {
 }
 
 // Get full product details for import (all images, variants, stock)
+// Respects CJ API rate limit of 1 request per second with retry logic
 async function getProductsForImport(accessToken: string, productIds: string[]) {
   const results: Array<{
     pid: string;
@@ -521,48 +522,101 @@ async function getProductsForImport(accessToken: string, productIds: string[]) {
     error?: string;
   }> = [];
 
+  // Helper function with retry logic for rate limiting
+  const fetchWithRetry = async (pid: string, retries = 3): Promise<{ result: boolean; data?: CJProductDetail; message?: string }> => {
+    for (let attempt = 0; attempt < retries; attempt++) {
+      const response = await getProductDetails(accessToken, pid, 'US');
+      
+      // Check for rate limit error
+      if (response.code === 1600200 || response.message?.includes('Too Many Requests')) {
+        console.log(`Rate limited on ${pid}, waiting 1.5s before retry ${attempt + 1}/${retries}...`);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        continue;
+      }
+      
+      return response;
+    }
+    return { result: false, message: 'Rate limit exceeded after retries' };
+  };
+
   for (const pid of productIds) {
     try {
       console.log(`Fetching full details for product ${pid}...`);
       
-      // Get full product details with inventory
-      const detailResponse = await getProductDetails(accessToken, pid, 'US');
+      // Wait BEFORE making request to respect rate limit (1 req/sec)
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      
+      // Get full product details with retry logic
+      const detailResponse = await fetchWithRetry(pid);
       
       if (!detailResponse.result) {
+        console.log(`Failed to get details for ${pid}: ${detailResponse.message}`);
         results.push({ pid, success: false, error: detailResponse.message });
         continue;
       }
 
       const product = detailResponse.data as CJProductDetail;
       
-      // Collect all images - prioritize productImageSet (full image array from CJ)
+      // Collect all images - handle both array and JSON string formats
       const images: string[] = [];
       
-      // First, add all images from productImageSet (this is the main image array from CJ)
-      if (product.productImageSet && Array.isArray(product.productImageSet)) {
-        for (const img of product.productImageSet) {
-          if (img && !images.includes(img)) {
-            images.push(img);
+      // Parse productImageSet - can be array or JSON string
+      let imageSet: string[] = [];
+      if (product.productImageSet) {
+        if (Array.isArray(product.productImageSet)) {
+          imageSet = product.productImageSet;
+        } else if (typeof product.productImageSet === 'string') {
+          try {
+            imageSet = JSON.parse(product.productImageSet);
+          } catch {
+            imageSet = [product.productImageSet];
           }
         }
-        console.log(`Found ${product.productImageSet.length} images in productImageSet for ${pid}`);
       }
       
-      // Fallback: add main productImage if not already in list
-      if (product.productImage && !images.includes(product.productImage)) {
-        images.unshift(product.productImage); // Add to front as main image
+      for (const img of imageSet) {
+        if (img && typeof img === 'string' && img.startsWith('http') && !images.includes(img)) {
+          images.push(img);
+        }
+      }
+      if (imageSet.length > 0) {
+        console.log(`Found ${imageSet.length} images in productImageSet for ${pid}`);
       }
       
-      // Add variant images (these are often different color/style variants)
+      // Parse main productImage - can also be JSON string
+      let mainImage = product.productImage;
+      if (mainImage && typeof mainImage === 'string') {
+        if (mainImage.startsWith('[')) {
+          try {
+            const parsed = JSON.parse(mainImage);
+            if (Array.isArray(parsed)) {
+              for (const img of parsed) {
+                if (img && typeof img === 'string' && img.startsWith('http') && !images.includes(img)) {
+                  images.unshift(img);
+                }
+              }
+            }
+          } catch {
+            if (mainImage.startsWith('http') && !images.includes(mainImage)) {
+              images.unshift(mainImage);
+            }
+          }
+        } else if (mainImage.startsWith('http') && !images.includes(mainImage)) {
+          images.unshift(mainImage);
+        }
+      }
+      
+      // Add variant images
       if (product.variants) {
         for (const variant of product.variants) {
-          if (variant.variantImage && !images.includes(variant.variantImage)) {
+          if (variant.variantImage && typeof variant.variantImage === 'string' && 
+              variant.variantImage.startsWith('http') && !images.includes(variant.variantImage)) {
             images.push(variant.variantImage);
           }
         }
       }
       
-      console.log(`Total ${images.length} images collected for product ${pid}`);
+      console.log(`Total ${images.length} unique images collected for product ${pid}`);
 
       // Calculate total stock from variants
       let totalStock = 0;
@@ -580,24 +634,6 @@ async function getProductsForImport(accessToken: string, productIds: string[]) {
         }
       }
 
-      // If no stock from variants, try getting inventory separately
-      if (totalStock === 0) {
-        try {
-          const inventoryResponse = await getProductInventory(accessToken, pid);
-          if (inventoryResponse.result && Array.isArray(inventoryResponse.data)) {
-            for (const inv of inventoryResponse.data) {
-              if (inv.countryCode === 'US') {
-                totalStock += inv.totalInventoryNum || 0;
-              } else if (inv.countryCode === 'CN' && totalStock === 0) {
-                totalStock = inv.totalInventoryNum || 0;
-              }
-            }
-          }
-        } catch (invErr) {
-          console.log(`Could not fetch separate inventory for ${pid}:`, invErr);
-        }
-      }
-
       results.push({
         pid,
         success: true,
@@ -607,14 +643,13 @@ async function getProductsForImport(accessToken: string, productIds: string[]) {
         totalStock,
       });
 
-      // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (err) {
       console.error(`Error fetching product ${pid}:`, err);
       results.push({ pid, success: false, error: String(err) });
     }
   }
 
+  console.log(`Completed fetching ${results.length} products, ${results.filter(r => r.success).length} successful`);
   return results;
 }
 
