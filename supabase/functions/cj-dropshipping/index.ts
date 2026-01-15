@@ -92,19 +92,40 @@ function filterProductsBySubcategory(products: CJProductDetail[], subcategory: s
 }
 
 // Search for pet products from US warehouse using the correct category endpoint
+// Uses CJ API's productNameEn parameter for server-side filtering when searching
 async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSize = 50, keyword?: string) {
-  // Fetch more products to allow for filtering
-  const fetchSize = pageSize * 4; // Fetch 4x to ensure enough after filtering
-  
   const params: Record<string, string> = {
-    pageNum: '1', // Always fetch from page 1 for client-side pagination
-    pageSize: fetchSize.toString(),
+    pageNum: pageNum.toString(),
+    pageSize: pageSize.toString(),
     categoryId: PET_CATEGORY_ID,
     countryCode: 'US',
   };
+  
+  // Determine the search keyword to send to CJ API
+  let apiSearchKeyword: string | null = null;
+  let clientSideFilter: string[] | null = null;
+  
+  if (keyword && keyword !== 'pet' && keyword !== 'all') {
+    // If it's a predefined subcategory, use the first few keywords for API search
+    if (PET_SUBCATEGORIES[keyword]) {
+      // Use the main identifying keywords for the category in API
+      const categoryKeywords = PET_SUBCATEGORIES[keyword];
+      // Pick the most specific keyword for API search
+      apiSearchKeyword = categoryKeywords[0]; // e.g., 'toy' for Pet Toys
+      clientSideFilter = categoryKeywords; // Use full list for client-side refinement
+    } else {
+      // Direct keyword search - use as-is for API
+      apiSearchKeyword = keyword;
+    }
+  }
+  
+  // Add productNameEn for server-side filtering if we have a search term
+  if (apiSearchKeyword) {
+    params.productNameEn = apiSearchKeyword;
+  }
 
   const queryString = new URLSearchParams(params).toString();
-  console.log(`Fetching pet products from US warehouse, size ${fetchSize}, category: ${PET_CATEGORY_ID}, filter keyword: ${keyword}`);
+  console.log(`Fetching pet products: page=${pageNum}, size=${pageSize}, category=${PET_CATEGORY_ID}, apiKeyword=${apiSearchKeyword}, clientFilter=${clientSideFilter?.join(',')}`);
 
   const response = await fetch(`${CJ_API_BASE}/product/list?${queryString}`, {
     method: 'GET',
@@ -117,35 +138,21 @@ async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSiz
   const data = await response.json();
   console.log('CJ Pet products response:', JSON.stringify(data).substring(0, 500));
   
-  // If we have a keyword filter, apply client-side filtering
-  if (data.result && data.data?.list && keyword && keyword !== 'pet' && keyword !== 'all') {
+  // Apply additional client-side filtering if we have subcategory keywords
+  // This ensures products match the full subcategory criteria, not just the API keyword
+  if (data.result && data.data?.list && clientSideFilter) {
     const originalList = data.data.list;
     const originalTotal = data.data.total || originalList.length;
     
-    // Check if keyword is a subcategory name
-    if (PET_SUBCATEGORIES[keyword]) {
-      data.data.list = filterProductsBySubcategory(originalList, keyword);
-    } else {
-      // General keyword search - match against product name
-      const lowerKeyword = keyword.toLowerCase();
-      const searchTerms = lowerKeyword.split(/\s+/).filter(t => t.length > 2);
-      
-      data.data.list = originalList.filter((p: CJProductDetail) => {
-        const name = p.productNameEn.toLowerCase();
-        // Match if ALL search terms are found in the name
-        return searchTerms.every(term => name.includes(term));
-      });
-    }
+    // Filter to products that match ANY of the subcategory keywords
+    data.data.list = originalList.filter((p: CJProductDetail) => 
+      productMatchesKeywords(p.productNameEn, clientSideFilter!)
+    );
     
-    // Apply pagination to filtered results
-    const startIndex = (pageNum - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const filteredTotal = data.data.list.length;
-    data.data.list = data.data.list.slice(startIndex, endIndex);
-    data.data.total = filteredTotal;
+    data.data.total = data.data.list.length;
     data.data.originalTotal = originalTotal;
     
-    console.log(`Filtered from ${originalTotal} to ${filteredTotal} products for keyword: ${keyword}`);
+    console.log(`Client-side filtered from ${originalList.length} to ${data.data.list.length} products`);
   }
   
   return data;

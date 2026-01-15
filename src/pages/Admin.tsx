@@ -213,11 +213,20 @@ const Admin = () => {
         // Find full details for this product
         const fullDetail = fullDetailsResponse?.find((d: { pid: string; success: boolean; data?: { description?: string }; images?: string[]; variants?: unknown; totalStock?: number }) => d.pid === p.pid && d.success);
         
-        // Get all images - ensure flat array of valid URLs
+        // Deep flatten and deduplicate images - handles nested arrays
         const rawImages = fullDetail?.images || [p.productImage];
-        const images = rawImages.flat().filter((img: unknown): img is string => 
-          typeof img === 'string' && img.startsWith('http')
-        );
+        const flattenDeep = (arr: unknown[]): string[] => {
+          const result: string[] = [];
+          for (const item of arr) {
+            if (Array.isArray(item)) {
+              result.push(...flattenDeep(item));
+            } else if (typeof item === 'string' && item.startsWith('http')) {
+              result.push(item);
+            }
+          }
+          return result;
+        };
+        const images = [...new Set(flattenDeep(Array.isArray(rawImages) ? rawImages : [rawImages]))];
         
         // Get stock from full details or default
         const stock = fullDetail?.totalStock ?? 100;
@@ -349,15 +358,27 @@ const Admin = () => {
         );
 
         if (!fullDetail) {
+          console.log(`No details found for ${product.name} (${product.cj_product_id})`);
           errors++;
           continue;
         }
 
-        // Flatten and filter images
+        // Deep flatten and deduplicate images - handles nested arrays like [["url1"], "url2"]
         const rawImages = fullDetail.images || product.images || [];
-        const flatImages = (Array.isArray(rawImages) ? rawImages : [rawImages])
-          .flat()
-          .filter((img: unknown): img is string => typeof img === 'string' && img.startsWith('http'));
+        const flattenDeep = (arr: unknown[]): string[] => {
+          const result: string[] = [];
+          for (const item of arr) {
+            if (Array.isArray(item)) {
+              result.push(...flattenDeep(item));
+            } else if (typeof item === 'string' && item.startsWith('http')) {
+              result.push(item);
+            }
+          }
+          return result;
+        };
+        const flatImages = [...new Set(flattenDeep(Array.isArray(rawImages) ? rawImages : [rawImages]))];
+        
+        console.log(`Updating ${product.name}: ${flatImages.length} images, ${fullDetail.variants?.length || 0} variants`);
 
         // Update product with new images and variants
         const { error: updateError } = await supabase
