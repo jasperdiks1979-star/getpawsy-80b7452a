@@ -42,7 +42,7 @@ export const ScrollToTop = () => {
         'bg-primary hover:bg-primary/90',
         'h-14 w-14 md:h-10 md:w-10',
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none',
-        shouldPulse && 'animate-[pulse_0.5s_ease-in-out_3]'
+        shouldPulse && 'animate-bounce'
       )}
       aria-label="Scroll naar boven"
     >
