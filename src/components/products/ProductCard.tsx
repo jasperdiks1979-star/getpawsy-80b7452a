@@ -119,15 +119,28 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             )}
           </div>
 
-          {/* Mobile Add to Cart Button */}
-          <Button
-            className="w-full gap-2 mt-3 md:hidden"
-            size="sm"
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart className="w-4 h-4" />
-            Toevoegen
-          </Button>
+          {/* Mobile Add to Cart & Wishlist Buttons */}
+          <div className="flex gap-2 mt-3 md:hidden">
+            <Button
+              className="flex-1 gap-2"
+              size="sm"
+              onClick={handleAddToCart}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Toevoegen
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 flex-shrink-0"
+              onClick={(e) => {
+                e.preventDefault();
+                toast.info('Added to wishlist!');
+              }}
+            >
+              <Heart className="w-4 h-4" />
+            </Button>
+          </div>
 
           {/* Stock indicator */}
           {product.stock !== null && product.stock !== undefined && product.stock < 10 && product.stock > 0 && (
