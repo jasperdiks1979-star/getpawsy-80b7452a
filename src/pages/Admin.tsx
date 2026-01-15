@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2 } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban } from "lucide-react";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
 import { CategoryManager } from "@/components/admin/CategoryManager";
@@ -101,6 +101,18 @@ const Admin = () => {
     },
   });
 
+  // Fetch blocked CJ products
+  const { data: blockedProducts } = useQuery({
+    queryKey: ["blocked-cj-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blocked_cj_products")
+        .select("cj_product_id");
+      if (error) throw error;
+      return new Set(data?.map(p => p.cj_product_id) || []);
+    },
+  });
+
   // Fetch existing products from database
   const { data: existingProducts } = useQuery({
     queryKey: ["admin-products"],
@@ -135,10 +147,10 @@ const Admin = () => {
         throw new Error(`CJ API error: ${response.code}`);
       }
       
-      // Filter out already imported products
+      // Filter out already imported products and blocked products
       const allProducts = response.data?.list || [];
       const importedIds = new Set(existingProducts?.map(p => p.cj_product_id) || []);
-      return allProducts.filter((p: CJProduct) => !importedIds.has(p.pid));
+      return allProducts.filter((p: CJProduct) => !importedIds.has(p.pid) && !blockedProducts?.has(p.pid));
     },
     enabled: false,
   });
@@ -182,10 +194,10 @@ const Admin = () => {
         throw new Error(`CJ API error: ${response.code}`);
       }
       
-      // Filter out already imported products
+      // Filter out already imported products and blocked products
       const allProducts = response.data?.list || [];
       const importedIds = new Set(existingProducts?.map(p => p.cj_product_id) || []);
-      const filteredProducts = allProducts.filter((p: CJProduct) => !importedIds.has(p.pid));
+      const filteredProducts = allProducts.filter((p: CJProduct) => !importedIds.has(p.pid) && !blockedProducts?.has(p.pid));
       
       return {
         products: filteredProducts,
@@ -553,6 +565,35 @@ const Admin = () => {
       toast.error(`Verwijderen mislukt: ${error.message}`);
     },
   });
+
+  // Block CJ product mutation
+  const blockProductMutation = useMutation({
+    mutationFn: async ({ cjProductId, productName }: { cjProductId: string; productName: string }) => {
+      const { error } = await supabase
+        .from("blocked_cj_products")
+        .insert({ 
+          cj_product_id: cjProductId, 
+          product_name: productName,
+          blocked_by: user?.id 
+        });
+      
+      if (error) throw error;
+      return cjProductId;
+    },
+    onSuccess: () => {
+      toast.success("Product geblokkeerd en verborgen uit zoekresultaten");
+      queryClient.invalidateQueries({ queryKey: ["blocked-cj-products"] });
+      queryClient.invalidateQueries({ queryKey: ["pet-catalog"] });
+      queryClient.invalidateQueries({ queryKey: ["cj-search"] });
+    },
+    onError: (error) => {
+      toast.error(`Blokkeren mislukt: ${error.message}`);
+    },
+  });
+
+  const handleBlockProduct = (cjProductId: string, productName: string) => {
+    blockProductMutation.mutate({ cjProductId, productName });
+  };
 
   const handleDeleteProduct = (productId: string) => {
     setDeleteProductId(productId);
@@ -950,7 +991,7 @@ const Admin = () => {
                         return (
                           <Card
                             key={product.pid}
-                            className={`cursor-pointer transition-all ${
+                            className={`cursor-pointer transition-all group ${
                               isSelected
                                 ? "ring-2 ring-primary bg-primary/5"
                                 : "hover:shadow-lg"
@@ -969,6 +1010,19 @@ const Admin = () => {
                                     <Check className="w-4 h-4" />
                                   </div>
                                 )}
+                                {/* Block button */}
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute top-2 left-2 w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleBlockProduct(product.pid, product.productNameEn);
+                                  }}
+                                  title="Blokkeer dit product"
+                                >
+                                  <Ban className="w-3 h-3" />
+                                </Button>
                                 <Badge className="absolute bottom-2 left-2" variant="default">
                                   <PawPrint className="w-3 h-3 mr-1" />
                                   Free Shipping
@@ -1158,7 +1212,7 @@ const Admin = () => {
                     return (
                       <Card
                         key={product.pid}
-                        className={`cursor-pointer transition-all ${
+                        className={`cursor-pointer transition-all group ${
                           isSelected
                             ? "ring-2 ring-primary bg-primary/5"
                             : "hover:shadow-lg"
@@ -1177,6 +1231,19 @@ const Admin = () => {
                                 <Check className="w-4 h-4" />
                               </div>
                             )}
+                            {/* Block button */}
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-2 left-2 w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleBlockProduct(product.pid, product.productNameEn);
+                              }}
+                              title="Blokkeer dit product"
+                            >
+                              <Ban className="w-3 h-3" />
+                            </Button>
                             <Badge className="absolute bottom-2 left-2" variant="default">
                               Free Shipping
                             </Badge>
