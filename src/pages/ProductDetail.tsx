@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock } from 'lucide-react';
+import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock, MessageSquare } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
@@ -14,6 +14,8 @@ import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
+import { ReviewForm } from '@/components/reviews/ReviewForm';
+import { ReviewsList } from '@/components/reviews/ReviewsList';
 
 interface ProductVariant {
   vid: string;
@@ -28,6 +30,7 @@ interface ProductVariant {
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
   const { addItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { addToRecentlyViewed, getRecentlyViewedIds } = useRecentlyViewed();
@@ -124,6 +127,26 @@ const ProductDetail = () => {
     },
     enabled: recentlyViewedIds.length > 0,
   });
+
+  // Fetch product reviews
+  const { data: reviews = [] } = useQuery({
+    queryKey: ['product-reviews', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_reviews')
+        .select('*')
+        .eq('product_id', id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const handleReviewsRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['product-reviews', id] });
+  };
 
   // Parse variants from JSON
   const variants: ProductVariant[] = product?.variants && Array.isArray(product.variants) 
@@ -825,6 +848,47 @@ const ProductDetail = () => {
             )}
           </Tabs>
         </motion.div>
+
+        {/* Reviews Section */}
+        <motion.section 
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          className="mt-16"
+          id="reviews"
+        >
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <MessageSquare className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
+                Klantreviews
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {reviews.length} review{reviews.length !== 1 ? 's' : ''} van onze klanten
+              </p>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Review Form */}
+            <div className="lg:col-span-1">
+              <ReviewForm 
+                productId={product.id} 
+                onReviewSubmitted={handleReviewsRefresh} 
+              />
+            </div>
+
+            {/* Reviews List */}
+            <div className="lg:col-span-2">
+              <ReviewsList 
+                reviews={reviews} 
+                onReviewDeleted={handleReviewsRefresh} 
+              />
+            </div>
+          </div>
+        </motion.section>
 
         {/* Related Products */}
         {relatedProducts && relatedProducts.length > 0 && (
