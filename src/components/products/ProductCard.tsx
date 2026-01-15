@@ -119,14 +119,24 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             )}
           </div>
 
+          {/* Mobile Add to Cart Button */}
+          <Button
+            className="w-full gap-2 mt-3 md:hidden"
+            size="sm"
+            onClick={handleAddToCart}
+          >
+            <ShoppingCart className="w-4 h-4" />
+            Toevoegen
+          </Button>
+
           {/* Stock indicator */}
           {product.stock !== null && product.stock !== undefined && product.stock < 10 && product.stock > 0 && (
-            <p className="text-xs text-orange-600 mt-1">
+            <p className="text-xs text-orange-600 mt-2">
               Only {product.stock} left in stock
             </p>
           )}
           {product.stock === 0 && (
-            <p className="text-xs text-destructive mt-1">Out of Stock</p>
+            <p className="text-xs text-destructive mt-2">Out of Stock</p>
           )}
         </div>
       </div>
