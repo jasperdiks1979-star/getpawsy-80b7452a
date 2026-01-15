@@ -382,11 +382,12 @@ const Index = () => {
                   to={`/products?category=${category.name}`}
                   className="group block relative overflow-hidden rounded-2xl aspect-square shadow-soft hover:shadow-soft-lg transition-shadow duration-300"
                 >
-                  {/* Image with zoom effect - v3 forces cache refresh for new images */}
+                  {/* Image with zoom effect - v4 forces cache refresh */}
                   <img 
-                    src={`${category.image_url || categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}?v=3`}
+                    src={`${category.image_url || categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}?v=4`}
                     alt={category.name}
                     className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-115"
+                    onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'; }}
                   />
                   
                   {/* Gradient overlay with enhanced hover */}
