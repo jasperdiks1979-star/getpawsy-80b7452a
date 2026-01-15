@@ -70,20 +70,20 @@ const ProductDetail = () => {
     ? (product.variants as unknown as ProductVariant[])
     : [];
 
-  // Group variants by property (e.g., color, size)
+  // Group variants - CJ uses variantKey as the display name
   const variantGroups = variants.reduce((groups, variant) => {
-    // Parse variant key to get property name and value
-    // Format is typically "Color:Red" or "Size:Large"
-    const parts = variant.variantNameEn?.split(':') || [];
-    const groupName = parts[0] || 'Option';
-    const value = parts.slice(1).join(':') || variant.variantNameEn;
+    // CJ format uses variantKey like "120 Soft Chews1 BOTTLE" or "Yellow Black"
+    const displayName = variant.variantKey || variant.variantNameEn || 'Option';
+    
+    // Use a simple group name for all variants
+    const groupName = 'Option';
     
     if (!groups[groupName]) {
       groups[groupName] = [];
     }
     
-    // Avoid duplicates
-    if (!groups[groupName].find(v => v.variantNameEn === variant.variantNameEn)) {
+    // Avoid duplicates based on vid
+    if (!groups[groupName].find(v => v.vid === variant.vid)) {
       groups[groupName].push(variant);
     }
     
@@ -303,44 +303,45 @@ const ProductDetail = () => {
             )}
 
             {/* Variants */}
-            {Object.keys(variantGroups).length > 0 && (
+            {variants.length > 0 && (
               <div className="space-y-4">
-                {Object.entries(variantGroups).map(([groupName, groupVariants]) => (
-                  <div key={groupName}>
-                    <label className="text-sm font-medium mb-2 block">
-                      {groupName}: {selectedVariant?.variantNameEn?.includes(groupName) 
-                        ? selectedVariant.variantNameEn.split(':')[1] 
-                        : 'Select'}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {groupVariants.map((variant) => {
-                        const isSelected = selectedVariant?.vid === variant.vid;
-                        const displayValue = variant.variantNameEn?.split(':').slice(1).join(':') || variant.variantNameEn;
-                        
-                        return (
-                          <button
-                            key={variant.vid}
-                            onClick={() => setSelectedVariant(isSelected ? null : variant)}
-                            className={`px-4 py-2 rounded-lg border-2 transition-all ${
-                              isSelected
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-border hover:border-primary/50'
-                            }`}
-                          >
-                            {variant.variantImage && (
-                              <img 
-                                src={variant.variantImage} 
-                                alt={displayValue}
-                                className="w-8 h-8 rounded object-cover inline-block mr-2"
-                              />
-                            )}
-                            <span className="text-sm font-medium">{displayValue}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Kies een optie: {selectedVariant ? (selectedVariant.variantKey || 'Geselecteerd') : 'Selecteer'}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {variants.map((variant) => {
+                      const isSelected = selectedVariant?.vid === variant.vid;
+                      const displayValue = variant.variantKey || variant.variantNameEn || 'Optie';
+                      
+                      return (
+                        <button
+                          key={variant.vid}
+                          onClick={() => setSelectedVariant(isSelected ? null : variant)}
+                          className={`flex items-center px-4 py-2 rounded-lg border-2 transition-all ${
+                            isSelected
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          {variant.variantImage && (
+                            <img 
+                              src={variant.variantImage} 
+                              alt={displayValue}
+                              className="w-8 h-8 rounded object-cover mr-2"
+                            />
+                          )}
+                          <span className="text-sm font-medium">{displayValue}</span>
+                          {variant.variantSellPrice && variant.variantSellPrice !== Number(product.price) && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              ${Number(variant.variantSellPrice).toFixed(2)}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
-                ))}
+                </div>
               </div>
             )}
 
