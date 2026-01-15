@@ -12,6 +12,7 @@ import { OptimizedImage } from '@/components/ui/optimized-image';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { useHaptic } from '@/hooks/useHaptic';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
@@ -47,15 +48,19 @@ const ProductDetail = () => {
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
 
+  const haptic = useHaptic();
+
   const handleDragEnd = (imagesLength: number, offsetX: number, velocityX: number) => {
     const swipe = offsetX + velocityX * 50; // Factor in velocity for snappier feel
     
     if (swipe < -minSwipeDistance) {
       // Swiped left - next image
       setSelectedImage(prev => prev === imagesLength - 1 ? 0 : prev + 1);
+      haptic.lightTap(); // Haptic feedback on swipe
     } else if (swipe > minSwipeDistance) {
       // Swiped right - previous image
       setSelectedImage(prev => prev === 0 ? imagesLength - 1 : prev - 1);
+      haptic.lightTap(); // Haptic feedback on swipe
     }
     
     setDragX(0);
@@ -245,6 +250,7 @@ const ProductDetail = () => {
   }
 
   const handleAddToCart = () => {
+    haptic.success(); // Success haptic on add to cart
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
@@ -257,6 +263,7 @@ const ProductDetail = () => {
   };
 
   const handleWishlistToggle = () => {
+    haptic.selection(); // Selection haptic on wishlist toggle
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
       toast.info('Removed from wishlist');
