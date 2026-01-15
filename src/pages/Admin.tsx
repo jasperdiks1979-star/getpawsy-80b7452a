@@ -210,6 +210,12 @@ const Admin = () => {
       const productIds = products.map(p => p.pid);
       const total = products.length;
       
+      // Track success/failure counts
+      let successCount = 0;
+      let seoSuccessCount = 0;
+      let seoFailedCount = 0;
+      const failedProducts: string[] = [];
+      
       setImportProgress({ current: 0, total, status: "Fetching product details from CJ...", startTime: Date.now() });
       
       // Fetch full product details (all images, variants, stock) from CJ
@@ -267,33 +273,37 @@ const Admin = () => {
         
         // Generate SEO description
         let seoDescription = originalDescription;
+        let seoGenerated = false;
         try {
           const category = selectedCategory === "auto" ? p.categoryName : (selectedCategory || p.categoryName);
           seoDescription = await generateSeoForProduct(p.productNameEn, category);
+          seoGenerated = true;
+          seoSuccessCount++;
         } catch (err) {
           console.error("SEO generation failed for", p.productNameEn, err);
+          seoFailedCount++;
           // Keep original description if SEO generation fails
         }
         
         // Get variants data
         const variants = fullDetail?.variants || null;
         
-                        // Calculate price using dynamic pricing with shipping included
-                        // Parse sellPrice safely - it might be a range like "400-620"
-                        const parsedSellPrice = typeof p.sellPrice === 'string' 
-                          ? parseFloat(String(p.sellPrice).split('-')[0]) 
-                          : Number(p.sellPrice);
-                        const costPrice = isNaN(parsedSellPrice) ? 0 : parsedSellPrice;
-                        // Parse weight safely - handle ranges like "8500-9100"
-                        let parsedWeight: number;
-                        const weightStr = String(p.productWeight || '200');
-                        if (weightStr.includes('-')) {
-                          parsedWeight = parseFloat(weightStr.split('-')[0]) || 200;
-                        } else {
-                          parsedWeight = parseFloat(weightStr) || 200;
-                        }
-                        const weight = parsedWeight <= 0 ? 200 : parsedWeight;
-                        const pricing = calculateSellingPrice(costPrice, weight);
+        // Calculate price using dynamic pricing with shipping included
+        // Parse sellPrice safely - it might be a range like "400-620"
+        const parsedSellPrice = typeof p.sellPrice === 'string' 
+          ? parseFloat(String(p.sellPrice).split('-')[0]) 
+          : Number(p.sellPrice);
+        const costPrice = isNaN(parsedSellPrice) ? 0 : parsedSellPrice;
+        // Parse weight safely - handle ranges like "8500-9100"
+        let parsedWeight: number;
+        const weightStr = String(p.productWeight || '200');
+        if (weightStr.includes('-')) {
+          parsedWeight = parseFloat(weightStr.split('-')[0]) || 200;
+        } else {
+          parsedWeight = parseFloat(weightStr) || 200;
+        }
+        const weight = parsedWeight <= 0 ? 200 : parsedWeight;
+        const pricing = calculateSellingPrice(costPrice, weight);
 
         productsToInsert.push({
           cj_product_id: p.pid,
@@ -331,11 +341,45 @@ const Admin = () => {
         .select();
 
       if (error) throw error;
-      return data;
+      
+      successCount = data?.length || 0;
+      
+      return { 
+        products: data, 
+        successCount, 
+        seoSuccessCount, 
+        seoFailedCount, 
+        failedProducts,
+        total 
+      };
     },
-    onSuccess: (data) => {
+    onSuccess: (result) => {
       setImportProgress(null);
-      toast.success(`${data?.length || 0} products imported with SEO descriptions!`);
+      
+      // Build detailed success message
+      const details: string[] = [];
+      details.push(`✅ ${result.successCount}/${result.total} products imported`);
+      
+      if (result.seoSuccessCount > 0) {
+        details.push(`📝 ${result.seoSuccessCount} SEO descriptions generated`);
+      }
+      if (result.seoFailedCount > 0) {
+        details.push(`⚠️ ${result.seoFailedCount} SEO generations failed (used original)`);
+      }
+      if (result.failedProducts.length > 0) {
+        details.push(`❌ Failed: ${result.failedProducts.slice(0, 3).join(', ')}${result.failedProducts.length > 3 ? '...' : ''}`);
+      }
+      
+      toast.success(
+        <div className="space-y-1">
+          <div className="font-semibold">Import Complete!</div>
+          {details.map((detail, i) => (
+            <div key={i} className="text-sm">{detail}</div>
+          ))}
+        </div>,
+        { duration: 8000 }
+      );
+      
       setSelectedProducts(new Set());
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       // Refetch catalog to update filtered list
