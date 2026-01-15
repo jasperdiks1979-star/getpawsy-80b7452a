@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Heart } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
@@ -36,6 +37,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const inWishlist = isInWishlist(product.id);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -50,8 +52,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
+    setIsAnimating(true);
     toggleWishlist(product.id);
     toast.success(inWishlist ? 'Removed from wishlist!' : 'Added to wishlist!');
+    setTimeout(() => setIsAnimating(false), 300);
   };
 
   const discount = product.compare_at_price
@@ -86,7 +90,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               className="rounded-full bg-background/80 backdrop-blur-sm hover:bg-background"
               onClick={handleToggleWishlist}
             >
-              <Heart className={`w-4 h-4 transition-colors ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
+              <Heart className={`w-4 h-4 transition-colors ${inWishlist ? 'fill-red-500 text-red-500' : ''} ${isAnimating ? 'animate-heartPop' : ''}`} />
             </Button>
           </div>
 
@@ -141,7 +145,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               className="h-9 w-9 flex-shrink-0"
               onClick={handleToggleWishlist}
             >
-              <Heart className={`w-4 h-4 transition-colors ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
+              <Heart className={`w-4 h-4 transition-colors ${inWishlist ? 'fill-red-500 text-red-500' : ''} ${isAnimating ? 'animate-heartPop' : ''}`} />
             </Button>
           </div>
 

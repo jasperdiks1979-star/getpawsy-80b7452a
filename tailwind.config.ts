@@ -88,12 +88,18 @@ export default {
           "0%": { opacity: "0", transform: "translateX(20px)" },
           "100%": { opacity: "1", transform: "translateX(0)" },
         },
+        heartPop: {
+          "0%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.3)" },
+          "100%": { transform: "scale(1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         wiggle: "wiggle 0.3s ease-in-out infinite",
         slideIn: "slideIn 0.3s ease-out",
+        heartPop: "heartPop 0.3s ease-out",
       },
     },
   },
