@@ -30,6 +30,34 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = (imagesLength: number) => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      setSelectedImage(prev => prev === imagesLength - 1 ? 0 : prev + 1);
+    }
+    if (isRightSwipe) {
+      setSelectedImage(prev => prev === 0 ? imagesLength - 1 : prev - 1);
+    }
+  };
 
   // Fetch product from database
   const { data: product, isLoading } = useQuery({
@@ -190,10 +218,13 @@ const ProductDetail = () => {
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
           {/* Images */}
           <div className="space-y-4">
-            {/* Main Image with Navigation */}
+            {/* Main Image with Navigation and Swipe */}
             <div 
-              className="relative aspect-square rounded-xl overflow-hidden bg-muted group cursor-zoom-in"
+              className="relative aspect-square rounded-xl overflow-hidden bg-muted group cursor-zoom-in touch-pan-y"
               onClick={() => setLightboxOpen(true)}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={() => onTouchEnd(images.length)}
             >
               <img
                 src={images[selectedImage]}
