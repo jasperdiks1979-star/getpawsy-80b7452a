@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2 } from "lucide-react";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
 import { CategoryManager } from "@/components/admin/CategoryManager";
@@ -74,6 +74,8 @@ const Admin = () => {
   const [importProgress, setImportProgress] = useState<{ current: number; total: number; status: string; startTime?: number } | null>(null);
   const [batchWarningOpen, setBatchWarningOpen] = useState(false);
   const [pendingImportProducts, setPendingImportProducts] = useState<CJProduct[]>([]);
+  const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Redirect if not admin
@@ -525,6 +527,40 @@ const Admin = () => {
       toast.error(`Refresh failed: ${error.message}`);
     },
   });
+
+  // Delete product mutation
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", productId);
+      
+      if (error) throw error;
+      return productId;
+    },
+    onSuccess: () => {
+      toast.success("Product succesvol verwijderd");
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["pet-catalog"] });
+      setDeleteDialogOpen(false);
+      setDeleteProductId(null);
+    },
+    onError: (error) => {
+      toast.error(`Verwijderen mislukt: ${error.message}`);
+    },
+  });
+
+  const handleDeleteProduct = (productId: string) => {
+    setDeleteProductId(productId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (deleteProductId) {
+      deleteProductMutation.mutate(deleteProductId);
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1255,19 +1291,27 @@ const Admin = () => {
                               {product.images.length} images
                             </Badge>
                           )}
-                          {/* Edit button overlay */}
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => {
-                              setEditProduct(product);
-                              setEditDialogOpen(true);
-                            }}
-                          >
-                            <Pencil className="w-3 h-3 mr-1" />
-                            Edit
-                          </Button>
+                          {/* Action buttons overlay */}
+                          <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                setEditProduct(product);
+                                setEditDialogOpen(true);
+                              }}
+                            >
+                              <Pencil className="w-3 h-3 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteProduct(product.id)}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </div>
                         <h3 className="font-medium text-sm line-clamp-2 mb-2">
                           {product.name}
@@ -1353,6 +1397,40 @@ const Admin = () => {
               </Button>
               <AlertDialogAction onClick={() => handleConfirmBatchImport(true)}>
                 Import alle {pendingImportProducts.length}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Product Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-destructive" />
+                Product verwijderen
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Weet je zeker dat je dit product wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setDeleteDialogOpen(false);
+                setDeleteProductId(null);
+              }}>
+                Annuleren
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteProductMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4 mr-2" />
+                )}
+                Verwijderen
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
