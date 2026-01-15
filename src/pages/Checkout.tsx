@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CreditCard, Lock } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
+import { trackBeginCheckout } from '@/lib/analytics';
 
 const usStates = [
   'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
@@ -29,6 +30,21 @@ const Checkout = () => {
   const shipping = 0; // Free shipping on all orders
   const tax = totalPrice * 0.08;
   const total = totalPrice + shipping + tax;
+
+  // Track begin checkout when page loads with items
+  useEffect(() => {
+    if (items.length > 0) {
+      trackBeginCheckout(
+        items.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        totalPrice
+      );
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

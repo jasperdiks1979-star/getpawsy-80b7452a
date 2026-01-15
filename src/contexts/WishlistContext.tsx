@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
 
 interface WishlistItem {
   productId: string;
@@ -44,12 +45,14 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
 
   const wishlist = wishlistItems.map(item => item.productId);
 
-  const addToWishlist = (productId: string) => {
+  const addToWishlist = (productId: string, productName?: string, productPrice?: number) => {
     setWishlistItems((prev) => [...prev, { productId, addedAt: Date.now() }]);
+    trackAddToWishlist(productId, productName, productPrice);
   };
 
-  const removeFromWishlist = (productId: string) => {
+  const removeFromWishlist = (productId: string, productName?: string) => {
     setWishlistItems((prev) => prev.filter((item) => item.productId !== productId));
+    trackRemoveFromWishlist(productId, productName);
   };
 
   const toggleWishlist = (productId: string) => {

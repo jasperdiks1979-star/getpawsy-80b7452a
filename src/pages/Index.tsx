@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect, useCallback } from 'react';
 import type { CarouselApi } from '@/components/ui/carousel';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { trackNewsletterSignup } from '@/lib/analytics';
+import { toast } from 'sonner';
 
 const features = [
   {
@@ -92,6 +94,8 @@ const itemVariants = {
 };
 
 const Index = () => {
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
   // Testimonials carousel state
   const [testimonialsApi, setTestimonialsApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -190,6 +194,37 @@ const Index = () => {
     },
     enabled: recentlyViewedIds.length > 0,
   });
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail || !newsletterEmail.includes('@')) {
+      toast.error('Vul een geldig e-mailadres in');
+      return;
+    }
+    
+    setIsSubscribing(true);
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert({ email: newsletterEmail });
+      
+      if (error) {
+        if (error.code === '23505') {
+          toast.info('Je bent al ingeschreven voor de nieuwsbrief!');
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success('Bedankt voor je aanmelding! Check je inbox voor 15% korting.');
+        trackNewsletterSignup(newsletterEmail);
+      }
+      setNewsletterEmail('');
+    } catch (error) {
+      toast.error('Er ging iets mis. Probeer het later opnieuw.');
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
 
   const categoryImages: Record<string, string> = {
     'Dogs': 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&q=80',
@@ -659,16 +694,25 @@ const Index = () => {
                 Subscribe to our newsletter and get 15% off your first order, 
                 plus exclusive deals and pet care tips from our experts.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+              <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
                 <input
                   type="email"
                   placeholder="Enter your email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
                   className="flex-1 px-5 py-3.5 rounded-full bg-white/15 border border-white/25 placeholder:text-white/60 text-white focus:outline-none focus:ring-2 focus:ring-white/40 backdrop-blur-sm"
+                  disabled={isSubscribing}
                 />
-                <Button variant="secondary" size="lg" className="rounded-full px-8">
-                  Subscribe
+                <Button 
+                  type="submit" 
+                  variant="secondary" 
+                  size="lg" 
+                  className="rounded-full px-8"
+                  disabled={isSubscribing}
+                >
+                  {isSubscribing ? 'Bezig...' : 'Subscribe'}
                 </Button>
-              </div>
+              </form>
               <p className="text-sm text-primary-foreground/70 mt-4">
                 No spam, unsubscribe anytime. We respect your inbox.
               </p>

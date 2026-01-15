@@ -21,6 +21,7 @@ import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { ReviewForm } from '@/components/reviews/ReviewForm';
 import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { sanitizeHtml } from '@/lib/sanitize';
+import { trackViewItem } from '@/lib/analytics';
 
 interface ProductVariant {
   vid: string;
@@ -182,11 +183,12 @@ const ProductDetail = () => {
     setSelectedImage(0);
     setSelectedVariant(null);
     
-    // Add current product to recently viewed
-    if (id) {
+    // Add current product to recently viewed and track view
+    if (id && product) {
       addToRecentlyViewed(id);
+      trackViewItem(id, product.name || '', product.price || 0, product.category || undefined);
     }
-  }, [id, addToRecentlyViewed]);
+  }, [id, product, addToRecentlyViewed]);
 
   // Update selected image when variant is selected
   useEffect(() => {
