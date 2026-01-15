@@ -284,11 +284,15 @@ const Admin = () => {
                           ? parseFloat(String(p.sellPrice).split('-')[0]) 
                           : Number(p.sellPrice);
                         const costPrice = isNaN(parsedSellPrice) ? 0 : parsedSellPrice;
-                        // Parse weight safely - it might also be a range
-                        const parsedWeight = typeof p.productWeight === 'string'
-                          ? parseFloat(String(p.productWeight).split('-')[0])
-                          : Number(p.productWeight);
-                        const weight = isNaN(parsedWeight) || parsedWeight <= 0 ? 200 : parsedWeight;
+                        // Parse weight safely - handle ranges like "8500-9100"
+                        let parsedWeight: number;
+                        const weightStr = String(p.productWeight || '200');
+                        if (weightStr.includes('-')) {
+                          parsedWeight = parseFloat(weightStr.split('-')[0]) || 200;
+                        } else {
+                          parsedWeight = parseFloat(weightStr) || 200;
+                        }
+                        const weight = parsedWeight <= 0 ? 200 : parsedWeight;
                         const pricing = calculateSellingPrice(costPrice, weight);
 
         productsToInsert.push({
@@ -849,11 +853,15 @@ const Admin = () => {
                           ? parseFloat(String(product.sellPrice).split('-')[0]) 
                           : Number(product.sellPrice);
                         const costPrice = isNaN(parsedSellPrice) ? 0 : parsedSellPrice;
-                        // Parse weight safely
-                        const parsedWeight = typeof product.productWeight === 'string'
-                          ? parseFloat(String(product.productWeight).split('-')[0])
-                          : Number(product.productWeight);
-                        const weight = isNaN(parsedWeight) || parsedWeight <= 0 ? 200 : parsedWeight;
+                        // Parse weight safely - handle ranges like "8500-9100"
+                        let parsedWeight: number;
+                        const weightStr = String(product.productWeight || '200');
+                        if (weightStr.includes('-')) {
+                          parsedWeight = parseFloat(weightStr.split('-')[0]) || 200;
+                        } else {
+                          parsedWeight = parseFloat(weightStr) || 200;
+                        }
+                        const weight = parsedWeight <= 0 ? 200 : parsedWeight;
                         const pricing = calculateSellingPrice(costPrice, weight);
 
                         return (
@@ -926,7 +934,7 @@ const Admin = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => setCatalogPage(p => p + 1)}
-                        disabled={petCatalogProducts.length < 50 || isCatalogLoading}
+                        disabled={(petCatalogData?.originalTotal || 0) <= catalogPage * 50 || isCatalogLoading}
                       >
                         Next
                         <ChevronRight className="w-4 h-4 ml-1" />
