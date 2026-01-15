@@ -39,34 +39,27 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = (imagesLength: number) => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+  const handleDragEnd = (imagesLength: number, offsetX: number, velocityX: number) => {
+    const swipe = offsetX + velocityX * 50; // Factor in velocity for snappier feel
     
-    if (isLeftSwipe) {
+    if (swipe < -minSwipeDistance) {
+      // Swiped left - next image
       setSelectedImage(prev => prev === imagesLength - 1 ? 0 : prev + 1);
-    }
-    if (isRightSwipe) {
+    } else if (swipe > minSwipeDistance) {
+      // Swiped right - previous image
       setSelectedImage(prev => prev === 0 ? imagesLength - 1 : prev - 1);
     }
+    
+    setDragX(0);
+    setIsDragging(false);
   };
 
   // Fetch product from database
@@ -338,34 +331,64 @@ const ProductDetail = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="space-y-4 w-full max-w-full"
           >
-            {/* Main Image */}
-            <div 
-              className="relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft 3xl:rounded-[2rem]"
+            {/* Main Image with Swipe Gestures */}
+            <motion.div 
+              ref={imageContainerRef}
+              className="relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group shadow-soft 3xl:rounded-[2rem] touch-pan-y"
               style={{ aspectRatio: '1/1' }}
-              onClick={() => setLightboxOpen(true)}
-              onTouchStart={onTouchStart}
-              onTouchMove={onTouchMove}
-              onTouchEnd={() => onTouchEnd(images.length)}
             >
-              {/* Optimized image with blur placeholder */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={selectedImage}
-                  className="absolute inset-0"
-                  initial={{ opacity: 0, scale: 1.05 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <OptimizedImage
-                    src={images[selectedImage]}
-                    alt={product.name}
-                    className="object-contain"
-                    containerClassName="w-full h-full"
-                    priority={selectedImage === 0}
-                  />
-                </motion.div>
-              </AnimatePresence>
+              {/* Swipeable image container */}
+              <motion.div
+                className="absolute inset-0 cursor-zoom-in"
+                drag={images.length > 1 ? "x" : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.2}
+                onDragStart={() => setIsDragging(true)}
+                onDrag={(_, info) => setDragX(info.offset.x)}
+                onDragEnd={(_, info) => handleDragEnd(images.length, info.offset.x, info.velocity.x)}
+                onClick={() => !isDragging && setLightboxOpen(true)}
+                whileTap={{ cursor: "grabbing" }}
+              >
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={selectedImage}
+                    className="absolute inset-0"
+                    initial={{ opacity: 0, x: dragX > 0 ? -100 : 100 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: dragX > 0 ? 100 : -100 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  >
+                    <OptimizedImage
+                      src={images[selectedImage]}
+                      alt={product.name}
+                      className="object-contain pointer-events-none"
+                      containerClassName="w-full h-full"
+                      priority={selectedImage === 0}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Swipe hint indicators - only on mobile */}
+                {images.length > 1 && (
+                  <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between pointer-events-none md:hidden">
+                    <motion.div
+                      className="w-8 h-8 rounded-full bg-foreground/10 flex items-center justify-center ml-2"
+                      animate={{ opacity: isDragging ? 0 : [0.3, 0.6, 0.3], x: [0, -3, 0] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                    >
+                      <ChevronLeft className="w-4 h-4 text-foreground/60" />
+                    </motion.div>
+                    <motion.div
+                      className="w-8 h-8 rounded-full bg-foreground/10 flex items-center justify-center mr-2"
+                      animate={{ opacity: isDragging ? 0 : [0.3, 0.6, 0.3], x: [0, 3, 0] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                    >
+                      <ChevronRight className="w-4 h-4 text-foreground/60" />
+                    </motion.div>
+                  </div>
+                )}
+              </motion.div>
+              
               
               {/* Zoom indicator */}
               <motion.div 
@@ -417,13 +440,33 @@ const ProductDetail = () => {
                     <ChevronRight className="w-5 h-5" />
                   </Button>
                   
-                  {/* Image Counter */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium">
+                  {/* Image Counter - Desktop */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium hidden md:block">
                     {selectedImage + 1} / {images.length}
+                  </div>
+                  
+                  {/* Dot Indicators - Mobile */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 md:hidden">
+                    {images.map((_, idx) => (
+                      <motion.button
+                        key={idx}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedImage(idx);
+                        }}
+                        className={`rounded-full transition-all ${
+                          selectedImage === idx 
+                            ? 'w-6 h-2 bg-primary' 
+                            : 'w-2 h-2 bg-foreground/30'
+                        }`}
+                        whileTap={{ scale: 0.9 }}
+                        layout
+                      />
+                    ))}
                   </div>
                 </>
               )}
-            </div>
+            </motion.div>
             
             {/* Thumbnail Carousel */}
             {images.length > 1 && (
