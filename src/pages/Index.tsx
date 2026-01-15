@@ -130,7 +130,7 @@ const Index = () => {
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-        .limit(4);
+        .limit(12);
       
       if (error) throw error;
       return data;
@@ -406,18 +406,30 @@ const Index = () => {
           )}
           
           {!productsLoading && featuredProducts && featuredProducts.length > 0 && (
-            <motion.div 
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="visible"
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
             >
-              {featuredProducts.map((product) => (
-                <motion.div key={product.id} variants={itemVariants}>
-                  <ProductCard product={product} />
-                </motion.div>
-              ))}
+              <Carousel
+                opts={{
+                  align: "start",
+                  loop: true,
+                  dragFree: true,
+                }}
+                className="w-full cursor-grab active:cursor-grabbing"
+              >
+                <CarouselContent className="-ml-4">
+                  {featuredProducts.map((product) => (
+                    <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
+                      <ProductCard product={product} />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+                <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+              </Carousel>
             </motion.div>
           )}
 
