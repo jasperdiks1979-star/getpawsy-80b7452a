@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
@@ -32,6 +32,7 @@ const ProductDetail = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
@@ -136,6 +137,18 @@ const ProductDetail = () => {
       }
     }
   }, [selectedVariant, product]);
+
+  // Auto-scroll thumbnail into view
+  useEffect(() => {
+    const thumbnail = thumbnailRefs.current[selectedImage];
+    if (thumbnail) {
+      thumbnail.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  }, [selectedImage]);
 
   if (isLoading) {
     return (
@@ -295,6 +308,7 @@ const ProductDetail = () => {
                     {images.map((img, idx) => (
                       <button
                         key={idx}
+                        ref={(el) => { thumbnailRefs.current[idx] = el; }}
                         onClick={() => setSelectedImage(idx)}
                         className={`flex-shrink-0 w-14 h-14 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all snap-start ${
                           selectedImage === idx 
