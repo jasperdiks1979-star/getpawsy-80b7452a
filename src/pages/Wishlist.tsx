@@ -3,6 +3,17 @@ import { Heart, ShoppingCart, Trash2, ArrowLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -79,17 +90,37 @@ const Wishlist = () => {
               </p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={() => {
-              clearWishlist();
-              toast.success('Wishlist geleegd');
-            }}
-          >
-            <Trash2 className="w-4 h-4" />
-            Leeg wishlist
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="w-4 h-4" />
+                Leeg wishlist
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Wishlist legen?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Weet je zeker dat je alle {wishlist.length} producten uit je wishlist wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => {
+                    clearWishlist();
+                    toast.success('Wishlist geleegd');
+                  }}
+                >
+                  Ja, leeg wishlist
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         {isLoading ? (
