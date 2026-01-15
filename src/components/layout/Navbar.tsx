@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Menu, Search, User, LogOut, Shield, Heart, X, ChevronDown, Dog, Cat, Bone, Sparkles, Gift, Truck, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Search, User, LogOut, Shield, Heart, X, ChevronDown, Dog, Cat, Bone, Sparkles, Gift, Truck, ArrowRight } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SearchSuggestions } from '@/components/search/SearchSuggestions';
+import { AnimatedHamburger } from '@/components/ui/animated-hamburger';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -65,6 +66,7 @@ export const Navbar = () => {
   const { wishlist } = useWishlist();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -268,10 +270,10 @@ export const Navbar = () => {
             )}
 
             {/* Mobile Menu */}
-            <Sheet>
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild className="lg:hidden">
                 <Button variant="ghost" size="icon" className="rounded-full">
-                  <Menu className="h-5 w-5" />
+                  <AnimatedHamburger isOpen={isMobileMenuOpen} />
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[320px] p-0 bg-background">
