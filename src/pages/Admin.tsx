@@ -77,6 +77,8 @@ const Admin = () => {
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [myProductsSearch, setMyProductsSearch] = useState("");
+  const [myProductsCategoryFilter, setMyProductsCategoryFilter] = useState<string>("all");
+  const [myProductsStatusFilter, setMyProductsStatusFilter] = useState<string>("all");
   const queryClient = useQueryClient();
 
   // Redirect if not admin
@@ -1251,9 +1253,9 @@ const Admin = () => {
                 </div>
               </div>
               
-              {/* Search bar for My Products */}
-              <div className="mb-4">
-                <div className="relative">
+              {/* Search and Filters for My Products */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder="Zoek in mijn producten..."
@@ -1262,6 +1264,32 @@ const Admin = () => {
                     className="pl-10"
                   />
                 </div>
+                <Select value={myProductsCategoryFilter} onValueChange={setMyProductsCategoryFilter}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="Alle categorieën" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle categorieën</SelectItem>
+                    {(() => {
+                      const productCategories = [...new Set(existingProducts?.map(p => p.category).filter(Boolean) || [])];
+                      return productCategories.map((cat) => (
+                        <SelectItem key={cat} value={cat!}>
+                          {cat}
+                        </SelectItem>
+                      ));
+                    })()}
+                  </SelectContent>
+                </Select>
+                <Select value={myProductsStatusFilter} onValueChange={setMyProductsStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-36">
+                    <SelectValue placeholder="Alle status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle status</SelectItem>
+                    <SelectItem value="active">Actief</SelectItem>
+                    <SelectItem value="inactive">Inactief</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Refresh Progress Indicator */}
@@ -1291,18 +1319,33 @@ const Admin = () => {
               )}
               {(() => {
                 const filteredProducts = existingProducts?.filter((product) => {
-                  if (!myProductsSearch.trim()) return true;
-                  const searchLower = myProductsSearch.toLowerCase();
-                  return (
-                    product.name.toLowerCase().includes(searchLower) ||
-                    product.category?.toLowerCase().includes(searchLower) ||
-                    product.sku?.toLowerCase().includes(searchLower)
-                  );
+                  // Text search filter
+                  if (myProductsSearch.trim()) {
+                    const searchLower = myProductsSearch.toLowerCase();
+                    const matchesSearch = 
+                      product.name.toLowerCase().includes(searchLower) ||
+                      product.category?.toLowerCase().includes(searchLower) ||
+                      product.sku?.toLowerCase().includes(searchLower);
+                    if (!matchesSearch) return false;
+                  }
+                  
+                  // Category filter
+                  if (myProductsCategoryFilter !== "all" && product.category !== myProductsCategoryFilter) {
+                    return false;
+                  }
+                  
+                  // Status filter
+                  if (myProductsStatusFilter === "active" && !product.is_active) return false;
+                  if (myProductsStatusFilter === "inactive" && product.is_active) return false;
+                  
+                  return true;
                 }) || [];
+                
+                const hasActiveFilters = myProductsSearch || myProductsCategoryFilter !== "all" || myProductsStatusFilter !== "all";
                 
                 return filteredProducts.length > 0 ? (
                   <>
-                    {myProductsSearch && (
+                    {hasActiveFilters && (
                       <p className="text-sm text-muted-foreground mb-3">
                         {filteredProducts.length} van {existingProducts?.length || 0} producten gevonden
                       </p>
