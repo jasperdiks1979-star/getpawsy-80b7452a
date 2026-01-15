@@ -260,6 +260,12 @@ export const Navbar = () => {
                     )}
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+                      <User className="h-4 w-4" />
+                      Mijn Profiel
+                    </Link>
+                  </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem asChild>
                       <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
@@ -268,6 +274,7 @@ export const Navbar = () => {
                       </Link>
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={handleSignOut}
                     className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
@@ -388,6 +395,14 @@ export const Navbar = () => {
                     {user ? (
                       <div className="space-y-2">
                         <p className="text-sm text-muted-foreground px-2 truncate">{user.email}</p>
+                        <SheetClose asChild>
+                          <Link to="/profile" className="block">
+                            <Button variant="outline" className="w-full justify-start gap-2 rounded-xl">
+                              <User className="h-4 w-4" />
+                              Mijn Profiel
+                            </Button>
+                          </Link>
+                        </SheetClose>
                         {isAdmin && (
                           <SheetClose asChild>
                             <Link to="/admin" className="block">
