@@ -86,7 +86,7 @@ export const CategoryManager = () => {
     queryKey: ['category-product-counts'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('category')
         .eq('is_active', true);
       

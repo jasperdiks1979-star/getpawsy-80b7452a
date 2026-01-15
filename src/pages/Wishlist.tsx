@@ -42,7 +42,7 @@ const Wishlist = () => {
       if (wishlist.length === 0) return [];
       
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .in('id', wishlist);
       

@@ -77,7 +77,7 @@ const ProductDetail = () => {
     queryKey: ['product', id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .eq('id', id)
         .maybeSingle();
@@ -93,7 +93,7 @@ const ProductDetail = () => {
     queryKey: ['related-products', product?.category],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .eq('is_active', true)
         .eq('category', product?.category || '')
@@ -116,7 +116,7 @@ const ProductDetail = () => {
       if (recentlyViewedIds.length === 0) return [];
       
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .eq('is_active', true)
         .in('id', recentlyViewedIds);

@@ -33,7 +33,7 @@ const Products = () => {
     queryKey: ['products'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
