@@ -340,7 +340,7 @@ const ProductDetail = () => {
           >
             {/* Main Image */}
             <div 
-              className="relative aspect-square w-full max-h-[50vh] md:max-h-none rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft"
+              className="relative w-full h-auto min-h-[200px] max-h-[45vh] md:aspect-square md:max-h-none rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group cursor-zoom-in shadow-soft flex items-center justify-center"
               onClick={() => setLightboxOpen(true)}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -352,11 +352,11 @@ const ProductDetail = () => {
               )}
               
               <AnimatePresence mode="wait">
-                <motion.img
+              <motion.img
                   key={selectedImage}
                   src={images[selectedImage]}
                   alt={product.name}
-                  className="w-full h-full object-contain"
+                  className="w-auto h-auto max-w-full max-h-[45vh] md:w-full md:h-full md:max-h-none object-contain"
                   initial={{ opacity: 0, scale: 1.05 }}
                   animate={{ opacity: imageLoaded ? 1 : 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
