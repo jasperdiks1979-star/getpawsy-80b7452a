@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { PawPrint, Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, Send, ArrowRight } from 'lucide-react';
+import { Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, Send, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
+import logoIcon from '@/assets/logo-getpawsy.png';
 
 const emailSchema = z.string().trim().email({ message: 'Invalid email address' }).max(255);
 
@@ -147,8 +148,8 @@ export const Footer = () => {
             {/* Brand Column */}
             <div className="col-span-2 md:col-span-2 space-y-6">
               <Link to="/" className="inline-flex items-center gap-3 group">
-                <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary text-primary-foreground shadow-lg group-hover:scale-105 transition-transform">
-                  <PawPrint className="w-7 h-7" />
+                <div className="flex items-center justify-center w-12 h-12 rounded-2xl overflow-hidden shadow-lg group-hover:scale-105 transition-transform">
+                  <img src={logoIcon} alt="GetPawsy" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-display text-2xl font-bold">
                   Get<span className="text-primary">Pawsy</span>
