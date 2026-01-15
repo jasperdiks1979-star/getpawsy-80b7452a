@@ -91,37 +91,54 @@ const itemVariants = {
 };
 
 const Index = () => {
-  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  // Testimonials carousel state
+  const [testimonialsApi, setTestimonialsApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slideCount, setSlideCount] = useState(0);
 
-  const onSelect = useCallback(() => {
-    if (!carouselApi) return;
-    setCurrentSlide(carouselApi.selectedScrollSnap());
-  }, [carouselApi]);
+  // Featured products carousel state
+  const [productsApi, setProductsApi] = useState<CarouselApi>();
+
+  const onTestimonialsSelect = useCallback(() => {
+    if (!testimonialsApi) return;
+    setCurrentSlide(testimonialsApi.selectedScrollSnap());
+  }, [testimonialsApi]);
 
   useEffect(() => {
-    if (!carouselApi) return;
-    setSlideCount(carouselApi.scrollSnapList().length);
-    onSelect();
-    carouselApi.on('select', onSelect);
+    if (!testimonialsApi) return;
+    setSlideCount(testimonialsApi.scrollSnapList().length);
+    onTestimonialsSelect();
+    testimonialsApi.on('select', onTestimonialsSelect);
     return () => {
-      carouselApi.off('select', onSelect);
+      testimonialsApi.off('select', onTestimonialsSelect);
     };
-  }, [carouselApi, onSelect]);
+  }, [testimonialsApi, onTestimonialsSelect]);
 
   // Auto-play for testimonials carousel
   useEffect(() => {
-    if (!carouselApi) return;
+    if (!testimonialsApi) return;
     const interval = setInterval(() => {
-      if (carouselApi.canScrollNext()) {
-        carouselApi.scrollNext();
+      if (testimonialsApi.canScrollNext()) {
+        testimonialsApi.scrollNext();
       } else {
-        carouselApi.scrollTo(0);
+        testimonialsApi.scrollTo(0);
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [carouselApi]);
+  }, [testimonialsApi]);
+
+  // Auto-play for featured products carousel
+  useEffect(() => {
+    if (!productsApi) return;
+    const interval = setInterval(() => {
+      if (productsApi.canScrollNext()) {
+        productsApi.scrollNext();
+      } else {
+        productsApi.scrollTo(0);
+      }
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [productsApi]);
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
     queryKey: ['featured-products'],
     queryFn: async () => {
@@ -413,6 +430,7 @@ const Index = () => {
               transition={{ duration: 0.5 }}
             >
               <Carousel
+                setApi={setProductsApi}
                 opts={{
                   align: "start",
                   loop: true,
@@ -468,7 +486,7 @@ const Index = () => {
             className="relative"
           >
             <Carousel
-              setApi={setCarouselApi}
+              setApi={setTestimonialsApi}
               opts={{
                 align: "start",
                 loop: true,
@@ -529,7 +547,7 @@ const Index = () => {
               {Array.from({ length: slideCount }).map((_, index) => (
                 <button
                   key={index}
-                  onClick={() => carouselApi?.scrollTo(index)}
+                  onClick={() => testimonialsApi?.scrollTo(index)}
                   className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
                     currentSlide === index 
                       ? 'bg-primary w-8' 
