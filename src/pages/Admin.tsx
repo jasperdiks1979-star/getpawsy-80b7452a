@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail } from "lucide-react";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
+import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -593,18 +594,26 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="catalog" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
             <TabsTrigger value="catalog" className="flex items-center gap-2">
               <PawPrint className="w-4 h-4" />
-              Pet Catalog (US)
+              <span className="hidden sm:inline">Pet Catalog</span>
+              <span className="sm:hidden">Catalog</span>
             </TabsTrigger>
             <TabsTrigger value="search" className="flex items-center gap-2">
               <Search className="w-4 h-4" />
-              Search
+              <span className="hidden sm:inline">Search</span>
+              <span className="sm:hidden">Zoek</span>
             </TabsTrigger>
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="w-4 h-4" />
-              My Products
+              <span className="hidden sm:inline">My Products</span>
+              <span className="sm:hidden">Products</span>
+            </TabsTrigger>
+            <TabsTrigger value="newsletter" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              <span className="hidden sm:inline">Nieuwsbrief</span>
+              <span className="sm:hidden">Mail</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1157,6 +1166,11 @@ const Admin = () => {
                 </Card>
               )}
             </div>
+          </TabsContent>
+
+          {/* Newsletter Tab */}
+          <TabsContent value="newsletter">
+            <NewsletterSubscribers />
           </TabsContent>
         </Tabs>
 
