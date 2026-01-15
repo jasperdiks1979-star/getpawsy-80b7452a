@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock, MessageSquare } from 'lucide-react';
+import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock, MessageSquare, Ruler, Weight, Box, Info } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -738,12 +738,24 @@ const ProductDetail = () => {
           className="mt-16"
         >
           <Tabs defaultValue="description" className="w-full">
-            <TabsList className="w-full justify-start border-b border-border/50 bg-transparent p-0 h-auto">
+            <TabsList className="w-full justify-start border-b border-border/50 bg-transparent p-0 h-auto flex-wrap">
               <TabsTrigger 
                 value="description" 
                 className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
               >
                 Description
+              </TabsTrigger>
+              <TabsTrigger 
+                value="specifications"
+                className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
+              >
+                Specifications
+              </TabsTrigger>
+              <TabsTrigger 
+                value="size-guide"
+                className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
+              >
+                Size Guide
               </TabsTrigger>
               <TabsTrigger 
                 value="shipping"
@@ -756,7 +768,7 @@ const ProductDetail = () => {
                   value="variants"
                   className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
                 >
-                  Varianten ({variants.length})
+                  Options ({variants.length})
                 </TabsTrigger>
               )}
             </TabsList>
@@ -773,6 +785,149 @@ const ProductDetail = () => {
                     {product.description || 'No description available.'}
                   </p>
                 )}
+              </div>
+            </TabsContent>
+            
+            {/* Specifications Tab */}
+            <TabsContent value="specifications" className="mt-6">
+              <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Product Specifications */}
+                  <div className="space-y-4">
+                    <h3 className="font-display font-semibold text-lg text-foreground flex items-center gap-2">
+                      <Box className="w-5 h-5 text-primary" />
+                      Product Details
+                    </h3>
+                    <div className="space-y-3">
+                      {product.sku && (
+                        <div className="flex justify-between items-center py-2 border-b border-border/50">
+                          <span className="text-muted-foreground">SKU</span>
+                          <span className="font-medium text-foreground">{product.sku}</span>
+                        </div>
+                      )}
+                      {product.category && (
+                        <div className="flex justify-between items-center py-2 border-b border-border/50">
+                          <span className="text-muted-foreground">Category</span>
+                          <span className="font-medium text-foreground">{product.category}</span>
+                        </div>
+                      )}
+                      {product.weight && (
+                        <div className="flex justify-between items-center py-2 border-b border-border/50">
+                          <span className="text-muted-foreground flex items-center gap-1">
+                            <Weight className="w-4 h-4" />
+                            Weight
+                          </span>
+                          <span className="font-medium text-foreground">{Number(product.weight).toFixed(2)} lbs</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center py-2 border-b border-border/50">
+                        <span className="text-muted-foreground">Availability</span>
+                        <span className={`font-medium ${inStock ? 'text-success' : 'text-destructive'}`}>
+                          {inStock ? 'In Stock' : 'Out of Stock'}
+                        </span>
+                      </div>
+                      {product.supplier_name && (
+                        <div className="flex justify-between items-center py-2 border-b border-border/50">
+                          <span className="text-muted-foreground">Supplier</span>
+                          <span className="font-medium text-foreground">{product.supplier_name}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Features & Benefits */}
+                  <div className="space-y-4">
+                    <h3 className="font-display font-semibold text-lg text-foreground flex items-center gap-2">
+                      <Info className="w-5 h-5 text-primary" />
+                      Features & Benefits
+                    </h3>
+                    <ul className="space-y-3">
+                      {[
+                        'Premium quality materials',
+                        'Safe for all pets',
+                        'Easy to clean and maintain',
+                        'Durable construction',
+                        'Eco-friendly packaging',
+                      ].map((feature, idx) => (
+                        <motion.li 
+                          key={idx}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.05 * idx }}
+                          className="flex items-center gap-2 text-muted-foreground"
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          {feature}
+                        </motion.li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            {/* Size Guide Tab */}
+            <TabsContent value="size-guide" className="mt-6">
+              <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 text-foreground">
+                    <Ruler className="w-5 h-5 text-primary" />
+                    <h3 className="font-display font-semibold text-lg">Pet Size Guide</h3>
+                  </div>
+                  
+                  <p className="text-muted-foreground">
+                    Use this guide to find the perfect size for your pet. Measure your pet and compare with the chart below.
+                  </p>
+                  
+                  {/* Size Chart Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="py-3 px-4 text-left font-semibold text-foreground">Size</th>
+                          <th className="py-3 px-4 text-left font-semibold text-foreground">Pet Weight</th>
+                          <th className="py-3 px-4 text-left font-semibold text-foreground">Neck</th>
+                          <th className="py-3 px-4 text-left font-semibold text-foreground">Chest</th>
+                          <th className="py-3 px-4 text-left font-semibold text-foreground">Back Length</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { size: 'XS', weight: 'Up to 5 lbs', neck: '6-8"', chest: '10-12"', back: '8-10"' },
+                          { size: 'S', weight: '5-10 lbs', neck: '8-10"', chest: '12-15"', back: '10-12"' },
+                          { size: 'M', weight: '10-25 lbs', neck: '10-14"', chest: '15-20"', back: '12-16"' },
+                          { size: 'L', weight: '25-50 lbs', neck: '14-18"', chest: '20-26"', back: '16-20"' },
+                          { size: 'XL', weight: '50-80 lbs', neck: '18-22"', chest: '26-32"', back: '20-24"' },
+                          { size: 'XXL', weight: '80+ lbs', neck: '22-26"', chest: '32-38"', back: '24-28"' },
+                        ].map((row, idx) => (
+                          <motion.tr 
+                            key={row.size}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.05 * idx }}
+                            className="border-b border-border/50 hover:bg-muted/50 transition-colors"
+                          >
+                            <td className="py-3 px-4 font-medium text-primary">{row.size}</td>
+                            <td className="py-3 px-4 text-muted-foreground">{row.weight}</td>
+                            <td className="py-3 px-4 text-muted-foreground">{row.neck}</td>
+                            <td className="py-3 px-4 text-muted-foreground">{row.chest}</td>
+                            <td className="py-3 px-4 text-muted-foreground">{row.back}</td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  {/* Measuring Tips */}
+                  <div className="bg-secondary/30 rounded-xl p-4 mt-4">
+                    <h4 className="font-semibold text-foreground mb-2">📏 How to Measure Your Pet</h4>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li><strong>Neck:</strong> Measure around the base of the neck where the collar sits</li>
+                      <li><strong>Chest:</strong> Measure the widest part of the chest, behind the front legs</li>
+                      <li><strong>Back Length:</strong> Measure from the base of the neck to the base of the tail</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </TabsContent>
             
