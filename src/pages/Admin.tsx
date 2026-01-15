@@ -76,6 +76,7 @@ const Admin = () => {
   const [pendingImportProducts, setPendingImportProducts] = useState<CJProduct[]>([]);
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [myProductsSearch, setMyProductsSearch] = useState("");
   const queryClient = useQueryClient();
 
   // Redirect if not admin
@@ -1250,6 +1251,19 @@ const Admin = () => {
                 </div>
               </div>
               
+              {/* Search bar for My Products */}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Zoek in mijn producten..."
+                    value={myProductsSearch}
+                    onChange={(e) => setMyProductsSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
               {/* Refresh Progress Indicator */}
               {refreshProgress && (
                 <Card className="mb-4 border-primary/20 bg-primary/5">
@@ -1275,9 +1289,26 @@ const Admin = () => {
                   </CardContent>
                 </Card>
               )}
-              {existingProducts && existingProducts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {existingProducts.map((product) => (
+              {(() => {
+                const filteredProducts = existingProducts?.filter((product) => {
+                  if (!myProductsSearch.trim()) return true;
+                  const searchLower = myProductsSearch.toLowerCase();
+                  return (
+                    product.name.toLowerCase().includes(searchLower) ||
+                    product.category?.toLowerCase().includes(searchLower) ||
+                    product.sku?.toLowerCase().includes(searchLower)
+                  );
+                }) || [];
+                
+                return filteredProducts.length > 0 ? (
+                  <>
+                    {myProductsSearch && (
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {filteredProducts.length} van {existingProducts?.length || 0} producten gevonden
+                      </p>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {filteredProducts.map((product) => (
                     <Card key={product.id} className="group">
                       <CardContent className="p-4">
                         <div className="relative">
@@ -1335,17 +1366,22 @@ const Admin = () => {
                       </CardContent>
                     </Card>
                   ))}
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">
-                      No products yet. Use the Pet Catalog or Search to import products.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+                    </div>
+                  </>
+                ) : (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">
+                        {myProductsSearch 
+                          ? "Geen producten gevonden met deze zoekterm."
+                          : "No products yet. Use the Pet Catalog or Search to import products."
+                        }
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
             </div>
           </TabsContent>
 
