@@ -6,6 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 import { toast } from 'sonner';
 
 export interface Product {
@@ -39,7 +40,6 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const inWishlist = isInWishlist(product.id);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -73,16 +73,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       >
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-muted">
-          {/* Skeleton loader */}
-          {!imageLoaded && (
-            <div className="absolute inset-0 bg-muted animate-pulse" />
-          )}
-          
-          <img
+          <OptimizedImage
             src={product.image_url || '/placeholder.svg'}
             alt={product.name}
-            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-            onLoad={() => setImageLoaded(true)}
+            aspectRatio="square"
+            className="group-hover:scale-105"
           />
           
           {/* Gradient overlay on hover */}
