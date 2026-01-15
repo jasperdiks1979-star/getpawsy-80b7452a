@@ -382,9 +382,9 @@ const Index = () => {
                   to={`/products?category=${category.name}`}
                   className="group block relative overflow-hidden rounded-2xl aspect-square shadow-soft hover:shadow-soft-lg transition-shadow duration-300"
                 >
-                  {/* Image with zoom effect */}
+                  {/* Image with zoom effect - v2 forces cache refresh for new images */}
                   <img 
-                    src={category.image_url || categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}
+                    src={`${category.image_url || categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}?v=2`}
                     alt={category.name}
                     className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-115"
                   />
