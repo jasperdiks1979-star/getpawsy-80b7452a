@@ -3,6 +3,7 @@ import { ShoppingCart, Search, User, LogOut, Shield, Heart, X, ChevronDown, Dog,
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
+import { useCartIconRef } from '@/contexts/CartAnimationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { Button } from '@/components/ui/button';
@@ -78,6 +79,7 @@ const promoItems = [
 
 export const Navbar = () => {
   const { totalItems } = useCart();
+  const cartIconRef = useCartIconRef();
   const { user, isAdmin, signOut } = useAuth();
   const { wishlist } = useWishlist();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -226,20 +228,22 @@ export const Navbar = () => {
 
             {/* Cart */}
             <Link to="/cart">
-              <Button variant="ghost" size="icon" className="relative rounded-full">
-                <ShoppingCart className="h-5 w-5" />
-                {totalItems > 0 && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    key={totalItems}
-                  >
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
-                      {totalItems}
-                    </Badge>
-                  </motion.div>
-                )}
-              </Button>
+              <div ref={cartIconRef as React.RefObject<HTMLDivElement>}>
+                <Button variant="ghost" size="icon" className="relative rounded-full">
+                  <ShoppingCart className="h-5 w-5" />
+                  {totalItems > 0 && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      key={totalItems}
+                    >
+                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
+                        {totalItems}
+                      </Badge>
+                    </motion.div>
+                  )}
+                </Button>
+              </div>
             </Link>
 
             {/* Account */}
