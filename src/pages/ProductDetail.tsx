@@ -263,12 +263,18 @@ const ProductDetail = () => {
       addToCartButtonRef.current
     );
     
+    // Use variant price if selected, otherwise use product price
+    const cartPrice = selectedVariant?.variantSellPrice 
+      ? Number(selectedVariant.variantSellPrice) 
+      : Number(product.price);
+    
     for (let i = 0; i < quantity; i++) {
       addItem({
-        id: product.id,
-        name: product.name + (selectedVariant ? ` - ${selectedVariant.variantNameEn}` : ''),
-        price: Number(product.price),
+        id: product.id + (selectedVariant ? `-${selectedVariant.vid}` : ''),
+        name: product.name + (selectedVariant ? ` - ${selectedVariant.variantKey || selectedVariant.variantNameEn}` : ''),
+        price: cartPrice,
         image: selectedVariant?.variantImage || product.image_url || '/placeholder.svg',
+        variant: selectedVariant?.variantKey || selectedVariant?.variantNameEn,
       });
     }
     toast.success(`${quantity}x ${product.name} added to cart!`);
