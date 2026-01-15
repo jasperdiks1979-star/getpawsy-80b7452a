@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, User, LogOut, Shield, Heart, X, ChevronDown, Dog, Cat, Bone, Sparkles, Gift, Truck, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Search, User, LogOut, Shield, Heart, X, ChevronDown, Dog, Cat, Bone, Sparkles, Gift, Truck, ArrowRight, Home, Sofa, Fish } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
@@ -26,32 +26,46 @@ const navLinks = [
 
 const categoryItems = [
   { 
-    href: '/products?category=Dogs', 
-    label: 'Dogs', 
-    icon: Dog,
-    description: 'Everything for your loyal companion',
+    href: '/products?category=Pet+Houses+%26+Cages', 
+    label: 'Pet Houses & Cages', 
+    icon: Home,
+    description: 'Cozy homes for your pets',
     color: 'bg-amber-100 text-amber-600'
   },
   { 
-    href: '/products?category=Cats', 
-    label: 'Cats', 
-    icon: Cat,
-    description: 'Premium products for cats',
+    href: '/products?category=Pet+Furniture+Tools', 
+    label: 'Pet Furniture', 
+    icon: Sofa,
+    description: 'Comfort and style',
     color: 'bg-purple-100 text-purple-600'
   },
   { 
-    href: '/products?category=Toys', 
-    label: 'Toys', 
-    icon: Bone,
-    description: 'Hours of fun guaranteed',
+    href: '/products?category=Cat+Trees+%26+Condos', 
+    label: 'Cat Trees', 
+    icon: Cat,
+    description: 'Climbing & scratching fun',
     color: 'bg-pink-100 text-pink-600'
   },
   { 
-    href: '/products?category=Care', 
-    label: 'Grooming', 
-    icon: Sparkles,
-    description: 'Health & wellness',
+    href: '/products?category=Dog+Stairs+%26+Steps', 
+    label: 'Dog Stairs', 
+    icon: Dog,
+    description: 'Easy access for dogs',
     color: 'bg-emerald-100 text-emerald-600'
+  },
+  { 
+    href: '/products?category=Pet+Snacks', 
+    label: 'Pet Snacks', 
+    icon: Bone,
+    description: 'Tasty treats',
+    color: 'bg-orange-100 text-orange-600'
+  },
+  { 
+    href: '/products?category=Pet+Chase+Toys', 
+    label: 'Toys', 
+    icon: Sparkles,
+    description: 'Hours of fun',
+    color: 'bg-blue-100 text-blue-600'
   },
 ];
 

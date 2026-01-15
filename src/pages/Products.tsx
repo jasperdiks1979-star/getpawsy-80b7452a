@@ -57,17 +57,6 @@ const Products = () => {
     },
   });
 
-  // Map navigation categories to product category keywords
-  const categoryKeywordMap: Record<string, string[]> = {
-    'Dogs': ['dog', 'puppy', 'canine'],
-    'Cats': ['cat', 'kitten', 'feline'],
-    'Toys': ['toy', 'chase', 'play'],
-    'Food': ['food', 'snack', 'treat', 'feeding', 'drinking'],
-    'Grooming': ['groom', 'care', 'brush', 'clean'],
-    'Care': ['care', 'health', 'groom', 'brush', 'clean'],
-    'Accessories': ['accessory', 'collar', 'leash', 'bed', 'furniture', 'house', 'cage', 'hammock', 'nest', 'stairs', 'steps', 'tree', 'condo'],
-  };
-
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     let result = [...products];
@@ -81,24 +70,18 @@ const Products = () => {
       );
     }
 
-    // Filter by category - use keyword matching for navigation categories
+    // Filter by category - exact match or partial match
     if (selectedCategories.length > 0) {
       result = result.filter(p => {
         if (!p.category) return false;
         const productCategory = p.category.toLowerCase();
         
         return selectedCategories.some(selected => {
-          // First try exact match
-          if (productCategory === selected.toLowerCase()) return true;
-          
-          // Then try keyword matching for navigation categories
-          const keywords = categoryKeywordMap[selected];
-          if (keywords) {
-            return keywords.some(keyword => productCategory.includes(keyword));
-          }
-          
-          // Finally try partial match
-          return productCategory.includes(selected.toLowerCase());
+          const selectedLower = selected.toLowerCase();
+          // Exact match or partial match
+          return productCategory === selectedLower || 
+                 productCategory.includes(selectedLower) ||
+                 selectedLower.includes(productCategory);
         });
       });
     }
