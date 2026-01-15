@@ -180,6 +180,9 @@ const Checkout = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.name}</p>
+                        {item.variant && (
+                          <p className="text-xs text-muted-foreground">{item.variant}</p>
+                        )}
                         <p className="text-sm text-muted-foreground">
                           ${item.price.toFixed(2)} each
                         </p>
