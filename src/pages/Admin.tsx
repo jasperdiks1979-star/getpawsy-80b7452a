@@ -71,7 +71,7 @@ const Admin = () => {
   const [editProduct, setEditProduct] = useState<Tables<"products"> | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [refreshProgress, setRefreshProgress] = useState<{ current: number; total: number; status: string } | null>(null);
-  const [importProgress, setImportProgress] = useState<{ current: number; total: number; status: string } | null>(null);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number; status: string; startTime?: number } | null>(null);
   const [batchWarningOpen, setBatchWarningOpen] = useState(false);
   const [pendingImportProducts, setPendingImportProducts] = useState<CJProduct[]>([]);
   const queryClient = useQueryClient();
@@ -210,7 +210,7 @@ const Admin = () => {
       const productIds = products.map(p => p.pid);
       const total = products.length;
       
-      setImportProgress({ current: 0, total, status: "Fetching product details from CJ..." });
+      setImportProgress({ current: 0, total, status: "Fetching product details from CJ...", startTime: Date.now() });
       
       // Fetch full product details (all images, variants, stock) from CJ
       const { data: fullDetailsResponse, error: detailsError } = await supabase.functions.invoke("cj-dropshipping", {
@@ -225,7 +225,8 @@ const Admin = () => {
         throw detailsError;
       }
 
-      setImportProgress({ current: 0, total, status: "Generating SEO descriptions..." });
+      const seoStartTime = Date.now();
+      setImportProgress({ current: 0, total, status: "Generating SEO descriptions...", startTime: seoStartTime });
       
       // Process products sequentially to avoid rate limits and timeouts
       const productsToInsert = [];
@@ -233,11 +234,12 @@ const Admin = () => {
       for (let i = 0; i < products.length; i++) {
         const p = products[i];
         
-        setImportProgress({ 
+        setImportProgress(prev => ({ 
           current: i + 1, 
           total, 
-          status: `Processing ${i + 1}/${total}: ${p.productNameEn.substring(0, 40)}...` 
-        });
+          status: `Processing ${i + 1}/${total}: ${p.productNameEn.substring(0, 40)}...`,
+          startTime: prev?.startTime || seoStartTime
+        }));
         
         // Find full details for this product
         const fullDetail = fullDetailsResponse?.find((d: { pid: string; success: boolean; data?: { description?: string }; images?: string[]; variants?: unknown; totalStock?: number }) => d.pid === p.pid && d.success);
@@ -773,33 +775,58 @@ const Admin = () => {
                 )}
 
                 {/* Import Progress Indicator */}
-                {importProgress && (
-                  <Card className="mb-4 border-primary/20 bg-primary/5">
-                    <CardContent className="pt-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Producten importeren...
-                          </span>
-                          <div className="text-right">
-                            <span className="text-lg font-bold text-primary">
-                              {importProgress.current}
+                {importProgress && (() => {
+                  const remaining = importProgress.total - importProgress.current;
+                  const elapsed = importProgress.startTime ? Date.now() - importProgress.startTime : 0;
+                  const avgTimePerProduct = importProgress.current > 0 ? elapsed / importProgress.current : 0;
+                  const estimatedRemaining = avgTimePerProduct * remaining;
+                  
+                  // Format time remaining
+                  const formatTime = (ms: number) => {
+                    if (ms < 1000) return "< 1 sec";
+                    const seconds = Math.ceil(ms / 1000);
+                    if (seconds < 60) return `~${seconds} sec`;
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSecs = seconds % 60;
+                    return remainingSecs > 0 ? `~${minutes} min ${remainingSecs} sec` : `~${minutes} min`;
+                  };
+                  
+                  return (
+                    <Card className="mb-4 border-primary/20 bg-primary/5">
+                      <CardContent className="pt-4">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Producten importeren...
                             </span>
-                            <span className="text-muted-foreground"> / {importProgress.total}</span>
+                            <div className="text-right">
+                              <span className="text-lg font-bold text-primary">
+                                {importProgress.current}
+                              </span>
+                              <span className="text-muted-foreground"> / {importProgress.total}</span>
+                            </div>
+                          </div>
+                          <Progress value={(importProgress.current / importProgress.total) * 100} className="h-3" />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span className="flex-1 truncate mr-2">{importProgress.status}</span>
+                            <div className="flex gap-3 shrink-0">
+                              {importProgress.current > 0 && remaining > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatTime(estimatedRemaining)}
+                                </span>
+                              )}
+                              <span className="font-medium">
+                                Nog {remaining} te gaan
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <Progress value={(importProgress.current / importProgress.total) * 100} className="h-3" />
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>{importProgress.status}</span>
-                          <span className="font-medium">
-                            Nog {importProgress.total - importProgress.current} te gaan
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
 
                 {isCatalogLoading ? (
                   <div className="py-12 text-center">
