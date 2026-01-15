@@ -199,6 +199,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       products: {
@@ -317,7 +324,69 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      products_public: {
+        Row: {
+          category: string | null
+          cj_product_id: string | null
+          compare_at_price: number | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          image_url: string | null
+          images: string[] | null
+          is_active: boolean | null
+          name: string | null
+          price: number | null
+          shipping_time: string | null
+          sku: string | null
+          stock: number | null
+          supplier_name: string | null
+          updated_at: string | null
+          variants: Json | null
+          weight: number | null
+        }
+        Insert: {
+          category?: string | null
+          cj_product_id?: string | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          images?: string[] | null
+          is_active?: boolean | null
+          name?: string | null
+          price?: number | null
+          shipping_time?: string | null
+          sku?: string | null
+          stock?: number | null
+          supplier_name?: string | null
+          updated_at?: string | null
+          variants?: Json | null
+          weight?: number | null
+        }
+        Update: {
+          category?: string | null
+          cj_product_id?: string | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          images?: string[] | null
+          is_active?: boolean | null
+          name?: string | null
+          price?: number | null
+          shipping_time?: string | null
+          sku?: string | null
+          stock?: number | null
+          supplier_name?: string | null
+          updated_at?: string | null
+          variants?: Json | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
