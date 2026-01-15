@@ -276,10 +276,18 @@ const Admin = () => {
         // Get variants data
         const variants = fullDetail?.variants || null;
         
-        // Calculate price using dynamic pricing with shipping included
-        const costPrice = Number(p.sellPrice) || 0;
-        const weight = p.productWeight || 200; // Default weight if not specified
-        const pricing = calculateSellingPrice(costPrice, weight);
+                        // Calculate price using dynamic pricing with shipping included
+                        // Parse sellPrice safely - it might be a range like "400-620"
+                        const parsedSellPrice = typeof p.sellPrice === 'string' 
+                          ? parseFloat(String(p.sellPrice).split('-')[0]) 
+                          : Number(p.sellPrice);
+                        const costPrice = isNaN(parsedSellPrice) ? 0 : parsedSellPrice;
+                        // Parse weight safely - it might also be a range
+                        const parsedWeight = typeof p.productWeight === 'string'
+                          ? parseFloat(String(p.productWeight).split('-')[0])
+                          : Number(p.productWeight);
+                        const weight = isNaN(parsedWeight) || parsedWeight <= 0 ? 200 : parsedWeight;
+                        const pricing = calculateSellingPrice(costPrice, weight);
 
         productsToInsert.push({
           cj_product_id: p.pid,
@@ -514,9 +522,11 @@ const Admin = () => {
   };
 
   // Confirm batch import with first N products
-  const handleConfirmBatchImport = () => {
-    const limitedProducts = pendingImportProducts.slice(0, MAX_BATCH_SIZE);
-    importMutation.mutate(limitedProducts);
+  const handleConfirmBatchImport = (importAll: boolean = false) => {
+    const productsToImport = importAll 
+      ? pendingImportProducts 
+      : pendingImportProducts.slice(0, MAX_BATCH_SIZE);
+    importMutation.mutate(productsToImport);
     setBatchWarningOpen(false);
     setPendingImportProducts([]);
   };
@@ -796,8 +806,17 @@ const Admin = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {petCatalogProducts.map((product: CJProduct) => {
                         const isSelected = selectedProducts.has(product.pid);
-                        const costPrice = Number(product.sellPrice) || 0;
-                        const pricing = calculateSellingPrice(costPrice, product.productWeight || 200);
+                        // Parse sellPrice safely - it might be a range like "400-620"
+                        const parsedSellPrice = typeof product.sellPrice === 'string' 
+                          ? parseFloat(String(product.sellPrice).split('-')[0]) 
+                          : Number(product.sellPrice);
+                        const costPrice = isNaN(parsedSellPrice) ? 0 : parsedSellPrice;
+                        // Parse weight safely
+                        const parsedWeight = typeof product.productWeight === 'string'
+                          ? parseFloat(String(product.productWeight).split('-')[0])
+                          : Number(product.productWeight);
+                        const weight = isNaN(parsedWeight) || parsedWeight <= 0 ? 200 : parsedWeight;
+                        const pricing = calculateSellingPrice(costPrice, weight);
 
                         return (
                           <Card
@@ -1220,28 +1239,30 @@ const Admin = () => {
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-amber-500" />
-                Too Many Products Selected
+                Veel producten geselecteerd
               </AlertDialogTitle>
               <AlertDialogDescription className="space-y-2">
                 <p>
-                  You have selected <strong>{pendingImportProducts.length}</strong> products, 
-                  but the maximum batch size is <strong>{MAX_BATCH_SIZE}</strong> products.
+                  Je hebt <strong>{pendingImportProducts.length}</strong> producten geselecteerd. 
+                  Het importeren van veel producten kan langer duren.
                 </p>
                 <p>
-                  Importing too many products at once can cause timeouts and failures. 
-                  Would you like to import the first {MAX_BATCH_SIZE} products now?
+                  Wil je alle {pendingImportProducts.length} producten importeren, of alleen de eerste {MAX_BATCH_SIZE}?
                 </p>
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
               <AlertDialogCancel onClick={() => {
                 setBatchWarningOpen(false);
                 setPendingImportProducts([]);
               }}>
-                Cancel & Adjust Selection
+                Annuleren
               </AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmBatchImport}>
-                Import First {MAX_BATCH_SIZE} Products
+              <Button variant="outline" onClick={() => handleConfirmBatchImport(false)}>
+                Import eerste {MAX_BATCH_SIZE}
+              </Button>
+              <AlertDialogAction onClick={() => handleConfirmBatchImport(true)}>
+                Import alle {pendingImportProducts.length}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
