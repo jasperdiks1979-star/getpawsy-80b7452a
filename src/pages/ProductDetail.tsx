@@ -271,33 +271,56 @@ const ProductDetail = () => {
               )}
             </div>
             
-            {/* Thumbnail Carousel with Swipe */}
+            {/* Thumbnail Carousel with Swipe and Arrows */}
             {images.length > 1 && (
-              <div 
-                className="relative overflow-hidden"
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={() => onTouchEnd(images.length)}
-              >
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory touch-pan-x">
-                  {images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImage(idx)}
-                      className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all snap-start ${
-                        selectedImage === idx 
-                          ? 'border-primary ring-2 ring-primary/20' 
-                          : 'border-transparent hover:border-muted-foreground/30'
-                      }`}
-                    >
-                      <img 
-                        src={img} 
-                        alt={`Product image ${idx + 1}`} 
-                        className="w-full h-full object-cover" 
-                      />
-                    </button>
-                  ))}
+              <div className="relative flex items-center gap-2">
+                {/* Left Arrow */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="flex-shrink-0 h-8 w-8 md:h-10 md:w-10"
+                  onClick={handlePrevImage}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+
+                {/* Thumbnails */}
+                <div 
+                  className="flex-1 overflow-hidden"
+                  onTouchStart={onTouchStart}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={() => onTouchEnd(images.length)}
+                >
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory touch-pan-x">
+                    {images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedImage(idx)}
+                        className={`flex-shrink-0 w-14 h-14 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all snap-start ${
+                          selectedImage === idx 
+                            ? 'border-primary ring-2 ring-primary/20' 
+                            : 'border-transparent hover:border-muted-foreground/30'
+                        }`}
+                      >
+                        <img 
+                          src={img} 
+                          alt={`Product image ${idx + 1}`} 
+                          className="w-full h-full object-cover" 
+                        />
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Right Arrow */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="flex-shrink-0 h-8 w-8 md:h-10 md:w-10"
+                  onClick={handleNextImage}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
               </div>
             )}
           </div>
