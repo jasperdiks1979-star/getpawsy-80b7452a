@@ -247,6 +247,36 @@ serve(async (req) => {
 
     console.log(`Admin verified for user: ${userId}`);
 
+    // Check rate limit (10 requests per hour for sync-stock - expensive operation)
+    const { data: rateLimitData, error: rateLimitError } = await adminSupabase
+      .rpc('check_rate_limit', {
+        p_user_id: userId,
+        p_function_name: 'sync-stock',
+        p_max_requests: 10,
+        p_window_minutes: 60
+      });
+
+    if (rateLimitError) {
+      console.error('Rate limit check failed:', rateLimitError);
+    } else if (rateLimitData && rateLimitData.length > 0 && !rateLimitData[0].allowed) {
+      console.log(`Rate limit exceeded for user: ${userId}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded. Please try again later.',
+          reset_at: rateLimitData[0].reset_at
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimitData[0].reset_at
+          } 
+        }
+      );
+    }
+
     const result = await syncAllProductStock();
     
     return new Response(JSON.stringify(result), {
