@@ -56,6 +56,7 @@ const Admin = () => {
   const [editProduct, setEditProduct] = useState<Tables<"products"> | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [refreshProgress, setRefreshProgress] = useState<{ current: number; total: number; status: string } | null>(null);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number; status: string } | null>(null);
   const queryClient = useQueryClient();
 
   // Redirect if not admin
@@ -186,13 +187,13 @@ const Admin = () => {
 
   // Import products mutation - fetches full details including all images, variants, and stock
   // Uses dynamic pricing with shipping included and psychological price rounding
-  // Now also generates SEO descriptions automatically
+  // Now also generates SEO descriptions automatically with progress tracking
   const importMutation = useMutation({
     mutationFn: async (products: CJProduct[]) => {
       const productIds = products.map(p => p.pid);
+      const total = products.length;
       
-      // Show loading toast
-      toast.loading("Fetching full product details from CJ...", { id: "import-loading" });
+      setImportProgress({ current: 0, total, status: "Fetching product details from CJ..." });
       
       // Fetch full product details (all images, variants, stock) from CJ
       const { data: fullDetailsResponse, error: detailsError } = await supabase.functions.invoke("cj-dropshipping", {
@@ -203,15 +204,24 @@ const Admin = () => {
       });
 
       if (detailsError) {
-        toast.dismiss("import-loading");
+        setImportProgress(null);
         throw detailsError;
       }
 
-      toast.dismiss("import-loading");
-      toast.loading(`Generating SEO descriptions for ${products.length} products...`, { id: "seo-loading" });
+      setImportProgress({ current: 0, total, status: "Generating SEO descriptions..." });
       
-      // Map full details to database format with dynamic pricing
-      const productsToInsert = await Promise.all(products.map(async (p) => {
+      // Process products sequentially to avoid rate limits and timeouts
+      const productsToInsert = [];
+      
+      for (let i = 0; i < products.length; i++) {
+        const p = products[i];
+        
+        setImportProgress({ 
+          current: i + 1, 
+          total, 
+          status: `Processing ${i + 1}/${total}: ${p.productNameEn.substring(0, 40)}...` 
+        });
+        
         // Find full details for this product
         const fullDetail = fullDetailsResponse?.find((d: { pid: string; success: boolean; data?: { description?: string }; images?: string[]; variants?: unknown; totalStock?: number }) => d.pid === p.pid && d.success);
         
@@ -254,27 +264,32 @@ const Admin = () => {
         const weight = p.productWeight || 200; // Default weight if not specified
         const pricing = calculateSellingPrice(costPrice, weight);
 
-        return {
+        productsToInsert.push({
           cj_product_id: p.pid,
           name: p.productNameEn,
           description: seoDescription,
           category: selectedCategory === "auto" ? p.categoryName : (selectedCategory || p.categoryName),
           image_url: p.productImage,
-          images: images, // Store all images
-          price: pricing.sellingPrice, // Psychological price with shipping included
-          cost_price: pricing.totalCost, // Cost + shipping for accurate profit calculation
-          compare_at_price: pricing.compareAtPrice, // Strikethrough price
+          images: images,
+          price: pricing.sellingPrice,
+          cost_price: pricing.totalCost,
+          compare_at_price: pricing.compareAtPrice,
           sku: p.productSku,
           weight: p.productWeight,
-          stock: stock, // Real stock from CJ
-          variants: variants, // Store variant data
+          stock: stock,
+          variants: variants,
           is_active: true,
           supplier_name: "CJ Dropshipping",
-          shipping_time: "Free Shipping", // Shipping is included in price
-        };
-      }));
+          shipping_time: "Free Shipping",
+        });
+        
+        // Small delay between SEO generations to avoid rate limiting
+        if (i < products.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
 
-      toast.dismiss("seo-loading");
+      setImportProgress({ current: total, total, status: "Saving to database..." });
 
       const { data, error } = await supabase
         .from("products")
@@ -288,6 +303,7 @@ const Admin = () => {
       return data;
     },
     onSuccess: (data) => {
+      setImportProgress(null);
       toast.success(`${data?.length || 0} products imported with SEO descriptions!`);
       setSelectedProducts(new Set());
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
@@ -296,6 +312,7 @@ const Admin = () => {
       queryClient.invalidateQueries({ queryKey: ["cj-search"] });
     },
     onError: (error) => {
+      setImportProgress(null);
       toast.error(`Import failed: ${error.message}`);
     },
   });
@@ -666,6 +683,24 @@ const Admin = () => {
                   </div>
                 )}
 
+                {/* Import Progress Indicator */}
+                {importProgress && (
+                  <Card className="mb-4 border-primary/20 bg-primary/5">
+                    <CardContent className="pt-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-medium">Importing Products...</span>
+                          <span className="text-muted-foreground">
+                            {importProgress.current} / {importProgress.total}
+                          </span>
+                        </div>
+                        <Progress value={(importProgress.current / importProgress.total) * 100} />
+                        <p className="text-xs text-muted-foreground">{importProgress.status}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {isCatalogLoading ? (
                   <div className="py-12 text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
@@ -855,6 +890,24 @@ const Admin = () => {
                         Import ({selectedProducts.size})
                       </Button>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Import Progress Indicator for Search */}
+            {importProgress && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="pt-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">Importing Products...</span>
+                      <span className="text-muted-foreground">
+                        {importProgress.current} / {importProgress.total}
+                      </span>
+                    </div>
+                    <Progress value={(importProgress.current / importProgress.total) * 100} />
+                    <p className="text-xs text-muted-foreground">{importProgress.status}</p>
                   </div>
                 </CardContent>
               </Card>
