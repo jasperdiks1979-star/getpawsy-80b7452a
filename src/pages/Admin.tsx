@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart } from "lucide-react";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
 import { CategoryManager } from "@/components/admin/CategoryManager";
+import { OrdersManager } from "@/components/admin/OrdersManager";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -735,7 +736,7 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="catalog" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
             <TabsTrigger value="catalog" className="flex items-center gap-2">
               <PawPrint className="w-4 h-4" />
               <span className="hidden sm:inline">Pet Catalog</span>
@@ -750,6 +751,11 @@ const Admin = () => {
               <Package className="w-4 h-4" />
               <span className="hidden sm:inline">My Products</span>
               <span className="sm:hidden">Products</span>
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center gap-2">
+              <ShoppingCart className="w-4 h-4" />
+              <span className="hidden sm:inline">Bestellingen</span>
+              <span className="sm:hidden">Orders</span>
             </TabsTrigger>
             <TabsTrigger value="newsletter" className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
@@ -1493,6 +1499,11 @@ const Admin = () => {
                 );
               })()}
             </div>
+          </TabsContent>
+
+          {/* Orders Tab */}
+          <TabsContent value="orders">
+            <OrdersManager />
           </TabsContent>
 
           {/* Newsletter Tab */}
