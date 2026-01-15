@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_cj_products: {
+        Row: {
+          blocked_at: string
+          blocked_by: string | null
+          cj_product_id: string
+          id: string
+          product_name: string | null
+        }
+        Insert: {
+          blocked_at?: string
+          blocked_by?: string | null
+          cj_product_id: string
+          id?: string
+          product_name?: string | null
+        }
+        Update: {
+          blocked_at?: string
+          blocked_by?: string | null
+          cj_product_id?: string
+          id?: string
+          product_name?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
