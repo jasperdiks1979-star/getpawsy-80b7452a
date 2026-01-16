@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      bestsellers: {
+        Row: {
+          created_at: string
+          hero_headline: string | null
+          hero_subheadline: string | null
+          id: string
+          is_active: boolean
+          is_manual: boolean
+          long_description: string | null
+          meta_keywords: string[] | null
+          product_id: string
+          rank: number
+          selling_points: Json | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hero_headline?: string | null
+          hero_subheadline?: string | null
+          id?: string
+          is_active?: boolean
+          is_manual?: boolean
+          long_description?: string | null
+          meta_keywords?: string[] | null
+          product_id: string
+          rank?: number
+          selling_points?: Json | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hero_headline?: string | null
+          hero_subheadline?: string | null
+          id?: string
+          is_active?: boolean
+          is_manual?: boolean
+          long_description?: string | null
+          meta_keywords?: string[] | null
+          product_id?: string
+          rank?: number
+          selling_points?: Json | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bestsellers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bestsellers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_cj_products: {
         Row: {
           blocked_at: string
