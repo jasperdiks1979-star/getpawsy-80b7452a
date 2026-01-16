@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro } from "lucide-react";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
 import { CategoryManager } from "@/components/admin/CategoryManager";
 import { OrdersManager } from "@/components/admin/OrdersManager";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { ContactMessagesManager } from "@/components/admin/ContactMessagesManager";
+import { SalesDashboard } from "@/components/admin/SalesDashboard";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -779,8 +780,13 @@ const Admin = () => {
           </Badge>
         </div>
 
-        <Tabs defaultValue="catalog" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
+        <Tabs defaultValue="sales" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-9 lg:w-auto lg:inline-grid">
+            <TabsTrigger value="sales" className="flex items-center gap-2">
+              <Euro className="w-4 h-4" />
+              <span className="hidden sm:inline">Verkoop</span>
+              <span className="sm:hidden">€</span>
+            </TabsTrigger>
             <TabsTrigger value="catalog" className="flex items-center gap-2">
               <PawPrint className="w-4 h-4" />
               <span className="hidden sm:inline">Pet Catalog</span>
@@ -822,6 +828,11 @@ const Admin = () => {
               <span className="sm:hidden">Msg</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Sales Dashboard Tab */}
+          <TabsContent value="sales" className="space-y-6">
+            <SalesDashboard />
+          </TabsContent>
 
           {/* Pet Catalog Tab */}
           <TabsContent value="catalog" className="space-y-6">
