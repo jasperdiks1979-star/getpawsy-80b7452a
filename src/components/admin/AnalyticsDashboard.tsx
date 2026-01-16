@@ -20,7 +20,14 @@ import {
   Activity,
   Zap,
   MousePointerClick,
-  Loader2
+  Loader2,
+  Chrome,
+  MapPin,
+  Target,
+  Percent,
+  TrendingDown,
+  DollarSign,
+  Layers
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { 
@@ -69,6 +76,22 @@ interface GA4RealtimeResponse {
 interface GA4EcommerceResponse {
   transactions?: GA4Report;
   topProducts?: GA4Report;
+}
+
+interface GA4DemographicsResponse {
+  browsers?: GA4Report;
+  operatingSystems?: GA4Report;
+  trafficSources?: GA4Report;
+  cities?: GA4Report;
+  ageGender?: GA4Report;
+  landingPages?: GA4Report;
+}
+
+interface GA4ConversionsResponse {
+  conversionEvents?: GA4Report;
+  purchaseFunnel?: GA4Report;
+  revenueByDate?: GA4Report;
+  conversionsBySource?: GA4Report;
 }
 
 // Helper to parse GA4 response into usable format
@@ -243,6 +266,24 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     topProducts: [] as { name: string; sales: number; revenue: number }[]
   });
   const [realtimeHistory, setRealtimeHistory] = useState<{ time: string; users: number }[]>([]);
+  
+  // New demographics data states
+  const [demographicsData, setDemographicsData] = useState({
+    browsers: [] as { name: string; users: number; sessions: number }[],
+    operatingSystems: [] as { name: string; users: number }[],
+    trafficSources: [] as { channel: string; sessions: number; users: number; bounceRate: number; avgDuration: number }[],
+    cities: [] as { city: string; users: number }[],
+    ageGender: [] as { age: string; users: number }[],
+    landingPages: [] as { page: string; sessions: number; bounceRate: number; avgDuration: number; conversions: number }[]
+  });
+  
+  // New conversions data states
+  const [conversionsData, setConversionsData] = useState({
+    events: [] as { name: string; count: number; users: number }[],
+    funnel: { sessions: 0, addToCarts: 0, checkouts: 0, purchases: 0, revenue: 0 },
+    revenueByDate: [] as { date: string; revenue: number; purchases: number; transactions: number }[],
+    conversionsBySource: [] as { channel: string; sessions: number; purchases: number; revenue: number }[]
+  });
 
   const fetchOverviewData = useCallback(async () => {
     try {
@@ -284,7 +325,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
         bounceRate: avgBounce * 100,
         newUsers: totalNewUsers,
         returningUsers: totalUsers - totalNewUsers,
-        conversionRate: 0, // Requires e-commerce data
+        conversionRate: 0,
       });
 
       // Parse other data
@@ -362,6 +403,110 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     }
   }, []);
 
+  const fetchDemographicsData = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error: fetchError } = await supabase.functions.invoke<GA4DemographicsResponse>('ga4-analytics', {
+        body: { reportType: 'demographics' }
+      });
+
+      if (fetchError) throw fetchError;
+      if (!data) return;
+
+      setDemographicsData({
+        browsers: data.browsers?.rows?.map(row => ({
+          name: row.dimensionValues?.[0]?.value || 'Unknown',
+          users: parseInt(row.metricValues?.[0]?.value || '0'),
+          sessions: parseInt(row.metricValues?.[1]?.value || '0')
+        })) || [],
+        operatingSystems: data.operatingSystems?.rows?.map(row => ({
+          name: row.dimensionValues?.[0]?.value || 'Unknown',
+          users: parseInt(row.metricValues?.[0]?.value || '0')
+        })) || [],
+        trafficSources: data.trafficSources?.rows?.map(row => ({
+          channel: row.dimensionValues?.[0]?.value || 'Unknown',
+          sessions: parseInt(row.metricValues?.[0]?.value || '0'),
+          users: parseInt(row.metricValues?.[1]?.value || '0'),
+          bounceRate: parseFloat(row.metricValues?.[2]?.value || '0') * 100,
+          avgDuration: parseFloat(row.metricValues?.[3]?.value || '0')
+        })) || [],
+        cities: data.cities?.rows?.slice(0, 8).map(row => ({
+          city: row.dimensionValues?.[0]?.value || 'Unknown',
+          users: parseInt(row.metricValues?.[0]?.value || '0')
+        })) || [],
+        ageGender: data.ageGender?.rows?.map(row => ({
+          age: row.dimensionValues?.[0]?.value || 'Unknown',
+          users: parseInt(row.metricValues?.[0]?.value || '0')
+        })) || [],
+        landingPages: data.landingPages?.rows?.slice(0, 5).map(row => ({
+          page: row.dimensionValues?.[0]?.value || '/',
+          sessions: parseInt(row.metricValues?.[0]?.value || '0'),
+          bounceRate: parseFloat(row.metricValues?.[1]?.value || '0') * 100,
+          avgDuration: parseFloat(row.metricValues?.[2]?.value || '0'),
+          conversions: parseInt(row.metricValues?.[3]?.value || '0')
+        })) || []
+      });
+    } catch (err) {
+      console.error('Error fetching demographics data:', err);
+    }
+  }, []);
+
+  const fetchConversionsData = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error: fetchError } = await supabase.functions.invoke<GA4ConversionsResponse>('ga4-analytics', {
+        body: { reportType: 'conversions' }
+      });
+
+      if (fetchError) throw fetchError;
+      if (!data) return;
+
+      const funnelRow = data.purchaseFunnel?.rows?.[0];
+      const dayNames = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
+
+      setConversionsData({
+        events: data.conversionEvents?.rows?.slice(0, 10).map(row => ({
+          name: row.dimensionValues?.[0]?.value || 'Unknown',
+          count: parseInt(row.metricValues?.[0]?.value || '0'),
+          users: parseInt(row.metricValues?.[1]?.value || '0')
+        })) || [],
+        funnel: {
+          sessions: parseInt(funnelRow?.metricValues?.[0]?.value || '0'),
+          addToCarts: parseInt(funnelRow?.metricValues?.[1]?.value || '0'),
+          checkouts: parseInt(funnelRow?.metricValues?.[2]?.value || '0'),
+          purchases: parseInt(funnelRow?.metricValues?.[3]?.value || '0'),
+          revenue: parseFloat(funnelRow?.metricValues?.[4]?.value || '0')
+        },
+        revenueByDate: data.revenueByDate?.rows?.map(row => {
+          const dateStr = row.dimensionValues?.[0]?.value || '';
+          const date = new Date(
+            parseInt(dateStr.substring(0, 4)),
+            parseInt(dateStr.substring(4, 6)) - 1,
+            parseInt(dateStr.substring(6, 8))
+          );
+          return {
+            date: dayNames[date.getDay()],
+            revenue: parseFloat(row.metricValues?.[0]?.value || '0'),
+            purchases: parseInt(row.metricValues?.[1]?.value || '0'),
+            transactions: parseInt(row.metricValues?.[2]?.value || '0')
+          };
+        }) || [],
+        conversionsBySource: data.conversionsBySource?.rows?.map(row => ({
+          channel: row.dimensionValues?.[0]?.value || 'Unknown',
+          sessions: parseInt(row.metricValues?.[0]?.value || '0'),
+          purchases: parseInt(row.metricValues?.[1]?.value || '0'),
+          revenue: parseFloat(row.metricValues?.[2]?.value || '0')
+        })) || []
+      });
+    } catch (err) {
+      console.error('Error fetching conversions data:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isConfigured) return;
 
@@ -390,11 +535,25 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     fetchEcommerceData();
   }, [isConfigured, activeTab, fetchEcommerceData]);
 
+  // Fetch demographics data when tab changes
+  useEffect(() => {
+    if (!isConfigured || activeTab !== 'demographics') return;
+    fetchDemographicsData();
+  }, [isConfigured, activeTab, fetchDemographicsData]);
+
+  // Fetch conversions data when tab changes
+  useEffect(() => {
+    if (!isConfigured || activeTab !== 'conversions') return;
+    fetchConversionsData();
+  }, [isConfigured, activeTab, fetchConversionsData]);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchOverviewData();
     if (activeTab === 'realtime') await fetchRealtimeData();
     if (activeTab === 'ecommerce') await fetchEcommerceData();
+    if (activeTab === 'demographics') await fetchDemographicsData();
+    if (activeTab === 'conversions') await fetchConversionsData();
     setIsRefreshing(false);
     toast.success('Analytics data vernieuwd');
   };
@@ -489,7 +648,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             Overzicht
@@ -501,6 +660,14 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
           <TabsTrigger value="audience" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Publiek
+          </TabsTrigger>
+          <TabsTrigger value="demographics" className="flex items-center gap-2">
+            <Globe className="w-4 h-4" />
+            Demografie
+          </TabsTrigger>
+          <TabsTrigger value="conversions" className="flex items-center gap-2">
+            <Target className="w-4 h-4" />
+            Conversies
           </TabsTrigger>
           <TabsTrigger value="ecommerce" className="flex items-center gap-2">
             <ShoppingCart className="w-4 h-4" />
@@ -850,6 +1017,367 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Demographics Tab */}
+        <TabsContent value="demographics" className="space-y-6">
+          {/* Traffic Sources */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Layers className="w-5 h-5" />
+                Verkeersbronnen
+              </CardTitle>
+              <CardDescription>Waar komen je bezoekers vandaan</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-64 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : demographicsData.trafficSources.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+              ) : (
+                <div className="space-y-4">
+                  {demographicsData.trafficSources.map((source, index) => {
+                    const maxSessions = demographicsData.trafficSources[0]?.sessions || 1;
+                    return (
+                      <div key={source.channel} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
+                            <span className="font-medium">{source.channel}</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>{source.sessions.toLocaleString()} sessies</span>
+                            <span className="text-xs">{source.bounceRate.toFixed(1)}% bounce</span>
+                          </div>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div 
+                            className="bg-primary h-2 rounded-full transition-all"
+                            style={{ width: `${(source.sessions / maxSessions) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Browsers */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Chrome className="w-5 h-5" />
+                  Browsers
+                </CardTitle>
+                <CardDescription>Meest gebruikte browsers</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="h-48 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : demographicsData.browsers.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+                ) : (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={demographicsData.browsers.slice(0, 6)} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis type="number" className="text-xs" />
+                        <YAxis dataKey="name" type="category" className="text-xs" width={80} />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "8px"
+                          }} 
+                        />
+                        <Bar dataKey="users" fill="hsl(25, 65%, 45%)" radius={[0, 4, 4, 0]} name="Gebruikers" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Cities */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5" />
+                  Steden
+                </CardTitle>
+                <CardDescription>Top steden van bezoekers</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="h-48 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : demographicsData.cities.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+                ) : (
+                  <div className="space-y-3">
+                    {demographicsData.cities.map((city, index) => (
+                      <div key={city.city} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
+                          <span className="font-medium">{city.city}</span>
+                        </div>
+                        <Badge variant="secondary">{city.users.toLocaleString()}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Operating Systems */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Monitor className="w-5 h-5" />
+                Besturingssystemen
+              </CardTitle>
+              <CardDescription>Verdeling per OS</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-32 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : demographicsData.operatingSystems.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+              ) : (
+                <div className="flex flex-wrap gap-4">
+                  {demographicsData.operatingSystems.slice(0, 6).map((os) => (
+                    <div key={os.name} className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                      <span className="font-medium">{os.name}</span>
+                      <Badge variant="outline">{os.users.toLocaleString()}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Landing Pages */}
+          {demographicsData.landingPages.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Landing Pages</CardTitle>
+                <CardDescription>Pagina's waar bezoekers binnenkomen</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {demographicsData.landingPages.map((page, index) => (
+                    <div key={page.page} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
+                        <span className="font-medium truncate max-w-[250px]">{page.page}</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>{page.sessions.toLocaleString()} sessies</span>
+                        <span>{page.bounceRate.toFixed(1)}% bounce</span>
+                        <span>{formatDuration(page.avgDuration)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Conversions Tab */}
+        <TabsContent value="conversions" className="space-y-6">
+          {/* Conversion Funnel */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Conversie Funnel
+              </CardTitle>
+              <CardDescription>Van sessie tot aankoop</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-32 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="text-center p-4 bg-muted/30 rounded-lg">
+                    <div className="text-2xl font-bold">{conversionsData.funnel.sessions.toLocaleString()}</div>
+                    <p className="text-sm text-muted-foreground">Sessies</p>
+                  </div>
+                  <div className="text-center p-4 bg-muted/40 rounded-lg relative">
+                    <div className="text-2xl font-bold">{conversionsData.funnel.addToCarts.toLocaleString()}</div>
+                    <p className="text-sm text-muted-foreground">Add to Cart</p>
+                    {conversionsData.funnel.sessions > 0 && (
+                      <span className="text-xs text-primary">
+                        {((conversionsData.funnel.addToCarts / conversionsData.funnel.sessions) * 100).toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold">{conversionsData.funnel.checkouts.toLocaleString()}</div>
+                    <p className="text-sm text-muted-foreground">Checkout</p>
+                    {conversionsData.funnel.addToCarts > 0 && (
+                      <span className="text-xs text-primary">
+                        {((conversionsData.funnel.checkouts / conversionsData.funnel.addToCarts) * 100).toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-center p-4 bg-primary/10 rounded-lg">
+                    <div className="text-2xl font-bold text-primary">{conversionsData.funnel.purchases.toLocaleString()}</div>
+                    <p className="text-sm text-muted-foreground">Aankopen</p>
+                    {conversionsData.funnel.checkouts > 0 && (
+                      <span className="text-xs text-primary">
+                        {((conversionsData.funnel.purchases / conversionsData.funnel.checkouts) * 100).toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-center p-4 bg-green-500/10 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">€{conversionsData.funnel.revenue.toFixed(0)}</div>
+                    <p className="text-sm text-muted-foreground">Omzet</p>
+                    {conversionsData.funnel.sessions > 0 && (
+                      <span className="text-xs text-green-600">
+                        CR: {((conversionsData.funnel.purchases / conversionsData.funnel.sessions) * 100).toFixed(2)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Revenue Over Time */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                Omzet per Dag
+              </CardTitle>
+              <CardDescription>Omzet trend van de afgelopen week</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-72 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : conversionsData.revenueByDate.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Geen omzet data beschikbaar</p>
+              ) : (
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={conversionsData.revenueByDate}>
+                      <defs>
+                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(140, 40%, 45%)" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="hsl(140, 40%, 45%)" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="date" className="text-xs" />
+                      <YAxis className="text-xs" tickFormatter={(value) => `€${value}`} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px"
+                        }}
+                        formatter={(value: number) => [`€${value.toFixed(2)}`, 'Omzet']}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="hsl(140, 40%, 45%)"
+                        fillOpacity={1}
+                        fill="url(#colorRevenue)"
+                        name="Omzet"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Conversions by Source */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Conversies per Kanaal</CardTitle>
+                <CardDescription>Welke kanalen converteren het best</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="h-48 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : conversionsData.conversionsBySource.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+                ) : (
+                  <div className="space-y-3">
+                    {conversionsData.conversionsBySource.slice(0, 6).map((source) => {
+                      const conversionRate = source.sessions > 0 
+                        ? ((source.purchases / source.sessions) * 100).toFixed(2) 
+                        : '0.00';
+                      return (
+                        <div key={source.channel} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                          <div>
+                            <p className="font-medium">{source.channel}</p>
+                            <p className="text-sm text-muted-foreground">{source.sessions.toLocaleString()} sessies</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-green-600">€{source.revenue.toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground">{conversionRate}% CR</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Top Events */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Events</CardTitle>
+                <CardDescription>Meest getriggerde events</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="h-48 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : conversionsData.events.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Geen events data beschikbaar</p>
+                ) : (
+                  <div className="space-y-2">
+                    {conversionsData.events.slice(0, 8).map((event) => (
+                      <div key={event.name} className="flex items-center justify-between py-2 border-b border-muted last:border-0">
+                        <span className="font-medium truncate max-w-[180px]">{event.name}</span>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <span>{event.count.toLocaleString()}x</span>
+                          <Badge variant="outline">{event.users} users</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* E-commerce Tab */}
