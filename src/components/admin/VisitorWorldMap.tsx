@@ -160,10 +160,11 @@ export const VisitorWorldMap = () => {
           table: "visitor_activity",
         },
         (payload) => {
-          // Show notification for new checkouts
           const newActivity = payload.new as VisitorActivity;
+          const location = newActivity.city || newActivity.country || "Onbekende locatie";
+          
+          // Show notification for new checkouts
           if (newActivity.activity_type === "checkout") {
-            const location = newActivity.city || newActivity.country || "Onbekende locatie";
             playNotificationSound();
             toast({
               title: "🎉 Nieuwe checkout!",
@@ -171,6 +172,17 @@ export const VisitorWorldMap = () => {
               duration: 5000,
             });
           }
+          
+          // Show notification for new cart additions
+          if (newActivity.activity_type === "cart") {
+            playNotificationSound();
+            toast({
+              title: "🛒 Nieuw in winkelwagen!",
+              description: `Een klant uit ${location} heeft iets toegevoegd`,
+              duration: 4000,
+            });
+          }
+          
           refetch();
         }
       )
