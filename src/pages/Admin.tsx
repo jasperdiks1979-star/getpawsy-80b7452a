@@ -18,6 +18,7 @@ import { ContactMessagesManager } from "@/components/admin/ContactMessagesManage
 import { SalesDashboard } from "@/components/admin/SalesDashboard";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -65,6 +66,7 @@ interface CJResponse {
 
 const Admin = () => {
   const { user, isLoading: authLoading, isAdmin } = useAuth();
+  const { invokeFunction } = useAuthenticatedFetch();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -136,7 +138,7 @@ const Admin = () => {
     queryFn: async (): Promise<CJProduct[]> => {
       if (!searchTerm) return [];
       
-      const { data, error } = await supabase.functions.invoke("cj-dropshipping", {
+      const { data, error } = await invokeFunction<CJResponse>("cj-dropshipping", {
         body: {
           action: "search-products",
           keyword: searchTerm,
@@ -169,7 +171,7 @@ const Admin = () => {
   } = useQuery({
     queryKey: ["pet-catalog", catalogPage, catalogKeyword],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("cj-dropshipping", {
+      const { data, error } = await invokeFunction<CJResponse & { error?: string; data: { originalTotal?: number; list: CJProduct[]; total: number } }>("cj-dropshipping", {
         body: {
           action: "pet-search",
           keyword: catalogKeyword,
@@ -216,7 +218,7 @@ const Admin = () => {
 
   // Generate SEO text for a product
   const generateSeoForProduct = async (productName: string, category: string) => {
-    const { data, error } = await supabase.functions.invoke("generate-seo-text", {
+    const { data, error } = await invokeFunction<{ description?: string }>("generate-seo-text", {
       body: { productName, category },
     });
     if (error) throw error;
@@ -240,7 +242,7 @@ const Admin = () => {
       setImportProgress({ current: 0, total, status: "Fetching product details from CJ...", startTime: Date.now() });
       
       // Fetch full product details (all images, variants, stock) from CJ
-      const { data: fullDetailsResponse, error: detailsError } = await supabase.functions.invoke("cj-dropshipping", {
+      const { data: fullDetailsResponse, error: detailsError } = await invokeFunction<Array<{ pid: string; success: boolean; data?: { description?: string }; images?: string[]; variants?: unknown; totalStock?: number }>>("cj-dropshipping", {
         body: {
           action: "get-products-for-import",
           productIds: productIds,
@@ -442,7 +444,7 @@ const Admin = () => {
   // Stock sync mutation
   const syncStockMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("cj-dropshipping", {
+      const { data, error } = await invokeFunction<{ synced?: number }>("cj-dropshipping", {
         body: {
           action: "sync-stock",
         },
@@ -463,7 +465,7 @@ const Admin = () => {
   // Fix variant prices mutation
   const fixVariantPricesMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("fix-variant-prices");
+      const { data, error } = await invokeFunction<{ updatedProducts?: unknown[] }>("fix-variant-prices");
       if (error) throw error;
       return data;
     },
@@ -505,7 +507,7 @@ const Admin = () => {
         });
 
         // Fetch full details for this batch from CJ
-        const { data: fullDetailsResponse, error: detailsError } = await supabase.functions.invoke("cj-dropshipping", {
+        const { data: fullDetailsResponse, error: detailsError } = await invokeFunction<Array<{ pid: string; success: boolean; images?: string[]; variants?: Array<unknown>; totalStock?: number }>>("cj-dropshipping", {
           body: {
             action: "get-products-for-import",
             productIds: batchIds,
@@ -558,7 +560,7 @@ const Admin = () => {
             .from("products")
             .update({
               images: flatImages,
-              variants: fullDetail.variants || product.variants,
+              variants: (fullDetail.variants || product.variants) as unknown as null,
               stock: fullDetail.totalStock ?? product.stock,
               updated_at: new Date().toISOString(),
             })
