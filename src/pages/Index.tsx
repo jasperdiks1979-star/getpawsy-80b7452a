@@ -281,19 +281,12 @@ const Index = () => {
                 From organic treats to cozy beds, we bring nature's best to your doorstep.
               </p>
               
-              <div className="flex flex-wrap gap-4">
-                <Link to="/products">
-                  <Button size="lg" className="gap-2 btn-organic rounded-full px-8">
-                    Explore Collection
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-                <Link to="/products?category=Dogs">
-                  <Button size="lg" variant="outline" className="rounded-full px-8 border-2">
-                    Shop for Dogs
-                  </Button>
-                </Link>
-              </div>
+              <Link to="/products">
+                <Button size="lg" className="gap-2 btn-organic rounded-full px-8">
+                  Explore Collection
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
 
               {/* Trust badges */}
               <div className="flex items-center gap-6 pt-4">
