@@ -295,7 +295,12 @@ const Index = () => {
                   onClick={() => document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' })}
                 >
                   View Categories
-                  <ArrowDown className="w-4 h-4" />
+                  <motion.span
+                    animate={{ y: [0, 4, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </motion.span>
                 </Button>
               </div>
 
