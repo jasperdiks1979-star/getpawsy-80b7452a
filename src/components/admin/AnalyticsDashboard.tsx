@@ -280,9 +280,11 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     toggleWidgetVisibility,
     setWidgetSize,
     reorderWidgets,
+    applyPreset,
     resetToDefaults,
     getWidgetsByTab,
     getWidgetSize,
+    activePreset,
   } = useDashboardWidgets();
   
   // Helper to check if a widget is visible
@@ -1090,7 +1092,9 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
             onToggleVisibility={toggleWidgetVisibility}
             onSizeChange={setWidgetSize}
             onReorder={reorderWidgets}
+            onApplyPreset={applyPreset}
             onReset={resetToDefaults}
+            activePreset={activePreset}
           />
 
           <Badge variant="outline" className="flex items-center gap-2">

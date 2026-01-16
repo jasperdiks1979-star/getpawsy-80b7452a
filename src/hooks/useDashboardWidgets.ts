@@ -12,6 +12,14 @@ export interface DashboardWidget {
   order: number;
 }
 
+export interface LayoutPreset {
+  id: string;
+  name: string;
+  description: string;
+  icon: 'compact' | 'detailed' | 'analytics' | 'ecommerce' | 'overview';
+  config: { [widgetId: string]: { visible: boolean; size: WidgetSize } };
+}
+
 const DEFAULT_WIDGETS: DashboardWidget[] = [
   { id: 'active-users', type: 'metric', title: 'Actieve Gebruikers', size: 'small', visible: true, order: 0 },
   { id: 'pageviews', type: 'metric', title: 'Paginaweergaven', size: 'small', visible: true, order: 1 },
@@ -31,11 +39,135 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
   { id: 'conversion-funnel', type: 'chart', title: 'Conversie Funnel', description: 'Van sessie naar aankoop', size: 'full', visible: true, order: 15 },
 ];
 
+export const LAYOUT_PRESETS: LayoutPreset[] = [
+  {
+    id: 'compact',
+    name: 'Compact',
+    description: 'Alleen essentiële metrics, minimale ruimte',
+    icon: 'compact',
+    config: {
+      'active-users': { visible: true, size: 'small' },
+      'pageviews': { visible: true, size: 'small' },
+      'session-duration': { visible: true, size: 'small' },
+      'bounce-rate': { visible: true, size: 'small' },
+      'traffic-chart': { visible: false, size: 'full' },
+      'top-pages': { visible: false, size: 'full' },
+      'devices': { visible: false, size: 'medium' },
+      'countries': { visible: false, size: 'medium' },
+      'new-returning': { visible: false, size: 'full' },
+      'traffic-sources': { visible: false, size: 'full' },
+      'browsers': { visible: false, size: 'medium' },
+      'cities': { visible: false, size: 'medium' },
+      'realtime-counter': { visible: true, size: 'small' },
+      'ecommerce-revenue': { visible: true, size: 'small' },
+      'ecommerce-transactions': { visible: true, size: 'small' },
+      'conversion-funnel': { visible: false, size: 'full' },
+    },
+  },
+  {
+    id: 'detailed',
+    name: 'Gedetailleerd',
+    description: 'Alle widgets zichtbaar, maximale inzichten',
+    icon: 'detailed',
+    config: {
+      'active-users': { visible: true, size: 'small' },
+      'pageviews': { visible: true, size: 'small' },
+      'session-duration': { visible: true, size: 'small' },
+      'bounce-rate': { visible: true, size: 'small' },
+      'traffic-chart': { visible: true, size: 'full' },
+      'top-pages': { visible: true, size: 'full' },
+      'devices': { visible: true, size: 'medium' },
+      'countries': { visible: true, size: 'medium' },
+      'new-returning': { visible: true, size: 'full' },
+      'traffic-sources': { visible: true, size: 'full' },
+      'browsers': { visible: true, size: 'medium' },
+      'cities': { visible: true, size: 'medium' },
+      'realtime-counter': { visible: true, size: 'small' },
+      'ecommerce-revenue': { visible: true, size: 'small' },
+      'ecommerce-transactions': { visible: true, size: 'small' },
+      'conversion-funnel': { visible: true, size: 'full' },
+    },
+  },
+  {
+    id: 'analytics-focus',
+    name: 'Analytics Focus',
+    description: 'Focus op verkeer en gebruikersgedrag',
+    icon: 'analytics',
+    config: {
+      'active-users': { visible: true, size: 'medium' },
+      'pageviews': { visible: true, size: 'medium' },
+      'session-duration': { visible: true, size: 'small' },
+      'bounce-rate': { visible: true, size: 'small' },
+      'traffic-chart': { visible: true, size: 'full' },
+      'top-pages': { visible: true, size: 'full' },
+      'devices': { visible: true, size: 'large' },
+      'countries': { visible: true, size: 'large' },
+      'new-returning': { visible: true, size: 'full' },
+      'traffic-sources': { visible: true, size: 'full' },
+      'browsers': { visible: true, size: 'medium' },
+      'cities': { visible: true, size: 'medium' },
+      'realtime-counter': { visible: false, size: 'small' },
+      'ecommerce-revenue': { visible: false, size: 'small' },
+      'ecommerce-transactions': { visible: false, size: 'small' },
+      'conversion-funnel': { visible: false, size: 'full' },
+    },
+  },
+  {
+    id: 'ecommerce',
+    name: 'E-commerce',
+    description: 'Focus op verkoop en conversie',
+    icon: 'ecommerce',
+    config: {
+      'active-users': { visible: true, size: 'small' },
+      'pageviews': { visible: false, size: 'small' },
+      'session-duration': { visible: false, size: 'small' },
+      'bounce-rate': { visible: false, size: 'small' },
+      'traffic-chart': { visible: false, size: 'full' },
+      'top-pages': { visible: true, size: 'full' },
+      'devices': { visible: false, size: 'medium' },
+      'countries': { visible: true, size: 'large' },
+      'new-returning': { visible: false, size: 'full' },
+      'traffic-sources': { visible: true, size: 'full' },
+      'browsers': { visible: false, size: 'medium' },
+      'cities': { visible: false, size: 'medium' },
+      'realtime-counter': { visible: true, size: 'medium' },
+      'ecommerce-revenue': { visible: true, size: 'large' },
+      'ecommerce-transactions': { visible: true, size: 'large' },
+      'conversion-funnel': { visible: true, size: 'full' },
+    },
+  },
+  {
+    id: 'overview',
+    name: 'Overzicht',
+    description: 'Gebalanceerde weergave van alle belangrijke data',
+    icon: 'overview',
+    config: {
+      'active-users': { visible: true, size: 'small' },
+      'pageviews': { visible: true, size: 'small' },
+      'session-duration': { visible: true, size: 'small' },
+      'bounce-rate': { visible: true, size: 'small' },
+      'traffic-chart': { visible: true, size: 'full' },
+      'top-pages': { visible: true, size: 'full' },
+      'devices': { visible: true, size: 'medium' },
+      'countries': { visible: true, size: 'medium' },
+      'new-returning': { visible: false, size: 'full' },
+      'traffic-sources': { visible: false, size: 'full' },
+      'browsers': { visible: false, size: 'medium' },
+      'cities': { visible: false, size: 'medium' },
+      'realtime-counter': { visible: true, size: 'small' },
+      'ecommerce-revenue': { visible: true, size: 'small' },
+      'ecommerce-transactions': { visible: true, size: 'small' },
+      'conversion-funnel': { visible: false, size: 'full' },
+    },
+  },
+];
+
 const STORAGE_KEY = 'dashboard-widgets-config';
 
 export const useDashboardWidgets = () => {
   const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const [activePreset, setActivePreset] = useState<string | null>(null);
 
   // Load widgets from localStorage on mount
   useEffect(() => {
@@ -61,6 +193,7 @@ export const useDashboardWidgets = () => {
   const saveWidgets = useCallback((newWidgets: DashboardWidget[]) => {
     setWidgets(newWidgets);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newWidgets));
+    setActivePreset(null); // Clear active preset when manually changing
   }, []);
 
   const toggleWidgetVisibility = useCallback((widgetId: string) => {
@@ -92,9 +225,28 @@ export const useDashboardWidgets = () => {
     saveWidgets(reordered);
   }, [widgets, saveWidgets]);
 
+  const applyPreset = useCallback((presetId: string) => {
+    const preset = LAYOUT_PRESETS.find(p => p.id === presetId);
+    if (!preset) return;
+
+    const newWidgets = widgets.map(w => {
+      const presetConfig = preset.config[w.id];
+      if (presetConfig) {
+        return { ...w, visible: presetConfig.visible, size: presetConfig.size };
+      }
+      return w;
+    });
+
+    setWidgets(newWidgets);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newWidgets));
+    setActivePreset(presetId);
+  }, [widgets]);
+
   const resetToDefaults = useCallback(() => {
-    saveWidgets(DEFAULT_WIDGETS);
-  }, [saveWidgets]);
+    setWidgets(DEFAULT_WIDGETS);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_WIDGETS));
+    setActivePreset(null);
+  }, []);
 
   const getVisibleWidgets = useCallback(() => {
     return widgets.filter(w => w.visible).sort((a, b) => a.order - b.order);
@@ -115,9 +267,11 @@ export const useDashboardWidgets = () => {
     widgets,
     isCustomizing,
     setIsCustomizing,
+    activePreset,
     toggleWidgetVisibility,
     setWidgetSize,
     reorderWidgets,
+    applyPreset,
     resetToDefaults,
     getVisibleWidgets,
     getWidgetsByTab,

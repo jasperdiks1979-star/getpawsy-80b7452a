@@ -50,8 +50,13 @@ import {
   Square,
   Maximize2,
   RectangleHorizontal,
+  Layers,
+  LayoutList,
+  TrendingUp,
+  ShoppingCart,
+  PieChart,
 } from 'lucide-react';
-import { DashboardWidget, WidgetSize } from '@/hooks/useDashboardWidgets';
+import { DashboardWidget, WidgetSize, LayoutPreset, LAYOUT_PRESETS } from '@/hooks/useDashboardWidgets';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -62,7 +67,9 @@ interface DashboardWidgetBuilderProps {
   onToggleVisibility: (widgetId: string) => void;
   onSizeChange: (widgetId: string, size: WidgetSize) => void;
   onReorder: (activeId: string, overId: string) => void;
+  onApplyPreset: (presetId: string) => void;
   onReset: () => void;
+  activePreset: string | null;
 }
 
 const getWidgetIcon = (type: DashboardWidget['type']) => {
@@ -77,6 +84,23 @@ const getWidgetIcon = (type: DashboardWidget['type']) => {
       return <List className="w-4 h-4" />;
     default:
       return <LayoutGrid className="w-4 h-4" />;
+  }
+};
+
+const getPresetIcon = (icon: LayoutPreset['icon']) => {
+  switch (icon) {
+    case 'compact':
+      return <Minimize2 className="w-4 h-4" />;
+    case 'detailed':
+      return <LayoutList className="w-4 h-4" />;
+    case 'analytics':
+      return <TrendingUp className="w-4 h-4" />;
+    case 'ecommerce':
+      return <ShoppingCart className="w-4 h-4" />;
+    case 'overview':
+      return <PieChart className="w-4 h-4" />;
+    default:
+      return <Layers className="w-4 h-4" />;
   }
 };
 
@@ -226,6 +250,41 @@ const DragOverlayItem = ({ widget }: { widget: DashboardWidget }) => (
   </div>
 );
 
+interface PresetCardProps {
+  preset: LayoutPreset;
+  isActive: boolean;
+  onApply: (presetId: string) => void;
+}
+
+const PresetCard = ({ preset, isActive, onApply }: PresetCardProps) => {
+  const visibleCount = Object.values(preset.config).filter(c => c.visible).length;
+
+  return (
+    <button
+      onClick={() => onApply(preset.id)}
+      className={cn(
+        "flex flex-col items-start gap-2 p-3 rounded-lg border text-left transition-all hover:bg-accent/50",
+        isActive && "ring-2 ring-primary bg-primary/5 border-primary"
+      )}
+    >
+      <div className="flex items-center gap-2 w-full">
+        <div className={cn(
+          "p-1.5 rounded-md",
+          isActive ? "bg-primary text-primary-foreground" : "bg-muted"
+        )}>
+          {getPresetIcon(preset.icon)}
+        </div>
+        <span className="font-medium flex-1">{preset.name}</span>
+        {isActive && <Check className="w-4 h-4 text-primary" />}
+      </div>
+      <p className="text-xs text-muted-foreground">{preset.description}</p>
+      <Badge variant="secondary" className="text-xs">
+        {visibleCount} widgets
+      </Badge>
+    </button>
+  );
+};
+
 export const DashboardWidgetBuilder = ({
   widgets,
   isCustomizing,
@@ -233,9 +292,12 @@ export const DashboardWidgetBuilder = ({
   onToggleVisibility,
   onSizeChange,
   onReorder,
+  onApplyPreset,
   onReset,
+  activePreset,
 }: DashboardWidgetBuilderProps) => {
   const [activeWidget, setActiveWidget] = useState<DashboardWidget | null>(null);
+  const [showPresets, setShowPresets] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -267,6 +329,13 @@ export const DashboardWidgetBuilder = ({
     toast.success('Dashboard gereset naar standaard instellingen');
   };
 
+  const handleApplyPreset = (presetId: string) => {
+    onApplyPreset(presetId);
+    const preset = LAYOUT_PRESETS.find(p => p.id === presetId);
+    toast.success(`Preset "${preset?.name}" toegepast`);
+    setShowPresets(false);
+  };
+
   const handleDone = () => {
     setIsCustomizing(false);
     toast.success('Dashboard aangepast');
@@ -287,55 +356,91 @@ export const DashboardWidgetBuilder = ({
             Dashboard Aanpassen
           </SheetTitle>
           <SheetDescription>
-            Sleep widgets om de volgorde aan te passen. Pas de grootte aan en schakel widgets in of uit.
+            Kies een preset of pas individuele widgets aan.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex items-center gap-4 py-4 border-b">
+        <div className="flex items-center gap-2 py-4 border-b">
+          <Button
+            variant={showPresets ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowPresets(true)}
+            className="flex items-center gap-2"
+          >
+            <Layers className="w-4 h-4" />
+            Presets
+          </Button>
+          <Button
+            variant={!showPresets ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowPresets(false)}
+            className="flex items-center gap-2"
+          >
+            <Settings2 className="w-4 h-4" />
+            Handmatig
+          </Button>
+          <div className="flex-1" />
           <Badge variant="default" className="flex items-center gap-1">
             <Eye className="w-3 h-3" />
-            {visibleCount} zichtbaar
+            {visibleCount}
           </Badge>
           <Badge variant="secondary" className="flex items-center gap-1">
             <EyeOff className="w-3 h-3" />
-            {hiddenCount} verborgen
+            {hiddenCount}
           </Badge>
         </div>
 
-        <div className="py-3 px-1 bg-muted/50 rounded-lg my-4">
-          <p className="text-xs text-muted-foreground text-center">
-            <strong>Grootte:</strong> Klein = 25%, Medium = 50%, Groot = 75%, Volledig = 100% breedte
-          </p>
-        </div>
+        {showPresets ? (
+          <ScrollArea className="h-[calc(100vh-280px)] pr-4 py-4">
+            <div className="grid gap-3">
+              {LAYOUT_PRESETS.map(preset => (
+                <PresetCard
+                  key={preset.id}
+                  preset={preset}
+                  isActive={activePreset === preset.id}
+                  onApply={handleApplyPreset}
+                />
+              ))}
+            </div>
+          </ScrollArea>
+        ) : (
+          <>
+            <div className="py-3 px-1 bg-muted/50 rounded-lg my-4">
+              <p className="text-xs text-muted-foreground text-center">
+                <strong>Grootte:</strong> Klein = 25%, Medium = 50%, Groot = 75%, Volledig = 100% breedte
+              </p>
+            </div>
 
-        <ScrollArea className="h-[calc(100vh-340px)] pr-4">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={widgets.map(w => w.id)}
-              strategy={rectSortingStrategy}
-            >
-              <div className="space-y-2">
-                {widgets.sort((a, b) => a.order - b.order).map(widget => (
-                  <SortableWidgetItem
-                    key={widget.id}
-                    widget={widget}
-                    onToggleVisibility={onToggleVisibility}
-                    onSizeChange={onSizeChange}
-                  />
-                ))}
-              </div>
-            </SortableContext>
+            <ScrollArea className="h-[calc(100vh-380px)] pr-4">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={widgets.map(w => w.id)}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="space-y-2">
+                    {widgets.sort((a, b) => a.order - b.order).map(widget => (
+                      <SortableWidgetItem
+                        key={widget.id}
+                        widget={widget}
+                        onToggleVisibility={onToggleVisibility}
+                        onSizeChange={onSizeChange}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
 
-            <DragOverlay>
-              {activeWidget && <DragOverlayItem widget={activeWidget} />}
-            </DragOverlay>
-          </DndContext>
-        </ScrollArea>
+                <DragOverlay>
+                  {activeWidget && <DragOverlayItem widget={activeWidget} />}
+                </DragOverlay>
+              </DndContext>
+            </ScrollArea>
+          </>
+        )}
 
         <SheetFooter className="flex-row gap-2 pt-4 border-t">
           <Button
