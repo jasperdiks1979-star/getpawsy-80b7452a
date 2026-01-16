@@ -62,6 +62,19 @@ const Contact = () => {
 
       if (error) throw error;
 
+      // Send notification email to admin (don't block on this)
+      supabase.functions.invoke('notify-contact-message', {
+        body: {
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+          orderNumber: formData.orderNumber || undefined,
+        },
+      }).catch((notifyError) => {
+        console.error('Failed to send admin notification:', notifyError);
+      });
+
       setIsSubmitted(true);
       toast.success('Message sent successfully! We will get back to you soon.');
     } catch (error) {
