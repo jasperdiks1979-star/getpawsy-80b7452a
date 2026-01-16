@@ -14,12 +14,13 @@ import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers"
 import { CategoryManager } from "@/components/admin/CategoryManager";
 import { OrdersManager } from "@/components/admin/OrdersManager";
 import { ContactMessagesManager } from "@/components/admin/ContactMessagesManager";
+import { BestsellerManager } from "@/components/admin/BestsellerManager";
 
 // Lazy load heavy admin components to improve initial load time
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard").then(module => ({ default: module.AnalyticsDashboard })));
 const SalesDashboard = lazy(() => import("@/components/admin/SalesDashboard").then(module => ({ default: module.SalesDashboard })));
 const GoogleAdsGenerator = lazy(() => import("@/components/admin/GoogleAdsGenerator").then(module => ({ default: module.GoogleAdsGenerator })));
-const VisitorWorldMap = lazy(() => import("@/components/admin/VisitorWorldMap").then(module => ({ default: module.VisitorWorldMap })));
+const VisitorWorldMap = lazy(() => import("@/components/admin/VisitorWorldMap").then(module => ({ default: module.VisitorWorldMap }));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
