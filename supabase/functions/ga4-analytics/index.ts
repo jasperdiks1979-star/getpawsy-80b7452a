@@ -217,9 +217,13 @@ serve(async (req) => {
     const accessToken = await getAccessToken(credentials);
 
     // Parse request body
-    const { reportType = 'overview' } = await req.json();
+    const { reportType = 'overview', startDate, endDate } = await req.json();
     
-    console.log(`Fetching ${reportType} report for property ${propertyId}`);
+    // Use provided dates or default to last 7 days
+    const dateStart = startDate || '7daysAgo';
+    const dateEnd = endDate || 'today';
+    
+    console.log(`Fetching ${reportType} report for property ${propertyId} from ${dateStart} to ${dateEnd}`);
 
     let result: Record<string, unknown> = {};
 
@@ -232,9 +236,9 @@ serve(async (req) => {
         countryReport,
         realtimeReport
       ] = await Promise.all([
-        // Traffic data for last 7 days
+        // Traffic data for date range
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'date' }],
           metrics: [
             { name: 'activeUsers' },
@@ -246,9 +250,9 @@ serve(async (req) => {
           ],
           orderBys: [{ dimension: { dimensionName: 'date' } }]
         }),
-        // Top pages
+        // Top pages for date range
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: 'today', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'pagePath' }],
           metrics: [
             { name: 'screenPageViews' },
@@ -257,21 +261,21 @@ serve(async (req) => {
           orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
           limit: 10
         }),
-        // Device category
+        // Device category for date range
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'deviceCategory' }],
           metrics: [{ name: 'activeUsers' }]
         }),
-        // Countries
+        // Countries for date range
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'country' }],
           metrics: [{ name: 'activeUsers' }],
           orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
           limit: 10
         }),
-        // Realtime users
+        // Realtime users (always current)
         runRealtimeReport(accessToken, propertyId, {
           metrics: [{ name: 'activeUsers' }]
         })
@@ -305,7 +309,7 @@ serve(async (req) => {
       // E-commerce data
       const [transactions, topProducts] = await Promise.all([
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: 'today', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           metrics: [
             { name: 'transactions' },
             { name: 'totalRevenue' },
@@ -314,7 +318,7 @@ serve(async (req) => {
           ]
         }),
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'itemName' }],
           metrics: [
             { name: 'itemsViewed' },
@@ -335,7 +339,7 @@ serve(async (req) => {
       const [browsers, operatingSystems, trafficSources, cities, ageGender, landingPages] = await Promise.all([
         // Browser breakdown
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'browser' }],
           metrics: [{ name: 'activeUsers' }, { name: 'sessions' }],
           orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
@@ -343,7 +347,7 @@ serve(async (req) => {
         }),
         // Operating systems
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'operatingSystem' }],
           metrics: [{ name: 'activeUsers' }],
           orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
@@ -351,7 +355,7 @@ serve(async (req) => {
         }),
         // Traffic sources/channels
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'sessionDefaultChannelGroup' }],
           metrics: [
             { name: 'sessions' },
@@ -364,7 +368,7 @@ serve(async (req) => {
         }),
         // Cities
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'city' }],
           metrics: [{ name: 'activeUsers' }],
           orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
@@ -372,14 +376,14 @@ serve(async (req) => {
         }),
         // Age and gender (if available)
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'userAgeBracket' }],
           metrics: [{ name: 'activeUsers' }],
           orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }]
         }).catch(() => ({ rows: [] })), // May not be available
         // Top landing pages with engagement
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'landingPage' }],
           metrics: [
             { name: 'sessions' },
@@ -405,7 +409,7 @@ serve(async (req) => {
       const [conversionEvents, purchaseFunnel, revenueByDate, conversionsBySource] = await Promise.all([
         // All conversion events
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'eventName' }],
           metrics: [
             { name: 'eventCount' },
@@ -416,7 +420,7 @@ serve(async (req) => {
         }),
         // Purchase funnel metrics
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           metrics: [
             { name: 'sessions' },
             { name: 'addToCarts' },
@@ -427,7 +431,7 @@ serve(async (req) => {
         }).catch(() => ({ rows: [] })),
         // Revenue over time
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'date' }],
           metrics: [
             { name: 'totalRevenue' },
@@ -438,7 +442,7 @@ serve(async (req) => {
         }),
         // Conversions by traffic source
         runReport(accessToken, propertyId, {
-          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'sessionDefaultChannelGroup' }],
           metrics: [
             { name: 'sessions' },

@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   BarChart3, 
   Users, 
@@ -27,7 +30,8 @@ import {
   Percent,
   TrendingDown,
   DollarSign,
-  Layers
+  Layers,
+  CalendarIcon
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { 
@@ -48,6 +52,10 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format, subDays } from "date-fns";
+import { nl } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { DateRange } from "react-day-picker";
 
 // Types for GA4 API responses
 interface GA4Row {
@@ -244,6 +252,14 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
   const [realtimeUsers, setRealtimeUsers] = useState(0);
   const [error, setError] = useState<string | null>(null);
   
+  // Date range state
+  const [dateRangePreset, setDateRangePreset] = useState<string>("7days");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 7),
+    to: new Date()
+  });
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  
   // Data states
   const [trafficData, setTrafficData] = useState<ReturnType<typeof parseTrafficData>>([]);
   const [topPages, setTopPages] = useState<ReturnType<typeof parseTopPages>>([]);
@@ -285,6 +301,50 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     conversionsBySource: [] as { channel: string; sessions: number; purchases: number; revenue: number }[]
   });
 
+  // Helper function to get date range for API
+  const getDateRangeParams = useCallback(() => {
+    if (dateRange?.from && dateRange?.to) {
+      return {
+        startDate: format(dateRange.from, 'yyyy-MM-dd'),
+        endDate: format(dateRange.to, 'yyyy-MM-dd')
+      };
+    }
+    // Default to last 7 days
+    return {
+      startDate: format(subDays(new Date(), 7), 'yyyy-MM-dd'),
+      endDate: format(new Date(), 'yyyy-MM-dd')
+    };
+  }, [dateRange]);
+
+  // Handle preset change
+  const handlePresetChange = (preset: string) => {
+    setDateRangePreset(preset);
+    const today = new Date();
+    
+    switch (preset) {
+      case "today":
+        setDateRange({ from: today, to: today });
+        break;
+      case "yesterday":
+        const yesterday = subDays(today, 1);
+        setDateRange({ from: yesterday, to: yesterday });
+        break;
+      case "7days":
+        setDateRange({ from: subDays(today, 7), to: today });
+        break;
+      case "30days":
+        setDateRange({ from: subDays(today, 30), to: today });
+        break;
+      case "90days":
+        setDateRange({ from: subDays(today, 90), to: today });
+        break;
+      case "custom":
+        // Keep current range, user will pick dates
+        setIsCalendarOpen(true);
+        break;
+    }
+  };
+
   const fetchOverviewData = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -292,8 +352,9 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
         throw new Error('Not authenticated');
       }
 
+      const dateParams = getDateRangeParams();
       const { data, error: fetchError } = await supabase.functions.invoke<GA4OverviewResponse>('ga4-analytics', {
-        body: { reportType: 'overview' }
+        body: { reportType: 'overview', ...dateParams }
       });
 
       if (fetchError) throw fetchError;
@@ -342,7 +403,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
         description: errorMessage
       });
     }
-  }, []);
+  }, [getDateRangeParams]);
 
   const fetchRealtimeData = useCallback(async () => {
     try {
@@ -378,8 +439,9 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      const dateParams = getDateRangeParams();
       const { data, error: fetchError } = await supabase.functions.invoke<GA4EcommerceResponse>('ga4-analytics', {
-        body: { reportType: 'ecommerce' }
+        body: { reportType: 'ecommerce', ...dateParams }
       });
 
       if (fetchError) throw fetchError;
@@ -401,15 +463,16 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     } catch (err) {
       console.error('Error fetching e-commerce data:', err);
     }
-  }, []);
+  }, [getDateRangeParams]);
 
   const fetchDemographicsData = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      const dateParams = getDateRangeParams();
       const { data, error: fetchError } = await supabase.functions.invoke<GA4DemographicsResponse>('ga4-analytics', {
-        body: { reportType: 'demographics' }
+        body: { reportType: 'demographics', ...dateParams }
       });
 
       if (fetchError) throw fetchError;
@@ -451,15 +514,16 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     } catch (err) {
       console.error('Error fetching demographics data:', err);
     }
-  }, []);
+  }, [getDateRangeParams]);
 
   const fetchConversionsData = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      const dateParams = getDateRangeParams();
       const { data, error: fetchError } = await supabase.functions.invoke<GA4ConversionsResponse>('ga4-analytics', {
-        body: { reportType: 'conversions' }
+        body: { reportType: 'conversions', ...dateParams }
       });
 
       if (fetchError) throw fetchError;
@@ -505,7 +569,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     } catch (err) {
       console.error('Error fetching conversions data:', err);
     }
-  }, []);
+  }, [getDateRangeParams]);
 
   useEffect(() => {
     if (!isConfigured) return;
@@ -625,12 +689,72 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Analytics Dashboard</h2>
           <p className="text-muted-foreground">Realtime inzichten van je webshop</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Date Range Picker */}
+          <div className="flex items-center gap-2">
+            <Select value={dateRangePreset} onValueChange={handlePresetChange}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Periode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Vandaag</SelectItem>
+                <SelectItem value="yesterday">Gisteren</SelectItem>
+                <SelectItem value="7days">Laatste 7 dagen</SelectItem>
+                <SelectItem value="30days">Laatste 30 dagen</SelectItem>
+                <SelectItem value="90days">Laatste 90 dagen</SelectItem>
+                <SelectItem value="custom">Aangepast</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "justify-start text-left font-normal",
+                    !dateRange && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "d MMM", { locale: nl })} - {format(dateRange.to, "d MMM", { locale: nl })}
+                      </>
+                    ) : (
+                      format(dateRange.from, "d MMM yyyy", { locale: nl })
+                    )
+                  ) : (
+                    <span>Kies datum</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="range"
+                  defaultMonth={dateRange?.from}
+                  selected={dateRange}
+                  onSelect={(range) => {
+                    setDateRange(range);
+                    if (range?.from && range?.to) {
+                      setDateRangePreset("custom");
+                      setIsCalendarOpen(false);
+                    }
+                  }}
+                  numberOfMonths={2}
+                  disabled={(date) => date > new Date()}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <Badge variant="outline" className="flex items-center gap-2">
             <Activity className="w-3 h-3 text-green-500 animate-pulse" />
             Live
@@ -690,7 +814,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               title="Paginaweergaven"
               value={overviewMetrics.totalPageViews.toLocaleString()}
               icon={<Eye className="w-5 h-5" />}
-              subtitle="Laatste 7 dagen"
+              subtitle={dateRangePreset === "7days" ? "Laatste 7 dagen" : dateRangePreset === "30days" ? "Laatste 30 dagen" : dateRangePreset === "90days" ? "Laatste 90 dagen" : dateRangePreset === "today" ? "Vandaag" : "Geselecteerde periode"}
               loading={isLoading}
             />
             <MetricCard
