@@ -265,7 +265,7 @@ const BestsellerDetail = () => {
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(product.name, bestseller.slug);
 
   return (
-    <>
+    <Layout>
       {/* SEO Meta Tags */}
       <Helmet>
         <title>{bestseller.seo_title || `${product.name} | GetPawsy Bestseller`}</title>
@@ -301,8 +301,6 @@ const BestsellerDetail = () => {
           {JSON.stringify(breadcrumbJsonLd)}
         </script>
       </Helmet>
-
-      <Layout>
         {/* Breadcrumb */}
         <div className="bg-muted/30 border-b">
           <div className="container px-4 py-3">
@@ -581,7 +579,6 @@ const BestsellerDetail = () => {
           </Button>
         </div>
       </Layout>
-    </>
   );
 };
 
