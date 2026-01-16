@@ -9,7 +9,6 @@ import { User, Mail, Calendar, Shield, ArrowLeft, Package, ChevronRight } from '
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatDistanceToNow } from 'date-fns';
-import { nl } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 
 const Profile = () => {
@@ -50,10 +49,10 @@ const Profile = () => {
           className="mb-6 gap-2 -ml-2"
         >
           <ArrowLeft className="w-4 h-4" />
-          Terug
+          Back
         </Button>
 
-        <h1 className="text-3xl font-display font-bold mb-6">Mijn Profiel</h1>
+        <h1 className="text-3xl font-display font-bold mb-6">My Profile</h1>
 
         <div className="space-y-6">
           {/* Account Info Card */}
@@ -61,10 +60,10 @@ const Profile = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="w-5 h-5" />
-                Account Informatie
+                Account Information
               </CardTitle>
               <CardDescription>
-                Je account gegevens en instellingen
+                Your account details and settings
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -85,7 +84,7 @@ const Profile = () => {
                   {user.created_at && (
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      Lid sinds {formatDistanceToNow(new Date(user.created_at), { addSuffix: true, locale: nl })}
+                      Member since {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
                     </p>
                   )}
                 </div>
@@ -104,10 +103,10 @@ const Profile = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm">
                     <Shield className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">E-mail bevestigd</span>
+                    <span className="text-muted-foreground">Email confirmed</span>
                   </div>
                   <Badge variant={user.email_confirmed_at ? "default" : "secondary"}>
-                    {user.email_confirmed_at ? "Ja" : "Nee"}
+                    {user.email_confirmed_at ? "Yes" : "No"}
                   </Badge>
                 </div>
               </div>
@@ -124,8 +123,8 @@ const Profile = () => {
                       <Package className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium">Mijn Bestellingen</p>
-                      <p className="text-sm text-muted-foreground">Bekijk je order historie</p>
+                      <p className="font-medium">My Orders</p>
+                      <p className="text-sm text-muted-foreground">View your order history</p>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground" />

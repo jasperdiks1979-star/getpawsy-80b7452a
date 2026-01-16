@@ -74,7 +74,7 @@ export const SearchSuggestions = ({ query, onSelect, isVisible }: SearchSuggesti
         {isLoading ? (
           <div className="p-4 flex items-center justify-center gap-2 text-muted-foreground">
             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm">Zoeken...</span>
+            <span className="text-sm">Searching...</span>
           </div>
         ) : suggestions.length > 0 ? (
           <div className="divide-y divide-border">
@@ -126,7 +126,7 @@ export const SearchSuggestions = ({ query, onSelect, isVisible }: SearchSuggesti
               className="flex items-center justify-center gap-2 p-3 text-sm text-primary hover:bg-primary/5 transition-colors font-medium"
             >
               <Search className="w-4 h-4" />
-              Alle resultaten voor "{query}"
+              All results for "{query}"
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -134,14 +134,14 @@ export const SearchSuggestions = ({ query, onSelect, isVisible }: SearchSuggesti
           <div className="p-6 text-center">
             <Package className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
             <p className="text-sm text-muted-foreground">
-              Geen producten gevonden voor "{query}"
+              No products found for "{query}"
             </p>
             <Link
               to="/products"
               onClick={onSelect}
               className="inline-flex items-center gap-1 mt-2 text-sm text-primary hover:underline"
             >
-              Bekijk alle producten
+              View all products
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>

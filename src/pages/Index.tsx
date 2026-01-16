@@ -205,7 +205,7 @@ const Index = () => {
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsletterEmail || !newsletterEmail.includes('@')) {
-      toast.error('Vul een geldig e-mailadres in');
+      toast.error('Please enter a valid email address');
       return;
     }
     
@@ -217,17 +217,17 @@ const Index = () => {
       
       if (error) {
         if (error.code === '23505') {
-          toast.info('Je bent al ingeschreven voor de nieuwsbrief!');
+          toast.info('You\'re already subscribed to our newsletter!');
         } else {
           throw error;
         }
       } else {
-        toast.success('Bedankt voor je aanmelding! Check je inbox voor 15% korting.');
+        toast.success('Thanks for signing up! Check your inbox for 15% off.');
         trackNewsletterSignup(newsletterEmail);
       }
       setNewsletterEmail('');
     } catch (error) {
-      toast.error('Er ging iets mis. Probeer het later opnieuw.');
+      toast.error('Something went wrong. Please try again later.');
     } finally {
       setIsSubscribing(false);
     }
@@ -729,7 +729,7 @@ const Index = () => {
                   className="rounded-full px-8"
                   disabled={isSubscribing}
                 >
-                  {isSubscribing ? 'Bezig...' : 'Subscribe'}
+                  {isSubscribing ? 'Subscribing...' : 'Subscribe'}
                 </Button>
               </form>
               <p className="text-sm text-primary-foreground/70 mt-4">
