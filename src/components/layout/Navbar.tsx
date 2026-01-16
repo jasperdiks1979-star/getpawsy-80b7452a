@@ -343,8 +343,8 @@ export const Navbar = () => {
                         </SheetClose>
                       ))}
                       
-                      {/* Admin link - only visible for admins */}
-                      {isAdmin && (
+                      {/* Admin link - visible for logged in users (temporary for testing) */}
+                      {user && (
                         <SheetClose asChild>
                           <Link
                             to="/admin"
@@ -356,6 +356,7 @@ export const Navbar = () => {
                           >
                             <Shield className="h-5 w-5" />
                             Admin Dashboard
+                            {!isAdmin && <Badge variant="outline" className="ml-auto text-xs">Test</Badge>}
                           </Link>
                         </SheetClose>
                       )}
