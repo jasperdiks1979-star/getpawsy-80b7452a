@@ -155,6 +155,7 @@ const Index = () => {
         .from('products_public')
         .select('*')
         .eq('is_active', true)
+        .gt('stock', 0)
         .order('created_at', { ascending: false })
         .limit(12);
       
@@ -188,7 +189,8 @@ const Index = () => {
         .from('products_public')
         .select('*')
         .in('id', recentlyViewedIds)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .gt('stock', 0);
       
       if (error) throw error;
       // Sort by recently viewed order

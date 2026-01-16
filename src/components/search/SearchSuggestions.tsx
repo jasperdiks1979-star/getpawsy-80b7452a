@@ -35,8 +35,9 @@ export const SearchSuggestions = ({ query, onSelect, isVisible }: SearchSuggesti
       try {
         const { data, error } = await supabase
           .from('products_public')
-          .select('id, name, price, image_url, category')
+          .select('id, name, price, image_url, category, stock')
           .eq('is_active', true)
+          .gt('stock', 0)
           .or(`name.ilike.%${query}%,description.ilike.%${query}%,category.ilike.%${query}%`)
           .limit(5);
 

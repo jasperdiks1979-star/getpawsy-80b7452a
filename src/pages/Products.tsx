@@ -36,6 +36,7 @@ const Products = () => {
         .from('products_public')
         .select('*')
         .eq('is_active', true)
+        .gt('stock', 0)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
