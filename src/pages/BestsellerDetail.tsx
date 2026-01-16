@@ -26,12 +26,20 @@ import {
   RotateCcw,
   Timer,
   Users,
-  TrendingUp
+  TrendingUp,
+  HelpCircle,
+  MessageCircle
 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { PinchZoomImage } from '@/components/ui/pinch-zoom-image';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
@@ -1094,6 +1102,138 @@ const BestsellerDetail = () => {
                   reviews={reviews}
                   onReviewDeleted={() => refetchReviews()}
                 />
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="py-16 lg:py-20 bg-muted/30">
+          <div className="container px-4">
+            <div className="max-w-3xl mx-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-center mb-10"
+              >
+                <Badge className="mb-4 bg-blue-500/10 text-blue-600 border-blue-500/20">
+                  <HelpCircle className="w-3 h-3 mr-1" />
+                  FAQ
+                </Badge>
+                <h2 className="text-3xl lg:text-4xl font-display font-bold mb-3">
+                  Frequently Asked Questions
+                </h2>
+                <p className="text-muted-foreground">
+                  Everything you need to know about this product
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+              >
+                <Accordion type="single" collapsible className="space-y-4">
+                  <AccordionItem value="shipping" className="bg-background rounded-2xl border border-border/50 px-6 shadow-soft">
+                    <AccordionTrigger className="text-left font-semibold hover:no-underline py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Truck className="w-5 h-5 text-primary" />
+                        </div>
+                        <span>How long does shipping take?</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground pb-5 pl-13">
+                      We offer free shipping on all orders over €50. Standard delivery takes 5-10 business days. 
+                      Once your order is shipped, you'll receive a tracking number to monitor your package's journey to your doorstep.
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="returns" className="bg-background rounded-2xl border border-border/50 px-6 shadow-soft">
+                    <AccordionTrigger className="text-left font-semibold hover:no-underline py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                          <RotateCcw className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <span>What is your return policy?</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground pb-5 pl-13">
+                      We offer a 30-day money-back guarantee. If you or your pet aren't completely satisfied with your purchase, 
+                      simply contact us and we'll arrange a hassle-free return. Items must be unused and in original packaging.
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="quality" className="bg-background rounded-2xl border border-border/50 px-6 shadow-soft">
+                    <AccordionTrigger className="text-left font-semibold hover:no-underline py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                          <Award className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <span>Is this product safe for my pet?</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground pb-5 pl-13">
+                      Absolutely! All our products undergo rigorous quality testing and are made with pet-safe, 
+                      non-toxic materials. We prioritize your pet's health and safety above all else. 
+                      Each product is designed with your furry friend's comfort and well-being in mind.
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="sizing" className="bg-background rounded-2xl border border-border/50 px-6 shadow-soft">
+                    <AccordionTrigger className="text-left font-semibold hover:no-underline py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                          <Package className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <span>How do I choose the right size?</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground pb-5 pl-13">
+                      Check the product description for detailed sizing information. We provide measurements and 
+                      weight guidelines to help you choose the perfect fit for your pet. If you're unsure, 
+                      feel free to contact our support team for personalized recommendations.
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="support" className="bg-background rounded-2xl border border-border/50 px-6 shadow-soft">
+                    <AccordionTrigger className="text-left font-semibold hover:no-underline py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                          <MessageCircle className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <span>How can I contact customer support?</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground pb-5 pl-13">
+                      Our friendly customer support team is here to help! You can reach us through our 
+                      <Link to="/contact" className="text-primary hover:underline mx-1">contact page</Link> 
+                      or email us directly. We typically respond within 24 hours and are happy to assist 
+                      with any questions about your order or our products.
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </motion.div>
+
+              {/* Still have questions? */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="mt-10 text-center"
+              >
+                <p className="text-muted-foreground mb-4">
+                  Still have questions? We're here to help!
+                </p>
+                <Link to="/contact">
+                  <Button variant="outline" className="gap-2 rounded-full">
+                    <MessageCircle className="w-4 h-4" />
+                    Contact Us
+                  </Button>
+                </Link>
               </motion.div>
             </div>
           </div>
