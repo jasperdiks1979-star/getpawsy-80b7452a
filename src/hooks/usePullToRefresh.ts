@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIsMobile } from './use-mobile';
+import { useHaptic } from './useHaptic';
 
 interface UsePullToRefreshOptions {
   onRefresh: () => Promise<void>;
@@ -13,12 +14,14 @@ export function usePullToRefresh({
   disabled = false,
 }: UsePullToRefreshOptions) {
   const isMobile = useIsMobile();
+  const haptic = useHaptic();
   const [isPulling, setIsPulling] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
   const currentY = useRef(0);
+  const hasTriggeredHaptic = useRef(false);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (disabled || !containerRef.current) return;
@@ -27,6 +30,7 @@ export function usePullToRefresh({
     if (containerRef.current.scrollTop === 0) {
       startY.current = e.touches[0].clientY;
       setIsPulling(true);
+      hasTriggeredHaptic.current = false;
     }
   }, [disabled]);
 
@@ -40,11 +44,20 @@ export function usePullToRefresh({
     const resistedDistance = Math.min(distance * 0.5, threshold * 1.5);
     setPullDistance(resistedDistance);
     
+    // Trigger haptic when threshold is crossed
+    if (resistedDistance >= threshold && !hasTriggeredHaptic.current) {
+      haptic.mediumTap();
+      hasTriggeredHaptic.current = true;
+    } else if (resistedDistance < threshold && hasTriggeredHaptic.current) {
+      // Reset if user pulls back below threshold
+      hasTriggeredHaptic.current = false;
+    }
+    
     // Prevent default scroll when pulling down
     if (distance > 0 && containerRef.current?.scrollTop === 0) {
       e.preventDefault();
     }
-  }, [isPulling, disabled, isRefreshing, threshold]);
+  }, [isPulling, disabled, isRefreshing, threshold, haptic]);
 
   const handleTouchEnd = useCallback(async () => {
     if (!isPulling || disabled) return;
@@ -54,6 +67,7 @@ export function usePullToRefresh({
     if (pullDistance >= threshold && !isRefreshing) {
       setIsRefreshing(true);
       setPullDistance(threshold);
+      haptic.success(); // Success haptic when refresh starts
       
       try {
         await onRefresh();
@@ -64,7 +78,7 @@ export function usePullToRefresh({
     } else {
       setPullDistance(0);
     }
-  }, [isPulling, disabled, pullDistance, threshold, isRefreshing, onRefresh]);
+  }, [isPulling, disabled, pullDistance, threshold, isRefreshing, onRefresh, haptic]);
 
   useEffect(() => {
     const container = containerRef.current;
