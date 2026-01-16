@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Package, Search, Eye, Loader2, RefreshCw, ExternalLink, Download } from "lucide-react";
+import { Package, Search, Eye, Loader2, RefreshCw, ExternalLink, Download, Truck } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -58,9 +58,27 @@ interface Order {
   customer_email: string | null;
   shipping_address: ShippingAddress | null;
   items: OrderItem[];
+  tracking_number: string | null;
+  tracking_carrier: string | null;
   created_at: string;
   updated_at: string;
 }
+
+const CARRIER_TRACKING_URLS: Record<string, string> = {
+  postnl: "https://postnl.nl/tracktrace/?B=",
+  dhl: "https://www.dhl.com/nl-nl/home/tracking.html?tracking-id=",
+  ups: "https://www.ups.com/track?tracknum=",
+  fedex: "https://www.fedex.com/fedextrack/?trknbr=",
+  dpd: "https://tracking.dpd.de/status/nl_NL/parcel/",
+};
+
+const CARRIER_LABELS: Record<string, string> = {
+  postnl: "PostNL",
+  dhl: "DHL",
+  ups: "UPS",
+  fedex: "FedEx",
+  dpd: "DPD",
+};
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
@@ -125,6 +143,38 @@ export function OrdersManager() {
     },
     onSuccess: () => {
       toast.success("Order status bijgewerkt");
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+    },
+    onError: (error) => {
+      toast.error(`Fout bij bijwerken: ${error.message}`);
+    },
+  });
+
+  // Update tracking info mutation
+  const updateTrackingMutation = useMutation({
+    mutationFn: async ({ 
+      orderId, 
+      trackingNumber, 
+      trackingCarrier 
+    }: { 
+      orderId: string; 
+      trackingNumber: string; 
+      trackingCarrier: string;
+    }) => {
+      const { error } = await supabase
+        .from("orders")
+        .update({ 
+          tracking_number: trackingNumber || null,
+          tracking_carrier: trackingCarrier,
+          status: trackingNumber ? "shipped" : undefined,
+          updated_at: new Date().toISOString() 
+        })
+        .eq("id", orderId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Tracking informatie bijgewerkt");
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
     },
     onError: (error) => {
@@ -531,6 +581,92 @@ export function OrdersManager() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Tracking Info */}
+              <div className="border-t pt-4">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Truck className="w-4 h-4" />
+                  Track & Trace
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-1 block">Vervoerder</label>
+                    <Select
+                      value={selectedOrder.tracking_carrier || "postnl"}
+                      onValueChange={(carrier) => 
+                        updateTrackingMutation.mutate({
+                          orderId: selectedOrder.id,
+                          trackingNumber: selectedOrder.tracking_number || "",
+                          trackingCarrier: carrier,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="postnl">PostNL</SelectItem>
+                        <SelectItem value="dhl">DHL</SelectItem>
+                        <SelectItem value="ups">UPS</SelectItem>
+                        <SelectItem value="fedex">FedEx</SelectItem>
+                        <SelectItem value="dpd">DPD</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-1 block">Tracking Nummer</label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Voer tracking nummer in..."
+                        defaultValue={selectedOrder.tracking_number || ""}
+                        onBlur={(e) => {
+                          if (e.target.value !== selectedOrder.tracking_number) {
+                            updateTrackingMutation.mutate({
+                              orderId: selectedOrder.id,
+                              trackingNumber: e.target.value,
+                              trackingCarrier: selectedOrder.tracking_carrier || "postnl",
+                            });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const target = e.target as HTMLInputElement;
+                            updateTrackingMutation.mutate({
+                              orderId: selectedOrder.id,
+                              trackingNumber: target.value,
+                              trackingCarrier: selectedOrder.tracking_carrier || "postnl",
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {selectedOrder.tracking_number && (
+                  <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Truck className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-medium">
+                          {CARRIER_LABELS[selectedOrder.tracking_carrier || "postnl"]}
+                        </span>
+                        <code className="text-xs bg-background px-2 py-1 rounded">
+                          {selectedOrder.tracking_number}
+                        </code>
+                      </div>
+                      <a
+                        href={`${CARRIER_TRACKING_URLS[selectedOrder.tracking_carrier || "postnl"]}${selectedOrder.tracking_number}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline text-sm flex items-center gap-1"
+                      >
+                        Volg zending
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Stripe Info */}

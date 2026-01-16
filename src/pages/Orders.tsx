@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { Package, ChevronRight, ShoppingBag, Loader2 } from "lucide-react";
+import { Package, ChevronRight, ShoppingBag, Loader2, Truck, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -35,8 +35,26 @@ interface Order {
   currency: string;
   items: OrderItem[];
   shipping_address: ShippingAddress | null;
+  tracking_number: string | null;
+  tracking_carrier: string | null;
   created_at: string;
 }
+
+const CARRIER_TRACKING_URLS: Record<string, string> = {
+  postnl: "https://postnl.nl/tracktrace/?B=",
+  dhl: "https://www.dhl.com/nl-nl/home/tracking.html?tracking-id=",
+  ups: "https://www.ups.com/track?tracknum=",
+  fedex: "https://www.fedex.com/fedextrack/?trknbr=",
+  dpd: "https://tracking.dpd.de/status/nl_NL/parcel/",
+};
+
+const CARRIER_LABELS: Record<string, string> = {
+  postnl: "PostNL",
+  dhl: "DHL",
+  ups: "UPS",
+  fedex: "FedEx",
+  dpd: "DPD",
+};
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
@@ -79,7 +97,7 @@ const Orders = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, status, total_amount, currency, items, shipping_address, created_at")
+        .select("id, status, total_amount, currency, items, shipping_address, tracking_number, tracking_carrier, created_at")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -222,8 +240,29 @@ const Orders = () => {
                         </div>
                       </div>
 
-                      {/* Shipping Address (if available) */}
-                      {order.shipping_address && order.shipping_address.city && (
+                      {/* Tracking Info */}
+                      {order.tracking_number && (
+                        <div className="mt-4 pt-4 border-t">
+                          <a
+                            href={`${CARRIER_TRACKING_URLS[order.tracking_carrier || "postnl"]}${order.tracking_number}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg hover:bg-primary/10 transition-colors group"
+                          >
+                            <Truck className="w-5 h-5 text-primary" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">Volg je zending</p>
+                              <p className="text-xs text-muted-foreground">
+                                {CARRIER_LABELS[order.tracking_carrier || "postnl"]} • {order.tracking_number}
+                              </p>
+                            </div>
+                            <ExternalLink className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Shipping Address (if available and no tracking) */}
+                      {!order.tracking_number && order.shipping_address && order.shipping_address.city && (
                         <div className="mt-4 pt-4 border-t">
                           <p className="text-sm text-muted-foreground">
                             Verzonden naar: {order.shipping_address.city}, {order.shipping_address.country}

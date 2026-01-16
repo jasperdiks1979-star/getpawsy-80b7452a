@@ -136,6 +136,8 @@ export type Database = {
           stripe_payment_intent_id: string | null
           stripe_session_id: string | null
           total_amount: number
+          tracking_carrier: string | null
+          tracking_number: string | null
           updated_at: string
           user_id: string | null
         }
@@ -150,6 +152,8 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           total_amount: number
+          tracking_carrier?: string | null
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -164,6 +168,8 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           total_amount?: number
+          tracking_carrier?: string | null
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
