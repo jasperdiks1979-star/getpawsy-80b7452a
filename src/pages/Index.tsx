@@ -13,6 +13,7 @@ import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { trackNewsletterSignup } from '@/lib/analytics';
 import { toast } from 'sonner';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
+import { BestsellersSection } from '@/components/home/BestsellersSection';
 
 const features = [
   {
@@ -397,6 +398,9 @@ const Index = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Bestsellers Section */}
+      <BestsellersSection />
 
       {/* Categories */}
       <section id="categories" className="py-20">
