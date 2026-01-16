@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.ga4-analytics]
 verify_jwt = false
+
+[functions.generate-google-ads]
+verify_jwt = false
