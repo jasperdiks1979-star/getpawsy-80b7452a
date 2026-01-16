@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Package, Search, Eye, Loader2, RefreshCw, ExternalLink } from "lucide-react";
+import { Package, Search, Eye, Loader2, RefreshCw, ExternalLink, Download } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -166,6 +166,89 @@ export function OrdersManager() {
     }).format(amount);
   };
 
+  // Export to CSV
+  const exportToCSV = () => {
+    if (!filteredOrders.length) {
+      toast.error("Geen orders om te exporteren");
+      return;
+    }
+
+    // CSV headers
+    const headers = [
+      "Order ID",
+      "Datum",
+      "Status",
+      "Klant Email",
+      "Naam",
+      "Adres",
+      "Postcode",
+      "Stad",
+      "Land",
+      "Producten",
+      "Aantal Items",
+      "Subtotaal",
+      "Valuta",
+      "Stripe Payment Intent",
+      "Stripe Session ID",
+    ];
+
+    // CSV rows
+    const rows = filteredOrders.map((order) => {
+      const itemsSummary = order.items
+        ?.map((item) => `${item.name} (x${item.quantity})`)
+        .join("; ") || "";
+      const totalItems = order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+      
+      return [
+        order.id,
+        format(new Date(order.created_at), "yyyy-MM-dd HH:mm:ss"),
+        STATUS_LABELS[order.status] || order.status,
+        order.customer_email || "",
+        order.shipping_address?.name || "",
+        order.shipping_address?.address || "",
+        order.shipping_address?.postal_code || "",
+        order.shipping_address?.city || "",
+        order.shipping_address?.country || "",
+        itemsSummary,
+        totalItems.toString(),
+        Number(order.total_amount).toFixed(2),
+        order.currency.toUpperCase(),
+        order.stripe_payment_intent_id || "",
+        order.stripe_session_id || "",
+      ];
+    });
+
+    // Escape CSV values
+    const escapeCSV = (value: string) => {
+      if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    };
+
+    // Build CSV content
+    const csvContent = [
+      headers.map(escapeCSV).join(","),
+      ...rows.map((row) => row.map(escapeCSV).join(",")),
+    ].join("\n");
+
+    // Add BOM for Excel compatibility with UTF-8
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+    
+    // Create download link
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `orders-export-${format(new Date(), "yyyy-MM-dd-HHmm")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`${filteredOrders.length} orders geëxporteerd naar CSV`);
+  };
+
   // Calculate stats
   const stats = {
     total: orders?.length || 0,
@@ -225,15 +308,26 @@ export function OrdersManager() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between flex-wrap gap-2">
             <span className="flex items-center gap-2">
               <Package className="w-5 h-5" />
               Bestellingen
             </span>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Ververs
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={exportToCSV}
+                disabled={filteredOrders.length === 0}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Ververs
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
