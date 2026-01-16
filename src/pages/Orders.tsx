@@ -41,19 +41,21 @@ interface Order {
 }
 
 const CARRIER_TRACKING_URLS: Record<string, string> = {
-  postnl: "https://postnl.nl/tracktrace/?B=",
-  dhl: "https://www.dhl.com/nl-nl/home/tracking.html?tracking-id=",
+  usps: "https://tools.usps.com/go/TrackConfirmAction?tLabels=",
   ups: "https://www.ups.com/track?tracknum=",
   fedex: "https://www.fedex.com/fedextrack/?trknbr=",
-  dpd: "https://tracking.dpd.de/status/nl_NL/parcel/",
+  dhl: "https://www.dhl.com/us-en/home/tracking.html?tracking-id=",
+  ontrac: "https://www.ontrac.com/tracking/?number=",
+  lasership: "https://www.lasership.com/track/",
 };
 
 const CARRIER_LABELS: Record<string, string> = {
-  postnl: "PostNL",
-  dhl: "DHL",
+  usps: "USPS",
   ups: "UPS",
   fedex: "FedEx",
-  dpd: "DPD",
+  dhl: "DHL",
+  ontrac: "OnTrac",
+  lasership: "LaserShip",
 };
 
 const STATUS_COLORS: Record<string, string> = {
