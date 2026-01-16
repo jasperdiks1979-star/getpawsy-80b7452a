@@ -40,6 +40,7 @@ import {
 import { format, subDays, startOfDay, endOfDay, parseISO, isWithinInterval, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Json } from "@/integrations/supabase/types";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 interface OrderItem {
   name: string;
@@ -137,11 +138,17 @@ export const SalesDashboard = () => {
   // Date range filter state
   const [startDate, setStartDate] = useState<Date | undefined>(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  
+  // Use authenticated fetch hook for session refresh
+  const { refreshSessionIfNeeded } = useAuthenticatedFetch();
 
-  // Fetch all orders
+  // Fetch all orders with automatic session refresh
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders-stats"],
     queryFn: async () => {
+      // Ensure session is fresh before fetching
+      await refreshSessionIfNeeded();
+      
       const { data, error } = await supabase
         .from("orders")
         .select("*")
