@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, FolderTree, Loader2, Save, X, ImageIcon, Download } from 'lucide-react';
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import {
   Dialog,
   DialogContent,
@@ -373,9 +374,12 @@ export const CategoryManager = () => {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
+          <TableSkeleton 
+            columns={7} 
+            rows={6}
+            headerWidths={["w-8", "w-16", "w-32", "w-28", "w-20", "w-40", "w-24"]}
+            cellWidths={["w-6", "w-12", "w-28", "w-24", "w-12", "w-36", "w-20"]}
+          />
         )}
 
         {/* Categories Table */}

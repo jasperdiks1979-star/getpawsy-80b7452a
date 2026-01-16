@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Mail, Search, Trash2, UserX, UserCheck, Download, Loader2, Users } from 'lucide-react';
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -202,9 +203,12 @@ export const NewsletterSubscribers = () => {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
+            <TableSkeleton 
+              columns={4} 
+              rows={8}
+              headerWidths={["w-48", "w-36", "w-20", "w-24"]}
+              cellWidths={["w-44", "w-32", "w-16", "w-20"]}
+            />
           ) : filteredSubscribers.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Mail className="w-12 h-12 mx-auto mb-4 opacity-50" />
