@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -125,7 +125,7 @@ const Admin = () => {
   });
 
   // Fetch existing products from database
-  const { data: existingProducts } = useQuery({
+  const { data: existingProducts, isSuccess: existingProductsLoaded } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -137,9 +137,14 @@ const Admin = () => {
     },
   });
 
+  // Memoize imported CJ product IDs for efficient filtering
+  const importedCjIds = useMemo(() => {
+    return new Set(existingProducts?.map(p => p.cj_product_id).filter(Boolean) || []);
+  }, [existingProducts]);
+
   // Search CJ products
   const { data: cjProducts, isLoading: isSearching, refetch: searchProducts } = useQuery({
-    queryKey: ["cj-search", searchTerm],
+    queryKey: ["cj-search", searchTerm, Array.from(importedCjIds)],
     queryFn: async (): Promise<CJProduct[]> => {
       if (!searchTerm) return [];
       
@@ -160,8 +165,7 @@ const Admin = () => {
       
       // Filter out already imported products and blocked products
       const allProducts = response.data?.list || [];
-      const importedIds = new Set(existingProducts?.map(p => p.cj_product_id) || []);
-      return allProducts.filter((p: CJProduct) => !importedIds.has(p.pid) && !blockedProducts?.has(p.pid));
+      return allProducts.filter((p: CJProduct) => !importedCjIds.has(p.pid) && !blockedProducts?.has(p.pid));
     },
     enabled: false,
   });
@@ -174,7 +178,7 @@ const Admin = () => {
     isError: catalogError,
     error: catalogErrorData
   } = useQuery({
-    queryKey: ["pet-catalog", catalogPage, catalogKeyword],
+    queryKey: ["pet-catalog", catalogPage, catalogKeyword, Array.from(importedCjIds)],
     queryFn: async () => {
       const { data, error } = await invokeFunction<CJResponse & { error?: string; data: { originalTotal?: number; list: CJProduct[]; total: number } }>("cj-dropshipping", {
         body: {
@@ -205,15 +209,15 @@ const Admin = () => {
         throw new Error(`CJ API error: ${response.code}`);
       }
       
-      // Filter out already imported products and blocked products
+      // Filter out already imported products and blocked products using memoized set
       const allProducts = response.data?.list || [];
-      const importedIds = new Set(existingProducts?.map(p => p.cj_product_id) || []);
-      const filteredProducts = allProducts.filter((p: CJProduct) => !importedIds.has(p.pid) && !blockedProducts?.has(p.pid));
+      const filteredProducts = allProducts.filter((p: CJProduct) => !importedCjIds.has(p.pid) && !blockedProducts?.has(p.pid));
       
       return {
         products: filteredProducts,
         total: filteredProducts.length,
         originalTotal: response.data?.total || 0,
+        hiddenCount: allProducts.length - filteredProducts.length,
       };
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
@@ -932,8 +936,10 @@ const Admin = () => {
                 <div className="flex flex-wrap gap-2 items-center justify-between mb-4 pb-4 border-b">
                     <div className="text-sm text-muted-foreground">
                       Showing {petCatalogProducts.length} pet products
-                      {petCatalogData?.originalTotal && petCatalogData.originalTotal !== petCatalogData.total && (
-                        <span> (filtered from {petCatalogData.originalTotal})</span>
+                      {petCatalogData?.hiddenCount && petCatalogData.hiddenCount > 0 && (
+                        <span className="ml-1 text-green-600">
+                          ({petCatalogData.hiddenCount} already in your shop - hidden)
+                        </span>
                       )}
                     </div>
                     <div className="flex gap-2">
