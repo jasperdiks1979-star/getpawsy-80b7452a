@@ -3,7 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import { 
   Euro, 
   ShoppingCart, 
@@ -12,7 +14,9 @@ import {
   Users,
   ArrowUpRight,
   ArrowDownRight,
-  Calendar
+  Calendar,
+  FileSpreadsheet,
+  FileText
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -293,18 +297,195 @@ export const SalesDashboard = () => {
     }).format(cents / 100);
   };
 
+  const exportToCSV = () => {
+    if (!orders || orders.length === 0) {
+      toast.error("Geen data om te exporteren");
+      return;
+    }
+
+    const headers = ["Datum", "Order ID", "Klant Email", "Status", "Totaal (€)", "Aantal Items"];
+    const rows = orders.map((order) => {
+      const items = order.items as unknown as OrderItem[];
+      const itemCount = Array.isArray(items) ? items.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
+      return [
+        format(parseISO(order.created_at), "dd-MM-yyyy HH:mm"),
+        order.id.slice(0, 8),
+        order.customer_email || "Onbekend",
+        STATUS_LABELS[order.status] || order.status,
+        (Number(order.total_amount) / 100).toFixed(2),
+        itemCount.toString(),
+      ];
+    });
+
+    // Add summary rows
+    rows.push([]);
+    rows.push(["Samenvatting"]);
+    rows.push(["Totale omzet", formatCurrency(stats.totalRevenue)]);
+    rows.push(["Totaal bestellingen", stats.totalOrders.toString()]);
+    rows.push(["Gemiddelde orderwaarde", formatCurrency(stats.avgOrderValue)]);
+    rows.push(["Unieke klanten", stats.uniqueCustomers.toString()]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `verkoop-rapport-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    
+    toast.success("CSV geëxporteerd");
+  };
+
+  const exportToPDF = () => {
+    if (!orders || orders.length === 0) {
+      toast.error("Geen data om te exporteren");
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Popup geblokkeerd. Sta popups toe om te exporteren.");
+      return;
+    }
+
+    const statusBreakdown = stats.statusDistribution
+      .map((s) => `<tr><td>${s.name}</td><td>${s.value}</td></tr>`)
+      .join("");
+
+    const topProductsRows = stats.topProducts
+      .map(
+        (p) =>
+          `<tr><td>${p.name}</td><td>${p.quantity}</td><td>${formatCurrency(p.revenue)}</td></tr>`
+      )
+      .join("");
+
+    const ordersRows = orders
+      .slice(0, 50)
+      .map((order) => {
+        const items = order.items as unknown as OrderItem[];
+        const itemCount = Array.isArray(items)
+          ? items.reduce((sum, item) => sum + (item.quantity || 1), 0)
+          : 0;
+        return `<tr>
+          <td>${format(parseISO(order.created_at), "dd-MM-yyyy")}</td>
+          <td>${order.id.slice(0, 8)}</td>
+          <td>${order.customer_email || "Onbekend"}</td>
+          <td>${STATUS_LABELS[order.status] || order.status}</td>
+          <td>${formatCurrency(order.total_amount)}</td>
+          <td>${itemCount}</td>
+        </tr>`;
+      })
+      .join("");
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Verkoop Rapport - GetPawsy</title>
+        <style>
+          * { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+          body { padding: 40px; max-width: 900px; margin: 0 auto; color: #1a1a1a; }
+          h1 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+          h2 { color: #374151; margin-top: 30px; }
+          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 20px 0; }
+          .stat-card { background: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; }
+          .stat-value { font-size: 24px; font-weight: bold; color: #2563eb; }
+          .stat-label { font-size: 12px; color: #6b7280; margin-top: 5px; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+          th { background: #f9fafb; font-weight: 600; }
+          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+          @media print {
+            body { padding: 20px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>📊 Verkoop Rapport - GetPawsy</h1>
+        <p>Gegenereerd op: ${format(new Date(), "d MMMM yyyy HH:mm", { locale: nl })}</p>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">${formatCurrency(stats.totalRevenue)}</div>
+            <div class="stat-label">Totale Omzet</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${stats.totalOrders}</div>
+            <div class="stat-label">Totaal Bestellingen</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${stats.uniqueCustomers}</div>
+            <div class="stat-label">Unieke Klanten</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${formatCurrency(stats.avgOrderValue)}</div>
+            <div class="stat-label">Gemiddelde Orderwaarde</div>
+          </div>
+        </div>
+
+        <h2>📈 Status Verdeling</h2>
+        <table>
+          <thead><tr><th>Status</th><th>Aantal</th></tr></thead>
+          <tbody>${statusBreakdown || "<tr><td colspan='2'>Geen data</td></tr>"}</tbody>
+        </table>
+
+        <h2>🏆 Top 5 Producten</h2>
+        <table>
+          <thead><tr><th>Product</th><th>Verkocht</th><th>Omzet</th></tr></thead>
+          <tbody>${topProductsRows || "<tr><td colspan='3'>Geen data</td></tr>"}</tbody>
+        </table>
+
+        <h2>📋 Recente Bestellingen (max 50)</h2>
+        <table>
+          <thead>
+            <tr><th>Datum</th><th>Order ID</th><th>Klant</th><th>Status</th><th>Totaal</th><th>Items</th></tr>
+          </thead>
+          <tbody>${ordersRows}</tbody>
+        </table>
+
+        <div class="footer">
+          <p>Dit rapport is automatisch gegenereerd door GetPawsy Admin Dashboard.</p>
+        </div>
+
+        <button class="no-print" onclick="window.print()" style="margin-top: 20px; padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer;">
+          🖨️ Afdrukken / Opslaan als PDF
+        </button>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    
+    toast.success("PDF rapport geopend in nieuw tabblad");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Verkoop Dashboard</h2>
           <p className="text-muted-foreground">Overzicht van je verkoop statistieken</p>
         </div>
-        <Badge variant="outline" className="flex items-center gap-2">
-          <Calendar className="w-3 h-3" />
-          {format(new Date(), "d MMMM yyyy", { locale: nl })}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={exportToCSV} disabled={isLoading}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportToPDF} disabled={isLoading}>
+            <FileText className="h-4 w-4 mr-2" />
+            PDF
+          </Button>
+          <Badge variant="outline" className="flex items-center gap-2">
+            <Calendar className="w-3 h-3" />
+            {format(new Date(), "d MMMM yyyy", { locale: nl })}
+          </Badge>
+        </div>
       </div>
 
       {/* Key Metrics */}
