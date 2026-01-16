@@ -59,7 +59,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       price: Number(product.price),
       image: product.image_url || '/placeholder.svg',
     });
-    toast.success(`${product.name} added to cart!`);
+    // Toast is handled by CartContext
   };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
