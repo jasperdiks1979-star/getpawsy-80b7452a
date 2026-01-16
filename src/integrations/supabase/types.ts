@@ -418,6 +418,66 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_google_ads: {
+        Row: {
+          created_at: string
+          descriptions: string[]
+          display_paths: string[]
+          headlines: string[]
+          id: string
+          keywords: string[]
+          language: string
+          product_id: string | null
+          product_name: string
+          target_audience: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          descriptions: string[]
+          display_paths: string[]
+          headlines: string[]
+          id?: string
+          keywords: string[]
+          language?: string
+          product_id?: string | null
+          product_name: string
+          target_audience?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          descriptions?: string[]
+          display_paths?: string[]
+          headlines?: string[]
+          id?: string
+          keywords?: string[]
+          language?: string
+          product_id?: string | null
+          product_name?: string
+          target_audience?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_google_ads_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_google_ads_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
