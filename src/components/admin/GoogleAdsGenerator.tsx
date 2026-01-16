@@ -76,6 +76,7 @@ export function GoogleAdsGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedAd, setGeneratedAd] = useState<GeneratedAd | null>(null);
   const [selectedSavedAd, setSelectedSavedAd] = useState<SavedAd | null>(null);
+  const [finalUrl, setFinalUrl] = useState("https://getpawsy.com");
 
   // Fetch products for quick selection
   const { data: products } = useQuery({
@@ -282,7 +283,7 @@ ${keywords.join(", ")}
       ...descriptionValues,
       displayPaths[0] || '',
       displayPaths[1] || '',
-      'https://getpawsy.com', // Default final URL
+      finalUrl, // Final URL from input
       'Enabled'
     ];
 
@@ -555,6 +556,20 @@ ${keywords.join(", ")}
                 placeholder="Beschrijf het product en de belangrijkste kenmerken..."
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="finalUrl">Final URL (voor CSV export)</Label>
+              <Input
+                id="finalUrl"
+                type="url"
+                value={finalUrl}
+                onChange={(e) => setFinalUrl(e.target.value)}
+                placeholder="https://getpawsy.com/product-page"
+              />
+              <p className="text-xs text-muted-foreground">
+                De landingspagina URL die wordt gebruikt in de Google Ads CSV export
+              </p>
             </div>
 
             <Button 
