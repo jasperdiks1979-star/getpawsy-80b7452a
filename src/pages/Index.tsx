@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Truck, Shield, HeartHandshake, Sparkles, Loader2, Star, Leaf, Quote, Clock } from 'lucide-react';
+import { ArrowRight, ArrowDown, Truck, Shield, HeartHandshake, Sparkles, Loader2, Star, Leaf, Quote, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
@@ -291,10 +291,11 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="rounded-full px-8 border-2"
+                  className="gap-2 rounded-full px-8 border-2"
                   onClick={() => document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' })}
                 >
                   View Categories
+                  <ArrowDown className="w-4 h-4" />
                 </Button>
               </div>
 
