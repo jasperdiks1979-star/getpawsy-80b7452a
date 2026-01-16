@@ -217,11 +217,29 @@ serve(async (req) => {
     const accessToken = await getAccessToken(credentials);
 
     // Parse request body
-    const { reportType = 'overview', startDate, endDate } = await req.json();
+    const { reportType = 'overview', startDate, endDate, includeComparison = false } = await req.json();
     
     // Use provided dates or default to last 7 days
     const dateStart = startDate || '7daysAgo';
     const dateEnd = endDate || 'today';
+    
+    // Calculate previous period dates for comparison
+    let previousDateStart: string | null = null;
+    let previousDateEnd: string | null = null;
+    
+    if (includeComparison && startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      
+      const prevEnd = new Date(start);
+      prevEnd.setDate(prevEnd.getDate() - 1);
+      const prevStart = new Date(prevEnd);
+      prevStart.setDate(prevStart.getDate() - diffDays + 1);
+      
+      previousDateStart = prevStart.toISOString().split('T')[0];
+      previousDateEnd = prevEnd.toISOString().split('T')[0];
+    }
     
     console.log(`Fetching ${reportType} report for property ${propertyId} from ${dateStart} to ${dateEnd}`);
 
@@ -229,14 +247,8 @@ serve(async (req) => {
 
     if (reportType === 'overview') {
       // Fetch multiple reports in parallel for overview
-      const [
-        trafficReport,
-        topPagesReport,
-        deviceReport,
-        countryReport,
-        realtimeReport
-      ] = await Promise.all([
-        // Traffic data for date range
+      const reportPromises: Promise<unknown>[] = [
+        // Traffic data for date range (index 0)
         runReport(accessToken, propertyId, {
           dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'date' }],
@@ -250,7 +262,7 @@ serve(async (req) => {
           ],
           orderBys: [{ dimension: { dimensionName: 'date' } }]
         }),
-        // Top pages for date range
+        // Top pages for date range (index 1)
         runReport(accessToken, propertyId, {
           dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'pagePath' }],
@@ -261,13 +273,13 @@ serve(async (req) => {
           orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
           limit: 10
         }),
-        // Device category for date range
+        // Device category for date range (index 2)
         runReport(accessToken, propertyId, {
           dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'deviceCategory' }],
           metrics: [{ name: 'activeUsers' }]
         }),
-        // Countries for date range
+        // Countries for date range (index 3)
         runReport(accessToken, propertyId, {
           dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
           dimensions: [{ name: 'country' }],
@@ -275,18 +287,45 @@ serve(async (req) => {
           orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
           limit: 10
         }),
-        // Realtime users (always current)
+        // Realtime users (index 4)
         runRealtimeReport(accessToken, propertyId, {
           metrics: [{ name: 'activeUsers' }]
         })
-      ]);
+      ];
+      
+      // Add comparison period traffic if requested (will be index 5)
+      if (includeComparison && previousDateStart && previousDateEnd) {
+        console.log(`Including comparison data from ${previousDateStart} to ${previousDateEnd}`);
+        reportPromises.push(
+          runReport(accessToken, propertyId, {
+            dateRanges: [{ startDate: previousDateStart, endDate: previousDateEnd }],
+            dimensions: [{ name: 'date' }],
+            metrics: [
+              { name: 'activeUsers' },
+              { name: 'screenPageViews' },
+              { name: 'sessions' },
+              { name: 'averageSessionDuration' },
+              { name: 'bounceRate' },
+              { name: 'newUsers' }
+            ],
+            orderBys: [{ dimension: { dimensionName: 'date' } }]
+          })
+        );
+      }
+      
+      const reports = await Promise.all(reportPromises);
 
       result = {
-        traffic: trafficReport,
-        topPages: topPagesReport,
-        devices: deviceReport,
-        countries: countryReport,
-        realtime: realtimeReport
+        traffic: reports[0],
+        topPages: reports[1],
+        devices: reports[2],
+        countries: reports[3],
+        realtime: reports[4],
+        previousTraffic: includeComparison && reports[5] ? reports[5] : undefined,
+        comparisonPeriod: includeComparison && previousDateStart && previousDateEnd ? {
+          startDate: previousDateStart,
+          endDate: previousDateEnd
+        } : undefined
       };
     } else if (reportType === 'realtime') {
       // Realtime data

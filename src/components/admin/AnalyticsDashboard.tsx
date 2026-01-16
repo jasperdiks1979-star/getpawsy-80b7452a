@@ -74,6 +74,8 @@ interface GA4OverviewResponse {
   devices?: GA4Report;
   countries?: GA4Report;
   realtime?: GA4Report;
+  previousTraffic?: GA4Report;
+  comparisonPeriod?: { startDate: string; endDate: string };
 }
 
 interface GA4RealtimeResponse {
@@ -210,9 +212,10 @@ interface MetricCardProps {
   icon: React.ReactNode;
   subtitle?: string;
   loading?: boolean;
+  comparisonLabel?: string;
 }
 
-const MetricCard = ({ title, value, change, icon, subtitle, loading }: MetricCardProps) => (
+const MetricCard = ({ title, value, change, icon, subtitle, loading, comparisonLabel = "vs vorige periode" }: MetricCardProps) => (
   <Card className="relative overflow-hidden">
     <CardContent className="p-6">
       {loading ? (
@@ -224,10 +227,10 @@ const MetricCard = ({ title, value, change, icon, subtitle, loading }: MetricCar
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <p className="text-2xl font-bold">{value}</p>
-            {change !== undefined && (
+            {change !== undefined && !isNaN(change) && isFinite(change) && (
               <div className={`flex items-center gap-1 text-sm ${change >= 0 ? "text-green-600" : "text-red-600"}`}>
                 {change >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                <span>{Math.abs(change).toFixed(1)}% vs vorige week</span>
+                <span>{Math.abs(change).toFixed(1)}% {comparisonLabel}</span>
               </div>
             )}
             {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
@@ -240,6 +243,12 @@ const MetricCard = ({ title, value, change, icon, subtitle, loading }: MetricCar
     </CardContent>
   </Card>
 );
+
+// Helper to calculate percentage change
+const calculateChange = (current: number, previous: number): number | undefined => {
+  if (previous === 0) return current > 0 ? 100 : undefined;
+  return ((current - previous) / previous) * 100;
+};
 
 interface AnalyticsDashboardProps {
   isConfigured?: boolean;
@@ -270,11 +279,23 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     activeUsers: 0,
     totalPageViews: 0,
     avgSessionDuration: "0m 00s",
+    avgSessionDurationSeconds: 0,
     bounceRate: 0,
     newUsers: 0,
     returningUsers: 0,
     conversionRate: 0,
   });
+  
+  // Comparison metrics (previous period)
+  const [comparisonMetrics, setComparisonMetrics] = useState<{
+    totalPageViews: number;
+    avgSessionDurationSeconds: number;
+    bounceRate: number;
+    newUsers: number;
+  } | null>(null);
+  
+  // Comparison toggle
+  const [showComparison, setShowComparison] = useState(true);
   const [ecommerceData, setEcommerceData] = useState({
     transactions: 0,
     revenue: 0,
@@ -354,7 +375,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
 
       const dateParams = getDateRangeParams();
       const { data, error: fetchError } = await supabase.functions.invoke<GA4OverviewResponse>('ga4-analytics', {
-        body: { reportType: 'overview', ...dateParams }
+        body: { reportType: 'overview', ...dateParams, includeComparison: showComparison }
       });
 
       if (fetchError) throw fetchError;
@@ -383,11 +404,34 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
         activeUsers: realtimeValue,
         totalPageViews,
         avgSessionDuration: formatDuration(avgDuration),
+        avgSessionDurationSeconds: avgDuration,
         bounceRate: avgBounce * 100,
         newUsers: totalNewUsers,
         returningUsers: totalUsers - totalNewUsers,
         conversionRate: 0,
       });
+
+      // Parse and set comparison metrics if available
+      if (data.previousTraffic?.rows && data.previousTraffic.rows.length > 0) {
+        const prevParsed = parseTrafficData(data.previousTraffic);
+        const prevTotalPageViews = prevParsed.reduce((sum, d) => sum + d.pageViews, 0);
+        const prevTotalNewUsers = prevParsed.reduce((sum, d) => sum + d.newUsers, 0);
+        const prevAvgDuration = prevParsed.length > 0 
+          ? prevParsed.reduce((sum, d) => sum + d.avgSessionDuration, 0) / prevParsed.length 
+          : 0;
+        const prevAvgBounce = prevParsed.length > 0
+          ? prevParsed.reduce((sum, d) => sum + d.bounceRate, 0) / prevParsed.length
+          : 0;
+        
+        setComparisonMetrics({
+          totalPageViews: prevTotalPageViews,
+          avgSessionDurationSeconds: prevAvgDuration,
+          bounceRate: prevAvgBounce * 100,
+          newUsers: prevTotalNewUsers
+        });
+      } else {
+        setComparisonMetrics(null);
+      }
 
       // Parse other data
       setTopPages(parseTopPages(data.topPages));
@@ -403,7 +447,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
         description: errorMessage
       });
     }
-  }, [getDateRangeParams]);
+  }, [getDateRangeParams, showComparison]);
 
   const fetchRealtimeData = useCallback(async () => {
     try {
@@ -755,6 +799,18 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
             </Popover>
           </div>
 
+          <div className="flex items-center gap-2">
+            <Button
+              variant={showComparison ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowComparison(!showComparison)}
+              className="flex items-center gap-2"
+            >
+              <TrendingUp className="w-4 h-4" />
+              Vergelijking
+            </Button>
+          </div>
+
           <Badge variant="outline" className="flex items-center gap-2">
             <Activity className="w-3 h-3 text-green-500 animate-pulse" />
             Live
@@ -770,6 +826,14 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
           </Button>
         </div>
       </div>
+
+      {/* Comparison info badge */}
+      {showComparison && comparisonMetrics && (
+        <div className="mb-4 p-3 bg-muted/50 rounded-lg flex items-center gap-2 text-sm text-muted-foreground">
+          <TrendingUp className="w-4 h-4" />
+          <span>Vergelijking met vorige periode actief - percentages tonen verandering t.o.v. dezelfde periode ervoor</span>
+        </div>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex-wrap h-auto gap-1">
@@ -813,21 +877,27 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
             <MetricCard
               title="Paginaweergaven"
               value={overviewMetrics.totalPageViews.toLocaleString()}
+              change={showComparison && comparisonMetrics ? calculateChange(overviewMetrics.totalPageViews, comparisonMetrics.totalPageViews) : undefined}
               icon={<Eye className="w-5 h-5" />}
               subtitle={dateRangePreset === "7days" ? "Laatste 7 dagen" : dateRangePreset === "30days" ? "Laatste 30 dagen" : dateRangePreset === "90days" ? "Laatste 90 dagen" : dateRangePreset === "today" ? "Vandaag" : "Geselecteerde periode"}
               loading={isLoading}
+              comparisonLabel="vs vorige periode"
             />
             <MetricCard
               title="Gem. Sessieduur"
               value={overviewMetrics.avgSessionDuration}
+              change={showComparison && comparisonMetrics ? calculateChange(overviewMetrics.avgSessionDurationSeconds, comparisonMetrics.avgSessionDurationSeconds) : undefined}
               icon={<Clock className="w-5 h-5" />}
               loading={isLoading}
+              comparisonLabel="vs vorige periode"
             />
             <MetricCard
               title="Bounce Rate"
               value={`${overviewMetrics.bounceRate.toFixed(1)}%`}
-              icon={<TrendingUp className="w-5 h-5" />}
+              change={showComparison && comparisonMetrics ? calculateChange(overviewMetrics.bounceRate, comparisonMetrics.bounceRate) : undefined}
+              icon={<TrendingDown className="w-5 h-5" />}
               loading={isLoading}
+              comparisonLabel="vs vorige periode"
             />
           </div>
 
