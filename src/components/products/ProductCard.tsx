@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
 import { useCartAnimation } from '@/contexts/CartAnimationContext';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { useHaptic } from '@/hooks/useHaptic';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OptimizedImage } from '@/components/ui/optimized-image';
@@ -40,12 +41,16 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { success: hapticSuccess, selection: hapticSelection } = useHaptic();
   const inWishlist = isInWishlist(product.id);
   const [isAnimating, setIsAnimating] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
+    
+    // Trigger haptic feedback on mobile
+    hapticSuccess();
     
     // Trigger flying animation
     triggerAddToCart(
@@ -65,6 +70,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsAnimating(true);
+    hapticSelection();
     toggleWishlist(product.id);
     toast.success(inWishlist ? 'Removed from wishlist!' : 'Added to wishlist!');
     setTimeout(() => setIsAnimating(false), 300);
