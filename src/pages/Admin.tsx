@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles } from "lucide-react";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
 import { CategoryManager } from "@/components/admin/CategoryManager";
@@ -16,6 +16,7 @@ import { OrdersManager } from "@/components/admin/OrdersManager";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { ContactMessagesManager } from "@/components/admin/ContactMessagesManager";
 import { SalesDashboard } from "@/components/admin/SalesDashboard";
+import { GoogleAdsGenerator } from "@/components/admin/GoogleAdsGenerator";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -784,7 +785,7 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="sales" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-10 lg:w-auto lg:inline-grid">
             <TabsTrigger value="sales" className="flex items-center gap-2">
               <Euro className="w-4 h-4" />
               <span className="hidden sm:inline">Verkoop</span>
@@ -829,6 +830,11 @@ const Admin = () => {
               <MessageSquare className="w-4 h-4" />
               <span className="hidden sm:inline">Berichten</span>
               <span className="sm:hidden">Msg</span>
+            </TabsTrigger>
+            <TabsTrigger value="google-ads" className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Google Ads</span>
+              <span className="sm:hidden">Ads</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1617,6 +1623,13 @@ const Admin = () => {
           <TabsContent value="messages">
             <AuthErrorBoundary>
               <ContactMessagesManager />
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Google Ads Generator Tab */}
+          <TabsContent value="google-ads">
+            <AuthErrorBoundary>
+              <GoogleAdsGenerator />
             </AuthErrorBoundary>
           </TabsContent>
         </Tabs>
