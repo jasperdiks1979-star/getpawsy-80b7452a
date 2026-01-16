@@ -20,3 +20,15 @@ verify_jwt = false
 
 [functions.notify-contact-message]
 verify_jwt = false
+
+[functions.webauthn-register]
+verify_jwt = false
+
+[functions.webauthn-authenticate]
+verify_jwt = false
+
+[functions.fix-variant-prices]
+verify_jwt = false
+
+[functions.ga4-analytics]
+verify_jwt = false
