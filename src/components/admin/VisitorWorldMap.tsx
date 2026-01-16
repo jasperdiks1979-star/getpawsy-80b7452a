@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
 interface VisitorActivity {
   id: string;
@@ -95,14 +96,35 @@ export const VisitorWorldMap = () => {
     activityFilter === "all" || a.activity_type === activityFilter
   );
 
-  // Subscribe to realtime updates
+  // Subscribe to realtime updates with checkout notifications
   useEffect(() => {
     const channel = supabase
       .channel("visitor-activity-changes")
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
+          schema: "public",
+          table: "visitor_activity",
+        },
+        (payload) => {
+          // Show notification for new checkouts
+          const newActivity = payload.new as VisitorActivity;
+          if (newActivity.activity_type === "checkout") {
+            const location = newActivity.city || newActivity.country || "Onbekende locatie";
+            toast({
+              title: "🎉 Nieuwe checkout!",
+              description: `Een klant uit ${location} is aan het afrekenen`,
+              duration: 5000,
+            });
+          }
+          refetch();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
           schema: "public",
           table: "visitor_activity",
         },
