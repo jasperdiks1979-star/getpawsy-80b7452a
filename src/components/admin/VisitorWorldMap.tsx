@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -65,6 +65,7 @@ export const VisitorWorldMap = () => {
   const [mapError, setMapError] = useState<string | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("24h");
+  const [activityFilter, setActivityFilter] = useState<"all" | "browsing" | "cart" | "checkout">("all");
 
   // Get the time range in milliseconds
   const getTimeRangeMs = () => {
@@ -88,6 +89,11 @@ export const VisitorWorldMap = () => {
     },
     refetchInterval: timeRange === "1h" ? 10000 : 30000, // Faster refresh for short time ranges
   });
+
+  // Filter activities based on selected activity type
+  const filteredActivities = activities?.filter(a => 
+    activityFilter === "all" || a.activity_type === activityFilter
+  );
 
   // Subscribe to realtime updates
   useEffect(() => {
@@ -193,7 +199,7 @@ export const VisitorWorldMap = () => {
 
   // Update heatmap layer
   useEffect(() => {
-    if (!map.current || !mapLoaded || !activities) return;
+    if (!map.current || !mapLoaded || !filteredActivities) return;
 
     const mapInstance = map.current;
 
@@ -214,7 +220,7 @@ export const VisitorWorldMap = () => {
       // Create GeoJSON data for heatmap
       const geojsonData: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
-        features: activities
+        features: filteredActivities
           .filter((a) => a.latitude && a.longitude)
           .map((activity) => ({
             type: "Feature" as const,
@@ -287,11 +293,11 @@ export const VisitorWorldMap = () => {
         marker.getElement().style.display = "block";
       });
     }
-  }, [showHeatmap, activities, mapLoaded]);
+  }, [showHeatmap, filteredActivities, mapLoaded, activityFilter]);
 
   // Update markers when activities change
   useEffect(() => {
-    if (!map.current || !mapLoaded || !activities) return;
+    if (!map.current || !mapLoaded || !filteredActivities) return;
 
     // Remove existing markers
     markersRef.current.forEach((marker) => marker.remove());
@@ -300,7 +306,7 @@ export const VisitorWorldMap = () => {
     // Group activities by location (rounded to 1 decimal for clustering)
     const locationGroups = new Map<string, VisitorActivity[]>();
     
-    activities.forEach((activity) => {
+    filteredActivities.forEach((activity) => {
       if (activity.latitude && activity.longitude) {
         const key = `${activity.latitude.toFixed(1)},${activity.longitude.toFixed(1)}`;
         if (!locationGroups.has(key)) {
@@ -380,28 +386,28 @@ export const VisitorWorldMap = () => {
 
       markersRef.current.push(marker);
     });
-  }, [activities, mapLoaded, showHeatmap]);
+  }, [filteredActivities, mapLoaded, showHeatmap, activityFilter]);
 
-  // Count activities by type
+  // Count activities by type (from filtered data)
   const counts = {
-    browsing: activities?.filter(a => a.activity_type === "browsing").length || 0,
-    cart: activities?.filter(a => a.activity_type === "cart").length || 0,
-    checkout: activities?.filter(a => a.activity_type === "checkout").length || 0,
+    browsing: filteredActivities?.filter(a => a.activity_type === "browsing").length || 0,
+    cart: filteredActivities?.filter(a => a.activity_type === "cart").length || 0,
+    checkout: filteredActivities?.filter(a => a.activity_type === "checkout").length || 0,
   };
 
-  const totalVisitors = new Set(activities?.map(a => a.session_id)).size;
+  const totalVisitors = new Set(filteredActivities?.map(a => a.session_id)).size;
 
   // Get selected time range label
   const selectedTimeRangeLabel = TIME_RANGE_OPTIONS.find(o => o.value === timeRange)?.label || "Laatste 24 uur";
 
   // Calculate top locations with conversion rates
   const topLocations = (() => {
-    if (!activities) return { countries: [], cities: [], summary: { totalVisitors: 0, browsingOnly: 0, addedToCart: 0, completed: 0 } };
+    if (!filteredActivities) return { countries: [], cities: [], summary: { totalVisitors: 0, browsingOnly: 0, addedToCart: 0, completed: 0 } };
 
     // Track sessions by their highest activity level
     const sessionHighestActivity = new Map<string, "browsing" | "cart" | "checkout">();
     
-    activities.forEach((activity) => {
+    filteredActivities.forEach((activity) => {
       const current = sessionHighestActivity.get(activity.session_id);
       const activityRank = { browsing: 1, cart: 2, checkout: 3 };
       if (!current || activityRank[activity.activity_type] > activityRank[current]) {
@@ -426,7 +432,7 @@ export const VisitorWorldMap = () => {
       checkoutSessions: Set<string>;
     }>();
 
-    activities.forEach((activity) => {
+    filteredActivities.forEach((activity) => {
       const country = activity.country || "Onbekend";
       const city = activity.city || "Onbekend";
       const sessionId = activity.session_id;
@@ -544,7 +550,7 @@ export const VisitorWorldMap = () => {
     ];
 
     // Create CSV rows
-    const rows = activities.map((activity) => [
+    const rows = (filteredActivities || []).map((activity) => [
       new Date(activity.created_at).toLocaleString("nl-NL"),
       activity.session_id,
       ACTIVITY_LABELS[activity.activity_type] || activity.activity_type,
@@ -602,6 +608,39 @@ export const VisitorWorldMap = () => {
               </SelectContent>
             </Select>
 
+            {/* Activity Type Filter */}
+            <Select value={activityFilter} onValueChange={(value) => setActivityFilter(value as "all" | "browsing" | "cart" | "checkout")}>
+              <SelectTrigger className="w-[150px] h-9">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    Alle activiteiten
+                  </div>
+                </SelectItem>
+                <SelectItem value="browsing">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.browsing }} />
+                    Browsen
+                  </div>
+                </SelectItem>
+                <SelectItem value="cart">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.cart }} />
+                    Winkelwagen
+                  </div>
+                </SelectItem>
+                <SelectItem value="checkout">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.checkout }} />
+                    Afrekenen
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
             {/* Heatmap Toggle */}
             <div className="flex items-center gap-2 px-2">
               <Switch
@@ -626,7 +665,7 @@ export const VisitorWorldMap = () => {
               variant="outline"
               size="sm"
               onClick={exportToCSV}
-              disabled={!activities || activities.length === 0}
+              disabled={!filteredActivities || filteredActivities.length === 0}
             >
               <Download className="w-4 h-4 mr-2" />
               Export
@@ -651,6 +690,12 @@ export const VisitorWorldMap = () => {
             <Calendar className="w-3 h-3" />
             {selectedTimeRangeLabel}
           </Badge>
+          {activityFilter !== "all" && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Filter className="w-3 h-3" />
+              {ACTIVITY_LABELS[activityFilter]}
+            </Badge>
+          )}
           <Badge variant="outline" className="flex items-center gap-1">
             <Users className="w-3 h-3" />
             {totalVisitors} unieke bezoekers
