@@ -676,18 +676,18 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await authSupabase.auth.getClaims(token);
+    // First try to get user directly - this handles both fresh tokens and validates the session
+    const { data: userData, error: userError } = await authSupabase.auth.getUser();
     
-    if (claimsError || !claimsData?.claims) {
-      console.error('JWT verification failed:', claimsError);
+    if (userError || !userData?.user) {
+      console.error('User verification failed:', userError);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - invalid token' }),
+        JSON.stringify({ error: 'Unauthorized - invalid or expired session. Please log out and log back in.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = userData.user.id;
     console.log(`Authenticated user: ${userId}`);
 
     // Check if user is admin
