@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X, Radio } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X, Radio, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -83,6 +83,12 @@ export const VisitorWorldMap = () => {
     return saved !== null ? saved === "true" : true;
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [autoRotate, setAutoRotate] = useState(() => {
+    const saved = localStorage.getItem("map-auto-rotate");
+    return saved !== null ? saved === "true" : false;
+  });
+  const spinIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const userInteractingRef = useRef(false);
 
   // Toggle fullscreen mode
   const toggleFullscreen = useCallback(() => {
@@ -359,6 +365,13 @@ export const VisitorWorldMap = () => {
           });
           setMapLoaded(true);
         });
+
+        // Track user interaction
+        map.current.on("mousedown", () => { userInteractingRef.current = true; });
+        map.current.on("dragstart", () => { userInteractingRef.current = true; });
+        map.current.on("mouseup", () => { userInteractingRef.current = false; });
+        map.current.on("touchstart", () => { userInteractingRef.current = true; });
+        map.current.on("touchend", () => { userInteractingRef.current = false; });
       } catch (err) {
         console.error("Map initialization error:", err);
         setMapError("Fout bij het laden van de kaart.");
@@ -372,6 +385,37 @@ export const VisitorWorldMap = () => {
       map.current = null;
     };
   }, []);
+
+  // Auto-rotate effect
+  useEffect(() => {
+    localStorage.setItem("map-auto-rotate", String(autoRotate));
+    
+    if (spinIntervalRef.current) {
+      clearInterval(spinIntervalRef.current);
+      spinIntervalRef.current = null;
+    }
+
+    if (autoRotate && map.current && mapLoaded) {
+      const spinGlobe = () => {
+        if (!map.current || userInteractingRef.current) return;
+        const zoom = map.current.getZoom();
+        if (zoom < 3) {
+          const center = map.current.getCenter();
+          center.lng -= 1;
+          map.current.easeTo({ center, duration: 1000, easing: (n) => n });
+        }
+      };
+
+      spinIntervalRef.current = setInterval(spinGlobe, 1000);
+    }
+
+    return () => {
+      if (spinIntervalRef.current) {
+        clearInterval(spinIntervalRef.current);
+        spinIntervalRef.current = null;
+      }
+    };
+  }, [autoRotate, mapLoaded]);
 
   // Update heatmap layer
   useEffect(() => {
@@ -866,6 +910,20 @@ export const VisitorWorldMap = () => {
                 <span className="text-sm">
                   {showHeatmap ? "Heatmap" : "Markers"}
                 </span>
+              </Label>
+            </div>
+
+            {/* Auto-Rotate Toggle */}
+            <div className="flex items-center gap-2 px-2 border-l border-border">
+              <Switch
+                id="auto-rotate-toggle"
+                checked={autoRotate}
+                onCheckedChange={setAutoRotate}
+                disabled={mapProjection === "mercator"}
+              />
+              <Label htmlFor="auto-rotate-toggle" className="flex items-center gap-1.5 cursor-pointer">
+                <RotateCw className={`w-4 h-4 ${autoRotate ? "text-blue-500 animate-spin" : "text-muted-foreground"}`} style={{ animationDuration: autoRotate ? "3s" : "0s" }} />
+                <span className="text-sm">Roteer</span>
               </Label>
             </div>
 
