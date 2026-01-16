@@ -87,7 +87,7 @@ async function runReport(accessToken: string, propertyId: string, request: {
   dateRanges?: { startDate: string; endDate: string }[];
   dimensions?: { name: string }[];
   metrics?: { name: string }[];
-  orderBys?: { metric?: { metricName: string }; desc?: boolean }[];
+  orderBys?: { metric?: { metricName: string }; dimension?: { dimensionName: string }; desc?: boolean }[];
   limit?: number;
 }) {
   const response = await fetch(
@@ -244,7 +244,7 @@ serve(async (req) => {
             { name: 'bounceRate' },
             { name: 'newUsers' }
           ],
-          orderBys: [{ metric: { metricName: 'date' } }]
+          orderBys: [{ dimension: { dimensionName: 'date' } }]
         }),
         // Top pages
         runReport(accessToken, propertyId, {
