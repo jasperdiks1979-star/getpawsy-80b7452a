@@ -12,6 +12,7 @@ import type { CarouselApi } from '@/components/ui/carousel';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { trackNewsletterSignup } from '@/lib/analytics';
 import { toast } from 'sonner';
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 
 const features = [
   {
@@ -94,6 +95,9 @@ const itemVariants = {
 };
 
 const Index = () => {
+  // Track visitor browsing activity
+  useVisitorTracking();
+  
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
   // Testimonials carousel state

@@ -30,6 +30,49 @@ const Checkout = () => {
     }
   }, [user]);
 
+  // Track checkout activity for visitor map
+  const trackCheckoutActivity = async () => {
+    try {
+      let sessionId = sessionStorage.getItem("visitor_session_id");
+      if (!sessionId) {
+        sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+        sessionStorage.setItem("visitor_session_id", sessionId);
+      }
+      
+      let location = sessionStorage.getItem("visitor_location");
+      if (!location) {
+        try {
+          const response = await fetch("https://ipapi.co/json/");
+          if (response.ok) {
+            const data = await response.json();
+            location = JSON.stringify({
+              latitude: data.latitude,
+              longitude: data.longitude,
+              country: data.country_name,
+              city: data.city,
+            });
+            sessionStorage.setItem("visitor_location", location);
+          }
+        } catch {
+          // Ignore location errors
+        }
+      }
+      
+      const loc = location ? JSON.parse(location) : {};
+      
+      await supabase.from("visitor_activity").insert({
+        session_id: sessionId,
+        activity_type: "checkout",
+        latitude: loc.latitude || null,
+        longitude: loc.longitude || null,
+        country: loc.country || null,
+        city: loc.city || null,
+      });
+    } catch {
+      // Silently fail
+    }
+  };
+
   // Track begin checkout when page loads with items
   useEffect(() => {
     if (items.length > 0) {
@@ -42,6 +85,7 @@ const Checkout = () => {
         })),
         totalPrice
       );
+      trackCheckoutActivity();
     }
   }, []);
 
