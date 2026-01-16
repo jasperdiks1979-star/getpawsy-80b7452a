@@ -278,9 +278,11 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     isCustomizing,
     setIsCustomizing,
     toggleWidgetVisibility,
+    setWidgetSize,
     reorderWidgets,
     resetToDefaults,
     getWidgetsByTab,
+    getWidgetSize,
   } = useDashboardWidgets();
   
   // Helper to check if a widget is visible
@@ -1086,6 +1088,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
             isCustomizing={isCustomizing}
             setIsCustomizing={setIsCustomizing}
             onToggleVisibility={toggleWidgetVisibility}
+            onSizeChange={setWidgetSize}
             onReorder={reorderWidgets}
             onReset={resetToDefaults}
           />
