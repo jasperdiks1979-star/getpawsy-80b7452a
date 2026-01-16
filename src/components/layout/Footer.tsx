@@ -82,7 +82,7 @@ export const Footer = () => {
   ];
 
   return (
-    <footer className="relative mt-auto w-full max-w-[100vw] overflow-x-hidden">
+    <footer className="relative mt-auto w-full max-w-[100vw] overflow-x-hidden pb-safe">
       {/* Decorative top wave */}
       <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-background to-transparent pointer-events-none" />
       

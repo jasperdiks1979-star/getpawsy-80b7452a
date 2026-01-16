@@ -92,6 +92,12 @@ export default {
         'soft-lg': '0 12px 40px hsl(25 25% 15% / 0.15)',
         'inner-soft': 'inset 0 2px 4px 0 hsl(25 25% 15% / 0.05)',
       },
+      spacing: {
+        'safe': 'env(safe-area-inset-bottom)',
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

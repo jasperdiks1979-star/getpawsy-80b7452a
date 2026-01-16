@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface CartItem {
   id: string;
@@ -42,37 +43,52 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sessionStorage.setItem("visitor_session_id", sessionId);
       }
       
-      // Get location from cache or fetch
-      let location = sessionStorage.getItem("visitor_location");
-      if (!location) {
+      // Get location from cache
+      let locationData: { latitude?: number; longitude?: number; country?: string; city?: string } = {};
+      const cachedLocation = sessionStorage.getItem("visitor_location");
+      
+      if (cachedLocation) {
         try {
-          const response = await fetch("https://ipapi.co/json/");
+          locationData = JSON.parse(cachedLocation);
+        } catch {
+          // Ignore parse errors
+        }
+      } else {
+        // Try to fetch location, but don't wait or fail if it doesn't work
+        try {
+          const response = await fetch("https://ipapi.co/json/", { 
+            signal: AbortSignal.timeout(3000) // 3 second timeout
+          });
           if (response.ok) {
             const data = await response.json();
-            location = JSON.stringify({
+            locationData = {
               latitude: data.latitude,
               longitude: data.longitude,
               country: data.country_name,
               city: data.city,
-            });
-            sessionStorage.setItem("visitor_location", location);
+            };
+            sessionStorage.setItem("visitor_location", JSON.stringify(locationData));
           }
         } catch {
-          // Ignore location errors
+          // Ignore location errors - proceed without location
         }
       }
       
-      const loc = location ? JSON.parse(location) : {};
-      
-      await supabase.from("visitor_activity").insert({
+      // Always insert the activity, even without location
+      const { error } = await supabase.from("visitor_activity").insert({
         session_id: sessionId,
         activity_type: "cart",
-        latitude: loc.latitude || null,
-        longitude: loc.longitude || null,
-        country: loc.country || null,
-        city: loc.city || null,
+        latitude: locationData.latitude || null,
+        longitude: locationData.longitude || null,
+        country: locationData.country || null,
+        city: locationData.city || null,
       });
-    } catch {
+      
+      if (error) {
+        console.error("Error tracking cart activity:", error);
+      }
+    } catch (err) {
+      console.error("Error in trackCartActivity:", err);
       // Silently fail - don't impact cart functionality
     }
   }, []);
@@ -81,12 +97,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(prev => {
       const existing = prev.find(item => item.id === newItem.id);
       if (existing) {
+        toast.success(`${newItem.name} quantity increased`, {
+          description: `Now ${existing.quantity + 1} in cart`,
+          duration: 2000,
+        });
         return prev.map(item =>
           item.id === newItem.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
+      toast.success(`Added to cart`, {
+        description: newItem.name,
+        duration: 2000,
+      });
       return [...prev, { ...newItem, quantity: 1 }];
     });
     trackAddToCart(newItem.id, newItem.name, newItem.price, 1);
