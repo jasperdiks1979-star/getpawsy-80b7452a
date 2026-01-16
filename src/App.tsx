@@ -22,6 +22,11 @@ import Wishlist from "./pages/Wishlist";
 import Profile from "./pages/Profile";
 import Install from "./pages/Install";
 import Orders from "./pages/Orders";
+import About from "./pages/About";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import ReturnPolicy from "./pages/ReturnPolicy";
+import CookiePolicy from "./pages/CookiePolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +69,11 @@ const App = () => {
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/orders" element={<Orders />} />
                     <Route path="/install" element={<Install />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/terms" element={<TermsOfService />} />
+                    <Route path="/returns" element={<ReturnPolicy />} />
+                    <Route path="/cookies" element={<CookiePolicy />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
