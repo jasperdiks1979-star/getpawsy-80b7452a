@@ -499,6 +499,42 @@ export type Database = {
         }
         Relationships: []
       }
+      visitor_activity: {
+        Row: {
+          activity_type: string
+          city: string | null
+          country: string | null
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          activity_type: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       products_public: {
@@ -579,6 +615,7 @@ export type Database = {
           reset_at: string
         }[]
       }
+      cleanup_old_visitor_activity: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
