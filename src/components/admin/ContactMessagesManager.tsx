@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +43,7 @@ import {
   Loader2
 } from "lucide-react";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -148,8 +149,12 @@ export function ContactMessagesManager() {
     return acc;
   }, {} as Record<string, number>) || {};
 
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
   return (
-    <div className="space-y-6">
+    <PullToRefreshContainer onRefresh={handleRefresh} className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
@@ -426,6 +431,6 @@ export function ContactMessagesManager() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PullToRefreshContainer>
   );
 }

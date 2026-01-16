@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +26,7 @@ import {
 import { toast } from 'sonner';
 import { Mail, Search, Trash2, UserX, UserCheck, Download, Loader2, Users } from 'lucide-react';
 import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -42,7 +43,7 @@ export const NewsletterSubscribers = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: subscribers, isLoading } = useQuery({
+  const { data: subscribers, isLoading, refetch } = useQuery({
     queryKey: ['newsletter-subscribers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -54,6 +55,10 @@ export const NewsletterSubscribers = () => {
       return data as Subscriber[];
     },
   });
+
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
@@ -128,7 +133,7 @@ export const NewsletterSubscribers = () => {
   const inactiveCount = subscribers?.filter(s => !s.is_active).length || 0;
 
   return (
-    <div className="space-y-6">
+    <PullToRefreshContainer onRefresh={handleRefresh} className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
@@ -297,6 +302,6 @@ export const NewsletterSubscribers = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PullToRefreshContainer>
   );
 };

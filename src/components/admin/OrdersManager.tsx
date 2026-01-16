@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner";
 import { Package, Search, Eye, Loader2, RefreshCw, ExternalLink, Download, Truck } from "lucide-react";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -313,9 +314,12 @@ export function OrdersManager() {
       ?.filter(o => ["paid", "processing", "shipped", "delivered"].includes(o.status))
       .reduce((sum, o) => sum + Number(o.total_amount), 0) || 0,
   };
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   return (
-    <div className="space-y-6">
+    <PullToRefreshContainer onRefresh={handleRefresh} className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <Card>
@@ -710,6 +714,6 @@ export function OrdersManager() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PullToRefreshContainer>
   );
 }
