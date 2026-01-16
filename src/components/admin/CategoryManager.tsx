@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, FolderTree, Loader2, Save, X, ImageIcon, Download } from 'lucide-react';
 import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
 import {
   Dialog,
   DialogContent,
@@ -70,7 +71,7 @@ export const CategoryManager = () => {
   });
 
   // Fetch categories
-  const { data: categories, isLoading } = useQuery({
+  const { data: categories, isLoading, refetch } = useQuery({
     queryKey: ['admin-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -81,6 +82,10 @@ export const CategoryManager = () => {
       return data as Category[];
     },
   });
+
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   // Fetch product counts per category
   const { data: productCounts } = useQuery({
@@ -321,7 +326,8 @@ export const CategoryManager = () => {
   const allSelected = filteredCategories.length > 0 && selectedIds.size === filteredCategories.length;
 
   return (
-    <Card>
+    <PullToRefreshContainer onRefresh={handleRefresh}>
+      <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <CardTitle className="flex items-center gap-2">
@@ -619,6 +625,7 @@ export const CategoryManager = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+      </Card>
+    </PullToRefreshContainer>
   );
 };
