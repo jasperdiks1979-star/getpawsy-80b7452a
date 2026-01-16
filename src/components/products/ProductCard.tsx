@@ -46,8 +46,16 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  const isOutOfStock = product.stock === 0 || product.stock === null;
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
+    
+    // Prevent adding out-of-stock items
+    if (isOutOfStock) {
+      toast.error('This product is out of stock');
+      return;
+    }
     
     // Trigger haptic feedback on mobile
     hapticSuccess();
@@ -137,9 +145,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             <Button
               className="w-full gap-2 rounded-full shadow-soft"
               onClick={handleAddToCart}
+              disabled={isOutOfStock}
+              variant={isOutOfStock ? "secondary" : "default"}
             >
               <ShoppingCart className="w-4 h-4" />
-              Add to Cart
+              {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
             </Button>
           </div>
         </div>
@@ -173,9 +183,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               className="flex-1 gap-2 rounded-full"
               size="sm"
               onClick={handleAddToCart}
+              disabled={isOutOfStock}
+              variant={isOutOfStock ? "secondary" : "default"}
             >
               <ShoppingCart className="w-4 h-4" />
-              Add
+              {isOutOfStock ? 'Out of Stock' : 'Add'}
             </Button>
             <Button
               variant="outline"

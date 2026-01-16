@@ -283,7 +283,16 @@ const ProductDetail = () => {
     );
   }
 
+  // Check stock status first - used by handleAddToCart and in rendering
+  const inStock = product.stock !== null && product.stock > 0;
+
   const handleAddToCart = () => {
+    // Prevent adding out-of-stock items
+    if (!inStock) {
+      toast.error('This product is out of stock');
+      return;
+    }
+    
     haptic.success(); // Success haptic on add to cart
     
     // Trigger flying animation
@@ -340,8 +349,6 @@ const ProductDetail = () => {
 
   // Check if description contains HTML
   const descriptionHasHtml = product.description?.includes('<') && product.description?.includes('>');
-
-  const inStock = product.stock !== null && product.stock > 0;
 
   const handlePrevImage = () => {
     setSelectedImage(prev => prev === 0 ? images.length - 1 : prev - 1);
