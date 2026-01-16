@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -49,9 +49,10 @@ const ACTIVITY_WEIGHTS = {
 };
 
 // Time range options
-type TimeRange = "1h" | "24h" | "7d" | "30d";
+type TimeRange = "live" | "1h" | "24h" | "7d" | "30d";
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; hours: number }[] = [
+  { value: "live", label: "Live", hours: 0 },
   { value: "1h", label: "Laatste uur", hours: 1 },
   { value: "24h", label: "Laatste 24 uur", hours: 24 },
   { value: "7d", label: "Laatste 7 dagen", hours: 24 * 7 },
@@ -66,6 +67,7 @@ export const VisitorWorldMap = () => {
   const [mapError, setMapError] = useState<string | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("24h");
+  const [liveActivities, setLiveActivities] = useState<VisitorActivity[]>([]);
   const [mapProjection, setMapProjection] = useState<"globe" | "mercator">("globe");
   const [activityFilter, setActivityFilter] = useState<"all" | "browsing" | "cart" | "checkout">("all");
   const [checkoutNotifications, setCheckoutNotifications] = useState(() => {
@@ -193,16 +195,28 @@ export const VisitorWorldMap = () => {
       });
     }
   }, [mapProjection, mapLoaded]);
+
+  // Clear live activities when switching away from live mode
+  useEffect(() => {
+    if (timeRange !== "live") {
+      setLiveActivities([]);
+    }
+  }, [timeRange]);
+
   // Get the time range in milliseconds
   const getTimeRangeMs = () => {
     const option = TIME_RANGE_OPTIONS.find(o => o.value === timeRange);
     return (option?.hours || 24) * 60 * 60 * 1000;
   };
 
-  // Fetch visitor activities with time range
+  // Fetch visitor activities with time range (only when not in live mode)
   const { data: activities, refetch, isLoading } = useQuery({
     queryKey: ["visitor-activities", timeRange],
     queryFn: async () => {
+      // In live mode, we don't fetch historical data
+      if (timeRange === "live") {
+        return [] as VisitorActivity[];
+      }
       const timeRangeMs = getTimeRangeMs();
       const { data, error } = await supabase
         .from("visitor_activity")
@@ -213,11 +227,15 @@ export const VisitorWorldMap = () => {
       if (error) throw error;
       return (data || []) as VisitorActivity[];
     },
-    refetchInterval: timeRange === "1h" ? 10000 : 30000, // Faster refresh for short time ranges
+    refetchInterval: timeRange === "live" ? false : timeRange === "1h" ? 10000 : 30000,
+    enabled: timeRange !== "live",
   });
 
+  // Use live activities when in live mode, otherwise use fetched activities
+  const displayActivities = timeRange === "live" ? liveActivities : activities;
+
   // Filter activities based on selected activity type
-  const filteredActivities = activities?.filter(a => 
+  const filteredActivities = displayActivities?.filter(a => 
     activityFilter === "all" || a.activity_type === activityFilter
   );
 
@@ -235,6 +253,16 @@ export const VisitorWorldMap = () => {
         (payload) => {
           const newActivity = payload.new as VisitorActivity;
           const location = newActivity.city || newActivity.country || "Onbekende locatie";
+          
+          // In live mode, add activity to live activities list
+          if (timeRange === "live") {
+            setLiveActivities(prev => {
+              // Keep only activities from last 5 minutes to avoid memory issues
+              const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+              const filtered = prev.filter(a => a.created_at > fiveMinutesAgo);
+              return [newActivity, ...filtered];
+            });
+          }
           
           // Show notification for new checkouts
           if (newActivity.activity_type === "checkout" && checkoutNotifications) {
@@ -256,7 +284,9 @@ export const VisitorWorldMap = () => {
             });
           }
           
-          refetch();
+          if (timeRange !== "live") {
+            refetch();
+          }
         }
       )
       .on(
@@ -267,7 +297,9 @@ export const VisitorWorldMap = () => {
           table: "visitor_activity",
         },
         () => {
-          refetch();
+          if (timeRange !== "live") {
+            refetch();
+          }
         }
       )
       .subscribe();
@@ -275,7 +307,7 @@ export const VisitorWorldMap = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch, playNotificationSound, checkoutNotifications, cartNotifications, soundEnabled]);
+  }, [refetch, playNotificationSound, checkoutNotifications, cartNotifications, soundEnabled, timeRange]);
 
   // Initialize map
   useEffect(() => {
@@ -756,14 +788,24 @@ export const VisitorWorldMap = () => {
           <div className="flex items-center gap-2 flex-wrap">
             {/* Time Range Selector */}
             <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
-              <SelectTrigger className="w-[160px] h-9">
-                <Calendar className="w-4 h-4 mr-2" />
+              <SelectTrigger className={`w-[160px] h-9 ${timeRange === "live" ? "border-green-500 bg-green-500/10" : ""}`}>
+                {timeRange === "live" ? (
+                  <Radio className="w-4 h-4 mr-2 text-green-500 animate-pulse" />
+                ) : (
+                  <Calendar className="w-4 h-4 mr-2" />
+                )}
                 <SelectValue placeholder="Periode" />
               </SelectTrigger>
               <SelectContent>
                 {TIME_RANGE_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     <div className="flex items-center gap-2">
+                      {option.value === "live" && (
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                      )}
                       {option.value === "1h" && <Clock className="w-3 h-3" />}
                       {option.label}
                     </div>
