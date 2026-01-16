@@ -11,43 +11,49 @@ serve(async (req) => {
   }
 
   try {
-    const { productName, productDescription, targetAudience, language = 'nl' } = await req.json();
+    const { productName, productDescription, targetAudience, language = 'nl', variantCount = 1 } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log(`Generating Google Ads for product: ${productName}`);
+    console.log(`Generating ${variantCount} Google Ads variant(s) for product: ${productName}`);
 
     const systemPrompt = `You are an expert Google Ads copywriter. Generate compelling, high-converting Google Ads copy in ${language === 'nl' ? 'Dutch' : 'English'}.
 
-For each ad, provide:
+You need to generate ${variantCount} unique ad variant(s). Each variant should have a different angle/approach.
+
+For each ad variant, provide:
 1. Headlines (max 30 characters each, provide 3 variations)
 2. Descriptions (max 90 characters each, provide 2 variations)
 3. Display path suggestions (2 path segments, max 15 chars each)
+4. Keywords (5 relevant keywords)
 
-Focus on:
-- Clear value propositions
-- Strong calls-to-action
-- Emotional triggers
-- Urgency when appropriate
-- Keywords that match search intent
+Focus on different angles for each variant:
+- Variant 1: Focus on benefits/value proposition
+- Variant 2: Focus on urgency/scarcity (if applicable)
+- Variant 3: Focus on social proof/trust (if applicable)
 
 Return the response as valid JSON with this structure:
 {
-  "headlines": ["headline1", "headline2", "headline3"],
-  "descriptions": ["description1", "description2"],
-  "displayPaths": ["path1", "path2"],
-  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
+  "variants": [
+    {
+      "headlines": ["headline1", "headline2", "headline3"],
+      "descriptions": ["description1", "description2"],
+      "displayPaths": ["path1", "path2"],
+      "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+      "angle": "Brief description of the angle used"
+    }
+  ]
 }`;
 
-    const userPrompt = `Generate Google Ads for:
+    const userPrompt = `Generate ${variantCount} unique Google Ads variant(s) for:
 Product: ${productName}
 Description: ${productDescription || 'Not provided'}
 Target Audience: ${targetAudience || 'General consumers'}
 
-Create compelling ad copy that will drive clicks and conversions.`;
+Create compelling ad copy with different angles for each variant.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -111,6 +117,11 @@ Create compelling ad copy that will drive clicks and conversions.`;
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Handle backward compatibility: if response has old format, wrap in variants array
+    if (!adData.variants && adData.headlines) {
+      adData = { variants: [adData] };
     }
 
     console.log("Successfully generated ads:", adData);
