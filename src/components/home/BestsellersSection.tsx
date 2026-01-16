@@ -70,13 +70,13 @@ export const BestsellersSection = () => {
         >
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-400 px-4 py-2 rounded-full text-sm font-medium mb-4">
             <Award className="w-4 h-4" />
-            Onze Top Producten
+            Our Top Products
           </div>
           <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
             Bestsellers
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            De meest geliefde producten door huisdiereigenaren. Ontdek waarom duizenden klanten deze producten kiezen.
+            The most loved products by pet owners. Discover why thousands of customers choose these products.
           </p>
         </motion.div>
 
@@ -147,7 +147,7 @@ export const BestsellersSection = () => {
                       {/* View Button on hover */}
                       <div className="absolute inset-0 flex items-end justify-center pb-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
                         <span className="bg-white text-foreground px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2">
-                          Bekijk product
+                          View Product
                           <ArrowRight className="w-4 h-4" />
                         </span>
                       </div>
@@ -205,7 +205,7 @@ export const BestsellersSection = () => {
           >
             <Link to="/products">
               <Button size="lg" variant="outline" className="gap-2 rounded-full px-8">
-                Bekijk alle producten
+                View All Products
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
