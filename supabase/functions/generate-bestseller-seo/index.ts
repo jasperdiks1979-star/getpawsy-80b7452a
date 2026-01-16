@@ -25,40 +25,40 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `Je bent een expert e-commerce SEO copywriter voor een Nederlandse dierenwinkel genaamd GetPawsy. 
-Je schrijft overtuigende, emotionele verkoopteksten die converteren. 
-Gebruik Nederlandse taal. Focus op voordelen voor huisdier en eigenaar.
-Schrijf professioneel maar warm en persoonlijk.`;
+    const systemPrompt = `You are an expert e-commerce SEO copywriter for an American pet store called GetPawsy. 
+You write compelling, emotional sales copy that converts. 
+Use American English. Focus on benefits for both pet and owner.
+Write professionally but warm and personal.`;
 
-    const userPrompt = `Genereer SEO content voor dit bestseller product:
+    const userPrompt = `Generate SEO content for this bestseller product:
 
 Product: ${productName}
-Categorie: ${category}
-Prijs: €${price}
-Beschrijving: ${productDescription || 'Geen beschrijving beschikbaar'}
+Category: ${category}
+Price: €${price}
+Description: ${productDescription || 'No description available'}
 
-Genereer de volgende content in JSON format:
+Generate the following content in JSON format:
 {
-  "seo_title": "SEO titel (max 60 karakters, inclusief GetPawsy)",
-  "seo_description": "Meta description (max 155 karakters, met call-to-action)",
-  "hero_headline": "Pakkende kop voor de productpagina (emotioneel, max 80 karakters)",
-  "hero_subheadline": "Ondersteunende tekst (max 120 karakters)",
+  "seo_title": "SEO title (max 60 characters, including GetPawsy)",
+  "seo_description": "Meta description (max 155 characters, with call-to-action)",
+  "hero_headline": "Catchy headline for the product page (emotional, max 80 characters)",
+  "hero_subheadline": "Supporting text (max 120 characters)",
   "selling_points": [
-    {"icon": "heart", "title": "Voordeel 1", "description": "Korte uitleg"},
-    {"icon": "shield", "title": "Voordeel 2", "description": "Korte uitleg"},
-    {"icon": "star", "title": "Voordeel 3", "description": "Korte uitleg"},
-    {"icon": "truck", "title": "Voordeel 4", "description": "Korte uitleg"}
+    {"icon": "heart", "title": "Benefit 1", "description": "Short explanation"},
+    {"icon": "shield", "title": "Benefit 2", "description": "Short explanation"},
+    {"icon": "star", "title": "Benefit 3", "description": "Short explanation"},
+    {"icon": "truck", "title": "Benefit 4", "description": "Short explanation"}
   ],
-  "long_description": "Uitgebreide productbeschrijving (300-400 woorden, overtuigend, emotioneel, SEO-geoptimaliseerd met relevante zoekwoorden)",
-  "meta_keywords": ["zoekwoord1", "zoekwoord2", "zoekwoord3", "zoekwoord4", "zoekwoord5"]
+  "long_description": "Extended product description (300-400 words, persuasive, emotional, SEO-optimized with relevant keywords)",
+  "meta_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
 }
 
-Zorg dat de content:
-- Emotie oproept (liefde voor huisdieren)
-- Voordelen benadrukt boven features
-- Urgentie creëert zonder pushy te zijn
-- Vertrouwen opbouwt
-- SEO-geoptimaliseerd is voor Nederlandse zoekopdrachten`;
+Make sure the content:
+- Evokes emotion (love for pets)
+- Emphasizes benefits over features
+- Creates urgency without being pushy
+- Builds trust
+- Is SEO-optimized for American English search queries`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
