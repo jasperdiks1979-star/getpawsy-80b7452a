@@ -1,11 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { 
   Euro, 
   ShoppingCart, 
@@ -14,9 +17,10 @@ import {
   Users,
   ArrowUpRight,
   ArrowDownRight,
-  Calendar,
+  CalendarIcon,
   FileSpreadsheet,
-  FileText
+  FileText,
+  X
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -33,7 +37,7 @@ import {
   Cell,
   Legend
 } from "recharts";
-import { format, subDays, startOfDay, endOfDay, parseISO, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
+import { format, subDays, startOfDay, endOfDay, parseISO, isWithinInterval, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Json } from "@/integrations/supabase/types";
 
@@ -130,6 +134,10 @@ const MetricCard = ({ title, value, change, icon, subtitle, loading }: MetricCar
 };
 
 export const SalesDashboard = () => {
+  // Date range filter state
+  const [startDate, setStartDate] = useState<Date | undefined>(subDays(new Date(), 30));
+  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+
   // Fetch all orders
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders-stats"],
@@ -145,9 +153,28 @@ export const SalesDashboard = () => {
     refetchInterval: 60000, // Refresh every minute
   });
 
-  // Calculate statistics
+  // Filter orders by date range
+  const filteredOrders = useMemo(() => {
+    if (!orders) return [];
+    if (!startDate || !endDate) return orders;
+    
+    const start = startOfDay(startDate);
+    const end = endOfDay(endDate);
+    
+    return orders.filter((order) => {
+      const orderDate = parseISO(order.created_at);
+      return isWithinInterval(orderDate, { start, end });
+    });
+  }, [orders, startDate, endDate]);
+
+  const dateRangeDays = useMemo(() => {
+    if (!startDate || !endDate) return 30;
+    return Math.max(1, differenceInDays(endDate, startDate) + 1);
+  }, [startDate, endDate]);
+
+  // Calculate statistics based on filtered orders
   const stats = useMemo(() => {
-    if (!orders || orders.length === 0) {
+    if (!filteredOrders || filteredOrders.length === 0) {
       return {
         totalRevenue: 0,
         totalOrders: 0,
@@ -177,7 +204,7 @@ export const SalesDashboard = () => {
 
     // Filter paid/successful orders for revenue calculations
     const paidStatuses = ["paid", "processing", "shipped", "delivered"];
-    const paidOrders = orders.filter(o => paidStatuses.includes(o.status));
+    const paidOrders = filteredOrders.filter(o => paidStatuses.includes(o.status));
 
     // Today's stats
     const todayOrders = paidOrders.filter(o => 
@@ -216,13 +243,16 @@ export const SalesDashboard = () => {
     const avgOrderValue = paidOrders.length > 0 ? totalRevenue / paidOrders.length : 0;
 
     // Unique customers
-    const uniqueEmails = new Set(orders.filter(o => o.customer_email).map(o => o.customer_email));
+    const uniqueEmails = new Set(filteredOrders.filter(o => o.customer_email).map(o => o.customer_email));
     const uniqueCustomers = uniqueEmails.size;
 
-    // Daily revenue for chart (last 14 days)
+    // Daily revenue for chart (based on date range)
     const dailyData = [];
-    for (let i = 13; i >= 0; i--) {
-      const date = subDays(now, i);
+    const chartDays = Math.min(dateRangeDays, 30); // Limit to 30 days for readability
+    const chartStartDate = startDate || subDays(new Date(), chartDays);
+    
+    for (let i = chartDays - 1; i >= 0; i--) {
+      const date = subDays(endDate || new Date(), i);
       const dayStart = startOfDay(date);
       const dayEnd = endOfDay(date);
       
@@ -239,7 +269,7 @@ export const SalesDashboard = () => {
 
     // Status distribution
     const statusCounts: Record<string, number> = {};
-    orders.forEach(o => {
+    filteredOrders.forEach(o => {
       statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
     });
     const statusDistribution = Object.entries(statusCounts).map(([status, count]) => ({
@@ -268,11 +298,11 @@ export const SalesDashboard = () => {
       .slice(0, 5);
 
     // Recent orders
-    const recentOrders = orders.slice(0, 5);
+    const recentOrders = filteredOrders.slice(0, 5);
 
     return {
       totalRevenue,
-      totalOrders: orders.length,
+      totalOrders: filteredOrders.length,
       avgOrderValue,
       uniqueCustomers,
       todayRevenue,
@@ -288,7 +318,7 @@ export const SalesDashboard = () => {
       topProducts,
       recentOrders,
     };
-  }, [orders]);
+  }, [filteredOrders, dateRangeDays, startDate, endDate]);
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat("nl-NL", {
@@ -298,13 +328,17 @@ export const SalesDashboard = () => {
   };
 
   const exportToCSV = () => {
-    if (!orders || orders.length === 0) {
+    if (!filteredOrders || filteredOrders.length === 0) {
       toast.error("Geen data om te exporteren");
       return;
     }
 
+    const dateRangeText = startDate && endDate 
+      ? `${format(startDate, "dd-MM-yyyy")} t/m ${format(endDate, "dd-MM-yyyy")}`
+      : "Alle data";
+
     const headers = ["Datum", "Order ID", "Klant Email", "Status", "Totaal (€)", "Aantal Items"];
-    const rows = orders.map((order) => {
+    const rows = filteredOrders.map((order) => {
       const items = order.items as unknown as OrderItem[];
       const itemCount = Array.isArray(items) ? items.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
       return [
@@ -319,7 +353,7 @@ export const SalesDashboard = () => {
 
     // Add summary rows
     rows.push([]);
-    rows.push(["Samenvatting"]);
+    rows.push(["Periode", dateRangeText]);
     rows.push(["Totale omzet", formatCurrency(stats.totalRevenue)]);
     rows.push(["Totaal bestellingen", stats.totalOrders.toString()]);
     rows.push(["Gemiddelde orderwaarde", formatCurrency(stats.avgOrderValue)]);
@@ -340,7 +374,7 @@ export const SalesDashboard = () => {
   };
 
   const exportToPDF = () => {
-    if (!orders || orders.length === 0) {
+    if (!filteredOrders || filteredOrders.length === 0) {
       toast.error("Geen data om te exporteren");
       return;
     }
@@ -350,6 +384,10 @@ export const SalesDashboard = () => {
       toast.error("Popup geblokkeerd. Sta popups toe om te exporteren.");
       return;
     }
+
+    const dateRangeText = startDate && endDate 
+      ? `${format(startDate, "d MMMM yyyy", { locale: nl })} t/m ${format(endDate, "d MMMM yyyy", { locale: nl })}`
+      : "Alle data";
 
     const statusBreakdown = stats.statusDistribution
       .map((s) => `<tr><td>${s.name}</td><td>${s.value}</td></tr>`)
@@ -362,7 +400,7 @@ export const SalesDashboard = () => {
       )
       .join("");
 
-    const ordersRows = orders
+    const ordersRows = filteredOrders
       .slice(0, 50)
       .map((order) => {
         const items = order.items as unknown as OrderItem[];
@@ -406,6 +444,7 @@ export const SalesDashboard = () => {
       </head>
       <body>
         <h1>📊 Verkoop Rapport - GetPawsy</h1>
+        <p><strong>Periode:</strong> ${dateRangeText}</p>
         <p>Gegenereerd op: ${format(new Date(), "d MMMM yyyy HH:mm", { locale: nl })}</p>
         
         <div class="stats-grid">
@@ -464,28 +503,137 @@ export const SalesDashboard = () => {
     toast.success("PDF rapport geopend in nieuw tabblad");
   };
 
+  const resetDateRange = () => {
+    setStartDate(subDays(new Date(), 30));
+    setEndDate(new Date());
+  };
+
+  const setPresetRange = (days: number) => {
+    setStartDate(subDays(new Date(), days));
+    setEndDate(new Date());
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Verkoop Dashboard</h2>
-          <p className="text-muted-foreground">Overzicht van je verkoop statistieken</p>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold">Verkoop Dashboard</h2>
+            <p className="text-muted-foreground">Overzicht van je verkoop statistieken</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={exportToCSV} disabled={isLoading}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportToPDF} disabled={isLoading}>
+              <FileText className="h-4 w-4 mr-2" />
+              PDF
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={exportToCSV} disabled={isLoading}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            CSV
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportToPDF} disabled={isLoading}>
-            <FileText className="h-4 w-4 mr-2" />
-            PDF
-          </Button>
-          <Badge variant="outline" className="flex items-center gap-2">
-            <Calendar className="w-3 h-3" />
-            {format(new Date(), "d MMMM yyyy", { locale: nl })}
-          </Badge>
-        </div>
+
+        {/* Date Range Filter */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium text-muted-foreground">Periode:</span>
+                
+                {/* Start Date Picker */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "d MMM yyyy", { locale: nl }) : "Start"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      disabled={(date) => date > new Date() || (endDate ? date > endDate : false)}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <span className="text-muted-foreground">t/m</span>
+
+                {/* End Date Picker */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "d MMM yyyy", { locale: nl }) : "Eind"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      disabled={(date) => date > new Date() || (startDate ? date < startDate : false)}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <Button variant="ghost" size="sm" onClick={resetDateRange}>
+                  <X className="h-4 w-4 mr-1" />
+                  Reset
+                </Button>
+              </div>
+
+              {/* Quick presets */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-muted-foreground">Snel:</span>
+                <Button variant="secondary" size="sm" onClick={() => setPresetRange(7)}>
+                  7 dagen
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setPresetRange(30)}>
+                  30 dagen
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setPresetRange(90)}>
+                  90 dagen
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setPresetRange(365)}>
+                  1 jaar
+                </Button>
+              </div>
+            </div>
+            
+            {/* Selected range info */}
+            <div className="mt-3 flex items-center gap-2">
+              <Badge variant="outline">
+                {filteredOrders.length} orders in geselecteerde periode
+              </Badge>
+              {startDate && endDate && (
+                <Badge variant="secondary">
+                  {dateRangeDays} dagen
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Key Metrics */}
