@@ -393,6 +393,66 @@ export const VisitorWorldMap = () => {
   // Get selected time range label
   const selectedTimeRangeLabel = TIME_RANGE_OPTIONS.find(o => o.value === timeRange)?.label || "Laatste 24 uur";
 
+  // Calculate top locations (countries and cities)
+  const topLocations = (() => {
+    if (!activities) return { countries: [], cities: [] };
+
+    // Group by country
+    const countryMap = new Map<string, { count: number; sessions: Set<string>; checkouts: number }>();
+    // Group by city
+    const cityMap = new Map<string, { country: string; count: number; sessions: Set<string>; checkouts: number }>();
+
+    activities.forEach((activity) => {
+      const country = activity.country || "Onbekend";
+      const city = activity.city || "Onbekend";
+
+      // Country stats
+      if (!countryMap.has(country)) {
+        countryMap.set(country, { count: 0, sessions: new Set(), checkouts: 0 });
+      }
+      const countryStats = countryMap.get(country)!;
+      countryStats.count++;
+      countryStats.sessions.add(activity.session_id);
+      if (activity.activity_type === "checkout") countryStats.checkouts++;
+
+      // City stats (skip unknown cities)
+      if (city !== "Onbekend") {
+        const cityKey = `${city}, ${country}`;
+        if (!cityMap.has(cityKey)) {
+          cityMap.set(cityKey, { country, count: 0, sessions: new Set(), checkouts: 0 });
+        }
+        const cityStats = cityMap.get(cityKey)!;
+        cityStats.count++;
+        cityStats.sessions.add(activity.session_id);
+        if (activity.activity_type === "checkout") cityStats.checkouts++;
+      }
+    });
+
+    // Convert to sorted arrays
+    const countries = Array.from(countryMap.entries())
+      .map(([name, stats]) => ({
+        name,
+        activities: stats.count,
+        visitors: stats.sessions.size,
+        checkouts: stats.checkouts,
+      }))
+      .sort((a, b) => b.visitors - a.visitors)
+      .slice(0, 10);
+
+    const cities = Array.from(cityMap.entries())
+      .map(([name, stats]) => ({
+        name,
+        country: stats.country,
+        activities: stats.count,
+        visitors: stats.sessions.size,
+        checkouts: stats.checkouts,
+      }))
+      .sort((a, b) => b.visitors - a.visitors)
+      .slice(0, 10);
+
+    return { countries, cities };
+  })();
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">
@@ -503,16 +563,116 @@ export const VisitorWorldMap = () => {
         )}
       </CardHeader>
       <CardContent className="p-0">
-        {mapError ? (
-          <div className="h-[500px] flex items-center justify-center bg-muted/50">
-            <div className="text-center text-muted-foreground">
-              <Globe className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>{mapError}</p>
+        <div className="flex flex-col lg:flex-row">
+          {/* Map Container */}
+          <div className="flex-1 min-w-0">
+            {mapError ? (
+              <div className="h-[500px] flex items-center justify-center bg-muted/50">
+                <div className="text-center text-muted-foreground">
+                  <Globe className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>{mapError}</p>
+                </div>
+              </div>
+            ) : (
+              <div ref={mapContainer} className="h-[500px] w-full" />
+            )}
+          </div>
+
+          {/* Top Locations Sidebar */}
+          <div className="lg:w-80 border-t lg:border-t-0 lg:border-l border-border bg-muted/30">
+            <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+              {/* Top Countries */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Globe className="w-4 h-4" />
+                  Top Landen
+                </h4>
+                {topLocations.countries.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Geen data beschikbaar</p>
+                ) : (
+                  <div className="space-y-1">
+                    {topLocations.countries.map((country, index) => (
+                      <div
+                        key={country.name}
+                        className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs font-medium text-muted-foreground w-4">
+                            {index + 1}.
+                          </span>
+                          <span className="text-sm truncate">{country.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                            {country.visitors}
+                          </Badge>
+                          {country.checkouts > 0 && (
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs px-1.5 py-0"
+                              style={{ borderColor: ACTIVITY_COLORS.checkout, color: ACTIVITY_COLORS.checkout }}
+                            >
+                              {country.checkouts} ✓
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-border" />
+
+              {/* Top Cities */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Top Steden
+                </h4>
+                {topLocations.cities.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Geen data beschikbaar</p>
+                ) : (
+                  <div className="space-y-1">
+                    {topLocations.cities.map((city, index) => (
+                      <div
+                        key={city.name}
+                        className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className="text-xs font-medium text-muted-foreground w-4">
+                            {index + 1}.
+                          </span>
+                          <div className="min-w-0">
+                            <span className="text-sm truncate block">{city.name.split(',')[0]}</span>
+                            <span className="text-xs text-muted-foreground truncate block">
+                              {city.country}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                            {city.visitors}
+                          </Badge>
+                          {city.checkouts > 0 && (
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs px-1.5 py-0"
+                              style={{ borderColor: ACTIVITY_COLORS.checkout, color: ACTIVITY_COLORS.checkout }}
+                            >
+                              {city.checkouts} ✓
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        ) : (
-          <div ref={mapContainer} className="h-[500px] w-full" />
-        )}
+        </div>
       </CardContent>
     </Card>
   );
