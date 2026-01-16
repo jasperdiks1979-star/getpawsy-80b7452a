@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3 } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -143,7 +143,8 @@ export const VisitorWorldMap = () => {
           "top-right"
         );
 
-        map.current.scrollZoom.disable();
+        // Enable scroll zoom for better user experience
+        map.current.scrollZoom.enable();
 
         map.current.on("style.load", () => {
           map.current?.setFog({
@@ -697,7 +698,7 @@ export const VisitorWorldMap = () => {
       <CardContent className="p-0">
         <div className="flex flex-col lg:flex-row">
           {/* Map Container */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 relative">
             {mapError ? (
               <div className="h-[500px] flex items-center justify-center bg-muted/50">
                 <div className="text-center text-muted-foreground">
@@ -706,7 +707,50 @@ export const VisitorWorldMap = () => {
                 </div>
               </div>
             ) : (
-              <div ref={mapContainer} className="h-[500px] w-full" />
+              <>
+                <div ref={mapContainer} className="h-[500px] w-full" />
+                {/* Custom Zoom Controls */}
+                <div className="absolute bottom-4 left-4 flex flex-col gap-1 z-10">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-9 w-9 bg-background/90 backdrop-blur-sm shadow-md hover:bg-background"
+                    onClick={() => map.current?.zoomIn({ duration: 300 })}
+                    title="Inzoomen"
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-9 w-9 bg-background/90 backdrop-blur-sm shadow-md hover:bg-background"
+                    onClick={() => map.current?.zoomOut({ duration: 300 })}
+                    title="Uitzoomen"
+                  >
+                    <ZoomOut className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-9 w-9 bg-background/90 backdrop-blur-sm shadow-md hover:bg-background mt-1"
+                    onClick={() => {
+                      map.current?.flyTo({
+                        center: [10, 30],
+                        zoom: 1.5,
+                        pitch: 20,
+                        duration: 1000
+                      });
+                    }}
+                    title="Reset weergave"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                </div>
+                {/* Zoom hint */}
+                <div className="absolute bottom-4 right-4 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded shadow-sm z-10">
+                  Scroll of pinch om te zoomen
+                </div>
+              </>
             )}
           </div>
 
