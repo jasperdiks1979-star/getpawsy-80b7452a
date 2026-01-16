@@ -35,6 +35,8 @@ import { Separator } from '@/components/ui/separator';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { PinchZoomImage } from '@/components/ui/pinch-zoom-image';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
+import { ReviewForm } from '@/components/reviews/ReviewForm';
+import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useCartAnimation } from '@/contexts/CartAnimationContext';
@@ -244,6 +246,27 @@ const BestsellerDetail = () => {
   const sellingPoints: SellingPoint[] = bestseller?.selling_points 
     ? (bestseller.selling_points as unknown as SellingPoint[])
     : [];
+
+  // Fetch reviews for this product
+  const { data: reviews = [], refetch: refetchReviews } = useQuery({
+    queryKey: ['product-reviews', product?.id],
+    queryFn: async () => {
+      if (!product?.id) return [];
+      const { data, error } = await supabase
+        .from('product_reviews')
+        .select('*')
+        .eq('product_id', product.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!product?.id,
+  });
+
+  const averageRating = reviews.length > 0
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : 0;
 
   // Build images array
   const rawImages = product?.images && product.images.length > 0 
@@ -993,6 +1016,88 @@ const BestsellerDetail = () => {
             </div>
           </section>
         )}
+
+        {/* Customer Reviews Section */}
+        <section className="py-16 lg:py-20 bg-gradient-to-b from-background to-muted/20">
+          <div className="container px-4">
+            <div className="max-w-4xl mx-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="mb-10"
+              >
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <Badge className="mb-4 bg-amber-500/10 text-amber-600 border-amber-500/20">
+                      <Star className="w-3 h-3 mr-1 fill-amber-500" />
+                      Customer Reviews
+                    </Badge>
+                    <h2 className="text-3xl lg:text-4xl font-display font-bold">
+                      What Pet Parents Say
+                    </h2>
+                    {reviews.length > 0 && (
+                      <p className="text-muted-foreground mt-2">
+                        {reviews.length} review{reviews.length !== 1 ? 's' : ''} • Average rating: {averageRating.toFixed(1)} / 5
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Quick rating summary */}
+                  {reviews.length > 0 && (
+                    <div className="flex items-center gap-2 bg-background rounded-2xl px-4 py-3 shadow-soft border border-border/50">
+                      <div className="text-3xl font-bold text-foreground">{averageRating.toFixed(1)}</div>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`w-4 h-4 ${
+                                star <= Math.round(averageRating)
+                                  ? 'text-amber-400 fill-amber-400'
+                                  : 'text-muted-foreground/30'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-muted-foreground">{reviews.length} reviews</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Review Form */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="mb-10"
+              >
+                {product && (
+                  <ReviewForm
+                    productId={product.id}
+                    onReviewSubmitted={() => refetchReviews()}
+                  />
+                )}
+              </motion.div>
+
+              {/* Reviews List */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+              >
+                <ReviewsList
+                  reviews={reviews}
+                  onReviewDeleted={() => refetchReviews()}
+                />
+              </motion.div>
+            </div>
+          </div>
+        </section>
 
         {/* Premium CTA Section */}
         <section className="py-20 relative overflow-hidden">
