@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, FolderTree, Loader2, Save, X, ImageIcon, Download } from 'lucide-react';
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
+import { SwipeToDelete } from "@/components/ui/swipe-to-delete";
 import {
   Dialog,
   DialogContent,
@@ -418,61 +419,66 @@ export const CategoryManager = () => {
                   </TableRow>
                 ) : (
                   filteredCategories.map((category) => (
-                    <TableRow key={category.id} className={selectedIds.has(category.id) ? 'bg-muted/50' : ''}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedIds.has(category.id)}
-                          onCheckedChange={() => toggleSelect(category.id)}
-                          aria-label={`Selecteer ${category.name}`}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {category.image_url ? (
-                          <img
-                            src={category.image_url}
-                            alt={category.name}
-                            className="w-12 h-12 object-cover rounded-lg"
+                    <SwipeToDelete
+                      key={category.id}
+                      onDelete={() => deleteMutation.mutate(category.id)}
+                    >
+                      <TableRow className={selectedIds.has(category.id) ? 'bg-muted/50' : ''}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(category.id)}
+                            onCheckedChange={() => toggleSelect(category.id)}
+                            aria-label={`Selecteer ${category.name}`}
                           />
-                        ) : (
-                          <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                            <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                        </TableCell>
+                        <TableCell>
+                          {category.image_url ? (
+                            <img
+                              src={category.image_url}
+                              alt={category.name}
+                              className="w-12 h-12 object-cover rounded-lg"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                              <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium">{category.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="font-mono text-xs">
+                            {category.slug}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {productCounts?.[category.name] || 0} producten
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate text-muted-foreground">
+                          {category.description || '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditDialog(category)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => openDeleteDialog(category)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">{category.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="font-mono text-xs">
-                          {category.slug}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {productCounts?.[category.name] || 0} producten
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate text-muted-foreground">
-                        {category.description || '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditDialog(category)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => openDeleteDialog(category)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                      </TableRow>
+                    </SwipeToDelete>
                   ))
                 )}
               </TableBody>

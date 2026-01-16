@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { Mail, Search, Trash2, UserX, UserCheck, Download, Loader2, Users } from 'lucide-react';
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
+import { SwipeToDelete } from "@/components/ui/swipe-to-delete";
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -232,48 +233,53 @@ export const NewsletterSubscribers = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredSubscribers.map((subscriber) => (
-                    <TableRow key={subscriber.id}>
-                      <TableCell className="font-medium">{subscriber.email}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {format(new Date(subscriber.subscribed_at), 'd MMM yyyy, HH:mm', { locale: nl })}
-                      </TableCell>
-                      <TableCell>
-                        {subscriber.is_active ? (
-                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                            Actief
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">Uitgeschreven</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleActiveMutation.mutate({
-                              id: subscriber.id,
-                              is_active: !subscriber.is_active
-                            })}
-                            disabled={toggleActiveMutation.isPending}
-                          >
-                            {subscriber.is_active ? (
-                              <UserX className="w-4 h-4" />
-                            ) : (
-                              <UserCheck className="w-4 h-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeleteId(subscriber.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <SwipeToDelete
+                      key={subscriber.id}
+                      onDelete={() => deleteMutation.mutate(subscriber.id)}
+                    >
+                      <TableRow>
+                        <TableCell className="font-medium">{subscriber.email}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {format(new Date(subscriber.subscribed_at), 'd MMM yyyy, HH:mm', { locale: nl })}
+                        </TableCell>
+                        <TableCell>
+                          {subscriber.is_active ? (
+                            <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                              Actief
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">Uitgeschreven</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleActiveMutation.mutate({
+                                id: subscriber.id,
+                                is_active: !subscriber.is_active
+                              })}
+                              disabled={toggleActiveMutation.isPending}
+                            >
+                              {subscriber.is_active ? (
+                                <UserX className="w-4 h-4" />
+                              ) : (
+                                <UserCheck className="w-4 h-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteId(subscriber.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    </SwipeToDelete>
                   ))}
                 </TableBody>
               </Table>
