@@ -676,18 +676,32 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // First try to get user directly - this handles both fresh tokens and validates the session
-    const { data: userData, error: userError } = await authSupabase.auth.getUser();
+    // Extract the token and validate it using getClaims for reliable JWT validation
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await authSupabase.auth.getClaims(token);
     
-    if (userError || !userData?.user) {
-      console.error('User verification failed:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - invalid or expired session. Please log out and log back in.' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    let userId: string;
+    
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error('Token validation via getClaims failed:', claimsError || 'Missing sub claim');
+      
+      // Try getUser as fallback
+      const { data: userData, error: userError } = await authSupabase.auth.getUser();
+      
+      if (userError || !userData?.user) {
+        console.error('User verification also failed:', userError);
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized - invalid or expired session. Please log out and log back in.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      userId = userData.user.id;
+      console.log(`Authenticated user via getUser fallback: ${userId}`);
+    } else {
+      userId = claimsData.claims.sub as string;
+      console.log(`Authenticated user via getClaims: ${userId}`);
     }
-
-    const userId = userData.user.id;
     console.log(`Authenticated user: ${userId}`);
 
     // Check if user is admin
