@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -66,6 +66,7 @@ export const VisitorWorldMap = () => {
   const [mapError, setMapError] = useState<string | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("24h");
+  const [mapProjection, setMapProjection] = useState<"globe" | "mercator">("globe");
   const [activityFilter, setActivityFilter] = useState<"all" | "browsing" | "cart" | "checkout">("all");
   const [checkoutNotifications, setCheckoutNotifications] = useState(() => {
     const saved = localStorage.getItem("checkout-notifications-enabled");
@@ -135,6 +136,27 @@ export const VisitorWorldMap = () => {
     localStorage.setItem("notification-sound-enabled", String(soundEnabled));
   }, [soundEnabled]);
 
+  // Update map projection when toggle changes
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    
+    map.current.setProjection(mapProjection);
+    
+    // Adjust view based on projection
+    if (mapProjection === "mercator") {
+      map.current.easeTo({
+        pitch: 0,
+        zoom: 1.2,
+        duration: 500
+      });
+    } else {
+      map.current.easeTo({
+        pitch: 20,
+        zoom: 1.5,
+        duration: 500
+      });
+    }
+  }, [mapProjection, mapLoaded]);
   // Get the time range in milliseconds
   const getTimeRangeMs = () => {
     const option = TIME_RANGE_OPTIONS.find(o => o.value === timeRange);
@@ -743,8 +765,27 @@ export const VisitorWorldMap = () => {
               </SelectContent>
             </Select>
 
-            {/* Heatmap Toggle */}
+            {/* Map Projection Toggle */}
             <div className="flex items-center gap-2 px-2">
+              <Switch
+                id="projection-toggle"
+                checked={mapProjection === "mercator"}
+                onCheckedChange={(checked) => setMapProjection(checked ? "mercator" : "globe")}
+              />
+              <Label htmlFor="projection-toggle" className="flex items-center gap-1.5 cursor-pointer">
+                {mapProjection === "globe" ? (
+                  <Globe className="w-4 h-4" />
+                ) : (
+                  <MapIcon className="w-4 h-4" />
+                )}
+                <span className="text-sm">
+                  {mapProjection === "globe" ? "Bol" : "Plat"}
+                </span>
+              </Label>
+            </div>
+
+            {/* Heatmap Toggle */}
+            <div className="flex items-center gap-2 px-2 border-l border-border">
               <Switch
                 id="heatmap-toggle"
                 checked={showHeatmap}
