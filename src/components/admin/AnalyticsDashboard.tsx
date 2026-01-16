@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +19,8 @@ import {
   AlertCircle,
   Activity,
   Zap,
-  MapPin,
-  MousePointerClick
+  MousePointerClick,
+  Loader2
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { 
@@ -39,71 +39,137 @@ import {
   LineChart,
   Line
 } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-// Demo data - will be replaced with real GA4 data when credentials are added
-const demoOverviewData = {
-  activeUsers: 127,
-  totalPageViews: 3842,
-  avgSessionDuration: "2m 34s",
-  bounceRate: 42.5,
-  newUsers: 89,
-  returningUsers: 38,
-  conversionRate: 3.2,
-  revenue: 1247.50,
+// Types for GA4 API responses
+interface GA4Row {
+  dimensionValues?: { value: string }[];
+  metricValues?: { value: string }[];
+}
+
+interface GA4Report {
+  rows?: GA4Row[];
+  totals?: GA4Row[];
+}
+
+interface GA4OverviewResponse {
+  traffic?: GA4Report;
+  topPages?: GA4Report;
+  devices?: GA4Report;
+  countries?: GA4Report;
+  realtime?: GA4Report;
+}
+
+interface GA4RealtimeResponse {
+  activeUsers?: GA4Report;
+  activePages?: GA4Report;
+}
+
+interface GA4EcommerceResponse {
+  transactions?: GA4Report;
+  topProducts?: GA4Report;
+}
+
+// Helper to parse GA4 response into usable format
+const parseTrafficData = (report: GA4Report | undefined) => {
+  if (!report?.rows) return [];
+  
+  const dayNames = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
+  
+  return report.rows.map(row => {
+    const dateStr = row.dimensionValues?.[0]?.value || '';
+    const date = new Date(
+      parseInt(dateStr.substring(0, 4)),
+      parseInt(dateStr.substring(4, 6)) - 1,
+      parseInt(dateStr.substring(6, 8))
+    );
+    
+    return {
+      date: dayNames[date.getDay()],
+      fullDate: dateStr,
+      users: parseInt(row.metricValues?.[0]?.value || '0'),
+      pageViews: parseInt(row.metricValues?.[1]?.value || '0'),
+      sessions: parseInt(row.metricValues?.[2]?.value || '0'),
+      avgSessionDuration: parseFloat(row.metricValues?.[3]?.value || '0'),
+      bounceRate: parseFloat(row.metricValues?.[4]?.value || '0'),
+      newUsers: parseInt(row.metricValues?.[5]?.value || '0')
+    };
+  }).sort((a, b) => a.fullDate.localeCompare(b.fullDate));
 };
 
-const demoTrafficData = [
-  { date: "Ma", users: 145, pageViews: 423, sessions: 189 },
-  { date: "Di", users: 132, pageViews: 387, sessions: 165 },
-  { date: "Wo", users: 178, pageViews: 512, sessions: 223 },
-  { date: "Do", users: 156, pageViews: 445, sessions: 198 },
-  { date: "Vr", users: 189, pageViews: 567, sessions: 245 },
-  { date: "Za", users: 234, pageViews: 689, sessions: 312 },
-  { date: "Zo", users: 198, pageViews: 578, sessions: 267 },
-];
+const parseTopPages = (report: GA4Report | undefined) => {
+  if (!report?.rows) return [];
+  
+  return report.rows.slice(0, 5).map(row => ({
+    page: row.dimensionValues?.[0]?.value || '/',
+    views: parseInt(row.metricValues?.[0]?.value || '0'),
+    avgTime: formatDuration(parseFloat(row.metricValues?.[1]?.value || '0'))
+  }));
+};
 
-const demoRealtimeData = [
-  { time: "Nu", users: 127 },
-  { time: "1m", users: 119 },
-  { time: "2m", users: 134 },
-  { time: "3m", users: 128 },
-  { time: "4m", users: 115 },
-  { time: "5m", users: 142 },
-];
+const parseDeviceData = (report: GA4Report | undefined) => {
+  if (!report?.rows) return [];
+  
+  const colors: Record<string, string> = {
+    mobile: "hsl(25, 65%, 45%)",
+    desktop: "hsl(140, 25%, 45%)",
+    tablet: "hsl(80, 25%, 45%)"
+  };
+  
+  const total = report.rows.reduce((sum, row) => 
+    sum + parseInt(row.metricValues?.[0]?.value || '0'), 0);
+  
+  return report.rows.map(row => {
+    const name = row.dimensionValues?.[0]?.value || 'unknown';
+    const value = parseInt(row.metricValues?.[0]?.value || '0');
+    return {
+      name: name.charAt(0).toUpperCase() + name.slice(1),
+      value: Math.round((value / total) * 100),
+      color: colors[name.toLowerCase()] || "hsl(200, 25%, 45%)"
+    };
+  });
+};
 
-const demoTopPages = [
-  { page: "/", views: 1245, avgTime: "1m 23s" },
-  { page: "/products", views: 892, avgTime: "2m 45s" },
-  { page: "/products/kat-speelgoed", views: 567, avgTime: "3m 12s" },
-  { page: "/cart", views: 345, avgTime: "1m 56s" },
-  { page: "/checkout", views: 234, avgTime: "4m 23s" },
-];
+const parseCountryData = (report: GA4Report | undefined) => {
+  if (!report?.rows) return [];
+  
+  const countryFlags: Record<string, string> = {
+    'Netherlands': '🇳🇱',
+    'Belgium': '🇧🇪',
+    'Germany': '🇩🇪',
+    'France': '🇫🇷',
+    'United Kingdom': '🇬🇧',
+    'United States': '🇺🇸',
+    'Spain': '🇪🇸',
+    'Italy': '🇮🇹',
+    'Portugal': '🇵🇹',
+    'Poland': '🇵🇱'
+  };
+  
+  return report.rows.slice(0, 5).map(row => {
+    const country = row.dimensionValues?.[0]?.value || 'Unknown';
+    return {
+      country,
+      users: parseInt(row.metricValues?.[0]?.value || '0'),
+      flag: countryFlags[country] || '🌍'
+    };
+  });
+};
 
-const demoDeviceData = [
-  { name: "Mobile", value: 58, color: "hsl(25, 65%, 45%)" },
-  { name: "Desktop", value: 35, color: "hsl(140, 25%, 45%)" },
-  { name: "Tablet", value: 7, color: "hsl(80, 25%, 45%)" },
-];
+const parseActivePages = (report: GA4Report | undefined) => {
+  if (!report?.rows) return [];
+  
+  return report.rows.slice(0, 5).map(row => ({
+    page: row.dimensionValues?.[0]?.value || '/',
+    activeUsers: parseInt(row.metricValues?.[0]?.value || '0')
+  }));
+};
 
-const demoCountryData = [
-  { country: "Nederland", users: 2345, flag: "🇳🇱" },
-  { country: "België", users: 567, flag: "🇧🇪" },
-  { country: "Duitsland", users: 234, flag: "🇩🇪" },
-  { country: "Frankrijk", users: 123, flag: "🇫🇷" },
-  { country: "Verenigd Koninkrijk", users: 89, flag: "🇬🇧" },
-];
-
-const demoEcommerceData = {
-  transactions: 47,
-  revenue: 2847.50,
-  avgOrderValue: 60.58,
-  cartAbandonment: 68.5,
-  topProducts: [
-    { name: "Interactief Kattenspeelgoed", sales: 23, revenue: 459.77 },
-    { name: "Honden Knuffelbed XL", sales: 15, revenue: 524.85 },
-    { name: "Premium Krabpaal", sales: 12, revenue: 419.88 },
-    { name: "Automatische Voerbak", sales: 9, revenue: 314.91 },
-  ],
+const formatDuration = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}m ${secs.toString().padStart(2, '0')}s`;
 };
 
 interface MetricCardProps {
@@ -112,27 +178,34 @@ interface MetricCardProps {
   change?: number;
   icon: React.ReactNode;
   subtitle?: string;
+  loading?: boolean;
 }
 
-const MetricCard = ({ title, value, change, icon, subtitle }: MetricCardProps) => (
+const MetricCard = ({ title, value, change, icon, subtitle, loading }: MetricCardProps) => (
   <Card className="relative overflow-hidden">
     <CardContent className="p-6">
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold">{value}</p>
-          {change !== undefined && (
-            <div className={`flex items-center gap-1 text-sm ${change >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {change >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-              <span>{Math.abs(change)}% vs vorige week</span>
-            </div>
-          )}
-          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+      {loading ? (
+        <div className="flex items-center justify-center h-20">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
-        <div className="p-3 bg-primary/10 rounded-xl text-primary">
-          {icon}
+      ) : (
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="text-2xl font-bold">{value}</p>
+            {change !== undefined && (
+              <div className={`flex items-center gap-1 text-sm ${change >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {change >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                <span>{Math.abs(change).toFixed(1)}% vs vorige week</span>
+              </div>
+            )}
+            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+          </div>
+          <div className="p-3 bg-primary/10 rounded-xl text-primary">
+            {icon}
+          </div>
         </div>
-      </div>
+      )}
     </CardContent>
   </Card>
 );
@@ -143,28 +216,187 @@ interface AnalyticsDashboardProps {
 
 export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
-  const [realtimeUsers, setRealtimeUsers] = useState(127);
+  const [realtimeUsers, setRealtimeUsers] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Data states
+  const [trafficData, setTrafficData] = useState<ReturnType<typeof parseTrafficData>>([]);
+  const [topPages, setTopPages] = useState<ReturnType<typeof parseTopPages>>([]);
+  const [deviceData, setDeviceData] = useState<ReturnType<typeof parseDeviceData>>([]);
+  const [countryData, setCountryData] = useState<ReturnType<typeof parseCountryData>>([]);
+  const [activePages, setActivePages] = useState<ReturnType<typeof parseActivePages>>([]);
+  const [overviewMetrics, setOverviewMetrics] = useState({
+    activeUsers: 0,
+    totalPageViews: 0,
+    avgSessionDuration: "0m 00s",
+    bounceRate: 0,
+    newUsers: 0,
+    returningUsers: 0,
+    conversionRate: 0,
+  });
+  const [ecommerceData, setEcommerceData] = useState({
+    transactions: 0,
+    revenue: 0,
+    avgOrderValue: 0,
+    topProducts: [] as { name: string; sales: number; revenue: number }[]
+  });
+  const [realtimeHistory, setRealtimeHistory] = useState<{ time: string; users: number }[]>([]);
 
-  // Simulate realtime user count changes
+  const fetchOverviewData = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      const { data, error: fetchError } = await supabase.functions.invoke<GA4OverviewResponse>('ga4-analytics', {
+        body: { reportType: 'overview' }
+      });
+
+      if (fetchError) throw fetchError;
+      if (!data) throw new Error('No data received');
+
+      // Parse traffic data
+      const parsedTraffic = parseTrafficData(data.traffic);
+      setTrafficData(parsedTraffic);
+
+      // Calculate overview metrics from traffic data
+      const totalUsers = parsedTraffic.reduce((sum, d) => sum + d.users, 0);
+      const totalPageViews = parsedTraffic.reduce((sum, d) => sum + d.pageViews, 0);
+      const totalNewUsers = parsedTraffic.reduce((sum, d) => sum + d.newUsers, 0);
+      const avgDuration = parsedTraffic.length > 0 
+        ? parsedTraffic.reduce((sum, d) => sum + d.avgSessionDuration, 0) / parsedTraffic.length 
+        : 0;
+      const avgBounce = parsedTraffic.length > 0
+        ? parsedTraffic.reduce((sum, d) => sum + d.bounceRate, 0) / parsedTraffic.length
+        : 0;
+
+      // Get realtime users
+      const realtimeValue = parseInt(data.realtime?.rows?.[0]?.metricValues?.[0]?.value || '0');
+      setRealtimeUsers(realtimeValue);
+
+      setOverviewMetrics({
+        activeUsers: realtimeValue,
+        totalPageViews,
+        avgSessionDuration: formatDuration(avgDuration),
+        bounceRate: avgBounce * 100,
+        newUsers: totalNewUsers,
+        returningUsers: totalUsers - totalNewUsers,
+        conversionRate: 0, // Requires e-commerce data
+      });
+
+      // Parse other data
+      setTopPages(parseTopPages(data.topPages));
+      setDeviceData(parseDeviceData(data.devices));
+      setCountryData(parseCountryData(data.countries));
+      
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching GA4 data:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analytics data';
+      setError(errorMessage);
+      toast.error('Fout bij ophalen analytics data', {
+        description: errorMessage
+      });
+    }
+  }, []);
+
+  const fetchRealtimeData = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error: fetchError } = await supabase.functions.invoke<GA4RealtimeResponse>('ga4-analytics', {
+        body: { reportType: 'realtime' }
+      });
+
+      if (fetchError) throw fetchError;
+      if (!data) return;
+
+      const activeUserCount = parseInt(data.activeUsers?.rows?.[0]?.metricValues?.[0]?.value || '0');
+      setRealtimeUsers(activeUserCount);
+      
+      // Update realtime history
+      setRealtimeHistory(prev => {
+        const now = new Date();
+        const timeStr = `${now.getMinutes()}:${now.getSeconds().toString().padStart(2, '0')}`;
+        const newHistory = [...prev, { time: timeStr, users: activeUserCount }];
+        return newHistory.slice(-6); // Keep last 6 data points
+      });
+
+      setActivePages(parseActivePages(data.activePages));
+    } catch (err) {
+      console.error('Error fetching realtime data:', err);
+    }
+  }, []);
+
+  const fetchEcommerceData = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error: fetchError } = await supabase.functions.invoke<GA4EcommerceResponse>('ga4-analytics', {
+        body: { reportType: 'ecommerce' }
+      });
+
+      if (fetchError) throw fetchError;
+      if (!data) return;
+
+      const transactionRow = data.transactions?.rows?.[0];
+      if (transactionRow) {
+        setEcommerceData({
+          transactions: parseInt(transactionRow.metricValues?.[0]?.value || '0'),
+          revenue: parseFloat(transactionRow.metricValues?.[1]?.value || '0'),
+          avgOrderValue: parseFloat(transactionRow.metricValues?.[2]?.value || '0'),
+          topProducts: data.topProducts?.rows?.slice(0, 4).map(row => ({
+            name: row.dimensionValues?.[0]?.value || 'Unknown',
+            sales: parseInt(row.metricValues?.[1]?.value || '0'),
+            revenue: parseFloat(row.metricValues?.[2]?.value || '0')
+          })) || []
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching e-commerce data:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isConfigured) return;
-    
-    const interval = setInterval(() => {
-      setRealtimeUsers(prev => {
-        const change = Math.floor(Math.random() * 21) - 10;
-        return Math.max(50, prev + change);
-      });
-    }, 5000);
+
+    const loadData = async () => {
+      setIsLoading(true);
+      await fetchOverviewData();
+      setIsLoading(false);
+    };
+
+    loadData();
+  }, [isConfigured, fetchOverviewData]);
+
+  // Realtime updates every 30 seconds
+  useEffect(() => {
+    if (!isConfigured || activeTab !== 'realtime') return;
+
+    fetchRealtimeData();
+    const interval = setInterval(fetchRealtimeData, 30000);
 
     return () => clearInterval(interval);
-  }, [isConfigured]);
+  }, [isConfigured, activeTab, fetchRealtimeData]);
+
+  // Fetch e-commerce data when tab changes
+  useEffect(() => {
+    if (!isConfigured || activeTab !== 'ecommerce') return;
+    fetchEcommerceData();
+  }, [isConfigured, activeTab, fetchEcommerceData]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await fetchOverviewData();
+    if (activeTab === 'realtime') await fetchRealtimeData();
+    if (activeTab === 'ecommerce') await fetchEcommerceData();
     setIsRefreshing(false);
+    toast.success('Analytics data vernieuwd');
   };
 
   if (!isConfigured) {
@@ -208,6 +440,24 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
           <Badge variant="secondary" className="text-sm">
             Deel je credentials via de chat om de koppeling te voltooien
           </Badge>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error && !isLoading) {
+    return (
+      <Card className="border-destructive">
+        <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="p-4 bg-destructive/10 rounded-full mb-6">
+            <AlertCircle className="w-12 h-12 text-destructive" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">Fout bij laden analytics</h3>
+          <p className="text-muted-foreground max-w-md mb-6">{error}</p>
+          <Button onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+            Opnieuw proberen
+          </Button>
         </CardContent>
       </Card>
     );
@@ -264,29 +514,29 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
               title="Actieve Gebruikers"
-              value={demoOverviewData.activeUsers.toLocaleString()}
-              change={12.5}
+              value={overviewMetrics.activeUsers.toLocaleString()}
               icon={<Users className="w-5 h-5" />}
-              subtitle="Laatste 30 minuten"
+              subtitle="Nu actief"
+              loading={isLoading}
             />
             <MetricCard
               title="Paginaweergaven"
-              value={demoOverviewData.totalPageViews.toLocaleString()}
-              change={8.3}
+              value={overviewMetrics.totalPageViews.toLocaleString()}
               icon={<Eye className="w-5 h-5" />}
-              subtitle="Vandaag"
+              subtitle="Laatste 7 dagen"
+              loading={isLoading}
             />
             <MetricCard
               title="Gem. Sessieduur"
-              value={demoOverviewData.avgSessionDuration}
-              change={-2.1}
+              value={overviewMetrics.avgSessionDuration}
               icon={<Clock className="w-5 h-5" />}
+              loading={isLoading}
             />
             <MetricCard
-              title="Conversieratio"
-              value={`${demoOverviewData.conversionRate}%`}
-              change={5.7}
+              title="Bounce Rate"
+              value={`${overviewMetrics.bounceRate.toFixed(1)}%`}
               icon={<TrendingUp className="w-5 h-5" />}
+              loading={isLoading}
             />
           </div>
 
@@ -297,48 +547,54 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               <CardDescription>Gebruikers en paginaweergaven van de afgelopen week</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={demoTrafficData}>
-                    <defs>
-                      <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(25, 65%, 45%)" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(25, 65%, 45%)" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorPageViews" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(140, 25%, 45%)" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(140, 25%, 45%)" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="date" className="text-xs" />
-                    <YAxis className="text-xs" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px"
-                      }} 
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="users"
-                      stroke="hsl(25, 65%, 45%)"
-                      fillOpacity={1}
-                      fill="url(#colorUsers)"
-                      name="Gebruikers"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="pageViews"
-                      stroke="hsl(140, 25%, 45%)"
-                      fillOpacity={1}
-                      fill="url(#colorPageViews)"
-                      name="Paginaweergaven"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              {isLoading ? (
+                <div className="h-80 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={trafficData}>
+                      <defs>
+                        <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(25, 65%, 45%)" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="hsl(25, 65%, 45%)" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorPageViews" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(140, 25%, 45%)" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="hsl(140, 25%, 45%)" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="date" className="text-xs" />
+                      <YAxis className="text-xs" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px"
+                        }} 
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="users"
+                        stroke="hsl(25, 65%, 45%)"
+                        fillOpacity={1}
+                        fill="url(#colorUsers)"
+                        name="Gebruikers"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="pageViews"
+                        stroke="hsl(140, 25%, 45%)"
+                        fillOpacity={1}
+                        fill="url(#colorPageViews)"
+                        name="Paginaweergaven"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -349,26 +605,34 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               <CardDescription>Meest bezochte pagina's vandaag</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {demoTopPages.map((page, index) => (
-                  <div key={page.page} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
-                      <span className="font-medium">{page.page}</span>
+              {isLoading ? (
+                <div className="h-40 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : topPages.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+              ) : (
+                <div className="space-y-4">
+                  {topPages.map((page, index) => (
+                    <div key={page.page} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
+                        <span className="font-medium truncate max-w-[200px]">{page.page}</span>
+                      </div>
+                      <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          {page.views.toLocaleString()}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {page.avgTime}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" />
-                        {page.views.toLocaleString()}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {page.avgTime}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -390,7 +654,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                 </motion.div>
                 <div className="flex items-center gap-2 mt-4">
                   <Activity className="w-4 h-4 text-green-500 animate-pulse" />
-                  <span className="text-sm text-muted-foreground">Live bijgewerkt</span>
+                  <span className="text-sm text-muted-foreground">Live bijgewerkt (elke 30s)</span>
                 </div>
               </CardContent>
             </Card>
@@ -406,7 +670,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               <CardContent>
                 <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={demoRealtimeData}>
+                    <LineChart data={realtimeHistory.length > 0 ? realtimeHistory : [{ time: 'Nu', users: realtimeUsers }]}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="time" className="text-xs" />
                       <YAxis className="text-xs" />
@@ -433,17 +697,21 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               <CardDescription>Waar gebruikers nu zijn</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {demoTopPages.slice(0, 5).map((page) => (
-                  <div key={page.page} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <MousePointerClick className="w-4 h-4 text-primary" />
-                      <span className="font-medium">{page.page}</span>
+              {activePages.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Geen actieve pagina's</p>
+              ) : (
+                <div className="space-y-3">
+                  {activePages.map((page) => (
+                    <div key={page.page} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <MousePointerClick className="w-4 h-4 text-primary" />
+                        <span className="font-medium truncate max-w-[300px]">{page.page}</span>
+                      </div>
+                      <Badge variant="secondary">{page.activeUsers} actief</Badge>
                     </div>
-                    <Badge variant="secondary">{Math.floor(Math.random() * 20) + 5} actief</Badge>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -458,36 +726,46 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                 <CardDescription>Verdeling per apparaattype</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64 flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={demoDeviceData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {demoDeviceData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex justify-center gap-6 mt-4">
-                  {demoDeviceData.map((device) => (
-                    <div key={device.name} className="flex items-center gap-2 text-sm">
-                      {device.name === "Mobile" && <Smartphone className="w-4 h-4" style={{ color: device.color }} />}
-                      {device.name === "Desktop" && <Monitor className="w-4 h-4" style={{ color: device.color }} />}
-                      {device.name === "Tablet" && <Smartphone className="w-4 h-4" style={{ color: device.color }} />}
-                      <span>{device.name}: {device.value}%</span>
+                {isLoading ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : deviceData.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+                ) : (
+                  <>
+                    <div className="h-64 flex items-center justify-center">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={deviceData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {deviceData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
                     </div>
-                  ))}
-                </div>
+                    <div className="flex justify-center gap-6 mt-4">
+                      {deviceData.map((device) => (
+                        <div key={device.name} className="flex items-center gap-2 text-sm">
+                          {device.name.toLowerCase() === "mobile" && <Smartphone className="w-4 h-4" style={{ color: device.color }} />}
+                          {device.name.toLowerCase() === "desktop" && <Monitor className="w-4 h-4" style={{ color: device.color }} />}
+                          {device.name.toLowerCase() === "tablet" && <Smartphone className="w-4 h-4" style={{ color: device.color }} />}
+                          <span>{device.name}: {device.value}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -501,27 +779,35 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                 <CardDescription>Top landen op basis van gebruikers</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {demoCountryData.map((country, index) => (
-                    <div key={country.country} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">{country.flag}</span>
-                        <span className="font-medium">{country.country}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-32 bg-muted rounded-full h-2">
-                          <div 
-                            className="bg-primary h-2 rounded-full"
-                            style={{ width: `${(country.users / demoCountryData[0].users) * 100}%` }}
-                          />
+                {isLoading ? (
+                  <div className="h-40 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : countryData.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+                ) : (
+                  <div className="space-y-4">
+                    {countryData.map((country) => (
+                      <div key={country.country} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{country.flag}</span>
+                          <span className="font-medium">{country.country}</span>
                         </div>
-                        <span className="text-sm text-muted-foreground w-16 text-right">
-                          {country.users.toLocaleString()}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-32 bg-muted rounded-full h-2">
+                            <div 
+                              className="bg-primary h-2 rounded-full"
+                              style={{ width: `${(country.users / (countryData[0]?.users || 1)) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-muted-foreground w-16 text-right">
+                            {country.users.toLocaleString()}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -532,26 +818,36 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               <CardTitle>Nieuwe vs Terugkerende Gebruikers</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="text-center p-6 bg-primary/5 rounded-lg">
-                  <div className="text-4xl font-bold text-primary mb-2">
-                    {demoOverviewData.newUsers}
-                  </div>
-                  <p className="text-muted-foreground">Nieuwe Gebruikers</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {Math.round((demoOverviewData.newUsers / (demoOverviewData.newUsers + demoOverviewData.returningUsers)) * 100)}%
-                  </p>
+              {isLoading ? (
+                <div className="h-32 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
-                <div className="text-center p-6 bg-secondary/50 rounded-lg">
-                  <div className="text-4xl font-bold text-secondary-foreground mb-2">
-                    {demoOverviewData.returningUsers}
+              ) : (
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="text-center p-6 bg-primary/5 rounded-lg">
+                    <div className="text-4xl font-bold text-primary mb-2">
+                      {overviewMetrics.newUsers.toLocaleString()}
+                    </div>
+                    <p className="text-muted-foreground">Nieuwe Gebruikers</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {overviewMetrics.newUsers + overviewMetrics.returningUsers > 0
+                        ? Math.round((overviewMetrics.newUsers / (overviewMetrics.newUsers + overviewMetrics.returningUsers)) * 100)
+                        : 0}%
+                    </p>
                   </div>
-                  <p className="text-muted-foreground">Terugkerende Gebruikers</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {Math.round((demoOverviewData.returningUsers / (demoOverviewData.newUsers + demoOverviewData.returningUsers)) * 100)}%
-                  </p>
+                  <div className="text-center p-6 bg-secondary/50 rounded-lg">
+                    <div className="text-4xl font-bold text-secondary-foreground mb-2">
+                      {overviewMetrics.returningUsers.toLocaleString()}
+                    </div>
+                    <p className="text-muted-foreground">Terugkerende Gebruikers</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {overviewMetrics.newUsers + overviewMetrics.returningUsers > 0
+                        ? Math.round((overviewMetrics.returningUsers / (overviewMetrics.newUsers + overviewMetrics.returningUsers)) * 100)
+                        : 0}%
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -562,29 +858,30 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
               title="Transacties"
-              value={demoEcommerceData.transactions}
-              change={15.2}
+              value={ecommerceData.transactions}
               icon={<ShoppingCart className="w-5 h-5" />}
               subtitle="Vandaag"
+              loading={isLoading}
             />
             <MetricCard
               title="Omzet"
-              value={`€${demoEcommerceData.revenue.toFixed(2)}`}
-              change={22.8}
+              value={`€${ecommerceData.revenue.toFixed(2)}`}
               icon={<TrendingUp className="w-5 h-5" />}
               subtitle="Vandaag"
+              loading={isLoading}
             />
             <MetricCard
               title="Gem. Orderwaarde"
-              value={`€${demoEcommerceData.avgOrderValue.toFixed(2)}`}
-              change={3.5}
+              value={`€${ecommerceData.avgOrderValue.toFixed(2)}`}
               icon={<BarChart3 className="w-5 h-5" />}
+              loading={isLoading}
             />
             <MetricCard
-              title="Winkelwagen Verlating"
-              value={`${demoEcommerceData.cartAbandonment}%`}
-              change={-5.2}
-              icon={<AlertCircle className="w-5 h-5" />}
+              title="Actieve Gebruikers"
+              value={realtimeUsers}
+              icon={<Users className="w-5 h-5" />}
+              subtitle="Nu actief"
+              loading={isLoading}
             />
           </div>
 
@@ -592,54 +889,69 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
           <Card>
             <CardHeader>
               <CardTitle>Top Verkochte Producten</CardTitle>
-              <CardDescription>Best presterende producten vandaag</CardDescription>
+              <CardDescription>Best presterende producten</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {demoEcommerceData.topProducts.map((product, index) => (
-                  <div key={product.name} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <span className="text-2xl font-bold text-muted-foreground">#{index + 1}</span>
-                      <div>
-                        <p className="font-medium">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">{product.sales} verkocht</p>
+              {isLoading ? (
+                <div className="h-40 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : ecommerceData.topProducts.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Geen e-commerce data beschikbaar. Zorg ervoor dat Enhanced E-commerce is ingeschakeld in GA4.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {ecommerceData.topProducts.map((product, index) => (
+                    <div key={product.name} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <span className="text-2xl font-bold text-muted-foreground">#{index + 1}</span>
+                        <div>
+                          <p className="font-medium truncate max-w-[200px]">{product.name}</p>
+                          <p className="text-sm text-muted-foreground">{product.sales} verkocht</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-primary">€{product.revenue.toFixed(2)}</p>
+                        <p className="text-sm text-muted-foreground">omzet</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-primary">€{product.revenue.toFixed(2)}</p>
-                      <p className="text-sm text-muted-foreground">omzet</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Revenue Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Omzet Trend</CardTitle>
-              <CardDescription>Dagelijkse omzet van de afgelopen week</CardDescription>
+              <CardTitle>Verkeer Trend</CardTitle>
+              <CardDescription>Sessies van de afgelopen week</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={demoTrafficData.map((d, i) => ({ ...d, revenue: (i + 1) * 120 + Math.random() * 200 }))}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="date" className="text-xs" />
-                    <YAxis className="text-xs" tickFormatter={(v) => `€${v}`} />
-                    <Tooltip 
-                      formatter={(value: number) => [`€${value.toFixed(2)}`, "Omzet"]}
-                      contentStyle={{ 
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px"
-                      }} 
-                    />
-                    <Bar dataKey="revenue" fill="hsl(25, 65%, 45%)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {isLoading ? (
+                <div className="h-72 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={trafficData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="date" className="text-xs" />
+                      <YAxis className="text-xs" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px"
+                        }} 
+                      />
+                      <Bar dataKey="sessions" fill="hsl(25, 65%, 45%)" radius={[4, 4, 0, 0]} name="Sessies" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

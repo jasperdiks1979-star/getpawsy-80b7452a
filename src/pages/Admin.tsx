@@ -1597,7 +1597,7 @@ const Admin = () => {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics">
-            <AnalyticsDashboard isConfigured={false} />
+            <AnalyticsDashboard isConfigured={true} />
           </TabsContent>
 
           {/* Contact Messages Tab */}
