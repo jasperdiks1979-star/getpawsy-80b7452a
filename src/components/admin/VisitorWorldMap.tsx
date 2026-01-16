@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -393,64 +393,136 @@ export const VisitorWorldMap = () => {
   // Get selected time range label
   const selectedTimeRangeLabel = TIME_RANGE_OPTIONS.find(o => o.value === timeRange)?.label || "Laatste 24 uur";
 
-  // Calculate top locations (countries and cities)
+  // Calculate top locations with conversion rates
   const topLocations = (() => {
-    if (!activities) return { countries: [], cities: [] };
+    if (!activities) return { countries: [], cities: [], summary: { totalVisitors: 0, browsingOnly: 0, addedToCart: 0, completed: 0 } };
 
-    // Group by country
-    const countryMap = new Map<string, { count: number; sessions: Set<string>; checkouts: number }>();
-    // Group by city
-    const cityMap = new Map<string, { country: string; count: number; sessions: Set<string>; checkouts: number }>();
+    // Track sessions by their highest activity level
+    const sessionHighestActivity = new Map<string, "browsing" | "cart" | "checkout">();
+    
+    activities.forEach((activity) => {
+      const current = sessionHighestActivity.get(activity.session_id);
+      const activityRank = { browsing: 1, cart: 2, checkout: 3 };
+      if (!current || activityRank[activity.activity_type] > activityRank[current]) {
+        sessionHighestActivity.set(activity.session_id, activity.activity_type);
+      }
+    });
+
+    // Group by country with detailed conversion tracking
+    const countryMap = new Map<string, { 
+      sessions: Set<string>; 
+      browsingSessions: Set<string>;
+      cartSessions: Set<string>;
+      checkoutSessions: Set<string>;
+    }>();
+    
+    // Group by city with detailed conversion tracking
+    const cityMap = new Map<string, { 
+      country: string;
+      sessions: Set<string>; 
+      browsingSessions: Set<string>;
+      cartSessions: Set<string>;
+      checkoutSessions: Set<string>;
+    }>();
 
     activities.forEach((activity) => {
       const country = activity.country || "Onbekend";
       const city = activity.city || "Onbekend";
+      const sessionId = activity.session_id;
 
       // Country stats
       if (!countryMap.has(country)) {
-        countryMap.set(country, { count: 0, sessions: new Set(), checkouts: 0 });
+        countryMap.set(country, { 
+          sessions: new Set(), 
+          browsingSessions: new Set(),
+          cartSessions: new Set(),
+          checkoutSessions: new Set()
+        });
       }
       const countryStats = countryMap.get(country)!;
-      countryStats.count++;
-      countryStats.sessions.add(activity.session_id);
-      if (activity.activity_type === "checkout") countryStats.checkouts++;
+      countryStats.sessions.add(sessionId);
+      if (activity.activity_type === "browsing") countryStats.browsingSessions.add(sessionId);
+      if (activity.activity_type === "cart") countryStats.cartSessions.add(sessionId);
+      if (activity.activity_type === "checkout") countryStats.checkoutSessions.add(sessionId);
 
       // City stats (skip unknown cities)
       if (city !== "Onbekend") {
         const cityKey = `${city}, ${country}`;
         if (!cityMap.has(cityKey)) {
-          cityMap.set(cityKey, { country, count: 0, sessions: new Set(), checkouts: 0 });
+          cityMap.set(cityKey, { 
+            country, 
+            sessions: new Set(),
+            browsingSessions: new Set(),
+            cartSessions: new Set(),
+            checkoutSessions: new Set()
+          });
         }
         const cityStats = cityMap.get(cityKey)!;
-        cityStats.count++;
-        cityStats.sessions.add(activity.session_id);
-        if (activity.activity_type === "checkout") cityStats.checkouts++;
+        cityStats.sessions.add(sessionId);
+        if (activity.activity_type === "browsing") cityStats.browsingSessions.add(sessionId);
+        if (activity.activity_type === "cart") cityStats.cartSessions.add(sessionId);
+        if (activity.activity_type === "checkout") cityStats.checkoutSessions.add(sessionId);
       }
     });
 
-    // Convert to sorted arrays
+    // Convert to sorted arrays with conversion rates
     const countries = Array.from(countryMap.entries())
-      .map(([name, stats]) => ({
-        name,
-        activities: stats.count,
-        visitors: stats.sessions.size,
-        checkouts: stats.checkouts,
-      }))
+      .map(([name, stats]) => {
+        const visitors = stats.sessions.size;
+        const cartUsers = stats.cartSessions.size;
+        const checkoutUsers = stats.checkoutSessions.size;
+        return {
+          name,
+          visitors,
+          cartUsers,
+          checkoutUsers,
+          cartRate: visitors > 0 ? (cartUsers / visitors) * 100 : 0,
+          checkoutRate: visitors > 0 ? (checkoutUsers / visitors) * 100 : 0,
+          cartToCheckoutRate: cartUsers > 0 ? (checkoutUsers / cartUsers) * 100 : 0,
+        };
+      })
       .sort((a, b) => b.visitors - a.visitors)
       .slice(0, 10);
 
     const cities = Array.from(cityMap.entries())
-      .map(([name, stats]) => ({
-        name,
-        country: stats.country,
-        activities: stats.count,
-        visitors: stats.sessions.size,
-        checkouts: stats.checkouts,
-      }))
+      .map(([name, stats]) => {
+        const visitors = stats.sessions.size;
+        const cartUsers = stats.cartSessions.size;
+        const checkoutUsers = stats.checkoutSessions.size;
+        return {
+          name,
+          country: stats.country,
+          visitors,
+          cartUsers,
+          checkoutUsers,
+          cartRate: visitors > 0 ? (cartUsers / visitors) * 100 : 0,
+          checkoutRate: visitors > 0 ? (checkoutUsers / visitors) * 100 : 0,
+          cartToCheckoutRate: cartUsers > 0 ? (checkoutUsers / cartUsers) * 100 : 0,
+        };
+      })
       .sort((a, b) => b.visitors - a.visitors)
       .slice(0, 10);
 
-    return { countries, cities };
+    // Calculate overall summary
+    let browsingOnly = 0;
+    let addedToCart = 0;
+    let completed = 0;
+    sessionHighestActivity.forEach((level) => {
+      if (level === "browsing") browsingOnly++;
+      else if (level === "cart") addedToCart++;
+      else if (level === "checkout") completed++;
+    });
+
+    return { 
+      countries, 
+      cities, 
+      summary: {
+        totalVisitors: sessionHighestActivity.size,
+        browsingOnly,
+        addedToCart,
+        completed
+      }
+    };
   })();
 
   // Export to CSV function
@@ -638,14 +710,101 @@ export const VisitorWorldMap = () => {
             )}
           </div>
 
-          {/* Top Locations Sidebar */}
-          <div className="lg:w-80 border-t lg:border-t-0 lg:border-l border-border bg-muted/30">
+          {/* Top Locations & Conversion Sidebar */}
+          <div className="lg:w-96 border-t lg:border-t-0 lg:border-l border-border bg-muted/30">
             <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
-              {/* Top Countries */}
+              
+              {/* Conversion Summary */}
+              <div className="bg-background rounded-lg p-3 border border-border">
+                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  Conversie Overzicht
+                </h4>
+                <div className="space-y-2">
+                  {/* Funnel visualization */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.browsing }} />
+                        Bezoekers
+                      </span>
+                      <span className="font-medium">{topLocations.summary.totalVisitors}</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full rounded-full" 
+                        style={{ 
+                          width: '100%',
+                          backgroundColor: ACTIVITY_COLORS.browsing 
+                        }} 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <ShoppingCart className="w-3 h-3" style={{ color: ACTIVITY_COLORS.cart }} />
+                        Winkelwagen
+                      </span>
+                      <span className="font-medium">
+                        {topLocations.summary.addedToCart + topLocations.summary.completed}
+                        <span className="text-muted-foreground ml-1">
+                          ({topLocations.summary.totalVisitors > 0 
+                            ? ((topLocations.summary.addedToCart + topLocations.summary.completed) / topLocations.summary.totalVisitors * 100).toFixed(1) 
+                            : 0}%)
+                        </span>
+                      </span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full rounded-full" 
+                        style={{ 
+                          width: topLocations.summary.totalVisitors > 0 
+                            ? `${((topLocations.summary.addedToCart + topLocations.summary.completed) / topLocations.summary.totalVisitors * 100)}%`
+                            : '0%',
+                          backgroundColor: ACTIVITY_COLORS.cart 
+                        }} 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <CreditCard className="w-3 h-3" style={{ color: ACTIVITY_COLORS.checkout }} />
+                        Afgerekend
+                      </span>
+                      <span className="font-medium">
+                        {topLocations.summary.completed}
+                        <span className="text-muted-foreground ml-1">
+                          ({topLocations.summary.totalVisitors > 0 
+                            ? (topLocations.summary.completed / topLocations.summary.totalVisitors * 100).toFixed(1) 
+                            : 0}%)
+                        </span>
+                      </span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full rounded-full" 
+                        style={{ 
+                          width: topLocations.summary.totalVisitors > 0 
+                            ? `${(topLocations.summary.completed / topLocations.summary.totalVisitors * 100)}%`
+                            : '0%',
+                          backgroundColor: ACTIVITY_COLORS.checkout 
+                        }} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Countries with Conversion */}
               <div>
                 <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <Globe className="w-4 h-4" />
                   Top Landen
+                  <span className="text-xs font-normal text-muted-foreground">(conversie %)</span>
                 </h4>
                 {topLocations.countries.length === 0 ? (
                   <p className="text-xs text-muted-foreground">Geen data beschikbaar</p>
@@ -654,27 +813,40 @@ export const VisitorWorldMap = () => {
                     {topLocations.countries.map((country, index) => (
                       <div
                         key={country.name}
-                        className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors"
+                        className="py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors"
                       >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-xs font-medium text-muted-foreground w-4">
-                            {index + 1}.
-                          </span>
-                          <span className="text-sm truncate">{country.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-xs font-medium text-muted-foreground w-4">
+                              {index + 1}.
+                            </span>
+                            <span className="text-sm truncate">{country.name}</span>
+                          </div>
                           <Badge variant="secondary" className="text-xs px-1.5 py-0">
                             {country.visitors}
                           </Badge>
-                          {country.checkouts > 0 && (
-                            <Badge 
-                              variant="outline" 
-                              className="text-xs px-1.5 py-0"
-                              style={{ borderColor: ACTIVITY_COLORS.checkout, color: ACTIVITY_COLORS.checkout }}
-                            >
-                              {country.checkouts} ✓
-                            </Badge>
-                          )}
+                        </div>
+                        {/* Conversion bar */}
+                        <div className="mt-1 ml-6 flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden flex">
+                            <div 
+                              className="h-full" 
+                              style={{ 
+                                width: `${country.cartRate}%`,
+                                backgroundColor: ACTIVITY_COLORS.cart 
+                              }} 
+                            />
+                            <div 
+                              className="h-full" 
+                              style={{ 
+                                width: `${country.checkoutRate}%`,
+                                backgroundColor: ACTIVITY_COLORS.checkout 
+                              }} 
+                            />
+                          </div>
+                          <span className="text-[10px] text-muted-foreground w-10 text-right">
+                            {country.checkoutRate.toFixed(0)}%
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -685,11 +857,12 @@ export const VisitorWorldMap = () => {
               {/* Divider */}
               <div className="border-t border-border" />
 
-              {/* Top Cities */}
+              {/* Top Cities with Conversion */}
               <div>
                 <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
                   Top Steden
+                  <span className="text-xs font-normal text-muted-foreground">(conversie %)</span>
                 </h4>
                 {topLocations.cities.length === 0 ? (
                   <p className="text-xs text-muted-foreground">Geen data beschikbaar</p>
@@ -698,32 +871,45 @@ export const VisitorWorldMap = () => {
                     {topLocations.cities.map((city, index) => (
                       <div
                         key={city.name}
-                        className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors"
+                        className="py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors"
                       >
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span className="text-xs font-medium text-muted-foreground w-4">
-                            {index + 1}.
-                          </span>
-                          <div className="min-w-0">
-                            <span className="text-sm truncate block">{city.name.split(',')[0]}</span>
-                            <span className="text-xs text-muted-foreground truncate block">
-                              {city.country}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-xs font-medium text-muted-foreground w-4">
+                              {index + 1}.
                             </span>
+                            <div className="min-w-0">
+                              <span className="text-sm truncate block">{city.name.split(',')[0]}</span>
+                              <span className="text-[10px] text-muted-foreground truncate block">
+                                {city.country}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
                           <Badge variant="secondary" className="text-xs px-1.5 py-0">
                             {city.visitors}
                           </Badge>
-                          {city.checkouts > 0 && (
-                            <Badge 
-                              variant="outline" 
-                              className="text-xs px-1.5 py-0"
-                              style={{ borderColor: ACTIVITY_COLORS.checkout, color: ACTIVITY_COLORS.checkout }}
-                            >
-                              {city.checkouts} ✓
-                            </Badge>
-                          )}
+                        </div>
+                        {/* Conversion bar */}
+                        <div className="mt-1 ml-6 flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden flex">
+                            <div 
+                              className="h-full" 
+                              style={{ 
+                                width: `${city.cartRate}%`,
+                                backgroundColor: ACTIVITY_COLORS.cart 
+                              }} 
+                            />
+                            <div 
+                              className="h-full" 
+                              style={{ 
+                                width: `${city.checkoutRate}%`,
+                                backgroundColor: ACTIVITY_COLORS.checkout 
+                              }} 
+                            />
+                          </div>
+                          <span className="text-[10px] text-muted-foreground w-10 text-right">
+                            {city.checkoutRate.toFixed(0)}%
+                          </span>
                         </div>
                       </div>
                     ))}
