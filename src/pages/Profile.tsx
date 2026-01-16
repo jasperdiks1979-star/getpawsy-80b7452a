@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { PasskeyManager } from '@/components/auth/PasskeyManager';
-import { User, Mail, Calendar, Shield, ArrowLeft } from 'lucide-react';
+import { User, Mail, Calendar, Shield, ArrowLeft, Package, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
+import { Link } from 'react-router-dom';
 
 const Profile = () => {
   const { user, isAdmin, isLoading } = useAuth();
@@ -111,6 +112,26 @@ const Profile = () => {
                 </div>
               </div>
             </CardContent>
+          </Card>
+
+          {/* Orders Link */}
+          <Card className="hover:shadow-md transition-shadow">
+            <Link to="/orders">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Package className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Mijn Bestellingen</p>
+                      <p className="text-sm text-muted-foreground">Bekijk je order historie</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Link>
           </Card>
 
           {/* Passkey Manager */}
