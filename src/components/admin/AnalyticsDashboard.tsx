@@ -59,7 +59,6 @@ import {
   LineChart,
   Line
 } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -67,6 +66,7 @@ import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import { useDashboardWidgets } from "@/hooks/useDashboardWidgets";
 import { DashboardWidgetBuilder } from "./DashboardWidgetBuilder";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 // Types for GA4 API responses
 interface GA4Row {
@@ -272,6 +272,9 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
   const [realtimeUsers, setRealtimeUsers] = useState(0);
   const [error, setError] = useState<string | null>(null);
   
+  // Use authenticated fetch hook for automatic token refresh
+  const { invokeFunction } = useAuthenticatedFetch();
+  
   // Widget customization
   const {
     widgets,
@@ -422,13 +425,8 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
 
   const fetchOverviewData = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-
       const dateParams = getDateRangeParams();
-      const { data, error: fetchError } = await supabase.functions.invoke<GA4OverviewResponse>('ga4-analytics', {
+      const { data, error: fetchError } = await invokeFunction<GA4OverviewResponse>('ga4-analytics', {
         body: { reportType: 'overview', ...dateParams, includeComparison: showComparison }
       });
 
@@ -501,14 +499,11 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
         description: errorMessage
       });
     }
-  }, [getDateRangeParams, showComparison]);
+  }, [getDateRangeParams, showComparison, invokeFunction]);
 
   const fetchRealtimeData = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { data, error: fetchError } = await supabase.functions.invoke<GA4RealtimeResponse>('ga4-analytics', {
+      const { data, error: fetchError } = await invokeFunction<GA4RealtimeResponse>('ga4-analytics', {
         body: { reportType: 'realtime' }
       });
 
@@ -530,15 +525,12 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     } catch (err) {
       console.error('Error fetching realtime data:', err);
     }
-  }, []);
+  }, [invokeFunction]);
 
   const fetchEcommerceData = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
       const dateParams = getDateRangeParams();
-      const { data, error: fetchError } = await supabase.functions.invoke<GA4EcommerceResponse>('ga4-analytics', {
+      const { data, error: fetchError } = await invokeFunction<GA4EcommerceResponse>('ga4-analytics', {
         body: { reportType: 'ecommerce', ...dateParams }
       });
 
@@ -561,15 +553,12 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     } catch (err) {
       console.error('Error fetching e-commerce data:', err);
     }
-  }, [getDateRangeParams]);
+  }, [getDateRangeParams, invokeFunction]);
 
   const fetchDemographicsData = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
       const dateParams = getDateRangeParams();
-      const { data, error: fetchError } = await supabase.functions.invoke<GA4DemographicsResponse>('ga4-analytics', {
+      const { data, error: fetchError } = await invokeFunction<GA4DemographicsResponse>('ga4-analytics', {
         body: { reportType: 'demographics', ...dateParams }
       });
 
@@ -612,15 +601,12 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     } catch (err) {
       console.error('Error fetching demographics data:', err);
     }
-  }, [getDateRangeParams]);
+  }, [getDateRangeParams, invokeFunction]);
 
   const fetchConversionsData = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
       const dateParams = getDateRangeParams();
-      const { data, error: fetchError } = await supabase.functions.invoke<GA4ConversionsResponse>('ga4-analytics', {
+      const { data, error: fetchError } = await invokeFunction<GA4ConversionsResponse>('ga4-analytics', {
         body: { reportType: 'conversions', ...dateParams }
       });
 
@@ -667,7 +653,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     } catch (err) {
       console.error('Error fetching conversions data:', err);
     }
-  }, [getDateRangeParams]);
+  }, [getDateRangeParams, invokeFunction]);
 
   useEffect(() => {
     if (!isConfigured) return;
