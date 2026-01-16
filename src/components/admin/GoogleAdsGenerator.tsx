@@ -560,15 +560,42 @@ ${keywords.join(", ")}
 
             <div className="space-y-2">
               <Label htmlFor="finalUrl">Final URL (voor CSV export)</Label>
-              <Input
-                id="finalUrl"
-                type="url"
-                value={finalUrl}
-                onChange={(e) => setFinalUrl(e.target.value)}
-                placeholder="https://getpawsy.com/product-page"
-              />
+              <div className="flex gap-2">
+                <Select
+                  value=""
+                  onValueChange={(value) => setFinalUrl(value)}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Kies productpagina..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="https://getpawsy.lovable.app">
+                      Homepage
+                    </SelectItem>
+                    <SelectItem value="https://getpawsy.lovable.app/products">
+                      Alle producten
+                    </SelectItem>
+                    {products?.map((product) => (
+                      <SelectItem 
+                        key={product.id} 
+                        value={`https://getpawsy.lovable.app/products/${product.id}`}
+                      >
+                        {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  id="finalUrl"
+                  type="url"
+                  value={finalUrl}
+                  onChange={(e) => setFinalUrl(e.target.value)}
+                  placeholder="https://getpawsy.lovable.app/product-page"
+                  className="flex-1"
+                />
+              </div>
               <p className="text-xs text-muted-foreground">
-                De landingspagina URL die wordt gebruikt in de Google Ads CSV export
+                Selecteer een productpagina of typ een aangepaste URL
               </p>
             </div>
 
