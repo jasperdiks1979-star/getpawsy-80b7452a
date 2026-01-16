@@ -292,6 +292,23 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     const widget = widgets.find(w => w.id === widgetId);
     return widget?.visible ?? true;
   };
+
+  // Helper to get widget size class for responsive grid
+  const getWidgetSizeClass = (widgetId: string) => {
+    const size = getWidgetSize(widgetId);
+    switch (size) {
+      case 'small':
+        return 'w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]';
+      case 'medium':
+        return 'w-full sm:w-[calc(50%-0.5rem)]';
+      case 'large':
+        return 'w-full lg:w-[calc(75%-0.25rem)]';
+      case 'full':
+        return 'w-full';
+      default:
+        return 'w-full sm:w-[calc(50%-0.5rem)]';
+    }
+  };
   
   // Date range state
   const [dateRangePreset, setDateRangePreset] = useState<string>("7days");
@@ -1151,64 +1168,73 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Key Metrics - Flex layout with dynamic sizes */}
+          <div className="flex flex-wrap gap-4">
             {isWidgetVisible('active-users') && (
-              <MetricCard
-                title="Actieve Gebruikers"
-                value={overviewMetrics.activeUsers.toLocaleString()}
-                icon={<Users className="w-5 h-5" />}
-                subtitle="Nu actief"
-                loading={isLoading}
-              />
+              <div className={getWidgetSizeClass('active-users')}>
+                <MetricCard
+                  title="Actieve Gebruikers"
+                  value={overviewMetrics.activeUsers.toLocaleString()}
+                  icon={<Users className="w-5 h-5" />}
+                  subtitle="Nu actief"
+                  loading={isLoading}
+                />
+              </div>
             )}
             {isWidgetVisible('pageviews') && (
-              <MetricCard
-                title="Paginaweergaven"
-                value={overviewMetrics.totalPageViews.toLocaleString()}
-                change={showComparison && comparisonMetrics ? calculateChange(overviewMetrics.totalPageViews, comparisonMetrics.totalPageViews) : undefined}
-                icon={<Eye className="w-5 h-5" />}
-                subtitle={dateRangePreset === "7days" ? "Laatste 7 dagen" : dateRangePreset === "30days" ? "Laatste 30 dagen" : dateRangePreset === "90days" ? "Laatste 90 dagen" : dateRangePreset === "today" ? "Vandaag" : "Geselecteerde periode"}
-                loading={isLoading}
-                comparisonLabel="vs vorige periode"
-              />
+              <div className={getWidgetSizeClass('pageviews')}>
+                <MetricCard
+                  title="Paginaweergaven"
+                  value={overviewMetrics.totalPageViews.toLocaleString()}
+                  change={showComparison && comparisonMetrics ? calculateChange(overviewMetrics.totalPageViews, comparisonMetrics.totalPageViews) : undefined}
+                  icon={<Eye className="w-5 h-5" />}
+                  subtitle={dateRangePreset === "7days" ? "Laatste 7 dagen" : dateRangePreset === "30days" ? "Laatste 30 dagen" : dateRangePreset === "90days" ? "Laatste 90 dagen" : dateRangePreset === "today" ? "Vandaag" : "Geselecteerde periode"}
+                  loading={isLoading}
+                  comparisonLabel="vs vorige periode"
+                />
+              </div>
             )}
             {isWidgetVisible('session-duration') && (
-              <MetricCard
-                title="Gem. Sessieduur"
-                value={overviewMetrics.avgSessionDuration}
-                change={showComparison && comparisonMetrics ? calculateChange(overviewMetrics.avgSessionDurationSeconds, comparisonMetrics.avgSessionDurationSeconds) : undefined}
-                icon={<Clock className="w-5 h-5" />}
-                loading={isLoading}
-                comparisonLabel="vs vorige periode"
-              />
+              <div className={getWidgetSizeClass('session-duration')}>
+                <MetricCard
+                  title="Gem. Sessieduur"
+                  value={overviewMetrics.avgSessionDuration}
+                  change={showComparison && comparisonMetrics ? calculateChange(overviewMetrics.avgSessionDurationSeconds, comparisonMetrics.avgSessionDurationSeconds) : undefined}
+                  icon={<Clock className="w-5 h-5" />}
+                  loading={isLoading}
+                  comparisonLabel="vs vorige periode"
+                />
+              </div>
             )}
             {isWidgetVisible('bounce-rate') && (
-              <MetricCard
-                title="Bounce Rate"
-                value={`${overviewMetrics.bounceRate.toFixed(1)}%`}
-                change={showComparison && comparisonMetrics ? calculateChange(overviewMetrics.bounceRate, comparisonMetrics.bounceRate) : undefined}
-                icon={<TrendingDown className="w-5 h-5" />}
-                loading={isLoading}
-                comparisonLabel="vs vorige periode"
-              />
+              <div className={getWidgetSizeClass('bounce-rate')}>
+                <MetricCard
+                  title="Bounce Rate"
+                  value={`${overviewMetrics.bounceRate.toFixed(1)}%`}
+                  change={showComparison && comparisonMetrics ? calculateChange(overviewMetrics.bounceRate, comparisonMetrics.bounceRate) : undefined}
+                  icon={<TrendingDown className="w-5 h-5" />}
+                  loading={isLoading}
+                  comparisonLabel="vs vorige periode"
+                />
+              </div>
             )}
           </div>
 
           {/* Traffic Chart */}
           {isWidgetVisible('traffic-chart') && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Verkeer Overzicht</CardTitle>
-                <CardDescription>Gebruikers en paginaweergaven van de afgelopen week</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="h-80 flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="h-80">
+            <div className={getWidgetSizeClass('traffic-chart')}>
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle>Verkeer Overzicht</CardTitle>
+                  <CardDescription>Gebruikers en paginaweergaven van de afgelopen week</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoading ? (
+                    <div className="h-80 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={trafficData}>
                         <defs>
@@ -1253,46 +1279,49 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                 )}
               </CardContent>
             </Card>
+            </div>
           )}
 
           {/* Top Pages */}
           {isWidgetVisible('top-pages') && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Pagina's</CardTitle>
-                <CardDescription>Meest bezochte pagina's vandaag</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="h-40 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : topPages.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
-                ) : (
-                  <div className="space-y-4">
-                    {topPages.map((page, index) => (
-                      <div key={page.page} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
-                          <span className="font-medium truncate max-w-[200px]">{page.page}</span>
+            <div className={getWidgetSizeClass('top-pages')}>
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle>Top Pagina's</CardTitle>
+                  <CardDescription>Meest bezochte pagina's vandaag</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoading ? (
+                    <div className="h-40 flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : topPages.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {topPages.map((page, index) => (
+                        <div key={page.page} className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
+                            <span className="font-medium truncate max-w-[200px]">{page.page}</span>
+                          </div>
+                          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Eye className="w-3 h-3" />
+                              {page.views.toLocaleString()}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {page.avgTime}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Eye className="w-3 h-3" />
-                            {page.views.toLocaleString()}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {page.avgTime}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           )}
         </TabsContent>
 
@@ -1377,143 +1406,149 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
 
         {/* Audience Tab */}
         <TabsContent value="audience" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="flex flex-wrap gap-4">
             {/* Device Distribution */}
             {isWidgetVisible('devices') && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Apparaten</CardTitle>
-                  <CardDescription>Verdeling per apparaattype</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="h-64 flex items-center justify-center">
-                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : deviceData.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
-                  ) : (
-                    <>
+              <div className={getWidgetSizeClass('devices')}>
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle>Apparaten</CardTitle>
+                    <CardDescription>Verdeling per apparaattype</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
                       <div className="h-64 flex items-center justify-center">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={deviceData}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={60}
-                              outerRadius={80}
-                              paddingAngle={5}
-                              dataKey="value"
-                            >
-                              {deviceData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip />
-                          </PieChart>
-                        </ResponsiveContainer>
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                       </div>
-                      <div className="flex justify-center gap-6 mt-4">
-                        {deviceData.map((device) => (
-                          <div key={device.name} className="flex items-center gap-2 text-sm">
-                            {device.name.toLowerCase() === "mobile" && <Smartphone className="w-4 h-4" style={{ color: device.color }} />}
-                            {device.name.toLowerCase() === "desktop" && <Monitor className="w-4 h-4" style={{ color: device.color }} />}
-                            {device.name.toLowerCase() === "tablet" && <Smartphone className="w-4 h-4" style={{ color: device.color }} />}
-                            <span>{device.name}: {device.value}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+                    ) : deviceData.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+                    ) : (
+                      <>
+                        <div className="h-64 flex items-center justify-center">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={deviceData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="value"
+                              >
+                                {deviceData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="flex justify-center gap-6 mt-4">
+                          {deviceData.map((device) => (
+                            <div key={device.name} className="flex items-center gap-2 text-sm">
+                              {device.name.toLowerCase() === "mobile" && <Smartphone className="w-4 h-4" style={{ color: device.color }} />}
+                              {device.name.toLowerCase() === "desktop" && <Monitor className="w-4 h-4" style={{ color: device.color }} />}
+                              {device.name.toLowerCase() === "tablet" && <Smartphone className="w-4 h-4" style={{ color: device.color }} />}
+                              <span>{device.name}: {device.value}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             )}
 
             {/* Countries */}
             {isWidgetVisible('countries') && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="w-5 h-5" />
-                    Landen
-                  </CardTitle>
-                  <CardDescription>Top landen op basis van gebruikers</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="h-40 flex items-center justify-center">
-                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : countryData.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {countryData.map((country) => (
-                        <div key={country.country} className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-xl">{country.flag}</span>
-                            <span className="font-medium">{country.country}</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="w-32 bg-muted rounded-full h-2">
-                              <div 
-                                className="bg-primary h-2 rounded-full"
-                                style={{ width: `${(country.users / (countryData[0]?.users || 1)) * 100}%` }}
-                              />
+              <div className={getWidgetSizeClass('countries')}>
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Globe className="w-5 h-5" />
+                      Landen
+                    </CardTitle>
+                    <CardDescription>Top landen op basis van gebruikers</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <div className="h-40 flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : countryData.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {countryData.map((country) => (
+                          <div key={country.country} className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl">{country.flag}</span>
+                              <span className="font-medium">{country.country}</span>
                             </div>
-                            <span className="text-sm text-muted-foreground w-16 text-right">
-                              {country.users.toLocaleString()}
-                            </span>
+                            <div className="flex items-center gap-3">
+                              <div className="w-32 bg-muted rounded-full h-2">
+                                <div 
+                                  className="bg-primary h-2 rounded-full"
+                                  style={{ width: `${(country.users / (countryData[0]?.users || 1)) * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-sm text-muted-foreground w-16 text-right">
+                                {country.users.toLocaleString()}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
 
           {/* User Types */}
           {isWidgetVisible('new-returning') && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Nieuwe vs Terugkerende Gebruikers</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="h-32 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="text-center p-6 bg-primary/5 rounded-lg">
-                      <div className="text-4xl font-bold text-primary mb-2">
-                        {overviewMetrics.newUsers.toLocaleString()}
-                      </div>
-                      <p className="text-muted-foreground">Nieuwe Gebruikers</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {overviewMetrics.newUsers + overviewMetrics.returningUsers > 0
-                          ? Math.round((overviewMetrics.newUsers / (overviewMetrics.newUsers + overviewMetrics.returningUsers)) * 100)
-                          : 0}%
-                      </p>
+            <div className={getWidgetSizeClass('new-returning')}>
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle>Nieuwe vs Terugkerende Gebruikers</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isLoading ? (
+                    <div className="h-32 flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                     </div>
-                    <div className="text-center p-6 bg-secondary/50 rounded-lg">
-                      <div className="text-4xl font-bold text-secondary-foreground mb-2">
-                        {overviewMetrics.returningUsers.toLocaleString()}
+                  ) : (
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="text-center p-6 bg-primary/5 rounded-lg">
+                        <div className="text-4xl font-bold text-primary mb-2">
+                          {overviewMetrics.newUsers.toLocaleString()}
+                        </div>
+                        <p className="text-muted-foreground">Nieuwe Gebruikers</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {overviewMetrics.newUsers + overviewMetrics.returningUsers > 0
+                            ? Math.round((overviewMetrics.newUsers / (overviewMetrics.newUsers + overviewMetrics.returningUsers)) * 100)
+                            : 0}%
+                        </p>
                       </div>
-                      <p className="text-muted-foreground">Terugkerende Gebruikers</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {overviewMetrics.newUsers + overviewMetrics.returningUsers > 0
-                          ? Math.round((overviewMetrics.returningUsers / (overviewMetrics.newUsers + overviewMetrics.returningUsers)) * 100)
-                          : 0}%
-                      </p>
+                      <div className="text-center p-6 bg-secondary/50 rounded-lg">
+                        <div className="text-4xl font-bold text-secondary-foreground mb-2">
+                          {overviewMetrics.returningUsers.toLocaleString()}
+                        </div>
+                        <p className="text-muted-foreground">Terugkerende Gebruikers</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {overviewMetrics.newUsers + overviewMetrics.returningUsers > 0
+                            ? Math.round((overviewMetrics.returningUsers / (overviewMetrics.newUsers + overviewMetrics.returningUsers)) * 100)
+                            : 0}%
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           )}
         </TabsContent>
 
@@ -1521,125 +1556,131 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
         <TabsContent value="demographics" className="space-y-6">
           {/* Traffic Sources */}
           {isWidgetVisible('traffic-sources') && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Layers className="w-5 h-5" />
-                  Verkeersbronnen
-                </CardTitle>
-                <CardDescription>Waar komen je bezoekers vandaan</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="h-64 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : demographicsData.trafficSources.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
-                ) : (
-                  <div className="space-y-4">
-                    {demographicsData.trafficSources.map((source, index) => {
-                      const maxSessions = demographicsData.trafficSources[0]?.sessions || 1;
-                      return (
-                        <div key={source.channel} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
-                              <span className="font-medium">{source.channel}</span>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span>{source.sessions.toLocaleString()} sessies</span>
-                              <span className="text-xs">{source.bounceRate.toFixed(1)}% bounce</span>
-                            </div>
-                          </div>
-                          <div className="w-full bg-muted rounded-full h-2">
-                            <div 
-                              className="bg-primary h-2 rounded-full transition-all"
-                              style={{ width: `${(source.sessions / maxSessions) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Browsers */}
-            {isWidgetVisible('browsers') && (
-              <Card>
+            <div className={getWidgetSizeClass('traffic-sources')}>
+              <Card className="h-full">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Chrome className="w-5 h-5" />
-                    Browsers
+                    <Layers className="w-5 h-5" />
+                    Verkeersbronnen
                   </CardTitle>
-                  <CardDescription>Meest gebruikte browsers</CardDescription>
+                  <CardDescription>Waar komen je bezoekers vandaan</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {isLoading ? (
-                    <div className="h-48 flex items-center justify-center">
+                    <div className="h-64 flex items-center justify-center">
                       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                     </div>
-                  ) : demographicsData.browsers.length === 0 ? (
+                  ) : demographicsData.trafficSources.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
                   ) : (
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={demographicsData.browsers.slice(0, 6)} layout="vertical">
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                          <XAxis type="number" className="text-xs" />
-                          <YAxis dataKey="name" type="category" className="text-xs" width={80} />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: "hsl(var(--card))",
-                              border: "1px solid hsl(var(--border))",
-                              borderRadius: "8px"
-                            }} 
-                          />
-                          <Bar dataKey="users" fill="hsl(25, 65%, 45%)" radius={[0, 4, 4, 0]} name="Gebruikers" />
-                        </BarChart>
-                      </ResponsiveContainer>
+                    <div className="space-y-4">
+                      {demographicsData.trafficSources.map((source, index) => {
+                        const maxSessions = demographicsData.trafficSources[0]?.sessions || 1;
+                        return (
+                          <div key={source.channel} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
+                                <span className="font-medium">{source.channel}</span>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <span>{source.sessions.toLocaleString()} sessies</span>
+                                <span className="text-xs">{source.bounceRate.toFixed(1)}% bounce</span>
+                              </div>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-2">
+                              <div 
+                                className="bg-primary h-2 rounded-full transition-all"
+                                style={{ width: `${(source.sessions / maxSessions) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-4">
+            {/* Browsers */}
+            {isWidgetVisible('browsers') && (
+              <div className={getWidgetSizeClass('browsers')}>
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Chrome className="w-5 h-5" />
+                      Browsers
+                    </CardTitle>
+                    <CardDescription>Meest gebruikte browsers</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <div className="h-48 flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : demographicsData.browsers.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+                    ) : (
+                      <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={demographicsData.browsers.slice(0, 6)} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis type="number" className="text-xs" />
+                            <YAxis dataKey="name" type="category" className="text-xs" width={80} />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: "hsl(var(--card))",
+                                border: "1px solid hsl(var(--border))",
+                                borderRadius: "8px"
+                              }} 
+                            />
+                            <Bar dataKey="users" fill="hsl(25, 65%, 45%)" radius={[0, 4, 4, 0]} name="Gebruikers" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             )}
 
             {/* Cities */}
             {isWidgetVisible('cities') && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    Steden
-                  </CardTitle>
-                  <CardDescription>Top steden van bezoekers</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="h-48 flex items-center justify-center">
-                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : demographicsData.cities.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {demographicsData.cities.map((city, index) => (
-                        <div key={city.city} className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
-                            <span className="font-medium">{city.city}</span>
+              <div className={getWidgetSizeClass('cities')}>
+                <Card className="h-full">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      Steden
+                    </CardTitle>
+                    <CardDescription>Top steden van bezoekers</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <div className="h-48 flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : demographicsData.cities.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">Geen data beschikbaar</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {demographicsData.cities.map((city, index) => (
+                          <div key={city.city} className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
+                              <span className="font-medium">{city.city}</span>
+                            </div>
+                            <Badge variant="secondary">{city.users.toLocaleString()}</Badge>
                           </div>
-                          <Badge variant="secondary">{city.users.toLocaleString()}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
 
