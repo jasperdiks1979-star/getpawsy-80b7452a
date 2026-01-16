@@ -281,12 +281,22 @@ const Index = () => {
                 From organic treats to cozy beds, we bring nature's best to your doorstep.
               </p>
               
-              <Link to="/products">
-                <Button size="lg" className="gap-2 btn-organic rounded-full px-8">
-                  Explore Collection
-                  <ArrowRight className="w-4 h-4" />
+              <div className="flex flex-wrap gap-4">
+                <Link to="/products">
+                  <Button size="lg" className="gap-2 btn-organic rounded-full px-8">
+                    Explore Collection
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="rounded-full px-8 border-2"
+                  onClick={() => document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  View Categories
                 </Button>
-              </Link>
+              </div>
 
               {/* Trust badges */}
               <div className="flex items-center gap-6 pt-4">
@@ -381,7 +391,7 @@ const Index = () => {
       </section>
 
       {/* Categories */}
-      <section className="py-20">
+      <section id="categories" className="py-20">
         <div className="container px-4 md:px-6">
           <motion.div 
             className="text-center mb-12"
