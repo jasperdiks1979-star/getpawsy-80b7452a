@@ -22,6 +22,7 @@ import { ReviewForm } from '@/components/reviews/ReviewForm';
 import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { trackViewItem } from '@/lib/analytics';
+import { calculateSellingPrice } from '@/lib/pricing';
 
 interface ProductVariant {
   vid: string;
@@ -32,6 +33,7 @@ interface ProductVariant {
   variantKey: string;
   variantWeight: number;
   variantSellPrice: number;
+  variantCostPrice?: number; // Original cost price from CJ
 }
 
 const ProductDetail = () => {
@@ -152,10 +154,35 @@ const ProductDetail = () => {
     queryClient.invalidateQueries({ queryKey: ['product-reviews', id] });
   };
 
-  // Parse variants from JSON
-  const variants: ProductVariant[] = product?.variants && Array.isArray(product.variants) 
-    ? (product.variants as unknown as ProductVariant[])
-    : [];
+  // Parse variants from JSON and ensure prices are calculated correctly
+  const variants: ProductVariant[] = useMemo(() => {
+    if (!product?.variants || !Array.isArray(product.variants)) return [];
+    
+    const productPrice = Number(product.price) || 0;
+    const productWeight = Number(product.weight) || 200;
+    
+    return (product.variants as unknown as ProductVariant[]).map(variant => {
+      const variantPrice = Number(variant.variantSellPrice) || 0;
+      const variantWeight = Number(variant.variantWeight) || productWeight;
+      
+      // Check if the variant price seems like a cost price (much lower than product selling price)
+      // If variantSellPrice is less than 40% of product price, it's likely still the cost price
+      const isProbablyCostPrice = variantPrice > 0 && variantPrice < productPrice * 0.4;
+      
+      if (isProbablyCostPrice) {
+        // Calculate the proper selling price using the pricing function
+        const pricing = calculateSellingPrice(variantPrice, variantWeight);
+        return {
+          ...variant,
+          variantCostPrice: variantPrice,
+          variantSellPrice: pricing.sellingPrice,
+        };
+      }
+      
+      // Price seems correct, use as-is
+      return variant;
+    });
+  }, [product]);
 
   // Group variants - CJ uses variantKey as the display name
   const variantGroups = variants.reduce((groups, variant) => {

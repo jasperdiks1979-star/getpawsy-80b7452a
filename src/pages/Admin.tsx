@@ -304,8 +304,8 @@ const Admin = () => {
           // Keep original description if SEO generation fails
         }
         
-        // Get variants data
-        const variants = fullDetail?.variants || null;
+        // Get variants data and calculate selling prices for each variant
+        const rawVariants = fullDetail?.variants || null;
         
         // Calculate price using dynamic pricing with shipping included
         // Parse sellPrice safely - it might be a range like "400-620"
@@ -324,6 +324,32 @@ const Admin = () => {
         const weight = parsedWeight <= 0 ? 200 : parsedWeight;
         const pricing = calculateSellingPrice(costPrice, weight);
 
+        // Process variants to calculate selling prices
+        interface CJVariant {
+          vid: string;
+          pid: string;
+          variantNameEn: string;
+          variantSku: string;
+          variantImage?: string;
+          variantKey: string;
+          variantWeight: number;
+          variantSellPrice: number;
+        }
+        
+        const processedVariants = rawVariants ? (rawVariants as CJVariant[]).map((variant: CJVariant) => {
+          const variantCostPrice = Number(variant.variantSellPrice) || costPrice;
+          const variantWeight = Number(variant.variantWeight) || weight;
+          const variantPricing = calculateSellingPrice(variantCostPrice, variantWeight);
+          
+          return {
+            ...variant,
+            // Store original cost price for reference
+            variantCostPrice: variantCostPrice,
+            // Replace variantSellPrice with calculated selling price
+            variantSellPrice: variantPricing.sellingPrice,
+          };
+        }) : null;
+
         productsToInsert.push({
           cj_product_id: p.pid,
           name: p.productNameEn,
@@ -337,7 +363,7 @@ const Admin = () => {
           sku: p.productSku,
           weight: weight,
           stock: stock,
-          variants: variants,
+          variants: processedVariants,
           is_active: true,
           supplier_name: "CJ Dropshipping",
           shipping_time: "Free Shipping",
