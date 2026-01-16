@@ -4,9 +4,11 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface VisitorActivity {
   id: string;
@@ -31,12 +33,20 @@ const ACTIVITY_LABELS = {
   checkout: "Afrekenen",
 };
 
+// Activity weights for heatmap intensity
+const ACTIVITY_WEIGHTS = {
+  browsing: 1,
+  cart: 2,
+  checkout: 3,
+};
+
 export const VisitorWorldMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
   // Fetch visitor activities
   const { data: activities, refetch, isLoading } = useQuery({
@@ -155,6 +165,104 @@ export const VisitorWorldMap = () => {
     };
   }, []);
 
+  // Update heatmap layer
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !activities) return;
+
+    const mapInstance = map.current;
+
+    // Remove existing heatmap layer and source if they exist
+    if (mapInstance.getLayer("visitor-heatmap")) {
+      mapInstance.removeLayer("visitor-heatmap");
+    }
+    if (mapInstance.getSource("visitor-heatmap-source")) {
+      mapInstance.removeSource("visitor-heatmap-source");
+    }
+
+    if (showHeatmap) {
+      // Hide markers when showing heatmap
+      markersRef.current.forEach((marker) => {
+        marker.getElement().style.display = "none";
+      });
+
+      // Create GeoJSON data for heatmap
+      const geojsonData: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: activities
+          .filter((a) => a.latitude && a.longitude)
+          .map((activity) => ({
+            type: "Feature" as const,
+            properties: {
+              weight: ACTIVITY_WEIGHTS[activity.activity_type],
+            },
+            geometry: {
+              type: "Point" as const,
+              coordinates: [activity.longitude!, activity.latitude!],
+            },
+          })),
+      };
+
+      // Add heatmap source
+      mapInstance.addSource("visitor-heatmap-source", {
+        type: "geojson",
+        data: geojsonData,
+      });
+
+      // Add heatmap layer
+      mapInstance.addLayer({
+        id: "visitor-heatmap",
+        type: "heatmap",
+        source: "visitor-heatmap-source",
+        paint: {
+          // Increase weight based on activity type
+          "heatmap-weight": ["get", "weight"],
+          // Increase intensity as zoom level increases
+          "heatmap-intensity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0, 1,
+            9, 3
+          ],
+          // Color ramp for heatmap - from cold to hot
+          "heatmap-color": [
+            "interpolate",
+            ["linear"],
+            ["heatmap-density"],
+            0, "rgba(0, 0, 255, 0)",
+            0.1, "rgba(65, 105, 225, 0.5)",
+            0.3, "rgba(0, 255, 255, 0.6)",
+            0.5, "rgba(0, 255, 0, 0.7)",
+            0.7, "rgba(255, 255, 0, 0.8)",
+            0.9, "rgba(255, 165, 0, 0.9)",
+            1, "rgba(255, 0, 0, 1)"
+          ],
+          // Adjust radius based on zoom
+          "heatmap-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0, 15,
+            9, 30
+          ],
+          // Transition from heatmap to circle layer at higher zoom
+          "heatmap-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            7, 1,
+            9, 0.5
+          ],
+        },
+      });
+    } else {
+      // Show markers when heatmap is disabled
+      markersRef.current.forEach((marker) => {
+        marker.getElement().style.display = "block";
+      });
+    }
+  }, [showHeatmap, activities, mapLoaded]);
+
   // Update markers when activities change
   useEffect(() => {
     if (!map.current || !mapLoaded || !activities) return;
@@ -204,6 +312,7 @@ export const VisitorWorldMap = () => {
         cursor: pointer;
         box-shadow: 0 0 ${size}px ${color}80, 0 0 ${size * 2}px ${color}40;
         animation: pulse 2s ease-in-out infinite;
+        display: ${showHeatmap ? "none" : "block"};
       `;
 
       // Add pulse animation
@@ -245,7 +354,7 @@ export const VisitorWorldMap = () => {
 
       markersRef.current.push(marker);
     });
-  }, [activities, mapLoaded]);
+  }, [activities, mapLoaded, showHeatmap]);
 
   // Count activities by type
   const counts = {
@@ -259,20 +368,39 @@ export const VisitorWorldMap = () => {
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2">
             <Globe className="w-5 h-5" />
             Live Bezoekers Wereldkaart
           </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-            Vernieuwen
-          </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="heatmap-toggle"
+                checked={showHeatmap}
+                onCheckedChange={setShowHeatmap}
+              />
+              <Label htmlFor="heatmap-toggle" className="flex items-center gap-1.5 cursor-pointer">
+                {showHeatmap ? (
+                  <Flame className="w-4 h-4 text-orange-500" />
+                ) : (
+                  <MapPin className="w-4 h-4" />
+                )}
+                <span className="text-sm">
+                  {showHeatmap ? "Heatmap" : "Markers"}
+                </span>
+              </Label>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+              Vernieuwen
+            </Button>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2 mt-2">
           <Badge variant="outline" className="flex items-center gap-1">
@@ -304,6 +432,20 @@ export const VisitorWorldMap = () => {
             {counts.checkout} afrekenen
           </Badge>
         </div>
+        {showHeatmap && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Intensiteit:</span>
+            <div className="flex items-center h-3 rounded overflow-hidden">
+              <div className="w-6 h-full" style={{ background: "rgba(65, 105, 225, 0.8)" }} />
+              <div className="w-6 h-full" style={{ background: "rgba(0, 255, 255, 0.8)" }} />
+              <div className="w-6 h-full" style={{ background: "rgba(0, 255, 0, 0.8)" }} />
+              <div className="w-6 h-full" style={{ background: "rgba(255, 255, 0, 0.8)" }} />
+              <div className="w-6 h-full" style={{ background: "rgba(255, 165, 0, 0.8)" }} />
+              <div className="w-6 h-full" style={{ background: "rgba(255, 0, 0, 0.9)" }} />
+            </div>
+            <span>Laag → Hoog</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         {mapError ? (
