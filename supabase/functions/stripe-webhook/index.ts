@@ -7,6 +7,55 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
+// Helper function to send order confirmation email
+async function sendOrderConfirmationEmail(
+  orderId: string,
+  customerEmail: string,
+  items: any[],
+  totalAmount: number,
+  currency: string,
+  shippingAddress: any,
+  customerName?: string
+): Promise<void> {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("[STRIPE-WEBHOOK] Missing Supabase config for email function");
+      return;
+    }
+
+    console.log("[STRIPE-WEBHOOK] Sending order confirmation email to:", customerEmail);
+    
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-order-confirmation`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        orderId,
+        customerEmail,
+        customerName,
+        items,
+        totalAmount,
+        currency,
+        shippingAddress,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[STRIPE-WEBHOOK] Failed to send confirmation email:", errorText);
+    } else {
+      console.log("[STRIPE-WEBHOOK] Order confirmation email sent successfully");
+    }
+  } catch (error) {
+    console.error("[STRIPE-WEBHOOK] Error sending confirmation email:", error);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -64,6 +113,11 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         console.log("[STRIPE-WEBHOOK] Checkout session completed:", session.id);
 
+        const customerEmail = session.customer_email || session.customer_details?.email;
+        const customerName = session.customer_details?.name;
+        const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
+        const totalValue = session.metadata?.total_value ? parseFloat(session.metadata.total_value) : (session.amount_total || 0) / 100;
+
         // Check if order already exists
         const { data: existingOrder } = await supabaseAdmin
           .from("orders")
@@ -71,7 +125,10 @@ serve(async (req) => {
           .eq("stripe_session_id", session.id)
           .single();
 
+        let orderId: string;
+
         if (existingOrder) {
+          orderId = existingOrder.id;
           // Update existing order to paid
           const { error: updateError } = await supabaseAdmin
             .from("orders")
@@ -89,10 +146,7 @@ serve(async (req) => {
           }
         } else {
           // Create new order from webhook data
-          const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
-          const totalValue = session.metadata?.total_value ? parseFloat(session.metadata.total_value) : (session.amount_total || 0) / 100;
-
-          const { error: insertError } = await supabaseAdmin
+          const { data: newOrder, error: insertError } = await supabaseAdmin
             .from("orders")
             .insert({
               stripe_session_id: session.id,
@@ -100,17 +154,37 @@ serve(async (req) => {
               status: "paid",
               total_amount: totalValue,
               currency: session.currency || "eur",
-              customer_email: session.customer_email || session.customer_details?.email,
+              customer_email: customerEmail,
               shipping_address: session.shipping_details,
               items: items,
-            });
+            })
+            .select("id")
+            .single();
 
           if (insertError) {
             console.error("[STRIPE-WEBHOOK] Error creating order:", insertError);
+            orderId = session.id; // Fallback to session id
           } else {
-            console.log("[STRIPE-WEBHOOK] Order created from webhook");
+            console.log("[STRIPE-WEBHOOK] Order created from webhook:", newOrder?.id);
+            orderId = newOrder?.id || session.id;
           }
         }
+
+        // Send order confirmation email
+        if (customerEmail) {
+          await sendOrderConfirmationEmail(
+            orderId,
+            customerEmail,
+            items,
+            totalValue,
+            session.currency || "eur",
+            session.shipping_details,
+            customerName || undefined
+          );
+        } else {
+          console.warn("[STRIPE-WEBHOOK] No customer email available for confirmation");
+        }
+
         break;
       }
 
