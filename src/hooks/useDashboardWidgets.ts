@@ -16,8 +16,9 @@ export interface LayoutPreset {
   id: string;
   name: string;
   description: string;
-  icon: 'compact' | 'detailed' | 'analytics' | 'ecommerce' | 'overview';
+  icon: 'compact' | 'detailed' | 'analytics' | 'ecommerce' | 'overview' | 'custom';
   config: { [widgetId: string]: { visible: boolean; size: WidgetSize } };
+  isCustom?: boolean;
 }
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
@@ -39,7 +40,7 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
   { id: 'conversion-funnel', type: 'chart', title: 'Conversie Funnel', description: 'Van sessie naar aankoop', size: 'full', visible: true, order: 15 },
 ];
 
-export const LAYOUT_PRESETS: LayoutPreset[] = [
+export const BUILT_IN_PRESETS: LayoutPreset[] = [
   {
     id: 'compact',
     name: 'Compact',
@@ -162,14 +163,19 @@ export const LAYOUT_PRESETS: LayoutPreset[] = [
   },
 ];
 
+// Keep LAYOUT_PRESETS for backwards compatibility
+export const LAYOUT_PRESETS = BUILT_IN_PRESETS;
+
 const STORAGE_KEY = 'dashboard-widgets-config';
+const CUSTOM_PRESETS_KEY = 'dashboard-custom-presets';
 
 export const useDashboardWidgets = () => {
   const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [customPresets, setCustomPresets] = useState<LayoutPreset[]>([]);
 
-  // Load widgets from localStorage on mount
+  // Load widgets and custom presets from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -187,7 +193,20 @@ export const useDashboardWidgets = () => {
     } else {
       setWidgets(DEFAULT_WIDGETS);
     }
+
+    // Load custom presets
+    const storedPresets = localStorage.getItem(CUSTOM_PRESETS_KEY);
+    if (storedPresets) {
+      try {
+        setCustomPresets(JSON.parse(storedPresets));
+      } catch {
+        setCustomPresets([]);
+      }
+    }
   }, []);
+
+  // Get all presets (built-in + custom)
+  const allPresets = [...BUILT_IN_PRESETS, ...customPresets];
 
   // Save widgets to localStorage whenever they change
   const saveWidgets = useCallback((newWidgets: DashboardWidget[]) => {
@@ -226,7 +245,7 @@ export const useDashboardWidgets = () => {
   }, [widgets, saveWidgets]);
 
   const applyPreset = useCallback((presetId: string) => {
-    const preset = LAYOUT_PRESETS.find(p => p.id === presetId);
+    const preset = allPresets.find(p => p.id === presetId);
     if (!preset) return;
 
     const newWidgets = widgets.map(w => {
@@ -240,7 +259,55 @@ export const useDashboardWidgets = () => {
     setWidgets(newWidgets);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newWidgets));
     setActivePreset(presetId);
-  }, [widgets]);
+  }, [widgets, allPresets]);
+
+  const saveCustomPreset = useCallback((name: string, description: string) => {
+    // Create config from current widgets
+    const config: { [widgetId: string]: { visible: boolean; size: WidgetSize } } = {};
+    widgets.forEach(w => {
+      config[w.id] = { visible: w.visible, size: w.size };
+    });
+
+    const newPreset: LayoutPreset = {
+      id: `custom-${Date.now()}`,
+      name,
+      description,
+      icon: 'custom',
+      config,
+      isCustom: true,
+    };
+
+    const updatedPresets = [...customPresets, newPreset];
+    setCustomPresets(updatedPresets);
+    localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updatedPresets));
+    setActivePreset(newPreset.id);
+
+    return newPreset;
+  }, [widgets, customPresets]);
+
+  const deleteCustomPreset = useCallback((presetId: string) => {
+    const updatedPresets = customPresets.filter(p => p.id !== presetId);
+    setCustomPresets(updatedPresets);
+    localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updatedPresets));
+    
+    if (activePreset === presetId) {
+      setActivePreset(null);
+    }
+  }, [customPresets, activePreset]);
+
+  const updateCustomPreset = useCallback((presetId: string) => {
+    // Update existing preset with current widget configuration
+    const config: { [widgetId: string]: { visible: boolean; size: WidgetSize } } = {};
+    widgets.forEach(w => {
+      config[w.id] = { visible: w.visible, size: w.size };
+    });
+
+    const updatedPresets = customPresets.map(p => 
+      p.id === presetId ? { ...p, config } : p
+    );
+    setCustomPresets(updatedPresets);
+    localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updatedPresets));
+  }, [widgets, customPresets]);
 
   const resetToDefaults = useCallback(() => {
     setWidgets(DEFAULT_WIDGETS);
@@ -268,10 +335,15 @@ export const useDashboardWidgets = () => {
     isCustomizing,
     setIsCustomizing,
     activePreset,
+    customPresets,
+    allPresets,
     toggleWidgetVisibility,
     setWidgetSize,
     reorderWidgets,
     applyPreset,
+    saveCustomPreset,
+    deleteCustomPreset,
+    updateCustomPreset,
     resetToDefaults,
     getVisibleWidgets,
     getWidgetsByTab,
