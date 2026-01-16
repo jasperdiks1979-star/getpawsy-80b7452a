@@ -46,7 +46,7 @@ const RouteLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
     <div className="flex items-center gap-3 text-muted-foreground">
       <Loader2 className="h-6 w-6 animate-spin" />
-      <span>Laden...</span>
+      <span>Loading...</span>
     </div>
   </div>
 );
