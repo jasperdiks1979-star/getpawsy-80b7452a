@@ -921,12 +921,7 @@ const ProductDetail = () => {
                       Product Details
                     </h3>
                     <div className="space-y-3">
-                      {product.sku && (
-                        <div className="flex justify-between items-center py-2 border-b border-border/50">
-                          <span className="text-muted-foreground">SKU</span>
-                          <span className="font-medium text-foreground">{product.sku}</span>
-                        </div>
-                      )}
+                      {/* SKU hidden from customers - only visible in admin */}
                       {product.category && (
                         <div className="flex justify-between items-center py-2 border-b border-border/50">
                           <span className="text-muted-foreground">Category</span>
