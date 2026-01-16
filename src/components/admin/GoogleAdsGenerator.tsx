@@ -40,7 +40,8 @@ import {
   Save,
   History,
   Trash2,
-  Eye
+  Eye,
+  Download
 } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -229,6 +230,106 @@ ${keywords.join(", ")}
     
     navigator.clipboard.writeText(allText);
     toast.success("Alle advertentieteksten gekopieerd");
+  };
+
+  const exportToCSV = (ad: GeneratedAd | SavedAd) => {
+    const isGeneratedAd = 'displayPaths' in ad;
+    const headlines = ad.headlines;
+    const descriptions = ad.descriptions;
+    const displayPaths = isGeneratedAd ? ad.displayPaths : (ad as SavedAd).display_paths;
+    const keywords = ad.keywords;
+    const name = 'product_name' in ad ? (ad as SavedAd).product_name : productName;
+
+    // Google Ads Editor CSV format for Responsive Search Ads
+    const csvHeaders = [
+      'Campaign',
+      'Ad Group',
+      'Headline 1',
+      'Headline 2',
+      'Headline 3',
+      'Headline 4',
+      'Headline 5',
+      'Headline 6',
+      'Headline 7',
+      'Headline 8',
+      'Headline 9',
+      'Headline 10',
+      'Headline 11',
+      'Headline 12',
+      'Headline 13',
+      'Headline 14',
+      'Headline 15',
+      'Description 1',
+      'Description 2',
+      'Description 3',
+      'Description 4',
+      'Path 1',
+      'Path 2',
+      'Final URL',
+      'Status'
+    ];
+
+    // Fill headlines (up to 15)
+    const headlineValues = Array(15).fill('').map((_, i) => headlines[i] || '');
+    
+    // Fill descriptions (up to 4)
+    const descriptionValues = Array(4).fill('').map((_, i) => descriptions[i] || '');
+
+    const csvRow = [
+      '[CAMPAIGN_NAME]', // User fills this in Google Ads Editor
+      '[AD_GROUP_NAME]', // User fills this in Google Ads Editor
+      ...headlineValues,
+      ...descriptionValues,
+      displayPaths[0] || '',
+      displayPaths[1] || '',
+      'https://getpawsy.com', // Default final URL
+      'Enabled'
+    ];
+
+    // Escape CSV values
+    const escapeCSV = (value: string) => {
+      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    };
+
+    const csvContent = [
+      csvHeaders.join(','),
+      csvRow.map(escapeCSV).join(',')
+    ].join('\n');
+
+    // Also create a keywords CSV
+    const keywordsCSV = [
+      'Campaign,Ad Group,Keyword,Match Type',
+      ...keywords.map(kw => `[CAMPAIGN_NAME],[AD_GROUP_NAME],${escapeCSV(kw)},Broad`)
+    ].join('\n');
+
+    // Create and download the ads CSV
+    const adsBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const adsUrl = URL.createObjectURL(adsBlob);
+    const adsLink = document.createElement('a');
+    adsLink.href = adsUrl;
+    adsLink.download = `google-ads-${name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(adsLink);
+    adsLink.click();
+    document.body.removeChild(adsLink);
+    URL.revokeObjectURL(adsUrl);
+
+    // Create and download the keywords CSV
+    setTimeout(() => {
+      const keywordsBlob = new Blob([keywordsCSV], { type: 'text/csv;charset=utf-8;' });
+      const keywordsUrl = URL.createObjectURL(keywordsBlob);
+      const keywordsLink = document.createElement('a');
+      keywordsLink.href = keywordsUrl;
+      keywordsLink.download = `google-ads-keywords-${name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(keywordsLink);
+      keywordsLink.click();
+      document.body.removeChild(keywordsLink);
+      URL.revokeObjectURL(keywordsUrl);
+    }, 100);
+
+    toast.success("CSV bestanden gedownload! Open ze in Google Ads Editor en vul de campaign/ad group namen in.");
   };
 
   const renderAdContent = (ad: GeneratedAd | SavedAd, showSaveButton: boolean = false) => {
@@ -485,7 +586,11 @@ ${keywords.join(", ")}
                   <Target className="w-5 h-5" />
                   Gegenereerde Advertenties
                 </CardTitle>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" size="sm" onClick={() => exportToCSV(generatedAd)}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => copyAllAds(generatedAd)}>
                     <Copy className="w-4 h-4 mr-2" />
                     Kopieer alles
@@ -531,7 +636,7 @@ ${keywords.join(", ")}
                         {ad.target_audience && ` • ${ad.target_audience}`}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="flex items-center gap-2 ml-4 flex-wrap">
                       <Button
                         variant="outline"
                         size="sm"
@@ -539,6 +644,14 @@ ${keywords.join(", ")}
                       >
                         <Eye className="w-4 h-4 mr-2" />
                         Bekijken
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => exportToCSV(ad)}
+                        title="Exporteer naar Google Ads Editor"
+                      >
+                        <Download className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="outline"
