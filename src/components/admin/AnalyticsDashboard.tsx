@@ -31,8 +31,17 @@ import {
   TrendingDown,
   DollarSign,
   Layers,
-  CalendarIcon
+  CalendarIcon,
+  Download,
+  FileText,
+  FileSpreadsheet
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
 import { 
   AreaChart, 
@@ -666,6 +675,229 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     toast.success('Analytics data vernieuwd');
   };
 
+  // Export functions
+  const exportToCSV = () => {
+    const dateRangeStr = dateRange?.from && dateRange?.to 
+      ? `${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}`
+      : 'all-time';
+    
+    let csvContent = '';
+    
+    // Overview metrics
+    csvContent += 'OVERZICHT METRICS\n';
+    csvContent += 'Metric,Waarde\n';
+    csvContent += `Actieve Gebruikers,${overviewMetrics.activeUsers}\n`;
+    csvContent += `Paginaweergaven,${overviewMetrics.totalPageViews}\n`;
+    csvContent += `Gem. Sessieduur,${overviewMetrics.avgSessionDuration}\n`;
+    csvContent += `Bounce Rate,${overviewMetrics.bounceRate.toFixed(1)}%\n`;
+    csvContent += `Nieuwe Gebruikers,${overviewMetrics.newUsers}\n`;
+    csvContent += `Terugkerende Gebruikers,${overviewMetrics.returningUsers}\n`;
+    csvContent += '\n';
+    
+    // Traffic data
+    if (trafficData.length > 0) {
+      csvContent += 'VERKEER PER DAG\n';
+      csvContent += 'Datum,Gebruikers,Paginaweergaven,Sessies,Bounce Rate\n';
+      trafficData.forEach(row => {
+        csvContent += `${row.date},${row.users},${row.pageViews},${row.sessions},${(row.bounceRate * 100).toFixed(1)}%\n`;
+      });
+      csvContent += '\n';
+    }
+    
+    // Top pages
+    if (topPages.length > 0) {
+      csvContent += 'TOP PAGINAS\n';
+      csvContent += 'Pagina,Weergaven,Gem. Tijd\n';
+      topPages.forEach(page => {
+        csvContent += `"${page.page}",${page.views},${page.avgTime}\n`;
+      });
+      csvContent += '\n';
+    }
+    
+    // Device data
+    if (deviceData.length > 0) {
+      csvContent += 'APPARATEN\n';
+      csvContent += 'Type,Percentage\n';
+      deviceData.forEach(device => {
+        csvContent += `${device.name},${device.value}%\n`;
+      });
+      csvContent += '\n';
+    }
+    
+    // Country data
+    if (countryData.length > 0) {
+      csvContent += 'LANDEN\n';
+      csvContent += 'Land,Gebruikers\n';
+      countryData.forEach(country => {
+        csvContent += `${country.country},${country.users}\n`;
+      });
+      csvContent += '\n';
+    }
+    
+    // E-commerce data
+    if (ecommerceData.transactions > 0 || ecommerceData.revenue > 0) {
+      csvContent += 'E-COMMERCE\n';
+      csvContent += 'Metric,Waarde\n';
+      csvContent += `Transacties,${ecommerceData.transactions}\n`;
+      csvContent += `Omzet,€${ecommerceData.revenue.toFixed(2)}\n`;
+      csvContent += `Gem. Orderwaarde,€${ecommerceData.avgOrderValue.toFixed(2)}\n`;
+      csvContent += '\n';
+    }
+    
+    // Demographics
+    if (demographicsData.browsers.length > 0) {
+      csvContent += 'BROWSERS\n';
+      csvContent += 'Browser,Gebruikers,Sessies\n';
+      demographicsData.browsers.forEach(b => {
+        csvContent += `${b.name},${b.users},${b.sessions}\n`;
+      });
+      csvContent += '\n';
+    }
+    
+    if (demographicsData.trafficSources.length > 0) {
+      csvContent += 'TRAFFIC BRONNEN\n';
+      csvContent += 'Kanaal,Sessies,Gebruikers,Bounce Rate\n';
+      demographicsData.trafficSources.forEach(s => {
+        csvContent += `${s.channel},${s.sessions},${s.users},${s.bounceRate.toFixed(1)}%\n`;
+      });
+      csvContent += '\n';
+    }
+    
+    // Download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `analytics_rapport_${dateRangeStr}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    
+    toast.success('CSV rapport gedownload');
+  };
+
+  const exportToPDF = () => {
+    const dateRangeStr = dateRange?.from && dateRange?.to 
+      ? `${format(dateRange.from, 'd MMM yyyy', { locale: nl })} - ${format(dateRange.to, 'd MMM yyyy', { locale: nl })}`
+      : 'Alle data';
+    
+    // Create HTML content for PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Analytics Rapport</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; color: #1a1a1a; }
+          h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+          h2 { color: #334155; margin-top: 30px; font-size: 18px; }
+          .date-range { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+          .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
+          .metric-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; }
+          .metric-title { font-size: 12px; color: #64748b; margin-bottom: 5px; }
+          .metric-value { font-size: 24px; font-weight: bold; color: #0f172a; }
+          table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+          th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; }
+          th { background: #f8fafc; font-weight: 600; color: #334155; }
+          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 12px; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <h1>📊 Analytics Rapport</h1>
+        <p class="date-range">Periode: ${dateRangeStr}</p>
+        
+        <h2>Overzicht</h2>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-title">Actieve Gebruikers</div>
+            <div class="metric-value">${overviewMetrics.activeUsers.toLocaleString()}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Paginaweergaven</div>
+            <div class="metric-value">${overviewMetrics.totalPageViews.toLocaleString()}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Gem. Sessieduur</div>
+            <div class="metric-value">${overviewMetrics.avgSessionDuration}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Bounce Rate</div>
+            <div class="metric-value">${overviewMetrics.bounceRate.toFixed(1)}%</div>
+          </div>
+        </div>
+
+        ${topPages.length > 0 ? `
+        <h2>Top Pagina's</h2>
+        <table>
+          <tr><th>Pagina</th><th>Weergaven</th><th>Gem. Tijd</th></tr>
+          ${topPages.map(p => `<tr><td>${p.page}</td><td>${p.views.toLocaleString()}</td><td>${p.avgTime}</td></tr>`).join('')}
+        </table>
+        ` : ''}
+
+        ${deviceData.length > 0 ? `
+        <h2>Apparaten</h2>
+        <table>
+          <tr><th>Type</th><th>Percentage</th></tr>
+          ${deviceData.map(d => `<tr><td>${d.name}</td><td>${d.value}%</td></tr>`).join('')}
+        </table>
+        ` : ''}
+
+        ${countryData.length > 0 ? `
+        <h2>Landen</h2>
+        <table>
+          <tr><th>Land</th><th>Gebruikers</th></tr>
+          ${countryData.map(c => `<tr><td>${c.flag} ${c.country}</td><td>${c.users.toLocaleString()}</td></tr>`).join('')}
+        </table>
+        ` : ''}
+
+        ${ecommerceData.transactions > 0 || ecommerceData.revenue > 0 ? `
+        <h2>E-commerce</h2>
+        <div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr);">
+          <div class="metric-card">
+            <div class="metric-title">Transacties</div>
+            <div class="metric-value">${ecommerceData.transactions}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Omzet</div>
+            <div class="metric-value">€${ecommerceData.revenue.toFixed(2)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Gem. Orderwaarde</div>
+            <div class="metric-value">€${ecommerceData.avgOrderValue.toFixed(2)}</div>
+          </div>
+        </div>
+        ` : ''}
+
+        ${demographicsData.trafficSources.length > 0 ? `
+        <h2>Traffic Bronnen</h2>
+        <table>
+          <tr><th>Kanaal</th><th>Sessies</th><th>Gebruikers</th><th>Bounce Rate</th></tr>
+          ${demographicsData.trafficSources.slice(0, 5).map(s => `<tr><td>${s.channel}</td><td>${s.sessions.toLocaleString()}</td><td>${s.users.toLocaleString()}</td><td>${s.bounceRate.toFixed(1)}%</td></tr>`).join('')}
+        </table>
+        ` : ''}
+
+        <div class="footer">
+          Gegenereerd op ${format(new Date(), 'd MMMM yyyy HH:mm', { locale: nl })} | GetPawsy Analytics
+        </div>
+      </body>
+      </html>
+    `;
+    
+    // Open print dialog
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+      toast.success('PDF rapport wordt gegenereerd');
+    } else {
+      toast.error('Kon rapport niet openen. Controleer je pop-up blocker.');
+    }
+  };
+
   if (!isConfigured) {
     return (
       <Card className="border-dashed border-2">
@@ -810,6 +1042,25 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               Vergelijking
             </Button>
           </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Exporteren
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToCSV} className="flex items-center gap-2 cursor-pointer">
+                <FileSpreadsheet className="w-4 h-4" />
+                Exporteer als CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF} className="flex items-center gap-2 cursor-pointer">
+                <FileText className="w-4 h-4" />
+                Exporteer als PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Badge variant="outline" className="flex items-center gap-2">
             <Activity className="w-3 h-3 text-green-500 animate-pulse" />
