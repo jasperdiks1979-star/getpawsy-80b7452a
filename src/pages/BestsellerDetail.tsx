@@ -584,13 +584,13 @@ const BestsellerDetail = () => {
                     <ZoomIn className="w-5 h-5" />
                   </motion.div>
 
-                  {/* Navigation Arrows - Desktop */}
+                  {/* Navigation Arrows - Always visible */}
                   {images.length > 1 && (
                     <>
                       <Button
                         variant="secondary"
                         size="icon"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-20"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 transition-all duration-300 rounded-full shadow-lg bg-background/95 backdrop-blur-sm hover:bg-background hover:scale-110 z-20 border border-border/50"
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePrevImage();
@@ -601,7 +601,7 @@ const BestsellerDetail = () => {
                       <Button
                         variant="secondary"
                         size="icon"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-20"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-300 rounded-full shadow-lg bg-background/95 backdrop-blur-sm hover:bg-background hover:scale-110 z-20 border border-border/50"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleNextImage();
