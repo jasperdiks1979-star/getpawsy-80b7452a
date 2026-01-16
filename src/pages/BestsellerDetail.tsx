@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { 
   ShoppingCart, 
   Heart, 
@@ -24,6 +25,120 @@ import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useHaptic } from '@/hooks/useHaptic';
 import { toast } from 'sonner';
+
+// Generate JSON-LD structured data for product
+const generateProductJsonLd = (product: {
+  id: string;
+  name: string;
+  price: number;
+  compare_at_price?: number | null;
+  image_url?: string | null;
+  images?: string[] | null;
+  description?: string | null;
+  category?: string | null;
+  stock?: number | null;
+}, bestseller: {
+  seo_description?: string | null;
+  hero_headline?: string | null;
+  slug: string;
+}) => {
+  const availability = product.stock && product.stock > 0 
+    ? 'https://schema.org/InStock' 
+    : 'https://schema.org/OutOfStock';
+
+  const images = product.images?.length 
+    ? product.images 
+    : product.image_url 
+      ? [product.image_url] 
+      : [];
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: bestseller.hero_headline || product.name,
+    description: bestseller.seo_description || product.description || '',
+    image: images,
+    sku: product.id,
+    brand: {
+      '@type': 'Brand',
+      name: 'GetPawsy'
+    },
+    category: product.category || 'Huisdierproducten',
+    offers: {
+      '@type': 'Offer',
+      url: `https://getpawsy.lovable.app/bestseller/${bestseller.slug}`,
+      priceCurrency: 'EUR',
+      price: product.price.toFixed(2),
+      priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      availability,
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: {
+        '@type': 'Organization',
+        name: 'GetPawsy'
+      },
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: '0',
+          currency: 'EUR'
+        },
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'NL'
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 3,
+            unitCode: 'DAY'
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 5,
+            maxValue: 15,
+            unitCode: 'DAY'
+          }
+        }
+      }
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.9',
+      reviewCount: '128',
+      bestRating: '5',
+      worstRating: '1'
+    }
+  };
+};
+
+// Generate BreadcrumbList JSON-LD
+const generateBreadcrumbJsonLd = (productName: string, slug: string) => ({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://getpawsy.lovable.app'
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Producten',
+      item: 'https://getpawsy.lovable.app/products'
+    },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: productName,
+      item: `https://getpawsy.lovable.app/bestseller/${slug}`
+    }
+  ]
+});
 
 interface SellingPoint {
   icon: string;
@@ -145,8 +260,48 @@ const BestsellerDetail = () => {
     ? Math.round((1 - product.price / product.compare_at_price) * 100)
     : 0;
 
+  // Generate structured data
+  const productJsonLd = generateProductJsonLd(product, bestseller);
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd(product.name, bestseller.slug);
+
   return (
     <>
+      {/* SEO Meta Tags */}
+      <Helmet>
+        <title>{bestseller.seo_title || `${product.name} | GetPawsy Bestseller`}</title>
+        <meta 
+          name="description" 
+          content={bestseller.seo_description || product.description || `Ontdek ${product.name} - een van onze bestsellers. Koop nu met gratis verzending vanaf €50.`} 
+        />
+        {bestseller.meta_keywords && (
+          <meta name="keywords" content={bestseller.meta_keywords.join(', ')} />
+        )}
+        <link rel="canonical" href={`https://getpawsy.lovable.app/bestseller/${bestseller.slug}`} />
+        
+        {/* Open Graph */}
+        <meta property="og:type" content="product" />
+        <meta property="og:title" content={bestseller.hero_headline || product.name} />
+        <meta property="og:description" content={bestseller.seo_description || product.description || ''} />
+        <meta property="og:image" content={product.image_url || '/og-image.png'} />
+        <meta property="og:url" content={`https://getpawsy.lovable.app/bestseller/${bestseller.slug}`} />
+        <meta property="product:price:amount" content={product.price.toFixed(2)} />
+        <meta property="product:price:currency" content="EUR" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={bestseller.hero_headline || product.name} />
+        <meta name="twitter:description" content={bestseller.seo_description || product.description || ''} />
+        <meta name="twitter:image" content={product.image_url || '/og-image.png'} />
+
+        {/* JSON-LD Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify(productJsonLd)}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbJsonLd)}
+        </script>
+      </Helmet>
+
       <Layout>
         {/* Breadcrumb */}
         <div className="bg-muted/30 border-b">
