@@ -788,63 +788,54 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="sales" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-11 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="sales" className="flex items-center gap-2">
-              <Euro className="w-4 h-4" />
-              <span className="hidden sm:inline">Verkoop</span>
-              <span className="sm:hidden">€</span>
-            </TabsTrigger>
-            <TabsTrigger value="catalog" className="flex items-center gap-2">
-              <PawPrint className="w-4 h-4" />
-              <span className="hidden sm:inline">Pet Catalog</span>
-              <span className="sm:hidden">Catalog</span>
-            </TabsTrigger>
-            <TabsTrigger value="search" className="flex items-center gap-2">
-              <Search className="w-4 h-4" />
-              <span className="hidden sm:inline">Search</span>
-              <span className="sm:hidden">Zoek</span>
-            </TabsTrigger>
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              <span className="hidden sm:inline">My Products</span>
-              <span className="sm:hidden">Products</span>
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4" />
-              <span className="hidden sm:inline">Bestellingen</span>
-              <span className="sm:hidden">Orders</span>
-            </TabsTrigger>
-            <TabsTrigger value="newsletter" className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              <span className="hidden sm:inline">Nieuwsbrief</span>
-              <span className="sm:hidden">Mail</span>
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center gap-2">
-              <FolderTree className="w-4 h-4" />
-              <span className="hidden sm:inline">Categorieën</span>
-              <span className="sm:hidden">Cat.</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              <span className="hidden sm:inline">Analytics</span>
-              <span className="sm:hidden">Stats</span>
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" />
-              <span className="hidden sm:inline">Berichten</span>
-              <span className="sm:hidden">Msg</span>
-            </TabsTrigger>
-            <TabsTrigger value="google-ads" className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Google Ads</span>
-              <span className="sm:hidden">Ads</span>
-            </TabsTrigger>
-            <TabsTrigger value="visitor-map" className="flex items-center gap-2">
-              <Globe className="w-4 h-4" />
-              <span className="hidden sm:inline">Bezoekers</span>
-              <span className="sm:hidden">Map</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 pb-2">
+            <TabsList className="inline-flex w-max gap-1 p-1">
+              <TabsTrigger value="sales" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Euro className="w-4 h-4 shrink-0" />
+                <span>Verkoop</span>
+              </TabsTrigger>
+              <TabsTrigger value="catalog" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <PawPrint className="w-4 h-4 shrink-0" />
+                <span>Catalog</span>
+              </TabsTrigger>
+              <TabsTrigger value="search" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Search className="w-4 h-4 shrink-0" />
+                <span>Zoeken</span>
+              </TabsTrigger>
+              <TabsTrigger value="products" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Package className="w-4 h-4 shrink-0" />
+                <span>Products</span>
+              </TabsTrigger>
+              <TabsTrigger value="orders" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <ShoppingCart className="w-4 h-4 shrink-0" />
+                <span>Orders</span>
+              </TabsTrigger>
+              <TabsTrigger value="newsletter" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Mail className="w-4 h-4 shrink-0" />
+                <span>Mail</span>
+              </TabsTrigger>
+              <TabsTrigger value="categories" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <FolderTree className="w-4 h-4 shrink-0" />
+                <span>Cat.</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <BarChart3 className="w-4 h-4 shrink-0" />
+                <span>Stats</span>
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <MessageSquare className="w-4 h-4 shrink-0" />
+                <span>Msg</span>
+              </TabsTrigger>
+              <TabsTrigger value="google-ads" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <span>Ads</span>
+              </TabsTrigger>
+              <TabsTrigger value="visitor-map" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Globe className="w-4 h-4 shrink-0" />
+                <span>Map</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Sales Dashboard Tab */}
           <TabsContent value="sales" className="space-y-6">
