@@ -20,7 +20,7 @@ import { BestsellerManager } from "@/components/admin/BestsellerManager";
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard").then(module => ({ default: module.AnalyticsDashboard })));
 const SalesDashboard = lazy(() => import("@/components/admin/SalesDashboard").then(module => ({ default: module.SalesDashboard })));
 const GoogleAdsGenerator = lazy(() => import("@/components/admin/GoogleAdsGenerator").then(module => ({ default: module.GoogleAdsGenerator })));
-const VisitorWorldMap = lazy(() => import("@/components/admin/VisitorWorldMap").then(module => ({ default: module.VisitorWorldMap }));
+const VisitorWorldMap = lazy(() => import("@/components/admin/VisitorWorldMap").then(module => ({ default: module.VisitorWorldMap })));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -834,6 +834,10 @@ const Admin = () => {
               <TabsTrigger value="google-ads" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
                 <Sparkles className="w-4 h-4 shrink-0" />
                 <span>Ads</span>
+              </TabsTrigger>
+              <TabsTrigger value="bestsellers" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <span>Best</span>
               </TabsTrigger>
               <TabsTrigger value="visitor-map" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
                 <Globe className="w-4 h-4 shrink-0" />
@@ -1670,6 +1674,13 @@ const Admin = () => {
               }>
                 <GoogleAdsGenerator />
               </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Bestsellers Management Tab */}
+          <TabsContent value="bestsellers">
+            <AuthErrorBoundary>
+              <BestsellerManager />
             </AuthErrorBoundary>
           </TabsContent>
 
