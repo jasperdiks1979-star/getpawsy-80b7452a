@@ -330,6 +330,132 @@ serve(async (req) => {
         transactions,
         topProducts
       };
+    } else if (reportType === 'demographics') {
+      // Demographics and acquisition data
+      const [browsers, operatingSystems, trafficSources, cities, ageGender, landingPages] = await Promise.all([
+        // Browser breakdown
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dimensions: [{ name: 'browser' }],
+          metrics: [{ name: 'activeUsers' }, { name: 'sessions' }],
+          orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
+          limit: 10
+        }),
+        // Operating systems
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dimensions: [{ name: 'operatingSystem' }],
+          metrics: [{ name: 'activeUsers' }],
+          orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
+          limit: 10
+        }),
+        // Traffic sources/channels
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'activeUsers' },
+            { name: 'bounceRate' },
+            { name: 'averageSessionDuration' }
+          ],
+          orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+          limit: 10
+        }),
+        // Cities
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dimensions: [{ name: 'city' }],
+          metrics: [{ name: 'activeUsers' }],
+          orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
+          limit: 10
+        }),
+        // Age and gender (if available)
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+          dimensions: [{ name: 'userAgeBracket' }],
+          metrics: [{ name: 'activeUsers' }],
+          orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }]
+        }).catch(() => ({ rows: [] })), // May not be available
+        // Top landing pages with engagement
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dimensions: [{ name: 'landingPage' }],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'bounceRate' },
+            { name: 'averageSessionDuration' },
+            { name: 'conversions' }
+          ],
+          orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+          limit: 10
+        }).catch(() => ({ rows: [] }))
+      ]);
+
+      result = {
+        browsers,
+        operatingSystems,
+        trafficSources,
+        cities,
+        ageGender,
+        landingPages
+      };
+    } else if (reportType === 'conversions') {
+      // Conversion and funnel data
+      const [conversionEvents, purchaseFunnel, revenueByDate, conversionsBySource] = await Promise.all([
+        // All conversion events
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dimensions: [{ name: 'eventName' }],
+          metrics: [
+            { name: 'eventCount' },
+            { name: 'totalUsers' }
+          ],
+          orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+          limit: 15
+        }),
+        // Purchase funnel metrics
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'addToCarts' },
+            { name: 'checkouts' },
+            { name: 'ecommercePurchases' },
+            { name: 'totalRevenue' }
+          ]
+        }).catch(() => ({ rows: [] })),
+        // Revenue over time
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dimensions: [{ name: 'date' }],
+          metrics: [
+            { name: 'totalRevenue' },
+            { name: 'ecommercePurchases' },
+            { name: 'transactions' }
+          ],
+          orderBys: [{ dimension: { dimensionName: 'date' } }]
+        }),
+        // Conversions by traffic source
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+          dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'ecommercePurchases' },
+            { name: 'totalRevenue' }
+          ],
+          orderBys: [{ metric: { metricName: 'totalRevenue' }, desc: true }],
+          limit: 10
+        }).catch(() => ({ rows: [] }))
+      ]);
+
+      result = {
+        conversionEvents,
+        purchaseFunnel,
+        revenueByDate,
+        conversionsBySource
+      };
     }
 
     console.log('Successfully fetched GA4 data');
