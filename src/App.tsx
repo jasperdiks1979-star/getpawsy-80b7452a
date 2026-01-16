@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,30 +10,45 @@ import { CartAnimationProvider } from "@/contexts/CartAnimationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { Loader2 } from "lucide-react";
+
+// Critical routes - loaded immediately
 import Index from "./pages/Index";
-import Products from "./pages/Products";
-import ProductDetail from "./pages/ProductDetail";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import Admin from "./pages/Admin";
-import Auth from "./pages/Auth";
-import Wishlist from "./pages/Wishlist";
-import Profile from "./pages/Profile";
-import Install from "./pages/Install";
-import Orders from "./pages/Orders";
-import About from "./pages/About";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import ReturnPolicy from "./pages/ReturnPolicy";
-import CookiePolicy from "./pages/CookiePolicy";
-import Contact from "./pages/Contact";
-import Shipping from "./pages/Shipping";
-import FAQ from "./pages/FAQ";
-import TrackOrder from "./pages/TrackOrder";
 import NotFound from "./pages/NotFound";
 
+// Lazy load heavy route components to improve initial load time
+const Products = lazy(() => import("./pages/Products"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Wishlist = lazy(() => import("./pages/Wishlist"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Orders = lazy(() => import("./pages/Orders"));
+const Install = lazy(() => import("./pages/Install"));
+const About = lazy(() => import("./pages/About"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const ReturnPolicy = lazy(() => import("./pages/ReturnPolicy"));
+const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Shipping = lazy(() => import("./pages/Shipping"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const TrackOrder = lazy(() => import("./pages/TrackOrder"));
+
 const queryClient = new QueryClient();
+
+// Route loading fallback component
+const RouteLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="flex items-center gap-3 text-muted-foreground">
+      <Loader2 className="h-6 w-6 animate-spin" />
+      <span>Laden...</span>
+    </div>
+  </div>
+);
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -60,31 +75,33 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/product/:id" element={<ProductDetail />} />
-                    <Route path="/cart" element={<Cart />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/payment-success" element={<PaymentSuccess />} />
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/wishlist" element={<Wishlist />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/orders" element={<Orders />} />
-                    <Route path="/install" element={<Install />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/privacy" element={<PrivacyPolicy />} />
-                    <Route path="/terms" element={<TermsOfService />} />
-                    <Route path="/returns" element={<ReturnPolicy />} />
-                    <Route path="/cookies" element={<CookiePolicy />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/shipping" element={<Shipping />} />
-                    <Route path="/faq" element={<FAQ />} />
-                    <Route path="/track" element={<TrackOrder />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                  <Suspense fallback={<RouteLoader />}>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/products" element={<Products />} />
+                      <Route path="/product/:id" element={<ProductDetail />} />
+                      <Route path="/cart" element={<Cart />} />
+                      <Route path="/checkout" element={<Checkout />} />
+                      <Route path="/payment-success" element={<PaymentSuccess />} />
+                      <Route path="/admin" element={<Admin />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/wishlist" element={<Wishlist />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/orders" element={<Orders />} />
+                      <Route path="/install" element={<Install />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/privacy" element={<PrivacyPolicy />} />
+                      <Route path="/terms" element={<TermsOfService />} />
+                      <Route path="/returns" element={<ReturnPolicy />} />
+                      <Route path="/cookies" element={<CookiePolicy />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/shipping" element={<Shipping />} />
+                      <Route path="/faq" element={<FAQ />} />
+                      <Route path="/track" element={<TrackOrder />} />
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
                 </BrowserRouter>
               </WishlistProvider>
             </CartAnimationProvider>
