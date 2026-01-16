@@ -63,7 +63,7 @@ const generateProductJsonLd = (product: {
       '@type': 'Brand',
       name: 'GetPawsy'
     },
-    category: product.category || 'Huisdierproducten',
+    category: product.category || 'Pet Products',
     offers: {
       '@type': 'Offer',
       url: `https://getpawsy.lovable.app/bestseller/${bestseller.slug}`,
@@ -218,8 +218,8 @@ const BestsellerDetail = () => {
     toggleWishlist(product.id);
     toast.success(
       isInWishlist(product.id) 
-        ? 'Verwijderd uit verlanglijst' 
-        : 'Toegevoegd aan verlanglijst'
+        ? 'Removed from wishlist' 
+        : 'Added to wishlist'
     );
   };
 
@@ -247,9 +247,9 @@ const BestsellerDetail = () => {
     return (
       <Layout>
         <div className="container px-4 py-20 text-center">
-          <h1 className="text-2xl font-bold mb-4">Product niet gevonden</h1>
+          <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
           <Button onClick={() => navigate('/products')}>
-            Bekijk alle producten
+            View All Products
           </Button>
         </div>
       </Layout>
@@ -271,7 +271,7 @@ const BestsellerDetail = () => {
         <title>{bestseller.seo_title || `${product.name} | GetPawsy Bestseller`}</title>
         <meta 
           name="description" 
-          content={bestseller.seo_description || product.description || `Ontdek ${product.name} - een van onze bestsellers. Koop nu met gratis verzending vanaf €50.`} 
+          content={bestseller.seo_description || product.description || `Discover ${product.name} - one of our bestsellers. Buy now with free shipping on orders over €50.`}
         />
         {bestseller.meta_keywords && (
           <meta name="keywords" content={bestseller.meta_keywords.join(', ')} />
@@ -309,7 +309,7 @@ const BestsellerDetail = () => {
             <nav className="flex items-center gap-2 text-sm text-muted-foreground">
               <Link to="/" className="hover:text-primary transition-colors">Home</Link>
               <ChevronRight className="w-4 h-4" />
-              <Link to="/products" className="hover:text-primary transition-colors">Producten</Link>
+              <Link to="/products" className="hover:text-primary transition-colors">Products</Link>
               <ChevronRight className="w-4 h-4" />
               <span className="text-foreground font-medium truncate">{product.name}</span>
             </nav>
@@ -419,18 +419,18 @@ const BestsellerDetail = () => {
 
                 {/* Stock Status */}
                 <div className="flex items-center gap-2">
-                  {product.stock && product.stock > 0 ? (
+                {product.stock && product.stock > 0 ? (
                     <>
                       <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
                       <span className="text-sm text-green-600 font-medium">
-                        Op voorraad - Direct leverbaar
+                        In Stock - Ready to Ship
                       </span>
                     </>
                   ) : (
                     <>
                       <div className="w-3 h-3 rounded-full bg-red-500" />
                       <span className="text-sm text-red-600 font-medium">
-                        Uitverkocht
+                        Out of Stock
                       </span>
                     </>
                   )}
@@ -440,7 +440,7 @@ const BestsellerDetail = () => {
                 {product.shipping_time && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Truck className="w-4 h-4" />
-                    <span>Levertijd: {product.shipping_time}</span>
+                    <span>Delivery Time: {product.shipping_time}</span>
                   </div>
                 )}
 
@@ -455,7 +455,7 @@ const BestsellerDetail = () => {
                     disabled={!product.stock || product.stock <= 0}
                   >
                     <ShoppingCart className="w-5 h-5" />
-                    In winkelwagen
+                    Add to Cart
                   </Button>
                   <Button 
                     size="lg" 
@@ -474,15 +474,15 @@ const BestsellerDetail = () => {
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
                     <Truck className="w-5 h-5 text-primary" />
                     <div className="text-sm">
-                      <p className="font-medium">Gratis verzending</p>
-                      <p className="text-muted-foreground">Vanaf €50</p>
+                      <p className="font-medium">Free Shipping</p>
+                      <p className="text-muted-foreground">On orders over €50</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
                     <Shield className="w-5 h-5 text-primary" />
                     <div className="text-sm">
-                      <p className="font-medium">30 dagen retour</p>
-                      <p className="text-muted-foreground">Niet goed? Geld terug</p>
+                      <p className="font-medium">30-Day Returns</p>
+                      <p className="text-muted-foreground">Not satisfied? Money back</p>
                     </div>
                   </div>
                 </div>
@@ -496,7 +496,7 @@ const BestsellerDetail = () => {
           <section className="py-16 bg-muted/30">
             <div className="container px-4">
               <h2 className="text-2xl lg:text-3xl font-bold text-center mb-12">
-                Waarom dit product?
+                Why Choose This Product?
               </h2>
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {sellingPoints.map((point, idx) => {
@@ -529,7 +529,7 @@ const BestsellerDetail = () => {
             <div className="container px-4">
               <div className="max-w-4xl mx-auto">
                 <h2 className="text-2xl lg:text-3xl font-bold mb-8">
-                  Over dit product
+                  About This Product
                 </h2>
                 <div 
                   className="prose prose-lg max-w-none text-muted-foreground leading-relaxed"
@@ -550,11 +550,11 @@ const BestsellerDetail = () => {
             >
               <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
               <h2 className="text-2xl lg:text-3xl font-bold mb-4">
-                Klaar om je huisdier te verwennen?
+                Ready to Treat Your Pet?
               </h2>
               <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-                Bestel nu en geef je trouwe viervoeter de verzorging die hij verdient. 
-                Gratis verzending vanaf €50.
+                Order now and give your loyal companion the care they deserve. 
+                Free shipping on orders over €50.
               </p>
               <Button 
                 size="lg" 
@@ -563,7 +563,7 @@ const BestsellerDetail = () => {
                 disabled={!product.stock || product.stock <= 0}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Bestel nu - €{product.price.toFixed(2)}
+                Order Now - €{product.price.toFixed(2)}
               </Button>
             </motion.div>
           </div>
@@ -577,7 +577,7 @@ const BestsellerDetail = () => {
             className="gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            Terug naar alle producten
+            Back to All Products
           </Button>
         </div>
       </Layout>
