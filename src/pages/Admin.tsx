@@ -13,11 +13,12 @@ import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
 import { CategoryManager } from "@/components/admin/CategoryManager";
 import { OrdersManager } from "@/components/admin/OrdersManager";
-import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { ContactMessagesManager } from "@/components/admin/ContactMessagesManager";
-import { SalesDashboard } from "@/components/admin/SalesDashboard";
-import { GoogleAdsGenerator } from "@/components/admin/GoogleAdsGenerator";
-// Lazy load VisitorWorldMap to avoid loading mapbox-gl until needed
+
+// Lazy load heavy admin components to improve initial load time
+const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard").then(module => ({ default: module.AnalyticsDashboard })));
+const SalesDashboard = lazy(() => import("@/components/admin/SalesDashboard").then(module => ({ default: module.SalesDashboard })));
+const GoogleAdsGenerator = lazy(() => import("@/components/admin/GoogleAdsGenerator").then(module => ({ default: module.GoogleAdsGenerator })));
 const VisitorWorldMap = lazy(() => import("@/components/admin/VisitorWorldMap").then(module => ({ default: module.VisitorWorldMap })));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1622,7 +1623,16 @@ const Admin = () => {
           {/* Analytics Tab */}
           <TabsContent value="analytics">
             <AuthErrorBoundary>
-              <AnalyticsDashboard isConfigured={true} />
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex items-center justify-center gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span>Analytics laden...</span>
+                  </div>
+                </Card>
+              }>
+                <AnalyticsDashboard isConfigured={true} />
+              </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
 
@@ -1633,10 +1643,35 @@ const Admin = () => {
             </AuthErrorBoundary>
           </TabsContent>
 
+          {/* Sales Dashboard Tab - Lazy loaded */}
+          <TabsContent value="sales">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex items-center justify-center gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span>Verkoop dashboard laden...</span>
+                  </div>
+                </Card>
+              }>
+                <SalesDashboard />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
           {/* Google Ads Generator Tab */}
           <TabsContent value="google-ads">
             <AuthErrorBoundary>
-              <GoogleAdsGenerator />
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex items-center justify-center gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span>Google Ads generator laden...</span>
+                  </div>
+                </Card>
+              }>
+                <GoogleAdsGenerator />
+              </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
 
