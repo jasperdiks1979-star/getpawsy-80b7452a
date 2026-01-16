@@ -332,6 +332,9 @@ export const VisitorWorldMap = () => {
           zoom: 1.5,
           center: [10, 30],
           pitch: 20,
+          dragRotate: true,
+          touchZoomRotate: true,
+          touchPitch: true,
         });
 
         map.current.addControl(
@@ -341,8 +344,12 @@ export const VisitorWorldMap = () => {
           "top-right"
         );
 
-        // Enable scroll zoom for better user experience
+        // Enable all touch and scroll interactions for mobile
         map.current.scrollZoom.enable();
+        map.current.dragPan.enable();
+        map.current.dragRotate.enable();
+        map.current.touchZoomRotate.enable();
+        map.current.touchPitch.enable();
 
         map.current.on("style.load", () => {
           map.current?.setFog({
@@ -352,29 +359,6 @@ export const VisitorWorldMap = () => {
           });
           setMapLoaded(true);
         });
-
-        // Slow rotation animation
-        const secondsPerRevolution = 360;
-        let userInteracting = false;
-
-        function spinGlobe() {
-          if (!map.current) return;
-          const zoom = map.current.getZoom();
-          if (!userInteracting && zoom < 3) {
-            const distancePerSecond = 360 / secondsPerRevolution;
-            const center = map.current.getCenter();
-            center.lng -= distancePerSecond;
-            map.current.easeTo({ center, duration: 1000, easing: (n) => n });
-          }
-        }
-
-        map.current.on("mousedown", () => { userInteracting = true; });
-        map.current.on("dragstart", () => { userInteracting = true; });
-        map.current.on("mouseup", () => { userInteracting = false; spinGlobe(); });
-        map.current.on("touchend", () => { userInteracting = false; spinGlobe(); });
-        map.current.on("moveend", spinGlobe);
-
-        spinGlobe();
       } catch (err) {
         console.error("Map initialization error:", err);
         setMapError("Fout bij het laden van de kaart.");
