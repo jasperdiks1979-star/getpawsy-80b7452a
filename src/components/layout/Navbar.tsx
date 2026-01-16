@@ -241,7 +241,7 @@ export const Navbar = () => {
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
                       <User className="h-4 w-4" />
-                      Mijn Profiel
+                      My Profile
                     </Link>
                   </DropdownMenuItem>
                   {isAdmin && (
@@ -289,7 +289,7 @@ export const Navbar = () => {
                   <div className="p-4 border-b">
                     <EnhancedSearch
                       variant="navbar"
-                      placeholder="Zoek producten..."
+                      placeholder="Search products..."
                       onClose={() => setIsMobileMenuOpen(false)}
                     />
                   </div>
@@ -372,7 +372,7 @@ export const Navbar = () => {
                           <Link to="/profile" className="block">
                             <Button variant="outline" className="w-full justify-start gap-2 rounded-xl">
                               <User className="h-4 w-4" />
-                              Mijn Profiel
+                              My Profile
                             </Button>
                           </Link>
                         </SheetClose>
@@ -424,7 +424,7 @@ export const Navbar = () => {
               <div className="relative max-w-2xl mx-auto">
                 <EnhancedSearch
                   variant="default"
-                  placeholder="Waar ben je naar op zoek?"
+                  placeholder="What are you looking for?"
                   autoFocus
                   onClose={handleCloseSearch}
                 />

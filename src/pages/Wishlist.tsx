@@ -207,7 +207,7 @@ const Wishlist = () => {
             <Filter className="w-4 h-4 text-muted-foreground" />
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Alle categorieën" />
+                <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
@@ -230,7 +230,7 @@ const Wishlist = () => {
             <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Sorteer op" />
+                <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="added-desc">Recently Added</SelectItem>

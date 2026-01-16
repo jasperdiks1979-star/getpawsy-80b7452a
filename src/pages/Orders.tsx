@@ -10,7 +10,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { Package, ChevronRight, ShoppingBag, Loader2, Truck, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
-import { nl } from "date-fns/locale";
 
 interface OrderItem {
   id: string;
@@ -71,15 +70,15 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "In afwachting",
-  paid: "Betaald",
-  processing: "In behandeling",
-  shipped: "Verzonden",
-  delivered: "Geleverd",
-  cancelled: "Geannuleerd",
-  refunded: "Terugbetaald",
-  failed: "Mislukt",
-  expired: "Verlopen",
+  pending: "Pending",
+  paid: "Paid",
+  processing: "Processing",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  refunded: "Refunded",
+  failed: "Failed",
+  expired: "Expired",
 };
 
 const Orders = () => {
@@ -114,7 +113,7 @@ const Orders = () => {
   });
 
   const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat("nl-NL", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: currency.toUpperCase(),
     }).format(amount);
@@ -140,14 +139,14 @@ const Orders = () => {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Mijn Bestellingen</h1>
+              <h1 className="text-3xl font-bold text-foreground">My Orders</h1>
               <p className="text-muted-foreground mt-1">
-                Bekijk je eerdere bestellingen en hun status
+                View your previous orders and their status
               </p>
             </div>
             <Badge variant="secondary" className="text-lg px-4 py-2">
               <Package className="w-4 h-4 mr-2" />
-              {orders?.length || 0} bestellingen
+              {orders?.length || 0} orders
             </Badge>
           </div>
 
@@ -184,7 +183,7 @@ const Orders = () => {
                             </span>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(order.created_at), "d MMMM yyyy 'om' HH:mm", { locale: nl })}
+                            {format(new Date(order.created_at), "MMMM d, yyyy 'at' h:mm a")}
                           </p>
                         </div>
                         <div className="flex items-center gap-3">
@@ -237,7 +236,7 @@ const Orders = () => {
                             {order.items.map((item) => item.name).join(", ")}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {order.items.reduce((sum, item) => sum + item.quantity, 0)} artikel(en)
+                            {order.items.reduce((sum, item) => sum + item.quantity, 0)} item(s)
                           </p>
                         </div>
                       </div>
@@ -253,9 +252,9 @@ const Orders = () => {
                           >
                             <Truck className="w-5 h-5 text-primary" />
                             <div className="flex-1">
-                              <p className="text-sm font-medium">Volg je zending</p>
+                              <p className="text-sm font-medium">Track your shipment</p>
                               <p className="text-xs text-muted-foreground">
-                                {CARRIER_LABELS[order.tracking_carrier || "postnl"]} • {order.tracking_number}
+                                {CARRIER_LABELS[order.tracking_carrier || "usps"]} • {order.tracking_number}
                               </p>
                             </div>
                             <ExternalLink className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -267,7 +266,7 @@ const Orders = () => {
                       {!order.tracking_number && order.shipping_address && order.shipping_address.city && (
                         <div className="mt-4 pt-4 border-t">
                           <p className="text-sm text-muted-foreground">
-                            Verzonden naar: {order.shipping_address.city}, {order.shipping_address.country}
+                            Shipped to: {order.shipping_address.city}, {order.shipping_address.country}
                           </p>
                         </div>
                       )}
@@ -280,13 +279,13 @@ const Orders = () => {
             <Card>
               <CardContent className="py-16 text-center">
                 <ShoppingBag className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h2 className="text-xl font-semibold mb-2">Nog geen bestellingen</h2>
+                <h2 className="text-xl font-semibold mb-2">No orders yet</h2>
                 <p className="text-muted-foreground mb-6">
-                  Je hebt nog geen bestellingen geplaatst. Ontdek onze producten!
+                  You haven't placed any orders yet. Discover our products!
                 </p>
                 <Button asChild>
                   <Link to="/products">
-                    Bekijk Producten
+                    Browse Products
                     <ChevronRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>

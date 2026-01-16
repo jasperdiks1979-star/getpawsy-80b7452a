@@ -47,13 +47,13 @@ export const ScrollToTop = () => {
             isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none',
             shouldPulse && 'animate-bounce'
           )}
-          aria-label="Scroll naar boven"
+          aria-label="Scroll to top"
         >
           <ArrowUp className="h-6 w-6 md:h-5 md:w-5" />
         </Button>
       </TooltipTrigger>
       <TooltipContent side="left">
-        <p>Terug naar boven</p>
+        <p>Back to top</p>
       </TooltipContent>
     </Tooltip>
   );

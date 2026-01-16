@@ -14,10 +14,10 @@ import { EnhancedSearch } from '@/components/search/EnhancedSearch';
 import { supabase } from '@/integrations/supabase/client';
 
 const sortOptions = [
-  { value: 'newest', label: 'Nieuwste' },
-  { value: 'price-asc', label: 'Prijs: Laag naar Hoog' },
-  { value: 'price-desc', label: 'Prijs: Hoog naar Laag' },
-  { value: 'name', label: 'Naam: A-Z' },
+  { value: 'newest', label: 'Newest' },
+  { value: 'price-asc', label: 'Price: Low to High' },
+  { value: 'price-desc', label: 'Price: High to Low' },
+  { value: 'name', label: 'Name: A-Z' },
 ];
 
 const Products = () => {
@@ -159,7 +159,7 @@ const Products = () => {
     <div className="space-y-6">
       {/* Price Range */}
       <div>
-        <h3 className="font-semibold mb-3">Prijsbereik</h3>
+        <h3 className="font-semibold mb-3">Price Range</h3>
         <div className="px-2">
           <Slider
             value={priceRange}
@@ -179,7 +179,7 @@ const Products = () => {
 
       {/* Categories */}
       <div>
-        <h3 className="font-semibold mb-3">Categorieën</h3>
+        <h3 className="font-semibold mb-3">Categories</h3>
         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
           {categories?.map((category) => (
             <label
@@ -201,7 +201,7 @@ const Products = () => {
         className="w-full"
         onClick={clearAllFilters}
       >
-        Filters wissen
+        Clear Filters
       </Button>
     </div>
   );
@@ -214,10 +214,10 @@ const Products = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            {categoryParam || (searchQuery ? `Zoeken: "${searchQuery}"` : 'Alle Producten')}
+            {categoryParam || (searchQuery ? `Search: "${searchQuery}"` : 'All Products')}
           </h1>
           <p className="text-muted-foreground">
-            {filteredProducts.length} product{filteredProducts.length !== 1 ? 'en' : ''} gevonden
+            {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
           </p>
         </div>
 
@@ -226,7 +226,7 @@ const Products = () => {
           <div className="flex flex-wrap gap-2 mb-6">
             {searchQuery && (
               <Badge variant="secondary" className="gap-1">
-                Zoeken: {searchQuery}
+                Search: {searchQuery}
                 <X 
                   className="w-3 h-3 cursor-pointer" 
                   onClick={() => {
@@ -260,7 +260,7 @@ const Products = () => {
               className="h-6 text-xs"
               onClick={clearAllFilters}
             >
-              Alles wissen
+              Clear All
             </Button>
           </div>
         )}
@@ -313,14 +313,14 @@ const Products = () => {
               <div className="flex-1 max-w-md">
                 <EnhancedSearch
                   variant="navbar"
-                  placeholder="Zoek in producten..."
+                  placeholder="Search products..."
                 />
               </div>
 
               {/* Sort */}
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sorteren op" />
+                  <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
                   {sortOptions.map((option) => (
@@ -353,15 +353,15 @@ const Products = () => {
               <div className="text-center py-12">
                 <p className="text-lg text-muted-foreground mb-4">
                   {products?.length === 0 
-                    ? 'Nog geen producten. Importeer producten via de admin pagina.'
-                    : 'Geen producten gevonden met deze filters'}
+                    ? 'No products yet. Import products via the admin page.'
+                    : 'No products found with these filters'}
                 </p>
                 {products && products.length > 0 && (
                   <Button
                     variant="outline"
                     onClick={clearAllFilters}
                   >
-                    Alle filters wissen
+                    Clear All Filters
                   </Button>
                 )}
               </div>

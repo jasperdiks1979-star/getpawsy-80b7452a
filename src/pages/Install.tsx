@@ -61,18 +61,18 @@ const Install = () => {
   const features = [
     {
       icon: Zap,
-      title: 'Snelle toegang',
-      description: 'Start de app direct vanaf je startscherm',
+      title: 'Quick Access',
+      description: 'Launch the app directly from your home screen',
     },
     {
       icon: Wifi,
-      title: 'Werkt offline',
-      description: 'Bekijk producten zelfs zonder internet',
+      title: 'Works Offline',
+      description: 'Browse products even without internet',
     },
     {
       icon: Bell,
-      title: 'Meldingen',
-      description: 'Ontvang updates over aanbiedingen',
+      title: 'Notifications',
+      description: 'Get updates about deals and offers',
     },
   ];
 
@@ -105,7 +105,7 @@ const Install = () => {
             transition={{ delay: 0.2 }}
             className="text-3xl font-display font-bold text-foreground mb-2"
           >
-            Installeer GetPawsy
+            Install GetPawsy
           </motion.h1>
 
           <motion.p
@@ -114,7 +114,7 @@ const Install = () => {
             transition={{ delay: 0.3 }}
             className="text-muted-foreground mb-8"
           >
-            Voeg GetPawsy toe aan je startscherm voor de beste ervaring
+            Add GetPawsy to your home screen for the best experience
           </motion.p>
 
           {/* Already Installed */}
@@ -128,10 +128,10 @@ const Install = () => {
                 <Check className="w-8 h-8 text-success-foreground" />
               </div>
               <h2 className="text-xl font-semibold text-foreground mb-2">
-                App is geïnstalleerd!
+                App is installed!
               </h2>
               <p className="text-muted-foreground">
-                Je kunt GetPawsy nu openen vanaf je startscherm.
+                You can now open GetPawsy from your home screen.
               </p>
             </motion.div>
           ) : (
@@ -150,7 +150,7 @@ const Install = () => {
                     onClick={handleInstallClick}
                   >
                     <Download className="w-5 h-5" />
-                    Installeer App
+                    Install App
                   </Button>
                 </motion.div>
               )}
@@ -165,7 +165,7 @@ const Install = () => {
                 >
                   <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
                     <Smartphone className="w-5 h-5" />
-                    Installeer op iPhone/iPad
+                    Install on iPhone/iPad
                   </h3>
                   <ol className="space-y-4">
                     <li className="flex items-start gap-3">
@@ -173,7 +173,7 @@ const Install = () => {
                         1
                       </span>
                       <span className="text-muted-foreground">
-                        Tik op de <Share className="w-4 h-4 inline mx-1" /> <strong>Deel</strong> knop onderaan
+                        Tap the <Share className="w-4 h-4 inline mx-1" /> <strong>Share</strong> button at the bottom
                       </span>
                     </li>
                     <li className="flex items-start gap-3">
@@ -181,7 +181,7 @@ const Install = () => {
                         2
                       </span>
                       <span className="text-muted-foreground">
-                        Scroll naar beneden en tik op <Plus className="w-4 h-4 inline mx-1" /> <strong>Zet op beginscherm</strong>
+                        Scroll down and tap <Plus className="w-4 h-4 inline mx-1" /> <strong>Add to Home Screen</strong>
                       </span>
                     </li>
                     <li className="flex items-start gap-3">
@@ -189,7 +189,7 @@ const Install = () => {
                         3
                       </span>
                       <span className="text-muted-foreground">
-                        Tik op <strong>Voeg toe</strong> rechtsboven
+                        Tap <strong>Add</strong> in the top right
                       </span>
                     </li>
                   </ol>
@@ -206,7 +206,7 @@ const Install = () => {
                 >
                   <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
                     <Smartphone className="w-5 h-5" />
-                    Installeer op Android
+                    Install on Android
                   </h3>
                   <ol className="space-y-4">
                     <li className="flex items-start gap-3">
@@ -214,7 +214,7 @@ const Install = () => {
                         1
                       </span>
                       <span className="text-muted-foreground">
-                        Tik op <MoreVertical className="w-4 h-4 inline mx-1" /> <strong>Menu</strong> rechtsboven
+                        Tap <MoreVertical className="w-4 h-4 inline mx-1" /> <strong>Menu</strong> in the top right
                       </span>
                     </li>
                     <li className="flex items-start gap-3">
@@ -222,7 +222,7 @@ const Install = () => {
                         2
                       </span>
                       <span className="text-muted-foreground">
-                        Tik op <strong>Installeer app</strong> of <strong>Toevoegen aan startscherm</strong>
+                        Tap <strong>Install app</strong> or <strong>Add to Home Screen</strong>
                       </span>
                     </li>
                     <li className="flex items-start gap-3">
@@ -230,7 +230,7 @@ const Install = () => {
                         3
                       </span>
                       <span className="text-muted-foreground">
-                        Bevestig door op <strong>Installeren</strong> te tikken
+                        Confirm by tapping <strong>Install</strong>
                       </span>
                     </li>
                   </ol>
@@ -247,10 +247,10 @@ const Install = () => {
                 >
                   <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
                     <Download className="w-5 h-5" />
-                    Installeer op Desktop
+                    Install on Desktop
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    Klik op het installatie-icoon in de adresbalk van je browser, of:
+                    Click the install icon in your browser's address bar, or:
                   </p>
                   <ol className="space-y-3">
                     <li className="flex items-start gap-3">
@@ -258,7 +258,7 @@ const Install = () => {
                         1
                       </span>
                       <span className="text-muted-foreground">
-                        Open het browsermenu (⋮ of ⋯)
+                        Open the browser menu (⋮ or ⋯)
                       </span>
                     </li>
                     <li className="flex items-start gap-3">
@@ -266,7 +266,7 @@ const Install = () => {
                         2
                       </span>
                       <span className="text-muted-foreground">
-                        Klik op "Installeer GetPawsy" of "App installeren"
+                        Click "Install GetPawsy" or "Install app"
                       </span>
                     </li>
                   </ol>
@@ -306,7 +306,7 @@ const Install = () => {
           >
             <Button variant="ghost" asChild className="gap-2">
               <a href="/products">
-                Verder winkelen
+                Continue Shopping
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
