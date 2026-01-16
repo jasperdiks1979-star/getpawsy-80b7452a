@@ -76,7 +76,11 @@ export function GoogleAdsGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedAd, setGeneratedAd] = useState<GeneratedAd | null>(null);
   const [selectedSavedAd, setSelectedSavedAd] = useState<SavedAd | null>(null);
-  const [finalUrl, setFinalUrl] = useState("https://getpawsy.com");
+  const [finalUrl, setFinalUrl] = useState("https://getpawsy.lovable.app");
+  const [utmSource, setUtmSource] = useState("google");
+  const [utmMedium, setUtmMedium] = useState("cpc");
+  const [utmCampaign, setUtmCampaign] = useState("");
+  const [utmContent, setUtmContent] = useState("");
 
   // Fetch products for quick selection
   const { data: products } = useQuery({
@@ -233,6 +237,17 @@ ${keywords.join(", ")}
     toast.success("Alle advertentieteksten gekopieerd");
   };
 
+  const buildFinalUrlWithUtm = () => {
+    const params = new URLSearchParams();
+    if (utmSource) params.append('utm_source', utmSource);
+    if (utmMedium) params.append('utm_medium', utmMedium);
+    if (utmCampaign) params.append('utm_campaign', utmCampaign);
+    if (utmContent) params.append('utm_content', utmContent);
+    
+    const queryString = params.toString();
+    return queryString ? `${finalUrl}?${queryString}` : finalUrl;
+  };
+
   const exportToCSV = (ad: GeneratedAd | SavedAd) => {
     const isGeneratedAd = 'displayPaths' in ad;
     const headlines = ad.headlines;
@@ -283,7 +298,7 @@ ${keywords.join(", ")}
       ...descriptionValues,
       displayPaths[0] || '',
       displayPaths[1] || '',
-      finalUrl, // Final URL from input
+      buildFinalUrlWithUtm(), // Final URL with UTM parameters
       'Enabled'
     ];
 
@@ -650,6 +665,64 @@ ${keywords.join(", ")}
               </div>
               <p className="text-xs text-muted-foreground">
                 Selecteer een productpagina of typ een aangepaste URL
+              </p>
+            </div>
+
+            {/* UTM Parameters */}
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">UTM Parameters (voor tracking)</Label>
+                <Badge variant="outline" className="text-xs">Google Analytics</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="utmSource" className="text-xs text-muted-foreground">utm_source</Label>
+                  <Input
+                    id="utmSource"
+                    value={utmSource}
+                    onChange={(e) => setUtmSource(e.target.value)}
+                    placeholder="google"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="utmMedium" className="text-xs text-muted-foreground">utm_medium</Label>
+                  <Input
+                    id="utmMedium"
+                    value={utmMedium}
+                    onChange={(e) => setUtmMedium(e.target.value)}
+                    placeholder="cpc"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="utmCampaign" className="text-xs text-muted-foreground">utm_campaign</Label>
+                  <Input
+                    id="utmCampaign"
+                    value={utmCampaign}
+                    onChange={(e) => setUtmCampaign(e.target.value)}
+                    placeholder="Bijv. summer_sale_2024"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="utmContent" className="text-xs text-muted-foreground">utm_content (optioneel)</Label>
+                  <Input
+                    id="utmContent"
+                    value={utmContent}
+                    onChange={(e) => setUtmContent(e.target.value)}
+                    placeholder="Bijv. ad_variant_a"
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Preview: {finalUrl}{(utmSource || utmMedium || utmCampaign) ? '?' : ''}{[
+                  utmSource && `utm_source=${utmSource}`,
+                  utmMedium && `utm_medium=${utmMedium}`,
+                  utmCampaign && `utm_campaign=${utmCampaign}`,
+                  utmContent && `utm_content=${utmContent}`
+                ].filter(Boolean).join('&')}
               </p>
             </div>
 
