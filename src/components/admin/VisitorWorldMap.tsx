@@ -4,11 +4,18 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface VisitorActivity {
   id: string;
@@ -40,6 +47,16 @@ const ACTIVITY_WEIGHTS = {
   checkout: 3,
 };
 
+// Time range options
+type TimeRange = "1h" | "24h" | "7d" | "30d";
+
+const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; hours: number }[] = [
+  { value: "1h", label: "Laatste uur", hours: 1 },
+  { value: "24h", label: "Laatste 24 uur", hours: 24 },
+  { value: "7d", label: "Laatste 7 dagen", hours: 24 * 7 },
+  { value: "30d", label: "Laatste 30 dagen", hours: 24 * 30 },
+];
+
 export const VisitorWorldMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -47,21 +64,29 @@ export const VisitorWorldMap = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [timeRange, setTimeRange] = useState<TimeRange>("24h");
 
-  // Fetch visitor activities
+  // Get the time range in milliseconds
+  const getTimeRangeMs = () => {
+    const option = TIME_RANGE_OPTIONS.find(o => o.value === timeRange);
+    return (option?.hours || 24) * 60 * 60 * 1000;
+  };
+
+  // Fetch visitor activities with time range
   const { data: activities, refetch, isLoading } = useQuery({
-    queryKey: ["visitor-activities"],
+    queryKey: ["visitor-activities", timeRange],
     queryFn: async () => {
+      const timeRangeMs = getTimeRangeMs();
       const { data, error } = await supabase
         .from("visitor_activity")
         .select("*")
-        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .gte("created_at", new Date(Date.now() - timeRangeMs).toISOString())
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return (data || []) as VisitorActivity[];
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: timeRange === "1h" ? 10000 : 30000, // Faster refresh for short time ranges
   });
 
   // Subscribe to realtime updates
@@ -365,16 +390,38 @@ export const VisitorWorldMap = () => {
 
   const totalVisitors = new Set(activities?.map(a => a.session_id)).size;
 
+  // Get selected time range label
+  const selectedTimeRangeLabel = TIME_RANGE_OPTIONS.find(o => o.value === timeRange)?.label || "Laatste 24 uur";
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2">
             <Globe className="w-5 h-5" />
-            Live Bezoekers Wereldkaart
+            Bezoekers Wereldkaart
           </CardTitle>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Time Range Selector */}
+            <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
+              <SelectTrigger className="w-[160px] h-9">
+                <Calendar className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Periode" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_RANGE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex items-center gap-2">
+                      {option.value === "1h" && <Clock className="w-3 h-3" />}
+                      {option.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Heatmap Toggle */}
+            <div className="flex items-center gap-2 px-2">
               <Switch
                 id="heatmap-toggle"
                 checked={showHeatmap}
@@ -391,6 +438,8 @@ export const VisitorWorldMap = () => {
                 </span>
               </Label>
             </div>
+
+            {/* Refresh Button */}
             <Button
               variant="outline"
               size="sm"
@@ -402,7 +451,13 @@ export const VisitorWorldMap = () => {
             </Button>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 mt-2">
+
+        {/* Stats Row */}
+        <div className="flex flex-wrap items-center gap-2 mt-3">
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
+            {selectedTimeRangeLabel}
+          </Badge>
           <Badge variant="outline" className="flex items-center gap-1">
             <Users className="w-3 h-3" />
             {totalVisitors} unieke bezoekers
