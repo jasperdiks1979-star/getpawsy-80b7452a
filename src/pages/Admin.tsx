@@ -458,6 +458,22 @@ const Admin = () => {
     },
   });
 
+  // Fix variant prices mutation
+  const fixVariantPricesMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("fix-variant-prices");
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Variant prijzen geüpdatet! ${data?.updatedProducts?.length || 0} producten aangepast.`);
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+    },
+    onError: (error) => {
+      toast.error(`Fix variant prices mislukt: ${error.message}`);
+    },
+  });
+
   // Refresh all products - fetch missing images and data from CJ in batches
   const refreshAllProductsMutation = useMutation({
     mutationFn: async () => {
@@ -1354,6 +1370,20 @@ const Admin = () => {
                       <CloudDownload className="w-4 h-4 mr-2" />
                     )}
                     Sync Stock
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => fixVariantPricesMutation.mutate()}
+                    disabled={fixVariantPricesMutation.isPending}
+                    title="Fix variant selling prices for existing products"
+                  >
+                    {fixVariantPricesMutation.isPending ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    Fix Variant Prices
                   </Button>
                 </div>
               </div>
