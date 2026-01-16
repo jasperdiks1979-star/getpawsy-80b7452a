@@ -51,6 +51,11 @@ interface GeneratedAd {
   descriptions: string[];
   displayPaths: string[];
   keywords: string[];
+  angle?: string;
+}
+
+interface GeneratedAdsResponse {
+  variants: GeneratedAd[];
 }
 
 interface SavedAd {
@@ -74,9 +79,10 @@ export function GoogleAdsGenerator() {
   const [targetAudience, setTargetAudience] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedAd, setGeneratedAd] = useState<GeneratedAd | null>(null);
+  const [generatedAds, setGeneratedAds] = useState<GeneratedAd[]>([]);
   const [selectedSavedAd, setSelectedSavedAd] = useState<SavedAd | null>(null);
   const [finalUrl, setFinalUrl] = useState("https://getpawsy.lovable.app");
+  const [variantCount, setVariantCount] = useState<number>(1);
   const [utmSource, setUtmSource] = useState("google");
   const [utmMedium, setUtmMedium] = useState("cpc");
   const [utmCampaign, setUtmCampaign] = useState("");
@@ -176,7 +182,7 @@ export function GoogleAdsGenerator() {
     }
 
     setIsGenerating(true);
-    setGeneratedAd(null);
+    setGeneratedAds([]);
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-google-ads", {
@@ -185,6 +191,7 @@ export function GoogleAdsGenerator() {
           productDescription,
           targetAudience,
           language: "nl",
+          variantCount,
         },
       });
 
@@ -194,8 +201,10 @@ export function GoogleAdsGenerator() {
         throw new Error(data.error);
       }
 
-      setGeneratedAd(data);
-      toast.success("Google Ads gegenereerd!");
+      // Handle both new format (variants array) and old format (single ad)
+      const variants = data.variants || [data];
+      setGeneratedAds(variants);
+      toast.success(`${variants.length} advertentievariant(en) gegenereerd!`);
     } catch (error) {
       console.error("Failed to generate ads:", error);
       toast.error(error instanceof Error ? error.message : "Genereren mislukt");
@@ -348,15 +357,24 @@ ${keywords.join(", ")}
     toast.success("CSV bestanden gedownload! Open ze in Google Ads Editor en vul de campaign/ad group namen in.");
   };
 
-  const renderAdContent = (ad: GeneratedAd | SavedAd, showSaveButton: boolean = false) => {
+  const renderAdContent = (ad: GeneratedAd | SavedAd, showSaveButton: boolean = false, onSave?: () => void) => {
     const isGeneratedAd = 'displayPaths' in ad;
     const headlines = ad.headlines;
     const descriptions = ad.descriptions;
     const displayPaths = isGeneratedAd ? ad.displayPaths : (ad as SavedAd).display_paths;
     const keywords = ad.keywords;
+    const angle = 'angle' in ad ? ad.angle : undefined;
 
     return (
       <div className="space-y-6">
+        {/* Angle indicator */}
+        {angle && (
+          <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg">
+            <Target className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium text-primary">{angle}</span>
+          </div>
+        )}
+        
         {/* Headlines */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
@@ -529,10 +547,10 @@ ${keywords.join(", ")}
           </div>
         </div>
 
-        {/* Save Button for generated ads */}
-        {showSaveButton && generatedAd && (
+        {/* Save Button for generated ads - passed as prop */}
+        {showSaveButton && onSave && (
           <Button 
-            onClick={() => saveAdMutation.mutate(generatedAd)}
+            onClick={onSave}
             disabled={saveAdMutation.isPending}
             className="w-full"
           >
@@ -726,6 +744,30 @@ ${keywords.join(", ")}
               </p>
             </div>
 
+            {/* Variant Count Selector */}
+            <div className="flex items-center gap-4">
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">Aantal varianten</Label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3].map((count) => (
+                    <Button
+                      key={count}
+                      type="button"
+                      variant={variantCount === count ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setVariantCount(count)}
+                      className="w-10"
+                    >
+                      {count}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Genereer meerdere varianten met verschillende invalshoeken
+                </p>
+              </div>
+            </div>
+
             <Button 
               onClick={generateAds} 
               disabled={isGenerating || !productName.trim()}
@@ -747,34 +789,50 @@ ${keywords.join(", ")}
         </Card>
 
         {/* Generated Ads */}
-        {generatedAd && (
-          <Card className="animate-fade-in">
-            <CardHeader>
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="w-5 h-5" />
-                  Gegenereerde Advertenties
-                </CardTitle>
-                <div className="flex gap-2 flex-wrap">
-                  <Button variant="outline" size="sm" onClick={() => exportToCSV(generatedAd)}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Export CSV
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => copyAllAds(generatedAd)}>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Kopieer alles
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={generateAds} disabled={isGenerating}>
-                    <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating ? "animate-spin" : ""}`} />
-                    Opnieuw
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {renderAdContent(generatedAd, true)}
-            </CardContent>
-          </Card>
+        {generatedAds.length > 0 && (
+          <div className="space-y-4">
+            {generatedAds.map((ad, index) => (
+              <Card key={index} className="animate-fade-in">
+                <CardHeader>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="w-5 h-5" />
+                      Variant {index + 1} {generatedAds.length > 1 && `van ${generatedAds.length}`}
+                    </CardTitle>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button variant="outline" size="sm" onClick={() => exportToCSV(ad)}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Export CSV
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => copyAllAds(ad)}>
+                        <Copy className="w-4 h-4 mr-2" />
+                        Kopieer
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => saveAdMutation.mutate(ad)}
+                        disabled={saveAdMutation.isPending}
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        Opslaan
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {renderAdContent(ad, false)}
+                </CardContent>
+              </Card>
+            ))}
+            
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={generateAds} disabled={isGenerating}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating ? "animate-spin" : ""}`} />
+                Opnieuw genereren
+              </Button>
+            </div>
+          </div>
         )}
       </TabsContent>
 
