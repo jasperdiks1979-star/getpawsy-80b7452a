@@ -948,12 +948,10 @@ const ProductDetail = () => {
                           {inStock ? 'In Stock' : 'Out of Stock'}
                         </span>
                       </div>
-                      {product.supplier_name && (
-                        <div className="flex justify-between items-center py-2 border-b border-border/50">
-                          <span className="text-muted-foreground">Supplier</span>
-                          <span className="font-medium text-foreground">{product.supplier_name}</span>
-                        </div>
-                      )}
+                      <div className="flex justify-between items-center py-2 border-b border-border/50">
+                        <span className="text-muted-foreground">Sold by</span>
+                        <span className="font-medium text-foreground">GetPawsy</span>
+                      </div>
                     </div>
                   </div>
 
