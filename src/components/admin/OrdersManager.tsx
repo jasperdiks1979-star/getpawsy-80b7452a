@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Package, Search, Eye, Loader2, RefreshCw, ExternalLink, Download, Truck } from "lucide-react";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -411,10 +412,12 @@ export function OrdersManager() {
           </div>
 
           {isLoading ? (
-            <div className="py-12 text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-              <p className="text-muted-foreground">Bestellingen laden...</p>
-            </div>
+            <TableSkeleton 
+              columns={6} 
+              rows={8} 
+              headerWidths={["w-24", "w-32", "w-40", "w-24", "w-20", "w-20"]}
+              cellWidths={["w-20", "w-28", "w-36", "w-20", "w-16", "w-24"]}
+            />
           ) : filteredOrders.length === 0 ? (
             <div className="py-12 text-center">
               <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />

@@ -42,6 +42,7 @@ import {
   Package,
   Loader2
 } from "lucide-react";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -247,9 +248,12 @@ export function ContactMessagesManager() {
 
           {/* Messages Table */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
+            <TableSkeleton 
+              columns={6} 
+              rows={8}
+              headerWidths={["w-20", "w-28", "w-40", "w-24", "w-28", "w-16"]}
+              cellWidths={["w-16", "w-24", "w-36", "w-20", "w-24", "w-12"]}
+            />
           ) : filteredMessages?.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
