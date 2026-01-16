@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 type HapticStyle = 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' | 'selection';
 
@@ -12,8 +12,26 @@ const hapticPatterns: Record<HapticStyle, number | number[]> = {
   selection: 5,
 };
 
+/**
+ * Haptic feedback hook using the Vibration API.
+ * 
+ * IMPORTANT: This only works on Android devices in compatible browsers.
+ * iOS Safari does NOT support the Vibration API - this is a platform limitation.
+ * For iOS haptic feedback, a native app (e.g., with Capacitor) would be required.
+ * 
+ * Supported: Android Chrome, Android Firefox, Android Edge
+ * Not supported: iOS Safari, iOS Chrome, Desktop browsers
+ */
 export const useHaptic = () => {
-  const isSupported = typeof navigator !== 'undefined' && 'vibrate' in navigator;
+  // Check if Vibration API is available (Android browsers only)
+  const isSupported = useMemo(() => {
+    if (typeof navigator === 'undefined' || !('vibrate' in navigator)) {
+      return false;
+    }
+    // iOS doesn't support vibration even if the API exists
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    return !isIOS;
+  }, []);
 
   const trigger = useCallback((style: HapticStyle = 'medium') => {
     if (!isSupported) return false;
