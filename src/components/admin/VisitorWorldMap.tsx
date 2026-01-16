@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -453,6 +453,55 @@ export const VisitorWorldMap = () => {
     return { countries, cities };
   })();
 
+  // Export to CSV function
+  const exportToCSV = () => {
+    if (!activities || activities.length === 0) {
+      return;
+    }
+
+    // Create CSV headers
+    const headers = [
+      "Datum/Tijd",
+      "Sessie ID",
+      "Activiteit",
+      "Land",
+      "Stad",
+      "Breedtegraad",
+      "Lengtegraad"
+    ];
+
+    // Create CSV rows
+    const rows = activities.map((activity) => [
+      new Date(activity.created_at).toLocaleString("nl-NL"),
+      activity.session_id,
+      ACTIVITY_LABELS[activity.activity_type] || activity.activity_type,
+      activity.country || "Onbekend",
+      activity.city || "Onbekend",
+      activity.latitude?.toString() || "",
+      activity.longitude?.toString() || ""
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(";"),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(";"))
+    ].join("\n");
+
+    // Add BOM for Excel compatibility with special characters
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
+    
+    // Create download link
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `bezoekers-${timeRange}-${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">
@@ -498,6 +547,17 @@ export const VisitorWorldMap = () => {
                 </span>
               </Label>
             </div>
+
+            {/* Export Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToCSV}
+              disabled={!activities || activities.length === 0}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
 
             {/* Refresh Button */}
             <Button
