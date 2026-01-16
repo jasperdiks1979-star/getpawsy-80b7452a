@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -80,6 +80,42 @@ export const VisitorWorldMap = () => {
     const saved = localStorage.getItem("notification-sound-enabled");
     return saved !== null ? saved === "true" : true;
   });
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Toggle fullscreen mode
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(prev => !prev);
+  }, []);
+
+  // Handle ESC key to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    
+    if (isFullscreen) {
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [isFullscreen]);
+
+  // Resize map when fullscreen changes
+  useEffect(() => {
+    if (map.current && mapLoaded) {
+      setTimeout(() => {
+        map.current?.resize();
+      }, 100);
+    }
+  }, [isFullscreen, mapLoaded]);
 
   // Play notification sound
   const playNotificationSound = useCallback(() => {
@@ -706,8 +742,12 @@ export const VisitorWorldMap = () => {
   };
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-2">
+    <Card className={`overflow-hidden transition-all duration-300 ${
+      isFullscreen 
+        ? "fixed inset-0 z-50 rounded-none border-0 flex flex-col" 
+        : ""
+    }`}>
+      <CardHeader className={`pb-2 ${isFullscreen ? "shrink-0" : ""}`}>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2">
             <Globe className="w-5 h-5" />
@@ -860,6 +900,21 @@ export const VisitorWorldMap = () => {
               Export
             </Button>
 
+            {/* Fullscreen Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "Sluiten (ESC)" : "Fullscreen"}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="w-4 h-4 mr-2" />
+              ) : (
+                <Maximize2 className="w-4 h-4 mr-2" />
+              )}
+              {isFullscreen ? "Sluiten" : "Fullscreen"}
+            </Button>
+
             {/* Refresh Button */}
             <Button
               variant="outline"
@@ -929,12 +984,12 @@ export const VisitorWorldMap = () => {
           </div>
         )}
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="flex flex-col lg:flex-row">
+      <CardContent className={`p-0 ${isFullscreen ? "flex-1 overflow-hidden" : ""}`}>
+        <div className={`flex flex-col lg:flex-row ${isFullscreen ? "h-full" : ""}`}>
           {/* Map Container */}
           <div className="flex-1 min-w-0 relative">
             {mapError ? (
-              <div className="h-[500px] flex items-center justify-center bg-muted/50">
+              <div className={`${isFullscreen ? "h-full" : "h-[500px]"} flex items-center justify-center bg-muted/50`}>
                 <div className="text-center text-muted-foreground">
                   <Globe className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>{mapError}</p>
@@ -942,7 +997,7 @@ export const VisitorWorldMap = () => {
               </div>
             ) : (
               <>
-                <div ref={mapContainer} className="h-[500px] w-full" />
+                <div ref={mapContainer} className={`${isFullscreen ? "h-full" : "h-[500px]"} w-full`} />
                 {/* Custom Zoom Controls */}
                 <div className="absolute bottom-4 left-4 flex flex-col gap-1 z-10">
                   <Button
@@ -989,8 +1044,8 @@ export const VisitorWorldMap = () => {
           </div>
 
           {/* Top Locations & Conversion Sidebar */}
-          <div className="lg:w-96 border-t lg:border-t-0 lg:border-l border-border bg-muted/30">
-            <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+          <div className={`lg:w-96 border-t lg:border-t-0 lg:border-l border-border bg-muted/30 ${isFullscreen ? "h-full overflow-hidden" : ""}`}>
+            <div className={`p-4 space-y-4 overflow-y-auto ${isFullscreen ? "h-full" : "max-h-[500px]"}`}>
               
               {/* Conversion Summary */}
               <div className="bg-background rounded-lg p-3 border border-border">
