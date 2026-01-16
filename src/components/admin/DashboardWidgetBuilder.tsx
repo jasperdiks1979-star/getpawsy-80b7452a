@@ -15,7 +15,6 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -30,6 +29,13 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   GripVertical,
   Eye,
   EyeOff,
@@ -40,8 +46,12 @@ import {
   RotateCcw,
   Settings2,
   Check,
+  Minimize2,
+  Square,
+  Maximize2,
+  RectangleHorizontal,
 } from 'lucide-react';
-import { DashboardWidget } from '@/hooks/useDashboardWidgets';
+import { DashboardWidget, WidgetSize } from '@/hooks/useDashboardWidgets';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -50,6 +60,7 @@ interface DashboardWidgetBuilderProps {
   isCustomizing: boolean;
   setIsCustomizing: (value: boolean) => void;
   onToggleVisibility: (widgetId: string) => void;
+  onSizeChange: (widgetId: string, size: WidgetSize) => void;
   onReorder: (activeId: string, overId: string) => void;
   onReset: () => void;
 }
@@ -84,12 +95,26 @@ const getSizeLabel = (size: DashboardWidget['size']) => {
   }
 };
 
+const getSizeIcon = (size: WidgetSize) => {
+  switch (size) {
+    case 'small':
+      return <Minimize2 className="w-3 h-3" />;
+    case 'medium':
+      return <Square className="w-3 h-3" />;
+    case 'large':
+      return <Maximize2 className="w-3 h-3" />;
+    case 'full':
+      return <RectangleHorizontal className="w-3 h-3" />;
+  }
+};
+
 interface SortableWidgetItemProps {
   widget: DashboardWidget;
   onToggleVisibility: (id: string) => void;
+  onSizeChange: (id: string, size: WidgetSize) => void;
 }
 
-const SortableWidgetItem = ({ widget, onToggleVisibility }: SortableWidgetItemProps) => {
+const SortableWidgetItem = ({ widget, onToggleVisibility, onSizeChange }: SortableWidgetItemProps) => {
   const {
     attributes,
     listeners,
@@ -139,9 +164,45 @@ const SortableWidgetItem = ({ widget, onToggleVisibility }: SortableWidgetItemPr
         )}
       </div>
 
-      <Badge variant="outline" className="text-xs shrink-0">
-        {getSizeLabel(widget.size)}
-      </Badge>
+      <Select
+        value={widget.size}
+        onValueChange={(value: WidgetSize) => onSizeChange(widget.id, value)}
+      >
+        <SelectTrigger className="w-[110px] h-8">
+          <SelectValue>
+            <div className="flex items-center gap-1.5">
+              {getSizeIcon(widget.size)}
+              <span className="text-xs">{getSizeLabel(widget.size)}</span>
+            </div>
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="small">
+            <div className="flex items-center gap-2">
+              <Minimize2 className="w-3 h-3" />
+              <span>Klein (25%)</span>
+            </div>
+          </SelectItem>
+          <SelectItem value="medium">
+            <div className="flex items-center gap-2">
+              <Square className="w-3 h-3" />
+              <span>Medium (50%)</span>
+            </div>
+          </SelectItem>
+          <SelectItem value="large">
+            <div className="flex items-center gap-2">
+              <Maximize2 className="w-3 h-3" />
+              <span>Groot (75%)</span>
+            </div>
+          </SelectItem>
+          <SelectItem value="full">
+            <div className="flex items-center gap-2">
+              <RectangleHorizontal className="w-3 h-3" />
+              <span>Volledig (100%)</span>
+            </div>
+          </SelectItem>
+        </SelectContent>
+      </Select>
 
       <Switch
         checked={widget.visible}
@@ -170,6 +231,7 @@ export const DashboardWidgetBuilder = ({
   isCustomizing,
   setIsCustomizing,
   onToggleVisibility,
+  onSizeChange,
   onReorder,
   onReset,
 }: DashboardWidgetBuilderProps) => {
@@ -225,7 +287,7 @@ export const DashboardWidgetBuilder = ({
             Dashboard Aanpassen
           </SheetTitle>
           <SheetDescription>
-            Sleep widgets om de volgorde aan te passen. Schakel widgets in of uit om ze te tonen of verbergen.
+            Sleep widgets om de volgorde aan te passen. Pas de grootte aan en schakel widgets in of uit.
           </SheetDescription>
         </SheetHeader>
 
@@ -240,7 +302,13 @@ export const DashboardWidgetBuilder = ({
           </Badge>
         </div>
 
-        <ScrollArea className="h-[calc(100vh-280px)] pr-4 py-4">
+        <div className="py-3 px-1 bg-muted/50 rounded-lg my-4">
+          <p className="text-xs text-muted-foreground text-center">
+            <strong>Grootte:</strong> Klein = 25%, Medium = 50%, Groot = 75%, Volledig = 100% breedte
+          </p>
+        </div>
+
+        <ScrollArea className="h-[calc(100vh-340px)] pr-4">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -257,6 +325,7 @@ export const DashboardWidgetBuilder = ({
                     key={widget.id}
                     widget={widget}
                     onToggleVisibility={onToggleVisibility}
+                    onSizeChange={onSizeChange}
                   />
                 ))}
               </div>

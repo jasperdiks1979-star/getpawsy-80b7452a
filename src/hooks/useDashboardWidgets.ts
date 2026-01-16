@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 
+export type WidgetSize = 'small' | 'medium' | 'large' | 'full';
+
 export interface DashboardWidget {
   id: string;
   type: 'metric' | 'chart' | 'table' | 'list';
   title: string;
   description?: string;
-  size: 'small' | 'medium' | 'large' | 'full';
+  size: WidgetSize;
   visible: boolean;
   order: number;
 }
@@ -68,6 +70,13 @@ export const useDashboardWidgets = () => {
     saveWidgets(newWidgets);
   }, [widgets, saveWidgets]);
 
+  const setWidgetSize = useCallback((widgetId: string, size: WidgetSize) => {
+    const newWidgets = widgets.map(w => 
+      w.id === widgetId ? { ...w, size } : w
+    );
+    saveWidgets(newWidgets);
+  }, [widgets, saveWidgets]);
+
   const reorderWidgets = useCallback((activeId: string, overId: string) => {
     const oldIndex = widgets.findIndex(w => w.id === activeId);
     const newIndex = widgets.findIndex(w => w.id === overId);
@@ -97,14 +106,21 @@ export const useDashboardWidgets = () => {
       .sort((a, b) => a.order - b.order);
   }, [widgets]);
 
+  const getWidgetSize = useCallback((widgetId: string): WidgetSize => {
+    const widget = widgets.find(w => w.id === widgetId);
+    return widget?.size ?? 'medium';
+  }, [widgets]);
+
   return {
     widgets,
     isCustomizing,
     setIsCustomizing,
     toggleWidgetVisibility,
+    setWidgetSize,
     reorderWidgets,
     resetToDefaults,
     getVisibleWidgets,
     getWidgetsByTab,
+    getWidgetSize,
   };
 };
