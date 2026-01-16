@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -67,9 +67,16 @@ export const VisitorWorldMap = () => {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("24h");
   const [activityFilter, setActivityFilter] = useState<"all" | "browsing" | "cart" | "checkout">("all");
+  const [checkoutNotifications, setCheckoutNotifications] = useState(() => {
+    const saved = localStorage.getItem("checkout-notifications-enabled");
+    return saved !== null ? saved === "true" : true;
+  });
+  const [cartNotifications, setCartNotifications] = useState(() => {
+    const saved = localStorage.getItem("cart-notifications-enabled");
+    return saved !== null ? saved === "true" : false;
+  });
   const [soundEnabled, setSoundEnabled] = useState(() => {
-    // Load preference from localStorage
-    const saved = localStorage.getItem("checkout-sound-enabled");
+    const saved = localStorage.getItem("notification-sound-enabled");
     return saved !== null ? saved === "true" : true;
   });
 
@@ -115,9 +122,17 @@ export const VisitorWorldMap = () => {
     }
   }, [soundEnabled]);
 
-  // Save sound preference
+  // Save notification preferences
   useEffect(() => {
-    localStorage.setItem("checkout-sound-enabled", String(soundEnabled));
+    localStorage.setItem("checkout-notifications-enabled", String(checkoutNotifications));
+  }, [checkoutNotifications]);
+
+  useEffect(() => {
+    localStorage.setItem("cart-notifications-enabled", String(cartNotifications));
+  }, [cartNotifications]);
+
+  useEffect(() => {
+    localStorage.setItem("notification-sound-enabled", String(soundEnabled));
   }, [soundEnabled]);
 
   // Get the time range in milliseconds
@@ -164,8 +179,8 @@ export const VisitorWorldMap = () => {
           const location = newActivity.city || newActivity.country || "Onbekende locatie";
           
           // Show notification for new checkouts
-          if (newActivity.activity_type === "checkout") {
-            playNotificationSound();
+          if (newActivity.activity_type === "checkout" && checkoutNotifications) {
+            if (soundEnabled) playNotificationSound();
             toast({
               title: "🎉 Nieuwe checkout!",
               description: `Een klant uit ${location} is aan het afrekenen`,
@@ -174,8 +189,8 @@ export const VisitorWorldMap = () => {
           }
           
           // Show notification for new cart additions
-          if (newActivity.activity_type === "cart") {
-            playNotificationSound();
+          if (newActivity.activity_type === "cart" && cartNotifications) {
+            if (soundEnabled) playNotificationSound();
             toast({
               title: "🛒 Nieuw in winkelwagen!",
               description: `Een klant uit ${location} heeft iets toegevoegd`,
@@ -202,7 +217,7 @@ export const VisitorWorldMap = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch, playNotificationSound]);
+  }, [refetch, playNotificationSound, checkoutNotifications, cartNotifications, soundEnabled]);
 
   // Initialize map
   useEffect(() => {
@@ -747,23 +762,50 @@ export const VisitorWorldMap = () => {
               </Label>
             </div>
 
-            {/* Sound Toggle */}
-            <div className="flex items-center gap-2 px-2 border-l border-border">
-              <Switch
-                id="sound-toggle"
-                checked={soundEnabled}
-                onCheckedChange={setSoundEnabled}
-              />
-              <Label htmlFor="sound-toggle" className="flex items-center gap-1.5 cursor-pointer">
-                {soundEnabled ? (
-                  <Volume2 className="w-4 h-4 text-green-500" />
-                ) : (
-                  <VolumeX className="w-4 h-4 text-muted-foreground" />
-                )}
-                <span className="text-sm">
+            {/* Notification Toggles */}
+            <div className="flex items-center gap-3 px-2 border-l border-border">
+              {/* Checkout Notifications */}
+              <div className="flex items-center gap-1.5">
+                <Switch
+                  id="checkout-notifications"
+                  checked={checkoutNotifications}
+                  onCheckedChange={setCheckoutNotifications}
+                />
+                <Label htmlFor="checkout-notifications" className="flex items-center gap-1 cursor-pointer text-xs">
+                  <CreditCard className={`w-3 h-3 ${checkoutNotifications ? "text-green-500" : "text-muted-foreground"}`} />
+                  Checkout
+                </Label>
+              </div>
+              
+              {/* Cart Notifications */}
+              <div className="flex items-center gap-1.5">
+                <Switch
+                  id="cart-notifications"
+                  checked={cartNotifications}
+                  onCheckedChange={setCartNotifications}
+                />
+                <Label htmlFor="cart-notifications" className="flex items-center gap-1 cursor-pointer text-xs">
+                  <ShoppingCart className={`w-3 h-3 ${cartNotifications ? "text-orange-500" : "text-muted-foreground"}`} />
+                  Wagen
+                </Label>
+              </div>
+              
+              {/* Sound Toggle */}
+              <div className="flex items-center gap-1.5 border-l border-border pl-3">
+                <Switch
+                  id="sound-toggle"
+                  checked={soundEnabled}
+                  onCheckedChange={setSoundEnabled}
+                />
+                <Label htmlFor="sound-toggle" className="flex items-center gap-1 cursor-pointer text-xs">
+                  {soundEnabled ? (
+                    <Volume2 className="w-3 h-3 text-green-500" />
+                  ) : (
+                    <VolumeX className="w-3 h-3 text-muted-foreground" />
+                  )}
                   Geluid
-                </span>
-              </Label>
+                </Label>
+              </div>
             </div>
 
             {/* Export Button */}
