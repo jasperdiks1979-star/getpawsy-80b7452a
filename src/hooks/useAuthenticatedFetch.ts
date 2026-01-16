@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { FunctionInvokeOptions } from '@supabase/supabase-js';
 
 interface FetchOptions extends RequestInit {
   retryOnAuthError?: boolean;
@@ -46,6 +47,64 @@ export const useAuthenticatedFetch = () => {
       'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json',
     };
+  }, [refreshSessionIfNeeded]);
+
+  /**
+   * Invoke a Supabase edge function with automatic token refresh and retry on auth errors
+   */
+  const invokeFunction = useCallback(async <T>(
+    functionName: string,
+    options?: FunctionInvokeOptions & { retryOnAuthError?: boolean }
+  ): Promise<{ data: T | null; error: Error | null }> => {
+    const { retryOnAuthError = true, ...invokeOptions } = options || {};
+
+    // Ensure we have a fresh session before making the call
+    await refreshSessionIfNeeded();
+
+    try {
+      const { data, error } = await supabase.functions.invoke<T>(functionName, invokeOptions);
+
+      // Check if it's a 401 auth error
+      if (error && (error.message?.includes('401') || error.message?.includes('Unauthorized'))) {
+        if (retryOnAuthError) {
+          console.log('Received auth error, attempting to refresh session and retry...');
+          
+          // Force refresh the session
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          
+          if (refreshError || !refreshData.session) {
+            console.error('Session refresh failed:', refreshError);
+            return { 
+              data: null, 
+              error: new Error('Session expired. Please log in again.') 
+            };
+          }
+
+          // Retry the function call
+          const retryResult = await supabase.functions.invoke<T>(functionName, invokeOptions);
+          
+          if (retryResult.error) {
+            return { 
+              data: null, 
+              error: new Error(retryResult.error.message || 'Request failed after retry') 
+            };
+          }
+
+          return { data: retryResult.data, error: null };
+        }
+      }
+
+      if (error) {
+        return { data: null, error: new Error(error.message || 'Function invocation failed') };
+      }
+
+      return { data, error: null };
+    } catch (err) {
+      return { 
+        data: null, 
+        error: err instanceof Error ? err : new Error('Unknown error occurred') 
+      };
+    }
   }, [refreshSessionIfNeeded]);
 
   const authenticatedFetch = useCallback(async <T>(
@@ -127,6 +186,7 @@ export const useAuthenticatedFetch = () => {
   }, [getAuthHeaders]);
 
   return {
+    invokeFunction,
     authenticatedFetch,
     getAuthHeaders,
     refreshSessionIfNeeded,
