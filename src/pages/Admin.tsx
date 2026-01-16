@@ -20,6 +20,7 @@ import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AuthErrorBoundary } from "@/components/auth/AuthErrorBoundary";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -833,7 +834,9 @@ const Admin = () => {
 
           {/* Sales Dashboard Tab */}
           <TabsContent value="sales" className="space-y-6">
-            <SalesDashboard />
+            <AuthErrorBoundary>
+              <SalesDashboard />
+            </AuthErrorBoundary>
           </TabsContent>
 
           {/* Pet Catalog Tab */}
@@ -1584,27 +1587,37 @@ const Admin = () => {
 
           {/* Orders Tab */}
           <TabsContent value="orders">
-            <OrdersManager />
+            <AuthErrorBoundary>
+              <OrdersManager />
+            </AuthErrorBoundary>
           </TabsContent>
 
           {/* Newsletter Tab */}
           <TabsContent value="newsletter">
-            <NewsletterSubscribers />
+            <AuthErrorBoundary>
+              <NewsletterSubscribers />
+            </AuthErrorBoundary>
           </TabsContent>
 
           {/* Categories Tab */}
           <TabsContent value="categories">
-            <CategoryManager />
+            <AuthErrorBoundary>
+              <CategoryManager />
+            </AuthErrorBoundary>
           </TabsContent>
 
           {/* Analytics Tab */}
           <TabsContent value="analytics">
-            <AnalyticsDashboard isConfigured={true} />
+            <AuthErrorBoundary>
+              <AnalyticsDashboard isConfigured={true} />
+            </AuthErrorBoundary>
           </TabsContent>
 
           {/* Contact Messages Tab */}
           <TabsContent value="messages">
-            <ContactMessagesManager />
+            <AuthErrorBoundary>
+              <ContactMessagesManager />
+            </AuthErrorBoundary>
           </TabsContent>
         </Tabs>
 
