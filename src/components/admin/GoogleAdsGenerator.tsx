@@ -441,21 +441,75 @@ ${keywords.join(", ")}
           </div>
         </div>
 
-        {/* Preview */}
+        {/* Google Search Preview */}
         <div className="space-y-3">
-          <h3 className="font-medium">Advertentie Preview</h3>
-          <div className="p-4 border rounded-lg bg-background">
-            <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Advertentie</div>
-              <div className="text-sm text-green-700">
-                getpawsy.com/{displayPaths.join("/")}
+          <h3 className="font-medium">Google Zoekresultaten Preview</h3>
+          
+          {/* Desktop Preview */}
+          <div className="space-y-2">
+            <span className="text-xs text-muted-foreground font-medium">Desktop</span>
+            <div className="p-4 border rounded-lg bg-white dark:bg-zinc-950 max-w-[600px]">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
+                    <span className="text-xs font-bold text-muted-foreground">G</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-foreground">GetPawsy</span>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <span>getpawsy.lovable.app</span>
+                      <span>›</span>
+                      <span>{displayPaths.join(" › ")}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-1">
+                  <h4 className="text-xl text-[#1a0dab] dark:text-[#8ab4f8] hover:underline cursor-pointer leading-tight">
+                    {headlines[0]} | {headlines[1]} {headlines[2] ? `| ${headlines[2]}` : ''}
+                  </h4>
+                  <p className="text-sm text-[#4d5156] dark:text-[#bdc1c6] mt-1 leading-relaxed">
+                    {descriptions[0]} {descriptions[1] || ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 pt-1">
+                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-[#dadce0] text-[#70757a] rounded-sm font-normal">
+                    Advertentie
+                  </Badge>
+                </div>
               </div>
-              <h4 className="text-lg text-blue-700 hover:underline cursor-pointer">
-                {headlines[0]} | {headlines[1]}
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                {descriptions[0]}
-              </p>
+            </div>
+          </div>
+
+          {/* Mobile Preview */}
+          <div className="space-y-2">
+            <span className="text-xs text-muted-foreground font-medium">Mobiel</span>
+            <div className="p-3 border rounded-lg bg-white dark:bg-zinc-950 max-w-[360px]">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-muted-foreground">G</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-foreground">GetPawsy</span>
+                    <span className="text-[10px] text-muted-foreground truncate max-w-[280px]">
+                      getpawsy.lovable.app › {displayPaths.join(" › ")}
+                    </span>
+                  </div>
+                </div>
+                <div className="pt-1">
+                  <h4 className="text-base text-[#1a0dab] dark:text-[#8ab4f8] hover:underline cursor-pointer leading-tight">
+                    {headlines[0]} | {headlines[1]}
+                  </h4>
+                  <p className="text-xs text-[#4d5156] dark:text-[#bdc1c6] mt-1 leading-relaxed line-clamp-2">
+                    {descriptions[0]}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 pt-1">
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-[#dadce0] text-[#70757a] rounded-sm font-normal">
+                    Advertentie
+                  </Badge>
+                </div>
+              </div>
             </div>
           </div>
         </div>
