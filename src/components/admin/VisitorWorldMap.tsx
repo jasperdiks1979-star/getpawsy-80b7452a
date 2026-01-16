@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -67,6 +67,58 @@ export const VisitorWorldMap = () => {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("24h");
   const [activityFilter, setActivityFilter] = useState<"all" | "browsing" | "cart" | "checkout">("all");
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    // Load preference from localStorage
+    const saved = localStorage.getItem("checkout-sound-enabled");
+    return saved !== null ? saved === "true" : true;
+  });
+
+  // Play notification sound
+  const playNotificationSound = useCallback(() => {
+    if (!soundEnabled) return;
+    
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Create a pleasant "cha-ching" sound
+      const oscillator1 = audioContext.createOscillator();
+      const oscillator2 = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator1.connect(gainNode);
+      oscillator2.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // First note
+      oscillator1.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+      oscillator1.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+      oscillator1.type = "sine";
+      
+      // Second note (harmony)
+      oscillator2.frequency.setValueAtTime(392, audioContext.currentTime); // G4
+      oscillator2.frequency.setValueAtTime(523.25, audioContext.currentTime + 0.1); // C5
+      oscillator2.type = "sine";
+      
+      // Envelope
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.02);
+      gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.1);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.12);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.4);
+      
+      oscillator1.start(audioContext.currentTime);
+      oscillator2.start(audioContext.currentTime);
+      oscillator1.stop(audioContext.currentTime + 0.4);
+      oscillator2.stop(audioContext.currentTime + 0.4);
+    } catch (e) {
+      console.log("Could not play notification sound:", e);
+    }
+  }, [soundEnabled]);
+
+  // Save sound preference
+  useEffect(() => {
+    localStorage.setItem("checkout-sound-enabled", String(soundEnabled));
+  }, [soundEnabled]);
 
   // Get the time range in milliseconds
   const getTimeRangeMs = () => {
@@ -112,6 +164,7 @@ export const VisitorWorldMap = () => {
           const newActivity = payload.new as VisitorActivity;
           if (newActivity.activity_type === "checkout") {
             const location = newActivity.city || newActivity.country || "Onbekende locatie";
+            playNotificationSound();
             toast({
               title: "🎉 Nieuwe checkout!",
               description: `Een klant uit ${location} is aan het afrekenen`,
@@ -137,7 +190,7 @@ export const VisitorWorldMap = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch]);
+  }, [refetch, playNotificationSound]);
 
   // Initialize map
   useEffect(() => {
@@ -678,6 +731,25 @@ export const VisitorWorldMap = () => {
                 )}
                 <span className="text-sm">
                   {showHeatmap ? "Heatmap" : "Markers"}
+                </span>
+              </Label>
+            </div>
+
+            {/* Sound Toggle */}
+            <div className="flex items-center gap-2 px-2 border-l border-border">
+              <Switch
+                id="sound-toggle"
+                checked={soundEnabled}
+                onCheckedChange={setSoundEnabled}
+              />
+              <Label htmlFor="sound-toggle" className="flex items-center gap-1.5 cursor-pointer">
+                {soundEnabled ? (
+                  <Volume2 className="w-4 h-4 text-green-500" />
+                ) : (
+                  <VolumeX className="w-4 h-4 text-muted-foreground" />
+                )}
+                <span className="text-sm">
+                  Geluid
                 </span>
               </Label>
             </div>
