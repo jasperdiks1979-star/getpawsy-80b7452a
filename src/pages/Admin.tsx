@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +17,8 @@ import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { ContactMessagesManager } from "@/components/admin/ContactMessagesManager";
 import { SalesDashboard } from "@/components/admin/SalesDashboard";
 import { GoogleAdsGenerator } from "@/components/admin/GoogleAdsGenerator";
-import { VisitorWorldMap } from "@/components/admin/VisitorWorldMap";
+// Lazy load VisitorWorldMap to avoid loading mapbox-gl until needed
+const VisitorWorldMap = lazy(() => import("@/components/admin/VisitorWorldMap").then(module => ({ default: module.VisitorWorldMap })));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -1642,7 +1643,16 @@ const Admin = () => {
           {/* Visitor World Map Tab */}
           <TabsContent value="visitor-map">
             <AuthErrorBoundary>
-              <VisitorWorldMap />
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex items-center justify-center gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span>Wereldkaart laden...</span>
+                  </div>
+                </Card>
+              }>
+                <VisitorWorldMap />
+              </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
         </Tabs>
