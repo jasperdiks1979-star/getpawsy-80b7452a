@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
 import { CategoryManager } from "@/components/admin/CategoryManager";
@@ -95,6 +96,7 @@ const Admin = () => {
   const [myProductsStatusFilter, setMyProductsStatusFilter] = useState<string>("all");
   const [previewProduct, setPreviewProduct] = useState<CJProduct | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewEnabled, setPreviewEnabled] = useState(true);
   const queryClient = useQueryClient();
 
   // Redirect if not admin
@@ -1034,6 +1036,15 @@ const Admin = () => {
                       Dynamische prijzen + Gratis verzending inbegrepen
                     </Badge>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-muted-foreground">
+                      Product Preview
+                    </label>
+                    <Switch 
+                      checked={previewEnabled} 
+                      onCheckedChange={setPreviewEnabled}
+                    />
+                  </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-1 block">
                       Shop Categorie
@@ -1233,19 +1244,21 @@ const Admin = () => {
                                   <Ban className="w-3 h-3" />
                                 </Button>
                                 {/* Preview button */}
-                                <Button
-                                  variant="secondary"
-                                  size="icon"
-                                  className="absolute top-2 left-11 w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setPreviewProduct(product);
-                                    setPreviewOpen(true);
-                                  }}
-                                  title="Bekijk details"
-                                >
-                                  <Eye className="w-3 h-3" />
-                                </Button>
+                                {previewEnabled && (
+                                  <Button
+                                    variant="secondary"
+                                    size="icon"
+                                    className="absolute top-2 left-11 w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPreviewProduct(product);
+                                      setPreviewOpen(true);
+                                    }}
+                                    title="Bekijk details"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                  </Button>
+                                )}
                                 <Badge className="absolute bottom-2 left-2" variant="default">
                                   <PawPrint className="w-3 h-3 mr-1" />
                                   Free Shipping
@@ -1468,19 +1481,21 @@ const Admin = () => {
                               <Ban className="w-3 h-3" />
                             </Button>
                             {/* Preview button */}
-                            <Button
-                              variant="secondary"
-                              size="icon"
-                              className="absolute top-2 left-11 w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPreviewProduct(product);
-                                setPreviewOpen(true);
-                              }}
-                              title="Bekijk details"
-                            >
-                              <Eye className="w-3 h-3" />
-                            </Button>
+                            {previewEnabled && (
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="absolute top-2 left-11 w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreviewProduct(product);
+                                  setPreviewOpen(true);
+                                }}
+                                title="Bekijk details"
+                              >
+                                <Eye className="w-3 h-3" />
+                              </Button>
+                            )}
                             <Badge className="absolute bottom-2 left-2" variant="default">
                               Free Shipping
                             </Badge>
