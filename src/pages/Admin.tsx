@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye } from "lucide-react";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
 import { CategoryManager } from "@/components/admin/CategoryManager";
 import { OrdersManager } from "@/components/admin/OrdersManager";
 import { ContactMessagesManager } from "@/components/admin/ContactMessagesManager";
 import { BestsellerManager } from "@/components/admin/BestsellerManager";
+import { CJProductPreview } from "@/components/admin/CJProductPreview";
 
 // Lazy load heavy admin components to improve initial load time
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard").then(module => ({ default: module.AnalyticsDashboard })));
@@ -92,6 +93,8 @@ const Admin = () => {
   const [myProductsSearch, setMyProductsSearch] = useState("");
   const [myProductsCategoryFilter, setMyProductsCategoryFilter] = useState<string>("all");
   const [myProductsStatusFilter, setMyProductsStatusFilter] = useState<string>("all");
+  const [previewProduct, setPreviewProduct] = useState<CJProduct | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Redirect if not admin
@@ -1229,6 +1232,20 @@ const Admin = () => {
                                 >
                                   <Ban className="w-3 h-3" />
                                 </Button>
+                                {/* Preview button */}
+                                <Button
+                                  variant="secondary"
+                                  size="icon"
+                                  className="absolute top-2 left-11 w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPreviewProduct(product);
+                                    setPreviewOpen(true);
+                                  }}
+                                  title="Bekijk details"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                </Button>
                                 <Badge className="absolute bottom-2 left-2" variant="default">
                                   <PawPrint className="w-3 h-3 mr-1" />
                                   Free Shipping
@@ -1449,6 +1466,20 @@ const Admin = () => {
                               title="Blokkeer dit product"
                             >
                               <Ban className="w-3 h-3" />
+                            </Button>
+                            {/* Preview button */}
+                            <Button
+                              variant="secondary"
+                              size="icon"
+                              className="absolute top-2 left-11 w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewProduct(product);
+                                setPreviewOpen(true);
+                              }}
+                              title="Bekijk details"
+                            >
+                              <Eye className="w-3 h-3" />
                             </Button>
                             <Badge className="absolute bottom-2 left-2" variant="default">
                               Free Shipping
@@ -1890,6 +1921,18 @@ const Admin = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* CJ Product Preview Dialog */}
+        <CJProductPreview
+          product={previewProduct}
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          onImport={(product) => {
+            setPreviewOpen(false);
+            importMutation.mutate([product]);
+          }}
+          isImporting={importMutation.isPending}
+        />
       </div>
     </Layout>
   );
