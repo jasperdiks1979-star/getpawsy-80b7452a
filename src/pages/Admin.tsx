@@ -96,8 +96,16 @@ const Admin = () => {
   const [myProductsStatusFilter, setMyProductsStatusFilter] = useState<string>("all");
   const [previewProduct, setPreviewProduct] = useState<CJProduct | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewEnabled, setPreviewEnabled] = useState(true);
+  const [previewEnabled, setPreviewEnabled] = useState(() => {
+    const saved = localStorage.getItem('admin-preview-enabled');
+    return saved !== null ? saved === 'true' : true;
+  });
   const queryClient = useQueryClient();
+
+  // Save preview preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('admin-preview-enabled', String(previewEnabled));
+  }, [previewEnabled]);
 
   // Redirect if not admin
   useEffect(() => {
