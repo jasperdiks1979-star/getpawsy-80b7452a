@@ -145,6 +145,45 @@ export type Database = {
           },
         ]
       }
+      cj_product_bookmarks: {
+        Row: {
+          category_name: string | null
+          cj_product_id: string
+          created_at: string
+          id: string
+          product_image: string | null
+          product_name: string
+          product_sku: string | null
+          product_weight: number | null
+          sell_price: number | null
+          user_id: string
+        }
+        Insert: {
+          category_name?: string | null
+          cj_product_id: string
+          created_at?: string
+          id?: string
+          product_image?: string | null
+          product_name: string
+          product_sku?: string | null
+          product_weight?: number | null
+          sell_price?: number | null
+          user_id: string
+        }
+        Update: {
+          category_name?: string | null
+          cj_product_id?: string
+          created_at?: string
+          id?: string
+          product_image?: string | null
+          product_name?: string
+          product_sku?: string | null
+          product_weight?: number | null
+          sell_price?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       cj_token_cache: {
         Row: {
           access_token: string
