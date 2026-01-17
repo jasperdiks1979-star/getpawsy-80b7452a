@@ -69,31 +69,31 @@ const PaymentSuccess = () => {
           </motion.div>
 
           <h1 className="text-3xl md:text-4xl font-display font-bold mb-4">
-            Bedankt voor je bestelling! 🎉
+            Thank You for Your Order! 🎉
           </h1>
           
           <p className="text-lg text-muted-foreground mb-8">
-            Je bestelling is succesvol geplaatst. Je ontvangt binnenkort een bevestigingsmail 
-            met de details van je bestelling.
+            Your order has been successfully placed. You'll receive a confirmation email 
+            shortly with your order details.
           </p>
 
           <div className="bg-muted/50 rounded-2xl p-6 mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
               <Package className="w-6 h-6 text-primary" />
-              <h2 className="text-lg font-semibold">Wat gebeurt er nu?</h2>
+              <h2 className="text-lg font-semibold">What happens next?</h2>
             </div>
             <ul className="text-left space-y-3 text-muted-foreground">
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold">1.</span>
-                Je ontvangt een orderbevestiging per e-mail
+                You'll receive an order confirmation via email
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold">2.</span>
-                We bereiden je bestelling voor en sturen deze zo snel mogelijk op
+                We'll prepare your order and ship it as soon as possible
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold">3.</span>
-                Je ontvangt een track & trace code zodra je pakket onderweg is
+                You'll receive a tracking code once your package is on its way
               </li>
             </ul>
           </div>
@@ -101,13 +101,13 @@ const PaymentSuccess = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/products">
               <Button size="lg" className="gap-2">
-                Verder winkelen
+                Continue Shopping
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
             <Link to="/">
               <Button size="lg" variant="outline">
-                Terug naar home
+                Back to Home
               </Button>
             </Link>
           </div>
