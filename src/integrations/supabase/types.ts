@@ -244,6 +244,51 @@ export type Database = {
         }
         Relationships: []
       }
+      loss_making_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          margin_percentage: number
+          notified_at: string
+          product_id: string | null
+          product_name: string
+          total_loss: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          margin_percentage: number
+          notified_at?: string
+          product_id?: string | null
+          product_name: string
+          total_loss: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          margin_percentage?: number
+          notified_at?: string
+          product_id?: string | null
+          product_name?: string
+          total_loss?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loss_making_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loss_making_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_subscribers: {
         Row: {
           email: string

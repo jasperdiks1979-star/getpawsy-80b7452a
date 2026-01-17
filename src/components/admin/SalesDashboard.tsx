@@ -22,7 +22,9 @@ import {
   FileSpreadsheet,
   FileText,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Mail,
+  Loader2
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -1227,64 +1229,128 @@ export const SalesDashboard = () => {
         </Card>
 
         {/* Negative Margin Products (Loss-Making) */}
-        <Card className="border-red-200 dark:border-red-800">
-          <CardHeader>
+        <LossProductsCard 
+          isLoading={isLoading} 
+          products={stats.negativeMarginProducts} 
+          formatCurrency={formatCurrency} 
+        />
+      </div>
+    </div>
+  );
+};
+
+// Extracted Loss Products Card component with email notification button
+interface LossProductsCardProps {
+  isLoading: boolean;
+  products: Array<{
+    name: string;
+    quantity: number;
+    profit: number;
+    margin: number;
+  }>;
+  formatCurrency: (cents: number) => string;
+}
+
+const LossProductsCard = ({ isLoading, products, formatCurrency }: LossProductsCardProps) => {
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  const handleSendNotification = async () => {
+    setIsSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('notify-loss-products');
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success(`Email notificatie verstuurd voor ${data.products?.length || 0} product(en)`);
+      } else {
+        toast.info(data?.message || "Geen nieuwe verliesgevende producten om te melden");
+      }
+    } catch (error: any) {
+      console.error("Error sending notification:", error);
+      toast.error("Fout bij versturen notificatie: " + (error.message || "Onbekende fout"));
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  return (
+    <Card className="border-red-200 dark:border-red-800">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
             <CardTitle className="flex items-center gap-2">
               <TrendingDown className="w-5 h-5 text-red-500" />
               Verliesgevende Producten
             </CardTitle>
             <CardDescription>Producten die verlies opleveren en directe actie vereisen</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <Skeleton key={i} className="h-14 w-full" />
-                ))}
-              </div>
-            ) : stats.negativeMarginProducts.length > 0 ? (
-              <div className="space-y-3">
-                {stats.negativeMarginProducts.map((product, index) => (
-                  <div 
-                    key={product.name + index} 
-                    className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 dark:bg-red-900">
-                        <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm line-clamp-1">{product.name}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                          <span>{product.quantity}x verkocht</span>
-                          <span>•</span>
-                          <span className="text-red-600 dark:text-red-400">Verlies: {formatCurrency(Math.abs(product.profit))}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant="destructive">
-                      {product.margin.toFixed(1)}%
-                    </Badge>
+          </div>
+          {products.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSendNotification}
+              disabled={isSendingEmail}
+              className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950"
+            >
+              {isSendingEmail ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Mail className="w-4 h-4 mr-2" />
+              )}
+              Email Alert
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map(i => (
+              <Skeleton key={i} className="h-14 w-full" />
+            ))}
+          </div>
+        ) : products.length > 0 ? (
+          <div className="space-y-3">
+            {products.map((product, index) => (
+              <div 
+                key={product.name + index} 
+                className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 dark:bg-red-900">
+                    <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
                   </div>
-                ))}
-                <p className="text-xs text-red-600 dark:text-red-400 mt-2">
-                  ⚠️ Deze producten kosten meer dan ze opbrengen. Verhoog de prijs of stop met verkopen.
-                </p>
-              </div>
-            ) : (
-              <div className="py-8 text-center text-muted-foreground">
-                <div className="flex justify-center mb-2">
-                  <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-green-600" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm line-clamp-1">{product.name}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                      <span>{product.quantity}x verkocht</span>
+                      <span>•</span>
+                      <span className="text-red-600 dark:text-red-400">Verlies: {formatCurrency(Math.abs(product.profit))}</span>
+                    </div>
                   </div>
                 </div>
-                <p className="font-medium text-green-600">Geen verliesgevende producten!</p>
-                <p className="text-xs mt-1">Alle verkochte producten zijn winstgevend.</p>
+                <Badge variant="destructive">
+                  {product.margin.toFixed(1)}%
+                </Badge>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+            ))}
+            <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+              ⚠️ Deze producten kosten meer dan ze opbrengen. Verhoog de prijs of stop met verkopen.
+            </p>
+          </div>
+        ) : (
+          <div className="py-8 text-center text-muted-foreground">
+            <div className="flex justify-center mb-2">
+              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+            <p className="font-medium text-green-600">Geen verliesgevende producten!</p>
+            <p className="text-xs mt-1">Alle verkochte producten zijn winstgevend.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
