@@ -431,13 +431,13 @@ const ProductDetail = () => {
                     </div>
                     
                     {/* Mobile: Pinch-to-zoom image - no lightbox, direct swipe */}
-                    <div className="md:hidden w-full h-full pointer-events-none">
-                      <OptimizedImage
+                    <div className="md:hidden w-full h-full pointer-events-auto">
+                      <PinchZoomImage
                         src={images[selectedImage]}
                         alt={product.name}
                         className="object-contain"
                         containerClassName="w-full h-full"
-                        priority={selectedImage === 0}
+                        disabled={isDragging}
                       />
                     </div>
                   </motion.div>
