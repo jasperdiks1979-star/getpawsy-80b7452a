@@ -2425,6 +2425,12 @@ const Admin = () => {
           onOpenChange={setCompareDialogOpen}
           onRemoveProduct={(pid) => setCompareProducts(prev => prev.filter(p => p.pid !== pid))}
           onClearAll={() => setCompareProducts([])}
+          onImportAll={(products) => {
+            importMutation.mutate(products);
+            setCompareDialogOpen(false);
+            setCompareProducts([]);
+          }}
+          isImporting={importMutation.isPending}
         />
 
         {/* Floating Compare Bar */}
