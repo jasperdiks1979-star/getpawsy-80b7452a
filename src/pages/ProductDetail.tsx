@@ -50,6 +50,8 @@ const ProductDetail = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [autoplayPaused, setAutoplayPaused] = useState(false);
+  const autoplayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -65,14 +67,27 @@ const ProductDetail = () => {
       // Swiped left - next image
       setSelectedImage(prev => prev === imagesLength - 1 ? 0 : prev + 1);
       haptic.lightTap(); // Haptic feedback on swipe
+      pauseAutoplay();
     } else if (swipe > minSwipeDistance) {
       // Swiped right - previous image
       setSelectedImage(prev => prev === 0 ? imagesLength - 1 : prev - 1);
       haptic.lightTap(); // Haptic feedback on swipe
+      pauseAutoplay();
     }
     
     setDragX(0);
     setIsDragging(false);
+  };
+
+  // Pause autoplay helper (defined early for use in handleDragEnd)
+  const pauseAutoplay = () => {
+    setAutoplayPaused(true);
+    if (autoplayTimeoutRef.current) {
+      clearTimeout(autoplayTimeoutRef.current);
+    }
+    autoplayTimeoutRef.current = setTimeout(() => {
+      setAutoplayPaused(false);
+    }, 8000);
   };
 
   // Fetch product from database
@@ -351,12 +366,34 @@ const ProductDetail = () => {
   const descriptionHasHtml = product.description?.includes('<') && product.description?.includes('>');
 
   const handlePrevImage = () => {
+    pauseAutoplay();
     setSelectedImage(prev => prev === 0 ? images.length - 1 : prev - 1);
   };
 
   const handleNextImage = () => {
+    pauseAutoplay();
     setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
   };
+
+  // Auto-slideshow effect
+  useEffect(() => {
+    if (images.length <= 1 || autoplayPaused || lightboxOpen) return;
+
+    const interval = setInterval(() => {
+      setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [images.length, autoplayPaused, lightboxOpen]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoplayTimeoutRef.current) {
+        clearTimeout(autoplayTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const inWishlist = isInWishlist(product.id);
 
