@@ -65,6 +65,7 @@ const PET_CATEGORY_ID = '2409110611570657700';
 
 // Extended pet subcategory keywords for comprehensive filtering
 const PET_SUBCATEGORIES: Record<string, string[]> = {
+  // General categories
   'Pet Toys': ['toy', 'toys', 'ball', 'chew', 'squeaky', 'plush', 'rope', 'frisbee', 'fetch', 'puzzle', 'interactive', 'teaser', 'wand', 'kong', 'play', 'squeak', 'tug', 'throwing', 'catch'],
   'Pet Food & Treats': ['food', 'treat', 'treats', 'snack', 'bowl', 'feeder', 'feeding', 'water', 'fountain', 'dispenser', 'automatic', 'slow', 'portion', 'kibble', 'wet food', 'dry food'],
   'Pet Beds & Furniture': ['bed', 'beds', 'sofa', 'couch', 'mat', 'blanket', 'cushion', 'pillow', 'house', 'cave', 'nest', 'sleeping', 'orthopedic', 'donut', 'calming', 'elevated', 'hammock', 'window perch'],
@@ -72,16 +73,65 @@ const PET_SUBCATEGORIES: Record<string, string[]> = {
   'Pet Collars & Leashes': ['collar', 'leash', 'harness', 'lead', 'chain', 'tag', 'name', 'id', 'retractable', 'reflective', 'glow', 'led', 'nylon', 'leather', 'adjustable', 'breakaway', 'martingale'],
   'Pet Grooming': ['brush', 'comb', 'grooming', 'shampoo', 'nail', 'clipper', 'trimmer', 'bath', 'towel', 'dryer', 'deshedding', 'fur', 'hair', 'shedding', 'dematting', 'slicker', 'rake', 'scissors', 'ear', 'teeth', 'dental'],
   'Pet Carriers': ['carrier', 'bag', 'backpack', 'transport', 'travel', 'cage', 'crate', 'kennel', 'stroller', 'sling', 'airline', 'car seat', 'booster', 'pet seat', 'portable'],
-  'Cat Supplies': ['cat', 'kitten', 'scratching', 'scratcher', 'litter', 'catnip', 'climbing', 'tree', 'tower', 'perch', 'tunnel', 'laser', 'feather', 'mouse', 'mice', 'sisal', 'cardboard', 'window', 'condo', 'activity'],
-  'Dog Supplies': ['dog', 'puppy', 'canine', 'paw', 'muzzle', 'training', 'potty', 'pad', 'pee', 'waste', 'poop', 'bag', 'clicker', 'whistle', 'fence', 'gate', 'door', 'flap', 'ramp', 'stairs', 'step'],
-  'Small Pet Supplies': ['hamster', 'rabbit', 'bunny', 'guinea pig', 'bird', 'parrot', 'fish', 'aquarium', 'turtle', 'reptile', 'wheel', 'hideout', 'cage', 'tank', 'terrarium', 'bedding', 'hay', 'seed', 'pellet'],
   'Pet Health': ['medicine', 'supplement', 'vitamin', 'flea', 'tick', 'worm', 'dewormer', 'spray', 'cream', 'bandage', 'first aid', 'cone', 'recovery', 'calming', 'anxiety', 'joint', 'hip', 'senior'],
   'Pet Training': ['training', 'clicker', 'whistle', 'treat pouch', 'target', 'agility', 'tunnel', 'jump', 'weave', 'hurdle', 'course', 'obedience', 'puppy pad', 'potty training'],
   'Pet Accessories': ['id tag', 'charm', 'pendant', 'bell', 'camera', 'gps', 'tracker', 'monitor', 'pet cam', 'automatic', 'smart', 'wifi', 'app', 'remote'],
+  
+  // Dog specific
+  'Dog Supplies': ['dog', 'puppy', 'canine', 'paw', 'muzzle', 'training', 'potty', 'pad', 'pee', 'waste', 'poop', 'bag', 'clicker', 'whistle', 'fence', 'gate', 'door', 'flap', 'ramp', 'stairs', 'step'],
+  'Dog Toys': ['dog toy', 'chew toy', 'fetch', 'tennis ball', 'rope toy', 'squeaky dog', 'tug toy', 'dog ball', 'plush dog', 'interactive dog'],
+  'Dog Beds': ['dog bed', 'dog sofa', 'dog mat', 'dog cushion', 'dog blanket', 'orthopedic dog', 'elevated dog bed', 'cooling dog'],
+  'Dog Collars': ['dog collar', 'dog leash', 'dog harness', 'training collar', 'martingale', 'chain collar', 'prong collar', 'head collar'],
+  
+  // Cat specific
+  'Cat Supplies': ['cat', 'kitten', 'scratching', 'scratcher', 'litter', 'catnip', 'climbing', 'tree', 'tower', 'perch', 'tunnel', 'laser', 'feather', 'mouse', 'mice', 'sisal', 'cardboard', 'window', 'condo', 'activity'],
+  'Cat Trees': ['cat tree', 'scratching post', 'climbing tower', 'cat tower', 'cat condo', 'sisal', 'cat perch', 'cat furniture', 'multi-level', 'cat activity'],
+  'Cat Litter': ['litter', 'litter box', 'cat toilet', 'litter scoop', 'litter mat', 'self-cleaning', 'automatic litter', 'litter tray', 'covered litter'],
+  'Cat Toys': ['cat toy', 'feather toy', 'laser pointer', 'catnip toy', 'mouse toy', 'cat wand', 'interactive cat', 'cat ball', 'cat tunnel'],
+  
+  // Bird specific
+  'Bird Supplies': ['bird', 'parrot', 'parakeet', 'budgie', 'cockatiel', 'canary', 'finch', 'lovebird', 'conure', 'macaw', 'cockatoo', 'aviary', 'birdcage', 'perch', 'swing', 'ladder'],
+  'Bird Cages': ['bird cage', 'parrot cage', 'aviary', 'flight cage', 'breeding cage', 'travel cage bird', 'bird house', 'cage cover'],
+  'Bird Toys': ['bird toy', 'parrot toy', 'bird swing', 'bird ladder', 'bird perch', 'chewing toy bird', 'foraging toy', 'bird bell', 'bird mirror', 'climbing toy bird'],
+  'Bird Feeders': ['bird feeder', 'seed feeder', 'bird water', 'bird bath', 'bird bowl', 'automatic bird', 'nectar feeder', 'suet feeder'],
+  'Bird Accessories': ['cuttlebone', 'mineral block', 'bird vitamin', 'bird treat', 'bird harness', 'bird diaper', 'nesting box', 'bird nesting'],
+  
+  // Fish & Aquarium
+  'Fish Supplies': ['fish', 'aquarium', 'tank', 'goldfish', 'tropical fish', 'betta', 'guppy', 'tetra', 'cichlid', 'koi', 'pond'],
+  'Aquarium Equipment': ['aquarium filter', 'fish tank', 'aquarium pump', 'air pump', 'water pump', 'aquarium heater', 'aquarium light', 'led aquarium', 'co2', 'aquarium co2'],
+  'Aquarium Decor': ['aquarium decoration', 'fish tank decor', 'aquarium plant', 'artificial plant', 'aquarium rock', 'aquarium wood', 'driftwood', 'aquarium cave', 'aquarium background'],
+  'Fish Food': ['fish food', 'fish flakes', 'fish pellets', 'betta food', 'goldfish food', 'tropical fish food', 'freeze dried', 'bloodworm', 'brine shrimp'],
+  
+  // Reptile specific
+  'Reptile Supplies': ['reptile', 'lizard', 'gecko', 'bearded dragon', 'chameleon', 'iguana', 'snake', 'python', 'boa', 'turtle', 'tortoise', 'frog', 'terrarium', 'vivarium'],
+  'Reptile Terrariums': ['terrarium', 'vivarium', 'reptile tank', 'reptile cage', 'snake tank', 'gecko tank', 'turtle tank', 'reptile enclosure', 'glass tank'],
+  'Reptile Heating': ['heat lamp', 'heat mat', 'heating pad', 'basking lamp', 'ceramic heater', 'thermostat reptile', 'uvb lamp', 'uva lamp', 'reptile light'],
+  'Reptile Decor': ['reptile hide', 'reptile cave', 'basking rock', 'reptile branch', 'reptile plant', 'moss', 'substrate', 'coconut fiber', 'reptile bark'],
+  'Reptile Food': ['reptile food', 'cricket', 'mealworm', 'dubia roach', 'reptile calcium', 'vitamin d3', 'turtle food', 'tortoise food'],
+  
+  // Small pets (rabbits, hamsters, guinea pigs)
+  'Small Pet Supplies': ['hamster', 'rabbit', 'bunny', 'guinea pig', 'chinchilla', 'gerbil', 'ferret', 'hedgehog', 'mouse', 'rat', 'degu'],
+  'Small Pet Cages': ['hamster cage', 'rabbit cage', 'guinea pig cage', 'chinchilla cage', 'ferret cage', 'small animal cage', 'wire cage', 'modular cage'],
+  'Small Pet Toys': ['hamster wheel', 'exercise wheel', 'hamster ball', 'tunnel tube', 'chew toy wood', 'gnawing toy', 'hideaway', 'hammock small pet'],
+  'Small Pet Bedding': ['bedding', 'wood shavings', 'paper bedding', 'hay', 'timothy hay', 'alfalfa', 'nesting material', 'fleece liner'],
+  'Small Pet Food': ['rabbit food', 'guinea pig food', 'hamster food', 'chinchilla food', 'pellets', 'hay cubes', 'vegetable treats', 'fruit treats'],
+  
+  // Horse & Equestrian
+  'Horse Supplies': ['horse', 'pony', 'equestrian', 'stable', 'barn', 'paddock', 'riding', 'tack', 'equine', 'foal', 'mare', 'stallion'],
+  'Horse Tack': ['saddle', 'bridle', 'halter', 'reins', 'bit', 'girth', 'stirrup', 'saddle pad', 'numnah', 'martingale'],
+  'Horse Grooming': ['horse brush', 'curry comb', 'mane comb', 'hoof pick', 'horse shampoo', 'coat shine', 'fly spray', 'horse clipper'],
+  'Horse Blankets': ['horse blanket', 'fly sheet', 'turnout rug', 'stable blanket', 'cooler rug', 'exercise sheet', 'neck cover'],
+  'Horse Boots': ['horse boots', 'leg wraps', 'bandages', 'bell boots', 'splint boots', 'polo wraps', 'shipping boots'],
+  'Horse Treats': ['horse treat', 'horse snack', 'apple treat', 'carrot treat', 'sugar cube', 'horse cookie', 'lick block'],
+  
+  // Outdoor & Wildlife
+  'Wildlife & Garden': ['wildlife', 'garden', 'outdoor', 'wild bird', 'squirrel', 'hedgehog house', 'bat box', 'insect hotel', 'bee house'],
+  'Wild Bird Feeding': ['wild bird feeder', 'bird table', 'peanut feeder', 'fat ball', 'suet cake', 'nyjer seed', 'sunflower seed', 'bird seed mix'],
 };
 
-// Common search term mappings for better results
+// Common search term mappings for better results (Dutch to English)
 const SEARCH_TERM_EXPANSIONS: Record<string, string[]> = {
+  // Dutch pet terms
   'krabpaal': ['scratching', 'cat tree', 'scratcher', 'sisal'],
   'halsband': ['collar', 'necklace', 'band'],
   'riem': ['leash', 'lead', 'strap'],
@@ -93,6 +143,33 @@ const SEARCH_TERM_EXPANSIONS: Record<string, string[]> = {
   'bench': ['crate', 'cage', 'kennel'],
   'kattenluik': ['cat door', 'flap', 'pet door'],
   'hondenluik': ['dog door', 'flap', 'pet door'],
+  // Bird terms
+  'vogelkooi': ['bird cage', 'aviary', 'birdcage'],
+  'papegaai': ['parrot', 'parakeet', 'cockatoo'],
+  'parkiet': ['parakeet', 'budgie', 'budgerigar'],
+  'kanarie': ['canary', 'finch', 'songbird'],
+  // Fish terms
+  'aquarium': ['aquarium', 'fish tank', 'tank'],
+  'filter': ['filter', 'aquarium filter', 'pump'],
+  'verwarming': ['heater', 'aquarium heater', 'heating'],
+  'goudvis': ['goldfish', 'gold fish', 'fancy goldfish'],
+  // Reptile terms
+  'terrarium': ['terrarium', 'vivarium', 'reptile tank'],
+  'slang': ['snake', 'python', 'boa'],
+  'hagedis': ['lizard', 'gecko', 'bearded dragon'],
+  'schildpad': ['turtle', 'tortoise', 'terrapin'],
+  // Small pet terms
+  'konijn': ['rabbit', 'bunny', 'hare'],
+  'hamster': ['hamster', 'dwarf hamster', 'syrian'],
+  'cavia': ['guinea pig', 'cavy', 'guinea'],
+  'chinchilla': ['chinchilla', 'chin'],
+  'fret': ['ferret', 'polecat'],
+  // Horse terms
+  'paard': ['horse', 'pony', 'equine'],
+  'zadel': ['saddle', 'riding saddle', 'dressage'],
+  'hoofdstel': ['bridle', 'halter', 'headstall'],
+  'hoefijzer': ['horseshoe', 'hoof', 'farrier'],
+  'paardendeken': ['horse blanket', 'rug', 'turnout'],
 };
 
 // Helper function to check if product matches subcategory keywords

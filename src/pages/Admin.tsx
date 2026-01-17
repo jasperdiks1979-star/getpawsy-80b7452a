@@ -884,8 +884,11 @@ const Admin = () => {
                         <SelectTrigger className="w-52">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="max-h-[400px]">
+                          {/* Alle producten */}
                           <SelectItem value="all">🐾 Alle Huisdierproducten</SelectItem>
+                          
+                          {/* Algemene categorieën */}
                           <SelectItem value="Pet Toys">🎾 Speelgoed</SelectItem>
                           <SelectItem value="Pet Beds & Furniture">🛏️ Bedden & Meubels</SelectItem>
                           <SelectItem value="Pet Food & Treats">🍖 Voer & Snacks</SelectItem>
@@ -893,12 +896,60 @@ const Admin = () => {
                           <SelectItem value="Pet Clothing">👕 Kleding</SelectItem>
                           <SelectItem value="Pet Grooming">✂️ Verzorging</SelectItem>
                           <SelectItem value="Pet Carriers">🎒 Reizen & Transport</SelectItem>
-                          <SelectItem value="Cat Supplies">🐱 Katten Supplies</SelectItem>
-                          <SelectItem value="Dog Supplies">🐕 Honden Supplies</SelectItem>
-                          <SelectItem value="Small Pet Supplies">🐹 Kleine Huisdieren</SelectItem>
                           <SelectItem value="Pet Health">💊 Gezondheid</SelectItem>
                           <SelectItem value="Pet Training">🎓 Training</SelectItem>
                           <SelectItem value="Pet Accessories">🔌 Accessoires</SelectItem>
+                          
+                          {/* Honden */}
+                          <SelectItem value="Dog Supplies">🐕 Honden - Algemeen</SelectItem>
+                          <SelectItem value="Dog Toys">🐕 Honden - Speelgoed</SelectItem>
+                          <SelectItem value="Dog Beds">🐕 Honden - Bedden</SelectItem>
+                          <SelectItem value="Dog Collars">🐕 Honden - Halsbanden</SelectItem>
+                          
+                          {/* Katten */}
+                          <SelectItem value="Cat Supplies">🐱 Katten - Algemeen</SelectItem>
+                          <SelectItem value="Cat Trees">🐱 Katten - Krabpalen</SelectItem>
+                          <SelectItem value="Cat Litter">🐱 Katten - Kattenbak</SelectItem>
+                          <SelectItem value="Cat Toys">🐱 Katten - Speelgoed</SelectItem>
+                          
+                          {/* Vogels */}
+                          <SelectItem value="Bird Supplies">🦜 Vogels - Algemeen</SelectItem>
+                          <SelectItem value="Bird Cages">🦜 Vogels - Kooien</SelectItem>
+                          <SelectItem value="Bird Toys">🦜 Vogels - Speelgoed</SelectItem>
+                          <SelectItem value="Bird Feeders">🦜 Vogels - Voerbakken</SelectItem>
+                          <SelectItem value="Bird Accessories">🦜 Vogels - Accessoires</SelectItem>
+                          
+                          {/* Vissen & Aquarium */}
+                          <SelectItem value="Fish Supplies">🐠 Vissen - Algemeen</SelectItem>
+                          <SelectItem value="Aquarium Equipment">🐠 Aquarium - Apparatuur</SelectItem>
+                          <SelectItem value="Aquarium Decor">🐠 Aquarium - Decoratie</SelectItem>
+                          <SelectItem value="Fish Food">🐠 Vissen - Voer</SelectItem>
+                          
+                          {/* Reptielen */}
+                          <SelectItem value="Reptile Supplies">🦎 Reptielen - Algemeen</SelectItem>
+                          <SelectItem value="Reptile Terrariums">🦎 Reptielen - Terrariums</SelectItem>
+                          <SelectItem value="Reptile Heating">🦎 Reptielen - Verwarming</SelectItem>
+                          <SelectItem value="Reptile Decor">🦎 Reptielen - Decoratie</SelectItem>
+                          <SelectItem value="Reptile Food">🦎 Reptielen - Voer</SelectItem>
+                          
+                          {/* Kleine huisdieren */}
+                          <SelectItem value="Small Pet Supplies">🐹 Kleine Huisdieren - Algemeen</SelectItem>
+                          <SelectItem value="Small Pet Cages">🐹 Kleine Huisdieren - Kooien</SelectItem>
+                          <SelectItem value="Small Pet Toys">🐹 Kleine Huisdieren - Speelgoed</SelectItem>
+                          <SelectItem value="Small Pet Bedding">🐹 Kleine Huisdieren - Bodembedekking</SelectItem>
+                          <SelectItem value="Small Pet Food">🐹 Kleine Huisdieren - Voer</SelectItem>
+                          
+                          {/* Paarden */}
+                          <SelectItem value="Horse Supplies">🐴 Paarden - Algemeen</SelectItem>
+                          <SelectItem value="Horse Tack">🐴 Paarden - Zadels & Tuig</SelectItem>
+                          <SelectItem value="Horse Grooming">🐴 Paarden - Verzorging</SelectItem>
+                          <SelectItem value="Horse Blankets">🐴 Paarden - Dekens</SelectItem>
+                          <SelectItem value="Horse Boots">🐴 Paarden - Beenbeschermers</SelectItem>
+                          <SelectItem value="Horse Treats">🐴 Paarden - Snacks</SelectItem>
+                          
+                          {/* Outdoor & Wildlife */}
+                          <SelectItem value="Wildlife & Garden">🌿 Wilde dieren & Tuin</SelectItem>
+                          <SelectItem value="Wild Bird Feeding">🌿 Tuinvogels - Voeren</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button 
