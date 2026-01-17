@@ -997,68 +997,144 @@ export const SalesDashboard = () => {
         </Card>
       </div>
 
-      {/* Most Profitable Products */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-green-600" />
-            Meest Winstgevende Producten
-          </CardTitle>
-          <CardDescription>Top 5 producten gerangschikt op winst (omzet - kostprijs)</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map(i => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
-          ) : stats.mostProfitableProducts.length > 0 ? (
-            <div className="space-y-3">
-              {stats.mostProfitableProducts.map((product, index) => {
-                const marginPercent = product.revenue > 0 
-                  ? ((product.profit / product.revenue) * 100).toFixed(0) 
-                  : "0";
-                return (
-                  <div 
-                    key={product.name + index} 
-                    className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+      {/* Profit Chart & Most Profitable Products */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Profit per Product Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-600" />
+              Winst per Product
+            </CardTitle>
+            <CardDescription>Visualisatie van winst, omzet en kosten per product</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-80 w-full" />
+            ) : stats.mostProfitableProducts.length > 0 ? (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={stats.mostProfitableProducts.map(p => ({
+                      name: p.name.length > 15 ? p.name.substring(0, 15) + "..." : p.name,
+                      fullName: p.name,
+                      Winst: p.profit / 100,
+                      Omzet: p.revenue / 100,
+                      Kosten: p.cost / 100,
+                    }))}
+                    layout="vertical"
+                    margin={{ left: 20, right: 20, top: 10, bottom: 10 }}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold text-primary w-8">
-                        #{index + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm line-clamp-1">{product.name}</p>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                          <span>{product.quantity}x verkocht</span>
-                          <span>•</span>
-                          <span>Omzet: {formatCurrency(product.revenue)}</span>
-                          <span>•</span>
-                          <span>Kosten: {formatCurrency(product.cost)}</span>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={true} vertical={false} />
+                    <XAxis 
+                      type="number" 
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(value) => `€${value.toFixed(0)}`}
+                    />
+                    <YAxis 
+                      type="category" 
+                      dataKey="name" 
+                      tick={{ fontSize: 11 }}
+                      width={100}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px"
+                      }}
+                      formatter={(value: number, name: string) => [
+                        `€${value.toFixed(2)}`,
+                        name
+                      ]}
+                      labelFormatter={(label, payload) => {
+                        if (payload && payload[0]) {
+                          return payload[0].payload.fullName;
+                        }
+                        return label;
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="Omzet" fill="hsl(217, 91%, 60%)" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="Kosten" fill="hsl(0, 84%, 60%)" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="Winst" fill="hsl(142, 76%, 36%)" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-80 flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <p>Nog geen winstgegevens beschikbaar.</p>
+                  <p className="text-xs mt-1">Winst wordt berekend zodra er orders zijn met producten die een kostprijs hebben.</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Most Profitable Products List */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-600" />
+              Meest Winstgevende Producten
+            </CardTitle>
+            <CardDescription>Top 5 producten gerangschikt op winst (omzet - kostprijs)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : stats.mostProfitableProducts.length > 0 ? (
+              <div className="space-y-3">
+                {stats.mostProfitableProducts.map((product, index) => {
+                  const marginPercent = product.revenue > 0 
+                    ? ((product.profit / product.revenue) * 100).toFixed(0) 
+                    : "0";
+                  return (
+                    <div 
+                      key={product.name + index} 
+                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg font-bold text-primary w-8">
+                          #{index + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm line-clamp-1">{product.name}</p>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                            <span>{product.quantity}x verkocht</span>
+                            <span>•</span>
+                            <span>Omzet: {formatCurrency(product.revenue)}</span>
+                            <span>•</span>
+                            <span>Kosten: {formatCurrency(product.cost)}</span>
+                          </div>
                         </div>
                       </div>
+                      <div className="text-right">
+                        <p className="font-bold text-green-600">
+                          {formatCurrency(product.profit)}
+                        </p>
+                        <Badge variant="secondary" className="text-xs mt-1">
+                          {marginPercent}% marge
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-green-600">
-                        {formatCurrency(product.profit)}
-                      </p>
-                      <Badge variant="secondary" className="text-xs mt-1">
-                        {marginPercent}% marge
-                      </Badge>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="py-8 text-center text-muted-foreground">
-              <p>Nog geen winstgegevens beschikbaar.</p>
-              <p className="text-xs mt-1">Winst wordt berekend zodra er orders zijn met producten die een kostprijs hebben.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-muted-foreground">
+                <p>Nog geen winstgegevens beschikbaar.</p>
+                <p className="text-xs mt-1">Winst wordt berekend zodra er orders zijn met producten die een kostprijs hebben.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
