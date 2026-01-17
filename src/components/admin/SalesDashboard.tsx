@@ -13,6 +13,7 @@ import {
   Euro, 
   ShoppingCart, 
   TrendingUp, 
+  TrendingDown,
   Package, 
   Users,
   ArrowUpRight,
@@ -20,7 +21,8 @@ import {
   CalendarIcon,
   FileSpreadsheet,
   FileText,
-  X
+  X,
+  AlertTriangle
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -390,6 +392,31 @@ export const SalesDashboard = () => {
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 5);
 
+    // Low margin products (below 30% margin threshold)
+    const LOW_MARGIN_THRESHOLD = 30;
+    const lowMarginProducts = Object.values(productProfits)
+      .filter(p => {
+        if (p.revenue <= 0 || p.cost <= 0) return false; // Skip products without proper cost data
+        const margin = (p.profit / p.revenue) * 100;
+        return margin < LOW_MARGIN_THRESHOLD && margin >= 0; // Only positive but low margin
+      })
+      .map(p => ({
+        ...p,
+        margin: p.revenue > 0 ? (p.profit / p.revenue) * 100 : 0,
+      }))
+      .sort((a, b) => a.margin - b.margin) // Sort by lowest margin first
+      .slice(0, 5);
+
+    // Products with negative margin (loss-making)
+    const negativeMarginProducts = Object.values(productProfits)
+      .filter(p => p.profit < 0)
+      .map(p => ({
+        ...p,
+        margin: p.revenue > 0 ? (p.profit / p.revenue) * 100 : -100,
+      }))
+      .sort((a, b) => a.margin - b.margin) // Sort by most negative first
+      .slice(0, 5);
+
     // Recent orders
     const recentOrders = filteredOrders.slice(0, 5);
 
@@ -410,6 +437,8 @@ export const SalesDashboard = () => {
       statusDistribution,
       topProducts,
       mostProfitableProducts,
+      lowMarginProducts,
+      negativeMarginProducts,
       recentOrders,
     };
   }, [filteredOrders, dateRangeDays, startDate, endDate, productCostMap]);
@@ -1130,6 +1159,127 @@ export const SalesDashboard = () => {
               <div className="py-8 text-center text-muted-foreground">
                 <p>Nog geen winstgegevens beschikbaar.</p>
                 <p className="text-xs mt-1">Winst wordt berekend zodra er orders zijn met producten die een kostprijs hebben.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Margin Analysis Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Low Margin Products */}
+        <Card className="border-amber-200 dark:border-amber-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Lage Marge Producten
+            </CardTitle>
+            <CardDescription>Producten met een marge onder 30% die aandacht nodig hebben</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <Skeleton key={i} className="h-14 w-full" />
+                ))}
+              </div>
+            ) : stats.lowMarginProducts.length > 0 ? (
+              <div className="space-y-3">
+                {stats.lowMarginProducts.map((product, index) => (
+                  <div 
+                    key={product.name + index} 
+                    className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900">
+                        <TrendingDown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm line-clamp-1">{product.name}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                          <span>{product.quantity}x verkocht</span>
+                          <span>•</span>
+                          <span>Winst: {formatCurrency(product.profit)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400">
+                      {product.margin.toFixed(1)}% marge
+                    </Badge>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground mt-2">
+                  💡 Tip: Overweeg prijsverhoging of zoek goedkopere leveranciers voor deze producten.
+                </p>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-muted-foreground">
+                <div className="flex justify-center mb-2">
+                  <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+                <p className="font-medium text-green-600">Alle producten hebben gezonde marges!</p>
+                <p className="text-xs mt-1">Geen producten met marge onder 30%.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Negative Margin Products (Loss-Making) */}
+        <Card className="border-red-200 dark:border-red-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingDown className="w-5 h-5 text-red-500" />
+              Verliesgevende Producten
+            </CardTitle>
+            <CardDescription>Producten die verlies opleveren en directe actie vereisen</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <Skeleton key={i} className="h-14 w-full" />
+                ))}
+              </div>
+            ) : stats.negativeMarginProducts.length > 0 ? (
+              <div className="space-y-3">
+                {stats.negativeMarginProducts.map((product, index) => (
+                  <div 
+                    key={product.name + index} 
+                    className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 dark:bg-red-900">
+                        <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm line-clamp-1">{product.name}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                          <span>{product.quantity}x verkocht</span>
+                          <span>•</span>
+                          <span className="text-red-600 dark:text-red-400">Verlies: {formatCurrency(Math.abs(product.profit))}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Badge variant="destructive">
+                      {product.margin.toFixed(1)}%
+                    </Badge>
+                  </div>
+                ))}
+                <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                  ⚠️ Deze producten kosten meer dan ze opbrengen. Verhoog de prijs of stop met verkopen.
+                </p>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-muted-foreground">
+                <div className="flex justify-center mb-2">
+                  <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+                <p className="font-medium text-green-600">Geen verliesgevende producten!</p>
+                <p className="text-xs mt-1">Alle verkochte producten zijn winstgevend.</p>
               </div>
             )}
           </CardContent>
