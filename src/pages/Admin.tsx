@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
 import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
 import { CategoryManager } from "@/components/admin/CategoryManager";
@@ -94,6 +95,8 @@ const Admin = () => {
   const [myProductsSearch, setMyProductsSearch] = useState("");
   const [myProductsCategoryFilter, setMyProductsCategoryFilter] = useState<string>("all");
   const [myProductsStatusFilter, setMyProductsStatusFilter] = useState<string>("all");
+  const [selectedMyProducts, setSelectedMyProducts] = useState<Set<string>>(new Set());
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<CJProduct | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewEnabled, setPreviewEnabled] = useState(() => {
@@ -635,6 +638,50 @@ const Admin = () => {
     },
     onError: (error) => {
       toast.error(`Verwijderen mislukt: ${error.message}`);
+    },
+  });
+
+  // Bulk activate/deactivate products mutation
+  const bulkToggleActiveMutation = useMutation({
+    mutationFn: async ({ productIds, isActive }: { productIds: string[]; isActive: boolean }) => {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_active: isActive })
+        .in("id", productIds);
+      
+      if (error) throw error;
+      return { count: productIds.length, isActive };
+    },
+    onSuccess: (data) => {
+      toast.success(`${data.count} producten ${data.isActive ? 'geactiveerd' : 'gedeactiveerd'}`);
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      setSelectedMyProducts(new Set());
+    },
+    onError: (error) => {
+      toast.error(`Bulk update mislukt: ${error.message}`);
+    },
+  });
+
+  // Bulk delete products mutation
+  const bulkDeleteProductsMutation = useMutation({
+    mutationFn: async (productIds: string[]) => {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .in("id", productIds);
+      
+      if (error) throw error;
+      return productIds.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count} producten verwijderd`);
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["pet-catalog"] });
+      setSelectedMyProducts(new Set());
+      setBulkDeleteDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(`Bulk verwijderen mislukt: ${error.message}`);
     },
   });
 
@@ -1684,8 +1731,107 @@ const Admin = () => {
                 
                 const hasActiveFilters = myProductsSearch || myProductsCategoryFilter !== "all" || myProductsStatusFilter !== "all";
                 
+                // Helper functions for bulk selection
+                const toggleMyProduct = (productId: string) => {
+                  const newSelected = new Set(selectedMyProducts);
+                  if (newSelected.has(productId)) {
+                    newSelected.delete(productId);
+                  } else {
+                    newSelected.add(productId);
+                  }
+                  setSelectedMyProducts(newSelected);
+                };
+                
+                const selectAllFiltered = () => {
+                  setSelectedMyProducts(new Set(filteredProducts.map(p => p.id)));
+                };
+                
+                const deselectAllMyProducts = () => {
+                  setSelectedMyProducts(new Set());
+                };
+                
                 return filteredProducts.length > 0 ? (
                   <>
+                    {/* Bulk Actions Bar */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground">
+                          {selectedMyProducts.size > 0 
+                            ? `${selectedMyProducts.size} geselecteerd` 
+                            : `${filteredProducts.length} producten`}
+                        </span>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={selectAllFiltered}
+                          disabled={selectedMyProducts.size === filteredProducts.length}
+                        >
+                          <CheckSquare className="w-4 h-4 mr-1" />
+                          Alles
+                        </Button>
+                        {selectedMyProducts.size > 0 && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={deselectAllMyProducts}
+                          >
+                            <Square className="w-4 h-4 mr-1" />
+                            Deselecteer
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {selectedMyProducts.size > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => bulkToggleActiveMutation.mutate({ 
+                              productIds: Array.from(selectedMyProducts), 
+                              isActive: true 
+                            })}
+                            disabled={bulkToggleActiveMutation.isPending}
+                          >
+                            {bulkToggleActiveMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                            ) : (
+                              <Power className="w-4 h-4 mr-1" />
+                            )}
+                            Activeer
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => bulkToggleActiveMutation.mutate({ 
+                              productIds: Array.from(selectedMyProducts), 
+                              isActive: false 
+                            })}
+                            disabled={bulkToggleActiveMutation.isPending}
+                          >
+                            {bulkToggleActiveMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                            ) : (
+                              <PowerOff className="w-4 h-4 mr-1" />
+                            )}
+                            Deactiveer
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setBulkDeleteDialogOpen(true)}
+                            disabled={bulkDeleteProductsMutation.isPending}
+                          >
+                            {bulkDeleteProductsMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4 mr-1" />
+                            )}
+                            Verwijder ({selectedMyProducts.size})
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    
                     {hasActiveFilters && (
                       <p className="text-sm text-muted-foreground mb-3">
                         {filteredProducts.length} van {existingProducts?.length || 0} producten gevonden
@@ -1693,9 +1839,24 @@ const Admin = () => {
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {filteredProducts.map((product) => (
-                    <Card key={product.id} className="group">
+                    <Card 
+                      key={product.id} 
+                      className={`group cursor-pointer transition-all ${selectedMyProducts.has(product.id) ? 'ring-2 ring-primary' : ''}`}
+                      onClick={() => toggleMyProduct(product.id)}
+                    >
                       <CardContent className="p-4">
                         <div className="relative">
+                          {/* Selection checkbox */}
+                          <div 
+                            className="absolute top-2 left-2 z-10"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Checkbox 
+                              checked={selectedMyProducts.has(product.id)}
+                              onCheckedChange={() => toggleMyProduct(product.id)}
+                              className="bg-background"
+                            />
+                          </div>
                           <img
                             src={product.image_url || "/placeholder.svg"}
                             alt={product.name}
@@ -1711,7 +1872,8 @@ const Admin = () => {
                             <Button
                               variant="secondary"
                               size="sm"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setEditProduct(product);
                                 setEditDialogOpen(true);
                               }}
@@ -1722,7 +1884,10 @@ const Admin = () => {
                             <Button
                               variant="destructive"
                               size="sm"
-                              onClick={() => handleDeleteProduct(product.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteProduct(product.id);
+                              }}
                             >
                               <Trash2 className="w-3 h-3" />
                             </Button>
@@ -1940,6 +2105,37 @@ const Admin = () => {
                   <Trash2 className="w-4 h-4 mr-2" />
                 )}
                 Verwijderen
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Bulk Delete Confirmation Dialog */}
+        <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-destructive" />
+                {selectedMyProducts.size} producten verwijderen
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Weet je zeker dat je {selectedMyProducts.size} producten wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setBulkDeleteDialogOpen(false)}>
+                Annuleren
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => bulkDeleteProductsMutation.mutate(Array.from(selectedMyProducts))}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {bulkDeleteProductsMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4 mr-2" />
+                )}
+                Verwijder alles
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
