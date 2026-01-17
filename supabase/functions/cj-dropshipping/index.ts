@@ -63,18 +63,36 @@ interface CJProductDetail {
 // Pet Supplies category ID from CJ Dropshipping website
 const PET_CATEGORY_ID = '2409110611570657700';
 
-// Pet subcategory keywords for better filtering
+// Extended pet subcategory keywords for comprehensive filtering
 const PET_SUBCATEGORIES: Record<string, string[]> = {
-  'Pet Toys': ['toy', 'toys', 'ball', 'chew', 'squeaky', 'plush', 'rope', 'frisbee', 'fetch', 'puzzle', 'interactive', 'teaser', 'wand'],
-  'Pet Food & Treats': ['food', 'treat', 'treats', 'snack', 'bowl', 'feeder', 'feeding', 'water', 'fountain', 'dispenser'],
-  'Pet Beds & Furniture': ['bed', 'beds', 'sofa', 'couch', 'mat', 'blanket', 'cushion', 'pillow', 'house', 'cave', 'nest', 'sleeping'],
-  'Pet Clothing': ['clothes', 'clothing', 'sweater', 'jacket', 'coat', 'costume', 'dress', 'shirt', 'hoodie', 'raincoat', 'vest'],
-  'Pet Collars & Leashes': ['collar', 'leash', 'harness', 'lead', 'chain', 'tag', 'name', 'id'],
-  'Pet Grooming': ['brush', 'comb', 'grooming', 'shampoo', 'nail', 'clipper', 'trimmer', 'bath', 'towel', 'dryer', 'deshedding'],
-  'Pet Carriers': ['carrier', 'bag', 'backpack', 'transport', 'travel', 'cage', 'crate', 'kennel', 'stroller'],
-  'Cat Supplies': ['cat', 'kitten', 'scratching', 'scratcher', 'litter', 'catnip', 'climbing', 'tree', 'tower', 'perch'],
-  'Dog Supplies': ['dog', 'puppy', 'canine', 'paw', 'muzzle', 'training', 'potty', 'pad'],
-  'Small Pet Supplies': ['hamster', 'rabbit', 'guinea', 'bird', 'fish', 'aquarium', 'turtle', 'reptile', 'wheel', 'hideout'],
+  'Pet Toys': ['toy', 'toys', 'ball', 'chew', 'squeaky', 'plush', 'rope', 'frisbee', 'fetch', 'puzzle', 'interactive', 'teaser', 'wand', 'kong', 'play', 'squeak', 'tug', 'throwing', 'catch'],
+  'Pet Food & Treats': ['food', 'treat', 'treats', 'snack', 'bowl', 'feeder', 'feeding', 'water', 'fountain', 'dispenser', 'automatic', 'slow', 'portion', 'kibble', 'wet food', 'dry food'],
+  'Pet Beds & Furniture': ['bed', 'beds', 'sofa', 'couch', 'mat', 'blanket', 'cushion', 'pillow', 'house', 'cave', 'nest', 'sleeping', 'orthopedic', 'donut', 'calming', 'elevated', 'hammock', 'window perch'],
+  'Pet Clothing': ['clothes', 'clothing', 'sweater', 'jacket', 'coat', 'costume', 'dress', 'shirt', 'hoodie', 'raincoat', 'vest', 'pajamas', 'boots', 'shoes', 'socks', 'bandana', 'bow tie', 'hat', 'winter', 'summer'],
+  'Pet Collars & Leashes': ['collar', 'leash', 'harness', 'lead', 'chain', 'tag', 'name', 'id', 'retractable', 'reflective', 'glow', 'led', 'nylon', 'leather', 'adjustable', 'breakaway', 'martingale'],
+  'Pet Grooming': ['brush', 'comb', 'grooming', 'shampoo', 'nail', 'clipper', 'trimmer', 'bath', 'towel', 'dryer', 'deshedding', 'fur', 'hair', 'shedding', 'dematting', 'slicker', 'rake', 'scissors', 'ear', 'teeth', 'dental'],
+  'Pet Carriers': ['carrier', 'bag', 'backpack', 'transport', 'travel', 'cage', 'crate', 'kennel', 'stroller', 'sling', 'airline', 'car seat', 'booster', 'pet seat', 'portable'],
+  'Cat Supplies': ['cat', 'kitten', 'scratching', 'scratcher', 'litter', 'catnip', 'climbing', 'tree', 'tower', 'perch', 'tunnel', 'laser', 'feather', 'mouse', 'mice', 'sisal', 'cardboard', 'window', 'condo', 'activity'],
+  'Dog Supplies': ['dog', 'puppy', 'canine', 'paw', 'muzzle', 'training', 'potty', 'pad', 'pee', 'waste', 'poop', 'bag', 'clicker', 'whistle', 'fence', 'gate', 'door', 'flap', 'ramp', 'stairs', 'step'],
+  'Small Pet Supplies': ['hamster', 'rabbit', 'bunny', 'guinea pig', 'bird', 'parrot', 'fish', 'aquarium', 'turtle', 'reptile', 'wheel', 'hideout', 'cage', 'tank', 'terrarium', 'bedding', 'hay', 'seed', 'pellet'],
+  'Pet Health': ['medicine', 'supplement', 'vitamin', 'flea', 'tick', 'worm', 'dewormer', 'spray', 'cream', 'bandage', 'first aid', 'cone', 'recovery', 'calming', 'anxiety', 'joint', 'hip', 'senior'],
+  'Pet Training': ['training', 'clicker', 'whistle', 'treat pouch', 'target', 'agility', 'tunnel', 'jump', 'weave', 'hurdle', 'course', 'obedience', 'puppy pad', 'potty training'],
+  'Pet Accessories': ['id tag', 'charm', 'pendant', 'bell', 'camera', 'gps', 'tracker', 'monitor', 'pet cam', 'automatic', 'smart', 'wifi', 'app', 'remote'],
+};
+
+// Common search term mappings for better results
+const SEARCH_TERM_EXPANSIONS: Record<string, string[]> = {
+  'krabpaal': ['scratching', 'cat tree', 'scratcher', 'sisal'],
+  'halsband': ['collar', 'necklace', 'band'],
+  'riem': ['leash', 'lead', 'strap'],
+  'mand': ['bed', 'basket', 'nest'],
+  'speeltje': ['toy', 'play', 'interactive'],
+  'voerbak': ['bowl', 'feeder', 'dish'],
+  'drinkbak': ['water', 'fountain', 'bowl'],
+  'kam': ['brush', 'comb', 'grooming'],
+  'bench': ['crate', 'cage', 'kennel'],
+  'kattenluik': ['cat door', 'flap', 'pet door'],
+  'hondenluik': ['dog door', 'flap', 'pet door'],
 };
 
 // Helper function to check if product matches subcategory keywords
@@ -91,15 +109,43 @@ function filterProductsBySubcategory(products: CJProductDetail[], subcategory: s
   return products.filter(p => productMatchesKeywords(p.productNameEn, keywords));
 }
 
+// Expand search terms with related keywords (including Dutch to English)
+function expandSearchTerms(keyword: string): string[] {
+  const lowerKeyword = keyword.toLowerCase();
+  const expanded: string[] = [keyword];
+  
+  // Check if it's a Dutch term that needs expansion
+  for (const [dutch, english] of Object.entries(SEARCH_TERM_EXPANSIONS)) {
+    if (lowerKeyword.includes(dutch)) {
+      expanded.push(...english);
+    }
+  }
+  
+  // Add common variations
+  if (!lowerKeyword.endsWith('s')) {
+    expanded.push(keyword + 's'); // Add plural
+  }
+  if (lowerKeyword.endsWith('s') && lowerKeyword.length > 2) {
+    expanded.push(keyword.slice(0, -1)); // Add singular
+  }
+  
+  return [...new Set(expanded)]; // Remove duplicates
+}
+
 // Search for pet products from US warehouse using the correct category endpoint
 // Uses CJ API's productNameEn parameter for server-side filtering when searching
-async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSize = 50, keyword?: string) {
+// Now supports advanced search with multiple strategies
+async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSize = 50, keyword?: string, searchMode: 'category' | 'global' | 'advanced' = 'category') {
   const params: Record<string, string> = {
     pageNum: pageNum.toString(),
     pageSize: pageSize.toString(),
-    categoryId: PET_CATEGORY_ID,
     countryCode: 'US',
   };
+  
+  // Only add category filter for category mode
+  if (searchMode === 'category') {
+    params.categoryId = PET_CATEGORY_ID;
+  }
   
   // Determine the search keyword to send to CJ API
   let apiSearchKeyword: string | null = null;
@@ -114,8 +160,10 @@ async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSiz
       apiSearchKeyword = categoryKeywords[0]; // e.g., 'toy' for Pet Toys
       clientSideFilter = categoryKeywords; // Use full list for client-side refinement
     } else {
-      // Direct keyword search - use as-is for API
-      apiSearchKeyword = keyword;
+      // Expand search terms for better matching
+      const expandedTerms = expandSearchTerms(keyword);
+      apiSearchKeyword = expandedTerms[0]; // Use first term for API
+      clientSideFilter = expandedTerms; // Use all terms for client-side filtering
     }
   }
   
@@ -125,7 +173,7 @@ async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSiz
   }
 
   const queryString = new URLSearchParams(params).toString();
-  console.log(`Fetching pet products: page=${pageNum}, size=${pageSize}, category=${PET_CATEGORY_ID}, apiKeyword=${apiSearchKeyword}, clientFilter=${clientSideFilter?.join(',')}`);
+  console.log(`Fetching pet products: page=${pageNum}, size=${pageSize}, mode=${searchMode}, apiKeyword=${apiSearchKeyword}, clientFilter=${clientSideFilter?.join(',')}`);
 
   const response = await fetch(`${CJ_API_BASE}/product/list?${queryString}`, {
     method: 'GET',
@@ -140,7 +188,7 @@ async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSiz
   
   // Apply additional client-side filtering if we have subcategory keywords
   // This ensures products match the full subcategory criteria, not just the API keyword
-  if (data.result && data.data?.list && clientSideFilter) {
+  if (data.result && data.data?.list && clientSideFilter && PET_SUBCATEGORIES[keyword || '']) {
     const originalList = data.data.list;
     const originalTotal = data.data.total || originalList.length;
     
@@ -156,6 +204,65 @@ async function searchPetProductsFromUS(accessToken: string, pageNum = 1, pageSiz
   }
   
   return data;
+}
+
+// Advanced search that combines multiple search strategies for better results
+async function advancedPetSearch(accessToken: string, keyword: string, pageNum = 1, pageSize = 50) {
+  console.log(`Advanced search for: ${keyword}`);
+  
+  // Strategy 1: Try category-limited search first (most relevant)
+  const categoryResult = await searchPetProductsFromUS(accessToken, pageNum, pageSize, keyword, 'category');
+  
+  if (categoryResult.result && categoryResult.data?.list?.length >= 10) {
+    console.log(`Found ${categoryResult.data.list.length} products in pet category`);
+    categoryResult.data.searchStrategy = 'category';
+    return categoryResult;
+  }
+  
+  // Strategy 2: Try global search with pet-related filtering
+  console.log('Category search returned few results, trying global search with pet filter...');
+  const globalResult = await searchPetProductsFromUS(accessToken, pageNum, Math.min(pageSize * 2, 100), keyword, 'global');
+  
+  if (globalResult.result && globalResult.data?.list) {
+    // Filter global results to only pet-related products
+    const petKeywords = ['pet', 'dog', 'cat', 'puppy', 'kitten', 'animal', 'bird', 'fish', 'hamster', 'rabbit', 'parrot'];
+    const allSubcategoryKeywords = Object.values(PET_SUBCATEGORIES).flat();
+    const combinedPetKeywords = [...new Set([...petKeywords, ...allSubcategoryKeywords])];
+    
+    const petRelatedProducts = globalResult.data.list.filter((p: CJProductDetail) => {
+      const lowerName = p.productNameEn.toLowerCase();
+      const lowerCategory = (p.categoryName || '').toLowerCase();
+      
+      // Check if product name or category contains pet-related keywords
+      return combinedPetKeywords.some(kw => 
+        lowerName.includes(kw.toLowerCase()) || lowerCategory.includes(kw.toLowerCase())
+      );
+    });
+    
+    console.log(`Filtered global results: ${petRelatedProducts.length} pet-related products from ${globalResult.data.list.length} total`);
+    
+    // Combine with category results if any
+    const categoryProducts = categoryResult.result && categoryResult.data?.list ? categoryResult.data.list : [];
+    const seenPids = new Set(categoryProducts.map((p: CJProductDetail) => p.pid));
+    
+    // Add unique products from global search
+    for (const product of petRelatedProducts) {
+      if (!seenPids.has(product.pid)) {
+        categoryProducts.push(product);
+        seenPids.add(product.pid);
+      }
+    }
+    
+    categoryResult.data = {
+      list: categoryProducts.slice(0, pageSize),
+      total: categoryProducts.length,
+      originalTotal: globalResult.data.total,
+    };
+    categoryResult.data.searchStrategy = 'combined';
+    categoryResult.result = true;
+  }
+  
+  return categoryResult;
 }
 
 // Get product shipping info to verify US warehouse availability
@@ -845,11 +952,39 @@ serve(async (req) => {
         break;
 
       case 'pet-search':
-        result = await searchPetProductsFromUS(
+        // Use advanced search for custom keywords, basic search for subcategories
+        const searchKeyword = params.keyword || 'pet';
+        const isSubcategory = PET_SUBCATEGORIES[searchKeyword] || searchKeyword === 'all' || searchKeyword === 'pet';
+        
+        if (isSubcategory) {
+          result = await searchPetProductsFromUS(
+            accessToken,
+            params.pageNum || 1,
+            params.pageSize || 50,
+            searchKeyword,
+            'category'
+          );
+        } else {
+          // Use advanced search for custom keywords
+          result = await advancedPetSearch(
+            accessToken,
+            searchKeyword,
+            params.pageNum || 1,
+            params.pageSize || 50
+          );
+        }
+        break;
+      
+      case 'advanced-search':
+        // New action for advanced search with all strategies
+        if (!params.keyword) {
+          throw new Error('keyword is required');
+        }
+        result = await advancedPetSearch(
           accessToken,
+          params.keyword,
           params.pageNum || 1,
-          params.pageSize || 50,
-          params.keyword || 'pet'
+          params.pageSize || 50
         );
         break;
 
