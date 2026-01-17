@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, Plus, Loader2 } from "lucide-react";
 import { calculateSellingPrice } from "@/lib/pricing";
 
 interface CJProduct {
@@ -21,6 +21,8 @@ interface ProductCompareDialogProps {
   onOpenChange: (open: boolean) => void;
   onRemoveProduct: (pid: string) => void;
   onClearAll: () => void;
+  onImportAll?: (products: CJProduct[]) => void;
+  isImporting?: boolean;
 }
 
 export const ProductCompareDialog = ({
@@ -29,6 +31,8 @@ export const ProductCompareDialog = ({
   onOpenChange,
   onRemoveProduct,
   onClearAll,
+  onImportAll,
+  isImporting = false,
 }: ProductCompareDialogProps) => {
   if (products.length === 0) return null;
 
@@ -142,10 +146,26 @@ export const ProductCompareDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Product Vergelijking ({products.length})</span>
-            <Button variant="ghost" size="sm" onClick={onClearAll}>
-              <Trash2 className="w-4 h-4 mr-1" />
-              Wis alles
-            </Button>
+            <div className="flex items-center gap-2">
+              {onImportAll && (
+                <Button 
+                  size="sm" 
+                  onClick={() => onImportAll(products)}
+                  disabled={isImporting}
+                >
+                  {isImporting ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4 mr-1" />
+                  )}
+                  Import alle ({products.length})
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={onClearAll}>
+                <Trash2 className="w-4 h-4 mr-1" />
+                Wis alles
+              </Button>
+            </div>
           </DialogTitle>
           <DialogDescription>
             Vergelijk tot 4 producten naast elkaar om de beste keuze te maken.
@@ -160,7 +180,7 @@ export const ProductCompareDialog = ({
                   Eigenschap
                 </th>
                 {products.map((product) => (
-                  <th key={product.pid} className="p-2 border-b min-w-[180px]">
+                  <th key={product.pid} className="p-2 border-b min-w-[180px] relative">
                     <Button
                       variant="ghost"
                       size="icon"
