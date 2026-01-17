@@ -47,6 +47,14 @@ interface OrderItem {
   quantity: number;
   price: number;
   product_id?: string;
+  cost_price?: number;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  cost_price: number | null;
 }
 
 interface Order {
@@ -160,6 +168,34 @@ export const SalesDashboard = () => {
     refetchInterval: 60000, // Refresh every minute
   });
 
+  // Fetch products for cost price lookup
+  const { data: products } = useQuery({
+    queryKey: ["admin-products-for-profit"],
+    queryFn: async () => {
+      await refreshSessionIfNeeded();
+      
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, price, cost_price");
+      
+      if (error) throw error;
+      return data as Product[];
+    },
+    refetchInterval: 60000,
+  });
+
+  // Create a product lookup map
+  const productCostMap = useMemo(() => {
+    const map: Record<string, { costPrice: number; name: string }> = {};
+    products?.forEach(p => {
+      map[p.id] = { 
+        costPrice: p.cost_price || 0,
+        name: p.name 
+      };
+    });
+    return map;
+  }, [products]);
+
   // Filter orders by date range
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
@@ -198,6 +234,7 @@ export const SalesDashboard = () => {
         dailyData: [],
         statusDistribution: [],
         topProducts: [],
+        mostProfitableProducts: [],
         recentOrders: [],
       };
     }
@@ -304,6 +341,55 @@ export const SalesDashboard = () => {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
 
+    // Most profitable products - calculate profit based on cost_price
+    const productProfits: Record<string, { 
+      name: string; 
+      quantity: number; 
+      revenue: number; 
+      cost: number; 
+      profit: number;
+      product_id?: string;
+    }> = {};
+    
+    paidOrders.forEach(order => {
+      const items = order.items as unknown as OrderItem[];
+      if (Array.isArray(items)) {
+        items.forEach(item => {
+          const key = item.product_id || item.name || "Unknown";
+          const qty = item.quantity || 1;
+          const itemRevenue = (item.price || 0) * qty;
+          
+          // Get cost price from product map or from order item
+          let itemCost = 0;
+          if (item.product_id && productCostMap[item.product_id]) {
+            itemCost = productCostMap[item.product_id].costPrice * qty;
+          } else if (item.cost_price) {
+            itemCost = item.cost_price * qty;
+          }
+          
+          if (!productProfits[key]) {
+            productProfits[key] = { 
+              name: item.name || (item.product_id && productCostMap[item.product_id]?.name) || "Unknown",
+              quantity: 0, 
+              revenue: 0, 
+              cost: 0, 
+              profit: 0,
+              product_id: item.product_id
+            };
+          }
+          productProfits[key].quantity += qty;
+          productProfits[key].revenue += itemRevenue;
+          productProfits[key].cost += itemCost;
+          productProfits[key].profit += (itemRevenue - itemCost);
+        });
+      }
+    });
+    
+    const mostProfitableProducts = Object.values(productProfits)
+      .filter(p => p.profit > 0) // Only show products with positive profit
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 5);
+
     // Recent orders
     const recentOrders = filteredOrders.slice(0, 5);
 
@@ -323,9 +409,10 @@ export const SalesDashboard = () => {
       dailyData,
       statusDistribution,
       topProducts,
+      mostProfitableProducts,
       recentOrders,
     };
-  }, [filteredOrders, dateRangeDays, startDate, endDate]);
+  }, [filteredOrders, dateRangeDays, startDate, endDate, productCostMap]);
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat("nl-NL", {
@@ -909,6 +996,69 @@ export const SalesDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Most Profitable Products */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-green-600" />
+            Meest Winstgevende Producten
+          </CardTitle>
+          <CardDescription>Top 5 producten gerangschikt op winst (omzet - kostprijs)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map(i => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : stats.mostProfitableProducts.length > 0 ? (
+            <div className="space-y-3">
+              {stats.mostProfitableProducts.map((product, index) => {
+                const marginPercent = product.revenue > 0 
+                  ? ((product.profit / product.revenue) * 100).toFixed(0) 
+                  : "0";
+                return (
+                  <div 
+                    key={product.name + index} 
+                    className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-bold text-primary w-8">
+                        #{index + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm line-clamp-1">{product.name}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                          <span>{product.quantity}x verkocht</span>
+                          <span>•</span>
+                          <span>Omzet: {formatCurrency(product.revenue)}</span>
+                          <span>•</span>
+                          <span>Kosten: {formatCurrency(product.cost)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-green-600">
+                        {formatCurrency(product.profit)}
+                      </p>
+                      <Badge variant="secondary" className="text-xs mt-1">
+                        {marginPercent}% marge
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-muted-foreground">
+              <p>Nog geen winstgegevens beschikbaar.</p>
+              <p className="text-xs mt-1">Winst wordt berekend zodra er orders zijn met producten die een kostprijs hebben.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
