@@ -407,7 +407,7 @@ const ProductDetail = () => {
                 onDragStart={() => setIsDragging(true)}
                 onDrag={(_, info) => setDragX(info.offset.x)}
                 onDragEnd={(_, info) => handleDragEnd(images.length, info.offset.x, info.velocity.x)}
-                onClick={() => !isDragging && setLightboxOpen(true)}
+                onClick={() => !isDragging && window.innerWidth >= 768 && setLightboxOpen(true)}
                 whileTap={{ cursor: "grabbing" }}
               >
                 <AnimatePresence mode="wait">
@@ -430,38 +430,19 @@ const ProductDetail = () => {
                       />
                     </div>
                     
-                    {/* Mobile: Pinch-to-zoom image */}
-                    <div className="md:hidden w-full h-full">
-                      <PinchZoomImage
+                    {/* Mobile: Pinch-to-zoom image - no lightbox, direct swipe */}
+                    <div className="md:hidden w-full h-full pointer-events-none">
+                      <OptimizedImage
                         src={images[selectedImage]}
                         alt={product.name}
                         className="object-contain"
                         containerClassName="w-full h-full"
-                        onTap={() => setLightboxOpen(true)}
+                        priority={selectedImage === 0}
                       />
                     </div>
                   </motion.div>
                 </AnimatePresence>
 
-                {/* Swipe hint indicators - only on mobile */}
-                {images.length > 1 && (
-                  <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between pointer-events-none md:hidden">
-                    <motion.div
-                      className="w-8 h-8 rounded-full bg-foreground/10 flex items-center justify-center ml-2"
-                      animate={{ opacity: isDragging ? 0 : [0.3, 0.6, 0.3], x: [0, -3, 0] }}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                    >
-                      <ChevronLeft className="w-4 h-4 text-foreground/60" />
-                    </motion.div>
-                    <motion.div
-                      className="w-8 h-8 rounded-full bg-foreground/10 flex items-center justify-center mr-2"
-                      animate={{ opacity: isDragging ? 0 : [0.3, 0.6, 0.3], x: [0, 3, 0] }}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                    >
-                      <ChevronRight className="w-4 h-4 text-foreground/60" />
-                    </motion.div>
-                  </div>
-                )}
               </motion.div>
               
               
@@ -489,13 +470,13 @@ const ProductDetail = () => {
                 </motion.div>
               )}
               
-              {/* Navigation Arrows */}
+              {/* Navigation Arrows - always visible on mobile */}
               {images.length > 1 && (
                 <>
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-10"
                     onClick={(e) => {
                       e.stopPropagation();
                       handlePrevImage();
@@ -506,7 +487,7 @@ const ProductDetail = () => {
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-10"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleNextImage();
