@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
@@ -18,6 +18,7 @@ import { OrdersManager } from "@/components/admin/OrdersManager";
 import { ContactMessagesManager } from "@/components/admin/ContactMessagesManager";
 import { BestsellerManager } from "@/components/admin/BestsellerManager";
 import { CJProductPreview } from "@/components/admin/CJProductPreview";
+import { ProductCompareDialog } from "@/components/admin/ProductCompareDialog";
 
 // Lazy load heavy admin components to improve initial load time
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard").then(module => ({ default: module.AnalyticsDashboard })));
@@ -103,6 +104,8 @@ const Admin = () => {
     const saved = localStorage.getItem('admin-preview-enabled');
     return saved !== null ? saved === 'true' : true;
   });
+  const [compareProducts, setCompareProducts] = useState<CJProduct[]>([]);
+  const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Save preview preference to localStorage
@@ -786,6 +789,22 @@ const Admin = () => {
     }
   };
 
+  const handleToggleCompare = (product: CJProduct) => {
+    setCompareProducts(prev => {
+      const exists = prev.find(p => p.pid === product.pid);
+      if (exists) {
+        return prev.filter(p => p.pid !== product.pid);
+      }
+      if (prev.length >= 4) {
+        toast.error("Je kunt maximaal 4 producten vergelijken");
+        return prev;
+      }
+      return [...prev, product];
+    });
+  };
+
+  const compareProductIds = useMemo(() => new Set(compareProducts.map(p => p.pid)), [compareProducts]);
+
   const handleBlockProduct = (cjProductId: string, productName: string) => {
     blockProductMutation.mutate({ cjProductId, productName });
   };
@@ -1411,6 +1430,19 @@ const Admin = () => {
                                     <Bookmark className="w-3 h-3" />
                                   )}
                                 </Button>
+                                {/* Compare button */}
+                                <Button
+                                  variant={compareProductIds.has(product.pid) ? "default" : "secondary"}
+                                  size="icon"
+                                  className={`absolute top-2 ${previewEnabled ? 'left-[116px]' : 'left-20'} w-7 h-7 ${compareProductIds.has(product.pid) ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleCompare(product);
+                                  }}
+                                  title={compareProductIds.has(product.pid) ? "Verwijder uit vergelijking" : "Voeg toe aan vergelijking"}
+                                >
+                                  <GitCompare className="w-3 h-3" />
+                                </Button>
                                 <Badge className="absolute bottom-2 left-2" variant="default">
                                   <PawPrint className="w-3 h-3 mr-1" />
                                   Free Shipping
@@ -1664,6 +1696,19 @@ const Admin = () => {
                               ) : (
                                 <Bookmark className="w-3 h-3" />
                               )}
+                            </Button>
+                            {/* Compare button */}
+                            <Button
+                              variant={compareProductIds.has(product.pid) ? "default" : "secondary"}
+                              size="icon"
+                              className={`absolute top-2 ${previewEnabled ? 'left-[116px]' : 'left-20'} w-7 h-7 ${compareProductIds.has(product.pid) ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleCompare(product);
+                              }}
+                              title={compareProductIds.has(product.pid) ? "Verwijder uit vergelijking" : "Voeg toe aan vergelijking"}
+                            >
+                              <GitCompare className="w-3 h-3" />
                             </Button>
                             <Badge className="absolute bottom-2 left-2" variant="default">
                               Free Shipping
@@ -2372,6 +2417,41 @@ const Admin = () => {
           }}
           isImporting={importMutation.isPending}
         />
+
+        {/* Product Compare Dialog */}
+        <ProductCompareDialog
+          products={compareProducts}
+          open={compareDialogOpen}
+          onOpenChange={setCompareDialogOpen}
+          onRemoveProduct={(pid) => setCompareProducts(prev => prev.filter(p => p.pid !== pid))}
+          onClearAll={() => setCompareProducts([])}
+        />
+
+        {/* Floating Compare Bar */}
+        {compareProducts.length > 0 && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-lg px-4 py-3 flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <GitCompare className="w-5 h-5 text-primary" />
+              <span className="font-medium">{compareProducts.length} producten</span>
+            </div>
+            <div className="flex -space-x-2">
+              {compareProducts.slice(0, 4).map((p) => (
+                <img
+                  key={p.pid}
+                  src={p.productImage}
+                  alt={p.productNameEn}
+                  className="w-10 h-10 rounded-full border-2 border-background object-cover"
+                />
+              ))}
+            </div>
+            <Button onClick={() => setCompareDialogOpen(true)}>
+              Vergelijken
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setCompareProducts([])}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
     </Layout>
   );
