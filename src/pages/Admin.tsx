@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
@@ -141,6 +141,25 @@ const Admin = () => {
       return new Set(data?.map(p => p.cj_product_id) || []);
     },
   });
+
+  // Fetch bookmarked CJ products
+  const { data: bookmarkedProducts, refetch: refetchBookmarks } = useQuery({
+    queryKey: ["cj-bookmarks"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cj_product_bookmarks")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && isAdmin,
+  });
+
+  // Memoize bookmarked CJ product IDs for efficient lookup
+  const bookmarkedCjIds = useMemo(() => {
+    return new Set(bookmarkedProducts?.map(p => p.cj_product_id) || []);
+  }, [bookmarkedProducts]);
 
   // Fetch existing products from database
   const { data: existingProducts, isSuccess: existingProductsLoaded } = useQuery({
@@ -710,6 +729,63 @@ const Admin = () => {
     },
   });
 
+  // Bookmark CJ product mutation
+  const bookmarkProductMutation = useMutation({
+    mutationFn: async (product: CJProduct) => {
+      const { error } = await supabase
+        .from("cj_product_bookmarks")
+        .insert({
+          user_id: user?.id,
+          cj_product_id: product.pid,
+          product_name: product.productNameEn,
+          product_image: product.productImage,
+          sell_price: product.sellPrice,
+          category_name: product.categoryName,
+          product_weight: product.productWeight,
+          product_sku: product.productSku,
+        });
+      
+      if (error) throw error;
+      return product.pid;
+    },
+    onSuccess: () => {
+      toast.success("Product opgeslagen in bookmarks");
+      queryClient.invalidateQueries({ queryKey: ["cj-bookmarks"] });
+    },
+    onError: (error) => {
+      toast.error(`Bookmark mislukt: ${error.message}`);
+    },
+  });
+
+  // Remove bookmark mutation
+  const removeBookmarkMutation = useMutation({
+    mutationFn: async (cjProductId: string) => {
+      const { error } = await supabase
+        .from("cj_product_bookmarks")
+        .delete()
+        .eq("cj_product_id", cjProductId)
+        .eq("user_id", user?.id);
+      
+      if (error) throw error;
+      return cjProductId;
+    },
+    onSuccess: () => {
+      toast.success("Bookmark verwijderd");
+      queryClient.invalidateQueries({ queryKey: ["cj-bookmarks"] });
+    },
+    onError: (error) => {
+      toast.error(`Verwijderen mislukt: ${error.message}`);
+    },
+  });
+
+  const handleToggleBookmark = (product: CJProduct) => {
+    if (bookmarkedCjIds.has(product.pid)) {
+      removeBookmarkMutation.mutate(product.pid);
+    } else {
+      bookmarkProductMutation.mutate(product);
+    }
+  };
+
   const handleBlockProduct = (cjProductId: string, productName: string) => {
     blockProductMutation.mutate({ cjProductId, productName });
   };
@@ -903,6 +979,10 @@ const Admin = () => {
               <TabsTrigger value="visitor-map" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
                 <Globe className="w-4 h-4 shrink-0" />
                 <span>Map</span>
+              </TabsTrigger>
+              <TabsTrigger value="bookmarks" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Bookmark className="w-4 h-4 shrink-0" />
+                <span>Saved ({bookmarkedProducts?.length || 0})</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1314,6 +1394,23 @@ const Admin = () => {
                                     <Eye className="w-3 h-3" />
                                   </Button>
                                 )}
+                                {/* Bookmark button */}
+                                <Button
+                                  variant={bookmarkedCjIds.has(product.pid) ? "default" : "secondary"}
+                                  size="icon"
+                                  className={`absolute top-2 ${previewEnabled ? 'left-20' : 'left-11'} w-7 h-7 ${bookmarkedCjIds.has(product.pid) ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleBookmark(product);
+                                  }}
+                                  title={bookmarkedCjIds.has(product.pid) ? "Verwijder bookmark" : "Sla op voor later"}
+                                >
+                                  {bookmarkedCjIds.has(product.pid) ? (
+                                    <BookmarkCheck className="w-3 h-3" />
+                                  ) : (
+                                    <Bookmark className="w-3 h-3" />
+                                  )}
+                                </Button>
                                 <Badge className="absolute bottom-2 left-2" variant="default">
                                   <PawPrint className="w-3 h-3 mr-1" />
                                   Free Shipping
@@ -1551,6 +1648,23 @@ const Admin = () => {
                                 <Eye className="w-3 h-3" />
                               </Button>
                             )}
+                            {/* Bookmark button */}
+                            <Button
+                              variant={bookmarkedCjIds.has(product.pid) ? "default" : "secondary"}
+                              size="icon"
+                              className={`absolute top-2 ${previewEnabled ? 'left-20' : 'left-11'} w-7 h-7 ${bookmarkedCjIds.has(product.pid) ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleBookmark(product);
+                              }}
+                              title={bookmarkedCjIds.has(product.pid) ? "Verwijder bookmark" : "Sla op voor later"}
+                            >
+                              {bookmarkedCjIds.has(product.pid) ? (
+                                <BookmarkCheck className="w-3 h-3" />
+                              ) : (
+                                <Bookmark className="w-3 h-3" />
+                              )}
+                            </Button>
                             <Badge className="absolute bottom-2 left-2" variant="default">
                               Free Shipping
                             </Badge>
@@ -2031,6 +2145,112 @@ const Admin = () => {
                 <VisitorWorldMap />
               </Suspense>
             </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Bookmarks Tab */}
+          <TabsContent value="bookmarks" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bookmark className="w-5 h-5" />
+                  Opgeslagen CJ Producten ({bookmarkedProducts?.length || 0})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {bookmarkedProducts && bookmarkedProducts.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {bookmarkedProducts.map((bookmark) => {
+                      const costPrice = Number(bookmark.sell_price) || 0;
+                      const weight = Number(bookmark.product_weight) || 0;
+                      const pricing = calculateSellingPrice(costPrice, weight);
+                      const isImported = importedCjIds.has(bookmark.cj_product_id);
+
+                      return (
+                        <Card key={bookmark.id} className="group">
+                          <CardContent className="p-4">
+                            <div className="relative">
+                              <img
+                                src={bookmark.product_image || "/placeholder.svg"}
+                                alt={bookmark.product_name}
+                                className="w-full h-40 object-cover rounded-lg mb-3"
+                              />
+                              {isImported && (
+                                <Badge className="absolute top-2 right-2" variant="secondary">
+                                  <Check className="w-3 h-3 mr-1" />
+                                  Imported
+                                </Badge>
+                              )}
+                              {/* Remove bookmark button */}
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="absolute top-2 left-2 w-7 h-7"
+                                onClick={() => removeBookmarkMutation.mutate(bookmark.cj_product_id)}
+                                title="Verwijder bookmark"
+                              >
+                                <BookmarkCheck className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            <h3 className="font-medium text-sm line-clamp-2 mb-2">
+                              {bookmark.product_name}
+                            </h3>
+                            <div className="flex justify-between items-center text-sm">
+                              <div>
+                                <span className="text-muted-foreground">Cost: </span>
+                                <span className="font-medium">${pricing.totalCost.toFixed(2)}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Retail: </span>
+                                <span className="font-bold text-primary">
+                                  ${pricing.sellingPrice.toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="mt-2 text-xs">
+                              {bookmark.category_name || "Uncategorized"}
+                            </Badge>
+                            {!isImported && (
+                              <Button
+                                className="w-full mt-3"
+                                size="sm"
+                                onClick={() => {
+                                  // Convert bookmark to CJProduct format for import
+                                  const product: CJProduct = {
+                                    pid: bookmark.cj_product_id,
+                                    productNameEn: bookmark.product_name,
+                                    productImage: bookmark.product_image || "",
+                                    productWeight: bookmark.product_weight || 0,
+                                    categoryName: bookmark.category_name || "",
+                                    sellPrice: bookmark.sell_price || 0,
+                                    productSku: bookmark.product_sku || "",
+                                  };
+                                  importMutation.mutate([product]);
+                                }}
+                                disabled={importMutation.isPending}
+                              >
+                                {importMutation.isPending ? (
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Plus className="w-4 h-4 mr-2" />
+                                )}
+                                Import naar Shop
+                              </Button>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Bookmark className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">
+                      Nog geen opgeslagen producten. Gebruik het bookmark icoon bij CJ producten om ze hier op te slaan.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
