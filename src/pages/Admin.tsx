@@ -79,6 +79,7 @@ const Admin = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [catalogPage, setCatalogPage] = useState(1);
   const [catalogKeyword, setCatalogKeyword] = useState("all");
+  const [customSearchTerm, setCustomSearchTerm] = useState("");
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [editProduct, setEditProduct] = useState<Tables<"products"> | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -872,28 +873,32 @@ const Admin = () => {
                 <div className="flex flex-wrap gap-4 items-center mb-6">
                   <div>
                     <label className="text-sm text-muted-foreground mb-1 block">
-                      Search within pets
+                      Categorie
                     </label>
                     <div className="flex gap-2">
                       <Select value={catalogKeyword} onValueChange={(v) => {
                         setCatalogKeyword(v);
                         setCatalogPage(1);
+                        setCustomSearchTerm(""); // Reset custom search when category changes
                       }}>
-                        <SelectTrigger className="w-48">
+                        <SelectTrigger className="w-52">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All Pet Products</SelectItem>
-                          <SelectItem value="Pet Toys">🎾 Pet Toys</SelectItem>
-                          <SelectItem value="Pet Beds & Furniture">🛏️ Beds & Furniture</SelectItem>
-                          <SelectItem value="Pet Food & Treats">🍖 Food & Treats</SelectItem>
-                          <SelectItem value="Pet Collars & Leashes">🦮 Collars & Leashes</SelectItem>
-                          <SelectItem value="Pet Clothing">👕 Pet Clothing</SelectItem>
-                          <SelectItem value="Pet Grooming">✂️ Grooming</SelectItem>
-                          <SelectItem value="Pet Carriers">🎒 Carriers & Travel</SelectItem>
-                          <SelectItem value="Cat Supplies">🐱 Cat Supplies</SelectItem>
-                          <SelectItem value="Dog Supplies">🐕 Dog Supplies</SelectItem>
-                          <SelectItem value="Small Pet Supplies">🐹 Small Pets</SelectItem>
+                          <SelectItem value="all">🐾 Alle Huisdierproducten</SelectItem>
+                          <SelectItem value="Pet Toys">🎾 Speelgoed</SelectItem>
+                          <SelectItem value="Pet Beds & Furniture">🛏️ Bedden & Meubels</SelectItem>
+                          <SelectItem value="Pet Food & Treats">🍖 Voer & Snacks</SelectItem>
+                          <SelectItem value="Pet Collars & Leashes">🦮 Halsbanden & Riemen</SelectItem>
+                          <SelectItem value="Pet Clothing">👕 Kleding</SelectItem>
+                          <SelectItem value="Pet Grooming">✂️ Verzorging</SelectItem>
+                          <SelectItem value="Pet Carriers">🎒 Reizen & Transport</SelectItem>
+                          <SelectItem value="Cat Supplies">🐱 Katten Supplies</SelectItem>
+                          <SelectItem value="Dog Supplies">🐕 Honden Supplies</SelectItem>
+                          <SelectItem value="Small Pet Supplies">🐹 Kleine Huisdieren</SelectItem>
+                          <SelectItem value="Pet Health">💊 Gezondheid</SelectItem>
+                          <SelectItem value="Pet Training">🎓 Training</SelectItem>
+                          <SelectItem value="Pet Accessories">🔌 Accessoires</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button 
@@ -909,17 +914,75 @@ const Admin = () => {
                       </Button>
                     </div>
                   </div>
+                  
+                  {/* Custom Search Input */}
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="text-sm text-muted-foreground mb-1 block">
+                      🔍 Vrij zoeken (bijv. "krabpaal", "halsband", "aquarium")
+                    </label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Typ hier om te zoeken..."
+                        value={customSearchTerm}
+                        onChange={(e) => setCustomSearchTerm(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && customSearchTerm.trim()) {
+                            setCatalogKeyword(customSearchTerm.trim());
+                            setCatalogPage(1);
+                          }
+                        }}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={() => {
+                          if (customSearchTerm.trim()) {
+                            setCatalogKeyword(customSearchTerm.trim());
+                            setCatalogPage(1);
+                          }
+                        }}
+                        disabled={!customSearchTerm.trim() || isCatalogLoading}
+                      >
+                        <Search className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Tip: Zoek in het Engels voor betere resultaten (bijv. "scratching post", "cat tree", "leash")
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Active search indicator */}
+                {catalogKeyword !== 'all' && !['Pet Toys', 'Pet Beds & Furniture', 'Pet Food & Treats', 'Pet Collars & Leashes', 'Pet Clothing', 'Pet Grooming', 'Pet Carriers', 'Cat Supplies', 'Dog Supplies', 'Small Pet Supplies', 'Pet Health', 'Pet Training', 'Pet Accessories'].includes(catalogKeyword) && (
+                  <div className="mb-4 p-3 bg-primary/10 rounded-lg flex items-center justify-between">
+                    <span className="text-sm">
+                      Zoeken naar: <strong>"{catalogKeyword}"</strong>
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setCatalogKeyword('all');
+                        setCustomSearchTerm('');
+                        setCatalogPage(1);
+                      }}
+                    >
+                      ✕ Wis zoekopdracht
+                    </Button>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-4 items-center mb-4">
                   <div className="flex-1">
                     <label className="text-sm text-muted-foreground mb-1 block">
-                      Pricing
+                      Prijsberekening
                     </label>
                     <Badge variant="outline" className="text-xs">
-                      Dynamic pricing + Free Shipping included
+                      Dynamische prijzen + Gratis verzending inbegrepen
                     </Badge>
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-1 block">
-                      Category
+                      Shop Categorie
                     </label>
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                       <SelectTrigger className="w-48">
