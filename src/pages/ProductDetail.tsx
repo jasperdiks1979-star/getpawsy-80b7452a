@@ -734,25 +734,111 @@ const ProductDetail = () => {
                     const isSelected = selectedVariant?.vid === variant.vid;
                     const displayValue = variant.variantKey || variant.variantNameEn || 'Option';
                     
+                    // Detect if this is a color variant
+                    const colorMap: Record<string, string> = {
+                      // Basic colors
+                      'red': '#ef4444', 'blue': '#3b82f6', 'green': '#22c55e', 'yellow': '#eab308',
+                      'orange': '#f97316', 'purple': '#a855f7', 'pink': '#ec4899', 'black': '#000000',
+                      'white': '#ffffff', 'gray': '#6b7280', 'grey': '#6b7280', 'brown': '#92400e',
+                      'beige': '#d4a574', 'navy': '#1e3a5a', 'teal': '#14b8a6', 'cyan': '#06b6d4',
+                      'gold': '#fbbf24', 'silver': '#9ca3af', 'rose': '#fb7185', 'coral': '#f97171',
+                      'mint': '#6ee7b7', 'lavender': '#c4b5fd', 'burgundy': '#7f1d1d', 'khaki': '#c9b896',
+                      'cream': '#fffdd0', 'ivory': '#fffff0', 'tan': '#d2b48c', 'chocolate': '#7b3f00',
+                      // Extended colors
+                      'maroon': '#800000', 'olive': '#808000', 'lime': '#00ff00', 'aqua': '#00ffff',
+                      'magenta': '#ff00ff', 'violet': '#ee82ee', 'indigo': '#4b0082', 'turquoise': '#40e0d0',
+                      'salmon': '#fa8072', 'peach': '#ffdab9', 'plum': '#dda0dd', 'charcoal': '#36454f',
+                      'wine': '#722f37', 'mustard': '#ffdb58', 'sand': '#c2b280', 'rust': '#b7410e',
+                    };
+                    
+                    const lowerValue = displayValue.toLowerCase();
+                    const detectedColor = Object.keys(colorMap).find(color => 
+                      lowerValue.includes(color) || lowerValue === color
+                    );
+                    const isColorVariant = !!detectedColor;
+                    const colorHex = detectedColor ? colorMap[detectedColor] : null;
+                    const hasImage = !!variant.variantImage;
+                    
+                    // Render as color swatch if color detected
+                    if (isColorVariant && colorHex) {
+                      return (
+                        <motion.button
+                          key={variant.vid}
+                          onClick={() => setSelectedVariant(isSelected ? null : variant)}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
+                          title={displayValue}
+                          className={`relative w-10 h-10 rounded-full transition-all ${
+                            isSelected
+                              ? 'ring-2 ring-offset-2 ring-primary'
+                              : 'hover:ring-2 hover:ring-offset-2 hover:ring-muted-foreground/50'
+                          }`}
+                          style={{ backgroundColor: colorHex }}
+                        >
+                          {/* White/light colors need a border */}
+                          {['white', 'ivory', 'cream', 'beige'].includes(detectedColor) && (
+                            <span className="absolute inset-0 rounded-full border border-border" />
+                          )}
+                          {/* Checkmark for selected */}
+                          {isSelected && (
+                            <span className={`absolute inset-0 flex items-center justify-center ${
+                              ['white', 'ivory', 'cream', 'beige', 'yellow', 'gold', 'lime', 'mint', 'peach', 'sand', 'khaki'].includes(detectedColor)
+                                ? 'text-gray-800'
+                                : 'text-white'
+                            }`}>
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </span>
+                          )}
+                        </motion.button>
+                      );
+                    }
+                    
+                    // Render as image swatch if has image
+                    if (hasImage) {
+                      return (
+                        <motion.button
+                          key={variant.vid}
+                          onClick={() => setSelectedVariant(isSelected ? null : variant)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          title={displayValue}
+                          className={`relative w-14 h-14 rounded-xl overflow-hidden transition-all ${
+                            isSelected
+                              ? 'ring-2 ring-offset-2 ring-primary'
+                              : 'ring-1 ring-border hover:ring-2 hover:ring-primary/50'
+                          }`}
+                        >
+                          <img 
+                            src={variant.variantImage} 
+                            alt={displayValue}
+                            className="w-full h-full object-cover"
+                          />
+                          {isSelected && (
+                            <span className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                              <svg className="w-5 h-5 text-primary drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </span>
+                          )}
+                        </motion.button>
+                      );
+                    }
+                    
+                    // Default: text button for other variants (sizes, etc.)
                     return (
                       <motion.button
                         key={variant.vid}
                         onClick={() => setSelectedVariant(isSelected ? null : variant)}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className={`flex items-center px-4 py-2.5 rounded-xl border-2 transition-all ${
+                        className={`px-4 py-2.5 rounded-xl border-2 transition-all ${
                           isSelected
                             ? 'border-primary bg-primary/10 text-primary shadow-soft'
                             : 'border-border hover:border-primary/50 bg-background'
                         }`}
                       >
-                        {variant.variantImage && (
-                          <img 
-                            src={variant.variantImage} 
-                            alt={displayValue}
-                            className="w-8 h-8 rounded-lg object-cover mr-2"
-                          />
-                        )}
                         <span className="text-sm font-medium">{displayValue}</span>
                         {variant.variantSellPrice && variant.variantSellPrice !== Number(product.price) && (
                           <span className="ml-2 text-xs text-muted-foreground">
@@ -763,6 +849,18 @@ const ProductDetail = () => {
                     );
                   })}
                 </div>
+                
+                {/* Color name tooltip when hovering */}
+                {selectedVariant && (
+                  <p className="text-sm text-muted-foreground">
+                    Selected: <span className="font-medium text-foreground">{selectedVariant.variantKey}</span>
+                    {selectedVariant.variantSellPrice && selectedVariant.variantSellPrice !== Number(product.price) && (
+                      <span className="ml-2 text-primary font-medium">
+                        ${Number(selectedVariant.variantSellPrice).toFixed(2)}
+                      </span>
+                    )}
+                  </p>
+                )}
               </motion.div>
             )}
 
