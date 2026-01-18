@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { SEO_KEYWORDS } from '@/lib/seo-keywords';
 
 interface BlogPost {
   id: string;
@@ -115,13 +116,52 @@ const Blog = () => {
 
   const categories = ['honden', 'katten', 'vissen', 'algemeen'];
 
+  // Generate dynamic SEO based on selected category
+  const seoContent = useMemo(() => {
+    const categoryDescriptions: Record<string, { title: string; description: string; keywords: string[] }> = {
+      honden: {
+        title: 'Honden Blog | Expert Tips & Advies | GetPawsy',
+        description: '🐕 Ontdek expert tips over hondenvoeding, puppy training, gezondheid & gedrag. Praktisch advies van professionals voor jouw trouwe viervoeter.',
+        keywords: [...SEO_KEYWORDS.dog.general.slice(0, 6), 'honden blog', 'puppy tips', 'hondentraining', 'hondenvoeding'],
+      },
+      katten: {
+        title: 'Katten Blog | Verzorging & Gedragstips | GetPawsy',
+        description: '🐱 Alles over kattenverzorging, voeding, gedrag & gezondheid. Expert artikelen voor de beste zorg voor jouw kat.',
+        keywords: [...SEO_KEYWORDS.cat.general.slice(0, 6), 'katten blog', 'kattenverzorging', 'kattengedrag', 'kattenvoeding'],
+      },
+      vissen: {
+        title: 'Aquarium Blog | Beginners Guide & Tips | GetPawsy',
+        description: '🐠 Van aquarium setup tot visverzorging. Complete gids voor beginners en ervaren aquariumliefhebbers.',
+        keywords: ['aquarium tips', 'vissen verzorging', 'aquarium beginners', 'tropische vissen', 'aquarium onderhoud'],
+      },
+      algemeen: {
+        title: 'Huisdier Blog | Algemene Tips & Advies | GetPawsy',
+        description: '🐾 Algemene huisdierverzorging tips voor alle diersoorten. Van voeding tot welzijn - alles wat je moet weten.',
+        keywords: [...SEO_KEYWORDS.primary.slice(0, 8), 'huisdier tips', 'dierenverzorging'],
+      },
+    };
+
+    if (selectedCategory && categoryDescriptions[selectedCategory]) {
+      return categoryDescriptions[selectedCategory];
+    }
+
+    return {
+      title: 'Blog | Huisdierverzorging Tips & Advies | GetPawsy',
+      description: 'Ontdek expert tips over huisdierverzorging. Artikelen over hondenvoeding, kattenverzorging, aquarium tips en meer. Gratis advies voor huisdiereigenaren.',
+      keywords: ['huisdier blog', 'hondenvoeding tips', 'kattenverzorging', 'aquarium beginners', 'puppy training', 'huisdier advies'],
+    };
+  }, [selectedCategory]);
+
   return (
     <Layout>
       <Helmet>
-        <title>Blog | Huisdierverzorging Tips & Advies | GetPawsy</title>
-        <meta name="description" content="Ontdek expert tips over huisdierverzorging. Artikelen over hondenvoeding, kattenverzorging, aquarium tips en meer. Gratis advies voor huisdiereigenaren." />
-        <meta name="keywords" content="huisdier blog, hondenvoeding tips, kattenverzorging, aquarium beginners, puppy training, huisdier advies" />
-        <link rel="canonical" href="https://getpawsy.lovable.app/blog" />
+        <title>{seoContent.title}</title>
+        <meta name="description" content={seoContent.description} />
+        <meta name="keywords" content={seoContent.keywords.join(', ')} />
+        <link rel="canonical" href={`https://getpawsy.lovable.app/blog${selectedCategory ? `?category=${selectedCategory}` : ''}`} />
+        <meta property="og:title" content={seoContent.title} />
+        <meta property="og:description" content={seoContent.description} />
+        <meta property="og:type" content="website" />
       </Helmet>
 
       <div className="container py-8 md:py-12">
