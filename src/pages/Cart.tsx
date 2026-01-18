@@ -4,6 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
+import { CartUpsell } from '@/components/cart/CartUpsell';
 
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
@@ -107,6 +108,11 @@ const Cart = () => {
                 </div>
               </div>
             ))}
+            
+            {/* Upsell Section */}
+            <div className="mt-8">
+              <CartUpsell currentItemIds={items.map(item => item.id)} />
+            </div>
           </div>
 
           {/* Order Summary */}
