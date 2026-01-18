@@ -949,62 +949,60 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="sales" className="space-y-6">
-          <div className="overflow-x-auto -mx-4 px-4 pb-2">
-            <TabsList className="inline-flex w-max gap-1 p-1">
-              <TabsTrigger value="sales" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Euro className="w-4 h-4 shrink-0" />
-                <span>Verkoop</span>
-              </TabsTrigger>
-              <TabsTrigger value="catalog" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <PawPrint className="w-4 h-4 shrink-0" />
-                <span>Catalog</span>
-              </TabsTrigger>
-              <TabsTrigger value="search" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Search className="w-4 h-4 shrink-0" />
-                <span>Zoeken</span>
-              </TabsTrigger>
-              <TabsTrigger value="products" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Package className="w-4 h-4 shrink-0" />
-                <span>Products</span>
-              </TabsTrigger>
-              <TabsTrigger value="orders" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <ShoppingCart className="w-4 h-4 shrink-0" />
-                <span>Orders</span>
-              </TabsTrigger>
-              <TabsTrigger value="newsletter" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Mail className="w-4 h-4 shrink-0" />
-                <span>Mail</span>
-              </TabsTrigger>
-              <TabsTrigger value="categories" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <FolderTree className="w-4 h-4 shrink-0" />
-                <span>Cat.</span>
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <BarChart3 className="w-4 h-4 shrink-0" />
-                <span>Stats</span>
-              </TabsTrigger>
-              <TabsTrigger value="messages" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <MessageSquare className="w-4 h-4 shrink-0" />
-                <span>Msg</span>
-              </TabsTrigger>
-              <TabsTrigger value="google-ads" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Sparkles className="w-4 h-4 shrink-0" />
-                <span>Ads</span>
-              </TabsTrigger>
-              <TabsTrigger value="bestsellers" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Sparkles className="w-4 h-4 shrink-0" />
-                <span>Best</span>
-              </TabsTrigger>
-              <TabsTrigger value="visitor-map" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Globe className="w-4 h-4 shrink-0" />
-                <span>Map</span>
-              </TabsTrigger>
-              <TabsTrigger value="bookmarks" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Bookmark className="w-4 h-4 shrink-0" />
-                <span>Saved ({bookmarkedProducts?.length || 0})</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList className="grid grid-cols-5 sm:grid-cols-7 lg:inline-flex gap-1 p-1 h-auto w-full lg:w-auto">
+            <TabsTrigger value="products" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <Package className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Products</span>
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Orders</span>
+            </TabsTrigger>
+            <TabsTrigger value="newsletter" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <Mail className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Mail</span>
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <FolderTree className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Cat.</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Stats</span>
+            </TabsTrigger>
+            <TabsTrigger value="sales" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <Euro className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Sales</span>
+            </TabsTrigger>
+            <TabsTrigger value="catalog" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <PawPrint className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">CJ</span>
+            </TabsTrigger>
+            <TabsTrigger value="search" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <Search className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Zoek</span>
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Msg</span>
+            </TabsTrigger>
+            <TabsTrigger value="google-ads" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Ads</span>
+            </TabsTrigger>
+            <TabsTrigger value="bestsellers" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Best</span>
+            </TabsTrigger>
+            <TabsTrigger value="visitor-map" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <Globe className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">Map</span>
+            </TabsTrigger>
+            <TabsTrigger value="bookmarks" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+              <Bookmark className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">{bookmarkedProducts?.length || 0}</span>
+            </TabsTrigger>
+          </TabsList>
 
           {/* Sales Dashboard Tab */}
           <TabsContent value="sales" className="space-y-6">
