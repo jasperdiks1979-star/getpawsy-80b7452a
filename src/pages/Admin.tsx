@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
@@ -27,6 +27,7 @@ const CategoryManager = lazy(() => import("@/components/admin/CategoryManager").
 const OrdersManager = lazy(() => import("@/components/admin/OrdersManager").then(module => ({ default: module.OrdersManager })));
 const ContactMessagesManager = lazy(() => import("@/components/admin/ContactMessagesManager").then(module => ({ default: module.ContactMessagesManager })));
 const BestsellerManager = lazy(() => import("@/components/admin/BestsellerManager").then(module => ({ default: module.BestsellerManager })));
+const BlogPostsManager = lazy(() => import("@/components/admin/BlogPostsManager").then(module => ({ default: module.BlogPostsManager })));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -1058,6 +1059,12 @@ const Admin = () => {
                 <TabsTrigger value="url-import" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Link className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">URL</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Blog posts beheren">
+                <TabsTrigger value="blog" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Blog</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -2436,6 +2443,22 @@ const Admin = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Blog Posts Tab */}
+          <TabsContent value="blog" className="space-y-6">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Blog posts laden...</span>
+                  </div>
+                </Card>
+              }>
+                <BlogPostsManager />
+              </Suspense>
+            </AuthErrorBoundary>
           </TabsContent>
         </Tabs>
 
