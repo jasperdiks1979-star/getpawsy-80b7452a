@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Helmet } from 'react-helmet-async';
 import { Filter, SlidersHorizontal, Loader2, X, Eye, Clock } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard, Product } from '@/components/products/ProductCard';
@@ -17,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { CategorySchema } from '@/components/seo/CategorySchema';
+import { generateCategoryMetaDescription, getKeywordsForCategory } from '@/lib/seo-keywords';
 
 const sortOptions = [
   { value: 'newest', label: 'Newest' },
@@ -251,8 +253,35 @@ const Products = () => {
 
   const isLoading = productsLoading || categoriesLoading;
 
+  // Generate dynamic SEO content
+  const pageTitle = categoryParam 
+    ? `${categoryParam} - Premium Pet Products | GetPawsy`
+    : searchQuery 
+      ? `Search: "${searchQuery}" | GetPawsy Pet Store`
+      : 'All Products - Premium Pet Supplies | GetPawsy';
+
+  const metaDescription = categoryParam
+    ? generateCategoryMetaDescription(categoryParam)
+    : searchQuery
+      ? `Find "${searchQuery}" at GetPawsy. Browse our collection of premium pet products. Free shipping on orders over €50. Quality supplies for dogs, cats & more.`
+      : 'Shop premium pet products at GetPawsy. Quality supplies for dogs, cats & more. From cozy beds to durable toys, we have everything your furry friend needs. Free shipping over €50!';
+
+  const metaKeywords = categoryParam
+    ? getKeywordsForCategory(categoryParam).slice(0, 15).join(', ')
+    : 'pet supplies, dog products, cat products, pet accessories, premium pet store, GetPawsy, pet shop online';
+
   return (
     <Layout>
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={metaDescription} />
+        <meta name="keywords" content={metaKeywords} />
+        <link rel="canonical" href={`https://getpawsy.lovable.app/products${categoryParam ? `?category=${encodeURIComponent(categoryParam)}` : ''}`} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:type" content="website" />
+        {searchQuery && <meta name="robots" content="noindex, follow" />}
+      </Helmet>
       <CategorySchema 
         categoryName={categoryParam || undefined}
         searchQuery={searchQuery || undefined}
