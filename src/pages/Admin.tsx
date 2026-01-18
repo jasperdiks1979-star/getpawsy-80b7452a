@@ -12,20 +12,21 @@ import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
-import { NewsletterSubscribers } from "@/components/admin/NewsletterSubscribers";
-import { CategoryManager } from "@/components/admin/CategoryManager";
-import { OrdersManager } from "@/components/admin/OrdersManager";
-import { ContactMessagesManager } from "@/components/admin/ContactMessagesManager";
-import { BestsellerManager } from "@/components/admin/BestsellerManager";
 import { CJProductPreview } from "@/components/admin/CJProductPreview";
 import { ProductCompareDialog } from "@/components/admin/ProductCompareDialog";
 import { URLProductImport } from "@/components/admin/URLProductImport";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Lazy load heavy admin components to improve initial load time
+// Lazy load ALL heavy admin tab components to improve initial load time
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard").then(module => ({ default: module.AnalyticsDashboard })));
 const SalesDashboard = lazy(() => import("@/components/admin/SalesDashboard").then(module => ({ default: module.SalesDashboard })));
 const GoogleAdsGenerator = lazy(() => import("@/components/admin/GoogleAdsGenerator").then(module => ({ default: module.GoogleAdsGenerator })));
 const VisitorWorldMap = lazy(() => import("@/components/admin/VisitorWorldMap").then(module => ({ default: module.VisitorWorldMap })));
+const NewsletterSubscribers = lazy(() => import("@/components/admin/NewsletterSubscribers").then(module => ({ default: module.NewsletterSubscribers })));
+const CategoryManager = lazy(() => import("@/components/admin/CategoryManager").then(module => ({ default: module.CategoryManager })));
+const OrdersManager = lazy(() => import("@/components/admin/OrdersManager").then(module => ({ default: module.OrdersManager })));
+const ContactMessagesManager = lazy(() => import("@/components/admin/ContactMessagesManager").then(module => ({ default: module.ContactMessagesManager })));
+const BestsellerManager = lazy(() => import("@/components/admin/BestsellerManager").then(module => ({ default: module.BestsellerManager })));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -1065,7 +1066,19 @@ const Admin = () => {
           {/* Sales Dashboard Tab */}
           <TabsContent value="sales" className="space-y-6">
             <AuthErrorBoundary>
-              <SalesDashboard />
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Verkoop dashboard laden...</span>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full mt-4">
+                      {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
+                    </div>
+                  </div>
+                </Card>
+              }>
+                <SalesDashboard />
+              </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
 
@@ -2171,21 +2184,57 @@ const Admin = () => {
           {/* Orders Tab */}
           <TabsContent value="orders">
             <AuthErrorBoundary>
-              <OrdersManager />
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Bestellingen laden...</span>
+                    <div className="space-y-3 w-full mt-4">
+                      {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+                    </div>
+                  </div>
+                </Card>
+              }>
+                <OrdersManager />
+              </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
 
           {/* Newsletter Tab */}
           <TabsContent value="newsletter">
             <AuthErrorBoundary>
-              <NewsletterSubscribers />
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Nieuwsbrief abonnees laden...</span>
+                    <div className="space-y-3 w-full mt-4">
+                      {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
+                    </div>
+                  </div>
+                </Card>
+              }>
+                <NewsletterSubscribers />
+              </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
 
           {/* Categories Tab */}
           <TabsContent value="categories">
             <AuthErrorBoundary>
-              <CategoryManager />
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Categorieën laden...</span>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full mt-4">
+                      {[1,2,3,4].map(i => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
+                    </div>
+                  </div>
+                </Card>
+              }>
+                <CategoryManager />
+              </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
 
@@ -2208,25 +2257,22 @@ const Admin = () => {
           {/* Contact Messages Tab */}
           <TabsContent value="messages">
             <AuthErrorBoundary>
-              <ContactMessagesManager />
-            </AuthErrorBoundary>
-          </TabsContent>
-
-          {/* Sales Dashboard Tab - Lazy loaded */}
-          <TabsContent value="sales">
-            <AuthErrorBoundary>
               <Suspense fallback={
                 <Card className="p-8">
-                  <div className="flex items-center justify-center gap-3">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span>Verkoop dashboard laden...</span>
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Berichten laden...</span>
+                    <div className="space-y-3 w-full mt-4">
+                      {[1,2,3,4].map(i => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
+                    </div>
                   </div>
                 </Card>
               }>
-                <SalesDashboard />
+                <ContactMessagesManager />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
+
 
           {/* Google Ads Generator Tab */}
           <TabsContent value="google-ads">
@@ -2247,7 +2293,19 @@ const Admin = () => {
           {/* Bestsellers Management Tab */}
           <TabsContent value="bestsellers">
             <AuthErrorBoundary>
-              <BestsellerManager />
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Bestsellers laden...</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mt-4">
+                      {[1,2,3].map(i => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}
+                    </div>
+                  </div>
+                </Card>
+              }>
+                <BestsellerManager />
+              </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
 
