@@ -46,6 +46,33 @@
     <priority>0.8</priority>
   </url>
   
+  <!-- Blog Pages -->
+  <url>
+    <loc>https://getpawsy.lovable.app/blog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://getpawsy.lovable.app/blog/how-to-choose-perfect-dog-bed-guide</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://getpawsy.lovable.app/blog/cat-trees-guide-choosing-perfect-climbing-tower</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://getpawsy.lovable.app/blog/pet-nutrition-guide-feeding-dogs-cats</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://getpawsy.lovable.app/blog/best-pet-toys-guide-dogs-cats-entertainment</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
   <!-- Static Pages -->
   <url>
     <loc>https://getpawsy.lovable.app/about</loc>
