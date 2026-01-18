@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, Component, ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,35 +10,107 @@ import { CartAnimationProvider } from "@/contexts/CartAnimationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Critical routes - loaded immediately
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
-// Lazy load heavy route components to improve initial load time
-const Products = lazy(() => import("./pages/Products"));
-const ProductDetail = lazy(() => import("./pages/ProductDetail"));
-const Cart = lazy(() => import("./pages/Cart"));
-const Checkout = lazy(() => import("./pages/Checkout"));
-const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
-const Admin = lazy(() => import("./pages/Admin"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Wishlist = lazy(() => import("./pages/Wishlist"));
-const Profile = lazy(() => import("./pages/Profile"));
-const Orders = lazy(() => import("./pages/Orders"));
-const Install = lazy(() => import("./pages/Install"));
-const About = lazy(() => import("./pages/About"));
-const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
-const TermsOfService = lazy(() => import("./pages/TermsOfService"));
-const ReturnPolicy = lazy(() => import("./pages/ReturnPolicy"));
-const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
-const Contact = lazy(() => import("./pages/Contact"));
-const Shipping = lazy(() => import("./pages/Shipping"));
-const FAQ = lazy(() => import("./pages/FAQ"));
-const TrackOrder = lazy(() => import("./pages/TrackOrder"));
-const BestsellerDetail = lazy(() => import("./pages/BestsellerDetail"));
-const LiveMap = lazy(() => import("./pages/LiveMap"));
+// Error boundary for lazy loaded routes
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[RouteErrorBoundary] Caught error:', error);
+    console.error('[RouteErrorBoundary] Error info:', errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <div className="text-center max-w-md">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Oeps, er ging iets mis</h2>
+            <p className="text-muted-foreground mb-4">
+              {this.state.error?.message || 'Er is een fout opgetreden bij het laden van de pagina.'}
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Button 
+                onClick={() => window.location.reload()}
+                variant="default"
+              >
+                Vernieuwen
+              </Button>
+              <Button 
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.history.back();
+                }}
+                variant="outline"
+              >
+                Terug
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Lazy load heavy route components with error handling
+const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>) => {
+  return lazy(async () => {
+    try {
+      console.log('[LazyLoad] Starting import...');
+      const module = await importFn();
+      console.log('[LazyLoad] Import successful');
+      return module;
+    } catch (error) {
+      console.error('[LazyLoad] Import failed:', error);
+      throw error;
+    }
+  });
+};
+
+const Products = lazyWithRetry(() => import("./pages/Products"));
+const ProductDetail = lazyWithRetry(() => import("./pages/ProductDetail"));
+const Cart = lazyWithRetry(() => import("./pages/Cart"));
+const Checkout = lazyWithRetry(() => import("./pages/Checkout"));
+const PaymentSuccess = lazyWithRetry(() => import("./pages/PaymentSuccess"));
+const Admin = lazyWithRetry(() => import("./pages/Admin"));
+const Auth = lazyWithRetry(() => import("./pages/Auth"));
+const Wishlist = lazyWithRetry(() => import("./pages/Wishlist"));
+const Profile = lazyWithRetry(() => import("./pages/Profile"));
+const Orders = lazyWithRetry(() => import("./pages/Orders"));
+const Install = lazyWithRetry(() => import("./pages/Install"));
+const About = lazyWithRetry(() => import("./pages/About"));
+const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazyWithRetry(() => import("./pages/TermsOfService"));
+const ReturnPolicy = lazyWithRetry(() => import("./pages/ReturnPolicy"));
+const CookiePolicy = lazyWithRetry(() => import("./pages/CookiePolicy"));
+const Contact = lazyWithRetry(() => import("./pages/Contact"));
+const Shipping = lazyWithRetry(() => import("./pages/Shipping"));
+const FAQ = lazyWithRetry(() => import("./pages/FAQ"));
+const TrackOrder = lazyWithRetry(() => import("./pages/TrackOrder"));
+const BestsellerDetail = lazyWithRetry(() => import("./pages/BestsellerDetail"));
+const LiveMap = lazyWithRetry(() => import("./pages/LiveMap"));
 
 const queryClient = new QueryClient();
 
@@ -77,35 +149,37 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
-                  <Suspense fallback={<RouteLoader />}>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/products" element={<Products />} />
-                      <Route path="/product/:id" element={<ProductDetail />} />
-                      <Route path="/cart" element={<Cart />} />
-                      <Route path="/checkout" element={<Checkout />} />
-                      <Route path="/payment-success" element={<PaymentSuccess />} />
-                      <Route path="/admin" element={<Admin />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/wishlist" element={<Wishlist />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/orders" element={<Orders />} />
-                      <Route path="/install" element={<Install />} />
-                      <Route path="/about" element={<About />} />
-                      <Route path="/privacy" element={<PrivacyPolicy />} />
-                      <Route path="/terms" element={<TermsOfService />} />
-                      <Route path="/returns" element={<ReturnPolicy />} />
-                      <Route path="/cookies" element={<CookiePolicy />} />
-                      <Route path="/contact" element={<Contact />} />
-                      <Route path="/shipping" element={<Shipping />} />
-                      <Route path="/faq" element={<FAQ />} />
-                      <Route path="/track" element={<TrackOrder />} />
-                      <Route path="/bestseller/:slug" element={<BestsellerDetail />} />
-                      <Route path="/live-map" element={<LiveMap />} />
-                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
+                  <RouteErrorBoundary>
+                    <Suspense fallback={<RouteLoader />}>
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/products" element={<Products />} />
+                        <Route path="/product/:id" element={<ProductDetail />} />
+                        <Route path="/cart" element={<Cart />} />
+                        <Route path="/checkout" element={<Checkout />} />
+                        <Route path="/payment-success" element={<PaymentSuccess />} />
+                        <Route path="/admin" element={<Admin />} />
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/wishlist" element={<Wishlist />} />
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/orders" element={<Orders />} />
+                        <Route path="/install" element={<Install />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="/privacy" element={<PrivacyPolicy />} />
+                        <Route path="/terms" element={<TermsOfService />} />
+                        <Route path="/returns" element={<ReturnPolicy />} />
+                        <Route path="/cookies" element={<CookiePolicy />} />
+                        <Route path="/contact" element={<Contact />} />
+                        <Route path="/shipping" element={<Shipping />} />
+                        <Route path="/faq" element={<FAQ />} />
+                        <Route path="/track" element={<TrackOrder />} />
+                        <Route path="/bestseller/:slug" element={<BestsellerDetail />} />
+                        <Route path="/live-map" element={<LiveMap />} />
+                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </Suspense>
+                  </RouteErrorBoundary>
                 </BrowserRouter>
               </WishlistProvider>
             </CartAnimationProvider>
