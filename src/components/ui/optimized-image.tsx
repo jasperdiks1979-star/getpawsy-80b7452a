@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, memo } from 'react';
+import { useState, useRef, useEffect, memo, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps {
@@ -11,7 +11,7 @@ interface OptimizedImageProps {
   onLoad?: () => void;
 }
 
-export const OptimizedImage = memo(({
+export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProps>(({
   src,
   alt,
   className,
@@ -19,11 +19,11 @@ export const OptimizedImage = memo(({
   aspectRatio = 'auto',
   priority = false,
   onLoad,
-}: OptimizedImageProps) => {
+}, forwardedRef) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
   const [hasError, setHasError] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const internalRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer for lazy loading with larger margin
   useEffect(() => {
@@ -42,8 +42,8 @@ export const OptimizedImage = memo(({
       }
     );
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
+    if (internalRef.current) {
+      observer.observe(internalRef.current);
     }
 
     return () => observer.disconnect();
@@ -66,9 +66,19 @@ export const OptimizedImage = memo(({
     auto: '',
   }[aspectRatio];
 
+  // Combine refs
+  const setRefs = (node: HTMLDivElement | null) => {
+    internalRef.current = node;
+    if (typeof forwardedRef === 'function') {
+      forwardedRef(node);
+    } else if (forwardedRef) {
+      forwardedRef.current = node;
+    }
+  };
+
   return (
     <div
-      ref={containerRef}
+      ref={setRefs}
       className={cn(
         'relative overflow-hidden bg-muted',
         aspectRatioClass,
@@ -103,4 +113,6 @@ export const OptimizedImage = memo(({
       )}
     </div>
   );
-});
+}));
+
+OptimizedImage.displayName = 'OptimizedImage';
