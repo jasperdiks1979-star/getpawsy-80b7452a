@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1049,7 +1050,7 @@ const BestsellerDetail = () => {
                   viewport={{ once: true }}
                   transition={{ delay: 0.2 }}
                   className="prose prose-lg max-w-none text-muted-foreground leading-relaxed [&>p]:mb-6"
-                  dangerouslySetInnerHTML={{ __html: bestseller.long_description.replace(/\n/g, '<br/>') }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(bestseller.long_description.replace(/\n/g, '<br/>')) }}
                 />
               </div>
             </div>
