@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Clock, ArrowLeft, User, Share2, BookOpen, ShoppingBag } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
+import { generateBlogMetaDescription } from '@/lib/seo-keywords';
 
 interface BlogPost {
   id: string;
@@ -282,16 +283,19 @@ const BlogPostPage = () => {
     keywords: post.meta_keywords?.join(', ') || post.tags.join(', '),
   };
 
+  // Generate smart meta description using the new function
+  const metaDescription = post.meta_description || generateBlogMetaDescription(post.title, post.excerpt, post.category);
+
   return (
     <Layout>
       <Helmet>
         <title>{post.meta_title || post.title} | GetPawsy Blog</title>
-        <meta name="description" content={post.meta_description || post.excerpt} />
+        <meta name="description" content={metaDescription} />
         <meta name="keywords" content={post.meta_keywords?.join(', ') || post.tags.join(', ')} />
         <link rel="canonical" href={`https://getpawsy.lovable.app/blog/${post.slug}`} />
         <meta property="og:type" content="article" />
         <meta property="og:title" content={post.meta_title || post.title} />
-        <meta property="og:description" content={post.meta_description || post.excerpt} />
+        <meta property="og:description" content={metaDescription} />
         {post.featured_image && <meta property="og:image" content={post.featured_image} />}
         <meta property="article:published_time" content={post.published_at} />
         <meta property="article:author" content={post.author_name} />
