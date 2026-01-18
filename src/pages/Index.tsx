@@ -123,14 +123,12 @@ const Index = () => {
     offset: ["start start", "end start"]
   });
   
-  // Parallax transforms
-  const heroImageY = useTransform(scrollYProgress, [0, 1], [0, 150]);
-  const heroImageScale = useTransform(scrollYProgress, [0, 0.5], [1, 1.15]);
-  const heroContentY = useTransform(scrollYProgress, [0, 1], [0, 50]);
-  const floatingCard1Y = useTransform(scrollYProgress, [0, 1], [0, 80]);
-  const floatingCard2Y = useTransform(scrollYProgress, [0, 1], [0, 120]);
-  const bgBlobY = useTransform(scrollYProgress, [0, 1], [0, 200]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.3]);
+  // Parallax transforms - simplified for better mobile performance
+  const heroImageY = useTransform(scrollYProgress, [0, 1], [0, 100]);
+  const heroContentY = useTransform(scrollYProgress, [0, 1], [0, 30]);
+  const floatingCard1Y = useTransform(scrollYProgress, [0, 1], [0, 50]);
+  const floatingCard2Y = useTransform(scrollYProgress, [0, 1], [0, 70]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0.5]);
   
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -279,16 +277,10 @@ const Index = () => {
     <Layout>
       {/* Hero Section with Parallax */}
       <section ref={heroRef} className="relative overflow-hidden">
-        {/* Decorative background elements with parallax */}
+        {/* Decorative background elements */}
         <div className="absolute inset-0 gradient-hero" />
-        <motion.div 
-          className="absolute top-20 right-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl"
-          style={{ y: bgBlobY }}
-        />
-        <motion.div 
-          className="absolute bottom-10 left-10 w-96 h-96 bg-secondary/30 rounded-full blur-3xl"
-          style={{ y: useTransform(scrollYProgress, [0, 1], [0, -100]) }}
-        />
+        <div className="absolute top-20 right-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-10 w-96 h-96 bg-secondary/30 rounded-full blur-3xl" />
         
         <motion.div 
           className="container relative px-4 md:px-6 py-20 md:py-32"
@@ -373,18 +365,20 @@ const Index = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              {/* Main image with parallax and zoom */}
-              <motion.div className="relative z-10 overflow-hidden rounded-3xl" style={{ y: heroImageY }}>
-                <motion.img
+              {/* Main image with smooth parallax */}
+              <motion.div 
+                className="relative z-10 overflow-hidden rounded-3xl will-change-transform" 
+                style={{ y: heroImageY }}
+              >
+                <img
                   src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=80"
                   alt="Happy dog with natural pet products"
-                  className="shadow-soft-lg object-cover aspect-[4/5] w-full"
-                  style={{ scale: heroImageScale }}
+                  className="shadow-soft-lg object-cover aspect-[4/5] w-full transition-transform duration-700 hover:scale-105"
                 />
                 
-                {/* Floating cards with enhanced parallax */}
+                {/* Floating cards with simplified parallax */}
                 <motion.div 
-                  className="absolute -bottom-6 -left-6 bg-card p-4 rounded-2xl shadow-soft glass z-20"
+                  className="absolute -bottom-6 -left-6 bg-card p-4 rounded-2xl shadow-soft glass z-20 will-change-transform"
                   style={{ y: floatingCard1Y }}
                 >
                   <div className="flex items-center gap-3">
@@ -399,29 +393,13 @@ const Index = () => {
                 </motion.div>
 
                 <motion.div 
-                  className="absolute -top-4 -right-4 bg-card p-4 rounded-2xl shadow-soft glass z-20"
+                  className="absolute -top-4 -right-4 bg-card p-4 rounded-2xl shadow-soft glass z-20 will-change-transform"
                   style={{ y: floatingCard2Y }}
-                  animate={{ 
-                    scale: [1, 1.05, 1],
-                    boxShadow: [
-                      "0 4px 20px rgba(0,0,0,0.1)",
-                      "0 8px 30px rgba(0,0,0,0.15)",
-                      "0 4px 20px rgba(0,0,0,0.1)"
-                    ]
-                  }}
-                  transition={{ 
-                    duration: 2.5,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
                   <div className="flex items-center gap-2">
-                    <motion.div
-                      animate={{ rotate: [0, 10, -10, 0] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      <Leaf className="w-5 h-5 text-primary" />
-                    </motion.div>
+                    <Leaf className="w-5 h-5 text-primary animate-pulse" />
                     <span className="font-semibold text-sm">100% Natural</span>
                   </div>
                 </motion.div>
