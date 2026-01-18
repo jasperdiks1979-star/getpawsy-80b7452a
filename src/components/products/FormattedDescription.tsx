@@ -1,14 +1,23 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { sanitizeHtml } from '@/lib/sanitize';
-import { CheckCircle2, Sparkles } from 'lucide-react';
+import { CheckCircle2, Sparkles, Zap, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FormattedDescriptionProps {
   description: string;
+  productName?: string;
+  productId?: string;
   className?: string;
+}
+
+interface AISummary {
+  summary: string;
+  highlights: string[];
 }
 
 /**
  * Intelligently formats product descriptions for better readability.
+ * - AI-generated summary with 3 key highlights
  * - Splits long text into paragraphs
  * - Detects and renders feature lists as bullet points
  * - Highlights key product information
@@ -16,28 +25,129 @@ interface FormattedDescriptionProps {
  */
 const FormattedDescription: React.FC<FormattedDescriptionProps> = ({ 
   description, 
+  productName = 'Product',
+  productId,
   className = '' 
 }) => {
+  const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState(false);
+
+  // Fetch AI summary on mount
+  useEffect(() => {
+    const fetchAISummary = async () => {
+      // Only fetch if description is long enough
+      if (!description || description.length < 100) return;
+      
+      // Check if we have a cached summary in localStorage
+      const cacheKey = `product-summary-${productId || description.substring(0, 50)}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          setAiSummary(JSON.parse(cached));
+          return;
+        } catch {
+          localStorage.removeItem(cacheKey);
+        }
+      }
+
+      setIsLoadingSummary(true);
+      setSummaryError(false);
+
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-product-summary', {
+          body: { 
+            description: description.substring(0, 2000), // Limit input size
+            productName 
+          }
+        });
+
+        if (error) throw error;
+        
+        if (data?.summary && data?.highlights?.length > 0) {
+          setAiSummary(data);
+          // Cache the result
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error('Failed to fetch AI summary:', err);
+        setSummaryError(true);
+      } finally {
+        setIsLoadingSummary(false);
+      }
+    };
+
+    fetchAISummary();
+  }, [description, productName, productId]);
+
   // Check if description contains HTML
   const hasHtml = /<[^>]+>/.test(description);
+  
+  // AI Summary component
+  const AISummarySection = () => {
+    if (isLoadingSummary) {
+      return (
+        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-2xl p-5 mb-6 border border-primary/20">
+          <div className="flex items-center gap-2 text-primary">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm font-medium">Generating summary...</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (!aiSummary || summaryError) return null;
+
+    return (
+      <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-2xl p-5 mb-6 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-500">
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+            <Zap className="w-3.5 h-3.5 text-primary" />
+          </div>
+          <span className="text-xs font-semibold text-primary uppercase tracking-wider">Quick Summary</span>
+        </div>
+        
+        {/* Summary text */}
+        <p className="text-foreground font-medium leading-relaxed mb-4">
+          {aiSummary.summary}
+        </p>
+        
+        {/* Key highlights */}
+        <div className="flex flex-wrap gap-2">
+          {aiSummary.highlights.map((highlight, idx) => (
+            <span 
+              key={idx}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background/80 rounded-full text-sm border border-border/50"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+              <span className="text-muted-foreground">{highlight}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  };
   
   if (hasHtml) {
     // For HTML content, use existing sanitization with enhanced styling
     return (
-      <div 
-        className={`prose prose-sm max-w-none text-muted-foreground 
-          [&_h2]:text-xl [&_h2]:font-display [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:mt-8 [&_h2]:mb-4
-          [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-6 [&_h3]:mb-3
-          [&_p]:leading-relaxed [&_p]:mb-4 [&_p]:text-[15px]
-          [&_ul]:list-none [&_ul]:pl-0 [&_ul]:my-4 [&_ul]:space-y-2
-          [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:my-0
-          [&_li:before]:content-['✓'] [&_li:before]:text-primary [&_li:before]:font-bold
-          [&_img]:rounded-xl [&_img]:my-6
-          [&_strong]:text-foreground [&_strong]:font-semibold
-          [&_b]:text-foreground [&_b]:font-semibold
-          ${className}`}
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }}
-      />
+      <div className={className}>
+        <AISummarySection />
+        <div 
+          className={`prose prose-sm max-w-none text-muted-foreground 
+            [&_h2]:text-xl [&_h2]:font-display [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:mt-8 [&_h2]:mb-4
+            [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-6 [&_h3]:mb-3
+            [&_p]:leading-relaxed [&_p]:mb-4 [&_p]:text-[15px]
+            [&_ul]:list-none [&_ul]:pl-0 [&_ul]:my-4 [&_ul]:space-y-2
+            [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:my-0
+            [&_li:before]:content-['✓'] [&_li:before]:text-primary [&_li:before]:font-bold
+            [&_img]:rounded-xl [&_img]:my-6
+            [&_strong]:text-foreground [&_strong]:font-semibold
+            [&_b]:text-foreground [&_b]:font-semibold`}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }}
+        />
+      </div>
     );
   }
   
@@ -46,6 +156,8 @@ const FormattedDescription: React.FC<FormattedDescriptionProps> = ({
   
   return (
     <div className={`space-y-6 ${className}`}>
+      <AISummarySection />
+      
       {sections.map((section, index) => (
         <React.Fragment key={index}>
           {section.type === 'intro' && (

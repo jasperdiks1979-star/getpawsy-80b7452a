@@ -1013,7 +1013,9 @@ const ProductDetail = () => {
             <TabsContent value="description" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
                 <FormattedDescription 
-                  description={product.description || 'No description available.'} 
+                  description={product.description || 'No description available.'}
+                  productName={product.name}
+                  productId={product.id}
                 />
               </div>
             </TabsContent>
