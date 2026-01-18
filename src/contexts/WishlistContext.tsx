@@ -21,18 +21,24 @@ const WishlistContext = createContext<WishlistContextType | undefined>(undefined
 
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(() => {
-    const saved = localStorage.getItem('wishlist-items');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Migrate from old format
-    const oldSaved = localStorage.getItem('wishlist');
-    if (oldSaved) {
-      const oldIds: string[] = JSON.parse(oldSaved);
-      return oldIds.map((productId, index) => ({
-        productId,
-        addedAt: Date.now() - (oldIds.length - index) * 1000, // Preserve order
-      }));
+    try {
+      const saved = localStorage.getItem('wishlist-items');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      // Migrate from old format
+      const oldSaved = localStorage.getItem('wishlist');
+      if (oldSaved) {
+        const oldIds: string[] = JSON.parse(oldSaved);
+        return oldIds.map((productId, index) => ({
+          productId,
+          addedAt: Date.now() - (oldIds.length - index) * 1000, // Preserve order
+        }));
+      }
+    } catch {
+      // If parsing fails, clear corrupted data
+      localStorage.removeItem('wishlist-items');
+      localStorage.removeItem('wishlist');
     }
     return [];
   });

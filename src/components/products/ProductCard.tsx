@@ -1,4 +1,4 @@
-import { useState, useRef, memo } from 'react';
+import React, { useState, memo, forwardRef } from 'react';
 import { Link } from 'react-router-dom'
 import { ShoppingCart, Heart, Eye } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
@@ -36,14 +36,14 @@ interface ProductCardProps {
   product: Product;
 }
 
-export const ProductCard = memo(({ product }: ProductCardProps) => {
+export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(({ product }, ref) => {
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { success: hapticSuccess, selection: hapticSelection } = useHaptic();
   const inWishlist = isInWishlist(product.id);
   const [isAnimating, setIsAnimating] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  
 
   const isOutOfStock = product.stock === 0 || product.stock === null;
 
@@ -88,7 +88,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
     : null;
 
   return (
-    <Link to={`/product/${product.id}`} className="group block">
+    <Link ref={ref} to={`/product/${product.id}`} className="group block">
       <div 
         className="relative bg-card rounded-2xl overflow-hidden shadow-card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-1"
       >
@@ -209,4 +209,6 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
       </div>
     </Link>
   );
-});
+}));
+
+ProductCard.displayName = 'ProductCard';
