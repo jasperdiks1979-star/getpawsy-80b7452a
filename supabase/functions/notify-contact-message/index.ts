@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -35,11 +36,73 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { name, email, subject, message, orderNumber }: ContactNotificationRequest = await req.json();
     
+    // Validate required fields
+    if (!name || !email || !subject || !message) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email format" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Initialize Supabase admin client for rate limiting
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Check rate limit - 3 messages per hour per email address
+    const rateLimitId = `contact_${email.toLowerCase().trim()}`;
+    const { data: rateLimitData, error: rateLimitError } = await supabaseAdmin.rpc('check_rate_limit', {
+      p_user_id: rateLimitId,
+      p_function_name: 'notify-contact-message',
+      p_max_requests: 3,
+      p_window_minutes: 60
+    });
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+      // Continue without rate limiting if check fails (fail-open for user experience)
+    } else if (rateLimitData && rateLimitData[0] && !rateLimitData[0].allowed) {
+      console.log(`Rate limit exceeded for email: ${email}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Too many messages sent. Please try again later.",
+          reset_at: rateLimitData[0].reset_at 
+        }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    
     console.log(`New contact message from: ${name} (${email})`);
     console.log(`Subject: ${subject}, Order Number: ${orderNumber || "N/A"}`);
 
     const subjectLabel = subjectLabels[subject] || subject;
     const adminEmail = "support@getpawsy.pet";
+
+    // Escape HTML in user-provided content to prevent email injection
+    const escapeHtml = (str: string) => {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeMessage = escapeHtml(message);
+    const safeSubjectLabel = escapeHtml(subjectLabel);
+    const safeOrderNumber = orderNumber ? escapeHtml(orderNumber) : null;
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -79,28 +142,28 @@ const handler = async (req: Request): Promise<Response> => {
                             <tr>
                               <td style="padding: 8px 16px;">
                                 <p style="margin: 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Name</p>
-                                <p style="margin: 4px 0 0 0; color: #18181b; font-size: 16px; font-weight: 500;">${name}</p>
+                                <p style="margin: 4px 0 0 0; color: #18181b; font-size: 16px; font-weight: 500;">${safeName}</p>
                               </td>
                             </tr>
                             <tr>
                               <td style="padding: 8px 16px;">
                                 <p style="margin: 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Email</p>
                                 <p style="margin: 4px 0 0 0;">
-                                  <a href="mailto:${email}" style="color: #f97316; font-size: 16px; font-weight: 500; text-decoration: none;">${email}</a>
+                                  <a href="mailto:${safeEmail}" style="color: #f97316; font-size: 16px; font-weight: 500; text-decoration: none;">${safeEmail}</a>
                                 </p>
                               </td>
                             </tr>
                             <tr>
                               <td style="padding: 8px 16px;">
                                 <p style="margin: 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Subject</p>
-                                <p style="margin: 4px 0 0 0; color: #18181b; font-size: 16px; font-weight: 500;">${subjectLabel}</p>
+                                <p style="margin: 4px 0 0 0; color: #18181b; font-size: 16px; font-weight: 500;">${safeSubjectLabel}</p>
                               </td>
                             </tr>
-                            ${orderNumber ? `
+                            ${safeOrderNumber ? `
                             <tr>
                               <td style="padding: 8px 16px;">
                                 <p style="margin: 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Order Number</p>
-                                <p style="margin: 4px 0 0 0; color: #18181b; font-size: 16px; font-weight: 600;">${orderNumber}</p>
+                                <p style="margin: 4px 0 0 0; color: #18181b; font-size: 16px; font-weight: 600;">${safeOrderNumber}</p>
                               </td>
                             </tr>
                             ` : ""}
@@ -115,7 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
                             Message
                           </h2>
                           <div style="background-color: #fef3c7; border-left: 4px solid #f97316; border-radius: 0 8px 8px 0; padding: 16px 20px;">
-                            <p style="margin: 0; color: #18181b; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">${message}</p>
+                            <p style="margin: 0; color: #18181b; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">${safeMessage}</p>
                           </div>
                         </td>
                       </tr>
@@ -126,7 +189,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <!-- Quick Reply Button -->
                 <tr>
                   <td style="padding: 0 40px 32px 40px; text-align: center;">
-                    <a href="mailto:${email}?subject=Re: ${subjectLabel}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                    <a href="mailto:${safeEmail}?subject=Re: ${safeSubjectLabel}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
                       Reply to Customer
                     </a>
                   </td>
@@ -152,7 +215,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "Pawsy <noreply@getpawsy.pet>",
       to: [adminEmail],
-      subject: `📬 New Contact: ${subjectLabel} from ${name}`,
+      subject: `📬 New Contact: ${safeSubjectLabel} from ${safeName}`,
       html: emailHtml,
       reply_to: email,
     });
