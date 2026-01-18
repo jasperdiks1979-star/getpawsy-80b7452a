@@ -6,7 +6,8 @@ import { Layout } from '@/components/layout/Layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, ArrowLeft, User, Share2, BookOpen } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Calendar, Clock, ArrowLeft, User, Share2, BookOpen, ShoppingBag } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -27,11 +28,28 @@ interface BlogPost {
   meta_keywords: string[] | null;
 }
 
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  compare_at_price: number | null;
+  image_url: string | null;
+  category: string | null;
+}
+
 const categoryColors: Record<string, string> = {
   honden: 'bg-amber-100 text-amber-700',
   katten: 'bg-pink-100 text-pink-700',
   vissen: 'bg-blue-100 text-blue-700',
   algemeen: 'bg-emerald-100 text-emerald-700',
+};
+
+// Map blog categories to product categories
+const blogToProductCategories: Record<string, string[]> = {
+  honden: ['Honden', 'Dogs', 'Speelgoed', 'Voeding', 'Accessoires'],
+  katten: ['Katten', 'Cats', 'Speelgoed', 'Krabpalen', 'Accessoires'],
+  vissen: ['Vissen', 'Fish', 'Aquarium', 'Voeding'],
+  algemeen: ['Speelgoed', 'Accessoires', 'Voeding'],
 };
 
 const BlogPostPage = () => {
@@ -51,6 +69,49 @@ const BlogPostPage = () => {
       return data as BlogPost;
     },
     enabled: !!slug,
+  });
+
+  // Fetch related products based on blog category
+  const { data: relatedProducts } = useQuery({
+    queryKey: ['related-products', post?.category],
+    queryFn: async () => {
+      if (!post?.category) return [];
+      
+      const relevantCategories = blogToProductCategories[post.category] || [];
+      
+      // Fetch products that match the relevant categories
+      let query = supabase
+        .from('products_public')
+        .select('id, name, price, compare_at_price, image_url, category')
+        .eq('is_active', true)
+        .limit(8);
+
+      // If we have relevant categories, filter by them
+      if (relevantCategories.length > 0) {
+        // Use ilike for case-insensitive matching
+        const categoryFilters = relevantCategories.map(cat => `category.ilike.%${cat}%`);
+        query = supabase
+          .from('products_public')
+          .select('id, name, price, compare_at_price, image_url, category')
+          .eq('is_active', true)
+          .or(categoryFilters.join(','))
+          .limit(8);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        // Fallback: get any active products
+        const { data: fallbackData } = await supabase
+          .from('products_public')
+          .select('id, name, price, compare_at_price, image_url, category')
+          .eq('is_active', true)
+          .limit(8);
+        return (fallbackData || []) as Product[];
+      }
+      
+      return (data || []) as Product[];
+    },
+    enabled: !!post?.category,
   });
 
   const handleShare = async () => {
@@ -247,6 +308,70 @@ const BlogPostPage = () => {
                 <Badge key={tag} variant="outline" className="capitalize">
                   {tag}
                 </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Related Products */}
+        {relatedProducts && relatedProducts.length > 0 && (
+          <div className="mt-12 pt-8 border-t">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 text-primary" />
+                  Aanbevolen Producten
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Producten die passen bij dit artikel
+                </p>
+              </div>
+              <Link to="/products">
+                <Button variant="outline" size="sm">
+                  Bekijk alles
+                  <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                </Button>
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {relatedProducts.slice(0, 4).map((product) => (
+                <Link key={product.id} to={`/products/${product.id}`}>
+                  <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow group">
+                    <div className="aspect-square bg-muted relative overflow-hidden">
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ShoppingBag className="w-8 h-8 text-muted-foreground/50" />
+                        </div>
+                      )}
+                      {product.compare_at_price && product.compare_at_price > product.price && (
+                        <Badge className="absolute top-2 right-2 bg-red-500 text-white">
+                          -{Math.round((1 - product.price / product.compare_at_price) * 100)}%
+                        </Badge>
+                      )}
+                    </div>
+                    <CardContent className="p-3">
+                      <h4 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                        {product.name}
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-primary">
+                          €{product.price.toFixed(2)}
+                        </span>
+                        {product.compare_at_price && product.compare_at_price > product.price && (
+                          <span className="text-xs text-muted-foreground line-through">
+                            €{product.compare_at_price.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </div>
