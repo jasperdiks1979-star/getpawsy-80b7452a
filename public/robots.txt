@@ -25,8 +25,15 @@ User-agent: *
 Allow: /
 Crawl-delay: 2
 
-# Dynamic sitemap with all products, categories, bestsellers, and blog posts
-Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap
+# Sitemap Index (contains all individual sitemaps)
+Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=index
+
+# Individual sitemaps for reference:
+# - Static pages: ?type=static
+# - Products: ?type=products
+# - Categories: ?type=categories
+# - Bestsellers: ?type=bestsellers
+# - Blog: ?type=blog
 
 # Static sitemap fallback
 Sitemap: https://getpawsy.lovable.app/sitemap.xml
