@@ -16,6 +16,7 @@ import { EnhancedSearch } from '@/components/search/EnhancedSearch';
 import { supabase } from '@/integrations/supabase/client';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { CategorySchema } from '@/components/seo/CategorySchema';
 
 const sortOptions = [
   { value: 'newest', label: 'Newest' },
@@ -252,6 +253,11 @@ const Products = () => {
 
   return (
     <Layout>
+      <CategorySchema 
+        categoryName={categoryParam || undefined}
+        searchQuery={searchQuery || undefined}
+        productCount={totalCount}
+      />
       <div className="container px-4 md:px-6 py-8">
         {/* Header */}
         <div className="mb-8">

@@ -1,8 +1,13 @@
+# GetPawsy Pet Products - Robots.txt
+# Premium pet supplies, dog beds, cat trees, pet toys & accessories
+
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +15,23 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Pinterest
+Allow: /
+
 User-agent: *
 Allow: /
+Crawl-delay: 2
+
+# Sitemap location
+Sitemap: https://getpawsy.lovable.app/sitemap.xml
+
+# Important pages for SEO
+# Homepage: https://getpawsy.lovable.app/
+# Products: https://getpawsy.lovable.app/products
+# Dog Beds: https://getpawsy.lovable.app/products?category=Pet%20Beds
+# Pet Toys: https://getpawsy.lovable.app/products?category=Pet%20Toys
+# Pet Collars: https://getpawsy.lovable.app/products?category=Pet%20Collars
+# Pet Bowls: https://getpawsy.lovable.app/products?category=Pet%20Bowls
