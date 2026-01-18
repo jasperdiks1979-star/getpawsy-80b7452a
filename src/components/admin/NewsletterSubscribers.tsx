@@ -1,18 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,10 +17,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Mail, Search, Trash2, UserX, UserCheck, Download, Loader2, Users } from 'lucide-react';
+import { Mail, Search, Trash2, UserX, UserCheck, Download, Users } from 'lucide-react';
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
-import { SwipeToDelete } from "@/components/ui/swipe-to-delete";
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -37,6 +29,114 @@ interface Subscriber {
   is_active: boolean;
   subscribed_at: string;
   unsubscribed_at: string | null;
+}
+
+// Virtualized table component for subscribers
+function VirtualizedSubscriberTable({
+  subscribers,
+  onToggleActive,
+  onDelete,
+  isToggling,
+}: {
+  subscribers: Subscriber[];
+  onToggleActive: (id: string, isActive: boolean) => void;
+  onDelete: (id: string) => void;
+  isToggling: boolean;
+}) {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: subscribers.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 56,
+    overscan: 10,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
+  return (
+    <div className="rounded-lg border overflow-hidden">
+      {/* Header */}
+      <div className="flex border-b bg-muted/50">
+        <div className="flex-1 px-4 py-3 text-sm font-medium text-muted-foreground">E-mail</div>
+        <div className="w-40 px-4 py-3 text-sm font-medium text-muted-foreground">Aangemeld</div>
+        <div className="w-28 px-4 py-3 text-sm font-medium text-muted-foreground">Status</div>
+        <div className="w-24 px-4 py-3 text-sm font-medium text-muted-foreground text-right">Acties</div>
+      </div>
+
+      {/* Virtualized Body */}
+      <div
+        ref={parentRef}
+        style={{ maxHeight: 500, overflow: 'auto' }}
+        className="relative"
+      >
+        <div
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {virtualItems.map((virtualRow) => {
+            const subscriber = subscribers[virtualRow.index];
+
+            return (
+              <div
+                key={subscriber.id}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+                className="flex border-b hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex-1 px-4 py-4 text-sm font-medium truncate flex items-center">
+                  {subscriber.email}
+                </div>
+                <div className="w-40 px-4 py-4 text-sm text-muted-foreground flex items-center">
+                  {format(new Date(subscriber.subscribed_at), 'd MMM yyyy', { locale: nl })}
+                </div>
+                <div className="w-28 px-4 py-4 flex items-center">
+                  {subscriber.is_active ? (
+                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                      Actief
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">Uit</Badge>
+                  )}
+                </div>
+                <div className="w-24 px-4 py-4 flex items-center justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onToggleActive(subscriber.id, !subscriber.is_active)}
+                    disabled={isToggling}
+                  >
+                    {subscriber.is_active ? (
+                      <UserX className="w-4 h-4" />
+                    ) : (
+                      <UserCheck className="w-4 h-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDelete(subscriber.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export const NewsletterSubscribers = () => {
@@ -221,69 +321,12 @@ export const NewsletterSubscribers = () => {
               <p>Geen abonnees gevonden</p>
             </div>
           ) : (
-            <div className="rounded-lg border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>E-mail</TableHead>
-                    <TableHead>Aangemeld</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSubscribers.map((subscriber) => (
-                    <SwipeToDelete
-                      key={subscriber.id}
-                      onDelete={() => deleteMutation.mutate(subscriber.id)}
-                    >
-                      <TableRow>
-                        <TableCell className="font-medium">{subscriber.email}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {format(new Date(subscriber.subscribed_at), 'd MMM yyyy, HH:mm', { locale: nl })}
-                        </TableCell>
-                        <TableCell>
-                          {subscriber.is_active ? (
-                            <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                              Actief
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary">Uitgeschreven</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleActiveMutation.mutate({
-                                id: subscriber.id,
-                                is_active: !subscriber.is_active
-                              })}
-                              disabled={toggleActiveMutation.isPending}
-                            >
-                              {subscriber.is_active ? (
-                                <UserX className="w-4 h-4" />
-                              ) : (
-                                <UserCheck className="w-4 h-4" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteId(subscriber.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    </SwipeToDelete>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <VirtualizedSubscriberTable 
+              subscribers={filteredSubscribers}
+              onToggleActive={(id, isActive) => toggleActiveMutation.mutate({ id, is_active: isActive })}
+              onDelete={(id) => setDeleteId(id)}
+              isToggling={toggleActiveMutation.isPending}
+            />
           )}
         </CardContent>
       </Card>
