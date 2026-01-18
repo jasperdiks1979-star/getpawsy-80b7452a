@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowDown, Truck, Shield, HeartHandshake, Sparkles, Loader2, Star, Leaf, Quote, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
 import { supabase } from '@/integrations/supabase/client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { CarouselApi } from '@/components/ui/carousel';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { trackNewsletterSignup } from '@/lib/analytics';
@@ -98,6 +98,21 @@ const itemVariants = {
 const Index = () => {
   // Track visitor browsing activity
   useVisitorTracking();
+  
+  // Parallax scroll
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"]
+  });
+  
+  // Parallax transforms
+  const heroImageY = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const heroContentY = useTransform(scrollYProgress, [0, 1], [0, 50]);
+  const floatingCard1Y = useTransform(scrollYProgress, [0, 1], [0, 80]);
+  const floatingCard2Y = useTransform(scrollYProgress, [0, 1], [0, 120]);
+  const bgBlobY = useTransform(scrollYProgress, [0, 1], [0, 200]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.3]);
   
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -244,20 +259,30 @@ const Index = () => {
 
   return (
     <Layout>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        {/* Decorative background elements */}
+      {/* Hero Section with Parallax */}
+      <section ref={heroRef} className="relative overflow-hidden">
+        {/* Decorative background elements with parallax */}
         <div className="absolute inset-0 gradient-hero" />
-        <div className="absolute top-20 right-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-10 w-96 h-96 bg-secondary/30 rounded-full blur-3xl" />
+        <motion.div 
+          className="absolute top-20 right-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl"
+          style={{ y: bgBlobY }}
+        />
+        <motion.div 
+          className="absolute bottom-10 left-10 w-96 h-96 bg-secondary/30 rounded-full blur-3xl"
+          style={{ y: useTransform(scrollYProgress, [0, 1], [0, -100]) }}
+        />
         
-        <div className="container relative px-4 md:px-6 py-20 md:py-32">
+        <motion.div 
+          className="container relative px-4 md:px-6 py-20 md:py-32"
+          style={{ opacity: heroOpacity }}
+        >
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div 
               className="space-y-8"
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
+              style={{ y: heroContentY }}
             >
               <motion.div 
                 className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-full text-sm font-medium"
@@ -326,19 +351,18 @@ const Index = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              {/* Main image */}
-              <div className="relative z-10">
+              {/* Main image with parallax */}
+              <motion.div className="relative z-10" style={{ y: heroImageY }}>
                 <img
                   src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=80"
                   alt="Happy dog with natural pet products"
                   className="rounded-3xl shadow-soft-lg object-cover aspect-[4/5] w-full"
                 />
                 
-                {/* Floating cards */}
+                {/* Floating cards with enhanced parallax */}
                 <motion.div 
-                  className="absolute -bottom-6 -left-6 bg-card p-4 rounded-2xl shadow-soft glass"
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute -bottom-6 -left-6 bg-card p-4 rounded-2xl shadow-soft glass z-20"
+                  style={{ y: floatingCard1Y }}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
@@ -352,22 +376,21 @@ const Index = () => {
                 </motion.div>
 
                 <motion.div 
-                  className="absolute -top-4 -right-4 bg-card p-4 rounded-2xl shadow-soft glass"
-                  animate={{ y: [0, 8, 0] }}
-                  transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                  className="absolute -top-4 -right-4 bg-card p-4 rounded-2xl shadow-soft glass z-20"
+                  style={{ y: floatingCard2Y }}
                 >
                   <div className="flex items-center gap-2">
                     <Leaf className="w-5 h-5 text-primary" />
                     <span className="font-semibold text-sm">100% Natural</span>
                   </div>
                 </motion.div>
-              </div>
+              </motion.div>
 
               {/* Decorative blob */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-accent/30 blob-shape -z-10" />
             </motion.div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Features Bar */}
