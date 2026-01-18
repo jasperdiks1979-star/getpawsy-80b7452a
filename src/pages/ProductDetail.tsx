@@ -236,8 +236,9 @@ const ProductDetail = () => {
   // Update selected image when variant is selected
   useEffect(() => {
     if (selectedVariant?.variantImage) {
-      const images = product?.images && product.images.length > 0 
-        ? product.images 
+      const productImages = Array.isArray(product?.images) ? product.images : [];
+      const images = productImages.length > 0 
+        ? productImages 
         : [product?.image_url || '/placeholder.svg'];
       const variantImageIndex = images.findIndex(img => img === selectedVariant.variantImage);
       if (variantImageIndex !== -1) {
@@ -268,8 +269,9 @@ const ProductDetail = () => {
   }, [selectedImage]);
 
   // Flatten images array (handle nested arrays from database) and filter valid URLs
-  const rawImages = product?.images && product.images.length > 0 
-    ? product.images.flat().filter((img): img is string => 
+  const productImagesArray = Array.isArray(product?.images) ? product.images : [];
+  const rawImages = productImagesArray.length > 0 
+    ? productImagesArray.flat().filter((img): img is string => 
         typeof img === 'string' && 
         img.startsWith('http') && 
         !img.includes('undefined')

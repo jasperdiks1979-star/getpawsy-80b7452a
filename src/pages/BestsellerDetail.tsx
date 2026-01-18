@@ -80,8 +80,9 @@ const generateProductJsonLd = (product: {
     ? 'https://schema.org/InStock' 
     : 'https://schema.org/OutOfStock';
 
-  const images = product.images?.length 
-    ? product.images 
+  const imagesArray = Array.isArray(product.images) ? product.images : [];
+  const images = imagesArray.length > 0
+    ? imagesArray 
     : product.image_url 
       ? [product.image_url] 
       : [];
@@ -309,8 +310,9 @@ const BestsellerDetail = () => {
   });
 
   // Build images array
-  const rawImages = product?.images && product.images.length > 0 
-    ? product.images.filter((img): img is string => 
+  const productImagesArray = Array.isArray(product?.images) ? product.images : [];
+  const rawImages = productImagesArray.length > 0 
+    ? productImagesArray.filter((img): img is string => 
         typeof img === 'string' && 
         img.startsWith('http') && 
         !img.includes('undefined')

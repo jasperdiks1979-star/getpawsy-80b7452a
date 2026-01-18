@@ -187,7 +187,10 @@ const Admin = () => {
 
   // Count products that need refresh (new products with ≤1 image)
   const newProductsCount = useMemo(() => {
-    return existingProducts?.filter(p => p.cj_product_id && (p.images?.length || 0) <= 1).length || 0;
+    return existingProducts?.filter(p => {
+      const imagesArray = Array.isArray(p.images) ? p.images : [];
+      return p.cj_product_id && imagesArray.length <= 1;
+    }).length || 0;
   }, [existingProducts]);
 
   // Search CJ products
@@ -546,8 +549,8 @@ const Admin = () => {
       if (mode === "new-only") {
         productsWithCJ = productsWithCJ.filter(p => {
           // Consider a product "new" if it has no images array, empty images, or only 1 image (the main one)
-          const imagesCount = p.images?.length || 0;
-          return imagesCount <= 1;
+          const imagesArray = Array.isArray(p.images) ? p.images : [];
+          return imagesArray.length <= 1;
         });
       }
       
@@ -2264,7 +2267,9 @@ const Admin = () => {
 
           {/* URL Import Tab */}
           <TabsContent value="url-import" className="space-y-6">
-            <URLProductImport />
+            <AuthErrorBoundary>
+              <URLProductImport />
+            </AuthErrorBoundary>
           </TabsContent>
 
           {/* Bookmarks Tab */}
