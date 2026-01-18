@@ -178,11 +178,11 @@ export const BestsellersSection = () => {
                       {/* Price */}
                       <div className="flex items-baseline gap-2">
                         <span className="text-lg font-bold text-primary">
-                          €{product.price.toFixed(2)}
+                          ${product.price.toFixed(2)}
                         </span>
                         {product.compare_at_price && (
                           <span className="text-sm text-muted-foreground line-through">
-                            €{product.compare_at_price.toFixed(2)}
+                            ${product.compare_at_price.toFixed(2)}
                           </span>
                         )}
                       </div>

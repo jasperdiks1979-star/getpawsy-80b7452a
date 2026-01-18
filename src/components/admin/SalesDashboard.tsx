@@ -464,10 +464,10 @@ export const SalesDashboard = () => {
     }
 
     const dateRangeText = startDate && endDate 
-      ? `${format(startDate, "dd-MM-yyyy")} t/m ${format(endDate, "dd-MM-yyyy")}`
-      : "Alle data";
+      ? `${format(startDate, "dd-MM-yyyy")} to ${format(endDate, "dd-MM-yyyy")}`
+      : "All data";
 
-    const headers = ["Datum", "Order ID", "Klant Email", "Status", "Totaal (€)", "Aantal Items"];
+    const headers = ["Date", "Order ID", "Customer Email", "Status", "Total ($)", "Item Count"];
     const rows = filteredOrders.map((order) => {
       const items = order.items as unknown as OrderItem[];
       const itemCount = Array.isArray(items) ? items.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
@@ -866,8 +866,8 @@ export const SalesDashboard = () => {
                         borderRadius: "8px"
                       }}
                       formatter={(value: number, name: string) => [
-                        name === "revenue" ? `€${value.toFixed(2)}` : value,
-                        name === "revenue" ? "Omzet" : "Orders"
+                        name === "revenue" ? `$${value.toFixed(2)}` : value,
+                        name === "revenue" ? "Revenue" : "Orders"
                       ]}
                     />
                     <Area
@@ -1065,7 +1065,7 @@ export const SalesDashboard = () => {
                     <XAxis 
                       type="number" 
                       tick={{ fontSize: 11 }}
-                      tickFormatter={(value) => `€${value.toFixed(0)}`}
+                      tickFormatter={(value) => `$${value.toFixed(0)}`}
                     />
                     <YAxis 
                       type="category" 
@@ -1080,7 +1080,7 @@ export const SalesDashboard = () => {
                         borderRadius: "8px"
                       }}
                       formatter={(value: number, name: string) => [
-                        `€${value.toFixed(2)}`,
+                        `$${value.toFixed(2)}`,
                         name
                       ]}
                       labelFormatter={(label, payload) => {

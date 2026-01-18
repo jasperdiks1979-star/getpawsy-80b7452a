@@ -215,9 +215,9 @@ const Products = () => {
             className="mb-4"
           />
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">€{priceRange[0]}</span>
+            <span className="font-medium">${priceRange[0]}</span>
             <span className="text-muted-foreground">-</span>
-            <span className="font-medium">€{priceRange[1]}</span>
+            <span className="font-medium">${priceRange[1]}</span>
           </div>
         </div>
       </div>
@@ -263,8 +263,8 @@ const Products = () => {
   const metaDescription = categoryParam
     ? generateCategoryMetaDescription(categoryParam)
     : searchQuery
-      ? `Find "${searchQuery}" at GetPawsy. Browse our collection of premium pet products. Free shipping on orders over €50. Quality supplies for dogs, cats & more.`
-      : 'Shop premium pet products at GetPawsy. Quality supplies for dogs, cats & more. From cozy beds to durable toys, we have everything your furry friend needs. Free shipping over €50!';
+      ? `Find "${searchQuery}" at GetPawsy. Browse our collection of premium pet products. Free shipping on orders over $50. Quality supplies for dogs, cats & more.`
+      : 'Shop premium pet products at GetPawsy. Quality supplies for dogs, cats & more. From cozy beds to durable toys, we have everything your furry friend needs. Free shipping over $50!';
 
   const metaKeywords = categoryParam
     ? getKeywordsForCategory(categoryParam).slice(0, 15).join(', ')
@@ -324,7 +324,7 @@ const Products = () => {
             ))}
             {(priceRange[0] > 0 || priceRange[1] < maxPrice) && (
               <Badge variant="secondary" className="gap-1">
-                €{priceRange[0]} - €{priceRange[1]}
+                ${priceRange[0]} - ${priceRange[1]}
                 <X 
                   className="w-3 h-3 cursor-pointer" 
                   onClick={() => setPriceRange([0, maxPrice])} 

@@ -34,11 +34,11 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
 
       if (error) throw error;
 
-      toast.success('Review verwijderd');
+      toast.success('Review deleted');
       onReviewDeleted();
     } catch (error) {
       console.error('Error deleting review:', error);
-      toast.error('Kon review niet verwijderen');
+      toast.error('Could not delete review');
     }
   };
 
@@ -223,7 +223,7 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
                           onClick={() => handleDelete(review.id)}
                         >
                           <Trash2 className="w-4 h-4" />
-                          Verwijderen
+                          Delete
                         </Button>
                       )}
                     </div>

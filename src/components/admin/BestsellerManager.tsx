@@ -298,7 +298,7 @@ export const BestsellerManager = () => {
                           <div>
                             <div className="font-medium">{product.name}</div>
                             <div className="text-xs text-muted-foreground">
-                              €{product.price} - {product.category}
+                              ${product.price} - {product.category}
                             </div>
                           </div>
                         </div>
@@ -359,7 +359,7 @@ export const BestsellerManager = () => {
                       <div>
                         <div className="font-medium">{bestseller.products?.name}</div>
                         <div className="text-sm text-muted-foreground">
-                          €{bestseller.products?.price} • /{bestseller.slug}
+                          ${bestseller.products?.price} • /{bestseller.slug}
                         </div>
                       </div>
                     </div>

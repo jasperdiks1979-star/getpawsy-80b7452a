@@ -422,11 +422,11 @@ const BlogPostPage = () => {
                       </h4>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-primary">
-                          €{product.price.toFixed(2)}
+                          ${product.price.toFixed(2)}
                         </span>
                         {product.compare_at_price && product.compare_at_price > product.price && (
                           <span className="text-xs text-muted-foreground line-through">
-                            €{product.compare_at_price.toFixed(2)}
+                            ${product.compare_at_price.toFixed(2)}
                           </span>
                         )}
                       </div>
