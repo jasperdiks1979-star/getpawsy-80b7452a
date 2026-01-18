@@ -83,6 +83,7 @@ export const VisitorWorldMap = () => {
     return saved !== null ? saved === "true" : true;
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenMinimal, setFullscreenMinimal] = useState(false);
   const [autoRotate, setAutoRotate] = useState(() => {
     const saved = localStorage.getItem("map-auto-rotate");
     return saved !== null ? saved === "true" : false;
@@ -91,8 +92,9 @@ export const VisitorWorldMap = () => {
   const userInteractingRef = useRef(false);
 
   // Toggle fullscreen mode
-  const toggleFullscreen = useCallback(() => {
+  const toggleFullscreen = useCallback((minimal: boolean = false) => {
     setIsFullscreen(prev => !prev);
+    setFullscreenMinimal(minimal);
   }, []);
 
   // Handle ESC key to exit fullscreen
@@ -801,6 +803,119 @@ export const VisitorWorldMap = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Minimal fullscreen mode - only map with floating close button
+  if (isFullscreen && fullscreenMinimal) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background">
+        {/* Floating controls */}
+        <div className="absolute top-4 right-4 z-20 flex gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => toggleFullscreen(false)}
+            className="bg-background/90 backdrop-blur-sm shadow-lg"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Sluiten
+          </Button>
+        </div>
+        
+        {/* Live stats floating badge */}
+        <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-2">
+          <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm shadow-lg flex items-center gap-1">
+            <Users className="w-3 h-3" />
+            {totalVisitors} bezoekers
+          </Badge>
+          <Badge 
+            className="bg-background/90 backdrop-blur-sm shadow-lg flex items-center gap-1"
+            style={{ borderColor: ACTIVITY_COLORS.checkout, color: ACTIVITY_COLORS.checkout }}
+          >
+            <CreditCard className="w-3 h-3" />
+            {counts.checkout} checkouts
+          </Badge>
+          {timeRange === "live" && (
+            <Badge className="bg-green-500/20 text-green-500 border-green-500/50 backdrop-blur-sm shadow-lg flex items-center gap-1">
+              <Radio className="w-3 h-3 animate-pulse" />
+              Live
+            </Badge>
+          )}
+        </div>
+
+        {/* Map Container */}
+        <div ref={mapContainer} className="w-full h-full" />
+        
+        {/* Custom Zoom Controls */}
+        <div className="absolute bottom-8 left-4 flex flex-col gap-1 z-10">
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-12 w-12 bg-background/90 backdrop-blur-sm shadow-md hover:bg-background"
+            onClick={() => map.current?.zoomIn({ duration: 300 })}
+            title="Inzoomen"
+          >
+            <ZoomIn className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-12 w-12 bg-background/90 backdrop-blur-sm shadow-md hover:bg-background"
+            onClick={() => map.current?.zoomOut({ duration: 300 })}
+            title="Uitzoomen"
+          >
+            <ZoomOut className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-12 w-12 bg-background/90 backdrop-blur-sm shadow-md hover:bg-background mt-1"
+            onClick={() => {
+              map.current?.flyTo({
+                center: [10, 30],
+                zoom: 1.5,
+                pitch: 20,
+                duration: 1000
+              });
+            }}
+            title="Reset weergave"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            className={`h-12 w-12 bg-background/90 backdrop-blur-sm shadow-md hover:bg-background mt-1 ${autoRotate ? "ring-2 ring-blue-500" : ""}`}
+            onClick={() => setAutoRotate(!autoRotate)}
+            title={autoRotate ? "Stop rotatie" : "Start rotatie"}
+          >
+            <RotateCw className={`w-5 h-5 ${autoRotate ? "text-blue-500 animate-spin" : ""}`} style={{ animationDuration: autoRotate ? "3s" : "0s" }} />
+          </Button>
+        </div>
+        
+        {/* Quick toggles */}
+        <div className="absolute bottom-8 right-4 flex gap-2 z-10">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowHeatmap(!showHeatmap)}
+            className={`bg-background/90 backdrop-blur-sm shadow-md ${showHeatmap ? "ring-2 ring-orange-500" : ""}`}
+          >
+            {showHeatmap ? <Flame className="w-4 h-4 text-orange-500" /> : <MapPin className="w-4 h-4" />}
+            <span className="ml-2">{showHeatmap ? "Heatmap" : "Markers"}</span>
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setMapProjection(mapProjection === "globe" ? "mercator" : "globe")}
+            className="bg-background/90 backdrop-blur-sm shadow-md"
+          >
+            {mapProjection === "globe" ? <Globe className="w-4 h-4" /> : <MapIcon className="w-4 h-4" />}
+            <span className="ml-2">{mapProjection === "globe" ? "Bol" : "Plat"}</span>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Card className={`overflow-hidden transition-all duration-300 ${
       isFullscreen 
@@ -985,19 +1100,32 @@ export const VisitorWorldMap = () => {
             </Button>
 
             {/* Fullscreen Toggle */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleFullscreen}
-              title={isFullscreen ? "Sluiten (ESC)" : "Fullscreen"}
-            >
-              {isFullscreen ? (
-                <Minimize2 className="w-4 h-4 mr-2" />
-              ) : (
-                <Maximize2 className="w-4 h-4 mr-2" />
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleFullscreen(false)}
+                title={isFullscreen ? "Sluiten (ESC)" : "Fullscreen met controls"}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="w-4 h-4" />
+                ) : (
+                  <Maximize2 className="w-4 h-4" />
+                )}
+                <span className="hidden sm:inline ml-2">{isFullscreen ? "Sluiten" : "Volledig"}</span>
+              </Button>
+              {!isFullscreen && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleFullscreen(true)}
+                  title="Alleen kaart fullscreen"
+                  className="px-2"
+                >
+                  <Globe className="w-4 h-4" />
+                </Button>
               )}
-              {isFullscreen ? "Sluiten" : "Fullscreen"}
-            </Button>
+            </div>
 
             {/* Refresh Button */}
             <Button
