@@ -397,9 +397,27 @@ const Index = () => {
                 <motion.div 
                   className="absolute -top-4 -right-4 bg-card p-4 rounded-2xl shadow-soft glass z-20"
                   style={{ y: floatingCard2Y }}
+                  animate={{ 
+                    scale: [1, 1.05, 1],
+                    boxShadow: [
+                      "0 4px 20px rgba(0,0,0,0.1)",
+                      "0 8px 30px rgba(0,0,0,0.15)",
+                      "0 4px 20px rgba(0,0,0,0.1)"
+                    ]
+                  }}
+                  transition={{ 
+                    duration: 2.5,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
                 >
                   <div className="flex items-center gap-2">
-                    <Leaf className="w-5 h-5 text-primary" />
+                    <motion.div
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <Leaf className="w-5 h-5 text-primary" />
+                    </motion.div>
                     <span className="font-semibold text-sm">100% Natural</span>
                   </div>
                 </motion.div>
