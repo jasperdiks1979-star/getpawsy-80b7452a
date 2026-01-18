@@ -389,6 +389,7 @@ export const DashboardWidgetBuilder = ({
   );
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (!widgets || !Array.isArray(widgets)) return;
     const widget = widgets.find(w => w.id === event.active.id);
     setActiveWidget(widget || null);
   };
@@ -402,8 +403,10 @@ export const DashboardWidgetBuilder = ({
     }
   };
 
-  const visibleCount = widgets.filter(w => w.visible).length;
-  const hiddenCount = widgets.filter(w => !w.visible).length;
+  // Safe array operations with fallback to empty array
+  const safeWidgets = widgets && Array.isArray(widgets) ? widgets : [];
+  const visibleCount = safeWidgets.filter(w => w.visible).length;
+  const hiddenCount = safeWidgets.filter(w => !w.visible).length;
 
   const handleReset = () => {
     onReset();
@@ -510,7 +513,7 @@ export const DashboardWidgetBuilder = ({
               </Button>
 
               {/* Custom presets section */}
-              {customPresets.length > 0 && (
+              {customPresets && customPresets.length > 0 && (
                 <div className="mb-4">
                   <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
                     <Star className="w-4 h-4" />
@@ -565,11 +568,11 @@ export const DashboardWidgetBuilder = ({
                   onDragEnd={handleDragEnd}
                 >
                   <SortableContext
-                    items={widgets.map(w => w.id)}
+                    items={safeWidgets.map(w => w.id)}
                     strategy={rectSortingStrategy}
                   >
                     <div className="space-y-2">
-                      {widgets.sort((a, b) => a.order - b.order).map(widget => (
+                      {safeWidgets.sort((a, b) => a.order - b.order).map(widget => (
                         <SortableWidgetItem
                           key={widget.id}
                           widget={widget}
