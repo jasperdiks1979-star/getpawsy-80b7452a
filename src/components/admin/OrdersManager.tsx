@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,21 +14,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Package, Search, Eye, Loader2, RefreshCw, ExternalLink, Download, Truck } from "lucide-react";
+import { Package, Search, Eye, RefreshCw, ExternalLink, Download, Truck } from "lucide-react";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
 import { format } from "date-fns";
@@ -107,6 +100,133 @@ const STATUS_LABELS: Record<string, string> = {
   failed: "Mislukt",
   expired: "Verlopen",
 };
+
+// Virtualized orders table component
+function VirtualizedOrdersTable({
+  orders,
+  onOpenDetails,
+  onUpdateStatus,
+  formatCurrency,
+}: {
+  orders: Order[];
+  onOpenDetails: (order: Order) => void;
+  onUpdateStatus: (orderId: string, status: string) => void;
+  formatCurrency: (amount: number, currency: string) => string;
+}) {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: orders.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 56,
+    overscan: 10,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
+  if (orders.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-muted-foreground">Geen bestellingen gevonden.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-md border">
+      {/* Header */}
+      <div className="flex border-b bg-muted/50">
+        <div className="w-28 px-4 py-3 text-sm font-medium text-muted-foreground">Order ID</div>
+        <div className="w-36 px-4 py-3 text-sm font-medium text-muted-foreground">Datum</div>
+        <div className="flex-1 px-4 py-3 text-sm font-medium text-muted-foreground">Klant</div>
+        <div className="w-40 px-4 py-3 text-sm font-medium text-muted-foreground">Status</div>
+        <div className="w-28 px-4 py-3 text-sm font-medium text-muted-foreground text-right">Bedrag</div>
+        <div className="w-24 px-4 py-3 text-sm font-medium text-muted-foreground text-right">Acties</div>
+      </div>
+
+      {/* Virtualized Body */}
+      <div
+        ref={parentRef}
+        style={{ maxHeight: 500, overflow: 'auto' }}
+        className="relative"
+      >
+        <div
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {virtualItems.map((virtualRow) => {
+            const order = orders[virtualRow.index];
+
+            return (
+              <div
+                key={order.id}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+                className="flex border-b hover:bg-muted/50 transition-colors"
+              >
+                <div className="w-28 px-4 py-4 text-xs font-mono flex items-center">
+                  {order.id.slice(0, 8)}...
+                </div>
+                <div className="w-36 px-4 py-4 text-sm flex items-center">
+                  {format(new Date(order.created_at), "d MMM HH:mm", { locale: nl })}
+                </div>
+                <div className="flex-1 px-4 py-4 text-sm truncate flex items-center">
+                  {order.customer_email || "Onbekend"}
+                </div>
+                <div className="w-40 px-4 py-2 flex items-center">
+                  <Select
+                    value={order.status}
+                    onValueChange={(status) => onUpdateStatus(order.id, status)}
+                  >
+                    <SelectTrigger className="w-36 h-8">
+                      <Badge 
+                        variant="outline" 
+                        className={STATUS_COLORS[order.status] || STATUS_COLORS.pending}
+                      >
+                        {STATUS_LABELS[order.status] || order.status}
+                      </Badge>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">In afwachting</SelectItem>
+                      <SelectItem value="paid">Betaald</SelectItem>
+                      <SelectItem value="processing">In behandeling</SelectItem>
+                      <SelectItem value="shipped">Verzonden</SelectItem>
+                      <SelectItem value="delivered">Geleverd</SelectItem>
+                      <SelectItem value="cancelled">Geannuleerd</SelectItem>
+                      <SelectItem value="refunded">Terugbetaald</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-28 px-4 py-4 text-sm font-medium text-right flex items-center justify-end">
+                  {formatCurrency(Number(order.total_amount), order.currency)}
+                </div>
+                <div className="w-24 px-4 py-4 flex items-center justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onOpenDetails(order)}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function OrdersManager() {
   const queryClient = useQueryClient();
@@ -432,76 +552,12 @@ export function OrdersManager() {
               </p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Klant</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Bedrag</TableHead>
-                    <TableHead className="text-right">Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredOrders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-mono text-xs">
-                        {order.id.slice(0, 8)}...
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(order.created_at), "d MMM yyyy HH:mm", { locale: nl })}
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[200px] truncate">
-                          {order.customer_email || "Onbekend"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={order.status}
-                          onValueChange={(status) => 
-                            updateStatusMutation.mutate({ orderId: order.id, status })
-                          }
-                        >
-                          <SelectTrigger className="w-36 h-8">
-                            <Badge 
-                              variant="outline" 
-                              className={STATUS_COLORS[order.status] || STATUS_COLORS.pending}
-                            >
-                              {STATUS_LABELS[order.status] || order.status}
-                            </Badge>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">In afwachting</SelectItem>
-                            <SelectItem value="paid">Betaald</SelectItem>
-                            <SelectItem value="processing">In behandeling</SelectItem>
-                            <SelectItem value="shipped">Verzonden</SelectItem>
-                            <SelectItem value="delivered">Geleverd</SelectItem>
-                            <SelectItem value="cancelled">Geannuleerd</SelectItem>
-                            <SelectItem value="refunded">Terugbetaald</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(Number(order.total_amount), order.currency)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openOrderDetails(order)}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          Details
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <VirtualizedOrdersTable
+              orders={filteredOrders}
+              onOpenDetails={openOrderDetails}
+              onUpdateStatus={(orderId, status) => updateStatusMutation.mutate({ orderId, status })}
+              formatCurrency={formatCurrency}
+            />
           )}
         </CardContent>
       </Card>
