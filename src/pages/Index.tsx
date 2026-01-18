@@ -81,17 +81,34 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
+      staggerChildren: 0.15,
+      delayChildren: 0.1,
     },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5 },
+    scale: 1,
+    transition: { 
+      duration: 0.6,
+      ease: "easeOut" as const
+    },
+  },
+};
+
+const featureVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { 
+      duration: 0.5,
+      ease: "easeOut" as const
+    },
   },
 };
 
@@ -396,26 +413,37 @@ const Index = () => {
       </section>
 
       {/* Features Bar */}
-      <section className="border-y bg-card/50">
+      <section className="border-y bg-card/50 overflow-hidden">
         <div className="container px-4 md:px-6 py-8">
           <motion.div 
             className="grid grid-cols-2 md:grid-cols-4 gap-8"
-            variants={containerVariants}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ staggerChildren: 0.1 }}
           >
-            {features.map((feature) => (
+            {features.map((feature, index) => (
               <motion.div 
                 key={feature.title} 
-                className="flex items-center gap-4"
-                variants={itemVariants}
+                className="flex items-center gap-4 group"
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ 
+                  duration: 0.5, 
+                  delay: index * 0.1,
+                  ease: "easeOut"
+                }}
               >
-                <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary shadow-inner-soft">
+                <motion.div 
+                  className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary shadow-inner-soft"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
                   <feature.icon className="w-6 h-6 text-secondary-foreground" />
-                </div>
+                </motion.div>
                 <div>
-                  <p className="font-semibold">{feature.title}</p>
+                  <p className="font-semibold group-hover:text-primary transition-colors">{feature.title}</p>
                   <p className="text-sm text-muted-foreground">{feature.description}</p>
                 </div>
               </motion.div>
