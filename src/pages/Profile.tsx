@@ -5,11 +5,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { PasskeyManager } from '@/components/auth/PasskeyManager';
-import { User, Mail, Calendar, Shield, ArrowLeft, Package, ChevronRight } from 'lucide-react';
+import { User, Mail, Calendar, Shield, ArrowLeft, Package, ChevronRight, RotateCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const Profile = () => {
   const { user, isAdmin, isLoading } = useAuth();
@@ -135,6 +147,51 @@ const Profile = () => {
 
           {/* Passkey Manager */}
           <PasskeyManager />
+
+          {/* Reset App Data */}
+          <Card className="border-destructive/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <RotateCcw className="w-5 h-5" />
+                Reset App Data
+              </CardTitle>
+              <CardDescription>
+                Clear your local data if you're experiencing issues
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="gap-2">
+                    <RotateCcw className="w-4 h-4" />
+                    Reset Local Data
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reset App Data?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will clear your shopping cart, wishlist, and recently viewed products. 
+                      This can help fix display issues but cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        localStorage.clear();
+                        toast.success('App data cleared! Refreshing...');
+                        setTimeout(() => window.location.reload(), 1000);
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Reset Data
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>
