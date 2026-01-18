@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Filter, SlidersHorizontal, Loader2, X, Eye } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { memo } from 'react';
+
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard, Product } from '@/components/products/ProductCard';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
@@ -360,12 +361,9 @@ const Products = () => {
             {!isLoading && visibleItems.length > 0 && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {visibleItems.map((product, index) => (
-                    <motion.div
+                  {visibleItems.map((product) => (
+                    <div
                       key={product.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(index * 0.05, 0.3) }}
                       className="relative group"
                     >
                       <ProductCard product={product as Product} />
@@ -383,7 +381,7 @@ const Products = () => {
                         <Eye className="w-4 h-4" />
                         Quick View
                       </Button>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
                 

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps {
@@ -11,7 +11,7 @@ interface OptimizedImageProps {
   onLoad?: () => void;
 }
 
-export const OptimizedImage = ({
+export const OptimizedImage = memo(({
   src,
   alt,
   className,
@@ -23,10 +23,9 @@ export const OptimizedImage = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
   const [hasError, setHasError] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Intersection Observer for lazy loading
+  // Intersection Observer for lazy loading with larger margin
   useEffect(() => {
     if (priority || isInView) return;
 
@@ -38,8 +37,8 @@ export const OptimizedImage = ({
         }
       },
       {
-        rootMargin: '50px', // Start loading 50px before entering viewport
-        threshold: 0.01,
+        rootMargin: '200px', // Preload images 200px before viewport
+        threshold: 0,
       }
     );
 
@@ -76,37 +75,32 @@ export const OptimizedImage = ({
         containerClassName
       )}
     >
-      {/* Blur placeholder / skeleton */}
-      <div
-        className={cn(
-          'absolute inset-0 transition-opacity duration-500',
-          isLoaded ? 'opacity-0' : 'opacity-100'
-        )}
-      >
-        {/* Animated gradient shimmer */}
-        <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted-foreground/10 to-muted animate-shimmer bg-[length:200%_100%]" />
-        
-        {/* Blur overlay for smooth transition */}
-        <div className="absolute inset-0 backdrop-blur-sm bg-muted/50" />
-      </div>
+      {/* Simple skeleton placeholder */}
+      {!isLoaded && (
+        <div className="absolute inset-0 bg-muted animate-pulse" />
+      )}
 
-      {/* Actual image */}
+      {/* Actual image - hardware accelerated */}
       {isInView && (
         <img
-          ref={imgRef}
           src={hasError ? '/placeholder.svg' : src}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
+          fetchPriority={priority ? 'high' : 'auto'}
           onLoad={handleLoad}
           onError={handleError}
           className={cn(
-            'w-full h-full object-cover transition-all duration-500',
-            isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105',
+            'w-full h-full object-cover will-change-transform',
+            isLoaded ? 'opacity-100' : 'opacity-0',
             className
           )}
+          style={{ 
+            transform: 'translateZ(0)',
+            transition: 'opacity 0.2s ease-out',
+          }}
         />
       )}
     </div>
   );
-};
+});
