@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.notify-loss-products]
 verify_jwt = false
+
+[functions.generate-blog-image]
+verify_jwt = false

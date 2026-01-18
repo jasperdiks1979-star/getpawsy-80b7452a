@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, ArrowRight, BookOpen } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Clock, ArrowRight, BookOpen, Sparkles, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface BlogPost {
   id: string;
@@ -35,6 +38,9 @@ const categoryColors: Record<string, string> = {
 
 const Blog = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [generatingImageFor, setGeneratingImageFor] = useState<string | null>(null);
+  const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ['blog-posts', selectedCategory],
@@ -54,6 +60,58 @@ const Blog = () => {
       return data as BlogPost[];
     },
   });
+
+  const generateImageMutation = useMutation({
+    mutationFn: async (post: BlogPost) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-blog-image`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            postId: post.id,
+            title: post.title,
+            category: post.category,
+            excerpt: post.excerpt,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate image');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast.success('Afbeelding gegenereerd!', {
+        description: 'De blog afbeelding is succesvol aangemaakt.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['blog-posts'] });
+    },
+    onError: (error: Error) => {
+      toast.error('Genereren mislukt', {
+        description: error.message,
+      });
+    },
+    onSettled: () => {
+      setGeneratingImageFor(null);
+    },
+  });
+
+  const handleGenerateImage = (e: React.MouseEvent, post: BlogPost) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setGeneratingImageFor(post.id);
+    generateImageMutation.mutate(post);
+  };
 
   const categories = ['honden', 'katten', 'vissen', 'algemeen'];
 
@@ -135,6 +193,27 @@ const Blog = () => {
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20">
                         <BookOpen className="w-12 h-12 text-primary/50" />
                       </div>
+                    )}
+                    {isAdmin && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        onClick={(e) => handleGenerateImage(e, post)}
+                        disabled={generatingImageFor === post.id}
+                      >
+                        {generatingImageFor === post.id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                            Genereren...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4 mr-1" />
+                            {post.featured_image ? 'Nieuwe afbeelding' : 'Genereer afbeelding'}
+                          </>
+                        )}
+                      </Button>
                     )}
                   </div>
                   <CardContent className="p-5">
