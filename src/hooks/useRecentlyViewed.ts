@@ -11,8 +11,14 @@ interface RecentlyViewedProduct {
 export const useRecentlyViewed = () => {
   const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedProduct[]>(() => {
     if (typeof window === 'undefined') return [];
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      // If parsing fails, clear corrupted data and return empty array
+      localStorage.removeItem(STORAGE_KEY);
+      return [];
+    }
   });
 
   // Save to localStorage whenever the list changes
