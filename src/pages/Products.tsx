@@ -1,9 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Filter, SlidersHorizontal, Loader2, X, Eye } from 'lucide-react';
-import { memo } from 'react';
-
+import { Filter, SlidersHorizontal, Loader2, X, Eye, Clock } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard, Product } from '@/components/products/ProductCard';
 import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
@@ -17,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { EnhancedSearch } from '@/components/search/EnhancedSearch';
 import { supabase } from '@/integrations/supabase/client';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 
 const sortOptions = [
   { value: 'newest', label: 'Newest' },
@@ -38,6 +37,8 @@ const Products = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
   const [maxPrice, setMaxPrice] = useState(500);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const { getRecentlyViewedIds } = useRecentlyViewed();
+  const recentlyViewedIds = getRecentlyViewedIds();
 
   // Fetch products from database
   const { data: products, isLoading: productsLoading } = useQuery({
@@ -83,6 +84,28 @@ const Products = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch recently viewed products
+  const { data: recentlyViewedProducts } = useQuery({
+    queryKey: ['recently-viewed-products', recentlyViewedIds],
+    queryFn: async () => {
+      if (recentlyViewedIds.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from('products_public')
+        .select('*')
+        .eq('is_active', true)
+        .in('id', recentlyViewedIds);
+      
+      if (error) throw error;
+      
+      // Sort by the order in recentlyViewedIds
+      return data?.sort((a, b) => 
+        recentlyViewedIds.indexOf(a.id!) - recentlyViewedIds.indexOf(b.id!)
+      ) || [];
+    },
+    enabled: recentlyViewedIds.length > 0,
   });
 
   const filteredProducts = useMemo(() => {
@@ -420,6 +443,23 @@ const Products = () => {
           </div>
         </div>
       </div>
+
+      {/* Recently Viewed Products */}
+      {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
+        <section className="border-t border-border bg-muted/30 py-12">
+          <div className="container px-4 md:px-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Clock className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-display font-semibold">Recently Viewed</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {recentlyViewedProducts.slice(0, 4).map((recentProduct) => (
+                <ProductCard key={recentProduct.id} product={recentProduct as Product} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
       
       {/* Quick View Modal */}
       <QuickViewModal
