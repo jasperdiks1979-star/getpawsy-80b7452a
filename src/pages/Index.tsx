@@ -14,7 +14,7 @@ import { trackNewsletterSignup } from '@/lib/analytics';
 import { toast } from 'sonner';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { BestsellersSection } from '@/components/home/BestsellersSection';
-
+import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 const features = [
   {
     icon: Truck,
@@ -413,288 +413,127 @@ const Index = () => {
       </section>
 
       {/* Features Bar */}
-      <section className="border-y bg-card/50 overflow-hidden">
-        <div className="container px-4 md:px-6 py-8">
-          <motion.div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ staggerChildren: 0.1 }}
-          >
-            {features.map((feature, index) => (
-              <motion.div 
-                key={feature.title} 
-                className="flex items-center gap-4 group"
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ 
-                  duration: 0.5, 
-                  delay: index * 0.1,
-                  ease: "easeOut"
-                }}
-              >
+      <SectionErrorBoundary sectionName="Features">
+        <section className="border-y bg-card/50 overflow-hidden">
+          <div className="container px-4 md:px-6 py-8">
+            <motion.div 
+              className="grid grid-cols-2 md:grid-cols-4 gap-8"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ staggerChildren: 0.1 }}
+            >
+              {features.map((feature, index) => (
                 <motion.div 
-                  className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary shadow-inner-soft"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  key={feature.title} 
+                  className="flex items-center gap-4 group"
+                  initial={{ opacity: 0, x: -30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: index * 0.1,
+                    ease: "easeOut"
+                  }}
                 >
-                  <feature.icon className="w-6 h-6 text-secondary-foreground" />
+                  <motion.div 
+                    className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary shadow-inner-soft"
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  >
+                    <feature.icon className="w-6 h-6 text-secondary-foreground" />
+                  </motion.div>
+                  <div>
+                    <p className="font-semibold group-hover:text-primary transition-colors">{feature.title}</p>
+                    <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  </div>
                 </motion.div>
-                <div>
-                  <p className="font-semibold group-hover:text-primary transition-colors">{feature.title}</p>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+      </SectionErrorBoundary>
 
       {/* Bestsellers Section */}
-      <BestsellersSection />
+      <SectionErrorBoundary sectionName="Bestsellers">
+        <BestsellersSection />
+      </SectionErrorBoundary>
 
       {/* Categories */}
-      <section id="categories" className="py-20">
-        <div className="container px-4 md:px-6">
-          <motion.div 
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Shop by Category</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Find exactly what your beloved companion needs, from nutritious food to cozy accessories
-            </p>
-          </motion.div>
-          
-          <motion.div 
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {categories?.map((category) => (
-              <motion.div 
-                key={category.id} 
-                variants={itemVariants}
-                whileHover={{ y: -8 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                <Link
-                  to={`/products?category=${category.name}`}
-                  className="group block relative overflow-hidden rounded-2xl aspect-square shadow-soft hover:shadow-soft-lg transition-shadow duration-300"
-                >
-                  {/* Image with zoom effect - v4 forces cache refresh */}
-                  <img 
-                    src={`${category.image_url || categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}?v=4`}
-                    alt={category.name}
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-115"
-                    onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'; }}
-                  />
-                  
-                  {/* Gradient overlay with enhanced hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/30 to-transparent transition-all duration-300 group-hover:from-primary/90 group-hover:via-primary/30" />
-                  
-                  {/* Shine effect on hover */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-                  </div>
-                  
-                  {/* Content with slide-up animation */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300">
-                    <h3 className="font-display font-semibold text-lg text-white mb-1 transform translate-y-0 group-hover:-translate-y-1 transition-transform duration-300">
-                      {category.name}
-                    </h3>
-                    <p className="text-white/0 text-sm group-hover:text-white/80 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75">
-                      Bekijk producten →
-                    </p>
-                  </div>
-                  
-                  {/* Corner accent */}
-                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-0 group-hover:scale-100 transition-all duration-300">
-                    <ArrowRight className="w-4 h-4 text-white" />
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Featured Products */}
-      <section className="py-20 bg-muted/30">
-        <div className="container px-4 md:px-6">
-          <motion.div 
-            className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-2">Featured Favorites</h2>
-              <p className="text-muted-foreground text-lg">Handpicked selections loved by pets everywhere</p>
-            </div>
-            <Link to="/products">
-              <Button variant="outline" className="gap-2 rounded-full">
-                View All Products
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </motion.div>
-          
-          {productsLoading && (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          )}
-          
-          {!productsLoading && featuredProducts && featuredProducts.length > 0 && (
-            <motion.div
+      <SectionErrorBoundary sectionName="Categorieën">
+        <section id="categories" className="py-20">
+          <div className="container px-4 md:px-6">
+            <motion.div 
+              className="text-center mb-12"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <Carousel
-                setApi={setProductsApi}
-                opts={{
-                  align: "start",
-                  loop: true,
-                  dragFree: true,
-                }}
-                className="w-full cursor-grab active:cursor-grabbing"
-              >
-                <CarouselContent className="-ml-4">
-                  {featuredProducts.map((product) => (
-                    <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
-                      <ProductCard product={product} />
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-                <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-              </Carousel>
-            </motion.div>
-          )}
-
-          {!productsLoading && (!featuredProducts || featuredProducts.length === 0) && (
-            <div className="text-center py-16 bg-card rounded-3xl shadow-soft">
-              <p className="text-muted-foreground mb-4">
-                No products available yet. Import products via the admin page.
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Shop by Category</h2>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Find exactly what your beloved companion needs, from nutritious food to cozy accessories
               </p>
-              <Link to="/admin">
-                <Button className="rounded-full">Go to Admin</Button>
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-20 overflow-hidden">
-        <div className="container px-4 md:px-6">
-          <motion.div 
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Loved by Pet Parents</h2>
-            <p className="text-muted-foreground text-lg">See what our community has to say</p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="relative"
-          >
-            <Carousel
-              setApi={setTestimonialsApi}
-              opts={{
-                align: "start",
-                loop: true,
-                dragFree: true,
-              }}
-              className="w-full cursor-grab active:cursor-grabbing"
+            </motion.div>
+            
+            <motion.div 
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
             >
-              <CarouselContent className="-ml-4">
-                {testimonials.map((testimonial, index) => (
-                  <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                    <div className="bg-card p-8 rounded-3xl shadow-soft h-full relative group hover:shadow-soft-lg transition-shadow duration-300">
-                      {/* Quote icon */}
-                      <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-md">
-                        <Quote className="w-5 h-5 text-primary-foreground fill-primary-foreground" />
-                      </div>
-                      
-                      {/* Rating stars */}
-                      <div className="flex items-center gap-1 mb-4 pt-2">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-warning text-warning" />
-                        ))}
-                      </div>
-                      
-                      {/* Testimonial text */}
-                      <p className="text-foreground mb-6 leading-relaxed text-base">
-                        "{testimonial.text}"
-                      </p>
-                      
-                      {/* Author info */}
-                      <div className="flex items-center gap-3 mt-auto">
-                        <div className="relative">
-                          <img 
-                            src={testimonial.avatar} 
-                            alt={testimonial.name}
-                            className="w-12 h-12 rounded-full object-cover ring-2 ring-secondary"
-                          />
-                          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-success flex items-center justify-center">
-                            <span className="text-white text-xs">✓</span>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-semibold">{testimonial.name}</p>
-                          <p className="text-sm text-muted-foreground">{testimonial.pet}</p>
-                        </div>
-                      </div>
+              {categories?.map((category) => (
+                <motion.div 
+                  key={category.id} 
+                  variants={itemVariants}
+                  whileHover={{ y: -8 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <Link
+                    to={`/products?category=${category.name}`}
+                    className="group block relative overflow-hidden rounded-2xl aspect-square shadow-soft hover:shadow-soft-lg transition-shadow duration-300"
+                  >
+                    {/* Image with zoom effect - v4 forces cache refresh */}
+                    <img 
+                      src={`${category.image_url || categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}?v=4`}
+                      alt={category.name}
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-115"
+                      onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'; }}
+                    />
+                    
+                    {/* Gradient overlay with enhanced hover */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/30 to-transparent transition-all duration-300 group-hover:from-primary/90 group-hover:via-primary/30" />
+                    
+                    {/* Shine effect on hover */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
                     </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              
-              {/* Navigation buttons */}
-              <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-              <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-            </Carousel>
-
-            {/* Pagination dots */}
-            <div className="flex justify-center gap-2 mt-8">
-              {Array.from({ length: slideCount }).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => testimonialsApi?.scrollTo(index)}
-                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                    currentSlide === index 
-                      ? 'bg-primary w-8' 
-                      : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                  }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
+                    
+                    {/* Content with slide-up animation */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300">
+                      <h3 className="font-display font-semibold text-lg text-white mb-1 transform translate-y-0 group-hover:-translate-y-1 transition-transform duration-300">
+                        {category.name}
+                      </h3>
+                      <p className="text-white/0 text-sm group-hover:text-white/80 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75">
+                        Bekijk producten →
+                      </p>
+                    </div>
+                    
+                    {/* Corner accent */}
+                    <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-0 group-hover:scale-100 transition-all duration-300">
+                      <ArrowRight className="w-4 h-4 text-white" />
+                    </div>
+                  </Link>
+                </motion.div>
               ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
+            </motion.div>
+          </div>
+        </section>
+      </SectionErrorBoundary>
 
-      {/* Recently Viewed Products */}
-      {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
+      {/* Featured Products */}
+      <SectionErrorBoundary sectionName="Uitgelichte Producten">
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
             <motion.div 
@@ -704,94 +543,269 @@ const Index = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-secondary-foreground" />
-                </div>
-                <div>
-                  <h2 className="text-3xl md:text-4xl font-display font-bold">Recently Viewed</h2>
-                  <p className="text-muted-foreground text-lg">Pick up where you left off</p>
-                </div>
+              <div>
+                <h2 className="text-3xl md:text-4xl font-display font-bold mb-2">Featured Favorites</h2>
+                <p className="text-muted-foreground text-lg">Handpicked selections loved by pets everywhere</p>
               </div>
+              <Link to="/products">
+                <Button variant="outline" className="gap-2 rounded-full">
+                  View All Products
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
             </motion.div>
             
-            <motion.div
+            {productsLoading && (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            )}
+            
+            {!productsLoading && featuredProducts && featuredProducts.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <Carousel
+                  setApi={setProductsApi}
+                  opts={{
+                    align: "start",
+                    loop: true,
+                    dragFree: true,
+                  }}
+                  className="w-full cursor-grab active:cursor-grabbing"
+                >
+                  <CarouselContent className="-ml-4">
+                    {featuredProducts.map((product) => (
+                      <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
+                        <ProductCard product={product} />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+                  <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+                </Carousel>
+              </motion.div>
+            )}
+
+            {!productsLoading && (!featuredProducts || featuredProducts.length === 0) && (
+              <div className="text-center py-16 bg-card rounded-3xl shadow-soft">
+                <p className="text-muted-foreground mb-4">
+                  No products available yet. Import products via the admin page.
+                </p>
+                <Link to="/admin">
+                  <Button className="rounded-full">Go to Admin</Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+      </SectionErrorBoundary>
+
+      {/* Testimonials */}
+      <SectionErrorBoundary sectionName="Reviews">
+        <section className="py-20 overflow-hidden">
+          <div className="container px-4 md:px-6">
+            <motion.div 
+              className="text-center mb-12"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Loved by Pet Parents</h2>
+              <p className="text-muted-foreground text-lg">See what our community has to say</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="relative"
+            >
               <Carousel
+                setApi={setTestimonialsApi}
                 opts={{
                   align: "start",
-                  loop: false,
+                  loop: true,
                   dragFree: true,
                 }}
                 className="w-full cursor-grab active:cursor-grabbing"
               >
                 <CarouselContent className="-ml-4">
-                  {recentlyViewedProducts.map((product) => (
-                    <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
-                      <ProductCard product={product} />
+                  {testimonials.map((testimonial, index) => (
+                    <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                      <div className="bg-card p-8 rounded-3xl shadow-soft h-full relative group hover:shadow-soft-lg transition-shadow duration-300">
+                        {/* Quote icon */}
+                        <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-md">
+                          <Quote className="w-5 h-5 text-primary-foreground fill-primary-foreground" />
+                        </div>
+                        
+                        {/* Rating stars */}
+                        <div className="flex items-center gap-1 mb-4 pt-2">
+                          {[...Array(testimonial.rating)].map((_, i) => (
+                            <Star key={i} className="w-4 h-4 fill-warning text-warning" />
+                          ))}
+                        </div>
+                        
+                        {/* Testimonial text */}
+                        <p className="text-foreground mb-6 leading-relaxed text-base">
+                          "{testimonial.text}"
+                        </p>
+                        
+                        {/* Author info */}
+                        <div className="flex items-center gap-3 mt-auto">
+                          <div className="relative">
+                            <img 
+                              src={testimonial.avatar} 
+                              alt={testimonial.name}
+                              className="w-12 h-12 rounded-full object-cover ring-2 ring-secondary"
+                            />
+                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-success flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="font-semibold">{testimonial.name}</p>
+                            <p className="text-sm text-muted-foreground">{testimonial.pet}</p>
+                          </div>
+                        </div>
+                      </div>
                     </CarouselItem>
                   ))}
                 </CarouselContent>
+                
+                {/* Navigation buttons */}
                 <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
                 <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
               </Carousel>
+
+              {/* Pagination dots */}
+              <div className="flex justify-center gap-2 mt-8">
+                {Array.from({ length: slideCount }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => testimonialsApi?.scrollTo(index)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                      currentSlide === index 
+                        ? 'bg-primary w-8' 
+                        : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
             </motion.div>
           </div>
         </section>
+      </SectionErrorBoundary>
+
+      {/* Recently Viewed Products */}
+      {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
+        <SectionErrorBoundary sectionName="Recent Bekeken">
+          <section className="py-20 bg-muted/30">
+            <div className="container px-4 md:px-6">
+              <motion.div 
+                className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-secondary-foreground" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl md:text-4xl font-display font-bold">Recently Viewed</h2>
+                    <p className="text-muted-foreground text-lg">Pick up where you left off</p>
+                  </div>
+                </div>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <Carousel
+                  opts={{
+                    align: "start",
+                    loop: false,
+                    dragFree: true,
+                  }}
+                  className="w-full cursor-grab active:cursor-grabbing"
+                >
+                  <CarouselContent className="-ml-4">
+                    {recentlyViewedProducts.map((product) => (
+                      <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
+                        <ProductCard product={product} />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+                  <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+                </Carousel>
+              </motion.div>
+            </div>
+          </section>
+        </SectionErrorBoundary>
       )}
 
       {/* CTA Section */}
-      <section className="py-20">
-        <div className="container px-4 md:px-6">
-          <motion.div 
-            className="relative overflow-hidden rounded-3xl gradient-warm p-10 md:p-16 text-center"
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-            
-            <div className="relative z-10">
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 text-primary-foreground">
-                Join Our Pack! 🐾
-              </h2>
-              <p className="text-lg text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-                Subscribe to our newsletter and get 15% off your first order, 
-                plus exclusive deals and pet care tips from our experts.
-              </p>
-              <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  className="flex-1 px-5 py-3.5 rounded-full bg-white/15 border border-white/25 placeholder:text-white/60 text-white focus:outline-none focus:ring-2 focus:ring-white/40 backdrop-blur-sm"
-                  disabled={isSubscribing}
-                />
-                <Button 
-                  type="submit" 
-                  variant="secondary" 
-                  size="lg" 
-                  className="rounded-full px-8"
-                  disabled={isSubscribing}
-                >
-                  {isSubscribing ? 'Subscribing...' : 'Subscribe'}
-                </Button>
-              </form>
-              <p className="text-sm text-primary-foreground/70 mt-4">
-                No spam, unsubscribe anytime. We respect your inbox.
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      <SectionErrorBoundary sectionName="Nieuwsbrief">
+        <section className="py-20">
+          <div className="container px-4 md:px-6">
+            <motion.div 
+              className="relative overflow-hidden rounded-3xl gradient-warm p-10 md:p-16 text-center"
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+              
+              <div className="relative z-10">
+                <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 text-primary-foreground">
+                  Join Our Pack! 🐾
+                </h2>
+                <p className="text-lg text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
+                  Subscribe to our newsletter and get 15% off your first order, 
+                  plus exclusive deals and pet care tips from our experts.
+                </p>
+                <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
+                    className="flex-1 px-5 py-3.5 rounded-full bg-white/15 border border-white/25 placeholder:text-white/60 text-white focus:outline-none focus:ring-2 focus:ring-white/40 backdrop-blur-sm"
+                    disabled={isSubscribing}
+                  />
+                  <Button 
+                    type="submit" 
+                    variant="secondary" 
+                    size="lg" 
+                    className="rounded-full px-8"
+                    disabled={isSubscribing}
+                  >
+                    {isSubscribing ? 'Subscribing...' : 'Subscribe'}
+                  </Button>
+                </form>
+                <p className="text-sm text-primary-foreground/70 mt-4">
+                  No spam, unsubscribe anytime. We respect your inbox.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      </SectionErrorBoundary>
     </Layout>
   );
 };
