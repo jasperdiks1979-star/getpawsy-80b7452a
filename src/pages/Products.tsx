@@ -6,6 +6,7 @@ import { memo } from 'react';
 
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard, Product } from '@/components/products/ProductCard';
+import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -351,11 +352,7 @@ const Products = () => {
             </div>
 
             {/* Loading State */}
-            {isLoading && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            )}
+            {isLoading && <ProductGridSkeleton count={12} />}
 
             {/* Products */}
             {!isLoading && visibleItems.length > 0 && (
