@@ -370,13 +370,13 @@ const Index = () => {
             >
               {/* Main image with smooth parallax */}
               <motion.div 
-                className="relative z-10 overflow-hidden rounded-3xl will-change-transform" 
+                className="relative z-10 overflow-hidden rounded-3xl will-change-transform bg-secondary/20" 
                 style={{ y: heroImageY }}
               >
                 <img
                   src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=80"
                   alt="Happy dog with natural pet products"
-                  className="shadow-soft-lg object-cover aspect-[4/5] w-full transition-transform duration-700 hover:scale-105"
+                  className="shadow-soft-lg object-cover aspect-[4/5] w-full transition-transform duration-700 hover:scale-105 rounded-3xl"
                 />
                 
                 {/* Floating cards with simplified parallax */}
