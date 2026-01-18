@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
@@ -107,6 +107,7 @@ const Admin = () => {
   });
   const [compareProducts, setCompareProducts] = useState<CJProduct[]>([]);
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
+  const [refreshMode, setRefreshMode] = useState<"all" | "new-only">("all");
   const queryClient = useQueryClient();
 
   // Save preview preference to localStorage
@@ -529,13 +530,25 @@ const Admin = () => {
   });
 
   // Refresh all products - fetch missing images and data from CJ in batches
+  // Supports "all" mode (all products) or "new-only" mode (products with missing/minimal images)
   const refreshAllProductsMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (mode: "all" | "new-only" = "all") => {
       // Get all products that have CJ product IDs
-      const productsWithCJ = existingProducts?.filter(p => p.cj_product_id) || [];
+      let productsWithCJ = existingProducts?.filter(p => p.cj_product_id) || [];
+      
+      // If mode is "new-only", filter to only products with missing or minimal images
+      if (mode === "new-only") {
+        productsWithCJ = productsWithCJ.filter(p => {
+          // Consider a product "new" if it has no images array, empty images, or only 1 image (the main one)
+          const imagesCount = p.images?.length || 0;
+          return imagesCount <= 1;
+        });
+      }
       
       if (productsWithCJ.length === 0) {
-        throw new Error("No CJ products to refresh");
+        throw new Error(mode === "new-only" 
+          ? "Geen nieuw geïmporteerde producten gevonden om bij te werken" 
+          : "No CJ products to refresh");
       }
 
       const total = productsWithCJ.length;
@@ -1784,19 +1797,31 @@ const Admin = () => {
                     <Clock className="w-3 h-3" />
                     Auto-sync daily at 05:00 NL time
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => refreshAllProductsMutation.mutate()}
-                    disabled={refreshAllProductsMutation.isPending}
-                  >
-                    {refreshAllProductsMutation.isPending ? (
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                    )}
-                    Refresh All Images & Data
-                  </Button>
+                  <div className="flex">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="rounded-r-none border-r-0"
+                      onClick={() => refreshAllProductsMutation.mutate(refreshMode)}
+                      disabled={refreshAllProductsMutation.isPending}
+                    >
+                      {refreshAllProductsMutation.isPending ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                      )}
+                      {refreshMode === "new-only" ? "Refresh New Only" : "Refresh All"}
+                    </Button>
+                    <Select value={refreshMode} onValueChange={(value: "all" | "new-only") => setRefreshMode(value)}>
+                      <SelectTrigger className="w-8 rounded-l-none border-l-0 px-1.5" disabled={refreshAllProductsMutation.isPending}>
+                        <ChevronDown className="w-4 h-4" />
+                      </SelectTrigger>
+                      <SelectContent align="end">
+                        <SelectItem value="all">Alle producten bijwerken</SelectItem>
+                        <SelectItem value="new-only">Alleen nieuwe producten</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Button 
                     variant="outline" 
                     size="sm"
