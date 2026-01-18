@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Filter, SlidersHorizontal, Loader2, X } from 'lucide-react';
+import { Filter, SlidersHorizontal, Loader2, X, Eye } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
-import { ProductCard } from '@/components/products/ProductCard';
+import { ProductCard, Product } from '@/components/products/ProductCard';
+import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -12,6 +14,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { EnhancedSearch } from '@/components/search/EnhancedSearch';
 import { supabase } from '@/integrations/supabase/client';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 const sortOptions = [
   { value: 'newest', label: 'Newest' },
@@ -32,6 +35,7 @@ const Products = () => {
   const [searchQuery, setSearchQuery] = useState(searchParam || '');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
   const [maxPrice, setMaxPrice] = useState(500);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   // Fetch products from database
   const { data: products, isLoading: productsLoading } = useQuery({
@@ -136,6 +140,19 @@ const Products = () => {
     return result;
   }, [products, searchQuery, selectedCategories, sortBy, priceRange]);
 
+  // Infinite scroll
+  const {
+    visibleItems,
+    hasMore,
+    isLoading: isLoadingMore,
+    loaderRef,
+    displayCount,
+    totalCount,
+  } = useInfiniteScroll({
+    items: filteredProducts,
+    itemsPerPage: 12,
+  });
+
   const clearAllFilters = () => {
     setSelectedCategories([]);
     setPriceRange([0, maxPrice]);
@@ -216,6 +233,10 @@ const Products = () => {
           <h1 className="text-3xl font-bold mb-2">
             {categoryParam || (searchQuery ? `Search: "${searchQuery}"` : 'All Products')}
           </h1>
+          <p className="text-muted-foreground">
+            Showing {displayCount > totalCount ? totalCount : displayCount} of {totalCount} product{totalCount !== 1 ? 's' : ''}
+          </p>
+        </div>
           <p className="text-muted-foreground">
             {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
           </p>
@@ -340,12 +361,51 @@ const Products = () => {
             )}
 
             {/* Products */}
-            {!isLoading && filteredProducts.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+            {!isLoading && visibleItems.length > 0 && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {visibleItems.map((product, index) => (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(index * 0.05, 0.3) }}
+                      className="relative group"
+                    >
+                      <ProductCard product={product as Product} />
+                      {/* Quick View Button */}
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity rounded-full gap-1.5 z-10 shadow-lg"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setQuickViewProduct(product as Product);
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                        Quick View
+                      </Button>
+                    </motion.div>
+                  ))}
+                </div>
+                
+                {/* Infinite Scroll Loader */}
+                <div ref={loaderRef} className="flex justify-center py-8">
+                  {isLoadingMore && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Loading more products...</span>
+                    </div>
+                  )}
+                  {!hasMore && totalCount > 12 && (
+                    <p className="text-muted-foreground text-sm">
+                      You've seen all {totalCount} products
+                    </p>
+                  )}
+                </div>
+              </>
             )}
 
             {/* Empty State */}
@@ -369,6 +429,13 @@ const Products = () => {
           </div>
         </div>
       </div>
+      
+      {/* Quick View Modal */}
+      <QuickViewModal
+        product={quickViewProduct}
+        isOpen={!!quickViewProduct}
+        onClose={() => setQuickViewProduct(null)}
+      />
     </Layout>
   );
 };
