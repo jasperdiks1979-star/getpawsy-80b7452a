@@ -25,13 +25,15 @@ User-agent: *
 Allow: /
 Crawl-delay: 2
 
-# Sitemap location
+# Dynamic sitemap with all products, categories, bestsellers, and blog posts
+Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap
+
+# Static sitemap fallback
 Sitemap: https://getpawsy.lovable.app/sitemap.xml
 
-# Important pages for SEO
-# Homepage: https://getpawsy.lovable.app/
-# Products: https://getpawsy.lovable.app/products
-# Dog Beds: https://getpawsy.lovable.app/products?category=Pet%20Beds
-# Pet Toys: https://getpawsy.lovable.app/products?category=Pet%20Toys
-# Pet Collars: https://getpawsy.lovable.app/products?category=Pet%20Collars
-# Pet Bowls: https://getpawsy.lovable.app/products?category=Pet%20Bowls
+# Disallow admin and private pages
+Disallow: /admin
+Disallow: /profile
+Disallow: /orders
+Disallow: /checkout
+Disallow: /payment-success
