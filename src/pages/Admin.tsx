@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
@@ -19,6 +19,7 @@ import { ContactMessagesManager } from "@/components/admin/ContactMessagesManage
 import { BestsellerManager } from "@/components/admin/BestsellerManager";
 import { CJProductPreview } from "@/components/admin/CJProductPreview";
 import { ProductCompareDialog } from "@/components/admin/ProductCompareDialog";
+import { URLProductImport } from "@/components/admin/URLProductImport";
 
 // Lazy load heavy admin components to improve initial load time
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard").then(module => ({ default: module.AnalyticsDashboard })));
@@ -1046,6 +1047,12 @@ const Admin = () => {
                 <TabsTrigger value="bookmarks" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Bookmark className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">{bookmarkedProducts?.length || 0}</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Importeer via URL">
+                <TabsTrigger value="url-import" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <Link className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">URL</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -2253,6 +2260,11 @@ const Admin = () => {
                 <VisitorWorldMap />
               </Suspense>
             </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* URL Import Tab */}
+          <TabsContent value="url-import" className="space-y-6">
+            <URLProductImport />
           </TabsContent>
 
           {/* Bookmarks Tab */}
