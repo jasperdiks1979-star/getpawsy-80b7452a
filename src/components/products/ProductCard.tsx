@@ -35,10 +35,9 @@ export interface Product {
 
 interface ProductCardProps {
   product: Product;
-  onQuickView?: () => void;
 }
 
-export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
+export const ProductCard = ({ product }: ProductCardProps) => {
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -132,20 +131,13 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
             >
               <Heart className={`w-4 h-4 transition-all ${inWishlist ? 'fill-destructive text-destructive scale-110' : ''} ${isAnimating ? 'animate-heartPop' : ''}`} />
             </Button>
-            {onQuickView && (
-              <Button
-                variant="secondary"
-                size="icon"
-                className="rounded-full bg-card/90 backdrop-blur-sm hover:bg-card shadow-soft h-10 w-10"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onQuickView();
-                }}
-              >
-                <Eye className="w-4 h-4" />
-              </Button>
-            )}
+            <Button
+              variant="secondary"
+              size="icon"
+              className="rounded-full bg-card/90 backdrop-blur-sm hover:bg-card shadow-soft h-10 w-10"
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
           </div>
 
           {/* Add to Cart Button - Desktop */}

@@ -81,19 +81,8 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden rounded-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden rounded-2xl">
         <DialogTitle className="sr-only">{product.name}</DialogTitle>
-        
-        {/* Close Button - Always visible */}
-        <Button
-          variant="secondary"
-          size="icon"
-          className="absolute top-3 right-3 z-50 rounded-full bg-background/80 backdrop-blur-sm shadow-lg hover:bg-background"
-          onClick={onClose}
-        >
-          <X className="w-4 h-4" />
-        </Button>
-        
         <div className="grid md:grid-cols-2">
           {/* Image Section */}
           <div className="relative aspect-square bg-muted">
