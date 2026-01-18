@@ -124,8 +124,19 @@ const BlogPostPage = () => {
     }
   };
 
-  // Convert markdown-like content to HTML
+  // Render content - supports both HTML (from rich text editor) and legacy markdown
   const renderContent = (content: string) => {
+    // Check if content is HTML (from rich text editor)
+    if (content.includes('<p>') || content.includes('<h1>') || content.includes('<h2>') || content.includes('<ul>') || content.includes('<ol>')) {
+      return (
+        <div 
+          className="blog-content"
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      );
+    }
+    
+    // Legacy markdown-like content parsing
     return content
       .split('\n')
       .map((line, i) => {
