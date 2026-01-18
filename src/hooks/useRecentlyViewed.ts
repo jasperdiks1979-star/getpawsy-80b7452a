@@ -13,7 +13,16 @@ export const useRecentlyViewed = () => {
     if (typeof window === 'undefined') return [];
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      // Validate that parsed data is an array with valid items
+      if (!Array.isArray(parsed)) {
+        localStorage.removeItem(STORAGE_KEY);
+        return [];
+      }
+      return parsed.filter((item): item is RecentlyViewedProduct => 
+        item && typeof item === 'object' && typeof item.id === 'string' && typeof item.viewedAt === 'number'
+      );
     } catch {
       // If parsing fails, clear corrupted data and return empty array
       localStorage.removeItem(STORAGE_KEY);

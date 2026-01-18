@@ -225,10 +225,11 @@ const Index = () => {
         .gt('stock', 0);
       
       if (error) throw error;
-      // Sort by recently viewed order
+      if (!data) return [];
+      // Sort by recently viewed order and filter out any undefined products
       return recentlyViewedIds
-        .map(id => data?.find(p => p.id === id))
-        .filter(Boolean);
+        .map(id => data.find(p => p.id === id))
+        .filter((p): p is NonNullable<typeof p> => p != null);
     },
     enabled: recentlyViewedIds.length > 0,
   });
@@ -578,11 +579,14 @@ const Index = () => {
                   className="w-full cursor-grab active:cursor-grabbing"
                 >
                   <CarouselContent className="-ml-4">
-                    {featuredProducts.map((product) => (
-                      <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
-                        <ProductCard product={product} />
-                      </CarouselItem>
-                    ))}
+                    {featuredProducts.map((product) => {
+                      if (!product || !product.id) return null;
+                      return (
+                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
+                          <ProductCard product={product as any} />
+                        </CarouselItem>
+                      );
+                    })}
                   </CarouselContent>
                   <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
                   <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
@@ -741,11 +745,14 @@ const Index = () => {
                   className="w-full cursor-grab active:cursor-grabbing"
                 >
                   <CarouselContent className="-ml-4">
-                    {recentlyViewedProducts.map((product) => (
-                      <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
-                        <ProductCard product={product} />
-                      </CarouselItem>
-                    ))}
+                    {recentlyViewedProducts.map((product) => {
+                      if (!product || !product.id) return null;
+                      return (
+                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
+                          <ProductCard product={product as any} />
+                        </CarouselItem>
+                      );
+                    })}
                   </CarouselContent>
                   <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
                   <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
