@@ -363,7 +363,7 @@ const Index = () => {
             </motion.div>
             
             <motion.div 
-              className="relative"
+              className="relative py-6 px-6"
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -378,34 +378,34 @@ const Index = () => {
                   alt="Happy dog with natural pet products"
                   className="shadow-soft-lg object-cover aspect-[4/5] w-full transition-transform duration-700 hover:scale-105 rounded-3xl"
                 />
+              </motion.div>
                 
-                {/* Floating cards with simplified parallax */}
-                <motion.div 
-                  className="absolute -bottom-6 -left-6 bg-card p-4 rounded-2xl shadow-soft glass z-20 will-change-transform"
-                  style={{ y: floatingCard1Y }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
-                      <Truck className="w-6 h-6 text-secondary-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm">Free Shipping</p>
-                      <p className="text-xs text-muted-foreground">On orders $50+</p>
-                    </div>
+              {/* Floating cards with simplified parallax - positioned outside overflow container */}
+              <motion.div 
+                className="absolute bottom-0 left-0 bg-card p-4 rounded-2xl shadow-soft glass z-20 will-change-transform"
+                style={{ y: floatingCard1Y }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
+                    <Truck className="w-6 h-6 text-secondary-foreground" />
                   </div>
-                </motion.div>
+                  <div>
+                    <p className="font-semibold text-sm">Free Shipping</p>
+                    <p className="text-xs text-muted-foreground">On orders $50+</p>
+                  </div>
+                </div>
+              </motion.div>
 
-                <motion.div 
-                  className="absolute -top-4 -right-4 bg-card p-4 rounded-2xl shadow-soft glass z-20 will-change-transform"
-                  style={{ y: floatingCard2Y }}
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                >
-                  <div className="flex items-center gap-2">
-                    <Leaf className="w-5 h-5 text-primary animate-pulse" />
-                    <span className="font-semibold text-sm">100% Natural</span>
-                  </div>
-                </motion.div>
+              <motion.div 
+                className="absolute top-0 right-0 bg-card p-4 rounded-2xl shadow-soft glass z-20 will-change-transform"
+                style={{ y: floatingCard2Y }}
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              >
+                <div className="flex items-center gap-2">
+                  <Leaf className="w-5 h-5 text-primary animate-pulse" />
+                  <span className="font-semibold text-sm">100% Natural</span>
+                </div>
               </motion.div>
 
               {/* Decorative blob */}
