@@ -329,9 +329,13 @@ const Index = () => {
               
               <div className="flex flex-wrap gap-4">
                 <Link to="/products">
-                  <Button size="lg" className="gap-2 btn-organic rounded-full px-8">
-                    Explore Collection
-                    <ArrowRight className="w-4 h-4" />
+                  <Button size="lg" className="gap-2 btn-organic rounded-full px-8 relative overflow-hidden group">
+                    {/* Shimmer effect */}
+                    <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-1000 ease-out" />
+                    <span className="relative z-10 flex items-center gap-2">
+                      Explore Collection
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </span>
                   </Button>
                 </Link>
                 <Button 
