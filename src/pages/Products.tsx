@@ -237,10 +237,6 @@ const Products = () => {
             Showing {displayCount > totalCount ? totalCount : displayCount} of {totalCount} product{totalCount !== 1 ? 's' : ''}
           </p>
         </div>
-          <p className="text-muted-foreground">
-            {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
-          </p>
-        </div>
 
         {/* Active Filters */}
         {activeFiltersCount > 0 && (
