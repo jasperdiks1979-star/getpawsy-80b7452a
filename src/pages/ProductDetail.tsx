@@ -23,6 +23,7 @@ import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { trackViewItem } from '@/lib/analytics';
 import { calculateSellingPrice } from '@/lib/pricing';
+import FormattedDescription from '@/components/products/FormattedDescription';
 
 interface ProductVariant {
   vid: string;
@@ -704,16 +705,15 @@ const ProductDetail = () => {
               )}
             </motion.div>
 
-            {/* Short Description */}
+            {/* Short Description - Truncated preview */}
             {product.description && (
               <div className="text-muted-foreground leading-relaxed break-words overflow-hidden">
-                {descriptionHasHtml ? (
-                  <p className="line-clamp-3 break-words">
-                    {product.description.replace(/<[^>]*>/g, '').substring(0, 200)}...
-                  </p>
-                ) : (
-                  <p className="break-words">{product.description}</p>
-                )}
+                <p className="line-clamp-4 text-[15px] leading-relaxed">
+                  {product.description.replace(/<[^>]*>/g, '').replace(/\*\*/g, '').substring(0, 250)}
+                  {product.description.length > 250 && (
+                    <span className="text-primary font-medium cursor-pointer"> ...read more below</span>
+                  )}
+                </p>
               </div>
             )}
 
@@ -1012,16 +1012,9 @@ const ProductDetail = () => {
             
             <TabsContent value="description" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
-                {descriptionHasHtml ? (
-                  <div 
-                    className="prose prose-sm max-w-none text-muted-foreground [&_h2]:text-lg [&_h2]:font-display [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-4 [&_h3]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-3 [&_li]:my-1.5 [&_img]:rounded-xl [&_img]:my-4 [&_p]:leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description || '') }}
-                  />
-                ) : (
-                  <p className="text-muted-foreground leading-relaxed">
-                    {product.description || 'No description available.'}
-                  </p>
-                )}
+                <FormattedDescription 
+                  description={product.description || 'No description available.'} 
+                />
               </div>
             </TabsContent>
             

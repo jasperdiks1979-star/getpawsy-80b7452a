@@ -175,10 +175,10 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
               )}
             </div>
             
-            {/* Description */}
+            {/* Description - clean preview */}
             {product.description && (
-              <p className="text-muted-foreground text-sm mb-6 line-clamp-3">
-                {product.description}
+              <p className="text-muted-foreground text-sm mb-6 line-clamp-3 leading-relaxed">
+                {product.description.replace(/<[^>]*>/g, '').replace(/\*\*/g, '')}
               </p>
             )}
             
