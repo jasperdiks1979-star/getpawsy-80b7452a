@@ -29,6 +29,7 @@ import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AuthErrorBoundary } from "@/components/auth/AuthErrorBoundary";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -949,60 +950,127 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="sales" className="space-y-6">
-          <TabsList className="grid grid-cols-5 sm:grid-cols-7 lg:inline-flex gap-1 p-1 h-auto w-full lg:w-auto">
-            <TabsTrigger value="products" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <Package className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">Products</span>
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">Orders</span>
-            </TabsTrigger>
-            <TabsTrigger value="newsletter" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <Mail className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">Mail</span>
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <FolderTree className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">Cat.</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <BarChart3 className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">Stats</span>
-            </TabsTrigger>
-            <TabsTrigger value="sales" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <Euro className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">Sales</span>
-            </TabsTrigger>
-            <TabsTrigger value="catalog" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <PawPrint className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">CJ</span>
-            </TabsTrigger>
-            <TabsTrigger value="search" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <Search className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">Zoek</span>
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">Msg</span>
-            </TabsTrigger>
-            <TabsTrigger value="google-ads" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">Ads</span>
-            </TabsTrigger>
-            <TabsTrigger value="bestsellers" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">Best</span>
-            </TabsTrigger>
-            <TabsTrigger value="visitor-map" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <Globe className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">Map</span>
-            </TabsTrigger>
-            <TabsTrigger value="bookmarks" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
-              <Bookmark className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">{bookmarkedProducts?.length || 0}</span>
-            </TabsTrigger>
-          </TabsList>
+          <TooltipProvider delayDuration={300}>
+            <TabsList className="grid grid-cols-5 sm:grid-cols-7 lg:inline-flex gap-1 p-1 h-auto w-full lg:w-auto">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="products" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <Package className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Products</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Mijn winkelproducten beheren</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="orders" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Orders</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Bestellingen bekijken en beheren</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="newsletter" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <Mail className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Mail</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Nieuwsbrief abonnees</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="categories" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <FolderTree className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Cat.</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Productcategorieën beheren</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="analytics" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Stats</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Website statistieken en analytics</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="sales" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <Euro className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Sales</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Verkoop dashboard en omzet</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="catalog" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <PawPrint className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">CJ</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>CJ Dropshipping catalogus</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="search" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <Search className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Zoek</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Zoeken in CJ producten</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="messages" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Msg</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Contactberichten van klanten</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="google-ads" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Ads</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Google Ads generator</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="bestsellers" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Best</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Bestsellers beheren</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="visitor-map" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <Globe className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Map</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Bezoekers wereldkaart</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="bookmarks" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                    <Bookmark className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">{bookmarkedProducts?.length || 0}</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Opgeslagen CJ producten</TooltipContent>
+              </Tooltip>
+            </TabsList>
+          </TooltipProvider>
 
           {/* Sales Dashboard Tab */}
           <TabsContent value="sales" className="space-y-6">
