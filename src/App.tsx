@@ -38,6 +38,7 @@ const Shipping = lazy(() => import("./pages/Shipping"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const TrackOrder = lazy(() => import("./pages/TrackOrder"));
 const BestsellerDetail = lazy(() => import("./pages/BestsellerDetail"));
+const LiveMap = lazy(() => import("./pages/LiveMap"));
 
 const queryClient = new QueryClient();
 
@@ -100,6 +101,7 @@ const App = () => {
                       <Route path="/faq" element={<FAQ />} />
                       <Route path="/track" element={<TrackOrder />} />
                       <Route path="/bestseller/:slug" element={<BestsellerDetail />} />
+                      <Route path="/live-map" element={<LiveMap />} />
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>
