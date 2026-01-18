@@ -108,6 +108,7 @@ const Index = () => {
   
   // Parallax transforms
   const heroImageY = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const heroImageScale = useTransform(scrollYProgress, [0, 0.5], [1, 1.15]);
   const heroContentY = useTransform(scrollYProgress, [0, 1], [0, 50]);
   const floatingCard1Y = useTransform(scrollYProgress, [0, 1], [0, 80]);
   const floatingCard2Y = useTransform(scrollYProgress, [0, 1], [0, 120]);
@@ -351,12 +352,13 @@ const Index = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              {/* Main image with parallax */}
-              <motion.div className="relative z-10" style={{ y: heroImageY }}>
-                <img
+              {/* Main image with parallax and zoom */}
+              <motion.div className="relative z-10 overflow-hidden rounded-3xl" style={{ y: heroImageY }}>
+                <motion.img
                   src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=80"
                   alt="Happy dog with natural pet products"
-                  className="rounded-3xl shadow-soft-lg object-cover aspect-[4/5] w-full"
+                  className="shadow-soft-lg object-cover aspect-[4/5] w-full"
+                  style={{ scale: heroImageScale }}
                 />
                 
                 {/* Floating cards with enhanced parallax */}
