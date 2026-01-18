@@ -85,6 +85,9 @@ export const Navbar = () => {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isBannerDismissed, setIsBannerDismissed] = useState(() => {
+    return localStorage.getItem('promo-banner-dismissed') === 'true';
+  });
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -117,17 +120,38 @@ export const Navbar = () => {
     return location.pathname.startsWith(href.split('?')[0]);
   };
 
+  const dismissBanner = () => {
+    setIsBannerDismissed(true);
+    localStorage.setItem('promo-banner-dismissed', 'true');
+  };
+
   return (
     <>
       {/* Promo Banner */}
-      <div className="bg-primary text-primary-foreground text-center py-2 px-4 text-sm font-medium">
-        <div className="container flex items-center justify-center gap-2">
-          <Truck className="w-4 h-4" />
-          <span>Free shipping on orders over €50!</span>
-          <span className="hidden sm:inline text-primary-foreground/80">•</span>
-          <span className="hidden sm:inline text-primary-foreground/80">Fast delivery 🚀</span>
-        </div>
-      </div>
+      <AnimatePresence>
+        {!isBannerDismissed && (
+          <motion.div 
+            initial={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-primary text-primary-foreground text-sm font-medium overflow-hidden"
+          >
+            <div className="container flex items-center justify-center gap-2 py-2 px-4 relative">
+              <Truck className="w-4 h-4" />
+              <span>Free shipping on orders over €50!</span>
+              <span className="hidden sm:inline text-primary-foreground/80">•</span>
+              <span className="hidden sm:inline text-primary-foreground/80">Fast delivery 🚀</span>
+              <button
+                onClick={dismissBanner}
+                className="absolute right-4 p-1 hover:bg-primary-foreground/20 rounded-full transition-colors"
+                aria-label="Dismiss banner"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <header 
         className={`sticky top-0 z-50 w-full max-w-[100vw] overflow-x-hidden transition-all duration-300 ${
