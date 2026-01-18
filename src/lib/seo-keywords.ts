@@ -453,6 +453,124 @@ export const SEO_KEYWORDS = {
   },
 };
 
+// Product type detection for smart meta descriptions
+interface ProductTypeInfo {
+  type: string;
+  petType: 'dog' | 'cat' | 'general';
+  benefits: string[];
+  emotionalHooks: string[];
+  problemSolves: string[];
+  targetAudience: string[];
+}
+
+function detectProductType(productName: string, category?: string, description?: string): ProductTypeInfo {
+  const nameLower = productName.toLowerCase();
+  const categoryLower = (category || '').toLowerCase();
+  const descLower = (description || '').toLowerCase();
+  const combined = `${nameLower} ${categoryLower} ${descLower}`;
+
+  // Detect pet type
+  let petType: 'dog' | 'cat' | 'general' = 'general';
+  if (combined.includes('dog') || combined.includes('hond') || combined.includes('puppy')) {
+    petType = 'dog';
+  } else if (combined.includes('cat') || combined.includes('kat') || combined.includes('kitten')) {
+    petType = 'cat';
+  }
+
+  // Product type mappings with benefits and hooks
+  const productTypes: Record<string, Omit<ProductTypeInfo, 'petType'>> = {
+    bed: {
+      type: 'bed',
+      benefits: ['ultimate comfort', 'restful sleep', 'joint support', 'cozy retreat'],
+      emotionalHooks: ['your pet deserves the best rest', 'watch them drift off in pure comfort', 'the perfect spot for sweet dreams'],
+      problemSolves: ['tired pet', 'joint pain', 'anxiety', 'cold floors'],
+      targetAudience: ['caring pet parents', 'senior pet owners', 'comfort seekers'],
+    },
+    toy: {
+      type: 'toy',
+      benefits: ['endless fun', 'mental stimulation', 'exercise', 'boredom buster'],
+      emotionalHooks: ['see their tail wag with joy', 'hours of entertainment guaranteed', 'bring out their playful spirit'],
+      problemSolves: ['boredom', 'destructive behavior', 'excess energy', 'loneliness'],
+      targetAudience: ['active pet owners', 'busy professionals', 'playful pups'],
+    },
+    food: {
+      type: 'food',
+      benefits: ['nutritious meals', 'healthy digestion', 'shiny coat', 'natural ingredients'],
+      emotionalHooks: ['fuel their adventures', 'nourish the ones you love', 'every bite matters'],
+      problemSolves: ['picky eater', 'food allergies', 'weight management', 'digestive issues'],
+      targetAudience: ['health-conscious owners', 'pet nutrition enthusiasts'],
+    },
+    bowl: {
+      type: 'bowl',
+      benefits: ['ergonomic design', 'easy cleaning', 'proper posture', 'mess-free meals'],
+      emotionalHooks: ['make mealtime special', 'designed for their comfort'],
+      problemSolves: ['neck strain', 'fast eating', 'spills', 'whisker fatigue'],
+      targetAudience: ['thoughtful pet parents', 'design lovers'],
+    },
+    collar: {
+      type: 'collar',
+      benefits: ['comfortable fit', 'durable materials', 'stylish design', 'secure fastening'],
+      emotionalHooks: ['style meets safety', 'let them strut with confidence'],
+      problemSolves: ['pulling', 'escaping', 'skin irritation', 'fading colors'],
+      targetAudience: ['fashion-forward owners', 'safety-conscious parents'],
+    },
+    harness: {
+      type: 'harness',
+      benefits: ['no-pull design', 'even pressure distribution', 'escape-proof', 'comfortable walks'],
+      emotionalHooks: ['transform your walks', 'adventure awaits'],
+      problemSolves: ['pulling on leash', 'choking', 'escape artists', 'neck strain'],
+      targetAudience: ['active dog owners', 'training enthusiasts'],
+    },
+    grooming: {
+      type: 'grooming',
+      benefits: ['professional results', 'gentle on skin', 'reduces shedding', 'spa-like experience'],
+      emotionalHooks: ['pamper your furry friend', 'they deserve to look and feel amazing'],
+      problemSolves: ['matted fur', 'shedding', 'skin issues', 'grooming anxiety'],
+      targetAudience: ['home groomers', 'pampering pet parents'],
+    },
+    tree: {
+      type: 'cat tree',
+      benefits: ['climbing paradise', 'scratching satisfaction', 'cozy hideaways', 'territory marking'],
+      emotionalHooks: ['their own kingdom awaits', 'watch them conquer new heights'],
+      problemSolves: ['furniture scratching', 'boredom', 'lack of exercise', 'territorial issues'],
+      targetAudience: ['cat enthusiasts', 'indoor cat owners'],
+    },
+    carrier: {
+      type: 'carrier',
+      benefits: ['safe travel', 'airline approved', 'comfortable journey', 'easy access'],
+      emotionalHooks: ['adventures together', 'travel stress-free'],
+      problemSolves: ['travel anxiety', 'vet visits', 'moving stress'],
+      targetAudience: ['traveling pet owners', 'frequent flyers'],
+    },
+    clothing: {
+      type: 'clothing',
+      benefits: ['weather protection', 'adorable style', 'comfort fit', 'easy on/off'],
+      emotionalHooks: ['dress to impress', 'cozy and cute'],
+      problemSolves: ['cold weather', 'rain protection', 'post-surgery coverage'],
+      targetAudience: ['fashion lovers', 'small dog owners'],
+    },
+  };
+
+  // Detect product type from name/category
+  let detectedType = productTypes.toy; // default
+  for (const [key, value] of Object.entries(productTypes)) {
+    if (combined.includes(key)) {
+      detectedType = value;
+      break;
+    }
+  }
+
+  // Additional checks
+  if (combined.includes('scratch')) detectedType = productTypes.tree;
+  if (combined.includes('leash')) detectedType = productTypes.harness;
+  if (combined.includes('feeder') || combined.includes('fountain')) detectedType = productTypes.bowl;
+  if (combined.includes('brush') || combined.includes('shampoo') || combined.includes('nail')) detectedType = productTypes.grooming;
+  if (combined.includes('sweater') || combined.includes('coat') || combined.includes('jacket')) detectedType = productTypes.clothing;
+  if (combined.includes('crate') || combined.includes('travel') || combined.includes('bag')) detectedType = productTypes.carrier;
+
+  return { ...detectedType, petType };
+}
+
 // Helper function to get keywords by category
 export function getKeywordsForCategory(category: string): string[] {
   const categoryLower = category.toLowerCase();
@@ -465,37 +583,51 @@ export function getKeywordsForCategory(category: string): string[] {
   // Add category-specific keywords
   if (categoryLower.includes('dog') || categoryLower.includes('hond')) {
     keywordSets.push(...SEO_KEYWORDS.dog.general);
+    keywordSets.push(...SEO_KEYWORDS.breedSpecific.dogs.slice(0, 5));
+    keywordSets.push(...SEO_KEYWORDS.lifeStage.puppy.slice(0, 3));
   }
   if (categoryLower.includes('cat') || categoryLower.includes('kat')) {
     keywordSets.push(...SEO_KEYWORDS.cat.general);
+    keywordSets.push(...SEO_KEYWORDS.breedSpecific.cats.slice(0, 5));
+    keywordSets.push(...SEO_KEYWORDS.lifeStage.kitten.slice(0, 3));
   }
   if (categoryLower.includes('bed') || categoryLower.includes('sofa') || categoryLower.includes('cushion')) {
     keywordSets.push(...SEO_KEYWORDS.dog.beds);
+    keywordSets.push(...SEO_KEYWORDS.lifeStage.senior.slice(0, 3));
   }
   if (categoryLower.includes('bowl') || categoryLower.includes('food') || categoryLower.includes('feeder')) {
     keywordSets.push(...SEO_KEYWORDS.dog.food);
+    keywordSets.push(...SEO_KEYWORDS.problemSolving.filter(k => k.includes('eat') || k.includes('food')));
   }
   if (categoryLower.includes('collar') || categoryLower.includes('leash') || categoryLower.includes('harness')) {
     keywordSets.push(...SEO_KEYWORDS.dog.collars);
+    keywordSets.push(...SEO_KEYWORDS.sustainability.filter(k => k.includes('collar') || k.includes('leash')));
   }
   if (categoryLower.includes('toy')) {
     keywordSets.push(...SEO_KEYWORDS.dog.toys);
     keywordSets.push(...SEO_KEYWORDS.cat.toys);
+    keywordSets.push(...SEO_KEYWORDS.problemSolving.filter(k => k.includes('bored') || k.includes('chew')));
   }
   if (categoryLower.includes('groom')) {
     keywordSets.push(...SEO_KEYWORDS.dog.grooming);
+    keywordSets.push(...SEO_KEYWORDS.problemSolving.filter(k => k.includes('shed') || k.includes('hair')));
   }
   if (categoryLower.includes('tree') || categoryLower.includes('furniture') || categoryLower.includes('house')) {
     keywordSets.push(...SEO_KEYWORDS.cat.furniture);
+    keywordSets.push(...SEO_KEYWORDS.niche.filter(k => k.includes('space') || k.includes('apartment')));
   }
   
-  // Add trending keywords
+  // Add trending and sustainability keywords
   keywordSets.push(...SEO_KEYWORDS.trending.slice(0, 10));
+  keywordSets.push(...SEO_KEYWORDS.sustainability.slice(0, 5));
+  
+  // Add emotional keywords
+  keywordSets.push(...SEO_KEYWORDS.emotional.slice(0, 5));
   
   return [...new Set(keywordSets)]; // Remove duplicates
 }
 
-// Generate product-specific keywords
+// Generate product-specific keywords with niche keywords
 export function generateProductKeywords(
   productName: string,
   category: string,
@@ -505,61 +637,155 @@ export function generateProductKeywords(
   const nameLower = productName.toLowerCase();
   const categoryLower = category?.toLowerCase() || '';
   
-  // Extract meaningful words from product name
-  const nameWords = nameLower
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(' ')
-    .filter(w => w.length > 2);
-  
   // Add product type keywords
   if (nameLower.includes('bed') || nameLower.includes('sofa') || nameLower.includes('cushion')) {
     keywords.push('dog bed', 'pet bed', 'pet sofa', 'dog sofa bed', 'comfortable pet bed');
-    if (nameLower.includes('large')) keywords.push('large dog bed', 'big dog bed');
-    if (nameLower.includes('orthopedic')) keywords.push('orthopedic dog bed', 'memory foam pet bed');
+    keywords.push(...SEO_KEYWORDS.lifeStage.senior.filter(k => k.includes('bed')));
+    if (nameLower.includes('large')) keywords.push('large dog bed', 'big dog bed', 'bed for large breed');
+    if (nameLower.includes('orthopedic')) keywords.push('orthopedic dog bed', 'memory foam pet bed', 'joint support bed');
     if (nameLower.includes('elevated') || nameLower.includes('cot')) {
-      keywords.push('elevated dog bed', 'raised dog bed', 'dog cot', 'outdoor dog bed');
+      keywords.push('elevated dog bed', 'raised dog bed', 'dog cot', 'outdoor dog bed', 'cooling bed');
     }
   }
   
   if (nameLower.includes('bowl') || nameLower.includes('feeder')) {
     keywords.push('dog bowl', 'pet bowl', 'dog feeder', 'pet feeding station');
+    keywords.push(...SEO_KEYWORDS.problemSolving.filter(k => k.includes('eat')));
     if (nameLower.includes('elevated') || nameLower.includes('raised')) {
-      keywords.push('elevated dog bowl', 'raised pet feeder');
+      keywords.push('elevated dog bowl', 'raised pet feeder', 'ergonomic pet bowl');
+    }
+    if (nameLower.includes('slow')) {
+      keywords.push('slow feeder', 'anti-gulp bowl', 'puzzle feeder');
     }
   }
   
   if (nameLower.includes('collar') || nameLower.includes('leash') || nameLower.includes('harness')) {
     keywords.push('dog collar', 'pet collar', 'dog leash', 'pet harness');
-    if (nameLower.includes('training')) keywords.push('training collar', 'dog training collar');
+    keywords.push(...SEO_KEYWORDS.sustainability.filter(k => k.includes('collar') || k.includes('leash')));
+    if (nameLower.includes('training')) keywords.push('training collar', 'dog training collar', 'no pull solution');
+    if (nameLower.includes('reflective')) keywords.push('reflective collar', 'night safety', 'visible dog gear');
   }
   
   if (nameLower.includes('toy')) {
     keywords.push('dog toy', 'pet toy', 'interactive toy', 'chew toy');
+    keywords.push(...SEO_KEYWORDS.problemSolving.filter(k => k.includes('chew') || k.includes('bored')));
+    keywords.push(...SEO_KEYWORDS.niche.filter(k => k.includes('toy') || k.includes('ball')));
   }
   
   if (nameLower.includes('tree') || nameLower.includes('scratch')) {
     keywords.push('cat tree', 'cat scratching post', 'cat tower', 'cat furniture');
+    keywords.push(...SEO_KEYWORDS.problemSolving.filter(k => k.includes('scratch') || k.includes('furniture')));
+    keywords.push(...SEO_KEYWORDS.niche.filter(k => k.includes('space') || k.includes('cat')));
   }
   
   // Add category keywords
   keywords.push(...getKeywordsForCategory(categoryLower).slice(0, 15));
   
-  // Add brand keywords
-  keywords.push('GetPawsy', 'premium pet products', 'quality pet supplies');
+  // Add niche and emotional keywords based on product type
+  keywords.push(...SEO_KEYWORDS.emotional.slice(0, 5));
+  keywords.push(...SEO_KEYWORDS.niche.slice(0, 5));
   
-  return [...new Set(keywords)].slice(0, 30); // Limit to 30 unique keywords
+  // Add brand keywords
+  keywords.push('GetPawsy', 'premium pet products', 'quality pet supplies', 'trusted pet brand');
+  
+  return [...new Set(keywords)].slice(0, 40); // Limit to 40 unique keywords
 }
 
-// Generate meta description with keywords
+// Smart meta description templates based on product type
+const metaTemplates = {
+  benefit: (productName: string, benefit: string, price?: number) =>
+    `${productName} - ${benefit}. ${price ? `From €${price.toFixed(2)}. ` : ''}Free shipping on orders over €50. Shop now at GetPawsy!`,
+  
+  emotional: (productName: string, hook: string, price?: number) =>
+    `${productName} - ${hook}. ${price ? `Starting at €${price.toFixed(2)}. ` : ''}Premium quality, vet-approved. Order today at GetPawsy!`,
+  
+  problemSolving: (productName: string, problem: string, solution: string, price?: number) =>
+    `Struggling with ${problem}? ${productName} is the ${solution}. ${price ? `Only €${price.toFixed(2)}. ` : ''}Shop at GetPawsy - free shipping!`,
+  
+  lifestyle: (productName: string, audience: string, benefit: string, price?: number) =>
+    `Perfect for ${audience}: ${productName} offers ${benefit}. ${price ? `From €${price.toFixed(2)}. ` : ''}Discover at GetPawsy today!`,
+  
+  premium: (productName: string, features: string, price?: number) =>
+    `Premium ${productName} with ${features}. ${price ? `Starting at €${price.toFixed(2)}. ` : ''}Eco-friendly & vet-approved. Shop GetPawsy!`,
+};
+
+// Generate smart meta description with niche keywords
 export function generateMetaDescription(
   productName: string,
   price?: number,
-  category?: string
+  category?: string,
+  description?: string
 ): string {
-  const categoryText = category ? ` in ${category}` : '';
-  const priceText = price ? ` Starting at $${price.toFixed(2)}.` : '';
+  const productInfo = detectProductType(productName, category, description);
   
-  return `Shop ${productName}${categoryText} at GetPawsy.${priceText} Premium quality pet products with free shipping on orders over $50. Vet-approved, eco-friendly supplies for your furry friends.`;
+  // Select template type based on product name hash for consistency
+  const templateTypes = ['benefit', 'emotional', 'problemSolving', 'lifestyle', 'premium'] as const;
+  const hash = productName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const templateIndex = hash % templateTypes.length;
+  const templateType = templateTypes[templateIndex];
+  
+  switch (templateType) {
+    case 'benefit':
+      const benefit = productInfo.benefits[hash % productInfo.benefits.length];
+      return metaTemplates.benefit(productName, benefit, price);
+    
+    case 'emotional':
+      const hook = productInfo.emotionalHooks[hash % productInfo.emotionalHooks.length];
+      return metaTemplates.emotional(productName, hook, price);
+    
+    case 'problemSolving':
+      const problem = productInfo.problemSolves[hash % productInfo.problemSolves.length];
+      const solution = productInfo.benefits[0];
+      return metaTemplates.problemSolving(productName, problem, solution, price);
+    
+    case 'lifestyle':
+      const audience = productInfo.targetAudience[hash % productInfo.targetAudience.length];
+      const lifeBenefit = productInfo.benefits[1] || productInfo.benefits[0];
+      return metaTemplates.lifestyle(productName, audience, lifeBenefit, price);
+    
+    case 'premium':
+    default:
+      const features = productInfo.benefits.slice(0, 2).join(' & ');
+      return metaTemplates.premium(productName, features, price);
+  }
+}
+
+// Generate category page meta description
+export function generateCategoryMetaDescription(categoryName: string): string {
+  const categoryLower = categoryName.toLowerCase();
+  
+  const categoryDescriptions: Record<string, string> = {
+    dog: 'Discover premium dog supplies at GetPawsy. From cozy beds to durable toys, we have everything your furry friend needs. Vet-approved, eco-friendly products with free shipping over €50.',
+    cat: 'Shop the best cat products at GetPawsy. Cat trees, toys, feeding bowls & more. Premium quality, designed for happy cats. Free shipping on orders over €50!',
+    bed: 'Find the perfect pet bed at GetPawsy. Orthopedic, cooling, and cozy options for dogs & cats of all sizes. Help your pet sleep better. Free shipping over €50!',
+    toy: 'Keep your pet entertained with premium toys from GetPawsy. Interactive, durable, and mentally stimulating options. Say goodbye to boredom! Free shipping over €50.',
+    food: 'Premium pet feeding solutions at GetPawsy. Elevated bowls, slow feeders, automatic dispensers & more. Make mealtime special. Free shipping over €50!',
+    grooming: 'Professional pet grooming supplies at GetPawsy. Brushes, shampoos, nail care & more. Pamper your pet at home. Free shipping on orders over €50!',
+    collar: 'Stylish and safe pet collars & harnesses at GetPawsy. From leather to reflective designs. Find the perfect fit. Free shipping over €50!',
+  };
+  
+  for (const [key, description] of Object.entries(categoryDescriptions)) {
+    if (categoryLower.includes(key)) {
+      return description;
+    }
+  }
+  
+  return `Shop premium ${categoryName} at GetPawsy. Quality pet products, vet-approved and eco-friendly. Free shipping on orders over €50. Your pet deserves the best!`;
+}
+
+// Generate blog post meta description
+export function generateBlogMetaDescription(title: string, excerpt: string, category: string): string {
+  const categoryEmoji: Record<string, string> = {
+    honden: '🐕',
+    katten: '🐱',
+    vissen: '🐠',
+    algemeen: '🐾',
+  };
+  
+  const emoji = categoryEmoji[category] || '🐾';
+  const truncatedExcerpt = excerpt.length > 120 ? excerpt.substring(0, 117) + '...' : excerpt;
+  
+  return `${emoji} ${truncatedExcerpt} Read more pet care tips at GetPawsy Blog!`;
 }
 
 // Default site keywords
@@ -579,4 +805,7 @@ export const SITE_KEYWORDS = [
   'natural pet products',
   'eco-friendly pet supplies',
   'pet essentials',
+  'gift for pet lover',
+  'luxury pet accessories',
+  'sustainable pet products',
 ].join(', ');
