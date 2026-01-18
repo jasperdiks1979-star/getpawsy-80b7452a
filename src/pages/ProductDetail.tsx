@@ -246,8 +246,17 @@ const ProductDetail = () => {
     }
   }, [selectedVariant, product]);
 
-  // Auto-scroll thumbnail into view
+  // Track if change was from autoplay (to avoid scroll interference)
+  const isAutoplayChangeRef = useRef(false);
+
+  // Auto-scroll thumbnail into view (only for user-initiated changes)
   useEffect(() => {
+    // Skip scroll if this was an autoplay change
+    if (isAutoplayChangeRef.current) {
+      isAutoplayChangeRef.current = false;
+      return;
+    }
+    
     const thumbnail = thumbnailRefs.current[selectedImage];
     if (thumbnail) {
       thumbnail.scrollIntoView({
@@ -277,6 +286,7 @@ const ProductDetail = () => {
     if (!product || images.length <= 1 || autoplayPaused || lightboxOpen) return;
 
     const interval = setInterval(() => {
+      isAutoplayChangeRef.current = true; // Mark as autoplay change to prevent scroll
       setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
     }, 5000);
 
