@@ -1,0 +1,271 @@
+import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Layout } from '@/components/layout/Layout';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Calendar, Clock, ArrowLeft, User, Share2, BookOpen } from 'lucide-react';
+import { format } from 'date-fns';
+import { nl } from 'date-fns/locale';
+
+interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featured_image: string | null;
+  category: string;
+  tags: string[];
+  author_name: string;
+  published_at: string;
+  reading_time_minutes: number;
+  meta_title: string | null;
+  meta_description: string | null;
+  meta_keywords: string[] | null;
+}
+
+const categoryColors: Record<string, string> = {
+  honden: 'bg-amber-100 text-amber-700',
+  katten: 'bg-pink-100 text-pink-700',
+  vissen: 'bg-blue-100 text-blue-700',
+  algemeen: 'bg-emerald-100 text-emerald-700',
+};
+
+const BlogPostPage = () => {
+  const { slug } = useParams<{ slug: string }>();
+
+  const { data: post, isLoading, error } = useQuery({
+    queryKey: ['blog-post', slug],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('slug', slug)
+        .eq('is_published', true)
+        .single();
+
+      if (error) throw error;
+      return data as BlogPost;
+    },
+    enabled: !!slug,
+  });
+
+  const handleShare = async () => {
+    if (navigator.share && post) {
+      await navigator.share({
+        title: post.title,
+        text: post.excerpt,
+        url: window.location.href,
+      });
+    }
+  };
+
+  // Convert markdown-like content to HTML
+  const renderContent = (content: string) => {
+    return content
+      .split('\n')
+      .map((line, i) => {
+        if (line.startsWith('## ')) {
+          return <h2 key={i} className="text-2xl font-bold mt-8 mb-4">{line.slice(3)}</h2>;
+        }
+        if (line.startsWith('### ')) {
+          return <h3 key={i} className="text-xl font-semibold mt-6 mb-3">{line.slice(4)}</h3>;
+        }
+        if (line.startsWith('#### ')) {
+          return <h4 key={i} className="text-lg font-semibold mt-4 mb-2">{line.slice(5)}</h4>;
+        }
+        if (line.startsWith('- ')) {
+          return <li key={i} className="ml-6 mb-1">{line.slice(2)}</li>;
+        }
+        if (line.startsWith('✅ ') || line.startsWith('⚠️ ') || line.startsWith('🐠 ') || line.startsWith('🐕 ') || line.startsWith('🌟 ') || line.startsWith('🛁 ')) {
+          return <p key={i} className="mb-2">{line}</p>;
+        }
+        if (line.match(/^\d+\. /)) {
+          return <li key={i} className="ml-6 mb-1 list-decimal">{line.replace(/^\d+\. /, '')}</li>;
+        }
+        if (line.startsWith('**') && line.endsWith('**')) {
+          return <p key={i} className="font-bold mb-2">{line.slice(2, -2)}</p>;
+        }
+        if (line.startsWith('|')) {
+          return null; // Skip table rows for simplicity
+        }
+        if (line.trim() === '') {
+          return <br key={i} />;
+        }
+        // Handle inline bold
+        const formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        return <p key={i} className="mb-3" dangerouslySetInnerHTML={{ __html: formattedLine }} />;
+      });
+  };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container max-w-4xl py-8">
+          <Skeleton className="h-8 w-32 mb-6" />
+          <Skeleton className="h-12 w-full mb-4" />
+          <Skeleton className="h-6 w-2/3 mb-8" />
+          <Skeleton className="aspect-video w-full mb-8" />
+          <div className="space-y-4">
+            {[...Array(10)].map((_, i) => (
+              <Skeleton key={i} className="h-4 w-full" />
+            ))}
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <Layout>
+        <div className="container py-12 text-center">
+          <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Artikel niet gevonden</h1>
+          <p className="text-muted-foreground mb-6">Dit artikel bestaat niet of is niet meer beschikbaar.</p>
+          <Link to="/blog">
+            <Button>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Terug naar blog
+            </Button>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.meta_description || post.excerpt,
+    image: post.featured_image,
+    author: {
+      '@type': 'Person',
+      name: post.author_name,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'GetPawsy',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpawsy.lovable.app/favicon.png',
+      },
+    },
+    datePublished: post.published_at,
+    dateModified: post.published_at,
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://getpawsy.lovable.app/blog/${post.slug}`,
+    },
+    keywords: post.meta_keywords?.join(', ') || post.tags.join(', '),
+  };
+
+  return (
+    <Layout>
+      <Helmet>
+        <title>{post.meta_title || post.title} | GetPawsy Blog</title>
+        <meta name="description" content={post.meta_description || post.excerpt} />
+        <meta name="keywords" content={post.meta_keywords?.join(', ') || post.tags.join(', ')} />
+        <link rel="canonical" href={`https://getpawsy.lovable.app/blog/${post.slug}`} />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={post.meta_title || post.title} />
+        <meta property="og:description" content={post.meta_description || post.excerpt} />
+        {post.featured_image && <meta property="og:image" content={post.featured_image} />}
+        <meta property="article:published_time" content={post.published_at} />
+        <meta property="article:author" content={post.author_name} />
+        <meta property="article:section" content={post.category} />
+        {post.tags.map((tag) => (
+          <meta key={tag} property="article:tag" content={tag} />
+        ))}
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
+
+      <article className="container max-w-4xl py-8">
+        {/* Back Button */}
+        <Link to="/blog" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Terug naar blog
+        </Link>
+
+        {/* Header */}
+        <header className="mb-8">
+          <Badge className={`mb-4 capitalize ${categoryColors[post.category] || 'bg-muted'}`}>
+            {post.category}
+          </Badge>
+          <h1 className="text-3xl md:text-4xl font-display font-bold mb-4">
+            {post.title}
+          </h1>
+          <p className="text-lg text-muted-foreground mb-6">
+            {post.excerpt}
+          </p>
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <User className="w-4 h-4" />
+              {post.author_name}
+            </span>
+            <span className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              {format(new Date(post.published_at), 'd MMMM yyyy', { locale: nl })}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              {post.reading_time_minutes} min leestijd
+            </span>
+            <Button variant="ghost" size="sm" onClick={handleShare} className="ml-auto">
+              <Share2 className="w-4 h-4 mr-2" />
+              Delen
+            </Button>
+          </div>
+        </header>
+
+        {/* Featured Image */}
+        {post.featured_image && (
+          <div className="aspect-video rounded-2xl overflow-hidden mb-8">
+            <img
+              src={post.featured_image}
+              alt={post.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="prose prose-lg max-w-none">
+          {renderContent(post.content)}
+        </div>
+
+        {/* Tags */}
+        {post.tags.length > 0 && (
+          <div className="mt-12 pt-8 border-t">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-3">Tags</h3>
+            <div className="flex flex-wrap gap-2">
+              {post.tags.map((tag) => (
+                <Badge key={tag} variant="outline" className="capitalize">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* CTA */}
+        <div className="mt-12 p-6 bg-primary/5 rounded-2xl text-center">
+          <h3 className="text-xl font-semibold mb-2">Op zoek naar het beste voor je huisdier?</h3>
+          <p className="text-muted-foreground mb-4">Bekijk onze selectie van premium huisdierproducten.</p>
+          <Link to="/products">
+            <Button>
+              Shop nu
+              <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+            </Button>
+          </Link>
+        </div>
+      </article>
+    </Layout>
+  );
+};
+
+export default BlogPostPage;

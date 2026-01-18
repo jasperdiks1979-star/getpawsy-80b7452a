@@ -24,6 +24,7 @@ import logoFull from '@/assets/logo-getpawsy-full.png';
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Shop' },
+  { href: '/blog', label: 'Blog' },
 ];
 
 const categoryItems = [

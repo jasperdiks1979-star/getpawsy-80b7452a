@@ -111,6 +111,8 @@ const FAQ = lazyWithRetry(() => import("./pages/FAQ"));
 const TrackOrder = lazyWithRetry(() => import("./pages/TrackOrder"));
 const BestsellerDetail = lazyWithRetry(() => import("./pages/BestsellerDetail"));
 const LiveMap = lazyWithRetry(() => import("./pages/LiveMap"));
+const Blog = lazyWithRetry(() => import("./pages/Blog"));
+const BlogPost = lazyWithRetry(() => import("./pages/BlogPost"));
 
 const queryClient = new QueryClient();
 
@@ -175,6 +177,8 @@ const App = () => {
                         <Route path="/track" element={<TrackOrder />} />
                         <Route path="/bestseller/:slug" element={<BestsellerDetail />} />
                         <Route path="/live-map" element={<LiveMap />} />
+                        <Route path="/blog" element={<Blog />} />
+                        <Route path="/blog/:slug" element={<BlogPost />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
