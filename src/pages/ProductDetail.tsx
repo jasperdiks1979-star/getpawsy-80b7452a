@@ -24,6 +24,7 @@ import { sanitizeHtml } from '@/lib/sanitize';
 import { trackViewItem } from '@/lib/analytics';
 import { calculateSellingPrice } from '@/lib/pricing';
 import FormattedDescription from '@/components/products/FormattedDescription';
+import { ProductSchema } from '@/components/seo/ProductSchema';
 
 interface ProductVariant {
   vid: string;
@@ -411,6 +412,21 @@ const ProductDetail = () => {
 
   return (
     <Layout>
+      <ProductSchema 
+        product={{
+          id: product.id,
+          name: product.name || '',
+          description: product.description,
+          price: Number(product.price),
+          compare_at_price: product.compare_at_price ? Number(product.compare_at_price) : null,
+          image_url: product.image_url,
+          images: product.images as string[] | null,
+          category: product.category,
+          stock: product.stock,
+          sku: product.sku,
+        }}
+        reviews={reviews}
+      />
       {/* Decorative background - hidden on mobile to prevent overflow */}
       <div className="hidden md:block fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-40 -right-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />

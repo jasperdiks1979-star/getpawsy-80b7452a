@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { BestsellersSection } from '@/components/home/BestsellersSection';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
+import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
 const features = [
   {
     icon: Truck,
@@ -276,6 +277,7 @@ const Index = () => {
 
   return (
     <Layout>
+      <WebsiteSchema />
       {/* Hero Section with Parallax */}
       <section ref={heroRef} className="relative overflow-hidden">
         {/* Decorative background elements */}
