@@ -119,6 +119,16 @@ export const Navbar = () => {
 
   return (
     <>
+      {/* Promo Banner */}
+      <div className="bg-primary text-primary-foreground text-center py-2 px-4 text-sm font-medium">
+        <div className="container flex items-center justify-center gap-2">
+          <Truck className="w-4 h-4" />
+          <span>Free shipping on orders over €50!</span>
+          <span className="hidden sm:inline text-primary-foreground/80">•</span>
+          <span className="hidden sm:inline text-primary-foreground/80">Fast delivery 🚀</span>
+        </div>
+      </div>
+
       <header 
         className={`sticky top-0 z-50 w-full max-w-[100vw] overflow-x-hidden transition-all duration-300 ${
           isScrolled 
