@@ -4,7 +4,8 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X, Radio, RotateCw } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X, Radio, RotateCw, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -1123,6 +1124,19 @@ export const VisitorWorldMap = () => {
                   className="px-2"
                 >
                   <Globe className="w-4 h-4" />
+                </Button>
+              )}
+              {!isFullscreen && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  title="Open als losse pagina"
+                  className="px-2"
+                >
+                  <Link to="/live-map" target="_blank">
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
                 </Button>
               )}
             </div>
