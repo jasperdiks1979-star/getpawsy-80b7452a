@@ -32,6 +32,7 @@ import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TouchTooltip, TooltipProvider } from "@/components/ui/tooltip";
 import { AuthErrorBoundary } from "@/components/auth/AuthErrorBoundary";
+import { SectionErrorBoundary } from "@/components/ui/section-error-boundary";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -326,7 +327,7 @@ const Admin = () => {
         setImportProgress(prev => ({ 
           current: i + 1, 
           total, 
-          status: `Processing ${i + 1}/${total}: ${p.productNameEn.substring(0, 40)}...`,
+          status: `Processing ${i + 1}/${total}: ${(p.productNameEn || 'Product').substring(0, 40)}...`,
           startTime: prev?.startTime || seoStartTime
         }));
         
@@ -601,7 +602,7 @@ const Admin = () => {
           setRefreshProgress({ 
             current: updated + errors, 
             total, 
-            status: `Updating: ${product.name.substring(0, 30)}...` 
+            status: `Updating: ${(product.name || 'Unknown product').substring(0, 30)}...` 
           });
 
           if (!fullDetail) {
@@ -625,7 +626,7 @@ const Admin = () => {
           };
           const flatImages = [...new Set(flattenDeep(Array.isArray(rawImages) ? rawImages : [rawImages]))];
           
-          console.log(`Updating ${product.name}: ${flatImages.length} images, ${fullDetail.variants?.length || 0} variants`);
+          console.log(`Updating ${product.name || 'Unknown'}: ${flatImages.length} images, ${fullDetail.variants?.length || 0} variants`);
 
           // Update product with new images and variants
           const { error: updateError } = await supabase
@@ -639,7 +640,7 @@ const Admin = () => {
             .eq("id", product.id);
 
           if (updateError) {
-            console.error(`Failed to update ${product.name}:`, updateError);
+            console.error(`Failed to update ${product.name || 'Unknown'}:`, updateError);
             errors++;
           } else {
             updated++;
@@ -1799,8 +1800,8 @@ const Admin = () => {
             )}
           </TabsContent>
 
-          {/* My Products Tab */}
           <TabsContent value="products" className="space-y-6">
+            <SectionErrorBoundary sectionName="Store Products">
             <div>
               <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                 <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -2164,6 +2165,7 @@ const Admin = () => {
                 );
               })()}
             </div>
+            </SectionErrorBoundary>
           </TabsContent>
 
           {/* Orders Tab */}
