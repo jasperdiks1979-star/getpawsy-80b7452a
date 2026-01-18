@@ -295,9 +295,10 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     allPresets,
   } = useDashboardWidgets();
   
-  // Helper to check if a widget is visible
+  // Helper to check if a widget is visible - with safe array check
   const isWidgetVisible = (widgetId: string) => {
-    const widget = widgets.find(w => w.id === widgetId);
+    if (!widgets || !Array.isArray(widgets)) return true;
+    const widget = widgets.find(w => w && w.id === widgetId);
     return widget?.visible ?? true;
   };
 

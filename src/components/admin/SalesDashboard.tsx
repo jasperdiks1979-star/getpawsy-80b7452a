@@ -221,26 +221,31 @@ export const SalesDashboard = () => {
 
   // Calculate statistics based on filtered orders
   const stats = useMemo(() => {
+    // Default empty stats object - always return arrays to prevent .length errors
+    const emptyStats = {
+      totalRevenue: 0,
+      totalOrders: 0,
+      avgOrderValue: 0,
+      uniqueCustomers: 0,
+      todayRevenue: 0,
+      todayOrders: 0,
+      weekRevenue: 0,
+      weekOrders: 0,
+      monthRevenue: 0,
+      monthOrders: 0,
+      revenueChange: 0,
+      ordersChange: 0,
+      dailyData: [] as Array<{ date: string; revenue: number; orders: number }>,
+      statusDistribution: [] as Array<{ name: string; value: number; color: string }>,
+      topProducts: [] as Array<{ name: string; quantity: number; revenue: number }>,
+      mostProfitableProducts: [] as Array<{ name: string; quantity: number; revenue: number; cost: number; profit: number; product_id?: string }>,
+      lowMarginProducts: [] as Array<{ name: string; quantity: number; revenue: number; cost: number; profit: number; margin: number; product_id?: string }>,
+      negativeMarginProducts: [] as Array<{ name: string; quantity: number; revenue: number; cost: number; profit: number; margin: number; product_id?: string }>,
+      recentOrders: [] as Order[],
+    };
+
     if (!filteredOrders || filteredOrders.length === 0) {
-      return {
-        totalRevenue: 0,
-        totalOrders: 0,
-        avgOrderValue: 0,
-        uniqueCustomers: 0,
-        todayRevenue: 0,
-        todayOrders: 0,
-        weekRevenue: 0,
-        weekOrders: 0,
-        monthRevenue: 0,
-        monthOrders: 0,
-        revenueChange: 0,
-        ordersChange: 0,
-        dailyData: [],
-        statusDistribution: [],
-        topProducts: [],
-        mostProfitableProducts: [],
-        recentOrders: [],
-      };
+      return emptyStats;
     }
 
     const now = new Date();
@@ -1185,7 +1190,7 @@ export const SalesDashboard = () => {
                   <Skeleton key={i} className="h-14 w-full" />
                 ))}
               </div>
-            ) : stats.lowMarginProducts.length > 0 ? (
+            ) : stats.lowMarginProducts && Array.isArray(stats.lowMarginProducts) && stats.lowMarginProducts.length > 0 ? (
               <div className="space-y-3">
                 {stats.lowMarginProducts.map((product, index) => (
                   <div 
@@ -1285,7 +1290,7 @@ const LossProductsCard = ({ isLoading, products, formatCurrency }: LossProductsC
             </CardTitle>
             <CardDescription>Producten die verlies opleveren en directe actie vereisen</CardDescription>
           </div>
-          {products.length > 0 && (
+          {products && Array.isArray(products) && products.length > 0 && (
             <Button
               variant="outline"
               size="sm"
@@ -1310,7 +1315,7 @@ const LossProductsCard = ({ isLoading, products, formatCurrency }: LossProductsC
               <Skeleton key={i} className="h-14 w-full" />
             ))}
           </div>
-        ) : products.length > 0 ? (
+        ) : products && Array.isArray(products) && products.length > 0 ? (
           <div className="space-y-3">
             {products.map((product, index) => (
               <div 
