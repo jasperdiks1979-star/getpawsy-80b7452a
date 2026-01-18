@@ -72,6 +72,31 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://getpawsy.lovable.app/blog/pet-grooming-guide-dogs-cats-home</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://getpawsy.lovable.app/blog/traveling-with-pets-guide-tips</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://getpawsy.lovable.app/blog/first-time-pet-owner-guide-essentials</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://getpawsy.lovable.app/blog/pet-health-warning-signs-vet-visit</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://getpawsy.lovable.app/blog/indoor-outdoor-cats-guide-safety</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
   
   <!-- Static Pages -->
   <url>
