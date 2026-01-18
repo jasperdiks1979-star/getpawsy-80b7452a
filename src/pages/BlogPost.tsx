@@ -71,6 +71,52 @@ const BlogPostPage = () => {
     enabled: !!slug,
   });
 
+  // Fetch related blog posts (same category, different slug)
+  const { data: relatedPosts } = useQuery({
+    queryKey: ['related-posts', post?.category, post?.slug],
+    queryFn: async () => {
+      if (!post?.category || !post?.slug) return [];
+      
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('id, title, slug, excerpt, featured_image, category, reading_time_minutes, published_at')
+        .eq('is_published', true)
+        .eq('category', post.category)
+        .neq('slug', post.slug)
+        .order('published_at', { ascending: false })
+        .limit(3);
+
+      if (error) {
+        // Fallback: get any published posts except current
+        const { data: fallbackData } = await supabase
+          .from('blog_posts')
+          .select('id, title, slug, excerpt, featured_image, category, reading_time_minutes, published_at')
+          .eq('is_published', true)
+          .neq('slug', post.slug)
+          .order('published_at', { ascending: false })
+          .limit(3);
+        return fallbackData || [];
+      }
+      
+      // If not enough posts in same category, get more from other categories
+      if (data.length < 3) {
+        const { data: morePosts } = await supabase
+          .from('blog_posts')
+          .select('id, title, slug, excerpt, featured_image, category, reading_time_minutes, published_at')
+          .eq('is_published', true)
+          .neq('slug', post.slug)
+          .neq('category', post.category)
+          .order('published_at', { ascending: false })
+          .limit(3 - data.length);
+        
+        return [...data, ...(morePosts || [])];
+      }
+      
+      return data;
+    },
+    enabled: !!post?.category && !!post?.slug,
+  });
+
   // Fetch related products based on blog category
   const { data: relatedProducts } = useQuery({
     queryKey: ['related-products', post?.category],
@@ -379,6 +425,71 @@ const BlogPostPage = () => {
                             €{product.compare_at_price.toFixed(2)}
                           </span>
                         )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Related Posts */}
+        {relatedPosts && relatedPosts.length > 0 && (
+          <div className="mt-12 pt-8 border-t">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                  Meer Artikelen
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Ontdek meer interessante content
+                </p>
+              </div>
+              <Link to="/blog">
+                <Button variant="outline" size="sm">
+                  Bekijk alle artikelen
+                  <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                </Button>
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {relatedPosts.map((relatedPost) => (
+                <Link key={relatedPost.id} to={`/blog/${relatedPost.slug}`}>
+                  <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow group">
+                    <div className="aspect-video bg-muted relative overflow-hidden">
+                      {relatedPost.featured_image ? (
+                        <img
+                          src={relatedPost.featured_image}
+                          alt={relatedPost.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                          <BookOpen className="w-8 h-8 text-muted-foreground/50" />
+                        </div>
+                      )}
+                      <Badge className={`absolute top-2 left-2 capitalize ${categoryColors[relatedPost.category] || 'bg-muted'}`}>
+                        {relatedPost.category}
+                      </Badge>
+                    </div>
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                        {relatedPost.title}
+                      </h4>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                        {relatedPost.excerpt}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {format(new Date(relatedPost.published_at), 'd MMM yyyy', { locale: nl })}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {relatedPost.reading_time_minutes} min
+                        </span>
                       </div>
                     </CardContent>
                   </Card>
