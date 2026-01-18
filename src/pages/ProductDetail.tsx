@@ -37,7 +37,11 @@ interface ProductVariant {
 }
 
 const ProductDetail = () => {
+  console.log('[ProductDetail] Component rendering');
+  
   const { id } = useParams<{ id: string }>();
+  console.log('[ProductDetail] Product ID:', id);
+  
   const queryClient = useQueryClient();
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
@@ -258,7 +262,10 @@ const ProductDetail = () => {
   }, [selectedImage]);
 
 
+  console.log('[ProductDetail] isLoading:', isLoading, 'product:', product?.name || 'null');
+
   if (isLoading) {
+    console.log('[ProductDetail] Rendering loading state');
     return (
       <Layout>
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -276,6 +283,7 @@ const ProductDetail = () => {
   }
 
   if (!product) {
+    console.log('[ProductDetail] Product not found, rendering not found state');
     return (
       <Layout>
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -297,6 +305,8 @@ const ProductDetail = () => {
       </Layout>
     );
   }
+  
+  console.log('[ProductDetail] Rendering full product page for:', product.name);
 
   // Check stock status first - used by handleAddToCart and in rendering
   const inStock = product.stock !== null && product.stock > 0;
