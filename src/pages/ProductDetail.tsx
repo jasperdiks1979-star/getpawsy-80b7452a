@@ -261,6 +261,40 @@ const ProductDetail = () => {
     }
   }, [selectedImage]);
 
+  // Flatten images array (handle nested arrays from database) and filter valid URLs
+  const rawImages = product?.images && product.images.length > 0 
+    ? product.images.flat().filter((img): img is string => 
+        typeof img === 'string' && 
+        img.startsWith('http') && 
+        !img.includes('undefined')
+      )
+    : [];
+  
+  // Use image_url as fallback if no valid images
+  const images = rawImages.length > 0 
+    ? rawImages 
+    : (product?.image_url ? [product.image_url] : ['/placeholder.svg']);
+
+  // Auto-slideshow effect - moved before early returns to follow hooks rules
+  useEffect(() => {
+    if (!product || images.length <= 1 || autoplayPaused || lightboxOpen) return;
+
+    const interval = setInterval(() => {
+      setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [product, images.length, autoplayPaused, lightboxOpen]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoplayTimeoutRef.current) {
+        clearTimeout(autoplayTimeoutRef.current);
+      }
+    };
+  }, []);
+
 
   console.log('[ProductDetail] isLoading:', isLoading, 'product:', product?.name || 'null');
 
@@ -358,20 +392,6 @@ const ProductDetail = () => {
     ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
     : null;
 
-  // Flatten images array (handle nested arrays from database) and filter valid URLs
-  const rawImages = product.images && product.images.length > 0 
-    ? product.images.flat().filter((img): img is string => 
-        typeof img === 'string' && 
-        img.startsWith('http') && 
-        !img.includes('undefined')
-      )
-    : [];
-  
-  // Use image_url as fallback if no valid images
-  const images = rawImages.length > 0 
-    ? rawImages 
-    : (product.image_url ? [product.image_url] : ['/placeholder.svg']);
-
   // Check if description contains HTML
   const descriptionHasHtml = product.description?.includes('<') && product.description?.includes('>');
 
@@ -384,26 +404,6 @@ const ProductDetail = () => {
     pauseAutoplay();
     setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
   };
-
-  // Auto-slideshow effect
-  useEffect(() => {
-    if (images.length <= 1 || autoplayPaused || lightboxOpen) return;
-
-    const interval = setInterval(() => {
-      setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [images.length, autoplayPaused, lightboxOpen]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (autoplayTimeoutRef.current) {
-        clearTimeout(autoplayTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const inWishlist = isInWishlist(product.id);
 
