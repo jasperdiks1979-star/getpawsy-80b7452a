@@ -184,6 +184,11 @@ const Admin = () => {
     return new Set(existingProducts?.map(p => p.cj_product_id).filter(Boolean) || []);
   }, [existingProducts]);
 
+  // Count products that need refresh (new products with ≤1 image)
+  const newProductsCount = useMemo(() => {
+    return existingProducts?.filter(p => p.cj_product_id && (p.images?.length || 0) <= 1).length || 0;
+  }, [existingProducts]);
+
   // Search CJ products
   const { data: cjProducts, isLoading: isSearching, refetch: searchProducts } = useQuery({
     queryKey: ["cj-search", searchTerm, Array.from(importedCjIds)],
@@ -1810,15 +1815,21 @@ const Admin = () => {
                       ) : (
                         <RefreshCw className="w-4 h-4 mr-2" />
                       )}
-                      {refreshMode === "new-only" ? "Refresh New Only" : "Refresh All"}
+                      {refreshMode === "new-only" ? (
+                        <>Refresh New Only {newProductsCount > 0 && <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-xs">{newProductsCount}</Badge>}</>
+                      ) : (
+                        "Refresh All"
+                      )}
                     </Button>
                     <Select value={refreshMode} onValueChange={(value: "all" | "new-only") => setRefreshMode(value)}>
                       <SelectTrigger className="w-8 rounded-l-none border-l-0 px-1.5" disabled={refreshAllProductsMutation.isPending}>
                         <ChevronDown className="w-4 h-4" />
                       </SelectTrigger>
                       <SelectContent align="end">
-                        <SelectItem value="all">Alle producten bijwerken</SelectItem>
-                        <SelectItem value="new-only">Alleen nieuwe producten</SelectItem>
+                        <SelectItem value="all">Alle producten bijwerken ({existingProducts?.filter(p => p.cj_product_id).length || 0})</SelectItem>
+                        <SelectItem value="new-only">
+                          Alleen nieuwe producten {newProductsCount > 0 && `(${newProductsCount})`}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
