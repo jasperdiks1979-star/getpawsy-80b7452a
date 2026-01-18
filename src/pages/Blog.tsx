@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, ArrowRight, BookOpen, Sparkles, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { nl } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { SEO_KEYWORDS } from '@/lib/seo-keywords';
@@ -31,10 +31,12 @@ interface BlogPost {
 }
 
 const categoryColors: Record<string, string> = {
-  honden: 'bg-amber-100 text-amber-700',
-  katten: 'bg-pink-100 text-pink-700',
-  vissen: 'bg-blue-100 text-blue-700',
-  algemeen: 'bg-emerald-100 text-emerald-700',
+  Dogs: 'bg-amber-100 text-amber-700',
+  Cats: 'bg-pink-100 text-pink-700',
+  Fish: 'bg-blue-100 text-blue-700',
+  General: 'bg-emerald-100 text-emerald-700',
+  Health: 'bg-red-100 text-red-700',
+  Guides: 'bg-purple-100 text-purple-700',
 };
 
 const Blog = () => {
@@ -92,13 +94,13 @@ const Blog = () => {
       return response.json();
     },
     onSuccess: (data) => {
-      toast.success('Afbeelding gegenereerd!', {
-        description: 'De blog afbeelding is succesvol aangemaakt.',
+      toast.success('Image generated!', {
+        description: 'The blog image has been created successfully.',
       });
       queryClient.invalidateQueries({ queryKey: ['blog-posts'] });
     },
     onError: (error: Error) => {
-      toast.error('Genereren mislukt', {
+      toast.error('Generation failed', {
         description: error.message,
       });
     },
@@ -114,30 +116,40 @@ const Blog = () => {
     generateImageMutation.mutate(post);
   };
 
-  const categories = ['honden', 'katten', 'vissen', 'algemeen'];
+  const categories = ['Dogs', 'Cats', 'Fish', 'Health', 'Guides', 'General'];
 
   // Generate dynamic SEO based on selected category
   const seoContent = useMemo(() => {
     const categoryDescriptions: Record<string, { title: string; description: string; keywords: string[] }> = {
-      honden: {
-        title: 'Honden Blog | Expert Tips & Advies | GetPawsy',
-        description: '🐕 Ontdek expert tips over hondenvoeding, puppy training, gezondheid & gedrag. Praktisch advies van professionals voor jouw trouwe viervoeter.',
-        keywords: [...SEO_KEYWORDS.dog.general.slice(0, 6), 'honden blog', 'puppy tips', 'hondentraining', 'hondenvoeding'],
+      Dogs: {
+        title: 'Dog Blog | Expert Tips & Advice | GetPawsy',
+        description: '🐕 Discover expert tips on dog food, puppy training, health & behavior. Practical advice from professionals for your loyal companion.',
+        keywords: [...SEO_KEYWORDS.dog.general.slice(0, 6), 'dog blog', 'puppy tips', 'dog training', 'dog food'],
       },
-      katten: {
-        title: 'Katten Blog | Verzorging & Gedragstips | GetPawsy',
-        description: '🐱 Alles over kattenverzorging, voeding, gedrag & gezondheid. Expert artikelen voor de beste zorg voor jouw kat.',
-        keywords: [...SEO_KEYWORDS.cat.general.slice(0, 6), 'katten blog', 'kattenverzorging', 'kattengedrag', 'kattenvoeding'],
+      Cats: {
+        title: 'Cat Blog | Care & Behavior Tips | GetPawsy',
+        description: '🐱 Everything about cat care, food, behavior & health. Expert articles for the best care for your cat.',
+        keywords: [...SEO_KEYWORDS.cat.general.slice(0, 6), 'cat blog', 'cat care', 'cat behavior', 'cat food'],
       },
-      vissen: {
+      Fish: {
         title: 'Aquarium Blog | Beginners Guide & Tips | GetPawsy',
-        description: '🐠 Van aquarium setup tot visverzorging. Complete gids voor beginners en ervaren aquariumliefhebbers.',
-        keywords: ['aquarium tips', 'vissen verzorging', 'aquarium beginners', 'tropische vissen', 'aquarium onderhoud'],
+        description: '🐠 From aquarium setup to fish care. Complete guide for beginners and experienced aquarium enthusiasts.',
+        keywords: ['aquarium tips', 'fish care', 'aquarium beginners', 'tropical fish', 'aquarium maintenance'],
       },
-      algemeen: {
-        title: 'Huisdier Blog | Algemene Tips & Advies | GetPawsy',
-        description: '🐾 Algemene huisdierverzorging tips voor alle diersoorten. Van voeding tot welzijn - alles wat je moet weten.',
-        keywords: [...SEO_KEYWORDS.primary.slice(0, 8), 'huisdier tips', 'dierenverzorging'],
+      Health: {
+        title: 'Pet Health Blog | Wellness Tips & Advice | GetPawsy',
+        description: '🏥 Expert pet health advice and wellness tips. Learn about common health issues and preventive care for your pets.',
+        keywords: ['pet health', 'pet wellness', 'vet advice', 'pet care tips', 'pet nutrition'],
+      },
+      Guides: {
+        title: 'Pet Guides | Complete How-To Articles | GetPawsy',
+        description: '📚 Comprehensive pet guides for every pet owner. From first-time tips to advanced care techniques.',
+        keywords: ['pet guides', 'pet how-to', 'pet care guides', 'first-time pet owner', 'pet tips'],
+      },
+      General: {
+        title: 'Pet Blog | General Tips & Advice | GetPawsy',
+        description: '🐾 General pet care tips for all animal types. From nutrition to wellness - everything you need to know.',
+        keywords: [...SEO_KEYWORDS.primary.slice(0, 8), 'pet tips', 'animal care'],
       },
     };
 
@@ -146,9 +158,9 @@ const Blog = () => {
     }
 
     return {
-      title: 'Blog | Huisdierverzorging Tips & Advies | GetPawsy',
-      description: 'Ontdek expert tips over huisdierverzorging. Artikelen over hondenvoeding, kattenverzorging, aquarium tips en meer. Gratis advies voor huisdiereigenaren.',
-      keywords: ['huisdier blog', 'hondenvoeding tips', 'kattenverzorging', 'aquarium beginners', 'puppy training', 'huisdier advies'],
+      title: 'Blog | Pet Care Tips & Advice | GetPawsy',
+      description: 'Discover expert tips on pet care. Articles about dog food, cat care, aquarium tips and more. Free advice for pet owners.',
+      keywords: ['pet blog', 'dog food tips', 'cat care', 'aquarium beginners', 'puppy training', 'pet advice'],
     };
   }, [selectedCategory]);
 
@@ -169,13 +181,13 @@ const Blog = () => {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
             <BookOpen className="w-4 h-4" />
-            Huisdier Blog
+            Pet Blog
           </div>
           <h1 className="text-3xl md:text-4xl font-display font-bold mb-4">
-            Tips & Advies voor Huisdiereigenaren
+            Tips & Advice for Pet Owners
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Expert artikelen over verzorging, voeding en training van je huisdieren.
+            Expert articles on care, nutrition, and training for your pets.
           </p>
         </div>
 
@@ -187,13 +199,13 @@ const Blog = () => {
               !selectedCategory ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
             }`}
           >
-            Alle artikelen
+            All articles
           </button>
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-full text-sm font-medium capitalize transition-colors ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 selectedCategory === cat ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
               }`}
             >
@@ -245,19 +257,19 @@ const Blog = () => {
                         {generatingImageFor === post.id ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                            Genereren...
+                            Generating...
                           </>
                         ) : (
                           <>
                             <Sparkles className="w-4 h-4 mr-1" />
-                            {post.featured_image ? 'Nieuwe afbeelding' : 'Genereer afbeelding'}
+                            {post.featured_image ? 'New image' : 'Generate image'}
                           </>
                         )}
                       </Button>
                     )}
                   </div>
                   <CardContent className="p-5">
-                    <Badge className={`mb-3 capitalize ${categoryColors[post.category] || 'bg-muted'}`}>
+                    <Badge className={`mb-3 ${categoryColors[post.category] || 'bg-muted'}`}>
                       {post.category}
                     </Badge>
                     <h2 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
@@ -270,7 +282,7 @@ const Blog = () => {
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {format(new Date(post.published_at), 'd MMM yyyy', { locale: nl })}
+                          {format(new Date(post.published_at), 'MMM d, yyyy', { locale: enUS })}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -287,7 +299,7 @@ const Blog = () => {
         ) : (
           <div className="text-center py-12">
             <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Nog geen artikelen in deze categorie.</p>
+            <p className="text-muted-foreground">No articles in this category yet.</p>
           </div>
         )}
       </div>
