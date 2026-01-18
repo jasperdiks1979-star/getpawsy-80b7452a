@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Filter, SlidersHorizontal, Loader2, X, Eye } from 'lucide-react';
+import { Filter, SlidersHorizontal, Loader2, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard, Product } from '@/components/products/ProductCard';
@@ -368,21 +368,10 @@ const Products = () => {
                       transition={{ delay: Math.min(index * 0.05, 0.3) }}
                       className="relative group"
                     >
-                      <ProductCard product={product as Product} />
-                      {/* Quick View Button */}
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity rounded-full gap-1.5 z-10 shadow-lg"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setQuickViewProduct(product as Product);
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                        Quick View
-                      </Button>
+                      <ProductCard 
+                        product={product as Product} 
+                        onQuickView={() => setQuickViewProduct(product as Product)}
+                      />
                     </motion.div>
                   ))}
                 </div>
