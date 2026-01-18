@@ -1,7 +1,6 @@
-import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useRef, memo } from 'react';
+import { Link } from 'react-router-dom'
 import { ShoppingCart, Heart, Eye } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
 import { useCartAnimation } from '@/contexts/CartAnimationContext';
 import { useWishlist } from '@/contexts/WishlistContext';
@@ -37,7 +36,7 @@ interface ProductCardProps {
   product: Product;
 }
 
-export const ProductCard = ({ product }: ProductCardProps) => {
+export const ProductCard = memo(({ product }: ProductCardProps) => {
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -90,10 +89,8 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
   return (
     <Link to={`/product/${product.id}`} className="group block">
-      <motion.div 
-        className="relative bg-card rounded-2xl overflow-hidden shadow-card transition-shadow duration-300 hover:shadow-card-hover"
-        whileHover={{ y: -4 }}
-        transition={{ duration: 0.2 }}
+      <div 
+        className="relative bg-card rounded-2xl overflow-hidden shadow-card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-1"
       >
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-muted">
@@ -204,7 +201,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             <p className="text-xs text-destructive mt-3 font-medium">Out of Stock</p>
           )}
         </div>
-      </motion.div>
+      </div>
     </Link>
   );
-};
+});
