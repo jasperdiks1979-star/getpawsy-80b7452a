@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, memo, forwardRef } from 'react';
+import { useState, useRef, useEffect, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps {
@@ -11,7 +11,7 @@ interface OptimizedImageProps {
   onLoad?: () => void;
 }
 
-export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProps>(({
+export const OptimizedImage = forwardRef<HTMLDivElement, OptimizedImageProps>(({
   src,
   alt,
   className,
@@ -113,6 +113,6 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
       )}
     </div>
   );
-}));
+});
 
 OptimizedImage.displayName = 'OptimizedImage';
