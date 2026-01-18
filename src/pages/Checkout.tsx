@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
+import { CartUpsell } from '@/components/cart/CartUpsell';
 
 const Checkout = () => {
   const { items, totalPrice } = useCart();
@@ -353,6 +354,15 @@ const Checkout = () => {
               <p className="text-xs text-muted-foreground text-center mt-4">
                 🔒 Secure payment via Stripe
               </p>
+              
+              {/* Compact Upsell */}
+              <div className="mt-6 pt-6 border-t">
+                <CartUpsell 
+                  currentItemIds={items.map(item => item.id)} 
+                  variant="compact" 
+                  maxItems={3} 
+                />
+              </div>
             </div>
           </div>
         </div>
