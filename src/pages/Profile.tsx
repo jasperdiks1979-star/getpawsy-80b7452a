@@ -1,15 +1,14 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { PasskeyManager } from '@/components/auth/PasskeyManager';
-import { User, Mail, Calendar, Shield, ArrowLeft, Package, ChevronRight, RotateCcw } from 'lucide-react';
+import { User, Mail, Calendar, Shield, ArrowLeft, Package, ChevronRight, RotateCcw, LogOut } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatDistanceToNow } from 'date-fns';
-import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -24,8 +23,14 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Profile = () => {
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isLoading, signOut } = useAuth();
   const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+    toast.success('Je bent uitgelogd');
+  };
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -190,6 +195,25 @@ const Profile = () => {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+            </CardContent>
+          </Card>
+
+          {/* Sign Out */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LogOut className="w-5 h-5" />
+                Uitloggen
+              </CardTitle>
+              <CardDescription>
+                Log uit van je account
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" onClick={handleSignOut} className="gap-2">
+                <LogOut className="w-4 h-4" />
+                Uitloggen
+              </Button>
             </CardContent>
           </Card>
         </div>
