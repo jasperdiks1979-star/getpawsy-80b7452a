@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, Send, ArrowRight } from 'lucide-react';
+import { Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, Send, ArrowRight, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,17 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import logoIcon from '@/assets/logo-getpawsy.png';
 
 const emailSchema = z.string().trim().email({ message: 'Invalid email address' }).max(255);
@@ -269,6 +280,36 @@ export const Footer = () => {
                 <Link to="/cookies" className="hover:text-primary transition-colors">
                   Cookie Policy
                 </Link>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button className="hover:text-primary transition-colors inline-flex items-center gap-1">
+                      <RotateCcw className="w-3 h-3" />
+                      Reset App Data
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Reset App Data?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will clear your shopping cart, wishlist, and recently viewed products. 
+                        This can help fix display issues but cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          localStorage.clear();
+                          toast.success('App data cleared! Refreshing...');
+                          setTimeout(() => window.location.reload(), 1000);
+                        }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Reset Data
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
 
               {/* Payment methods placeholder */}
