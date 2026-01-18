@@ -131,7 +131,7 @@ const Auth = () => {
                   email={loginEmail} 
                   variant="login" 
                   onSuccess={() => {
-                    toast.success('Welkom terug!');
+                    toast.success('Welcome back!');
                     navigate('/');
                   }} 
                 />

@@ -769,10 +769,10 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     // E-commerce data
     if (ecommerceData.transactions > 0 || ecommerceData.revenue > 0) {
       csvContent += 'E-COMMERCE\n';
-      csvContent += 'Metric,Waarde\n';
-      csvContent += `Transacties,${ecommerceData.transactions}\n`;
-      csvContent += `Omzet,€${ecommerceData.revenue.toFixed(2)}\n`;
-      csvContent += `Gem. Orderwaarde,€${ecommerceData.avgOrderValue.toFixed(2)}\n`;
+      csvContent += 'Metric,Value\n';
+      csvContent += `Transactions,${ecommerceData.transactions}\n`;
+      csvContent += `Revenue,$${ecommerceData.revenue.toFixed(2)}\n`;
+      csvContent += `Avg. Order Value,$${ecommerceData.avgOrderValue.toFixed(2)}\n`;
       csvContent += '\n';
     }
     
@@ -890,18 +890,18 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
             <div class="metric-value">${ecommerceData.transactions}</div>
           </div>
           <div class="metric-card">
-            <div class="metric-title">Omzet</div>
-            <div class="metric-value">€${ecommerceData.revenue.toFixed(2)}</div>
+            <div class="metric-title">Revenue</div>
+            <div class="metric-value">$${ecommerceData.revenue.toFixed(2)}</div>
           </div>
           <div class="metric-card">
-            <div class="metric-title">Gem. Orderwaarde</div>
-            <div class="metric-value">€${ecommerceData.avgOrderValue.toFixed(2)}</div>
+            <div class="metric-title">Avg. Order Value</div>
+            <div class="metric-value">$${ecommerceData.avgOrderValue.toFixed(2)}</div>
           </div>
         </div>
         ` : ''}
 
         ${demographicsData.trafficSources.length > 0 ? `
-        <h2>Traffic Bronnen</h2>
+        <h2>Traffic Sources</h2>
         <table>
           <tr><th>Kanaal</th><th>Sessies</th><th>Gebruikers</th><th>Bounce Rate</th></tr>
           ${demographicsData.trafficSources.slice(0, 5).map(s => `<tr><td>${s.channel}</td><td>${s.sessions.toLocaleString()}</td><td>${s.users.toLocaleString()}</td><td>${s.bounceRate.toFixed(1)}%</td></tr>`).join('')}
@@ -1558,9 +1558,9 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Layers className="w-5 h-5" />
-                    Verkeersbronnen
+                    Traffic Sources
                   </CardTitle>
-                  <CardDescription>Waar komen je bezoekers vandaan</CardDescription>
+                  <CardDescription>Where your visitors come from</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {isLoading ? (
@@ -1715,7 +1715,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
             <Card>
               <CardHeader>
                 <CardTitle>Top Landing Pages</CardTitle>
-                <CardDescription>Pagina's waar bezoekers binnenkomen</CardDescription>
+                <CardDescription>Pages where visitors enter your site</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -1788,8 +1788,8 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                     )}
                   </div>
                   <div className="text-center p-4 bg-green-500/10 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">€{conversionsData.funnel.revenue.toFixed(0)}</div>
-                    <p className="text-sm text-muted-foreground">Omzet</p>
+                    <div className="text-2xl font-bold text-green-600">${conversionsData.funnel.revenue.toFixed(0)}</div>
+                    <p className="text-sm text-muted-foreground">Revenue</p>
                     {conversionsData.funnel.sessions > 0 && (
                       <span className="text-xs text-green-600">
                         CR: {((conversionsData.funnel.purchases / conversionsData.funnel.sessions) * 100).toFixed(2)}%
@@ -1829,14 +1829,14 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="date" className="text-xs" />
-                      <YAxis className="text-xs" tickFormatter={(value) => `€${value}`} />
+                      <YAxis className="text-xs" tickFormatter={(value) => `$${value}`} />
                       <Tooltip 
                         contentStyle={{ 
                           backgroundColor: "hsl(var(--card))",
                           border: "1px solid hsl(var(--border))",
                           borderRadius: "8px"
                         }}
-                        formatter={(value: number) => [`€${value.toFixed(2)}`, 'Omzet']}
+                        formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
                       />
                       <Area
                         type="monotone"
@@ -1877,10 +1877,10 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                         <div key={source.channel} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                           <div>
                             <p className="font-medium">{source.channel}</p>
-                            <p className="text-sm text-muted-foreground">{source.sessions.toLocaleString()} sessies</p>
+                            <p className="text-sm text-muted-foreground">{source.sessions.toLocaleString()} sessions</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-green-600">€{source.revenue.toFixed(2)}</p>
+                            <p className="font-semibold text-green-600">${source.revenue.toFixed(2)}</p>
                             <p className="text-xs text-muted-foreground">{conversionRate}% CR</p>
                           </div>
                         </div>
@@ -1927,22 +1927,22 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
           {/* E-commerce Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
-              title="Transacties"
+              title="Transactions"
               value={ecommerceData.transactions}
               icon={<ShoppingCart className="w-5 h-5" />}
-              subtitle="Vandaag"
+              subtitle="Today"
               loading={isLoading}
             />
             <MetricCard
-              title="Omzet"
-              value={`€${ecommerceData.revenue.toFixed(2)}`}
+              title="Revenue"
+              value={`$${ecommerceData.revenue.toFixed(2)}`}
               icon={<TrendingUp className="w-5 h-5" />}
-              subtitle="Vandaag"
+              subtitle="Today"
               loading={isLoading}
             />
             <MetricCard
-              title="Gem. Orderwaarde"
-              value={`€${ecommerceData.avgOrderValue.toFixed(2)}`}
+              title="Avg. Order Value"
+              value={`$${ecommerceData.avgOrderValue.toFixed(2)}`}
               icon={<BarChart3 className="w-5 h-5" />}
               loading={isLoading}
             />
@@ -1978,12 +1978,12 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                         <span className="text-2xl font-bold text-muted-foreground">#{index + 1}</span>
                         <div>
                           <p className="font-medium truncate max-w-[200px]">{product.name}</p>
-                          <p className="text-sm text-muted-foreground">{product.sales} verkocht</p>
+                          <p className="text-sm text-muted-foreground">{product.sales} sold</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-primary">€{product.revenue.toFixed(2)}</p>
-                        <p className="text-sm text-muted-foreground">omzet</p>
+                        <p className="font-semibold text-primary">${product.revenue.toFixed(2)}</p>
+                        <p className="text-sm text-muted-foreground">revenue</p>
                       </div>
                     </div>
                   ))}

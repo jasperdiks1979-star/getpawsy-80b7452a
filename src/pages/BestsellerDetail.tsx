@@ -434,7 +434,7 @@ const BestsellerDetail = () => {
         <title>{bestseller.seo_title || `${product.name} | GetPawsy Bestseller`}</title>
         <meta 
           name="description" 
-          content={bestseller.seo_description || product.description || `Discover ${product.name} - one of our bestsellers. Buy now with free shipping on orders over €50.`}
+          content={bestseller.seo_description || product.description || `Discover ${product.name} - one of our bestsellers. Buy now with free shipping on orders over $50.`}
         />
         {bestseller.meta_keywords && (
           <meta name="keywords" content={bestseller.meta_keywords.join(', ')} />
@@ -771,11 +771,11 @@ const BestsellerDetail = () => {
                 <div className="p-5 bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl border border-primary/10">
                   <div className="flex items-end gap-3 mb-2">
                     <span className="text-4xl lg:text-5xl font-bold text-primary">
-                      €{product.price.toFixed(2)}
+                      ${product.price.toFixed(2)}
                     </span>
                     {product.compare_at_price && (
                       <span className="text-xl text-muted-foreground line-through mb-1">
-                        €{product.compare_at_price.toFixed(2)}
+                        ${product.compare_at_price.toFixed(2)}
                       </span>
                     )}
                     {discount > 0 && (
@@ -793,7 +793,7 @@ const BestsellerDetail = () => {
                   {discount > 0 && product.compare_at_price && (
                     <p className="text-sm text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
                       <Gift className="w-4 h-4" />
-                      You save €{(product.compare_at_price - product.price).toFixed(2)} on this order!
+                      You save ${(product.compare_at_price - product.price).toFixed(2)} on this order!
                     </p>
                   )}
                 </div>
@@ -881,7 +881,7 @@ const BestsellerDetail = () => {
                     </Button>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    Total: <span className="font-semibold text-foreground">€{(product.price * quantity).toFixed(2)}</span>
+                    Total: <span className="font-semibold text-foreground">${(product.price * quantity).toFixed(2)}</span>
                   </span>
                 </div>
 
@@ -933,7 +933,7 @@ const BestsellerDetail = () => {
                     </div>
                     <div className="text-sm">
                       <p className="font-semibold">Free Shipping</p>
-                      <p className="text-muted-foreground text-xs">Orders over €50</p>
+                      <p className="text-muted-foreground text-xs">Orders over $50</p>
                     </div>
                   </motion.div>
                   <motion.div 
@@ -1180,7 +1180,7 @@ const BestsellerDetail = () => {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-5 pl-13">
-                      We offer free shipping on all orders over €50. Standard delivery takes 5-10 business days. 
+                      We offer free shipping on all orders over $50. Standard delivery takes 5-10 business days. 
                       Once your order is shipped, you'll receive a tracking number to monitor your package's journey to your doorstep.
                     </AccordionContent>
                   </AccordionItem>
@@ -1344,11 +1344,11 @@ const BestsellerDetail = () => {
                               </h3>
                               <div className="flex items-center gap-2">
                                 <span className="text-lg font-bold text-primary">
-                                  €{relatedProduct.price?.toFixed(2)}
+                                  ${relatedProduct.price?.toFixed(2)}
                                 </span>
                                 {relatedProduct.compare_at_price && relatedProduct.price && relatedProduct.compare_at_price > relatedProduct.price && (
                                   <span className="text-sm text-muted-foreground line-through">
-                                    €{relatedProduct.compare_at_price.toFixed(2)}
+                                    ${relatedProduct.compare_at_price.toFixed(2)}
                                   </span>
                                 )}
                               </div>
@@ -1399,7 +1399,7 @@ const BestsellerDetail = () => {
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
                 Join thousands of happy pet owners. Order now and give your loyal companion the care they deserve.
-                <span className="block mt-2 text-primary font-medium">Free shipping on orders over €50!</span>
+                <span className="block mt-2 text-primary font-medium">Free shipping on orders over $50!</span>
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -1411,7 +1411,7 @@ const BestsellerDetail = () => {
                     disabled={!inStock}
                   >
                     <ShoppingCart className="w-6 h-6" />
-                    Order Now - €{(product.price * quantity).toFixed(2)}
+                    Order Now - ${(product.price * quantity).toFixed(2)}
                   </Button>
                 </motion.div>
                 
@@ -1494,9 +1494,9 @@ const BestsellerDetail = () => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{product?.name}</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-primary">€{product?.price.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-primary">${product?.price.toFixed(2)}</span>
                     {product?.compare_at_price && product.compare_at_price > product.price && (
-                      <span className="text-xs text-muted-foreground line-through">€{product.compare_at_price.toFixed(2)}</span>
+                      <span className="text-xs text-muted-foreground line-through">${product.compare_at_price.toFixed(2)}</span>
                     )}
                   </div>
                 </div>

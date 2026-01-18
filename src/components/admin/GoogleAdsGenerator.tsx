@@ -139,10 +139,10 @@ export function GoogleAdsGenerator() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["saved-google-ads"] });
-      toast.success("Advertentie opgeslagen!");
+      toast.success("Ad saved!");
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Opslaan mislukt");
+      toast.error(error instanceof Error ? error.message : "Save failed");
     },
   });
 
@@ -159,10 +159,10 @@ export function GoogleAdsGenerator() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["saved-google-ads"] });
       setSelectedSavedAd(null);
-      toast.success("Advertentie verwijderd");
+      toast.success("Ad deleted");
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Verwijderen mislukt");
+      toast.error(error instanceof Error ? error.message : "Delete failed");
     },
   });
 
@@ -177,7 +177,7 @@ export function GoogleAdsGenerator() {
 
   const generateAds = async () => {
     if (!productName.trim()) {
-      toast.error("Vul een productnaam in");
+      toast.error("Please enter a product name");
       return;
     }
 

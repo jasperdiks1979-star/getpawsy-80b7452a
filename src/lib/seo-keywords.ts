@@ -694,19 +694,19 @@ export function generateProductKeywords(
 // Smart meta description templates based on product type
 const metaTemplates = {
   benefit: (productName: string, benefit: string, price?: number) =>
-    `${productName} - ${benefit}. ${price ? `From €${price.toFixed(2)}. ` : ''}Free shipping on orders over €50. Shop now at GetPawsy!`,
+    `${productName} - ${benefit}. ${price ? `From $${price.toFixed(2)}. ` : ''}Free shipping on orders over $50. Shop now at GetPawsy!`,
   
   emotional: (productName: string, hook: string, price?: number) =>
-    `${productName} - ${hook}. ${price ? `Starting at €${price.toFixed(2)}. ` : ''}Premium quality, vet-approved. Order today at GetPawsy!`,
+    `${productName} - ${hook}. ${price ? `Starting at $${price.toFixed(2)}. ` : ''}Premium quality, vet-approved. Order today at GetPawsy!`,
   
   problemSolving: (productName: string, problem: string, solution: string, price?: number) =>
-    `Struggling with ${problem}? ${productName} is the ${solution}. ${price ? `Only €${price.toFixed(2)}. ` : ''}Shop at GetPawsy - free shipping!`,
+    `Struggling with ${problem}? ${productName} is the ${solution}. ${price ? `Only $${price.toFixed(2)}. ` : ''}Shop at GetPawsy - free shipping!`,
   
   lifestyle: (productName: string, audience: string, benefit: string, price?: number) =>
-    `Perfect for ${audience}: ${productName} offers ${benefit}. ${price ? `From €${price.toFixed(2)}. ` : ''}Discover at GetPawsy today!`,
+    `Perfect for ${audience}: ${productName} offers ${benefit}. ${price ? `From $${price.toFixed(2)}. ` : ''}Discover at GetPawsy today!`,
   
   premium: (productName: string, features: string, price?: number) =>
-    `Premium ${productName} with ${features}. ${price ? `Starting at €${price.toFixed(2)}. ` : ''}Eco-friendly & vet-approved. Shop GetPawsy!`,
+    `Premium ${productName} with ${features}. ${price ? `Starting at $${price.toFixed(2)}. ` : ''}Eco-friendly & vet-approved. Shop GetPawsy!`,
 };
 
 // Generate smart meta description with niche keywords
@@ -755,13 +755,13 @@ export function generateCategoryMetaDescription(categoryName: string): string {
   const categoryLower = categoryName.toLowerCase();
   
   const categoryDescriptions: Record<string, string> = {
-    dog: 'Discover premium dog supplies at GetPawsy. From cozy beds to durable toys, we have everything your furry friend needs. Vet-approved, eco-friendly products with free shipping over €50.',
-    cat: 'Shop the best cat products at GetPawsy. Cat trees, toys, feeding bowls & more. Premium quality, designed for happy cats. Free shipping on orders over €50!',
-    bed: 'Find the perfect pet bed at GetPawsy. Orthopedic, cooling, and cozy options for dogs & cats of all sizes. Help your pet sleep better. Free shipping over €50!',
-    toy: 'Keep your pet entertained with premium toys from GetPawsy. Interactive, durable, and mentally stimulating options. Say goodbye to boredom! Free shipping over €50.',
-    food: 'Premium pet feeding solutions at GetPawsy. Elevated bowls, slow feeders, automatic dispensers & more. Make mealtime special. Free shipping over €50!',
-    grooming: 'Professional pet grooming supplies at GetPawsy. Brushes, shampoos, nail care & more. Pamper your pet at home. Free shipping on orders over €50!',
-    collar: 'Stylish and safe pet collars & harnesses at GetPawsy. From leather to reflective designs. Find the perfect fit. Free shipping over €50!',
+    dog: 'Discover premium dog supplies at GetPawsy. From cozy beds to durable toys, we have everything your furry friend needs. Vet-approved, eco-friendly products with free shipping over $50.',
+    cat: 'Shop the best cat products at GetPawsy. Cat trees, toys, feeding bowls & more. Premium quality, designed for happy cats. Free shipping on orders over $50!',
+    bed: 'Find the perfect pet bed at GetPawsy. Orthopedic, cooling, and cozy options for dogs & cats of all sizes. Help your pet sleep better. Free shipping over $50!',
+    toy: 'Keep your pet entertained with premium toys from GetPawsy. Interactive, durable, and mentally stimulating options. Say goodbye to boredom! Free shipping over $50.',
+    food: 'Premium pet feeding solutions at GetPawsy. Elevated bowls, slow feeders, automatic dispensers & more. Make mealtime special. Free shipping over $50!',
+    grooming: 'Professional pet grooming supplies at GetPawsy. Brushes, shampoos, nail care & more. Pamper your pet at home. Free shipping on orders over $50!',
+    collar: 'Stylish and safe pet collars & harnesses at GetPawsy. From leather to reflective designs. Find the perfect fit. Free shipping over $50!',
   };
   
   for (const [key, description] of Object.entries(categoryDescriptions)) {
@@ -770,16 +770,16 @@ export function generateCategoryMetaDescription(categoryName: string): string {
     }
   }
   
-  return `Shop premium ${categoryName} at GetPawsy. Quality pet products, vet-approved and eco-friendly. Free shipping on orders over €50. Your pet deserves the best!`;
+  return `Shop premium ${categoryName} at GetPawsy. Quality pet products, vet-approved and eco-friendly. Free shipping on orders over $50. Your pet deserves the best!`;
 }
 
 // Generate blog post meta description
 export function generateBlogMetaDescription(title: string, excerpt: string, category: string): string {
   const categoryEmoji: Record<string, string> = {
-    honden: '🐕',
-    katten: '🐱',
-    vissen: '🐠',
-    algemeen: '🐾',
+    dogs: '🐕',
+    cats: '🐱',
+    fish: '🐠',
+    general: '🐾',
   };
   
   const emoji = categoryEmoji[category] || '🐾';

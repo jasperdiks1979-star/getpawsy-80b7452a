@@ -38,25 +38,25 @@ export const ProductCompareDialog = ({
 
   const comparisonFields = [
     { 
-      label: "Afbeelding", 
+      label: "Image", 
       render: (p: CJProduct) => (
         <img src={p.productImage} alt={p.productNameEn} className="w-full h-32 object-cover rounded-lg" />
       )
     },
     { 
-      label: "Naam", 
+      label: "Name", 
       render: (p: CJProduct) => (
         <span className="text-sm font-medium line-clamp-3">{p.productNameEn}</span>
       )
     },
     { 
-      label: "Categorie", 
+      label: "Category", 
       render: (p: CJProduct) => (
         <Badge variant="outline" className="text-xs">{p.categoryName}</Badge>
       )
     },
     { 
-      label: "Gewicht", 
+      label: "Weight", 
       render: (p: CJProduct) => {
         const weight = typeof p.productWeight === 'string' 
           ? parseFloat(String(p.productWeight).split('-')[0]) 
@@ -65,7 +65,7 @@ export const ProductCompareDialog = ({
       }
     },
     { 
-      label: "Kostprijs", 
+      label: "Cost Price", 
       render: (p: CJProduct) => {
         const cost = typeof p.sellPrice === 'string' 
           ? parseFloat(String(p.sellPrice).split('-')[0]) 
@@ -74,7 +74,7 @@ export const ProductCompareDialog = ({
       }
     },
     { 
-      label: "Verkoopprijs", 
+      label: "Selling Price", 
       render: (p: CJProduct) => {
         const cost = typeof p.sellPrice === 'string' 
           ? parseFloat(String(p.sellPrice).split('-')[0]) 
@@ -87,7 +87,7 @@ export const ProductCompareDialog = ({
       }
     },
     { 
-      label: "Totale Kost", 
+      label: "Total Cost", 
       render: (p: CJProduct) => {
         const cost = typeof p.sellPrice === 'string' 
           ? parseFloat(String(p.sellPrice).split('-')[0]) 
@@ -113,7 +113,7 @@ export const ProductCompareDialog = ({
       }
     },
     { 
-      label: "Marge", 
+      label: "Margin", 
       render: (p: CJProduct) => {
         const cost = typeof p.sellPrice === 'string' 
           ? parseFloat(String(p.sellPrice).split('-')[0]) 
@@ -163,12 +163,12 @@ export const ProductCompareDialog = ({
               )}
               <Button variant="ghost" size="sm" onClick={onClearAll}>
                 <Trash2 className="w-4 h-4 mr-1" />
-                Wis alles
+                Clear All
               </Button>
             </div>
           </DialogTitle>
           <DialogDescription>
-            Vergelijk tot 4 producten naast elkaar om de beste keuze te maken.
+            Compare up to 4 products side by side to make the best choice.
           </DialogDescription>
         </DialogHeader>
         
