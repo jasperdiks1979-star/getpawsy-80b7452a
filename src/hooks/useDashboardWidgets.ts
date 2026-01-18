@@ -170,7 +170,8 @@ const STORAGE_KEY = 'dashboard-widgets-config';
 const CUSTOM_PRESETS_KEY = 'dashboard-custom-presets';
 
 export const useDashboardWidgets = () => {
-  const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
+  // Initialize with default widgets to prevent empty array issues
+  const [widgets, setWidgets] = useState<DashboardWidget[]>(DEFAULT_WIDGETS);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [customPresets, setCustomPresets] = useState<LayoutPreset[]>([]);
@@ -181,13 +182,20 @@ export const useDashboardWidgets = () => {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        // Merge with defaults to ensure new widgets are added
-        const merged = DEFAULT_WIDGETS.map(defaultWidget => {
-          const storedWidget = parsed.find((w: DashboardWidget) => w.id === defaultWidget.id);
-          return storedWidget ? { ...defaultWidget, ...storedWidget } : defaultWidget;
-        });
-        setWidgets(merged);
+        // Validate that parsed is an array
+        if (!Array.isArray(parsed)) {
+          localStorage.removeItem(STORAGE_KEY);
+          setWidgets(DEFAULT_WIDGETS);
+        } else {
+          // Merge with defaults to ensure new widgets are added
+          const merged = DEFAULT_WIDGETS.map(defaultWidget => {
+            const storedWidget = parsed.find((w: DashboardWidget) => w && w.id === defaultWidget.id);
+            return storedWidget ? { ...defaultWidget, ...storedWidget } : defaultWidget;
+          });
+          setWidgets(merged);
+        }
       } catch {
+        localStorage.removeItem(STORAGE_KEY);
         setWidgets(DEFAULT_WIDGETS);
       }
     } else {
@@ -198,8 +206,16 @@ export const useDashboardWidgets = () => {
     const storedPresets = localStorage.getItem(CUSTOM_PRESETS_KEY);
     if (storedPresets) {
       try {
-        setCustomPresets(JSON.parse(storedPresets));
+        const parsedPresets = JSON.parse(storedPresets);
+        // Validate that parsed presets is an array
+        if (Array.isArray(parsedPresets)) {
+          setCustomPresets(parsedPresets.filter((p: LayoutPreset) => p && p.id));
+        } else {
+          localStorage.removeItem(CUSTOM_PRESETS_KEY);
+          setCustomPresets([]);
+        }
       } catch {
+        localStorage.removeItem(CUSTOM_PRESETS_KEY);
         setCustomPresets([]);
       }
     }
