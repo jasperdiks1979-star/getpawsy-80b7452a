@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Clock, ArrowLeft, User, Share2, BookOpen, ShoppingBag } from 'lucide-react';
 import { format } from 'date-fns';
-import { nl } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { generateBlogMetaDescription } from '@/lib/seo-keywords';
 
 interface BlogPost {
@@ -40,9 +40,14 @@ interface Product {
 
 const categoryColors: Record<string, string> = {
   honden: 'bg-amber-100 text-amber-700',
+  dogs: 'bg-amber-100 text-amber-700',
   katten: 'bg-pink-100 text-pink-700',
+  cats: 'bg-pink-100 text-pink-700',
   vissen: 'bg-blue-100 text-blue-700',
+  fish: 'bg-blue-100 text-blue-700',
   algemeen: 'bg-emerald-100 text-emerald-700',
+  guides: 'bg-emerald-100 text-emerald-700',
+  general: 'bg-emerald-100 text-emerald-700',
 };
 
 // Map blog categories to product categories
@@ -243,12 +248,12 @@ const BlogPostPage = () => {
       <Layout>
         <div className="container py-12 text-center">
           <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Artikel niet gevonden</h1>
-          <p className="text-muted-foreground mb-6">Dit artikel bestaat niet of is niet meer beschikbaar.</p>
+          <h1 className="text-2xl font-bold mb-2">Article Not Found</h1>
+          <p className="text-muted-foreground mb-6">This article doesn't exist or is no longer available.</p>
           <Link to="/blog">
             <Button>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Terug naar blog
+              Back to Blog
             </Button>
           </Link>
         </div>
@@ -310,7 +315,7 @@ const BlogPostPage = () => {
         {/* Back Button */}
         <Link to="/blog" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" />
-          Terug naar blog
+          Back to Blog
         </Link>
 
         {/* Header */}
@@ -331,15 +336,15 @@ const BlogPostPage = () => {
             </span>
             <span className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              {format(new Date(post.published_at), 'd MMMM yyyy', { locale: nl })}
+              {format(new Date(post.published_at), 'MMMM d, yyyy', { locale: enUS })}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              {post.reading_time_minutes} min leestijd
+              {post.reading_time_minutes} min read
             </span>
             <Button variant="ghost" size="sm" onClick={handleShare} className="ml-auto">
               <Share2 className="w-4 h-4 mr-2" />
-              Delen
+              Share
             </Button>
           </div>
         </header>
@@ -356,7 +361,7 @@ const BlogPostPage = () => {
         )}
 
         {/* Content */}
-        <div className="prose prose-lg max-w-none">
+        <div className="prose prose-lg max-w-none blog-article-content">
           {renderContent(post.content)}
         </div>
 
@@ -381,15 +386,15 @@ const BlogPostPage = () => {
               <div>
                 <h3 className="text-xl font-semibold flex items-center gap-2">
                   <ShoppingBag className="w-5 h-5 text-primary" />
-                  Aanbevolen Producten
+                  Recommended Products
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Producten die passen bij dit artikel
+                  Products related to this article
                 </p>
               </div>
               <Link to="/products">
                 <Button variant="outline" size="sm">
-                  Bekijk alles
+                  View All
                   <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
                 </Button>
               </Link>
@@ -445,15 +450,15 @@ const BlogPostPage = () => {
               <div>
                 <h3 className="text-xl font-semibold flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-primary" />
-                  Meer Artikelen
+                  More Articles
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Ontdek meer interessante content
+                  Discover more interesting content
                 </p>
               </div>
               <Link to="/blog">
                 <Button variant="outline" size="sm">
-                  Bekijk alle artikelen
+                  View All Articles
                   <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
                 </Button>
               </Link>
@@ -488,7 +493,7 @@ const BlogPostPage = () => {
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {format(new Date(relatedPost.published_at), 'd MMM yyyy', { locale: nl })}
+                          {format(new Date(relatedPost.published_at), 'MMM d, yyyy', { locale: enUS })}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -505,11 +510,11 @@ const BlogPostPage = () => {
 
         {/* CTA */}
         <div className="mt-12 p-6 bg-primary/5 rounded-2xl text-center">
-          <h3 className="text-xl font-semibold mb-2">Op zoek naar het beste voor je huisdier?</h3>
-          <p className="text-muted-foreground mb-4">Bekijk onze selectie van premium huisdierproducten.</p>
+          <h3 className="text-xl font-semibold mb-2">Looking for the best for your pet?</h3>
+          <p className="text-muted-foreground mb-4">Browse our selection of premium pet products.</p>
           <Link to="/products">
             <Button>
-              Shop nu
+              Shop Now
               <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
             </Button>
           </Link>
