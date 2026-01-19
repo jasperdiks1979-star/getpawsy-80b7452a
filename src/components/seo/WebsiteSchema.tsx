@@ -55,7 +55,7 @@ export function WebsiteSchema({
     },
   };
 
-  // Online Store Schema
+  // Online Store Schema - without problematic nested Product schemas
   const storeSchema = {
     '@context': 'https://schema.org',
     '@type': 'Store',
@@ -76,31 +76,53 @@ export function WebsiteSchema({
     },
     paymentAccepted: ['Credit Card', 'Debit Card'],
     currenciesAccepted: 'USD',
-    hasOfferCatalog: {
-      '@type': 'OfferCatalog',
-      name: 'Pet Products',
-      itemListElement: [
-        {
-          '@type': 'OfferCatalog',
-          name: 'Dog Products',
-          itemListElement: [
-            { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Dog Beds' } },
-            { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Dog Toys' } },
-            { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Dog Collars' } },
-            { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Dog Bowls' } },
-          ],
-        },
-        {
-          '@type': 'OfferCatalog',
-          name: 'Cat Products',
-          itemListElement: [
-            { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Cat Trees' } },
-            { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Cat Toys' } },
-            { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Cat Beds' } },
-          ],
-        },
-      ],
-    },
+  };
+
+  // ItemList schema for product categories (without Product type to avoid validation errors)
+  const itemListSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Pet Product Categories',
+    description: 'Browse our collection of premium pet products',
+    numberOfItems: 6,
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Dog Products',
+        url: `${url}/products?category=Dogs`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Cat Products',
+        url: `${url}/products?category=Cats`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Pet Toys',
+        url: `${url}/products?category=Toys`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 4,
+        name: 'Pet Food & Treats',
+        url: `${url}/products?category=Food`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 5,
+        name: 'Pet Accessories',
+        url: `${url}/products?category=Accessories`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 6,
+        name: 'Grooming Supplies',
+        url: `${url}/products?category=Grooming`,
+      },
+    ],
   };
 
   return (
@@ -146,6 +168,9 @@ export function WebsiteSchema({
       </script>
       <script type="application/ld+json">
         {JSON.stringify(storeSchema)}
+      </script>
+      <script type="application/ld+json">
+        {JSON.stringify(itemListSchema)}
       </script>
     </Helmet>
   );
