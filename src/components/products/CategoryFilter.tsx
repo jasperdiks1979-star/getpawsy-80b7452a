@@ -350,7 +350,7 @@ export const CategoryFilter = ({
             className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
           >
             <X className="w-3 h-3" />
-            Wis filters ({selectedCategories.length})
+            Clear filters ({selectedCategories.length})
           </button>
         )}
         {allParentIds.length > 0 && (
@@ -369,11 +369,11 @@ export const CategoryFilter = ({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs max-w-[200px]">
-                  <p className="font-medium">{openCategories.length} van {allParentIds.length} uitgevouwen</p>
+                  <p className="font-medium">{openCategories.length} of {allParentIds.length} expanded</p>
                   {expandedCategoryNames.length > 0 && (
                     <p className="text-muted-foreground mt-1">
                       {expandedCategoryNames.slice(0, 5).join(', ')}
-                      {expandedCategoryNames.length > 5 && ` +${expandedCategoryNames.length - 5} meer`}
+                      {expandedCategoryNames.length > 5 && ` +${expandedCategoryNames.length - 5} more`}
                     </p>
                   )}
                 </TooltipContent>
@@ -385,7 +385,7 @@ export const CategoryFilter = ({
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
               >
                 <ChevronsUpDown className="w-3 h-3" />
-                Uitklappen
+                Expand all
               </button>
             )}
             {openCategories.length > 0 && (
@@ -394,7 +394,7 @@ export const CategoryFilter = ({
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
               >
                 <ChevronsUpDown className="w-3 h-3 rotate-90" />
-                Inklappen
+                Collapse all
               </button>
             )}
           </div>
@@ -406,7 +406,7 @@ export const CategoryFilter = ({
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <TrendingUp className="w-3 h-3" />
-            <span>Populair</span>
+            <span>Popular</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {popularCategories.map((cat) => {
@@ -476,8 +476,8 @@ export const CategoryFilter = ({
             className="text-xs text-muted-foreground flex items-center gap-1"
           >
             <span className="font-medium text-primary">{matchCount}</span>
-            {matchCount === 1 ? 'categorie gevonden' : 'categorieën gevonden'}
-            {matchCount > 0 && <span className="text-primary">• automatisch uitgevouwen</span>}
+            {matchCount === 1 ? 'category found' : 'categories found'}
+            {matchCount > 0 && <span className="text-primary">• auto expanded</span>}
           </motion.p>
         )}
       </div>
@@ -488,7 +488,7 @@ export const CategoryFilter = ({
           filteredCategoryTree.map((category) => renderCategory(category))
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Geen categorieën gevonden
+            No categories found
           </p>
         )}
       </div>

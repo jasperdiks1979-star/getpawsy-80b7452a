@@ -44,16 +44,16 @@ const RECENT_SEARCHES_KEY = 'pawsy-recent-searches';
 const MAX_RECENT_SEARCHES = 5;
 
 const popularSearches = [
-  'Kattenspeelgoed',
-  'Hondenmand',
-  'Voerbak',
-  'Krabpaal',
+  'Cat toys',
+  'Dog bed',
+  'Food bowl',
+  'Scratching post',
   'Snacks',
 ];
 
 export const EnhancedSearch = ({
   className,
-  placeholder = 'Zoek producten...',
+  placeholder = 'Search products...',
   autoFocus = false,
   onClose,
   variant = 'default',
@@ -394,7 +394,7 @@ export const EnhancedSearch = ({
                 <div>
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
                     <TrendingUp className="w-4 h-4" />
-                    Populaire zoekopdrachten
+                    Popular searches
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {popularSearches.map((term, index) => (
