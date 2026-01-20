@@ -5,12 +5,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const BASE_URL = "https://getpawsy.lovable.app";
+const BASE_URL = "https://getpawsy.pet";
 const FUNCTION_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap";
 
 interface Product {
   id: string;
   name: string;
+  slug: string | null;
   updated_at: string;
   category: string | null;
   image_url: string | null;
@@ -75,7 +76,7 @@ Deno.serve(async (req) => {
       case "products": {
         const { data: products } = await supabase
           .from("products")
-          .select("id, name, updated_at, category, image_url")
+          .select("id, name, slug, updated_at, category, image_url")
           .eq("is_active", true)
           .order("updated_at", { ascending: false });
         return new Response(generateProductsSitemap(products || [], today), { headers, status: 200 });
@@ -273,10 +274,12 @@ function generateProductsSitemap(products: Product[], today: string): string {
   for (const product of products) {
     const lastmod = product.updated_at?.split("T")[0] || today;
     const productName = escapeXml(product.name || "");
+    // Use slug for SEO-friendly URLs, fallback to id
+    const productPath = product.slug || product.id;
     
     urls += `
   <url>
-    <loc>${BASE_URL}/products/${product.id}</loc>
+    <loc>${BASE_URL}/product/${productPath}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>${product.image_url ? `
