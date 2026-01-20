@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingCart, Trash2, ArrowLeft, ArrowUpDown, Filter } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +28,38 @@ import { useWishlist } from '@/contexts/WishlistContext';
 import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+// Wishlist item skeleton component
+const WishlistItemSkeleton = memo(() => (
+  <div className="bg-card rounded-xl overflow-hidden shadow-card">
+    <Skeleton className="aspect-square w-full" />
+    <div className="p-4 space-y-3">
+      <Skeleton className="h-3 w-16" />
+      <div className="space-y-1.5">
+        <Skeleton className="h-5 w-full" />
+        <Skeleton className="h-5 w-3/4" />
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-6 w-16" />
+        <Skeleton className="h-4 w-12" />
+      </div>
+      <div className="flex gap-2 pt-1">
+        <Skeleton className="h-9 flex-1 rounded-md" />
+        <Skeleton className="h-9 w-9 rounded-md" />
+      </div>
+    </div>
+  </div>
+));
+WishlistItemSkeleton.displayName = 'WishlistItemSkeleton';
+
+const WishlistGridSkeleton = memo(({ count = 4 }: { count?: number }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    {[...Array(count)].map((_, i) => (
+      <WishlistItemSkeleton key={i} />
+    ))}
+  </div>
+));
+WishlistGridSkeleton.displayName = 'WishlistGridSkeleton';
 
 type SortOption = 'added-desc' | 'added-asc' | 'price-asc' | 'price-desc';
 
@@ -243,17 +276,7 @@ const Wishlist = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[...Array(wishlist.length)].map((_, i) => (
-              <div key={i} className="bg-card rounded-xl overflow-hidden animate-pulse">
-                <div className="aspect-square bg-muted" />
-                <div className="p-4 space-y-3">
-                  <div className="h-4 bg-muted rounded w-3/4" />
-                  <div className="h-4 bg-muted rounded w-1/2" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <WishlistGridSkeleton count={wishlist.length} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <AnimatePresence mode="popLayout">
