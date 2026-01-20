@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { PasskeyManager } from '@/components/auth/PasskeyManager';
 import { User, Mail, Calendar, Shield, ArrowLeft, Package, ChevronRight, RotateCcw, LogOut } from 'lucide-react';
@@ -21,6 +22,114 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+
+// Profile page skeleton component
+const ProfileSkeleton = memo(() => (
+  <div className="container max-w-2xl py-8 px-4">
+    {/* Back button */}
+    <Skeleton className="h-9 w-20 mb-6" />
+    
+    {/* Title */}
+    <Skeleton className="h-9 w-36 mb-6" />
+
+    <div className="space-y-6">
+      {/* Account Info Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-6 w-44" />
+          </div>
+          <Skeleton className="h-4 w-56 mt-1" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+            <Skeleton className="w-12 h-12 rounded-full" />
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-4 w-36" />
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="grid gap-3">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-5 w-12 rounded-full" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Orders Link Card */}
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-10 h-10 rounded-full" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-4 w-36" />
+              </div>
+            </div>
+            <Skeleton className="h-5 w-5 rounded" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Passkey Manager Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-6 w-32" />
+          </div>
+          <Skeleton className="h-4 w-64 mt-1" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-10 w-36 rounded-md" />
+        </CardContent>
+      </Card>
+
+      {/* Reset App Data Card */}
+      <Card className="border-destructive/20">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-6 w-32" />
+          </div>
+          <Skeleton className="h-4 w-72 mt-1" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-10 w-40 rounded-md" />
+        </CardContent>
+      </Card>
+
+      {/* Sign Out Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-6 w-24" />
+          </div>
+          <Skeleton className="h-4 w-40 mt-1" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-10 w-28 rounded-md" />
+        </CardContent>
+      </Card>
+    </div>
+  </div>
+));
+ProfileSkeleton.displayName = 'ProfileSkeleton';
 
 const Profile = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
@@ -41,13 +150,7 @@ const Profile = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="container max-w-2xl py-8 px-4">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 w-48 bg-muted rounded" />
-            <div className="h-40 bg-muted rounded-xl" />
-            <div className="h-60 bg-muted rounded-xl" />
-          </div>
-        </div>
+        <ProfileSkeleton />
       </Layout>
     );
   }
