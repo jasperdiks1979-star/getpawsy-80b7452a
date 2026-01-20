@@ -101,8 +101,8 @@ const generateProductJsonLd = (product: {
     category: product.category || 'Pet Products',
     offers: {
       '@type': 'Offer',
-      url: `https://getpawsy.lovable.app/bestseller/${bestseller.slug}`,
-      priceCurrency: 'EUR',
+      url: `https://getpawsy.pet/bestseller/${bestseller.slug}`,
+      priceCurrency: 'USD',
       price: product.price.toFixed(2),
       priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       availability,
@@ -116,11 +116,11 @@ const generateProductJsonLd = (product: {
         shippingRate: {
           '@type': 'MonetaryAmount',
           value: '0',
-          currency: 'EUR'
+          currency: 'USD'
         },
         shippingDestination: {
           '@type': 'DefinedRegion',
-          addressCountry: 'NL'
+          addressCountry: 'US'
         },
         deliveryTime: {
           '@type': 'ShippingDeliveryTime',
@@ -158,19 +158,19 @@ const generateBreadcrumbJsonLd = (productName: string, slug: string) => ({
       '@type': 'ListItem',
       position: 1,
       name: 'Home',
-      item: 'https://getpawsy.lovable.app'
+      item: 'https://getpawsy.pet'
     },
     {
       '@type': 'ListItem',
       position: 2,
-      name: 'Producten',
-      item: 'https://getpawsy.lovable.app/products'
+      name: 'Products',
+      item: 'https://getpawsy.pet/products'
     },
     {
       '@type': 'ListItem',
       position: 3,
       name: productName,
-      item: `https://getpawsy.lovable.app/bestseller/${slug}`
+      item: `https://getpawsy.pet/bestseller/${slug}`
     }
   ]
 });
@@ -439,16 +439,16 @@ const BestsellerDetail = () => {
         {bestseller.meta_keywords && (
           <meta name="keywords" content={bestseller.meta_keywords.join(', ')} />
         )}
-        <link rel="canonical" href={`https://getpawsy.lovable.app/bestseller/${bestseller.slug}`} />
+        <link rel="canonical" href={`https://getpawsy.pet/bestseller/${bestseller.slug}`} />
         
         {/* Open Graph */}
         <meta property="og:type" content="product" />
         <meta property="og:title" content={bestseller.hero_headline || product.name} />
         <meta property="og:description" content={bestseller.seo_description || product.description || ''} />
         <meta property="og:image" content={product.image_url || '/og-image.png'} />
-        <meta property="og:url" content={`https://getpawsy.lovable.app/bestseller/${bestseller.slug}`} />
+        <meta property="og:url" content={`https://getpawsy.pet/bestseller/${bestseller.slug}`} />
         <meta property="product:price:amount" content={product.price.toFixed(2)} />
-        <meta property="product:price:currency" content="EUR" />
+        <meta property="product:price:currency" content="USD" />
         
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />

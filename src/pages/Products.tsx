@@ -293,7 +293,7 @@ const Products = () => {
         <title>{pageTitle}</title>
         <meta name="description" content={metaDescription} />
         <meta name="keywords" content={metaKeywords} />
-        <link rel="canonical" href={`https://getpawsy.lovable.app/products${categoryParam ? `?category=${encodeURIComponent(categoryParam)}` : ''}`} />
+        <link rel="canonical" href={`https://getpawsy.pet/products${categoryParam ? `?category=${encodeURIComponent(categoryParam)}` : ''}`} />
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={metaDescription} />
         <meta property="og:type" content="website" />

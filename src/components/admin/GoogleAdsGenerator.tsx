@@ -81,7 +81,7 @@ export function GoogleAdsGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedAds, setGeneratedAds] = useState<GeneratedAd[]>([]);
   const [selectedSavedAd, setSelectedSavedAd] = useState<SavedAd | null>(null);
-  const [finalUrl, setFinalUrl] = useState("https://getpawsy.lovable.app");
+  const [finalUrl, setFinalUrl] = useState("https://getpawsy.pet");
   const [variantCount, setVariantCount] = useState<number>(1);
   const [utmSource, setUtmSource] = useState("google");
   const [utmMedium, setUtmMedium] = useState("cpc");
@@ -441,7 +441,7 @@ ${keywords.join(", ")}
         <div className="space-y-3">
           <h3 className="font-medium">Display URL Path</h3>
           <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-            <span className="text-muted-foreground">getpawsy.com/</span>
+            <span className="text-muted-foreground">getpawsy.pet/</span>
             <span className="font-medium text-primary">{displayPaths.join("/")}</span>
             <Button
               variant="ghost"
@@ -490,7 +490,7 @@ ${keywords.join(", ")}
                   <div className="flex flex-col">
                     <span className="text-sm text-foreground">GetPawsy</span>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <span>getpawsy.lovable.app</span>
+                      <span>getpawsy.pet</span>
                       <span>›</span>
                       <span>{displayPaths.join(" › ")}</span>
                     </div>
@@ -525,7 +525,7 @@ ${keywords.join(", ")}
                   <div className="flex flex-col">
                     <span className="text-xs text-foreground">GetPawsy</span>
                     <span className="text-[10px] text-muted-foreground truncate max-w-[280px]">
-                      getpawsy.lovable.app › {displayPaths.join(" › ")}
+                      getpawsy.pet › {displayPaths.join(" › ")}
                     </span>
                   </div>
                 </div>
@@ -656,16 +656,16 @@ ${keywords.join(", ")}
                     <SelectValue placeholder="Kies productpagina..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="https://getpawsy.lovable.app">
+                    <SelectItem value="https://getpawsy.pet">
                       Homepage
                     </SelectItem>
-                    <SelectItem value="https://getpawsy.lovable.app/products">
-                      Alle producten
+                    <SelectItem value="https://getpawsy.pet/products">
+                      All products
                     </SelectItem>
                     {products?.map((product) => (
                       <SelectItem 
                         key={product.id} 
-                        value={`https://getpawsy.lovable.app/products/${product.id}`}
+                        value={`https://getpawsy.pet/products/${product.id}`}
                       >
                         {product.name}
                       </SelectItem>
@@ -677,7 +677,7 @@ ${keywords.join(", ")}
                   type="url"
                   value={finalUrl}
                   onChange={(e) => setFinalUrl(e.target.value)}
-                  placeholder="https://getpawsy.lovable.app/product-page"
+                  placeholder="https://getpawsy.pet/product-page"
                   className="flex-1"
                 />
               </div>
