@@ -92,14 +92,39 @@ const ProductDetail = () => {
     }, 8000);
   };
 
-  // Fetch product from database
+  // Helper function to check if a string is a valid UUID
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
+  // Fetch product from database - supports both UUID and slug-like identifiers
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: async () => {
+      if (!id) return null;
+
+      // If it's a valid UUID, query by id
+      if (isValidUUID(id)) {
+        const { data, error } = await supabase
+          .from('products_public')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        
+        if (error) throw error;
+        return data;
+      }
+
+      // If it's not a UUID, it might be a slug-like identifier
+      // Try to find by name (converting slug to searchable format)
+      const searchName = id.replace(/-/g, ' ').toLowerCase();
       const { data, error } = await supabase
         .from('products_public')
         .select('*')
-        .eq('id', id)
+        .ilike('name', `%${searchName}%`)
+        .eq('is_active', true)
+        .limit(1)
         .maybeSingle();
       
       if (error) throw error;
