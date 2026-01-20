@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, ArrowRight, BookOpen, Sparkles, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -14,6 +13,7 @@ import { enUS } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { SEO_KEYWORDS } from '@/lib/seo-keywords';
+import { BlogGridSkeleton } from '@/components/blog/BlogPostSkeleton';
 
 interface BlogPost {
   id: string;
@@ -231,21 +231,8 @@ const Blog = () => {
           ))}
         </div>
 
-        {/* Posts Grid */}
         {isLoading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} className="overflow-hidden">
-                <Skeleton className="h-48 w-full" />
-                <CardContent className="p-5">
-                  <Skeleton className="h-4 w-20 mb-3" />
-                  <Skeleton className="h-6 w-full mb-2" />
-                  <Skeleton className="h-4 w-full mb-1" />
-                  <Skeleton className="h-4 w-3/4" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <BlogGridSkeleton count={6} />
         ) : posts && posts.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post) => (
