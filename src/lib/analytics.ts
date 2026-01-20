@@ -173,3 +173,49 @@ export const trackViewCategory = (categoryName: string): void => {
     item_list_name: categoryName,
   });
 };
+
+// View item list with products (enhanced ecommerce)
+export const trackViewItemList = (
+  listId: string,
+  listName: string,
+  items: Array<{ 
+    id: string; 
+    name: string; 
+    price: number; 
+    category?: string;
+    position?: number;
+  }>
+): void => {
+  trackEvent('view_item_list', {
+    item_list_id: listId,
+    item_list_name: listName,
+    items: items.map((item, index) => ({
+      item_id: item.id,
+      item_name: item.name,
+      price: item.price,
+      item_category: item.category,
+      index: item.position ?? index,
+      currency: 'EUR',
+    })),
+  });
+};
+
+// Select item from list (click tracking)
+export const trackSelectItem = (
+  listId: string,
+  listName: string,
+  item: { id: string; name: string; price: number; category?: string; position?: number }
+): void => {
+  trackEvent('select_item', {
+    item_list_id: listId,
+    item_list_name: listName,
+    items: [{
+      item_id: item.id,
+      item_name: item.name,
+      price: item.price,
+      item_category: item.category,
+      index: item.position,
+      currency: 'EUR',
+    }],
+  });
+};

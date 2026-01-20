@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Award, Star, TrendingUp, Sparkles, ArrowRight, ShoppingCart, Heart } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { toast } from 'sonner';
+import { trackViewItemList, trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
 
 interface SellingPoint {
   icon: string;
@@ -41,7 +43,11 @@ interface BestsellerWithProduct {
   };
 }
 
-const BestsellerCard = ({ bestseller, index }: { bestseller: BestsellerWithProduct; index: number }) => {
+const BestsellerCard = ({ bestseller, index, onSelect }: { 
+  bestseller: BestsellerWithProduct; 
+  index: number;
+  onSelect: () => void;
+}) => {
   const { addItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const inWishlist = isInWishlist(bestseller.product.id);
@@ -59,6 +65,13 @@ const BestsellerCard = ({ bestseller, index }: { bestseller: BestsellerWithProdu
       price: bestseller.product.price,
       image: bestseller.product.image_url || '/placeholder.svg',
     });
+    // Track add to cart
+    trackAddToCart(
+      bestseller.product.id,
+      bestseller.product.name,
+      bestseller.product.price,
+      1
+    );
     toast.success('Added to cart!');
   };
 
@@ -67,11 +80,17 @@ const BestsellerCard = ({ bestseller, index }: { bestseller: BestsellerWithProdu
     e.stopPropagation();
     if (inWishlist) {
       removeFromWishlist(bestseller.product.id);
+      trackRemoveFromWishlist(bestseller.product.id, bestseller.product.name);
       toast.success('Removed from wishlist');
     } else {
       addToWishlist(bestseller.product.id);
+      trackAddToWishlist(bestseller.product.id, bestseller.product.name, bestseller.product.price);
       toast.success('Added to wishlist!');
     }
+  };
+
+  const handleClick = () => {
+    onSelect();
   };
 
   return (
@@ -80,7 +99,7 @@ const BestsellerCard = ({ bestseller, index }: { bestseller: BestsellerWithProdu
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
     >
-      <Link to={`/bestseller/${bestseller.slug}`}>
+      <Link to={`/bestseller/${bestseller.slug}`} onClick={handleClick}>
         <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
           <div className="relative aspect-square overflow-hidden bg-muted">
             {/* Rank badge */}
@@ -198,6 +217,8 @@ const BestsellerSkeleton = () => (
 );
 
 const Bestsellers = () => {
+  const hasTrackedImpressions = useRef(false);
+
   const { data: bestsellers, isLoading, error } = useQuery({
     queryKey: ['bestsellers-page'],
     queryFn: async () => {
@@ -236,6 +257,35 @@ const Bestsellers = () => {
     },
     staleTime: 5 * 60 * 1000,
   });
+
+  // Track product impressions when bestsellers load
+  useEffect(() => {
+    if (bestsellers && bestsellers.length > 0 && !hasTrackedImpressions.current) {
+      hasTrackedImpressions.current = true;
+      trackViewItemList(
+        'bestsellers',
+        'Bestsellers',
+        bestsellers.map((item, index) => ({
+          id: item.product.id,
+          name: item.product.name,
+          price: item.product.price,
+          category: item.product.category || undefined,
+          position: index + 1,
+        }))
+      );
+    }
+  }, [bestsellers]);
+
+  // Handle product click tracking
+  const handleProductSelect = (bestseller: BestsellerWithProduct, index: number) => {
+    trackSelectItem('bestsellers', 'Bestsellers', {
+      id: bestseller.product.id,
+      name: bestseller.product.name,
+      price: bestseller.product.price,
+      category: bestseller.product.category || undefined,
+      position: index + 1,
+    });
+  };
 
   // Generate JSON-LD structured data
   const generateJsonLd = () => {
@@ -371,7 +421,12 @@ const Bestsellers = () => {
           ) : bestsellers && bestsellers.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {bestsellers.map((bestseller, index) => (
-                <BestsellerCard key={bestseller.id} bestseller={bestseller} index={index} />
+                <BestsellerCard 
+                  key={bestseller.id} 
+                  bestseller={bestseller} 
+                  index={index} 
+                  onSelect={() => handleProductSelect(bestseller, index)}
+                />
               ))}
             </div>
           ) : (
