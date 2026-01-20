@@ -298,9 +298,12 @@ export const CategoryFilter = ({
             Wis filters ({selectedCategories.length})
           </button>
         )}
-        {(openCategories.length > 0 || allParentIds.length > 0) && (
+        {allParentIds.length > 0 && (
           <div className="flex items-center gap-2 ml-auto">
-            {openCategories.length < allParentIds.length && allParentIds.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {openCategories.length}/{allParentIds.length}
+            </span>
+            {openCategories.length < allParentIds.length && (
               <button
                 onClick={expandAll}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
