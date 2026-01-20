@@ -124,7 +124,7 @@ const SortableCategory = ({ category, index, isSubcategory = false }: SortableCa
 interface SubcategoryManagerProps {
   parentCategory: Category;
   subcategories: Category[];
-  onSubcategoriesChange: (parentId: string, newOrder: Category[]) => void;
+  onSubcategoriesChange: (parentId: string, newOrder: Category[], movedCategoryName?: string, oldIndex?: number, newIndex?: number) => void;
   hasChanges: boolean;
 }
 
@@ -153,8 +153,9 @@ const SubcategoryManager = ({
     if (over && active.id !== over.id) {
       const oldIndex = subcategories.findIndex((item) => item.id === active.id);
       const newIndex = subcategories.findIndex((item) => item.id === over.id);
+      const movedItem = subcategories[oldIndex];
       const newOrder = arrayMove(subcategories, oldIndex, newIndex);
-      onSubcategoriesChange(parentCategory.id, newOrder);
+      onSubcategoriesChange(parentCategory.id, newOrder, movedItem.name, oldIndex, newIndex);
     }
   };
 
@@ -294,6 +295,9 @@ const HomepagePreview = ({ categories }: HomepagePreviewProps) => {
 interface HistoryState {
   parents: Category[];
   subcategories: Record<string, Category[]>;
+  label: string;
+  movedCategory?: string;
+  isSubcategoryChange?: boolean;
 }
 
 export const CategoryOrderManager = () => {
@@ -349,13 +353,19 @@ export const CategoryOrderManager = () => {
       setLocalSubcategories(subcats);
       
       // Initialize history with the original state
-      setHistory([{ parents, subcategories: subcats }]);
+      setHistory([{ parents, subcategories: subcats, label: 'Originele volgorde' }]);
       setHistoryIndex(0);
     }
   }, [allCategories]);
 
   // Push to history when state changes (but not during undo/redo)
-  const pushToHistory = useCallback((parents: Category[], subcats: Record<string, Category[]>) => {
+  const pushToHistory = useCallback((
+    parents: Category[], 
+    subcats: Record<string, Category[]>,
+    label: string,
+    movedCategory?: string,
+    isSubcategoryChange?: boolean
+  ) => {
     if (isUndoRedoAction) {
       setIsUndoRedoAction(false);
       return;
@@ -365,7 +375,7 @@ export const CategoryOrderManager = () => {
       // Remove any future states if we're not at the end
       const newHistory = prev.slice(0, historyIndex + 1);
       // Add the new state
-      newHistory.push({ parents, subcategories: subcats });
+      newHistory.push({ parents, subcategories: subcats, label, movedCategory, isSubcategoryChange });
       // Limit history to 50 states
       if (newHistory.length > 50) {
         newHistory.shift();
@@ -494,24 +504,42 @@ export const CategoryOrderManager = () => {
       setLocalParentCategories((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
+        const movedItem = items[oldIndex];
         const newOrder = arrayMove(items, oldIndex, newIndex);
         setHasParentChanges(true);
-        // Push to history
-        pushToHistory(newOrder, localSubcategories);
+        
+        // Create descriptive label
+        const direction = newIndex < oldIndex ? '↑' : '↓';
+        const label = `${movedItem.name} ${direction} naar positie ${newIndex + 1}`;
+        
+        // Push to history with label
+        pushToHistory(newOrder, localSubcategories, label, movedItem.name, false);
         return newOrder;
       });
     }
   };
 
-  const handleSubcategoriesChange = (parentId: string, newOrder: Category[]) => {
+  const handleSubcategoriesChange = (parentId: string, newOrder: Category[], movedCategoryName?: string, oldIndex?: number, newIndex?: number) => {
     const newSubcats = {
       ...localSubcategories,
       [parentId]: newOrder
     };
     setLocalSubcategories(newSubcats);
     setChangedSubcategoryParents(prev => new Set(prev).add(parentId));
-    // Push to history
-    pushToHistory(localParentCategories, newSubcats);
+    
+    // Get parent name for context
+    const parentCategory = localParentCategories.find(c => c.id === parentId);
+    const parentName = parentCategory?.name || 'Subcategorie';
+    
+    // Create descriptive label
+    let label = `Subcategorie in ${parentName} verplaatst`;
+    if (movedCategoryName && oldIndex !== undefined && newIndex !== undefined) {
+      const direction = newIndex < oldIndex ? '↑' : '↓';
+      label = `${movedCategoryName} ${direction} (${parentName})`;
+    }
+    
+    // Push to history with label
+    pushToHistory(localParentCategories, newSubcats, label, movedCategoryName, true);
   };
 
   const handleSave = () => {
@@ -535,7 +563,7 @@ export const CategoryOrderManager = () => {
       setHasParentChanges(false);
       setChangedSubcategoryParents(new Set());
       // Reset history
-      setHistory([{ parents, subcategories: subcats }]);
+      setHistory([{ parents, subcategories: subcats, label: 'Originele volgorde' }]);
       setHistoryIndex(0);
     }
   };
@@ -616,12 +644,15 @@ export const CategoryOrderManager = () => {
                         index === historyIndex && "bg-accent"
                       )}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className={cn(
+                          "w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium shrink-0",
+                          state.isSubcategoryChange ? "bg-secondary" : "bg-muted"
+                        )}>
                           {index + 1}
                         </span>
-                        <span className="text-sm">
-                          {index === 0 ? 'Originele volgorde' : `Wijziging ${index}`}
+                        <span className="text-sm truncate" title={state.label}>
+                          {state.label}
                         </span>
                       </div>
                       {index === historyIndex && (
