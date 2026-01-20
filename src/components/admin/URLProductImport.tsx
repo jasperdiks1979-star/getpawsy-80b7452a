@@ -280,20 +280,34 @@ export function URLProductImport() {
         });
 
         try {
-          // Flatten and deduplicate images
+          // Flatten and deduplicate images, filtering out empty/invalid URLs
           const rawImages = p.images || [p.productImage];
           const flattenDeep = (arr: unknown[]): string[] => {
             const result: string[] = [];
             for (const item of arr) {
               if (Array.isArray(item)) {
                 result.push(...flattenDeep(item));
-              } else if (typeof item === 'string' && item.startsWith('http')) {
-                result.push(item);
+              } else if (typeof item === 'string' && item.trim() && item.startsWith('http') && !item.includes('undefined')) {
+                result.push(item.trim());
               }
             }
             return result;
           };
-          const images = [...new Set(flattenDeep(Array.isArray(rawImages) ? rawImages : [rawImages]))];
+          const allImages = [...new Set(flattenDeep(Array.isArray(rawImages) ? rawImages : [rawImages]))];
+          
+          // Ensure we have valid images, use productImage as fallback
+          const validProductImage = p.productImage && p.productImage.trim() && p.productImage.startsWith('http') && !p.productImage.includes('undefined')
+            ? p.productImage.trim()
+            : null;
+          
+          // If productImage is valid and not in the array, add it to the front
+          let images = allImages;
+          if (validProductImage && !images.includes(validProductImage)) {
+            images = [validProductImage, ...images];
+          }
+          
+          // Use the first valid image as the main image_url
+          const mainImageUrl = images.length > 0 ? images[0] : (validProductImage || '/placeholder.svg');
           
           const stock = p.totalStock ?? 100;
 
@@ -343,7 +357,7 @@ export function URLProductImport() {
               name: p.productNameEn,
               description: seoDescription,
               category: category,
-              image_url: p.productImage,
+              image_url: mainImageUrl,
               images: images,
               price: pricing.sellingPrice,
               cost_price: pricing.totalCost,
