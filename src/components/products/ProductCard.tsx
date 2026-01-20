@@ -14,6 +14,7 @@ export interface Product {
   id: string;
   cj_product_id?: string | null;
   name: string;
+  slug?: string | null;
   description?: string | null;
   category?: string | null;
   image_url?: string | null;
@@ -87,8 +88,11 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
     ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
     : null;
 
+  // Use slug for SEO-friendly URLs, fallback to id
+  const productUrl = product.slug ? `/product/${product.slug}` : `/product/${product.id}`;
+
   return (
-    <Link ref={ref} to={`/product/${product.id}`} className="group block">
+    <Link ref={ref} to={productUrl} className="group block">
       <div 
         className="relative bg-card rounded-2xl overflow-hidden shadow-card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-1"
       >

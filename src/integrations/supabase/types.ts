@@ -527,6 +527,7 @@ export type Database = {
           price: number
           shipping_time: string | null
           sku: string | null
+          slug: string | null
           stock: number | null
           supplier_name: string | null
           updated_at: string
@@ -548,6 +549,7 @@ export type Database = {
           price: number
           shipping_time?: string | null
           sku?: string | null
+          slug?: string | null
           stock?: number | null
           supplier_name?: string | null
           updated_at?: string
@@ -569,6 +571,7 @@ export type Database = {
           price?: number
           shipping_time?: string | null
           sku?: string | null
+          slug?: string | null
           stock?: number | null
           supplier_name?: string | null
           updated_at?: string
@@ -832,6 +835,7 @@ export type Database = {
         }[]
       }
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
+      generate_product_slug: { Args: { product_name: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
