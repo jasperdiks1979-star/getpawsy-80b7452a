@@ -155,6 +155,23 @@ export const CategoryFilter = ({
     return ids;
   }, [categoryTree]);
 
+  // Get names of expanded categories
+  const expandedCategoryNames = useMemo(() => {
+    const names: string[] = [];
+    const findNames = (nodes: CategoryNode[]) => {
+      nodes.forEach((node) => {
+        if (openCategories.includes(node.id)) {
+          names.push(node.name);
+        }
+        if (node.children.length > 0) {
+          findNames(node.children);
+        }
+      });
+    };
+    findNames(categoryTree);
+    return names;
+  }, [categoryTree, openCategories]);
+
   const toggleOpen = (categoryId: string) => {
     setOpenCategories((prev) =>
       prev.includes(categoryId)
@@ -315,8 +332,14 @@ export const CategoryFilter = ({
                     </span>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  <p>{openCategories.length} van {allParentIds.length} categorieën uitgevouwen</p>
+                <TooltipContent side="bottom" className="text-xs max-w-[200px]">
+                  <p className="font-medium">{openCategories.length} van {allParentIds.length} uitgevouwen</p>
+                  {expandedCategoryNames.length > 0 && (
+                    <p className="text-muted-foreground mt-1">
+                      {expandedCategoryNames.slice(0, 5).join(', ')}
+                      {expandedCategoryNames.length > 5 && ` +${expandedCategoryNames.length - 5} meer`}
+                    </p>
+                  )}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
