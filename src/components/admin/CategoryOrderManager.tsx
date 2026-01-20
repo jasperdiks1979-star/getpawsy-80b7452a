@@ -298,7 +298,17 @@ interface HistoryState {
   label: string;
   movedCategory?: string;
   isSubcategoryChange?: boolean;
+  timestamp: Date;
 }
+
+// Helper function to format time
+const formatTimestamp = (date: Date): string => {
+  return date.toLocaleTimeString('nl-NL', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+};
 
 export const CategoryOrderManager = () => {
   const queryClient = useQueryClient();
@@ -353,7 +363,7 @@ export const CategoryOrderManager = () => {
       setLocalSubcategories(subcats);
       
       // Initialize history with the original state
-      setHistory([{ parents, subcategories: subcats, label: 'Originele volgorde' }]);
+      setHistory([{ parents, subcategories: subcats, label: 'Originele volgorde', timestamp: new Date() }]);
       setHistoryIndex(0);
     }
   }, [allCategories]);
@@ -374,8 +384,8 @@ export const CategoryOrderManager = () => {
     setHistory(prev => {
       // Remove any future states if we're not at the end
       const newHistory = prev.slice(0, historyIndex + 1);
-      // Add the new state
-      newHistory.push({ parents, subcategories: subcats, label, movedCategory, isSubcategoryChange });
+      // Add the new state with timestamp
+      newHistory.push({ parents, subcategories: subcats, label, movedCategory, isSubcategoryChange, timestamp: new Date() });
       // Limit history to 50 states
       if (newHistory.length > 50) {
         newHistory.shift();
@@ -563,7 +573,7 @@ export const CategoryOrderManager = () => {
       setHasParentChanges(false);
       setChangedSubcategoryParents(new Set());
       // Reset history
-      setHistory([{ parents, subcategories: subcats, label: 'Originele volgorde' }]);
+      setHistory([{ parents, subcategories: subcats, label: 'Originele volgorde', timestamp: new Date() }]);
       setHistoryIndex(0);
     }
   };
@@ -644,15 +654,20 @@ export const CategoryOrderManager = () => {
                         index === historyIndex && "bg-accent"
                       )}
                     >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className={cn(
-                          "w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium shrink-0",
-                          state.isSubcategoryChange ? "bg-secondary" : "bg-muted"
-                        )}>
-                          {index + 1}
-                        </span>
-                        <span className="text-sm truncate" title={state.label}>
-                          {state.label}
+                      <div className="flex flex-col flex-1 min-w-0 gap-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium shrink-0",
+                            state.isSubcategoryChange ? "bg-secondary" : "bg-muted"
+                          )}>
+                            {index + 1}
+                          </span>
+                          <span className="text-sm truncate" title={state.label}>
+                            {state.label}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground ml-7">
+                          {formatTimestamp(state.timestamp)}
                         </span>
                       </div>
                       {index === historyIndex && (
