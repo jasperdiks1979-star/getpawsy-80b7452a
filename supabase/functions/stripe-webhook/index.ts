@@ -15,7 +15,8 @@ async function sendOrderConfirmationEmail(
   totalAmount: number,
   currency: string,
   shippingAddress: any,
-  customerName?: string
+  customerName?: string,
+  orderAccessToken?: string
 ): Promise<void> {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -27,6 +28,7 @@ async function sendOrderConfirmationEmail(
     }
 
     console.log("[STRIPE-WEBHOOK] Sending order confirmation email to:", customerEmail);
+    console.log("[STRIPE-WEBHOOK] Including access token for tracking:", !!orderAccessToken);
     
     const response = await fetch(`${supabaseUrl}/functions/v1/send-order-confirmation`, {
       method: "POST",
@@ -42,6 +44,7 @@ async function sendOrderConfirmationEmail(
         totalAmount,
         currency,
         shippingAddress,
+        orderAccessToken,
       }),
     });
 
@@ -118,17 +121,21 @@ serve(async (req) => {
         const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
         const totalValue = session.metadata?.total_value ? parseFloat(session.metadata.total_value) : (session.amount_total || 0) / 100;
 
-        // Check if order already exists
+        // Check if order already exists and get access token
         const { data: existingOrder } = await supabaseAdmin
           .from("orders")
-          .select("id")
+          .select("id, order_access_token, user_id")
           .eq("stripe_session_id", session.id)
           .single();
 
         let orderId: string;
+        let orderAccessToken: string | null = null;
 
         if (existingOrder) {
           orderId = existingOrder.id;
+          // Only use access token for guest orders (no user_id)
+          orderAccessToken = existingOrder.user_id ? null : existingOrder.order_access_token;
+          
           // Update existing order to paid
           const { error: updateError } = await supabaseAdmin
             .from("orders")
@@ -145,6 +152,16 @@ serve(async (req) => {
             console.log("[STRIPE-WEBHOOK] Order updated to paid:", existingOrder.id);
           }
         } else {
+          // Generate access token for guest orders created via webhook
+          const generateAccessToken = () => {
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+          };
+          
+          // Guest order (no user_id) - generate access token
+          orderAccessToken = generateAccessToken();
+          
           // Create new order from webhook data
           const { data: newOrder, error: insertError } = await supabaseAdmin
             .from("orders")
@@ -157,6 +174,7 @@ serve(async (req) => {
               customer_email: customerEmail,
               shipping_address: session.shipping_details,
               items: items,
+              order_access_token: orderAccessToken,
             })
             .select("id")
             .single();
@@ -170,7 +188,7 @@ serve(async (req) => {
           }
         }
 
-        // Send order confirmation email
+        // Send order confirmation email with access token for guest orders
         if (customerEmail) {
           await sendOrderConfirmationEmail(
             orderId,
@@ -179,7 +197,8 @@ serve(async (req) => {
             totalValue,
             session.currency || "eur",
             session.shipping_details,
-            customerName || undefined
+            customerName || undefined,
+            orderAccessToken || undefined
           );
         } else {
           console.warn("[STRIPE-WEBHOOK] No customer email available for confirmation");
