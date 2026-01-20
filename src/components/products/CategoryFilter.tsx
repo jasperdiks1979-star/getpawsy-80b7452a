@@ -111,6 +111,42 @@ export const CategoryFilter = ({
     [categoryTree, searchQuery]
   );
 
+  // Count total matches when searching
+  const matchCount = useMemo(() => {
+    if (!searchQuery.trim()) return 0;
+    const lowerQuery = searchQuery.toLowerCase();
+    let count = 0;
+    const countMatches = (nodes: CategoryNode[]) => {
+      nodes.forEach((node) => {
+        if (node.name.toLowerCase().includes(lowerQuery)) {
+          count++;
+        }
+        countMatches(node.children);
+      });
+    };
+    countMatches(categoryTree);
+    return count;
+  }, [categoryTree, searchQuery]);
+
+  // Highlight matching text in category names
+  const highlightMatch = (text: string) => {
+    if (!searchQuery.trim()) return text;
+    const lowerQuery = searchQuery.toLowerCase();
+    const lowerText = text.toLowerCase();
+    const index = lowerText.indexOf(lowerQuery);
+    if (index === -1) return text;
+    
+    return (
+      <>
+        {text.slice(0, index)}
+        <mark className="bg-primary/20 text-foreground rounded px-0.5">
+          {text.slice(index, index + searchQuery.length)}
+        </mark>
+        {text.slice(index + searchQuery.length)}
+      </>
+    );
+  };
+
   // Auto-expand categories when searching
   const expandedIds = useMemo(() => {
     if (!searchQuery.trim()) return openCategories;
@@ -232,7 +268,7 @@ export const CategoryFilter = ({
                   )}
                 />
                 <CategoryImage imageUrl={category.image_url} name={category.name} />
-                <span className="text-sm font-medium truncate">{category.name}</span>
+                <span className="text-sm font-medium truncate">{highlightMatch(category.name)}</span>
                 {count > 0 && (
                   <span className="text-xs text-muted-foreground ml-auto shrink-0">
                     ({count})
@@ -294,7 +330,7 @@ export const CategoryFilter = ({
           />
         </motion.div>
         <CategoryImage imageUrl={category.image_url} name={category.name} />
-        <span className="text-sm truncate">{category.name}</span>
+        <span className="text-sm truncate">{highlightMatch(category.name)}</span>
         {count > 0 && (
           <span className="text-xs text-muted-foreground ml-auto shrink-0">
             ({count})
@@ -414,22 +450,35 @@ export const CategoryFilter = ({
       )}
 
       {/* Search input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Zoek categorie..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 pr-8 h-9 text-sm"
-        />
+      <div className="space-y-1.5">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Zoek categorie..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-8 h-9 text-sm"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
         {searchQuery && (
-          <button
-            onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          <motion.p
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-xs text-muted-foreground flex items-center gap-1"
           >
-            <X className="w-4 h-4" />
-          </button>
+            <span className="font-medium text-primary">{matchCount}</span>
+            {matchCount === 1 ? 'categorie gevonden' : 'categorieën gevonden'}
+            {matchCount > 0 && <span className="text-primary">• automatisch uitgevouwen</span>}
+          </motion.p>
         )}
       </div>
 
