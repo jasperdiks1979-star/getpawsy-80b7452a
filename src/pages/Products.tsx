@@ -69,10 +69,22 @@ const Products = () => {
     }
   }, [products]);
 
+  // Sync category filter with URL params
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategories([categoryParam]);
+    } else {
+      // Only clear if we had a category param before and now it's gone
+      setSelectedCategories([]);
+    }
+  }, [categoryParam]);
+
   // Update search from URL params
   useEffect(() => {
     if (searchParam) {
       setSearchQuery(searchParam);
+    } else {
+      setSearchQuery('');
     }
   }, [searchParam]);
 
@@ -153,7 +165,7 @@ const Products = () => {
       return price >= priceRange[0] && price <= priceRange[1];
     });
 
-    // Filter by category - exact match or partial match
+    // Filter by category - match against both name and slug formats
     if (selectedCategories.length > 0) {
       result = result.filter(p => {
         if (!p.category) return false;
@@ -161,10 +173,14 @@ const Products = () => {
         
         return selectedCategories.some(selected => {
           const selectedLower = selected.toLowerCase();
-          // Exact match or partial match
+          // Convert display name to slug format (e.g., "Bird Cages" -> "bird-cages")
+          const selectedSlug = selectedLower.replace(/\s+/g, '-').replace(/&/g, '');
+          
+          // Match against category name or slug
           return productCategory === selectedLower || 
-                 productCategory.includes(selectedLower) ||
-                 selectedLower.includes(productCategory);
+                 productCategory === selectedSlug ||
+                 productCategory.includes(selectedSlug) ||
+                 selectedSlug.includes(productCategory);
         });
       });
     }
