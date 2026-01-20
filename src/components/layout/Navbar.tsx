@@ -90,7 +90,7 @@ const MegaMenuCategoryItem = ({
         )}
         <div className="flex-1 min-w-0">
           <Link
-            to={`/products?category=${encodeURIComponent(category.name)}`}
+            to={`/products?category=${encodeURIComponent(category.slug)}`}
             onClick={(e) => {
               if (!hasChildren) {
                 onClose();
@@ -126,7 +126,7 @@ const MegaMenuCategoryItem = ({
             <div className="border-l-2 border-muted pl-2 py-1 space-y-1">
               {/* Link to parent category */}
               <Link
-                to={`/products?category=${encodeURIComponent(category.name)}`}
+                to={`/products?category=${encodeURIComponent(category.slug)}`}
                 onClick={onClose}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors text-primary font-medium"
               >
@@ -136,7 +136,7 @@ const MegaMenuCategoryItem = ({
               {category.children.map((child) => (
                 <Link
                   key={child.id}
-                  to={`/products?category=${encodeURIComponent(child.name)}`}
+                  to={`/products?category=${encodeURIComponent(child.slug)}`}
                   onClick={onClose}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
                 >
@@ -196,7 +196,7 @@ const MobileCategoryItem = ({
             <span className="font-medium">{category.name}</span>
           ) : (
             <Link
-              to={`/products?category=${encodeURIComponent(category.name)}`}
+              to={`/products?category=${encodeURIComponent(category.slug)}`}
               onClick={onClose}
               className="font-medium block"
             >
@@ -223,7 +223,7 @@ const MobileCategoryItem = ({
           >
             <div className="py-2 px-4 space-y-1">
               <Link
-                to={`/products?category=${encodeURIComponent(category.name)}`}
+                to={`/products?category=${encodeURIComponent(category.slug)}`}
                 onClick={onClose}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary font-medium hover:bg-muted transition-colors"
               >
@@ -233,7 +233,7 @@ const MobileCategoryItem = ({
               {category.children.map((child) => (
                 <Link
                   key={child.id}
-                  to={`/products?category=${encodeURIComponent(child.name)}`}
+                  to={`/products?category=${encodeURIComponent(child.slug)}`}
                   onClick={onClose}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
                 >

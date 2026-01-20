@@ -321,21 +321,32 @@ const Products = () => {
 
   const isLoading = productsLoading || categoriesLoading;
 
+  // Convert slug to display name (e.g., "dog-beds" -> "Dog Beds")
+  const getCategoryDisplayName = (slug: string): string => {
+    // Try to find the category in the database first
+    const category = categories?.find(c => c.slug === slug || c.name.toLowerCase() === slug.toLowerCase());
+    if (category) return category.name;
+    // Fallback: convert slug format to title case
+    return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  const categoryDisplayName = categoryParam ? getCategoryDisplayName(categoryParam) : null;
+
   // Generate dynamic SEO content
-  const pageTitle = categoryParam 
-    ? `${categoryParam} - Premium Pet Products | GetPawsy`
+  const pageTitle = categoryDisplayName 
+    ? `${categoryDisplayName} - Premium Pet Products | GetPawsy`
     : searchQuery 
       ? `Search: "${searchQuery}" | GetPawsy Pet Store`
       : 'All Products - Premium Pet Supplies | GetPawsy';
 
-  const metaDescription = categoryParam
-    ? generateCategoryMetaDescription(categoryParam)
+  const metaDescription = categoryDisplayName
+    ? generateCategoryMetaDescription(categoryDisplayName)
     : searchQuery
       ? `Find "${searchQuery}" at GetPawsy. Browse our collection of premium pet products. Free shipping on orders over $50. Quality supplies for dogs, cats & more.`
       : 'Shop premium pet products at GetPawsy. Quality supplies for dogs, cats & more. From cozy beds to durable toys, we have everything your furry friend needs. Free shipping over $50!';
 
-  const metaKeywords = categoryParam
-    ? getKeywordsForCategory(categoryParam).slice(0, 15).join(', ')
+  const metaKeywords = categoryDisplayName
+    ? getKeywordsForCategory(categoryDisplayName).slice(0, 15).join(', ')
     : 'pet supplies, dog products, cat products, pet accessories, premium pet store, GetPawsy, pet shop online';
 
   return (
@@ -351,7 +362,7 @@ const Products = () => {
         {searchQuery && <meta name="robots" content="noindex, follow" />}
       </Helmet>
       <CategorySchema 
-        categoryName={categoryParam || undefined}
+        categoryName={categoryDisplayName || undefined}
         searchQuery={searchQuery || undefined}
         productCount={totalCount}
       />
@@ -359,7 +370,7 @@ const Products = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            {categoryParam || (searchQuery ? `Search: "${searchQuery}"` : 'All Products')}
+            {categoryDisplayName || (searchQuery ? `Search: "${searchQuery}"` : 'All Products')}
           </h1>
           <p className="text-muted-foreground">
             Showing {displayCount > totalCount ? totalCount : displayCount} of {totalCount} product{totalCount !== 1 ? 's' : ''}
