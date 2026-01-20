@@ -309,7 +309,7 @@ const handler = async (req: Request): Promise<Response> => {
     const subject = t.subject(orderId.slice(0, 8).toUpperCase());
 
     const emailResponse = await resend.emails.send({
-      from: "GetPawsy <onboarding@resend.dev>",
+      from: "GetPawsy <noreply@getpawsy.pet>",
       to: [customerEmail],
       subject: subject,
       html: emailHtml,

@@ -305,7 +305,7 @@ serve(async (req: Request) => {
     console.log(`Sending notification email to: ${adminEmails.join(", ")}`);
 
     const emailResponse = await resend.emails.send({
-      from: "GetPawsy Alerts <onboarding@resend.dev>",
+      from: "GetPawsy Alerts <alerts@getpawsy.pet>",
       to: adminEmails,
       subject: `⚠️ ${newLossProducts.length} Verliesgevende Product${newLossProducts.length > 1 ? "en" : ""} Gedetecteerd`,
       html: emailHtml,
