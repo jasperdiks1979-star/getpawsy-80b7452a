@@ -384,6 +384,10 @@ export type Database = {
       }
       orders: {
         Row: {
+          cj_order_created_at: string | null
+          cj_order_id: string | null
+          cj_order_status: string | null
+          cj_shipping_info: Json | null
           created_at: string
           currency: string
           customer_email: string | null
@@ -401,6 +405,10 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          cj_order_created_at?: string | null
+          cj_order_id?: string | null
+          cj_order_status?: string | null
+          cj_shipping_info?: Json | null
           created_at?: string
           currency?: string
           customer_email?: string | null
@@ -418,6 +426,10 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          cj_order_created_at?: string | null
+          cj_order_id?: string | null
+          cj_order_status?: string | null
+          cj_shipping_info?: Json | null
           created_at?: string
           currency?: string
           customer_email?: string | null
