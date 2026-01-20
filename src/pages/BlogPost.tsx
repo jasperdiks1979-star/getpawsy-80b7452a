@@ -6,11 +6,19 @@ import { Layout } from '@/components/layout/Layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Clock, ArrowLeft, User, Share2, BookOpen, ShoppingBag } from 'lucide-react';
+import { Calendar, Clock, User, Share2, BookOpen, ShoppingBag, Home, ArrowLeft } from 'lucide-react';
 import { BlogPostDetailSkeleton } from '@/components/blog/BlogPostDetailSkeleton';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { generateBlogMetaDescription } from '@/lib/seo-keywords';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 
 interface BlogPost {
   id: string;
@@ -330,11 +338,35 @@ const BlogPostPage = () => {
       </Helmet>
 
       <article className="container max-w-4xl py-8">
-        {/* Back Button */}
-        <Link to="/blog" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Blog
-        </Link>
+        {/* Breadcrumbs */}
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/" className="flex items-center gap-1">
+                  <Home className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only">Home</span>
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/blog">Blog</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to={`/blog?category=${post.category}`}>{post.category}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="max-w-[200px] truncate">{post.title}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
         {/* Header */}
         <header className="mb-8">
