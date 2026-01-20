@@ -1,4 +1,4 @@
-import { ChevronDown, Search, X, TrendingUp, Check } from 'lucide-react';
+import { ChevronDown, Search, X, TrendingUp, Check, ChevronsUpDown } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -269,16 +269,27 @@ export const CategoryFilter = ({
 
   return (
     <div className="space-y-3">
-      {/* Clear filters button */}
-      {selectedCategories.length > 0 && onClearCategories && (
-        <button
-          onClick={onClearCategories}
-          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
-        >
-          <X className="w-3 h-3" />
-          Wis filters ({selectedCategories.length})
-        </button>
-      )}
+      {/* Header with clear and collapse buttons */}
+      <div className="flex items-center justify-between gap-2">
+        {selectedCategories.length > 0 && onClearCategories && (
+          <button
+            onClick={onClearCategories}
+            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+          >
+            <X className="w-3 h-3" />
+            Wis filters ({selectedCategories.length})
+          </button>
+        )}
+        {openCategories.length > 0 && (
+          <button
+            onClick={() => setOpenCategories([])}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors ml-auto"
+          >
+            <ChevronsUpDown className="w-3 h-3" />
+            Alles inklappen
+          </button>
+        )}
+      </div>
 
       {/* Popular categories */}
       {!searchQuery && popularCategories.length > 0 && (
