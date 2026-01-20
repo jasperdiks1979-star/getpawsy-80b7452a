@@ -66,23 +66,48 @@ interface CJVariant {
 
 // Extract product ID from CJ Dropshipping URL
 function extractProductId(url: string): string | null {
-  // Pattern 1: https://cjdropshipping.com/product/xxx-pid.html
-  // Pattern 2: https://www.cjdropshipping.com/product/some-product-name-p-00000000000000000000.html
-  // Pattern 3: Direct product ID (just the ID itself)
+  // Supported URL formats:
+  // 1: https://cjdropshipping.com/product/xxx-p-PRODUCTID.html
+  // 2: https://www.cjdropshipping.com/product/some-product-name-p-00000000000000000000.html
+  // 3: Direct product ID (just the ID itself, 18-30 alphanumeric chars)
+  // 4: Mobile app shared URLs with pid parameter
+  // 5: URLs with numeric product IDs (19-20 digit numbers)
   
   // Clean the URL
   const cleanUrl = url.trim();
   
-  // Check if it's already a product ID (20+ alphanumeric chars)
+  // Check if it's already a product ID (numeric, 16-25 digits)
+  if (/^\d{16,25}$/.test(cleanUrl)) {
+    return cleanUrl;
+  }
+  
+  // Check if it's already a product ID (alphanumeric, 18-30 chars)
   if (/^[A-Za-z0-9]{18,30}$/.test(cleanUrl)) {
     return cleanUrl;
   }
   
-  // Pattern for CJ product URLs: ...p-PRODUCTID.html or similar
+  // Pattern for CJ product URLs - try multiple formats
   const patterns = [
+    // -p-PRODUCTID.html format (most common)
+    /-p-(\d{16,25})\.html/i,
+    // p-PRODUCTID.html format
+    /p-(\d{16,25})\.html/i,
+    // pid query parameter
+    /pid=(\d{16,25})/i,
+    // product_id query parameter
+    /product_id=(\d{16,25})/i,
+    // id query parameter
+    /[?&]id=(\d{16,25})/i,
+    // Alphanumeric product ID formats
+    /-p-([A-Za-z0-9]{18,30})\.html/i,
     /p-([A-Za-z0-9]{18,30})\.html/i,
     /pid=([A-Za-z0-9]{18,30})/i,
     /product\/.*-([A-Za-z0-9]{18,30})\.html/i,
+    // Numeric ID at the end before .html
+    /-(\d{16,25})\.html/i,
+    // Any long numeric string in the URL (fallback)
+    /(\d{19,21})/,
+    // Alphanumeric fallback
     /([A-Za-z0-9]{20,30})(?:\.html)?$/i,
   ];
   
