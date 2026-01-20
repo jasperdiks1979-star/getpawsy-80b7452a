@@ -76,6 +76,7 @@ function extractProductId(url: string): string | null {
   
   // Clean the URL
   const cleanUrl = url.trim();
+  console.log('[extractProductId] Input URL:', cleanUrl);
   
   // UUID regex pattern (with hyphens)
   const uuidPattern = /[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}/;
@@ -129,13 +130,16 @@ function extractProductId(url: string): string | null {
     /([A-Za-z0-9]{20,30})(?:\.html)?$/i,
   ];
   
-  for (const pattern of patterns) {
+  for (let i = 0; i < patterns.length; i++) {
+    const pattern = patterns[i];
     const match = cleanUrl.match(pattern);
     if (match && match[1]) {
+      console.log(`[extractProductId] Matched pattern ${i}:`, pattern.toString(), '-> Result:', match[1]);
       return match[1];
     }
   }
   
+  console.log('[extractProductId] No pattern matched for URL:', cleanUrl);
   return null;
 }
 
