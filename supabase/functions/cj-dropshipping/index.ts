@@ -470,14 +470,16 @@ async function fetchProducts(accessToken: string, params: CJProductListRequest) 
 }
 
 // Get FULL product details by ID - includes all images, variants, and inventory
+// Tries /product/query first, then falls back to /product/list if that fails
 async function getProductDetails(accessToken: string, productId: string, countryCode = 'US') {
-  // Use features to get full details including inventory and videos
+  // First try /product/query endpoint
   const params = new URLSearchParams({
     pid: productId,
     features: 'enable_inventory,enable_video',
     countryCode: countryCode,
   });
 
+  console.log(`Trying /product/query for pid: ${productId}`);
   const response = await fetch(`${CJ_API_BASE}/product/query?${params}`, {
     method: 'GET',
     headers: {
@@ -487,7 +489,80 @@ async function getProductDetails(accessToken: string, productId: string, country
   });
 
   const data = await response.json();
-  console.log('CJ Product full details response:', JSON.stringify(data).substring(0, 800));
+  console.log('CJ Product query response:', JSON.stringify(data).substring(0, 800));
+  
+  // If query succeeded, return it
+  if (data.result && data.data) {
+    return data;
+  }
+  
+  // If query failed, try /product/list with pid filter as fallback
+  console.log(`Query failed for ${productId}, trying /product/list fallback...`);
+  const listParams = new URLSearchParams({
+    pid: productId,
+    pageNum: '1',
+    pageSize: '1',
+  });
+  
+  const listResponse = await fetch(`${CJ_API_BASE}/product/list?${listParams}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'CJ-Access-Token': accessToken,
+    },
+  });
+  
+  const listData = await listResponse.json();
+  console.log('CJ Product list fallback response:', JSON.stringify(listData).substring(0, 800));
+  
+  // If list found the product, convert to query format
+  if (listData.result && listData.data?.list?.length > 0) {
+    const product = listData.data.list[0];
+    // Fetch full details using the product we found
+    console.log(`Found product in list, fetching full details...`);
+    
+    // Wait to avoid rate limit
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    
+    // Try query again with the confirmed pid
+    const retryParams = new URLSearchParams({
+      pid: product.pid,
+      features: 'enable_inventory,enable_video',
+      countryCode: countryCode,
+    });
+    
+    const retryResponse = await fetch(`${CJ_API_BASE}/product/query?${retryParams}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'CJ-Access-Token': accessToken,
+      },
+    });
+    
+    const retryData = await retryResponse.json();
+    console.log('CJ Product query retry response:', JSON.stringify(retryData).substring(0, 500));
+    
+    if (retryData.result && retryData.data) {
+      return retryData;
+    }
+    
+    // If still failing, construct a minimal response from list data
+    return {
+      result: true,
+      data: {
+        pid: product.pid,
+        productNameEn: product.productNameEn,
+        productSku: product.productSku,
+        productImage: product.productImage,
+        productWeight: product.productWeight,
+        sellPrice: product.sellPrice,
+        categoryName: product.categoryName,
+        variants: product.variants || [],
+      }
+    };
+  }
+  
+  // Return original failed response
   return data;
 }
 
