@@ -97,15 +97,10 @@ function extractProductId(url: string): string | null {
   }
   
   // Pattern for CJ product URLs - try multiple formats
+  // IMPORTANT: The UUID pattern MUST be first and capture the full UUID
   const patterns = [
-    // UUID format: product/-p-UUID.html (direct after product/)
-    /product\/-p-([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12})\.html/i,
-    // UUID format in URL: -p-UUID.html (with product name before)
-    /-p-([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12})\.html/i,
-    // p-UUID.html format
-    /p-([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12})\.html/i,
-    // UUID anywhere in URL
-    /([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12})/,
+    // UUID anywhere in URL (most reliable for UUID-based IDs)
+    /([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})/,
     // -p-PRODUCTID.html format (numeric)
     /-p-(\d{16,25})\.html/i,
     // p-PRODUCTID.html format
