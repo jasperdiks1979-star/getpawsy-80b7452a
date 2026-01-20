@@ -494,8 +494,7 @@ const ProductDetail = () => {
             {/* Main Image with Swipe Gestures */}
             <motion.div 
               ref={imageContainerRef}
-              className="relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group shadow-soft 3xl:rounded-[2rem] touch-pan-y"
-              style={{ aspectRatio: '1/1' }}
+              className="relative w-full aspect-square rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group shadow-soft 3xl:rounded-[2rem] touch-pan-y"
             >
               {/* Swipeable image container */}
               <motion.div
