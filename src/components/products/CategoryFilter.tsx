@@ -1,9 +1,10 @@
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Search, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { OptimizedImage } from '@/components/ui/optimized-image';
+import { Input } from '@/components/ui/input';
 
 interface Category {
   id: string;
@@ -46,6 +47,7 @@ export const CategoryFilter = ({
   productCounts = {},
 }: CategoryFilterProps) => {
   const [openCategories, setOpenCategories] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Build tree structure
   const buildCategoryTree = (categories: Category[]): CategoryNode[] => {
@@ -77,6 +79,49 @@ export const CategoryFilter = ({
 
   const categoryTree = buildCategoryTree(categories);
 
+  // Filter categories based on search query
+  const filterTree = (nodes: CategoryNode[], query: string): CategoryNode[] => {
+    if (!query.trim()) return nodes;
+    
+    const lowerQuery = query.toLowerCase();
+    
+    return nodes.reduce<CategoryNode[]>((acc, node) => {
+      const matchesQuery = node.name.toLowerCase().includes(lowerQuery);
+      const filteredChildren = filterTree(node.children, query);
+      
+      if (matchesQuery || filteredChildren.length > 0) {
+        acc.push({
+          ...node,
+          children: matchesQuery ? node.children : filteredChildren,
+        });
+      }
+      
+      return acc;
+    }, []);
+  };
+
+  const filteredCategoryTree = useMemo(
+    () => filterTree(categoryTree, searchQuery),
+    [categoryTree, searchQuery]
+  );
+
+  // Auto-expand categories when searching
+  const expandedIds = useMemo(() => {
+    if (!searchQuery.trim()) return openCategories;
+    
+    const ids: string[] = [];
+    const collectParentIds = (nodes: CategoryNode[]) => {
+      nodes.forEach((node) => {
+        if (node.children.length > 0) {
+          ids.push(node.id);
+          collectParentIds(node.children);
+        }
+      });
+    };
+    collectParentIds(filteredCategoryTree);
+    return ids;
+  }, [filteredCategoryTree, searchQuery, openCategories]);
+
   const toggleOpen = (categoryId: string) => {
     setOpenCategories((prev) =>
       prev.includes(categoryId)
@@ -101,7 +146,7 @@ export const CategoryFilter = ({
 
   const renderCategory = (category: CategoryNode, depth: number = 0) => {
     const hasChildren = category.children.length > 0;
-    const isOpen = openCategories.includes(category.id);
+    const isOpen = expandedIds.includes(category.id);
     const isSelected = selectedCategories.includes(category.name);
     const hasSelectedChildren = category.children.some((child) =>
       isParentSelected(child)
@@ -181,8 +226,37 @@ export const CategoryFilter = ({
   };
 
   return (
-    <div className="space-y-1 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
-      {categoryTree.map((category) => renderCategory(category))}
+    <div className="space-y-3">
+      {/* Search input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Zoek categorie..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 pr-8 h-9 text-sm"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Category list */}
+      <div className="space-y-1 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin">
+        {filteredCategoryTree.length > 0 ? (
+          filteredCategoryTree.map((category) => renderCategory(category))
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Geen categorieën gevonden
+          </p>
+        )}
+      </div>
     </div>
   );
 };
