@@ -1,4 +1,4 @@
-import { ChevronDown, Search, X, TrendingUp } from 'lucide-react';
+import { ChevronDown, Search, X, TrendingUp, Check } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -6,6 +6,7 @@ import { useState, useMemo } from 'react';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Category {
   id: string;
@@ -175,13 +176,15 @@ export const CategoryFilter = ({
           open={isOpen}
           onOpenChange={() => toggleOpen(category.id)}
         >
-          <div
+          <motion.div
             className={cn(
               'flex items-center gap-2 p-2 rounded-lg transition-colors',
               'hover:bg-muted/50',
               (isSelected || hasSelectedChildren) && 'bg-primary/5'
             )}
             style={{ paddingLeft: `${depth * 12 + 8}px` }}
+            animate={isSelected ? { scale: [1, 1.02, 1] } : {}}
+            transition={{ duration: 0.2 }}
           >
             <CollapsibleTrigger asChild>
               <button className="flex items-center gap-2 flex-1 text-left">
@@ -200,12 +203,29 @@ export const CategoryFilter = ({
                 )}
               </button>
             </CollapsibleTrigger>
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={() => onToggleCategory(category.name)}
-              className="shrink-0"
-            />
-          </div>
+            <motion.div
+              animate={isSelected ? { scale: [1, 1.2, 1] } : {}}
+              transition={{ duration: 0.2 }}
+            >
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => onToggleCategory(category.name)}
+                className="shrink-0"
+              />
+            </motion.div>
+            <AnimatePresence>
+              {isSelected && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  className="absolute right-2"
+                >
+                  <Check className="w-3 h-3 text-primary" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
           <CollapsibleContent>
             <div className="ml-2 border-l border-border/50 pl-2">
               {category.children.map((child) => renderCategory(child, depth + 1))}
@@ -216,7 +236,7 @@ export const CategoryFilter = ({
     }
 
     return (
-      <label
+      <motion.label
         key={category.id}
         className={cn(
           'flex items-center gap-2 cursor-pointer p-2 rounded-lg transition-colors',
@@ -224,11 +244,18 @@ export const CategoryFilter = ({
           isSelected && 'bg-primary/5'
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
+        animate={isSelected ? { scale: [1, 1.02, 1] } : {}}
+        transition={{ duration: 0.2 }}
       >
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={() => onToggleCategory(category.name)}
-        />
+        <motion.div
+          animate={isSelected ? { scale: [1, 1.2, 1] } : {}}
+          transition={{ duration: 0.2 }}
+        >
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleCategory(category.name)}
+          />
+        </motion.div>
         <CategoryImage imageUrl={category.image_url} name={category.name} />
         <span className="text-sm truncate">{category.name}</span>
         {count > 0 && (
@@ -236,7 +263,7 @@ export const CategoryFilter = ({
             ({count})
           </span>
         )}
-      </label>
+      </motion.label>
     );
   };
 
@@ -264,19 +291,37 @@ export const CategoryFilter = ({
             {popularCategories.map((cat) => {
               const isSelected = selectedCategories.includes(cat.name);
               return (
-                <Badge
+                <motion.div
                   key={cat.id}
-                  variant={isSelected ? 'default' : 'outline'}
-                  className={cn(
-                    'cursor-pointer text-xs py-1 px-2 transition-colors',
-                    isSelected
-                      ? 'bg-primary hover:bg-primary/90'
-                      : 'hover:bg-muted'
-                  )}
-                  onClick={() => onToggleCategory(cat.name)}
+                  whileTap={{ scale: 0.95 }}
+                  animate={isSelected ? { scale: [1, 1.05, 1] } : {}}
+                  transition={{ duration: 0.2 }}
                 >
-                  {cat.name}
-                </Badge>
+                  <Badge
+                    variant={isSelected ? 'default' : 'outline'}
+                    className={cn(
+                      'cursor-pointer text-xs py-1 px-2 transition-all duration-200',
+                      isSelected
+                        ? 'bg-primary hover:bg-primary/90 shadow-sm'
+                        : 'hover:bg-muted hover:scale-105'
+                    )}
+                    onClick={() => onToggleCategory(cat.name)}
+                  >
+                    <AnimatePresence mode="wait">
+                      {isSelected && (
+                        <motion.span
+                          initial={{ width: 0, opacity: 0 }}
+                          animate={{ width: 'auto', opacity: 1 }}
+                          exit={{ width: 0, opacity: 0 }}
+                          className="overflow-hidden mr-1"
+                        >
+                          <Check className="w-3 h-3 inline" />
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                    {cat.name}
+                  </Badge>
+                </motion.div>
               );
             })}
           </div>
