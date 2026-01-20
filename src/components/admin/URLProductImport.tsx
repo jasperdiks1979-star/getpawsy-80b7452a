@@ -72,9 +72,18 @@ function extractProductId(url: string): string | null {
   // 3: Direct product ID (just the ID itself, 18-30 alphanumeric chars)
   // 4: Mobile app shared URLs with pid parameter
   // 5: URLs with numeric product IDs (19-20 digit numbers)
+  // 6: UUID format product IDs (e.g., 956CEFCE-0470-4BE9-86FE-7FFDDD0C82AA)
   
   // Clean the URL
   const cleanUrl = url.trim();
+  
+  // UUID regex pattern (with hyphens)
+  const uuidPattern = /[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}/;
+  
+  // Check if it's already a UUID product ID
+  if (uuidPattern.test(cleanUrl) && cleanUrl.length === 36) {
+    return cleanUrl;
+  }
   
   // Check if it's already a product ID (numeric, 16-25 digits)
   if (/^\d{16,25}$/.test(cleanUrl)) {
@@ -88,7 +97,13 @@ function extractProductId(url: string): string | null {
   
   // Pattern for CJ product URLs - try multiple formats
   const patterns = [
-    // -p-PRODUCTID.html format (most common)
+    // UUID format in URL: -p-UUID.html (highest priority for this format)
+    /-p-([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12})\.html/i,
+    // p-UUID.html format
+    /p-([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12})\.html/i,
+    // UUID anywhere in URL
+    /([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12})/,
+    // -p-PRODUCTID.html format (numeric)
     /-p-(\d{16,25})\.html/i,
     // p-PRODUCTID.html format
     /p-(\d{16,25})\.html/i,
