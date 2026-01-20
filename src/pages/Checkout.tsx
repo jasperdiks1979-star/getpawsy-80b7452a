@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, CreditCard, Lock, Loader2, ShieldCheck, FileText } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
@@ -7,12 +7,148 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { CartUpsell } from '@/components/cart/CartUpsell';
+
+// Checkout page skeleton component
+const CheckoutSkeleton = memo(() => (
+  <div className="container px-4 md:px-6 py-8 max-w-4xl">
+    {/* Back link */}
+    <Skeleton className="h-5 w-28 mb-6" />
+    
+    {/* Title */}
+    <Skeleton className="h-9 w-32 mb-8" />
+
+    <div className="grid lg:grid-cols-5 gap-8">
+      {/* Left side - Forms */}
+      <div className="lg:col-span-3 space-y-6">
+        {/* Contact Information Card */}
+        <div className="bg-card rounded-xl shadow-card p-6">
+          <Skeleton className="h-7 w-48 mb-4" />
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-10 w-full rounded-md" />
+            <Skeleton className="h-3 w-64" />
+          </div>
+        </div>
+
+        {/* Payment & Shipping Card */}
+        <div className="bg-card rounded-xl shadow-card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-7 w-44" />
+          </div>
+          <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+            <div className="flex items-start gap-3">
+              <Skeleton className="w-5 h-5 rounded shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Skeleton className="w-5 h-5 rounded shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t">
+            <Skeleton className="h-4 w-44 mb-2" />
+            <div className="flex gap-2">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-8 w-20 rounded" />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Terms Card */}
+        <div className="bg-card rounded-xl shadow-card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-7 w-40" />
+          </div>
+          <div className="flex items-start gap-3">
+            <Skeleton className="w-4 h-4 rounded shrink-0 mt-1" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Order Summary */}
+      <div className="lg:col-span-2">
+        <div className="bg-card rounded-xl shadow-card p-6">
+          <Skeleton className="h-7 w-36 mb-4" />
+          
+          {/* Items */}
+          <div className="space-y-3 mb-4">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="flex gap-3">
+                <Skeleton className="w-16 h-16 rounded-lg shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-4 w-14" />
+              </div>
+            ))}
+          </div>
+
+          <Separator className="my-4" />
+
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-14" />
+            </div>
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-10" />
+            </div>
+          </div>
+
+          <Separator className="my-4" />
+
+          <div className="flex justify-between">
+            <Skeleton className="h-6 w-12" />
+            <Skeleton className="h-6 w-16" />
+          </div>
+
+          <Skeleton className="h-12 w-full mt-6 rounded-md" />
+          
+          <Skeleton className="h-3 w-40 mx-auto mt-4" />
+          
+          {/* Upsell section */}
+          <div className="mt-6 pt-6 border-t space-y-3">
+            <Skeleton className="h-4 w-32" />
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
+                <Skeleton className="w-12 h-12 rounded-md shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <Skeleton className="h-8 w-8 rounded-md" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+));
+CheckoutSkeleton.displayName = 'CheckoutSkeleton';
 
 const Checkout = () => {
   const { items, totalPrice } = useCart();
