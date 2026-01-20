@@ -1,8 +1,9 @@
-import { ChevronDown, Folder, FolderOpen } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface Category {
   id: string;
@@ -10,6 +11,7 @@ interface Category {
   slug: string;
   parent_id: string | null;
   product_count?: number;
+  image_url?: string | null;
 }
 
 interface CategoryFilterProps {
@@ -22,6 +24,20 @@ interface CategoryFilterProps {
 interface CategoryNode extends Category {
   children: CategoryNode[];
 }
+
+const CategoryImage = ({ imageUrl, name }: { imageUrl?: string | null; name: string }) => {
+  if (!imageUrl) return null;
+  return (
+    <div className="w-6 h-6 rounded overflow-hidden shrink-0">
+      <OptimizedImage
+        src={imageUrl}
+        alt={name}
+        className="w-full h-full object-cover"
+        aspectRatio="square"
+      />
+    </div>
+  );
+};
 
 export const CategoryFilter = ({
   categories,
@@ -115,11 +131,7 @@ export const CategoryFilter = ({
                     isOpen && 'rotate-180'
                   )}
                 />
-                {isOpen ? (
-                  <FolderOpen className="w-4 h-4 text-primary shrink-0" />
-                ) : (
-                  <Folder className="w-4 h-4 text-muted-foreground shrink-0" />
-                )}
+                <CategoryImage imageUrl={category.image_url} name={category.name} />
                 <span className="text-sm font-medium truncate">{category.name}</span>
                 {count > 0 && (
                   <span className="text-xs text-muted-foreground ml-auto shrink-0">
@@ -157,6 +169,7 @@ export const CategoryFilter = ({
           checked={isSelected}
           onCheckedChange={() => onToggleCategory(category.name)}
         />
+        <CategoryImage imageUrl={category.image_url} name={category.name} />
         <span className="text-sm truncate">{category.name}</span>
         {count > 0 && (
           <span className="text-xs text-muted-foreground ml-auto shrink-0">
