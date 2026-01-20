@@ -76,14 +76,13 @@ function extractProductId(url: string): string | null {
   
   // Clean the URL
   const cleanUrl = url.trim();
-  console.log('[extractProductId] Input URL:', cleanUrl);
   
-  // UUID regex pattern (with hyphens)
-  const uuidPattern = /[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}/;
-  
-  // Check if it's already a UUID product ID
-  if (uuidPattern.test(cleanUrl) && cleanUrl.length === 36) {
-    return cleanUrl;
+  // Try to extract UUID first - this is the most reliable for UUID-based IDs
+  // UUID format: 8-4-4-4-12 hexadecimal characters with hyphens
+  const uuidMatch = cleanUrl.match(/([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})/);
+  if (uuidMatch) {
+    console.log('[extractProductId] Found UUID:', uuidMatch[1]);
+    return uuidMatch[1];
   }
   
   // Check if it's already a product ID (numeric, 16-25 digits)
@@ -97,10 +96,7 @@ function extractProductId(url: string): string | null {
   }
   
   // Pattern for CJ product URLs - try multiple formats
-  // IMPORTANT: The UUID pattern MUST be first and capture the full UUID
   const patterns = [
-    // UUID anywhere in URL (most reliable for UUID-based IDs)
-    /([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})/,
     // -p-PRODUCTID.html format (numeric)
     /-p-(\d{16,25})\.html/i,
     // p-PRODUCTID.html format
