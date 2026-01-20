@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { SEO_KEYWORDS } from '@/lib/seo-keywords';
 import { BlogGridSkeleton } from '@/components/blog/BlogPostSkeleton';
+import { StaggeredGrid, StaggeredItem } from '@/components/ui/staggered-animation';
 
 interface BlogPost {
   id: string;
@@ -234,72 +235,74 @@ const Blog = () => {
         {isLoading ? (
           <BlogGridSkeleton count={6} />
         ) : posts && posts.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StaggeredGrid className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post) => (
-              <Link key={post.id} to={`/blog/${post.slug}`}>
-                <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow group">
-                  <div className="aspect-video bg-muted relative overflow-hidden">
-                    {post.featured_image ? (
-                      <img
-                        src={post.featured_image}
-                        alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20">
-                        <BookOpen className="w-12 h-12 text-primary/50" />
-                      </div>
-                    )}
-                    {isAdmin && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                        onClick={(e) => handleGenerateImage(e, post)}
-                        disabled={generatingImageFor === post.id}
-                      >
-                        {generatingImageFor === post.id ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4 mr-1" />
-                            {post.featured_image ? 'New image' : 'Generate image'}
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                  <CardContent className="p-5">
-                    <Badge className={`mb-3 ${categoryColors[post.category] || 'bg-muted'}`}>
-                      {post.category}
-                    </Badge>
-                    <h2 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                      {post.title}
-                    </h2>
-                    <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
-                      {post.excerpt}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {format(new Date(post.published_at), 'MMM d, yyyy', { locale: enUS })}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {post.reading_time_minutes} min
-                        </span>
-                      </div>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <StaggeredItem key={post.id}>
+                <Link to={`/blog/${post.slug}`}>
+                  <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow group">
+                    <div className="aspect-video bg-muted relative overflow-hidden">
+                      {post.featured_image ? (
+                        <img
+                          src={post.featured_image}
+                          alt={post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20">
+                          <BookOpen className="w-12 h-12 text-primary/50" />
+                        </div>
+                      )}
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                          onClick={(e) => handleGenerateImage(e, post)}
+                          disabled={generatingImageFor === post.id}
+                        >
+                          {generatingImageFor === post.id ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4 mr-1" />
+                              {post.featured_image ? 'New image' : 'Generate image'}
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                    <CardContent className="p-5">
+                      <Badge className={`mb-3 ${categoryColors[post.category] || 'bg-muted'}`}>
+                        {post.category}
+                      </Badge>
+                      <h2 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                        {post.title}
+                      </h2>
+                      <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
+                        {post.excerpt}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {format(new Date(post.published_at), 'MMM d, yyyy', { locale: enUS })}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {post.reading_time_minutes} min
+                          </span>
+                        </div>
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </StaggeredItem>
             ))}
-          </div>
+          </StaggeredGrid>
         ) : (
           <div className="text-center py-12">
             <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
