@@ -7,6 +7,7 @@ import { OptimizedImage } from '@/components/ui/optimized-image';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Category {
@@ -301,15 +302,24 @@ export const CategoryFilter = ({
         )}
         {allParentIds.length > 0 && (
           <div className="flex items-center gap-2 ml-auto">
-            <div className="flex items-center gap-1.5">
-              <Progress 
-                value={(openCategories.length / allParentIds.length) * 100} 
-                className="w-12 h-1.5"
-              />
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {openCategories.length}/{allParentIds.length}
-              </span>
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 cursor-help">
+                    <Progress 
+                      value={(openCategories.length / allParentIds.length) * 100} 
+                      className="w-12 h-1.5"
+                    />
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {openCategories.length}/{allParentIds.length}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  <p>{openCategories.length} van {allParentIds.length} categorieën uitgevouwen</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             {openCategories.length < allParentIds.length && (
               <button
                 onClick={expandAll}
