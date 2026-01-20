@@ -519,7 +519,7 @@ const BestsellerDetail = () => {
                     onDragStart={() => setIsDragging(true)}
                     onDrag={(_, info) => setDragX(info.offset.x)}
                     onDragEnd={(_, info) => handleDragEnd(images.length, info.offset.x, info.velocity.x)}
-                    onClick={() => !isDragging && setLightboxOpen(true)}
+                    onClick={() => !isDragging && window.innerWidth >= 768 && setLightboxOpen(true)}
                     whileTap={{ cursor: "grabbing" }}
                   >
                     <AnimatePresence mode="wait">
@@ -542,14 +542,13 @@ const BestsellerDetail = () => {
                           />
                         </div>
                         
-                        {/* Mobile: Pinch-to-zoom image */}
+                        {/* Mobile: Pinch-to-zoom image - no lightbox, use native pinch-zoom */}
                         <div className="md:hidden w-full h-full">
                           <PinchZoomImage
                             src={images[selectedImage]}
                             alt={product.name}
                             className="object-contain"
                             containerClassName="w-full h-full"
-                            onTap={() => setLightboxOpen(true)}
                           />
                         </div>
                       </motion.div>
