@@ -13,7 +13,6 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
-  ArrowLeft,
   Sparkles,
   Award,
   Clock,
@@ -29,7 +28,8 @@ import {
   Users,
   TrendingUp,
   HelpCircle,
-  MessageCircle
+  MessageCircle,
+  Home
 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,14 @@ import { useCartAnimation } from '@/contexts/CartAnimationContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useHaptic } from '@/hooks/useHaptic';
 import { toast } from 'sonner';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 
 // Generate JSON-LD structured data for product
 const generateProductJsonLd = (product: {
@@ -464,16 +472,31 @@ const BestsellerDetail = () => {
           {JSON.stringify(breadcrumbJsonLd)}
         </script>
       </Helmet>
-        {/* Breadcrumb - Refined */}
+        {/* Breadcrumbs */}
         <div className="bg-gradient-to-r from-muted/40 via-muted/20 to-muted/40 border-b border-border/50">
           <div className="container px-4 py-4">
-            <nav className="flex items-center gap-2 text-sm">
-              <Link to="/" className="text-muted-foreground hover:text-primary transition-colors">Home</Link>
-              <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
-              <Link to="/products" className="text-muted-foreground hover:text-primary transition-colors">Products</Link>
-              <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
-              <span className="text-foreground font-medium truncate max-w-[200px]">{product.name}</span>
-            </nav>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/" className="flex items-center gap-1">
+                      <Home className="h-3.5 w-3.5" />
+                      <span className="sr-only sm:not-sr-only">Home</span>
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/bestsellers">Bestsellers</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="max-w-[200px] truncate">{product.name}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
         </div>
 
@@ -1459,7 +1482,7 @@ const BestsellerDetail = () => {
             onClick={() => navigate('/products')}
             className="gap-2 text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ChevronLeft className="w-4 h-4" />
             Back to All Products
           </Button>
         </div>
