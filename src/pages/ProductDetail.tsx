@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock, MessageSquare, Ruler, Weight, Box, Info } from 'lucide-react';
+import { ShoppingCart, Heart, Truck, Shield, Minus, Plus, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock, MessageSquare, Ruler, Weight, Box, Info, Home } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,6 +26,14 @@ import { calculateSellingPrice } from '@/lib/pricing';
 import FormattedDescription from '@/components/products/FormattedDescription';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 
 interface ProductVariant {
   vid: string;
@@ -460,19 +468,47 @@ const ProductDetail = () => {
       </div>
 
       <div className="w-full max-w-[100vw] px-4 md:px-6 3xl:px-8 py-8 3xl:py-12 mx-auto md:container ultrawide:max-w-[1800px]">
-        {/* Breadcrumb */}
+        {/* Breadcrumbs */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
+          className="mb-6 3xl:mb-8"
         >
-          <Link
-            to="/products"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-6 3xl:mb-8 group"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Back to Products</span>
-          </Link>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/" className="flex items-center gap-1">
+                    <Home className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only">Home</span>
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/products">Products</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              {product.category && (
+                <>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link to={`/products?category=${encodeURIComponent(product.category.toLowerCase().replace(/\s+/g, '-'))}`}>
+                        {product.category}
+                      </Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                </>
+              )}
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="max-w-[200px] truncate">{product.name}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-16 3xl:gap-24 ultrawide:gap-32 w-full">
