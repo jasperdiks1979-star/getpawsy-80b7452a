@@ -10,11 +10,11 @@ import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { StaggeredGrid, StaggeredItem } from '@/components/ui/staggered-animation';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { EnhancedSearch } from '@/components/search/EnhancedSearch';
+import { CategoryFilter } from '@/components/products/CategoryFilter';
 import { supabase } from '@/integrations/supabase/client';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
@@ -76,19 +76,40 @@ const Products = () => {
     }
   }, [searchParam]);
 
-  // Fetch categories from database
+  // Fetch categories from database with parent info
   const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['categories'],
+    queryKey: ['categories-with-parents'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select('*')
+        .select('id, name, slug, parent_id')
         .order('name');
       
       if (error) throw error;
       return data;
     },
   });
+
+  // Calculate product counts per category
+  const productCounts = useMemo(() => {
+    if (!products) return {};
+    const counts: Record<string, number> = {};
+    
+    products.forEach((product) => {
+      if (product.category) {
+        // Match by category name
+        const category = categories?.find(
+          (c) => c.name.toLowerCase() === product.category?.toLowerCase() ||
+                 c.slug === product.category?.toLowerCase()
+        );
+        if (category) {
+          counts[category.name] = (counts[category.name] || 0) + 1;
+        }
+      }
+    });
+    
+    return counts;
+  }, [products, categories]);
 
   // Fetch recently viewed products
   const { data: recentlyViewedProducts } = useQuery({
@@ -223,23 +244,17 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Categories */}
+      {/* Categories with Subcategories */}
       <div>
         <h3 className="font-semibold mb-3">Categories</h3>
-        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-          {categories?.map((category) => (
-            <label
-              key={category.id}
-              className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
-            >
-              <Checkbox
-                checked={selectedCategories.includes(category.name)}
-                onCheckedChange={() => toggleCategory(category.name)}
-              />
-              <span className="text-sm">{category.name}</span>
-            </label>
-          ))}
-        </div>
+        {categories && (
+          <CategoryFilter
+            categories={categories}
+            selectedCategories={selectedCategories}
+            onToggleCategory={toggleCategory}
+            productCounts={productCounts}
+          />
+        )}
       </div>
 
       <Button
