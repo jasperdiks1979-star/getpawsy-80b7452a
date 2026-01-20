@@ -25,6 +25,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 
 interface Category {
   id: string;
@@ -205,54 +206,78 @@ const HomepagePreview = ({ categories }: HomepagePreviewProps) => {
         <span>Live Preview - Zo ziet de homepage eruit</span>
       </div>
       
-      <div className="bg-muted/30 rounded-xl p-6 border">
+      <motion.div 
+        className="bg-muted/30 rounded-xl p-6 border"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <div className="text-center mb-6">
           <h3 className="text-lg font-display font-bold text-foreground">Shop by Category</h3>
           <p className="text-sm text-muted-foreground">Find the perfect products for your pet</p>
         </div>
         
-        <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-          {categories.map((category, index) => (
-            <div 
-              key={category.id} 
-              className="group relative aspect-square overflow-hidden rounded-2xl shadow-sm hover:shadow-md transition-all duration-300"
-            >
-              <img 
-                src={`${category.image_url || fallbackImage}?v=4`}
-                alt={category.name}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                onError={(e) => { e.currentTarget.src = fallbackImage; }}
-              />
-              
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent group-hover:from-primary/80 group-hover:via-primary/20 transition-colors duration-300" />
-              
-              {/* Content */}
-              <div className="absolute bottom-0 left-0 right-0 p-2">
-                <p className="font-medium text-xs text-white truncate">{category.name}</p>
-              </div>
-              
-              {/* Order badge */}
-              <div className="absolute top-1 left-1">
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 opacity-80">
-                  {index + 1}
-                </Badge>
-              </div>
-              
-              {/* Corner accent */}
-              <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <ArrowRight className="w-3 h-3 text-white" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <LayoutGroup>
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
+            <AnimatePresence mode="popLayout">
+              {categories.map((category, index) => (
+                <motion.div 
+                  key={category.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{
+                    layout: { type: "spring", stiffness: 350, damping: 30 },
+                    opacity: { duration: 0.2 },
+                    scale: { duration: 0.2 }
+                  }}
+                  className="group relative aspect-square overflow-hidden rounded-2xl shadow-sm hover:shadow-md"
+                >
+                  <img 
+                    src={`${category.image_url || fallbackImage}?v=4`}
+                    alt={category.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    onError={(e) => { e.currentTarget.src = fallbackImage; }}
+                  />
+                  
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent group-hover:from-primary/80 group-hover:via-primary/20 transition-colors duration-300" />
+                  
+                  {/* Content */}
+                  <div className="absolute bottom-0 left-0 right-0 p-2">
+                    <p className="font-medium text-xs text-white truncate">{category.name}</p>
+                  </div>
+                  
+                  {/* Animated order badge */}
+                  <motion.div 
+                    className="absolute top-1 left-1"
+                    key={`badge-${category.id}-${index}`}
+                    initial={{ scale: 1.3 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                  >
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 opacity-80">
+                      {index + 1}
+                    </Badge>
+                  </motion.div>
+                  
+                  {/* Corner accent */}
+                  <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <ArrowRight className="w-3 h-3 text-white" />
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </LayoutGroup>
         
         {categories.length === 0 && (
           <div className="text-center py-8 text-muted-foreground text-sm">
             Geen categorieën om weer te geven
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };
