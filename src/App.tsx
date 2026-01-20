@@ -111,6 +111,7 @@ const Shipping = lazyWithRetry(() => import("./pages/Shipping"));
 const FAQ = lazyWithRetry(() => import("./pages/FAQ"));
 const TrackOrder = lazyWithRetry(() => import("./pages/TrackOrder"));
 const BestsellerDetail = lazyWithRetry(() => import("./pages/BestsellerDetail"));
+const Bestsellers = lazyWithRetry(() => import("./pages/Bestsellers"));
 const LiveMap = lazyWithRetry(() => import("./pages/LiveMap"));
 const Blog = lazyWithRetry(() => import("./pages/Blog"));
 const BlogPost = lazyWithRetry(() => import("./pages/BlogPost"));
@@ -178,6 +179,7 @@ const App = () => {
                         <Route path="/shipping" element={<Shipping />} />
                         <Route path="/faq" element={<FAQ />} />
                         <Route path="/track" element={<TrackOrder />} />
+                        <Route path="/bestsellers" element={<Bestsellers />} />
                         <Route path="/bestseller/:slug" element={<BestsellerDetail />} />
                         <Route path="/live-map" element={<LiveMap />} />
                         <Route path="/blog" element={<Blog />} />
