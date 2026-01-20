@@ -59,6 +59,40 @@ async function sendOrderConfirmationEmail(
   }
 }
 
+// Helper function to create CJ Dropshipping order
+async function createCJDropshippingOrder(orderId: string): Promise<void> {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("[STRIPE-WEBHOOK] Missing Supabase config for CJ order");
+      return;
+    }
+
+    console.log("[STRIPE-WEBHOOK] Creating CJ Dropshipping order for:", orderId);
+    
+    const response = await fetch(`${supabaseUrl}/functions/v1/create-cj-order`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseServiceKey}`,
+      },
+      body: JSON.stringify({ orderId }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[STRIPE-WEBHOOK] Failed to create CJ order:", errorText);
+    } else {
+      const result = await response.json();
+      console.log("[STRIPE-WEBHOOK] CJ order created successfully:", result.cjOrderId);
+    }
+  } catch (error) {
+    console.error("[STRIPE-WEBHOOK] Error creating CJ order:", error);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -203,6 +237,9 @@ serve(async (req) => {
         } else {
           console.warn("[STRIPE-WEBHOOK] No customer email available for confirmation");
         }
+
+        // Create CJ Dropshipping order automatically after successful payment
+        await createCJDropshippingOrder(orderId);
 
         break;
       }
