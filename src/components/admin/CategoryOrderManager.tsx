@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { GripVertical, Save, RotateCcw, Home, Loader2, ImageIcon, ChevronDown, ChevronRight, FolderTree, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { GripVertical, Save, RotateCcw, Home, Loader2, ImageIcon, ChevronDown, ChevronRight, FolderTree, Eye, EyeOff, ArrowRight, Undo2, Redo2 } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -282,6 +282,12 @@ const HomepagePreview = ({ categories }: HomepagePreviewProps) => {
   );
 };
 
+// History state type
+interface HistoryState {
+  parents: Category[];
+  subcategories: Record<string, Category[]>;
+}
+
 export const CategoryOrderManager = () => {
   const queryClient = useQueryClient();
   const [localParentCategories, setLocalParentCategories] = useState<Category[]>([]);
@@ -289,6 +295,11 @@ export const CategoryOrderManager = () => {
   const [hasParentChanges, setHasParentChanges] = useState(false);
   const [changedSubcategoryParents, setChangedSubcategoryParents] = useState<Set<string>>(new Set());
   const [showPreview, setShowPreview] = useState(true);
+  
+  // Undo/Redo history
+  const [history, setHistory] = useState<HistoryState[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isUndoRedoAction, setIsUndoRedoAction] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -328,8 +339,87 @@ export const CategoryOrderManager = () => {
       
       setLocalParentCategories(parents);
       setLocalSubcategories(subcats);
+      
+      // Initialize history with the original state
+      setHistory([{ parents, subcategories: subcats }]);
+      setHistoryIndex(0);
     }
   }, [allCategories]);
+
+  // Push to history when state changes (but not during undo/redo)
+  const pushToHistory = useCallback((parents: Category[], subcats: Record<string, Category[]>) => {
+    if (isUndoRedoAction) {
+      setIsUndoRedoAction(false);
+      return;
+    }
+    
+    setHistory(prev => {
+      // Remove any future states if we're not at the end
+      const newHistory = prev.slice(0, historyIndex + 1);
+      // Add the new state
+      newHistory.push({ parents, subcategories: subcats });
+      // Limit history to 50 states
+      if (newHistory.length > 50) {
+        newHistory.shift();
+        return newHistory;
+      }
+      return newHistory;
+    });
+    setHistoryIndex(prev => Math.min(prev + 1, 49));
+  }, [historyIndex, isUndoRedoAction]);
+
+  // Undo handler
+  const handleUndo = useCallback(() => {
+    if (historyIndex <= 0) return;
+    
+    setIsUndoRedoAction(true);
+    const newIndex = historyIndex - 1;
+    const prevState = history[newIndex];
+    
+    setLocalParentCategories(prevState.parents);
+    setLocalSubcategories(prevState.subcategories);
+    setHistoryIndex(newIndex);
+    
+    // Check if we're back to the original state
+    if (newIndex === 0) {
+      setHasParentChanges(false);
+      setChangedSubcategoryParents(new Set());
+    }
+  }, [history, historyIndex]);
+
+  // Redo handler
+  const handleRedo = useCallback(() => {
+    if (historyIndex >= history.length - 1) return;
+    
+    setIsUndoRedoAction(true);
+    const newIndex = historyIndex + 1;
+    const nextState = history[newIndex];
+    
+    setLocalParentCategories(nextState.parents);
+    setLocalSubcategories(nextState.subcategories);
+    setHistoryIndex(newIndex);
+    setHasParentChanges(true);
+  }, [history, historyIndex]);
+
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (canUndo) handleUndo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        if (canRedo) handleRedo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, handleUndo, handleRedo]);
 
   // Save order mutation
   const saveMutation = useMutation({
@@ -379,17 +469,22 @@ export const CategoryOrderManager = () => {
         const newIndex = items.findIndex((item) => item.id === over.id);
         const newOrder = arrayMove(items, oldIndex, newIndex);
         setHasParentChanges(true);
+        // Push to history
+        pushToHistory(newOrder, localSubcategories);
         return newOrder;
       });
     }
   };
 
   const handleSubcategoriesChange = (parentId: string, newOrder: Category[]) => {
-    setLocalSubcategories(prev => ({
-      ...prev,
+    const newSubcats = {
+      ...localSubcategories,
       [parentId]: newOrder
-    }));
+    };
+    setLocalSubcategories(newSubcats);
     setChangedSubcategoryParents(prev => new Set(prev).add(parentId));
+    // Push to history
+    pushToHistory(localParentCategories, newSubcats);
   };
 
   const handleSave = () => {
@@ -412,6 +507,9 @@ export const CategoryOrderManager = () => {
       setLocalSubcategories(subcats);
       setHasParentChanges(false);
       setChangedSubcategoryParents(new Set());
+      // Reset history
+      setHistory([{ parents, subcategories: subcats }]);
+      setHistoryIndex(0);
     }
   };
 
@@ -449,6 +547,30 @@ export const CategoryOrderManager = () => {
             </CardDescription>
           </div>
           <div className="flex gap-2">
+            {/* Undo/Redo buttons */}
+            <div className="flex border rounded-md">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleUndo}
+                disabled={!canUndo || saveMutation.isPending}
+                className="rounded-r-none border-r"
+                title="Ongedaan maken (Ctrl+Z)"
+              >
+                <Undo2 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleRedo}
+                disabled={!canRedo || saveMutation.isPending}
+                className="rounded-l-none"
+                title="Opnieuw (Ctrl+Y)"
+              >
+                <Redo2 className="w-4 h-4" />
+              </Button>
+            </div>
+            
             <Button
               variant="outline"
               size="icon"
