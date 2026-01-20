@@ -198,12 +198,13 @@ const Index = () => {
   });
 
   const { data: categories } = useQuery({
-    queryKey: ['categories'],
+    queryKey: ['homepage-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
-        .order('name');
+        .is('parent_id', null)
+        .order('display_order', { ascending: true });
       
       if (error) throw error;
       return data;
