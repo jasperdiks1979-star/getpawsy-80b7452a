@@ -14,6 +14,12 @@ import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { toast } from 'sonner';
 
+interface SellingPoint {
+  icon: string;
+  title: string;
+  description: string;
+}
+
 interface BestsellerWithProduct {
   id: string;
   slug: string;
@@ -22,7 +28,7 @@ interface BestsellerWithProduct {
   hero_subheadline: string | null;
   seo_description: string | null;
   long_description: string | null;
-  selling_points: string[] | null;
+  selling_points: SellingPoint[] | null;
   product: {
     id: string;
     name: string;
@@ -156,9 +162,9 @@ const BestsellerCard = ({ bestseller, index }: { bestseller: BestsellerWithProdu
             {/* Selling points preview */}
             {bestseller.selling_points && bestseller.selling_points.length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {(bestseller.selling_points as string[]).slice(0, 2).map((point, i) => (
+                {bestseller.selling_points.slice(0, 2).map((point, i) => (
                   <Badge key={i} variant="secondary" className="text-xs">
-                    {point.length > 20 ? point.slice(0, 20) + '...' : point}
+                    {point.title.length > 20 ? point.title.slice(0, 20) + '...' : point.title}
                   </Badge>
                 ))}
               </div>
@@ -225,7 +231,7 @@ const Bestsellers = () => {
       return (data || []).map((item) => ({
         ...item,
         product: Array.isArray(item.product) ? item.product[0] : item.product,
-        selling_points: item.selling_points as string[] | null,
+        selling_points: item.selling_points as unknown as SellingPoint[] | null,
       })) as BestsellerWithProduct[];
     },
     staleTime: 5 * 60 * 1000,
