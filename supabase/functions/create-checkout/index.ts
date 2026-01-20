@@ -132,6 +132,16 @@ serve(async (req) => {
 
     console.log("[CREATE-CHECKOUT] Session created:", session.id);
 
+    // Generate access token for guest orders (when no userId)
+    const generateAccessToken = () => {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    };
+
+    // Only generate access token for guest orders (no authenticated user)
+    const orderAccessToken = userId ? null : generateAccessToken();
+
     // Create pending order in database using service role
     const { error: orderError } = await supabaseAdmin
       .from("orders")
@@ -143,6 +153,7 @@ serve(async (req) => {
         currency: "eur",
         customer_email: userEmail,
         items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
+        order_access_token: orderAccessToken,
       });
 
     if (orderError) {

@@ -47,9 +47,23 @@ const STATUS_STEPS = [
 const TrackOrder = () => {
   const [orderNumber, setOrderNumber] = useState('');
   const [email, setEmail] = useState('');
+  const [accessToken, setAccessToken] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [requiresToken, setRequiresToken] = useState(false);
+
+  // Check for access token in URL params (from email links)
+  useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const orderId = params.get('order');
+    const emailParam = params.get('email');
+    
+    if (token) setAccessToken(token);
+    if (orderId) setOrderNumber(orderId);
+    if (emailParam) setEmail(emailParam);
+  });
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,19 +81,37 @@ const TrackOrder = () => {
     setIsSearching(true);
     setNotFound(false);
     setOrderResult(null);
+    setRequiresToken(false);
 
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('id, status, created_at, tracking_number, tracking_carrier, customer_email, total_amount')
-        .eq('id', orderNumber.trim())
-        .eq('customer_email', email.trim().toLowerCase())
-        .single();
+      // Use secure edge function for order lookup
+      const { data, error } = await supabase.functions.invoke('lookup-guest-order', {
+        body: {
+          orderId: orderNumber.trim(),
+          email: email.trim().toLowerCase(),
+          accessToken: accessToken || undefined,
+        },
+      });
 
-      if (error || !data) {
+      if (error) {
+        console.error('Track order error:', error);
         setNotFound(true);
+        return;
+      }
+
+      if (data?.error) {
+        setNotFound(true);
+        return;
+      }
+
+      if (data?.requiresToken) {
+        setRequiresToken(true);
+      }
+
+      if (data?.order) {
+        setOrderResult(data.order);
       } else {
-        setOrderResult(data);
+        setNotFound(true);
       }
     } catch (error) {
       console.error('Track order error:', error);
@@ -190,6 +222,28 @@ const TrackOrder = () => {
                 <Button asChild variant="outline">
                   <Link to="/contact">Contact Support</Link>
                 </Button>
+              </motion.div>
+            )}
+
+            {/* Limited Access Notice */}
+            {requiresToken && orderResult && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-4"
+              >
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                      Limited Order Information
+                    </p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      For full order details including tracking information, please use the 
+                      tracking link sent to your email address.
+                    </p>
+                  </div>
+                </div>
               </motion.div>
             )}
 
