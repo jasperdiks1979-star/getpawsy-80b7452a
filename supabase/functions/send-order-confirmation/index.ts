@@ -35,6 +35,7 @@ interface OrderConfirmationRequest {
   totalAmount: number;
   currency: string;
   shippingAddress?: ShippingAddress;
+  orderAccessToken?: string; // Secure token for guest order tracking
 }
 
 // Countries that should receive Dutch emails
@@ -77,6 +78,8 @@ const translations = {
     visitShop: "Bezoek onze webshop",
     emailTitle: "Orderbevestiging - GetPawsy",
     subject: (orderId: string) => `🐾 Orderbevestiging #${orderId} - GetPawsy`,
+    trackOrder: "Volg je bestelling",
+    trackOrderDescription: "Klik op de knop hieronder om de status van je bestelling te bekijken:",
   },
   en: {
     thankYou: "Thank you for your order!",
@@ -95,6 +98,8 @@ const translations = {
     visitShop: "Visit our shop",
     emailTitle: "Order Confirmation - GetPawsy",
     subject: (orderId: string) => `🐾 Order Confirmation #${orderId} - GetPawsy`,
+    trackOrder: "Track Your Order",
+    trackOrderDescription: "Click the button below to view your order status:",
   }
 };
 
@@ -104,7 +109,8 @@ const generateOrderEmailHtml = (
   items: OrderItem[],
   totalAmount: number,
   currency: string,
-  shippingAddress?: ShippingAddress
+  shippingAddress?: ShippingAddress,
+  orderAccessToken?: string
 ): string => {
   const country = shippingAddress?.address?.country;
   const isDutch = isDutchCountry(country);
@@ -212,6 +218,19 @@ const generateOrderEmailHtml = (
         </p>
       </div>
       
+      <!-- Track Order Button (with secure link for guest orders) -->
+      ${orderAccessToken ? `
+      <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; padding: 20px; border-radius: 8px; margin-top: 24px; text-align: center;">
+        <p style="margin: 0 0 16px 0; color: #065f46; font-size: 14px;">
+          ${t.trackOrderDescription}
+        </p>
+        <a href="https://getpawsy.lovable.app/track-order?order=${encodeURIComponent(orderId)}&email=${encodeURIComponent(shippingAddress?.name ? '' : customerName)}&token=${encodeURIComponent(orderAccessToken)}" 
+           style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+          📦 ${t.trackOrder}
+        </a>
+      </div>
+      ` : ''}
+      
       <!-- Support -->
       <div style="border-top: 1px solid #e5e7eb; margin-top: 32px; padding-top: 24px;">
         <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0;">
@@ -256,12 +275,13 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const requestData: OrderConfirmationRequest = await req.json();
-    const { orderId, customerEmail, customerName, items, totalAmount, currency, shippingAddress } = requestData;
+    const { orderId, customerEmail, customerName, items, totalAmount, currency, shippingAddress, orderAccessToken } = requestData;
 
     console.log("[SEND-ORDER-CONFIRMATION] Processing order:", orderId);
     console.log("[SEND-ORDER-CONFIRMATION] Customer email:", customerEmail);
     console.log("[SEND-ORDER-CONFIRMATION] Items count:", items?.length || 0);
     console.log("[SEND-ORDER-CONFIRMATION] Shipping country:", shippingAddress?.address?.country);
+    console.log("[SEND-ORDER-CONFIRMATION] Has access token:", !!orderAccessToken);
 
     if (!customerEmail || !orderId) {
       console.error("[SEND-ORDER-CONFIRMATION] Missing required fields");
@@ -279,7 +299,8 @@ const handler = async (req: Request): Promise<Response> => {
       items || [],
       totalAmount,
       currency || 'EUR',
-      shippingAddress
+      shippingAddress,
+      orderAccessToken
     );
 
     // Determine subject based on language

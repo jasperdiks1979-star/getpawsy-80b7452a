@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
 import { Package, Search, Truck, CheckCircle, Clock, MapPin, ExternalLink, AlertCircle } from 'lucide-react';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 interface OrderResult {
   id: string;
@@ -45,6 +45,7 @@ const STATUS_STEPS = [
 ];
 
 const TrackOrder = () => {
+  const [searchParams] = useSearchParams();
   const [orderNumber, setOrderNumber] = useState('');
   const [email, setEmail] = useState('');
   const [accessToken, setAccessToken] = useState('');
@@ -54,16 +55,15 @@ const TrackOrder = () => {
   const [requiresToken, setRequiresToken] = useState(false);
 
   // Check for access token in URL params (from email links)
-  useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    const orderId = params.get('order');
-    const emailParam = params.get('email');
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const orderId = searchParams.get('order');
+    const emailParam = searchParams.get('email');
     
     if (token) setAccessToken(token);
     if (orderId) setOrderNumber(orderId);
     if (emailParam) setEmail(emailParam);
-  });
+  }, [searchParams]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
