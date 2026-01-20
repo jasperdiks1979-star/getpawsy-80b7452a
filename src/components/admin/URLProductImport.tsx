@@ -289,8 +289,17 @@ const CATEGORY_KEYWORD_MAP: Record<string, string[]> = {
   ], // Fallback category
 };
 
-// Match product name to the best database category
-function matchProductToCategory(productName: string, cjCategoryName: string, availableCategories: CategoryWithParent[]): string {
+// Match result with full details
+interface CategoryMatchResult {
+  categoryName: string;
+  categorySlug: string;
+  score: number;
+  matchedKeywords: string[];
+  isFallback: boolean;
+}
+
+// Match product name to the best database category with full details
+function matchProductToCategoryWithDetails(productName: string, cjCategoryName: string, availableCategories: CategoryWithParent[]): CategoryMatchResult {
   const lowerName = productName.toLowerCase();
   const lowerCjCategory = cjCategoryName.toLowerCase();
   
@@ -336,14 +345,33 @@ function matchProductToCategory(productName: string, cjCategoryName: string, ava
   
   // Return best match, or 'pet-supplies' as fallback
   if (scores.length > 0) {
-    console.log(`Category match for "${productName}": ${scores[0].slug} (score: ${scores[0].score}, keywords: ${scores[0].matchedKeywords.join(', ')})`);
-    return categoryBySlug.get(scores[0].slug)!.name;
+    const bestMatch = scores[0];
+    const category = categoryBySlug.get(bestMatch.slug)!;
+    console.log(`Category match for "${productName}": ${bestMatch.slug} (score: ${bestMatch.score}, keywords: ${bestMatch.matchedKeywords.join(', ')})`);
+    return {
+      categoryName: category.name,
+      categorySlug: category.slug,
+      score: bestMatch.score,
+      matchedKeywords: bestMatch.matchedKeywords,
+      isFallback: false,
+    };
   }
   
   // Fallback to CJ category or Pet Supplies
   const fallback = categoryBySlug.get('pet-supplies');
   console.log(`No match for "${productName}", using fallback: ${fallback?.name || cjCategoryName}`);
-  return fallback?.name || cjCategoryName || 'Pet Supplies';
+  return {
+    categoryName: fallback?.name || cjCategoryName || 'Pet Supplies',
+    categorySlug: fallback?.slug || 'pet-supplies',
+    score: 0,
+    matchedKeywords: [],
+    isFallback: true,
+  };
+}
+
+// Simple wrapper for backward compatibility
+function matchProductToCategory(productName: string, cjCategoryName: string, availableCategories: CategoryWithParent[]): string {
+  return matchProductToCategoryWithDetails(productName, cjCategoryName, availableCategories).categoryName;
 }
 
 // Extract product ID from CJ Dropshipping URL
@@ -819,6 +847,56 @@ https://www.cjdropshipping.com/product/...`}
             </div>
           </CardHeader>
           <CardContent>
+            {/* Category distribution summary */}
+            {selectedCategory === "auto" && foundCount > 0 && categories && (
+              <div className="mb-4 p-3 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium">📊 Categorie Verdeling (Preview)</span>
+                  <Badge variant="outline" className="text-xs">{foundCount} producten</Badge>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(() => {
+                    // Calculate category distribution
+                    const distribution = new Map<string, { count: number; fallbackCount: number }>();
+                    urlEntries
+                      .filter(e => e.status === "found" && e.productData)
+                      .forEach(entry => {
+                        const match = matchProductToCategoryWithDetails(
+                          entry.productData!.productNameEn,
+                          entry.productData!.categoryName || '',
+                          categories
+                        );
+                        const current = distribution.get(match.categoryName) || { count: 0, fallbackCount: 0 };
+                        distribution.set(match.categoryName, {
+                          count: current.count + 1,
+                          fallbackCount: current.fallbackCount + (match.isFallback ? 1 : 0),
+                        });
+                      });
+                    
+                    // Sort by count descending
+                    const sorted = Array.from(distribution.entries()).sort((a, b) => b[1].count - a[1].count);
+                    
+                    return sorted.map(([catName, data]) => (
+                      <div 
+                        key={catName}
+                        className={`text-xs px-2 py-1 rounded-md flex items-center gap-1 ${
+                          data.fallbackCount > 0 
+                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' 
+                            : 'bg-primary/10 text-primary'
+                        }`}
+                      >
+                        <span className="font-medium">{catName}</span>
+                        <span className="px-1.5 py-0.5 bg-background/50 rounded text-[10px]">{data.count}</span>
+                        {data.fallbackCount > 0 && (
+                          <span className="text-[10px]">⚠️ {data.fallbackCount} fallback</span>
+                        )}
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+
             {/* Progress bar */}
             {importProgress && (
               <div className="mb-4 space-y-2">
@@ -859,16 +937,64 @@ https://www.cjdropshipping.com/product/...`}
                         <img 
                           src={entry.productData.productImage} 
                           alt="" 
-                          className="w-10 h-10 object-cover rounded"
+                          className="w-12 h-12 object-cover rounded"
                         />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="font-medium text-sm truncate">{entry.productData.productNameEn}</p>
                           <p className="text-xs text-muted-foreground">
                             ${entry.productData.sellPrice} • {entry.productData.variants?.length || 0} varianten • {entry.productData.totalStock || 0} voorraad
                           </p>
-                          {selectedCategory === "auto" && categories && (
+                          {/* Category preview with details */}
+                          {selectedCategory === "auto" && categories && (() => {
+                            const matchResult = matchProductToCategoryWithDetails(
+                              entry.productData.productNameEn, 
+                              entry.productData.categoryName || '', 
+                              categories
+                            );
+                            return (
+                              <div className="mt-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                                    matchResult.isFallback 
+                                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' 
+                                      : 'bg-primary/10 text-primary'
+                                  }`}>
+                                    📁 {matchResult.categoryName}
+                                  </span>
+                                  {!matchResult.isFallback && matchResult.score > 0 && (
+                                    <span className="text-xs text-muted-foreground">
+                                      (score: {matchResult.score})
+                                    </span>
+                                  )}
+                                  {matchResult.isFallback && (
+                                    <span className="text-xs text-orange-600 dark:text-orange-400">
+                                      ⚠️ Geen match - fallback
+                                    </span>
+                                  )}
+                                </div>
+                                {matchResult.matchedKeywords.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {matchResult.matchedKeywords.slice(0, 5).map((kw, idx) => (
+                                      <span 
+                                        key={idx}
+                                        className="text-[10px] px-1 py-0.5 bg-muted rounded text-muted-foreground"
+                                      >
+                                        {kw}
+                                      </span>
+                                    ))}
+                                    {matchResult.matchedKeywords.length > 5 && (
+                                      <span className="text-[10px] text-muted-foreground">
+                                        +{matchResult.matchedKeywords.length - 5} meer
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                          {selectedCategory !== "auto" && (
                             <p className="text-xs text-primary mt-0.5">
-                              📁 {matchProductToCategory(entry.productData.productNameEn, entry.productData.categoryName || '', categories)}
+                              📁 {categories?.find(c => c.slug === selectedCategory)?.name || selectedCategory}
                             </p>
                           )}
                         </div>
