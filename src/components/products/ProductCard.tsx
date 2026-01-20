@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { toast } from 'sonner';
+import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
 
 export interface Product {
   id: string;
@@ -35,9 +36,17 @@ export interface Product {
 
 interface ProductCardProps {
   product: Product;
+  listId?: string;
+  listName?: string;
+  position?: number;
 }
 
-export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(({ product }, ref) => {
+export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(({ 
+  product, 
+  listId = 'products', 
+  listName = 'Products',
+  position = 0 
+}, ref) => {
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -47,6 +56,17 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   
 
   const isOutOfStock = product.stock === 0 || product.stock === null;
+
+  const handleCardClick = () => {
+    // Track select_item event for GA4 enhanced ecommerce
+    trackSelectItem(listId, listName, {
+      id: product.id,
+      name: product.name,
+      price: Number(product.price),
+      category: product.category || undefined,
+      position,
+    });
+  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -72,7 +92,9 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
       price: Number(product.price),
       image: product.image_url || '/placeholder.svg',
     });
-    // Toast is handled by CartContext
+
+    // Track add_to_cart for GA4
+    trackAddToCart(product.id, product.name, Number(product.price), 1);
   };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
@@ -80,7 +102,16 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
     setIsAnimating(true);
     hapticSelection();
     toggleWishlist(product.id);
-    toast.success(inWishlist ? 'Removed from wishlist!' : 'Added to wishlist!');
+    
+    // Track wishlist events for GA4
+    if (inWishlist) {
+      trackRemoveFromWishlist(product.id, product.name);
+      toast.success('Removed from wishlist!');
+    } else {
+      trackAddToWishlist(product.id, product.name, Number(product.price));
+      toast.success('Added to wishlist!');
+    }
+    
     setTimeout(() => setIsAnimating(false), 300);
   };
 
@@ -92,7 +123,7 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   const productUrl = product.slug ? `/product/${product.slug}` : `/product/${product.id}`;
 
   return (
-    <Link ref={ref} to={productUrl} className="group block">
+    <Link ref={ref} to={productUrl} className="group block" onClick={handleCardClick}>
       <div 
         className="relative bg-card rounded-2xl overflow-hidden shadow-card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-1"
       >
