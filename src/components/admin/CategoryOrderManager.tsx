@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { GripVertical, Save, RotateCcw, Home, Loader2, ImageIcon, ChevronDown, ChevronRight, FolderTree } from 'lucide-react';
+import { GripVertical, Save, RotateCcw, Home, Loader2, ImageIcon, ChevronDown, ChevronRight, FolderTree, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -190,12 +190,80 @@ const SubcategoryManager = ({
   );
 };
 
+// Homepage Preview Component
+interface HomepagePreviewProps {
+  categories: Category[];
+}
+
+const HomepagePreview = ({ categories }: HomepagePreviewProps) => {
+  const fallbackImage = 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80';
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Eye className="w-4 h-4" />
+        <span>Live Preview - Zo ziet de homepage eruit</span>
+      </div>
+      
+      <div className="bg-muted/30 rounded-xl p-6 border">
+        <div className="text-center mb-6">
+          <h3 className="text-lg font-display font-bold text-foreground">Shop by Category</h3>
+          <p className="text-sm text-muted-foreground">Find the perfect products for your pet</p>
+        </div>
+        
+        <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
+          {categories.map((category, index) => (
+            <div 
+              key={category.id} 
+              className="group relative aspect-square overflow-hidden rounded-2xl shadow-sm hover:shadow-md transition-all duration-300"
+            >
+              <img 
+                src={`${category.image_url || fallbackImage}?v=4`}
+                alt={category.name}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                onError={(e) => { e.currentTarget.src = fallbackImage; }}
+              />
+              
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent group-hover:from-primary/80 group-hover:via-primary/20 transition-colors duration-300" />
+              
+              {/* Content */}
+              <div className="absolute bottom-0 left-0 right-0 p-2">
+                <p className="font-medium text-xs text-white truncate">{category.name}</p>
+              </div>
+              
+              {/* Order badge */}
+              <div className="absolute top-1 left-1">
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 opacity-80">
+                  {index + 1}
+                </Badge>
+              </div>
+              
+              {/* Corner accent */}
+              <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <ArrowRight className="w-3 h-3 text-white" />
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {categories.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            Geen categorieën om weer te geven
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const CategoryOrderManager = () => {
   const queryClient = useQueryClient();
   const [localParentCategories, setLocalParentCategories] = useState<Category[]>([]);
   const [localSubcategories, setLocalSubcategories] = useState<Record<string, Category[]>>({});
   const [hasParentChanges, setHasParentChanges] = useState(false);
   const [changedSubcategoryParents, setChangedSubcategoryParents] = useState<Set<string>>(new Set());
+  const [showPreview, setShowPreview] = useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -358,6 +426,15 @@ export const CategoryOrderManager = () => {
           <div className="flex gap-2">
             <Button
               variant="outline"
+              size="icon"
+              onClick={() => setShowPreview(!showPreview)}
+              className="shrink-0"
+              title={showPreview ? "Verberg preview" : "Toon preview"}
+            >
+              {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleReset}
               disabled={!hasAnyChanges || saveMutation.isPending}
               className="gap-2"
@@ -385,7 +462,13 @@ export const CategoryOrderManager = () => {
           </Badge>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        {/* Live Preview */}
+        {showPreview && (
+          <HomepagePreview categories={localParentCategories} />
+        )}
+
+        {/* Drag and Drop Manager */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
