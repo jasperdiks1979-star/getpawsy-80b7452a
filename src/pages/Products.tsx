@@ -252,6 +252,7 @@ const Products = () => {
             categories={categories}
             selectedCategories={selectedCategories}
             onToggleCategory={toggleCategory}
+            onClearCategories={() => setSelectedCategories([])}
             productCounts={productCounts}
           />
         )}

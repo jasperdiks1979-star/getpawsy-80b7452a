@@ -20,6 +20,7 @@ interface CategoryFilterProps {
   categories: Category[];
   selectedCategories: string[];
   onToggleCategory: (categoryName: string) => void;
+  onClearCategories?: () => void;
   productCounts?: Record<string, number>;
 }
 
@@ -45,6 +46,7 @@ export const CategoryFilter = ({
   categories,
   selectedCategories,
   onToggleCategory,
+  onClearCategories,
   productCounts = {},
 }: CategoryFilterProps) => {
   const [openCategories, setOpenCategories] = useState<string[]>([]);
@@ -240,6 +242,17 @@ export const CategoryFilter = ({
 
   return (
     <div className="space-y-3">
+      {/* Clear filters button */}
+      {selectedCategories.length > 0 && onClearCategories && (
+        <button
+          onClick={onClearCategories}
+          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+        >
+          <X className="w-3 h-3" />
+          Wis filters ({selectedCategories.length})
+        </button>
+      )}
+
       {/* Popular categories */}
       {!searchQuery && popularCategories.length > 0 && (
         <div className="space-y-2">
