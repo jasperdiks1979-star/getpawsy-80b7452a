@@ -26,6 +26,7 @@ import logoIcon from '@/assets/logo-getpawsy.png';
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Shop' },
+  { href: '/bestsellers', label: 'Bestsellers' },
   { href: '/blog', label: 'Blog' },
 ];
 
