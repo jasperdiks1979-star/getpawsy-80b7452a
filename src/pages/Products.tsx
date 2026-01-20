@@ -468,12 +468,29 @@ const Products = () => {
             {!isLoading && visibleItems.length > 0 && (
               <>
                 <StaggeredGrid className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {visibleItems.map((product) => (
-                    <StaggeredItem
-                      key={product.id}
-                      className="relative group"
-                    >
-                      <ProductCard product={product as Product} />
+                  {visibleItems.map((product, index) => {
+                    const listId = categoryParam 
+                      ? `products_${categoryParam.toLowerCase().replace(/\s+/g, '_')}` 
+                      : searchQuery 
+                        ? `products_search` 
+                        : 'all_products';
+                    const listName = categoryParam 
+                      ? `Products - ${categoryParam}` 
+                      : searchQuery 
+                        ? `Products - Search: ${searchQuery}` 
+                        : 'All Products';
+                    
+                    return (
+                      <StaggeredItem
+                        key={product.id}
+                        className="relative group"
+                      >
+                        <ProductCard 
+                          product={product as Product} 
+                          listId={listId}
+                          listName={listName}
+                          position={index}
+                        />
                       {/* Quick View Button */}
                       <Button
                         variant="secondary"
@@ -488,8 +505,9 @@ const Products = () => {
                         <Eye className="w-4 h-4" />
                         Quick View
                       </Button>
-                    </StaggeredItem>
-                  ))}
+                      </StaggeredItem>
+                    );
+                  })}
                 </StaggeredGrid>
                 
                 {/* Infinite Scroll Loader */}
