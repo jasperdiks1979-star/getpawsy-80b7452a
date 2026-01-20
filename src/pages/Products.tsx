@@ -7,6 +7,7 @@ import { Layout } from '@/components/layout/Layout';
 import { ProductCard, Product } from '@/components/products/ProductCard';
 import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
+import { StaggeredGrid, StaggeredItem } from '@/components/ui/staggered-animation';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -415,9 +416,9 @@ const Products = () => {
             {/* Products */}
             {!isLoading && visibleItems.length > 0 && (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                <StaggeredGrid className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {visibleItems.map((product) => (
-                    <div
+                    <StaggeredItem
                       key={product.id}
                       className="relative group"
                     >
@@ -436,9 +437,9 @@ const Products = () => {
                         <Eye className="w-4 h-4" />
                         Quick View
                       </Button>
-                    </div>
+                    </StaggeredItem>
                   ))}
-                </div>
+                </StaggeredGrid>
                 
                 {/* Infinite Scroll Loader */}
                 <div ref={loaderRef} className="flex justify-center py-8">
