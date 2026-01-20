@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { GripVertical, Save, RotateCcw, Home, Loader2, ImageIcon, ChevronDown, ChevronRight, FolderTree, Eye, EyeOff, ArrowRight, Undo2, Redo2 } from 'lucide-react';
+import { GripVertical, Save, RotateCcw, Home, Loader2, ImageIcon, ChevronDown, ChevronRight, FolderTree, Eye, EyeOff, ArrowRight, Undo2, Redo2, History, Check } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -26,6 +26,14 @@ import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface Category {
   id: string;
@@ -401,6 +409,25 @@ export const CategoryOrderManager = () => {
     setHasParentChanges(true);
   }, [history, historyIndex]);
 
+  // Jump to specific history state
+  const jumpToHistory = useCallback((index: number) => {
+    if (index === historyIndex || index < 0 || index >= history.length) return;
+    
+    setIsUndoRedoAction(true);
+    const targetState = history[index];
+    
+    setLocalParentCategories(targetState.parents);
+    setLocalSubcategories(targetState.subcategories);
+    setHistoryIndex(index);
+    
+    if (index === 0) {
+      setHasParentChanges(false);
+      setChangedSubcategoryParents(new Set());
+    } else {
+      setHasParentChanges(true);
+    }
+  }, [history, historyIndex]);
+
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
@@ -546,8 +573,8 @@ export const CategoryOrderManager = () => {
               Sleep categorieën om de volgorde aan te passen. Klik op subcategorieën om die ook te sorteren.
             </CardDescription>
           </div>
-          <div className="flex gap-2">
-            {/* Undo/Redo buttons */}
+          <div className="flex gap-2 flex-wrap">
+            {/* Undo/Redo buttons with history dropdown */}
             <div className="flex border rounded-md">
               <Button
                 variant="ghost"
@@ -559,6 +586,52 @@ export const CategoryOrderManager = () => {
               >
                 <Undo2 className="w-4 h-4" />
               </Button>
+              
+              {/* History dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={history.length <= 1 || saveMutation.isPending}
+                    className="rounded-none border-r px-2 gap-1 min-w-[60px]"
+                    title="Bekijk history"
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    <span className="text-xs">{historyIndex + 1}/{history.length}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-56 max-h-72 overflow-y-auto bg-popover z-50">
+                  <DropdownMenuLabel className="flex items-center gap-2">
+                    <History className="w-4 h-4" />
+                    Wijzigingsgeschiedenis
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {history.map((state, index) => (
+                    <DropdownMenuItem
+                      key={index}
+                      onClick={() => jumpToHistory(index)}
+                      className={cn(
+                        "flex items-center justify-between cursor-pointer",
+                        index === historyIndex && "bg-accent"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm">
+                          {index === 0 ? 'Originele volgorde' : `Wijziging ${index}`}
+                        </span>
+                      </div>
+                      {index === historyIndex && (
+                        <Check className="w-4 h-4 text-primary" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
               <Button
                 variant="ghost"
                 size="icon"
