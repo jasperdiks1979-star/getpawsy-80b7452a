@@ -34,9 +34,8 @@ Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?
 # - Categories: ?type=categories
 # - Bestsellers: ?type=bestsellers
 # - Blog: ?type=blog
-
-# Static sitemap fallback
-Sitemap: https://getpawsy.lovable.app/sitemap.xml
+# Note: Static sitemap.xml in public folder is deprecated
+# All sitemap data is now generated dynamically from the database
 
 # Disallow admin and private pages
 Disallow: /admin
