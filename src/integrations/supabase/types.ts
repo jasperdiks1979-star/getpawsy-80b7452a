@@ -389,6 +389,7 @@ export type Database = {
           customer_email: string | null
           id: string
           items: Json
+          order_access_token: string | null
           shipping_address: Json | null
           status: string
           stripe_payment_intent_id: string | null
@@ -405,6 +406,7 @@ export type Database = {
           customer_email?: string | null
           id?: string
           items: Json
+          order_access_token?: string | null
           shipping_address?: Json | null
           status?: string
           stripe_payment_intent_id?: string | null
@@ -421,6 +423,7 @@ export type Database = {
           customer_email?: string | null
           id?: string
           items?: Json
+          order_access_token?: string | null
           shipping_address?: Json | null
           status?: string
           stripe_payment_intent_id?: string | null
