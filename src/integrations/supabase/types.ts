@@ -174,6 +174,8 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          display_order: number | null
+          icon: string | null
           id: string
           image_url: string | null
           name: string
@@ -183,6 +185,8 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          display_order?: number | null
+          icon?: string | null
           id?: string
           image_url?: string | null
           name: string
@@ -192,6 +196,8 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          display_order?: number | null
+          icon?: string | null
           id?: string
           image_url?: string | null
           name?: string
@@ -459,6 +465,49 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      product_categories: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_categories_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_categories_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_reviews: {
         Row: {
