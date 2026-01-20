@@ -73,220 +73,268 @@ interface CategoryWithParent {
 
 // Category mapping: keywords to database category slugs
 // Extensive keyword list for accurate automatic categorization
+// PRIORITY ORDER: More specific categories listed first for tie-breaking
 const CATEGORY_KEYWORD_MAP: Record<string, string[]> = {
-  // ============ CAT-SPECIFIC CATEGORIES ============
-  'cat-trees-and-condos': [
-    'cat tree', 'scratching tower', 'climbing tower', 'cat tower', 'cat condo', 'sisal', 
-    'cat perch', 'cat furniture', 'multi-level', 'cat activity', 'climbing frame', 'cat gym',
-    'cat playground', 'cat climbing', 'cat post', 'kitty tower', 'feline tower', 'cat castle',
-    'cat platform', 'cat shelf', 'wall mounted cat', 'cat bridge', 'cat walkway', 'cat jungle gym',
-    'cat activity center', 'cat play tower', 'cat exercise', 'vertical cat', 'tall cat tree'
-  ],
-  'cat-scratching-posts': [
-    'scratching post', 'scratcher', 'scratching board', 'sisal post', 'cardboard scratcher', 
-    'scratch pad', 'scratching mat', 'cat scratch', 'scratch lounge', 'corrugated', 'scratch box',
-    'claw sharpener', 'nail scratch', 'sisal rope', 'jute scratcher', 'carpet scratcher',
-    'wall scratcher', 'floor scratcher', 'angled scratcher', 'horizontal scratcher', 'vertical scratcher'
-  ],
-  'cat-litter-boxes': [
-    'litter box', 'litter tray', 'cat toilet', 'litter scoop', 'litter mat', 'self-cleaning litter', 
-    'automatic litter', 'covered litter', 'hooded litter', 'litter pan', 'cat sand', 'kitty litter',
-    'enclosed litter', 'top entry litter', 'front entry litter', 'litter cabinet', 'litter furniture',
-    'litter deodorizer', 'litter liner', 'litter disposal', 'poop scoop', 'waste box', 'sandbox cat'
-  ],
-  
-  // ============ BIRD-SPECIFIC CATEGORIES ============
-  'bird-supplies': [
-    'bird', 'parrot', 'parakeet', 'budgie', 'cockatiel', 'canary', 'finch', 'lovebird', 'aviary',
-    'macaw', 'cockatoo', 'conure', 'african grey', 'amazon parrot', 'pionus', 'eclectus',
-    'mynah', 'toucan', 'lorikeet', 'caique', 'quaker', 'ringneck', 'sun conure'
-  ],
+  // ============ BIRD SUBCATEGORIES (most specific first) ============
   'bird-cages': [
-    'bird cage', 'parrot cage', 'aviary', 'flight cage', 'breeding cage', 'birdcage', 'bird house',
+    'bird cage', 'parrot cage', 'aviary', 'flight cage', 'breeding cage', 'birdcage', 
     'canary cage', 'finch cage', 'parakeet cage', 'cockatiel cage', 'travel cage bird', 
-    'bird enclosure', 'wire cage bird', 'bamboo cage', 'decorative cage', 'hanging cage bird'
+    'bird enclosure', 'wire cage bird', 'bamboo cage', 'decorative cage', 'hanging cage bird',
+    'cage cover', 'cage stand', 'cage accessory', 'bird house cage', 'large bird cage',
+    'small bird cage', 'medium bird cage', 'corner cage', 'dome top cage', 'flat top cage',
+    'play top cage', 'stackable cage', 'vision cage', 'prevue cage', 'hagen cage'
   ],
   'bird-feeders': [
-    'bird feeder', 'seed feeder', 'bird water', 'bird bath', 'bird bowl', 'nectar feeder',
-    'bird dish', 'cuttlebone', 'mineral block', 'fruit holder bird', 'veggie clip', 'treat holder bird',
-    'automatic bird feeder', 'bird water bottle', 'seed cup', 'food cup bird'
+    'bird feeder', 'seed feeder', 'bird water bottle', 'bird bath', 'bird bowl', 'nectar feeder',
+    'bird dish', 'cuttlebone', 'cuttlefish bone', 'mineral block', 'fruit holder bird', 
+    'veggie clip bird', 'treat holder bird', 'automatic bird feeder', 'seed cup', 'food cup bird',
+    'bird food dish', 'bird water dish', 'gravity feeder bird', 'hopper feeder', 'tube feeder',
+    'platform feeder bird', 'suet feeder', 'hummingbird feeder', 'oriole feeder', 'thistle feeder',
+    'nyjer feeder', 'peanut feeder bird', 'mealworm feeder', 'bird feeding station'
   ],
   'bird-toys': [
     'bird toy', 'parrot toy', 'bird swing', 'bird ladder', 'bird perch', 'bird bell', 'bird mirror',
-    'foraging toy bird', 'shredding toy', 'chewing toy bird', 'rope toy bird', 'wooden toy bird',
-    'acrylic toy bird', 'bird playground', 'bird gym', 'training perch', 'claw toy bird'
+    'foraging toy bird', 'shredding toy bird', 'chewing toy bird', 'rope toy bird', 'wooden toy bird',
+    'acrylic toy bird', 'bird playground', 'bird gym', 'training perch', 'parrot perch',
+    'natural perch', 'pedi perch', 'heated perch', 'rope perch', 'swing perch', 'platform perch',
+    'bird kabob', 'bird pinata', 'shreddable toy', 'preening toy', 'foot toy bird', 'hanging toy bird',
+    'climbing toy bird', 'activity toy bird', 'enrichment bird', 'beak toy', 'bird puzzle'
+  ],
+  'bird-supplies': [
+    'bird', 'parrot', 'parakeet', 'budgie', 'cockatiel', 'canary', 'finch', 'lovebird', 
+    'macaw', 'cockatoo', 'conure', 'african grey', 'amazon parrot', 'pionus', 'eclectus',
+    'mynah', 'toucan', 'lorikeet', 'caique', 'quaker', 'ringneck', 'sun conure', 'bird nesting',
+    'bird breeding', 'bird vitamins', 'bird supplement', 'bird medicine', 'bird harness',
+    'bird diaper', 'flight suit', 'bird carrier', 'bird travel', 'bird cage liner'
+  ],
+  
+  // ============ PET FURNITURE SUBCATEGORIES (most specific first) ============
+  'pet-hammocks': [
+    'hammock', 'hanging bed', 'window perch', 'radiator bed', 'suspended bed', 'cat hammock',
+    'window hammock', 'suction cup bed', 'cage hammock', 'hanging perch', 'swing bed',
+    'wall mounted bed', 'shelf bed', 'aerial bed', 'elevated hammock', 'mesh hammock',
+    'window seat cat', 'window mount', 'suction mount', 'floating bed', 'hanging basket',
+    'macrame hammock', 'canvas hammock', 'fabric hammock', 'pet swing', 'lounger hanging',
+    'bunk bed pet', 'double hammock pet', 'ferret hammock', 'rat hammock', 'chinchilla hammock'
+  ],
+  'pet-nests': [
+    'nest', 'cave bed', 'igloo bed', 'cozy nest', 'snuggle bed', 'cuddle bed', 'enclosed bed', 
+    'hooded bed', 'cat cave', 'dog cave', 'burrow bed', 'cocoon bed', 'pod bed', 'covered bed', 
+    'tent bed', 'hut bed', 'felt cave', 'wool cave', 'dome bed', 'hideaway bed', 'retreat bed',
+    'cozy cave', 'snuggle cave', 'warm cave', 'winter cave', 'plush cave', 'soft cave',
+    'semi-enclosed', 'half covered', 'hood bed', 'canopy bed pet', 'teepee bed', 'tipi bed',
+    'shark bed', 'banana bed', 'pumpkin bed', 'fruit bed pet', 'novelty bed pet'
+  ],
+  'pet-houses': [
+    'pet house', 'dog house', 'cat house', 'kennel outdoor', 'indoor house', 'outdoor house', 
+    'wooden house pet', 'plastic house pet', 'cottage pet', 'villa pet', 'cabin pet',
+    'shelter outdoor', 'den house', 'hut house', 'lodge pet', 'chalet pet', 'insulated house', 
+    'weatherproof house', 'dog kennel', 'cat condo house', 'elevated house', 'duplex house pet',
+    'a-frame house', 'barn style house', 'log cabin pet', 'modern house pet', 'luxury house pet',
+    'winter house pet', 'summer house pet', 'ventilated house', 'raised house pet'
+  ],
+  'pet-beds': [
+    'pet bed', 'dog bed', 'cat bed', 'sleeping bed', 'orthopedic bed', 'donut bed', 'calming bed', 
+    'bolster bed', 'memory foam bed', 'waterproof bed', 'washable bed', 'plush bed', 'soft bed',
+    'round bed', 'rectangle bed', 'oval bed', 'luxury bed pet', 'heated bed', 'cooling bed', 
+    'raised bed pet', 'outdoor bed pet', 'travel bed pet', 'portable bed', 'sofa bed pet', 
+    'cozy bed', 'fluffy bed', 'anti-anxiety bed', 'faux fur bed', 'fleece bed', 'self-warming bed',
+    'nesting bed', 'crate bed', 'crate pad', 'kennel bed', 'pillow bed', 'cushion bed',
+    'flat bed pet', 'padded bed', 'thick bed', 'extra large bed', 'small bed pet', 'medium bed pet',
+    'senior bed', 'puppy bed', 'kitten bed', 'chew resistant bed', 'indestructible bed'
+  ],
+  
+  // ============ CAT-SPECIFIC CATEGORIES ============
+  'cat-trees-and-condos': [
+    'cat tree', 'scratching tower', 'climbing tower', 'cat tower', 'cat condo', 'sisal tower', 
+    'cat perch tower', 'cat furniture multi', 'multi-level cat', 'cat activity center', 
+    'climbing frame cat', 'cat gym', 'cat playground', 'cat climbing', 'kitty tower', 
+    'feline tower', 'cat castle', 'cat platform', 'cat shelf', 'wall mounted cat shelf', 
+    'cat bridge', 'cat walkway', 'cat jungle gym', 'cat play tower', 'cat exercise tower', 
+    'vertical cat furniture', 'tall cat tree', 'large cat tree', 'modern cat tree',
+    'cat condo tower', 'floor to ceiling cat', 'corner cat tree', 'compact cat tree'
+  ],
+  'cat-scratching-posts': [
+    'scratching post', 'scratcher', 'scratching board', 'sisal post', 'cardboard scratcher', 
+    'scratch pad', 'scratching mat', 'cat scratch', 'scratch lounge', 'corrugated scratcher', 
+    'scratch box', 'claw sharpener', 'sisal rope post', 'jute scratcher', 'carpet scratcher',
+    'wall scratcher', 'floor scratcher', 'angled scratcher', 'horizontal scratcher', 
+    'vertical scratcher', 'incline scratcher', 'wave scratcher', 'curved scratcher',
+    'scratching ramp', 'scratch barrel', 'scratch wheel', 'scratch ottoman'
+  ],
+  'cat-litter-boxes': [
+    'litter box', 'litter tray', 'cat toilet', 'litter scoop', 'litter mat', 'self-cleaning litter', 
+    'automatic litter', 'covered litter', 'hooded litter', 'litter pan', 'cat sand box', 
+    'kitty litter box', 'enclosed litter', 'top entry litter', 'front entry litter', 
+    'litter cabinet', 'litter furniture', 'litter deodorizer', 'litter liner', 'litter disposal', 
+    'poop scoop cat', 'waste box cat', 'sandbox cat', 'corner litter', 'jumbo litter',
+    'sifting litter', 'odor control litter', 'litter genie', 'litter locker'
   ],
   
   // ============ SMALL ANIMALS CATEGORIES ============
   'small-animal-supplies': [
     'hamster', 'guinea pig', 'rabbit', 'bunny', 'gerbil', 'chinchilla', 'ferret', 'hedgehog',
-    'mouse', 'rat', 'sugar glider', 'degu', 'prairie dog', 'squirrel', 'small animal', 'rodent',
-    'hamster wheel', 'exercise wheel', 'running wheel', 'hamster ball', 'hamster cage', 'rabbit hutch',
-    'guinea pig cage', 'hay feeder', 'timothy hay', 'water bottle small', 'hideout small animal'
+    'mouse cage', 'rat cage', 'sugar glider', 'degu', 'prairie dog', 'squirrel pet', 'small animal', 
+    'rodent', 'hamster wheel', 'exercise wheel', 'running wheel', 'hamster ball', 'hamster cage', 
+    'rabbit hutch', 'guinea pig cage', 'hay feeder', 'timothy hay', 'water bottle small pet', 
+    'hideout small animal', 'tunnel small pet', 'chew toy rodent', 'wood chew'
   ],
   
   // ============ FISH & AQUARIUM CATEGORIES ============
   'fish-aquarium': [
     'aquarium', 'fish tank', 'fish bowl', 'aquatic', 'underwater', 'fish food', 'fish net',
-    'fish tank filter', 'aquarium pump', 'air pump', 'aquarium heater', 'tank thermometer',
-    'aquarium light', 'led aquarium', 'gravel', 'substrate', 'aquarium decoration', 'fish cave',
-    'aquarium plant', 'artificial coral', 'fish breeding', 'betta', 'goldfish', 'tropical fish'
-  ],
-  
-  // ============ PET FURNITURE SUBCATEGORIES ============
-  'pet-beds': [
-    'pet bed', 'dog bed', 'cat bed', 'sleeping bed', 'orthopedic bed', 'donut bed', 'calming bed', 
-    'bolster bed', 'memory foam bed', 'waterproof bed', 'washable bed', 'plush bed', 'soft bed',
-    'round bed', 'rectangle bed', 'oval bed', 'luxury bed', 'heated bed', 'cooling bed', 'raised bed',
-    'outdoor bed', 'travel bed', 'portable bed', 'sofa bed pet', 'cozy bed', 'fluffy bed',
-    'anti-anxiety bed', 'faux fur bed', 'fleece bed', 'self-warming bed', 'nesting bed'
-  ],
-  'pet-hammocks': [
-    'hammock', 'hanging bed', 'window perch', 'radiator bed', 'suspended bed', 'cat hammock',
-    'window hammock', 'suction cup bed', 'cage hammock', 'hanging perch', 'swing bed',
-    'wall mounted bed', 'shelf bed', 'aerial bed', 'elevated hammock', 'mesh hammock'
-  ],
-  'pet-houses': [
-    'pet house', 'dog house', 'cat house', 'kennel', 'indoor house', 'outdoor house', 'wooden house',
-    'plastic house', 'igloo house', 'cottage', 'villa pet', 'tent pet', 'teepee', 'cabin pet',
-    'shelter pet', 'den pet', 'hut pet', 'lodge pet', 'chalet', 'insulated house', 'weatherproof house'
-  ],
-  'pet-nests': [
-    'nest', 'cave', 'igloo', 'cozy nest', 'snuggle', 'cuddle', 'enclosed bed', 'hooded bed',
-    'cat cave', 'dog cave', 'burrow bed', 'cocoon bed', 'pod bed', 'covered bed', 'tent bed',
-    'hut bed', 'felt cave', 'wool cave', 'dome bed', 'hideaway', 'retreat bed'
+    'fish tank filter', 'aquarium pump', 'air pump aquarium', 'aquarium heater', 'tank thermometer',
+    'aquarium light', 'led aquarium', 'gravel aquarium', 'substrate aquarium', 'aquarium decoration', 
+    'fish cave', 'aquarium plant', 'artificial coral', 'fish breeding', 'betta tank', 
+    'goldfish tank', 'tropical fish', 'aquarium cleaner', 'algae scraper', 'water conditioner'
   ],
   
   // ============ GENERAL PET CATEGORIES ============
   'pet-furniture': [
-    'furniture', 'sofa', 'couch', 'cushion', 'pillow', 'mat', 'blanket', 'elevated bed', 'cooling mat',
-    'pet stairs', 'pet steps', 'pet ramp', 'pet sofa', 'pet couch', 'pet chair', 'pet ottoman',
-    'pet bench', 'storage bench pet', 'window sill', 'crate mat', 'kennel pad'
+    'pet sofa', 'pet couch', 'pet chair', 'pet ottoman', 'pet bench', 'storage bench pet', 
+    'window sill pet', 'elevated furniture pet', 'cooling furniture', 'furniture protector pet',
+    'couch protector', 'sofa protector', 'furniture cover pet'
   ],
   'pet-beds-mats': [
-    'bed', 'mat', 'blanket', 'cushion', 'mattress', 'sleeping pad', 'foam bed', 'floor mat',
-    'crate pad', 'kennel mat', 'throw blanket', 'fleece blanket', 'sherpa blanket', 'thermal mat',
-    'self-heating mat', 'electric mat', 'cooling pad', 'gel mat', 'pressure mat'
+    'mat pet', 'blanket pet', 'throw pet', 'mattress pet', 'sleeping pad', 'foam mat pet', 
+    'floor mat pet', 'crate mat', 'kennel mat', 'throw blanket pet', 'fleece blanket pet', 
+    'sherpa blanket pet', 'thermal mat', 'self-heating mat', 'electric mat pet', 'cooling pad pet', 
+    'gel mat pet', 'pressure mat pet', 'orthopedic mat'
   ],
   'pet-toys': [
-    'toy', 'toys', 'ball', 'chew', 'squeaky', 'plush', 'rope', 'frisbee', 'fetch', 'puzzle', 
-    'interactive', 'teaser', 'wand', 'kong', 'play', 'squeak', 'tug', 'rubber toy', 'latex toy',
-    'tennis ball', 'bouncy ball', 'treat ball', 'snuffle', 'hide and seek', 'stuffed toy', 'soft toy',
-    'durable toy', 'tough toy', 'indestructible', 'aggressive chewer', 'puppy toy', 'kitten toy',
-    'catnip', 'feather toy', 'laser pointer', 'mouse toy', 'fish toy', 'bird toy', 'tunnel toy',
-    'crinkle toy', 'kickeroo', 'dental toy', 'chew ring', 'bone toy', 'stick toy', 'flying disc'
+    'toy', 'toys', 'ball pet', 'chew toy', 'squeaky', 'plush toy', 'rope toy', 'frisbee', 
+    'fetch toy', 'puzzle toy', 'interactive toy', 'teaser', 'wand toy', 'kong', 'play toy',
+    'squeak toy', 'tug toy', 'rubber toy', 'latex toy', 'tennis ball pet', 'bouncy ball',
+    'treat ball', 'snuffle mat', 'hide and seek toy', 'stuffed toy pet', 'soft toy pet',
+    'durable toy', 'tough toy', 'indestructible toy', 'aggressive chewer', 'puppy toy', 
+    'kitten toy', 'catnip toy', 'feather toy', 'laser pointer', 'mouse toy cat', 'fish toy cat',
+    'tunnel toy', 'crinkle toy', 'kickeroo', 'dental toy', 'chew ring', 'bone toy', 
+    'stick toy', 'flying disc', 'automatic toy', 'electronic toy pet', 'motion toy'
   ],
   'pet-collars-leashes': [
-    'collar', 'leash', 'harness', 'lead', 'chain', 'tag', 'retractable', 'reflective', 'glow', 'led', 
-    'nylon', 'leather', 'adjustable', 'breakaway', 'martingale', 'choke chain', 'prong collar',
-    'gentle leader', 'head halter', 'no pull', 'front clip', 'back clip', 'step-in harness',
-    'vest harness', 'mesh harness', 'padded harness', 'training leash', 'long line', 'check cord',
-    'slip lead', 'rope leash', 'hands free leash', 'waist leash', 'double leash', 'coupler leash',
-    'bungee leash', 'traffic handle', 'short leash', 'personalized collar', 'embroidered collar',
-    'studded collar', 'bowtie collar', 'bandana collar', 'flea collar', 'calming collar', 'e-collar',
-    'bark collar', 'spray collar', 'citronella collar', 'shock collar', 'vibration collar'
+    'collar', 'leash', 'harness', 'lead dog', 'chain leash', 'tag collar', 'retractable leash', 
+    'reflective collar', 'glow collar', 'led collar', 'nylon collar', 'leather collar', 
+    'adjustable collar', 'breakaway collar', 'martingale', 'gentle leader', 'head halter', 
+    'no pull harness', 'front clip harness', 'back clip harness', 'step-in harness',
+    'vest harness', 'mesh harness', 'padded harness', 'training leash', 'long line leash', 
+    'check cord', 'slip lead', 'rope leash', 'hands free leash', 'waist leash', 'double leash', 
+    'coupler leash', 'bungee leash', 'traffic handle', 'short leash', 'personalized collar',
+    'embroidered collar', 'studded collar', 'bowtie collar', 'bandana collar', 'airtag collar'
   ],
   'pet-grooming': [
-    'brush', 'comb', 'grooming', 'shampoo', 'nail', 'clipper', 'trimmer', 'bath', 'deshedding', 
-    'dematting', 'slicker', 'rake', 'scissors', 'grooming glove', 'rubber brush', 'bristle brush',
-    'pin brush', 'undercoat rake', 'flea comb', 'tick comb', 'detangling comb', 'wide tooth comb',
-    'thinning shears', 'blending shears', 'straight scissors', 'curved scissors', 'grooming table',
-    'grooming arm', 'grooming loop', 'ear cleaner', 'eye wipes', 'dental spray', 'breath freshener',
-    'paw balm', 'nose balm', 'hot spot spray', 'medicated shampoo', 'oatmeal shampoo', 'whitening shampoo'
+    'brush pet', 'comb pet', 'grooming', 'shampoo pet', 'nail clipper', 'nail trimmer', 
+    'bath pet', 'deshedding', 'dematting', 'slicker brush', 'rake brush', 'grooming scissors',
+    'grooming glove', 'rubber brush', 'bristle brush', 'pin brush', 'undercoat rake', 
+    'flea comb', 'tick comb', 'detangling comb', 'wide tooth comb', 'thinning shears', 
+    'grooming table', 'grooming arm', 'grooming loop', 'ear cleaner pet', 'eye wipes pet',
+    'dental spray pet', 'paw balm', 'nose balm', 'hot spot spray', 'medicated shampoo',
+    'oatmeal shampoo', 'whitening shampoo', 'grooming kit'
   ],
   'pet-hair-care': [
-    'fur', 'hair', 'shedding', 'coat', 'detangler', 'conditioner', 'dryer', 'hair remover', 'lint roller',
-    'deshedding tool', 'undercoat brush', 'furminator', 'shed control', 'hair vacuum', 'pet dryer',
-    'force dryer', 'stand dryer', 'grooming spray', 'shine spray', 'coat oil', 'leave-in conditioner',
-    'anti-static spray', 'deodorizing spray', 'perfume pet', 'cologne pet', 'finishing spray'
+    'fur remover', 'hair remover pet', 'shedding tool', 'coat brush', 'detangler spray', 
+    'conditioner pet', 'pet dryer', 'hair vacuum pet', 'deshedding tool', 'undercoat brush', 
+    'furminator', 'shed control', 'force dryer pet', 'stand dryer pet', 'grooming spray',
+    'shine spray pet', 'coat oil', 'leave-in conditioner pet', 'anti-static spray pet',
+    'deodorizing spray pet', 'perfume pet', 'cologne pet', 'finishing spray pet', 'lint roller pet'
   ],
   'pet-bags': [
-    'carrier', 'bag', 'backpack', 'transport', 'travel', 'sling', 'airline', 'pet purse', 'tote',
-    'soft carrier', 'hard carrier', 'rolling carrier', 'expandable carrier', 'mesh carrier',
-    'bubble backpack', 'front carrier', 'chest carrier', 'shoulder bag pet', 'crossbody carrier',
-    'bicycle carrier', 'motorcycle carrier', 'car seat carrier', 'booster seat', 'car hammock',
-    'cargo liner', 'seat cover pet', 'travel crate', 'portable kennel', 'foldable carrier'
+    'carrier pet', 'bag pet', 'backpack pet', 'transport pet', 'travel carrier', 'sling carrier', 
+    'airline carrier', 'pet purse', 'tote carrier', 'soft carrier', 'hard carrier', 
+    'rolling carrier', 'expandable carrier', 'mesh carrier', 'bubble backpack pet',
+    'front carrier pet', 'chest carrier', 'shoulder bag pet', 'crossbody carrier',
+    'bicycle carrier pet', 'car seat carrier', 'booster seat pet', 'car hammock pet',
+    'cargo liner pet', 'seat cover pet', 'travel crate', 'portable kennel', 'foldable carrier'
   ],
   'pet-strollers': [
-    'stroller', 'pram', 'pushchair', 'pet cart', 'jogging stroller', 'travel stroller',
-    'double stroller pet', 'twin stroller', 'all terrain stroller', 'heavy duty stroller',
-    'lightweight stroller', 'foldable stroller', 'pet wagon', 'pet buggy', 'pet pram'
+    'stroller pet', 'pram pet', 'pushchair pet', 'pet cart', 'jogging stroller pet', 
+    'travel stroller pet', 'double stroller pet', 'twin stroller pet', 'all terrain stroller pet',
+    'heavy duty stroller pet', 'lightweight stroller pet', 'foldable stroller pet', 
+    'pet wagon', 'pet buggy', 'pet pram', '3 wheel stroller pet', '4 wheel stroller pet'
   ],
   'pet-bowls': [
-    'bowl', 'dish', 'plate', 'slow feeder', 'elevated bowl', 'tilted bowl', 'anti-slip bowl',
-    'stainless steel bowl', 'ceramic bowl', 'plastic bowl', 'silicone bowl', 'collapsible bowl',
-    'travel bowl', 'portable bowl', 'double bowl', 'twin bowl', 'raised bowl', 'adjustable bowl',
-    'spill proof bowl', 'no tip bowl', 'weighted bowl', 'puzzle bowl', 'lick mat', 'snuffle bowl'
+    'bowl pet', 'dish pet', 'plate pet', 'slow feeder bowl', 'elevated bowl', 'tilted bowl', 
+    'anti-slip bowl', 'stainless steel bowl pet', 'ceramic bowl pet', 'plastic bowl pet', 
+    'silicone bowl pet', 'collapsible bowl', 'travel bowl pet', 'portable bowl pet', 
+    'double bowl pet', 'twin bowl', 'raised bowl', 'adjustable bowl', 'spill proof bowl',
+    'no tip bowl', 'weighted bowl', 'puzzle bowl', 'lick mat', 'snuffle bowl'
   ],
   'pet-feeding-tools': [
-    'feeder', 'automatic feeder', 'food dispenser', 'portion control', 'timer feeder', 'gravity feeder', 
-    'smart feeder', 'wifi feeder', 'app controlled feeder', 'programmable feeder', 'microchip feeder',
-    'multi-pet feeder', 'cat food dispenser', 'dog food dispenser', 'treat dispenser', 'kibble dispenser',
-    'food storage', 'food container', 'airtight container', 'food scoop', 'measuring scoop'
+    'feeder automatic', 'food dispenser pet', 'portion control feeder', 'timer feeder', 
+    'gravity feeder pet', 'smart feeder', 'wifi feeder', 'app controlled feeder', 
+    'programmable feeder', 'microchip feeder', 'multi-pet feeder', 'cat food dispenser',
+    'dog food dispenser', 'treat dispenser', 'kibble dispenser', 'food storage pet',
+    'food container pet', 'airtight container pet', 'food scoop pet', 'measuring scoop pet'
   ],
   'pet-drinking-tools': [
-    'water', 'fountain', 'dispenser', 'water bottle', 'drinking', 'hydration', 'water bowl', 'filter fountain',
-    'pet fountain', 'cat fountain', 'dog fountain', 'automatic water', 'gravity water', 'filtered water',
-    'stainless fountain', 'ceramic fountain', 'quiet fountain', 'running water', 'circulating water',
-    'water filter', 'replacement filter', 'carbon filter', 'charcoal filter', 'pump fountain'
+    'water fountain pet', 'water dispenser pet', 'water bottle pet', 'drinking fountain', 
+    'hydration pet', 'filter fountain', 'pet fountain', 'cat fountain', 'dog fountain',
+    'automatic water pet', 'gravity water pet', 'filtered water pet', 'stainless fountain pet',
+    'ceramic fountain pet', 'quiet fountain', 'running water pet', 'circulating water pet',
+    'water filter pet', 'replacement filter fountain', 'carbon filter fountain', 'pump fountain'
   ],
   'pet-food-treats': [
-    'food', 'treat', 'treats', 'snack', 'kibble', 'wet food', 'dry food', 'biscuit', 'chew treat', 
-    'dental treat', 'training treat', 'freeze dried', 'dehydrated', 'raw food', 'grain free',
-    'organic food', 'natural food', 'premium food', 'prescription diet', 'sensitive stomach',
-    'weight management', 'senior food', 'puppy food', 'kitten food', 'jerky', 'meat stick',
-    'rawhide', 'bully stick', 'antler', 'bone treat', 'dental chew', 'greenies', 'milk bone'
+    'food pet', 'treat pet', 'treats dog', 'treats cat', 'snack pet', 'kibble', 'wet food pet', 
+    'dry food pet', 'biscuit pet', 'chew treat', 'dental treat', 'training treat', 
+    'freeze dried treat', 'dehydrated treat', 'grain free food', 'organic food pet',
+    'natural food pet', 'premium food pet', 'jerky pet', 'meat stick pet', 'rawhide',
+    'bully stick', 'antler chew', 'bone treat', 'dental chew', 'greenies', 'milk bone'
   ],
   'pet-training': [
-    'training', 'clicker', 'whistle', 'treat pouch', 'target', 'agility', 'tunnel', 'jump', 'weave', 
-    'hurdle', 'potty', 'puppy pad', 'pee pad', 'training pad', 'wee wee pad', 'house training',
-    'crate training', 'bell training', 'door bell', 'potty bell', 'training spray', 'attractant spray',
-    'repellent spray', 'bitter spray', 'anti chew spray', 'training collar', 'training harness',
-    'training vest', 'training dummy', 'fetch training', 'retrieve training', 'obedience', 'behavior'
+    'training clicker', 'training whistle', 'treat pouch', 'target stick', 'agility equipment', 
+    'tunnel agility', 'jump agility', 'weave poles', 'hurdle agility', 'potty pad', 
+    'puppy pad', 'pee pad', 'training pad', 'wee wee pad', 'house training', 'crate training',
+    'bell training', 'potty bell', 'training spray', 'attractant spray', 'repellent spray',
+    'bitter spray', 'anti chew spray', 'training collar', 'training harness', 'training vest',
+    'training dummy', 'fetch training', 'retrieve training', 'obedience training'
   ],
   'pet-gates-fences': [
-    'gate', 'fence', 'barrier', 'playpen', 'pen', 'enclosure', 'baby gate', 'pet door', 'flap',
-    'exercise pen', 'x-pen', 'wire pen', 'plastic pen', 'wooden gate', 'metal gate', 'pressure mount',
-    'hardware mount', 'freestanding gate', 'retractable gate', 'mesh gate', 'extra wide gate',
-    'extra tall gate', 'walk through gate', 'swing gate', 'sliding gate', 'outdoor pen', 'indoor pen',
-    'puppy pen', 'kitten pen', 'pet fence', 'wireless fence', 'invisible fence', 'containment system'
+    'gate pet', 'fence pet', 'barrier pet', 'playpen pet', 'pen exercise', 'enclosure pet', 
+    'baby gate pet', 'pet door', 'pet flap', 'exercise pen', 'x-pen', 'wire pen pet',
+    'plastic pen pet', 'wooden gate pet', 'metal gate pet', 'pressure mount gate',
+    'hardware mount gate', 'freestanding gate', 'retractable gate pet', 'mesh gate pet',
+    'extra wide gate', 'extra tall gate', 'walk through gate', 'swing gate pet',
+    'outdoor pen pet', 'indoor pen pet', 'puppy pen', 'kitten pen', 'containment system'
   ],
   'dog-stairs-and-steps': [
-    'stairs', 'steps', 'ramp', 'ladder', 'pet stairs', 'dog ramp', 'car ramp', 'bed stairs',
-    'couch stairs', 'sofa stairs', 'folding ramp', 'telescoping ramp', 'portable ramp', 'lightweight ramp',
-    'non-slip stairs', 'foam stairs', 'wooden stairs', 'plastic stairs', 'carpeted stairs',
-    'adjustable stairs', 'wide stairs', 'deep stairs', 'senior pet stairs', 'arthritic pet'
+    'stairs pet', 'steps pet', 'ramp pet', 'ladder pet', 'pet stairs', 'dog ramp', 'car ramp pet',
+    'bed stairs', 'couch stairs', 'sofa stairs', 'folding ramp pet', 'telescoping ramp',
+    'portable ramp pet', 'lightweight ramp', 'non-slip stairs', 'foam stairs pet',
+    'wooden stairs pet', 'plastic stairs pet', 'carpeted stairs', 'adjustable stairs pet',
+    'wide stairs pet', 'senior pet stairs', 'arthritic pet ramp'
   ],
   'pet-accessories': [
-    'id tag', 'charm', 'pendant', 'bell', 'camera', 'gps', 'tracker', 'monitor', 'bandana', 'bow tie', 
-    'hat', 'glasses', 'jewelry', 'pet camera', 'wifi camera', 'treat camera', 'pet monitor',
-    'activity tracker', 'fitness tracker', 'health monitor', 'location tracker', 'smart collar',
-    'airtag holder', 'tile holder', 'costume', 'outfit', 'dress', 'sweater', 'jacket', 'coat',
-    'raincoat', 'winter coat', 'booties', 'shoes', 'socks', 'paw protector', 'life jacket', 'float coat'
+    'id tag pet', 'charm collar', 'pendant pet', 'bell collar', 'camera pet', 'gps tracker pet', 
+    'pet monitor', 'bandana pet', 'bow tie pet', 'hat pet', 'glasses pet', 'jewelry pet',
+    'pet camera', 'wifi camera pet', 'treat camera', 'activity tracker pet', 'fitness tracker pet',
+    'health monitor pet', 'location tracker pet', 'smart collar', 'airtag holder pet',
+    'costume pet', 'outfit pet', 'dress pet', 'life jacket pet', 'float coat'
   ],
   'pet-clothing': [
-    'sweater', 'jacket', 'coat', 'hoodie', 'shirt', 't-shirt', 'dress', 'costume', 'outfit',
-    'raincoat', 'winter coat', 'puffer jacket', 'fleece jacket', 'windbreaker', 'reflective vest',
-    'cooling vest', 'anxiety vest', 'thundershirt', 'recovery suit', 'surgical suit', 'onesie',
-    'pajamas', 'sleepwear', 'warm clothes', 'cold weather', 'snow suit', 'ski suit'
+    'sweater pet', 'jacket pet', 'coat dog', 'coat cat', 'hoodie pet', 'shirt pet', 't-shirt pet',
+    'dress dog', 'costume dog', 'raincoat pet', 'winter coat pet', 'puffer jacket pet',
+    'fleece jacket pet', 'windbreaker pet', 'reflective vest pet', 'cooling vest pet',
+    'anxiety vest', 'thundershirt', 'recovery suit pet', 'surgical suit pet', 'onesie pet',
+    'pajamas pet', 'warm clothes pet', 'snow suit pet', 'booties pet', 'shoes pet', 'socks pet'
   ],
   'pet-health': [
-    'supplement', 'vitamin', 'probiotic', 'joint support', 'glucosamine', 'omega', 'fish oil',
-    'calming', 'anxiety relief', 'stress relief', 'flea', 'tick', 'worm', 'dewormer', 'heartworm',
-    'first aid', 'bandage', 'wound care', 'antiseptic', 'thermometer', 'pill dispenser', 'syringe',
-    'medicine dropper', 'recovery', 'rehabilitation', 'mobility aid', 'wheelchair', 'leg brace',
-    'cone', 'e-collar', 'inflatable collar', 'recovery collar', 'elizabethan collar'
+    'supplement pet', 'vitamin pet', 'probiotic pet', 'joint support pet', 'glucosamine pet',
+    'omega pet', 'fish oil pet', 'calming supplement', 'anxiety relief pet', 'flea treatment',
+    'tick treatment', 'dewormer', 'heartworm', 'first aid pet', 'bandage pet', 'wound care pet',
+    'thermometer pet', 'pill dispenser pet', 'medicine dropper pet', 'recovery pet',
+    'mobility aid pet', 'wheelchair pet', 'leg brace pet', 'cone pet', 'e-collar pet',
+    'inflatable collar recovery', 'elizabethan collar'
   ],
   'pet-cleaning': [
-    'poop bag', 'waste bag', 'biodegradable bag', 'bag dispenser', 'pooper scooper', 'waste scoop',
-    'urine cleaner', 'stain remover', 'odor eliminator', 'enzyme cleaner', 'carpet cleaner',
-    'floor cleaner', 'cage cleaner', 'habitat cleaner', 'litter deodorizer', 'air freshener pet',
-    'pet wipes', 'grooming wipes', 'ear wipes', 'eye wipes', 'paw wipes', 'dental wipes'
+    'poop bag', 'waste bag pet', 'biodegradable bag pet', 'bag dispenser pet', 'pooper scooper',
+    'waste scoop', 'urine cleaner pet', 'stain remover pet', 'odor eliminator pet',
+    'enzyme cleaner pet', 'carpet cleaner pet', 'floor cleaner pet', 'cage cleaner',
+    'litter deodorizer', 'air freshener pet', 'pet wipes', 'grooming wipes', 'ear wipes pet',
+    'eye wipes pet', 'paw wipes', 'dental wipes pet'
   ],
   'pet-supplies': [
-    'supplies', 'accessory', 'pet', 'dog', 'cat', 'puppy', 'kitten', 'essential', 'starter kit',
-    'new pet', 'adoption', 'welcome kit', 'gift set', 'bundle', 'package deal'
-  ], // Fallback category
+    'supplies', 'accessory general', 'essential pet', 'starter kit pet',
+    'new pet kit', 'adoption kit', 'welcome kit pet', 'gift set pet', 'bundle pet'
+  ], // Fallback category - should have lowest priority keywords
 };
 
 // Match result with full details
