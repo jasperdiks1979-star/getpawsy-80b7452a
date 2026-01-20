@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, CreditCard, Lock, Loader2, ShieldCheck, FileText } from 'lucide-react';
+import { CreditCard, Lock, Loader2, ShieldCheck, FileText, Home, ShoppingCart } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,14 @@ import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { CartUpsell } from '@/components/cart/CartUpsell';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 
 // Checkout page skeleton component
 const CheckoutSkeleton = memo(() => (
@@ -286,13 +294,32 @@ const Checkout = () => {
   return (
     <Layout>
       <div className="container px-4 md:px-6 py-8 max-w-4xl">
-        <Link
-          to="/cart"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to cart
-        </Link>
+        {/* Breadcrumbs */}
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/" className="flex items-center gap-1">
+                  <Home className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only">Home</span>
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/cart" className="flex items-center gap-1">
+                  <ShoppingCart className="h-3.5 w-3.5" />
+                  Cart
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Checkout</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
         <h1 className="text-3xl font-bold mb-8">Checkout</h1>
 
