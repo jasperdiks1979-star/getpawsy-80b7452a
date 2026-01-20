@@ -5,9 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Clock, ArrowLeft, User, Share2, BookOpen, ShoppingBag } from 'lucide-react';
+import { BlogPostDetailSkeleton } from '@/components/blog/BlogPostDetailSkeleton';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { generateBlogMetaDescription } from '@/lib/seo-keywords';
@@ -228,17 +228,7 @@ const BlogPostPage = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="container max-w-4xl py-8">
-          <Skeleton className="h-8 w-32 mb-6" />
-          <Skeleton className="h-12 w-full mb-4" />
-          <Skeleton className="h-6 w-2/3 mb-8" />
-          <Skeleton className="aspect-video w-full mb-8" />
-          <div className="space-y-4">
-            {[...Array(10)].map((_, i) => (
-              <Skeleton key={i} className="h-4 w-full" />
-            ))}
-          </div>
-        </div>
+        <BlogPostDetailSkeleton />
       </Layout>
     );
   }
