@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
@@ -20,7 +20,7 @@ import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { CategorySchema } from '@/components/seo/CategorySchema';
 import { generateCategoryMetaDescription, getKeywordsForCategory } from '@/lib/seo-keywords';
-
+import { trackViewItemList } from '@/lib/analytics';
 const sortOptions = [
   { value: 'newest', label: 'Newest' },
   { value: 'price-asc', label: 'Price: Low to High' },
@@ -43,7 +43,7 @@ const Products = () => {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const { getRecentlyViewedIds } = useRecentlyViewed();
   const recentlyViewedIds = getRecentlyViewedIds();
-
+  const hasTrackedImpressions = useRef(false);
   // Fetch products from database
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['products'],
@@ -202,6 +202,41 @@ const Products = () => {
     items: filteredProducts,
     itemsPerPage: 12,
   });
+
+  // Track product impressions for GA4 enhanced ecommerce
+  useEffect(() => {
+    if (visibleItems.length > 0 && !hasTrackedImpressions.current) {
+      const listId = categoryParam 
+        ? `products_${categoryParam.toLowerCase().replace(/\s+/g, '_')}` 
+        : searchQuery 
+          ? `products_search_${searchQuery.toLowerCase().replace(/\s+/g, '_')}` 
+          : 'all_products';
+      
+      const listName = categoryParam 
+        ? `Products - ${categoryParam}` 
+        : searchQuery 
+          ? `Products - Search: ${searchQuery}` 
+          : 'All Products';
+      
+      trackViewItemList(
+        listId,
+        listName,
+        visibleItems.map((product, index) => ({
+          id: product.id || '',
+          name: product.name || '',
+          price: Number(product.price) || 0,
+          category: product.category || undefined,
+          position: index,
+        }))
+      );
+      hasTrackedImpressions.current = true;
+    }
+  }, [visibleItems, categoryParam, searchQuery]);
+
+  // Reset tracking when filters change
+  useEffect(() => {
+    hasTrackedImpressions.current = false;
+  }, [selectedCategories, searchQuery, priceRange]);
 
   const clearAllFilters = () => {
     setSelectedCategories([]);
