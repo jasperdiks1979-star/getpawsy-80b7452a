@@ -133,6 +133,11 @@ export function WebsiteSchema({
       <meta name="keywords" content={keywords} />
       <link rel="canonical" href={url} />
 
+      {/* Hreflang Tags for International SEO */}
+      <link rel="alternate" hrefLang="en" href={url} />
+      <link rel="alternate" hrefLang="en-US" href={url} />
+      <link rel="alternate" hrefLang="x-default" href={url} />
+
       {/* Robots */}
       <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
       <meta name="googlebot" content="index, follow" />
