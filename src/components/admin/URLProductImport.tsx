@@ -77,18 +77,11 @@ function extractProductId(url: string): string | null {
   // Clean the URL
   const cleanUrl = url.trim();
   
-  // DEBUG: Log to verify function is being called
-  console.log('[extractProductId] CALLED with:', cleanUrl);
-  
   // Try to extract UUID first - this is the most reliable for UUID-based IDs
   // UUID format: 8-4-4-4-12 hexadecimal characters with hyphens
-  // Example: 956CEFCE-0470-4BE9-86FE-7FFDDD0C82AA
   const uuidRegex = /[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}/g;
   const uuidMatches = cleanUrl.match(uuidRegex);
-  console.log('[extractProductId] UUID matches:', uuidMatches);
-  
   if (uuidMatches && uuidMatches.length > 0) {
-    console.log('[extractProductId] Returning UUID:', uuidMatches[0]);
     return uuidMatches[0];
   }
   
@@ -128,16 +121,14 @@ function extractProductId(url: string): string | null {
     /([A-Za-z0-9]{20,30})(?:\.html)?$/i,
   ];
   
-  for (let i = 0; i < patterns.length; i++) {
-    const pattern = patterns[i];
+  for (const pattern of patterns) {
     const match = cleanUrl.match(pattern);
     if (match && match[1]) {
-      console.log(`[extractProductId] Matched pattern ${i}:`, pattern.toString(), '-> Result:', match[1]);
       return match[1];
     }
   }
   
-  console.log('[extractProductId] No pattern matched for URL:', cleanUrl);
+  return null;
   return null;
 }
 
