@@ -24,6 +24,7 @@ const GoogleAdsGenerator = lazy(() => import("@/components/admin/GoogleAdsGenera
 const VisitorWorldMap = lazy(() => import("@/components/admin/VisitorWorldMap").then(module => ({ default: module.VisitorWorldMap })));
 const NewsletterSubscribers = lazy(() => import("@/components/admin/NewsletterSubscribers").then(module => ({ default: module.NewsletterSubscribers })));
 const CategoryManager = lazy(() => import("@/components/admin/CategoryManager").then(module => ({ default: module.CategoryManager })));
+const CategoryOrderManager = lazy(() => import("@/components/admin/CategoryOrderManager").then(module => ({ default: module.CategoryOrderManager })));
 const ProductRecategorizer = lazy(() => import("@/components/admin/ProductRecategorizer").then(module => ({ default: module.ProductRecategorizer })));
 const OrdersManager = lazy(() => import("@/components/admin/OrdersManager").then(module => ({ default: module.OrdersManager })));
 const ContactMessagesManager = lazy(() => import("@/components/admin/ContactMessagesManager").then(module => ({ default: module.ContactMessagesManager })));
@@ -2242,6 +2243,7 @@ const Admin = () => {
                 </Card>
               }>
                 <div className="space-y-6">
+                  <CategoryOrderManager />
                   <CategoryManager />
                   <ProductRecategorizer />
                 </div>
