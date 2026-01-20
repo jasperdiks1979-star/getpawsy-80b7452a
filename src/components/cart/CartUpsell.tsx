@@ -1,8 +1,10 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Sparkles, TrendingUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -13,6 +15,55 @@ interface CartUpsellProps {
   maxItems?: number;
 }
 
+// Skeleton for compact variant
+const CompactUpsellSkeleton = memo(() => (
+  <div className="space-y-3">
+    <div className="flex items-center gap-2">
+      <Skeleton className="h-4 w-4 rounded" />
+      <Skeleton className="h-4 w-32" />
+    </div>
+    <div className="space-y-2">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
+          <Skeleton className="w-12 h-12 rounded-md shrink-0" />
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+          <Skeleton className="h-8 w-8 rounded-md shrink-0" />
+        </div>
+      ))}
+    </div>
+  </div>
+));
+CompactUpsellSkeleton.displayName = 'CompactUpsellSkeleton';
+
+// Skeleton for default variant
+const DefaultUpsellSkeleton = memo(({ count = 4 }: { count?: number }) => (
+  <div className="space-y-4">
+    <div className="flex items-center gap-2">
+      <Skeleton className="h-5 w-5 rounded" />
+      <Skeleton className="h-6 w-44" />
+    </div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {[...Array(count)].map((_, i) => (
+        <div key={i} className="bg-card rounded-xl overflow-hidden shadow-card">
+          <Skeleton className="aspect-square w-full" />
+          <div className="p-3 space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <div className="flex items-center justify-between pt-1">
+              <Skeleton className="h-5 w-14" />
+              <Skeleton className="h-8 w-16 rounded-md" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+));
+DefaultUpsellSkeleton.displayName = 'DefaultUpsellSkeleton';
+
 export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }: CartUpsellProps) => {
   const { addItem } = useCart();
 
@@ -20,7 +71,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
   const baseProductIds = currentItemIds.map(id => id.split('-')[0]);
 
   // Fetch cart items to get categories
-  const { data: cartProducts } = useQuery({
+  const { data: cartProducts, isLoading: isLoadingCart } = useQuery({
     queryKey: ['cart-products', baseProductIds],
     queryFn: async () => {
       if (baseProductIds.length === 0) return [];
@@ -40,7 +91,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
   const cartCategories = [...new Set(cartProducts?.map(p => p.category).filter(Boolean) || [])];
 
   // Fetch upsell products (related by category, not in cart)
-  const { data: upsellProducts } = useQuery({
+  const { data: upsellProducts, isLoading: isLoadingUpsell } = useQuery({
     queryKey: ['upsell-products', cartCategories, baseProductIds],
     queryFn: async () => {
       if (cartCategories.length === 0) {
@@ -82,6 +133,8 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
+  const isLoading = isLoadingCart || isLoadingUpsell;
+
   const handleQuickAdd = (product: typeof upsellProducts[0]) => {
     addItem({
       id: product.id,
@@ -91,6 +144,13 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
     });
     toast.success(`${product.name} added to cart!`);
   };
+
+  // Show skeleton while loading
+  if (isLoading) {
+    return variant === 'compact' 
+      ? <CompactUpsellSkeleton /> 
+      : <DefaultUpsellSkeleton count={maxItems} />;
+  }
 
   if (!upsellProducts || upsellProducts.length === 0) {
     return null;
