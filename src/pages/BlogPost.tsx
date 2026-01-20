@@ -270,22 +270,30 @@ const BlogPostPage = () => {
     author: {
       '@type': 'Person',
       name: post.author_name,
+      url: 'https://getpawsy.pet/about',
     },
     publisher: {
       '@type': 'Organization',
       name: 'GetPawsy',
+      url: 'https://getpawsy.pet',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://getpawsy.lovable.app/favicon.png',
+        url: 'https://getpawsy.pet/favicon.png',
+        width: 512,
+        height: 512,
       },
     },
     datePublished: post.published_at,
     dateModified: post.published_at,
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://getpawsy.lovable.app/blog/${post.slug}`,
+      '@id': `https://getpawsy.pet/blog/${post.slug}`,
     },
     keywords: post.meta_keywords?.join(', ') || post.tags.join(', '),
+    articleSection: post.category,
+    inLanguage: 'en-US',
+    wordCount: Math.round(post.content.length / 5),
+    isAccessibleForFree: true,
   };
 
   // Generate smart meta description using the new function
@@ -297,17 +305,38 @@ const BlogPostPage = () => {
         <title>{post.meta_title || post.title} | GetPawsy Blog</title>
         <meta name="description" content={metaDescription} />
         <meta name="keywords" content={post.meta_keywords?.join(', ') || post.tags.join(', ')} />
-        <link rel="canonical" href={`https://getpawsy.lovable.app/blog/${post.slug}`} />
+        <link rel="canonical" href={`https://getpawsy.pet/blog/${post.slug}`} />
+        
+        {/* Hreflang Tags */}
+        <link rel="alternate" hrefLang="en" href={`https://getpawsy.pet/blog/${post.slug}`} />
+        <link rel="alternate" hrefLang="x-default" href={`https://getpawsy.pet/blog/${post.slug}`} />
+        
+        {/* Open Graph Article */}
         <meta property="og:type" content="article" />
         <meta property="og:title" content={post.meta_title || post.title} />
         <meta property="og:description" content={metaDescription} />
+        <meta property="og:url" content={`https://getpawsy.pet/blog/${post.slug}`} />
+        <meta property="og:site_name" content="GetPawsy" />
         {post.featured_image && <meta property="og:image" content={post.featured_image} />}
+        {post.featured_image && <meta property="og:image:alt" content={post.title} />}
         <meta property="article:published_time" content={post.published_at} />
         <meta property="article:author" content={post.author_name} />
         <meta property="article:section" content={post.category} />
         {post.tags.map((tag) => (
           <meta key={tag} property="article:tag" content={tag} />
         ))}
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.meta_title || post.title} />
+        <meta name="twitter:description" content={metaDescription} />
+        {post.featured_image && <meta name="twitter:image" content={post.featured_image} />}
+        
+        {/* Additional SEO */}
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+        <meta name="author" content={post.author_name} />
+        <meta name="article:modified_time" content={post.published_at} />
+        
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
 
