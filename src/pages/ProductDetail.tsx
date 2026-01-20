@@ -98,7 +98,7 @@ const ProductDetail = () => {
     return uuidRegex.test(str);
   };
 
-  // Fetch product from database - supports both UUID and slug-like identifiers
+  // Fetch product from database - supports both UUID and slug
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: async () => {
@@ -116,8 +116,17 @@ const ProductDetail = () => {
         return data;
       }
 
-      // If it's not a UUID, it might be a slug-like identifier
-      // Try to find by name (converting slug to searchable format)
+      // Otherwise, try to find by slug first
+      const { data: slugData, error: slugError } = await supabase
+        .from('products_public')
+        .select('*')
+        .eq('slug' as never, id)
+        .maybeSingle();
+      
+      if (slugError) throw slugError;
+      if (slugData && slugData.is_active) return slugData;
+
+      // Fallback: try to find by name (for legacy URLs)
       const searchName = id.replace(/-/g, ' ').toLowerCase();
       const { data, error } = await supabase
         .from('products_public')
