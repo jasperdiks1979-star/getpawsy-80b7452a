@@ -122,34 +122,34 @@ const Blog = () => {
   const seoContent = useMemo(() => {
     const categoryDescriptions: Record<string, { title: string; description: string; keywords: string[] }> = {
       Dogs: {
-        title: 'Dog Blog | Expert Tips & Advice | GetPawsy',
-        description: '🐕 Discover expert tips on dog food, puppy training, health & behavior. Practical advice from professionals for your loyal companion.',
-        keywords: [...SEO_KEYWORDS.dog.general.slice(0, 6), 'dog blog', 'puppy tips', 'dog training', 'dog food'],
+        title: 'Dog Care Blog 2026 | Training, Nutrition & Health Tips | GetPawsy',
+        description: 'Expert dog care guides: puppy training tips, best dog food recommendations, health advice & behavior solutions. Trusted by 10,000+ pet parents. Start reading now!',
+        keywords: [...SEO_KEYWORDS.dog.general.slice(0, 6), 'dog care blog', 'puppy training guide', 'dog nutrition tips', 'dog health advice', 'dog behavior tips', 'best dog products 2026'],
       },
       Cats: {
-        title: 'Cat Blog | Care & Behavior Tips | GetPawsy',
-        description: '🐱 Everything about cat care, food, behavior & health. Expert articles for the best care for your cat.',
-        keywords: [...SEO_KEYWORDS.cat.general.slice(0, 6), 'cat blog', 'cat care', 'cat behavior', 'cat food'],
+        title: 'Cat Care Blog 2026 | Health, Behavior & Nutrition Guides | GetPawsy',
+        description: 'Complete cat care articles: feline health tips, cat behavior explained, nutrition guides & product reviews. Expert advice for happy, healthy cats!',
+        keywords: [...SEO_KEYWORDS.cat.general.slice(0, 6), 'cat care blog', 'cat health tips', 'cat behavior guide', 'cat nutrition advice', 'indoor cat tips', 'best cat products 2026'],
       },
       Fish: {
-        title: 'Aquarium Blog | Beginners Guide & Tips | GetPawsy',
-        description: '🐠 From aquarium setup to fish care. Complete guide for beginners and experienced aquarium enthusiasts.',
-        keywords: ['aquarium tips', 'fish care', 'aquarium beginners', 'tropical fish', 'aquarium maintenance'],
+        title: 'Aquarium Blog 2026 | Fish Care, Tank Setup & Maintenance | GetPawsy',
+        description: 'Beginner-friendly aquarium guides: fish tank setup, tropical fish care, water quality tips & maintenance schedules. Create your perfect underwater world!',
+        keywords: ['aquarium blog', 'fish care guide', 'aquarium setup for beginners', 'tropical fish care', 'aquarium maintenance tips', 'fish tank ideas', 'aquarium water quality'],
       },
       Health: {
-        title: 'Pet Health Blog | Wellness Tips & Advice | GetPawsy',
-        description: '🏥 Expert pet health advice and wellness tips. Learn about common health issues and preventive care for your pets.',
-        keywords: ['pet health', 'pet wellness', 'vet advice', 'pet care tips', 'pet nutrition'],
+        title: 'Pet Health Blog 2026 | Wellness, Nutrition & Vet Tips | GetPawsy',
+        description: 'Comprehensive pet health resources: preventive care tips, nutrition advice, common illness guides & vet-approved wellness strategies. Keep your pet thriving!',
+        keywords: ['pet health blog', 'pet wellness tips', 'vet advice for pets', 'pet nutrition guide', 'pet preventive care', 'common pet illnesses', 'pet health 2026'],
       },
       Guides: {
-        title: 'Pet Guides | Complete How-To Articles | GetPawsy',
-        description: '📚 Comprehensive pet guides for every pet owner. From first-time tips to advanced care techniques.',
-        keywords: ['pet guides', 'pet how-to', 'pet care guides', 'first-time pet owner', 'pet tips'],
+        title: 'Pet Care Guides 2026 | Step-by-Step How-To Articles | GetPawsy',
+        description: 'Ultimate pet care guides: from first-time owner basics to advanced training techniques. Clear, actionable steps for dogs, cats & more. Start your journey!',
+        keywords: ['pet care guides', 'pet how-to articles', 'first-time pet owner guide', 'pet training guides', 'pet product guides', 'comprehensive pet care', 'pet owner tips'],
       },
       General: {
-        title: 'Pet Blog | General Tips & Advice | GetPawsy',
-        description: '🐾 General pet care tips for all animal types. From nutrition to wellness - everything you need to know.',
-        keywords: [...SEO_KEYWORDS.primary.slice(0, 8), 'pet tips', 'animal care'],
+        title: 'Pet Blog 2026 | Expert Tips for Dogs, Cats & More | GetPawsy',
+        description: 'Your ultimate pet resource: care tips, product reviews, training advice & health guides for all pets. Expert knowledge for devoted pet parents!',
+        keywords: [...SEO_KEYWORDS.primary.slice(0, 8), 'pet blog', 'pet care tips', 'pet owner advice', 'pet lifestyle'],
       },
     };
 
@@ -158,9 +158,9 @@ const Blog = () => {
     }
 
     return {
-      title: 'Blog | Pet Care Tips & Advice | GetPawsy',
-      description: 'Discover expert tips on pet care. Articles about dog food, cat care, aquarium tips and more. Free advice for pet owners.',
-      keywords: ['pet blog', 'dog food tips', 'cat care', 'aquarium beginners', 'puppy training', 'pet advice'],
+      title: 'Pet Care Blog 2026 | Expert Tips & Guides for Pet Parents | GetPawsy',
+      description: 'Discover 100+ expert pet care articles: dog training, cat health, nutrition guides & product reviews. Trusted advice for happy, healthy pets. Read free today!',
+      keywords: ['pet care blog', 'pet tips and advice', 'dog care articles', 'cat care guides', 'pet health blog', 'pet nutrition tips', 'pet owner resources 2026'],
     };
   }, [selectedCategory]);
 
@@ -170,10 +170,27 @@ const Blog = () => {
         <title>{seoContent.title}</title>
         <meta name="description" content={seoContent.description} />
         <meta name="keywords" content={seoContent.keywords.join(', ')} />
-        <link rel="canonical" href={`https://getpawsy.lovable.app/blog${selectedCategory ? `?category=${selectedCategory}` : ''}`} />
+        <link rel="canonical" href={`https://getpawsy.pet/blog${selectedCategory ? `?category=${selectedCategory}` : ''}`} />
+        
+        {/* Hreflang Tags */}
+        <link rel="alternate" hrefLang="en" href={`https://getpawsy.pet/blog${selectedCategory ? `?category=${selectedCategory}` : ''}`} />
+        <link rel="alternate" hrefLang="x-default" href={`https://getpawsy.pet/blog${selectedCategory ? `?category=${selectedCategory}` : ''}`} />
+        
+        {/* Open Graph */}
         <meta property="og:title" content={seoContent.title} />
         <meta property="og:description" content={seoContent.description} />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://getpawsy.pet/blog${selectedCategory ? `?category=${selectedCategory}` : ''}`} />
+        <meta property="og:site_name" content="GetPawsy" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoContent.title} />
+        <meta name="twitter:description" content={seoContent.description} />
+        
+        {/* Additional SEO */}
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+        <meta name="author" content="GetPawsy Pet Experts" />
       </Helmet>
 
       <div className="container py-8 md:py-12">
