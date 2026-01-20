@@ -97,7 +97,9 @@ function extractProductId(url: string): string | null {
   
   // Pattern for CJ product URLs - try multiple formats
   const patterns = [
-    // UUID format in URL: -p-UUID.html (highest priority for this format)
+    // UUID format: product/-p-UUID.html (direct after product/)
+    /product\/-p-([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12})\.html/i,
+    // UUID format in URL: -p-UUID.html (with product name before)
     /-p-([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12})\.html/i,
     // p-UUID.html format
     /p-([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12})\.html/i,
@@ -107,7 +109,8 @@ function extractProductId(url: string): string | null {
     /-p-(\d{16,25})\.html/i,
     // p-PRODUCTID.html format
     /p-(\d{16,25})\.html/i,
-    // pid query parameter
+    // pid query parameter (UUID or numeric)
+    /pid=([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12})/i,
     /pid=(\d{16,25})/i,
     // product_id query parameter
     /product_id=(\d{16,25})/i,
