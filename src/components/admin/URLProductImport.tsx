@@ -64,6 +64,109 @@ interface CJVariant {
   variantSellPrice: number;
 }
 
+interface CategoryWithParent {
+  id: string;
+  name: string;
+  slug: string;
+  parent_id: string | null;
+}
+
+// Category mapping: keywords to database category slugs
+const CATEGORY_KEYWORD_MAP: Record<string, string[]> = {
+  // Cat-specific
+  'cat-trees-and-condos': ['cat tree', 'scratching tower', 'climbing tower', 'cat tower', 'cat condo', 'sisal', 'cat perch', 'cat furniture', 'multi-level', 'cat activity', 'climbing frame'],
+  'cat-scratching-posts': ['scratching post', 'scratcher', 'scratching board', 'sisal post', 'cardboard scratcher', 'scratch pad', 'scratching mat'],
+  'cat-litter-boxes': ['litter box', 'litter tray', 'cat toilet', 'litter scoop', 'litter mat', 'self-cleaning litter', 'automatic litter', 'covered litter', 'hooded litter'],
+  
+  // Bird-specific
+  'bird-supplies': ['bird', 'parrot', 'parakeet', 'budgie', 'cockatiel', 'canary', 'finch', 'lovebird', 'aviary'],
+  'bird-cages': ['bird cage', 'parrot cage', 'aviary', 'flight cage', 'breeding cage', 'birdcage', 'bird house'],
+  'bird-feeders': ['bird feeder', 'seed feeder', 'bird water', 'bird bath', 'bird bowl', 'nectar feeder'],
+  'bird-toys': ['bird toy', 'parrot toy', 'bird swing', 'bird ladder', 'bird perch', 'bird bell', 'bird mirror'],
+  
+  // Pet furniture subcategories
+  'pet-beds': ['pet bed', 'dog bed', 'cat bed', 'sleeping bed', 'orthopedic bed', 'donut bed', 'calming bed', 'bolster bed'],
+  'pet-hammocks': ['hammock', 'hanging bed', 'window perch', 'radiator bed', 'suspended bed'],
+  'pet-houses': ['pet house', 'dog house', 'cat house', 'kennel', 'indoor house', 'outdoor house', 'wooden house'],
+  'pet-nests': ['nest', 'cave', 'igloo', 'cozy nest', 'snuggle', 'cuddle'],
+  
+  // General pet categories
+  'pet-furniture': ['furniture', 'sofa', 'couch', 'cushion', 'pillow', 'mat', 'blanket', 'elevated bed', 'cooling mat'],
+  'pet-beds-mats': ['bed', 'mat', 'blanket', 'cushion', 'mattress', 'sleeping pad', 'foam bed'],
+  'pet-toys': ['toy', 'toys', 'ball', 'chew', 'squeaky', 'plush', 'rope', 'frisbee', 'fetch', 'puzzle', 'interactive', 'teaser', 'wand', 'kong', 'play', 'squeak', 'tug'],
+  'pet-collars-leashes': ['collar', 'leash', 'harness', 'lead', 'chain', 'tag', 'retractable', 'reflective', 'glow', 'led', 'nylon', 'leather', 'adjustable', 'breakaway', 'martingale'],
+  'pet-grooming': ['brush', 'comb', 'grooming', 'shampoo', 'nail', 'clipper', 'trimmer', 'bath', 'deshedding', 'dematting', 'slicker', 'rake', 'scissors'],
+  'pet-hair-care': ['fur', 'hair', 'shedding', 'coat', 'detangler', 'conditioner', 'dryer', 'hair remover', 'lint roller'],
+  'pet-bags': ['carrier', 'bag', 'backpack', 'transport', 'travel', 'sling', 'airline', 'pet purse', 'tote'],
+  'pet-strollers': ['stroller', 'pram', 'pushchair', 'pet cart', 'jogging stroller', 'travel stroller'],
+  'pet-bowls': ['bowl', 'dish', 'plate', 'slow feeder', 'elevated bowl', 'tilted bowl', 'anti-slip bowl'],
+  'pet-feeding-tools': ['feeder', 'automatic feeder', 'food dispenser', 'portion control', 'timer feeder', 'gravity feeder', 'smart feeder'],
+  'pet-drinking-tools': ['water', 'fountain', 'dispenser', 'water bottle', 'drinking', 'hydration', 'water bowl', 'filter fountain'],
+  'pet-food-treats': ['food', 'treat', 'treats', 'snack', 'kibble', 'wet food', 'dry food', 'biscuit', 'chew treat', 'dental treat'],
+  'pet-training': ['training', 'clicker', 'whistle', 'treat pouch', 'target', 'agility', 'tunnel', 'jump', 'weave', 'hurdle', 'potty', 'puppy pad', 'pee pad'],
+  'pet-gates-fences': ['gate', 'fence', 'barrier', 'playpen', 'pen', 'enclosure', 'baby gate', 'pet door', 'flap'],
+  'dog-stairs-and-steps': ['stairs', 'steps', 'ramp', 'ladder', 'pet stairs', 'dog ramp', 'car ramp', 'bed stairs'],
+  'pet-accessories': ['id tag', 'charm', 'pendant', 'bell', 'camera', 'gps', 'tracker', 'monitor', 'bandana', 'bow tie', 'hat', 'glasses', 'jewelry'],
+  'pet-supplies': ['supplies', 'accessory', 'pet', 'dog', 'cat', 'puppy', 'kitten'], // Fallback category
+};
+
+// Match product name to the best database category
+function matchProductToCategory(productName: string, cjCategoryName: string, availableCategories: CategoryWithParent[]): string {
+  const lowerName = productName.toLowerCase();
+  const lowerCjCategory = cjCategoryName.toLowerCase();
+  
+  // Create a map of slug to category for quick lookup
+  const categoryBySlug = new Map(availableCategories.map(c => [c.slug, c]));
+  
+  // Score each category based on keyword matches
+  const scores: { slug: string; score: number; matchedKeywords: string[] }[] = [];
+  
+  for (const [slug, keywords] of Object.entries(CATEGORY_KEYWORD_MAP)) {
+    // Skip if category doesn't exist in database
+    if (!categoryBySlug.has(slug)) continue;
+    
+    let score = 0;
+    const matchedKeywords: string[] = [];
+    
+    for (const keyword of keywords) {
+      const lowerKeyword = keyword.toLowerCase();
+      
+      // Check product name (higher weight)
+      if (lowerName.includes(lowerKeyword)) {
+        // Longer keyword matches are more specific, so give them more points
+        score += lowerKeyword.length * 2;
+        matchedKeywords.push(keyword);
+      }
+      
+      // Check CJ category name (lower weight)
+      if (lowerCjCategory.includes(lowerKeyword)) {
+        score += lowerKeyword.length;
+        if (!matchedKeywords.includes(keyword)) {
+          matchedKeywords.push(keyword);
+        }
+      }
+    }
+    
+    if (score > 0) {
+      scores.push({ slug, score, matchedKeywords });
+    }
+  }
+  
+  // Sort by score descending
+  scores.sort((a, b) => b.score - a.score);
+  
+  // Return best match, or 'pet-supplies' as fallback
+  if (scores.length > 0) {
+    console.log(`Category match for "${productName}": ${scores[0].slug} (score: ${scores[0].score}, keywords: ${scores[0].matchedKeywords.join(', ')})`);
+    return categoryBySlug.get(scores[0].slug)!.name;
+  }
+  
+  // Fallback to CJ category or Pet Supplies
+  const fallback = categoryBySlug.get('pet-supplies');
+  console.log(`No match for "${productName}", using fallback: ${fallback?.name || cjCategoryName}`);
+  return fallback?.name || cjCategoryName || 'Pet Supplies';
+}
+
 // Extract product ID from CJ Dropshipping URL
 function extractProductId(url: string): string | null {
   // Supported URL formats:
@@ -347,8 +450,10 @@ export function URLProductImport() {
           
           const stock = p.totalStock ?? 100;
 
-          // Generate SEO description
-          const category = selectedCategory === "auto" ? p.categoryName : selectedCategory;
+          // Determine category - use smart matching for auto mode
+          const category = selectedCategory === "auto" 
+            ? matchProductToCategory(p.productNameEn, p.categoryName || '', categories || [])
+            : selectedCategory;
           let seoDescription = p.description || "";
           try {
             seoDescription = await generateSeoForProduct(p.productNameEn, category);
@@ -479,7 +584,7 @@ https://www.cjdropshipping.com/product/...`}
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="auto">🔄 Automatisch (van CJ)</SelectItem>
+                  <SelectItem value="auto">🧠 Slim Automatisch (op basis van productnaam)</SelectItem>
                   {categories?.map((cat) => (
                     <SelectItem key={cat.id} value={cat.slug}>
                       {cat.name}
@@ -582,6 +687,11 @@ https://www.cjdropshipping.com/product/...`}
                           <p className="text-xs text-muted-foreground">
                             ${entry.productData.sellPrice} • {entry.productData.variants?.length || 0} varianten • {entry.productData.totalStock || 0} voorraad
                           </p>
+                          {selectedCategory === "auto" && categories && (
+                            <p className="text-xs text-primary mt-0.5">
+                              📁 {matchProductToCategory(entry.productData.productNameEn, entry.productData.categoryName || '', categories)}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ) : (
