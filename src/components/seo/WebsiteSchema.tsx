@@ -15,7 +15,7 @@ export function WebsiteSchema({
   description = 'Discover premium, eco-friendly pet products at GetPawsy. Shop quality dog beds, cat trees, pet toys, collars, grooming supplies and more. Free shipping on orders over $50. Vet-approved items for happy, healthy pets.',
   keywords = SITE_KEYWORDS,
   image = '/og-image.png',
-  url = 'https://getpawsy.lovable.app',
+  url = 'https://getpawsy.pet',
   type = 'website',
 }: WebsiteSchemaProps) {
   // Organization Schema

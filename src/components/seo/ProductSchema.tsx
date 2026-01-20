@@ -25,7 +25,7 @@ interface ProductSchemaProps {
 export function ProductSchema({ 
   product, 
   reviews = [],
-  baseUrl = 'https://getpawsy.lovable.app'
+  baseUrl = 'https://getpawsy.pet'
 }: ProductSchemaProps) {
   // Clean description from HTML
   const cleanDescription = product.description

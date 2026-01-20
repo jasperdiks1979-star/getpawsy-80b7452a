@@ -12,7 +12,7 @@ export function CategorySchema({
   categoryName,
   searchQuery,
   productCount,
-  baseUrl = 'https://getpawsy.lovable.app',
+  baseUrl = 'https://getpawsy.pet',
 }: CategorySchemaProps) {
   const isSearch = !!searchQuery;
   const pageTitle = isSearch
