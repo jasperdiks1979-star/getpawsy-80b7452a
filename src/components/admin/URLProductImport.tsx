@@ -77,12 +77,19 @@ function extractProductId(url: string): string | null {
   // Clean the URL
   const cleanUrl = url.trim();
   
+  // DEBUG: Log to verify function is being called
+  console.log('[extractProductId] CALLED with:', cleanUrl);
+  
   // Try to extract UUID first - this is the most reliable for UUID-based IDs
   // UUID format: 8-4-4-4-12 hexadecimal characters with hyphens
-  const uuidMatch = cleanUrl.match(/([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})/);
-  if (uuidMatch) {
-    console.log('[extractProductId] Found UUID:', uuidMatch[1]);
-    return uuidMatch[1];
+  // Example: 956CEFCE-0470-4BE9-86FE-7FFDDD0C82AA
+  const uuidRegex = /[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}/g;
+  const uuidMatches = cleanUrl.match(uuidRegex);
+  console.log('[extractProductId] UUID matches:', uuidMatches);
+  
+  if (uuidMatches && uuidMatches.length > 0) {
+    console.log('[extractProductId] Returning UUID:', uuidMatches[0]);
+    return uuidMatches[0];
   }
   
   // Check if it's already a product ID (numeric, 16-25 digits)
