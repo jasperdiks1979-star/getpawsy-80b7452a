@@ -138,6 +138,21 @@ export const CategoryFilter = ({
       .slice(0, 5);
   }, [categories, productCounts]);
 
+  // Get all parent category IDs (categories with children)
+  const allParentIds = useMemo(() => {
+    const ids: string[] = [];
+    const collectParentIds = (nodes: CategoryNode[]) => {
+      nodes.forEach((node) => {
+        if (node.children.length > 0) {
+          ids.push(node.id);
+          collectParentIds(node.children);
+        }
+      });
+    };
+    collectParentIds(categoryTree);
+    return ids;
+  }, [categoryTree]);
+
   const toggleOpen = (categoryId: string) => {
     setOpenCategories((prev) =>
       prev.includes(categoryId)
@@ -145,6 +160,9 @@ export const CategoryFilter = ({
         : [...prev, categoryId]
     );
   };
+
+  const expandAll = () => setOpenCategories(allParentIds);
+  const collapseAll = () => setOpenCategories([]);
 
   const getProductCount = (category: CategoryNode): number => {
     const directCount = productCounts[category.name] || 0;
@@ -280,14 +298,27 @@ export const CategoryFilter = ({
             Wis filters ({selectedCategories.length})
           </button>
         )}
-        {openCategories.length > 0 && (
-          <button
-            onClick={() => setOpenCategories([])}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors ml-auto"
-          >
-            <ChevronsUpDown className="w-3 h-3" />
-            Alles inklappen
-          </button>
+        {(openCategories.length > 0 || allParentIds.length > 0) && (
+          <div className="flex items-center gap-2 ml-auto">
+            {openCategories.length < allParentIds.length && allParentIds.length > 0 && (
+              <button
+                onClick={expandAll}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
+              >
+                <ChevronsUpDown className="w-3 h-3" />
+                Uitklappen
+              </button>
+            )}
+            {openCategories.length > 0 && (
+              <button
+                onClick={collapseAll}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
+              >
+                <ChevronsUpDown className="w-3 h-3 rotate-90" />
+                Inklappen
+              </button>
+            )}
+          </div>
         )}
       </div>
 
