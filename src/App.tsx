@@ -10,6 +10,7 @@ import { CartAnimationProvider } from "@/contexts/CartAnimationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -44,16 +45,16 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <div className="text-center max-w-md">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Oeps, er ging iets mis</h2>
+            <h2 className="text-xl font-semibold mb-2">Oops, something went wrong</h2>
             <p className="text-muted-foreground mb-4">
-              {this.state.error?.message || 'Er is een fout opgetreden bij het laden van de pagina.'}
+              {this.state.error?.message || 'An error occurred while loading the page.'}
             </p>
             <div className="flex gap-2 justify-center">
               <Button 
                 onClick={() => window.location.reload()}
                 variant="default"
               >
-                Vernieuwen
+                Refresh
               </Button>
               <Button 
                 onClick={() => {
@@ -62,7 +63,7 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
                 }}
                 variant="outline"
               >
-                Terug
+                Go Back
               </Button>
             </div>
           </div>
@@ -152,6 +153,7 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
+                  <ScrollToTop />
                   <RouteErrorBoundary>
                     <Suspense fallback={<RouteLoader />}>
                       <Routes>

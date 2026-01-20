@@ -39,23 +39,22 @@ interface Product {
 }
 
 const categoryColors: Record<string, string> = {
-  honden: 'bg-amber-100 text-amber-700',
-  dogs: 'bg-amber-100 text-amber-700',
-  katten: 'bg-pink-100 text-pink-700',
-  cats: 'bg-pink-100 text-pink-700',
-  vissen: 'bg-blue-100 text-blue-700',
-  fish: 'bg-blue-100 text-blue-700',
-  algemeen: 'bg-emerald-100 text-emerald-700',
-  guides: 'bg-emerald-100 text-emerald-700',
-  general: 'bg-emerald-100 text-emerald-700',
+  Dogs: 'bg-amber-100 text-amber-700',
+  Cats: 'bg-pink-100 text-pink-700',
+  Fish: 'bg-blue-100 text-blue-700',
+  General: 'bg-emerald-100 text-emerald-700',
+  Guides: 'bg-purple-100 text-purple-700',
+  Health: 'bg-red-100 text-red-700',
 };
 
 // Map blog categories to product categories
 const blogToProductCategories: Record<string, string[]> = {
-  honden: ['Honden', 'Dogs', 'Speelgoed', 'Voeding', 'Accessoires'],
-  katten: ['Katten', 'Cats', 'Speelgoed', 'Krabpalen', 'Accessoires'],
-  vissen: ['Vissen', 'Fish', 'Aquarium', 'Voeding'],
-  algemeen: ['Speelgoed', 'Accessoires', 'Voeding'],
+  Dogs: ['Pet Food', 'Pet Toys', 'Pet Accessories', 'Pet Training'],
+  Cats: ['Pet Food', 'Pet Toys', 'Cat Trees', 'Pet Accessories'],
+  Fish: ['Fish Tank', 'Pet Food', 'Pet Accessories'],
+  General: ['Pet Toys', 'Pet Accessories', 'Pet Food'],
+  Health: ['Pet Grooming', 'Pet Accessories', 'Pet Food'],
+  Guides: ['Pet Toys', 'Pet Training', 'Pet Accessories'],
 };
 
 const BlogPostPage = () => {
