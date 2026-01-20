@@ -1,10 +1,11 @@
-import { ChevronDown, Search, X } from 'lucide-react';
+import { ChevronDown, Search, X, TrendingUp } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 interface Category {
   id: string;
@@ -122,6 +123,18 @@ export const CategoryFilter = ({
     return ids;
   }, [filteredCategoryTree, searchQuery, openCategories]);
 
+  // Get top 5 popular categories (highest product count)
+  const popularCategories = useMemo(() => {
+    return categories
+      .filter((cat) => productCounts[cat.name] && productCounts[cat.name] > 0)
+      .map((cat) => ({
+        ...cat,
+        count: productCounts[cat.name] || 0,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [categories, productCounts]);
+
   const toggleOpen = (categoryId: string) => {
     setOpenCategories((prev) =>
       prev.includes(categoryId)
@@ -227,6 +240,36 @@ export const CategoryFilter = ({
 
   return (
     <div className="space-y-3">
+      {/* Popular categories */}
+      {!searchQuery && popularCategories.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <TrendingUp className="w-3 h-3" />
+            <span>Populair</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {popularCategories.map((cat) => {
+              const isSelected = selectedCategories.includes(cat.name);
+              return (
+                <Badge
+                  key={cat.id}
+                  variant={isSelected ? 'default' : 'outline'}
+                  className={cn(
+                    'cursor-pointer text-xs py-1 px-2 transition-colors',
+                    isSelected
+                      ? 'bg-primary hover:bg-primary/90'
+                      : 'hover:bg-muted'
+                  )}
+                  onClick={() => onToggleCategory(cat.name)}
+                >
+                  {cat.name}
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Search input */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -248,7 +291,7 @@ export const CategoryFilter = ({
       </div>
 
       {/* Category list */}
-      <div className="space-y-1 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin">
+      <div className="space-y-1 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
         {filteredCategoryTree.length > 0 ? (
           filteredCategoryTree.map((category) => renderCategory(category))
         ) : (
