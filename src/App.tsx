@@ -113,6 +113,7 @@ const BestsellerDetail = lazyWithRetry(() => import("./pages/BestsellerDetail"))
 const LiveMap = lazyWithRetry(() => import("./pages/LiveMap"));
 const Blog = lazyWithRetry(() => import("./pages/Blog"));
 const BlogPost = lazyWithRetry(() => import("./pages/BlogPost"));
+const Sitemap = lazyWithRetry(() => import("./pages/Sitemap"));
 
 const queryClient = new QueryClient();
 
@@ -179,6 +180,7 @@ const App = () => {
                         <Route path="/live-map" element={<LiveMap />} />
                         <Route path="/blog" element={<Blog />} />
                         <Route path="/blog/:slug" element={<BlogPost />} />
+                        <Route path="/sitemap.xml" element={<Sitemap />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
