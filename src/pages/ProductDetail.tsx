@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, Loader2, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock, MessageSquare, Ruler, Weight, Box, Info } from 'lucide-react';
+import { ShoppingCart, Heart, Truck, Shield, ArrowLeft, Minus, Plus, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock, MessageSquare, Ruler, Weight, Box, Info } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,6 +25,7 @@ import { trackViewItem } from '@/lib/analytics';
 import { calculateSellingPrice } from '@/lib/pricing';
 import FormattedDescription from '@/components/products/FormattedDescription';
 import { ProductSchema } from '@/components/seo/ProductSchema';
+import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
 
 interface ProductVariant {
   vid: string;
@@ -342,16 +343,7 @@ const ProductDetail = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center"
-          >
-            <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading product...</p>
-          </motion.div>
-        </div>
+        <ProductDetailSkeleton />
       </Layout>
     );
   }
