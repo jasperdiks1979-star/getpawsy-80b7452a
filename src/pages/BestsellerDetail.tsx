@@ -508,7 +508,7 @@ const BestsellerDetail = () => {
 
                 {/* Main Image with swipe/navigation */}
                 <div 
-                  className="relative aspect-square rounded-3xl overflow-hidden bg-white shadow-2xl group touch-pan-y"
+                  className="relative aspect-[4/5] md:aspect-square rounded-3xl overflow-hidden bg-white shadow-2xl group touch-pan-y"
                 >
                   {/* Swipeable image container */}
                   <motion.div
@@ -525,7 +525,7 @@ const BestsellerDetail = () => {
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={selectedImage}
-                        className="absolute inset-0 p-8"
+                        className="absolute inset-0 p-4 md:p-8"
                         initial={{ opacity: 0, x: dragX > 0 ? -100 : 100 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: dragX > 0 ? 100 : -100 }}
