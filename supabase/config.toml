@@ -62,3 +62,9 @@ verify_jwt = false
 
 [functions.notify-delivery-issue]
 verify_jwt = false
+
+[functions.newsletter-preferences]
+verify_jwt = false
+
+[functions.send-email-campaign]
+verify_jwt = false

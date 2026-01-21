@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText, Bell } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText, Bell, Send } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
@@ -32,6 +32,7 @@ const BestsellerManager = lazy(() => import("@/components/admin/BestsellerManage
 const BlogPostsManager = lazy(() => import("@/components/admin/BlogPostsManager").then(module => ({ default: module.BlogPostsManager })));
 const AbandonedCartsManager = lazy(() => import("@/components/admin/AbandonedCartsManager").then(module => ({ default: module.AbandonedCartsManager })));
 const StockNotificationsManager = lazy(() => import("@/components/admin/StockNotificationsManager").then(module => ({ default: module.StockNotificationsManager })));
+const EmailCampaignManager = lazy(() => import("@/components/admin/EmailCampaignManager").then(module => ({ default: module.EmailCampaignManager })));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -1081,6 +1082,12 @@ const Admin = () => {
                 <TabsTrigger value="blog" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <FileText className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Blog</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="E-mail campagnes versturen">
+                <TabsTrigger value="campaigns" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <Send className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Campagnes</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -2515,6 +2522,22 @@ const Admin = () => {
                 </Card>
               }>
                 <BlogPostsManager />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Email Campaigns Tab */}
+          <TabsContent value="campaigns" className="space-y-6">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">E-mail campagnes laden...</span>
+                  </div>
+                </Card>
+              }>
+                <EmailCampaignManager />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
