@@ -58,11 +58,16 @@ export function ProductSchema({
   const images = product.images?.filter(Boolean) || [];
   const primaryImage = images[0] || product.image_url || `${baseUrl}/og-image.png`;
 
+  // Truncate product name for Google (max 150 chars recommended)
+  const truncatedName = product.name.length > 150 
+    ? product.name.slice(0, 147) + '...' 
+    : product.name;
+
   // JSON-LD Product Schema
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: product.name,
+    name: truncatedName,
     description: cleanDescription,
     image: images.length > 0 ? images : [primaryImage],
     sku: product.sku || product.id,
@@ -84,6 +89,15 @@ export function ProductSchema({
       seller: {
         '@type': 'Organization',
         name: 'GetPawsy',
+      },
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'US',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 30,
+        returnMethod: 'https://schema.org/ReturnByMail',
+        returnFees: 'https://schema.org/FreeReturn',
+        returnPolicySeasonalOverride: undefined,
       },
       shippingDetails: {
         '@type': 'OfferShippingDetails',
