@@ -21,19 +21,28 @@ interface Product {
 interface FrequentlyBoughtTogetherProps {
   currentProduct: Product;
   relatedProducts: Product[];
-  bundleDiscount?: number; // Percentage discount (default 10%)
   maxItems?: number;
   sourceProductId?: string;
   sourceProductName?: string;
 }
 
-const BUNDLE_DISCOUNT_CODE = 'BUNDLE10';
+// Dynamic discount tiers based on number of selected items
+const DISCOUNT_TIERS: Record<number, { percentage: number; code: string }> = {
+  2: { percentage: 10, code: 'BUNDLE10' },
+  3: { percentage: 15, code: 'BUNDLE15' },
+  4: { percentage: 18, code: 'BUNDLE18' },
+  5: { percentage: 20, code: 'BUNDLE20' },
+};
+
+const getDiscountForCount = (count: number): { percentage: number; code: string } => {
+  if (count >= 5) return DISCOUNT_TIERS[5];
+  return DISCOUNT_TIERS[count] || { percentage: 0, code: '' };
+};
 
 export const FrequentlyBoughtTogether = ({
   currentProduct,
   relatedProducts,
-  bundleDiscount = 10,
-  maxItems = 2,
+  maxItems = 3,
   sourceProductId,
   sourceProductName,
 }: FrequentlyBoughtTogetherProps) => {
@@ -94,6 +103,9 @@ export const FrequentlyBoughtTogether = ({
   const allProducts = [currentProduct, ...bundleProducts];
   const selectedProducts = allProducts.filter(p => selectedIds.has(p.id));
 
+  // Calculate dynamic discount based on selection count
+  const { percentage: bundleDiscount, code: discountCode } = getDiscountForCount(selectedProducts.length);
+  
   // Calculate prices
   const originalTotal = selectedProducts.reduce((sum, p) => sum + p.price, 0);
   const discountAmount = selectedProducts.length >= 2 
@@ -150,7 +162,7 @@ export const FrequentlyBoughtTogether = ({
       );
 
       // Store bundle discount code for checkout
-      localStorage.setItem('appliedDiscount', BUNDLE_DISCOUNT_CODE);
+      localStorage.setItem('appliedDiscount', discountCode);
 
       toast.success(
         <div className="flex flex-col gap-1">
@@ -183,7 +195,7 @@ export const FrequentlyBoughtTogether = ({
         <div>
           <h3 className="text-lg font-bold">Frequently Bought Together</h3>
           <p className="text-sm text-muted-foreground">
-            Save {bundleDiscount}% when you buy these items together
+            Buy 2+ items together and save up to 20%
           </p>
         </div>
       </div>
