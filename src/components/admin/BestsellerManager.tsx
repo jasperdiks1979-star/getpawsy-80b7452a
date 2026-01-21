@@ -16,7 +16,9 @@ import {
   Square,
   MinusSquare,
   Filter,
-  FilterX
+  FilterX,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
 import {
   DndContext,
@@ -688,6 +690,29 @@ export const BestsellerManager = () => {
 
   const isBulkActionPending = bulkActivateMutation.isPending || bulkDeleteMutation.isPending || bulkGenerateSEOMutation.isPending;
 
+  // Statistics calculations
+  const stats = useMemo(() => {
+    if (!baseBestsellers) return null;
+    
+    const total = baseBestsellers.length;
+    const active = baseBestsellers.filter(b => b.is_active).length;
+    const inactive = total - active;
+    const seoComplete = baseBestsellers.filter(b => b.seo_title).length;
+    const seoIncomplete = total - seoComplete;
+    const manual = baseBestsellers.filter(b => b.is_manual).length;
+    
+    return {
+      total,
+      active,
+      inactive,
+      seoComplete,
+      seoIncomplete,
+      manual,
+      activePercent: total > 0 ? Math.round((active / total) * 100) : 0,
+      seoPercent: total > 0 ? Math.round((seoComplete / total) * 100) : 0,
+    };
+  }, [baseBestsellers]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -795,6 +820,83 @@ export const BestsellerManager = () => {
             </div>
           </DialogContent>
       </Dialog>
+
+      {/* Statistics Cards */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Total Bestsellers */}
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/20 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-sm text-muted-foreground">Totaal bestsellers</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Status */}
+          <div className="bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-500/20 rounded-lg">
+                <Eye className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-bold">{stats.active}</p>
+                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                    {stats.activePercent}%
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">Actief ({stats.inactive} inactief)</p>
+              </div>
+            </div>
+          </div>
+
+          {/* SEO Status */}
+          <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/20 rounded-lg">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-bold">{stats.seoComplete}</p>
+                  <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                    {stats.seoPercent}%
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">SEO compleet ({stats.seoIncomplete} incompleet)</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions Summary */}
+          <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/20 rounded-lg">
+                <Sparkles className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.seoIncomplete}</p>
+                <p className="text-sm text-muted-foreground">SEO nodig</p>
+                {stats.seoIncomplete > 0 && (
+                  <Button
+                    size="sm"
+                    variant="link"
+                    className="h-auto p-0 text-xs text-amber-600"
+                    onClick={() => setSeoFilter('incomplete')}
+                  >
+                    Bekijk items →
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/30 rounded-lg border">
