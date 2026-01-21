@@ -2,20 +2,60 @@ import { useRef } from 'react';
 import { Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ProductCard, Product } from '@/components/products/ProductCard';
 
 interface RecentlyViewedCarouselProps {
   products: Product[];
+  isLoading?: boolean;
   title?: string;
   subtitle?: string;
 }
 
+const CarouselSkeleton = () => (
+  <div className="flex gap-4 overflow-hidden">
+    {Array.from({ length: 4 }).map((_, i) => (
+      <div key={i} className="flex-shrink-0 w-[45%] sm:w-[35%] md:w-[28%] lg:w-[22%] xl:w-[18%]">
+        <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+          <Skeleton className="aspect-square w-full" />
+          <div className="p-3 space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-8 w-16 rounded-md" />
+            </div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 export const RecentlyViewedCarousel = ({
   products,
+  isLoading = false,
   title = 'Recently Viewed',
   subtitle = 'Products you viewed earlier',
 }: RecentlyViewedCarouselProps) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  if (isLoading) {
+    return (
+      <section className="w-full max-w-full overflow-hidden">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-10 h-10 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-36" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+        </div>
+        <CarouselSkeleton />
+      </section>
+    );
+  }
 
   if (!products || products.length === 0) return null;
 
@@ -53,26 +93,28 @@ export const RecentlyViewedCarousel = ({
         </div>
         
         {/* Navigation Arrows - Desktop Only */}
-        <div className="hidden md:flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 rounded-full"
-            onClick={() => scroll('left')}
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 rounded-full"
-            onClick={() => scroll('right')}
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        {products.length > 4 && (
+          <div className="hidden md:flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+              onClick={() => scroll('left')}
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+              onClick={() => scroll('right')}
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Carousel Container */}
@@ -90,7 +132,7 @@ export const RecentlyViewedCarousel = ({
               key={product.id}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 * idx }}
+              transition={{ delay: 0.1 * Math.min(idx, 5) }}
               className="flex-shrink-0 w-[45%] sm:w-[35%] md:w-[28%] lg:w-[22%] xl:w-[18%]"
               style={{ scrollSnapAlign: 'start' }}
             >
@@ -110,9 +152,11 @@ export const RecentlyViewedCarousel = ({
       </div>
 
       {/* Scroll indicator - Mobile Only */}
-      <div className="flex justify-center gap-1 mt-4 md:hidden">
-        <span className="text-xs text-muted-foreground">Swipe for more →</span>
-      </div>
+      {products.length > 2 && (
+        <div className="flex justify-center gap-1 mt-4 md:hidden">
+          <span className="text-xs text-muted-foreground">Swipe for more →</span>
+        </div>
+      )}
     </motion.section>
   );
 };
