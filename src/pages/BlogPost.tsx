@@ -451,7 +451,7 @@ const BlogPostPage = () => {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {relatedProducts.slice(0, 4).map((product) => (
-                <Link key={product.id} to={`/products/${product.id}`}>
+                <Link key={product.id} to={`/product/${product.id}`}>
                   <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow group">
                     <div className="aspect-square bg-muted relative overflow-hidden">
                       {product.image_url ? (
