@@ -1,10 +1,11 @@
-import React, { useState, memo, forwardRef } from 'react';
+import React, { useState, memo, forwardRef, useCallback } from 'react';
 import { Link } from 'react-router-dom'
 import { ShoppingCart, Heart, Eye } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useCartAnimation } from '@/contexts/CartAnimationContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useHaptic } from '@/hooks/useHaptic';
+import { useProductPrefetch } from '@/hooks/useProductPrefetch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OptimizedImage } from '@/components/ui/optimized-image';
@@ -56,8 +57,18 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   const { triggerAddToCart } = useCartAnimation();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { success: hapticSuccess, selection: hapticSelection } = useHaptic();
+  const { prefetchProduct } = useProductPrefetch();
   const inWishlist = isInWishlist(product.id);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // Prefetch product data on hover for faster navigation
+  const handleMouseEnter = useCallback(() => {
+    prefetchProduct({
+      productId: product.id,
+      productSlug: product.slug,
+      category: product.category,
+    });
+  }, [product.id, product.slug, product.category, prefetchProduct]);
   
 
   const isOutOfStock = product.stock === 0 || product.stock === null;
@@ -128,7 +139,7 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   const productUrl = product.slug ? `/product/${product.slug}` : `/product/${product.id}`;
 
   return (
-    <Link ref={ref} to={productUrl} className="group block" onClick={handleCardClick}>
+    <Link ref={ref} to={productUrl} className="group block" onClick={handleCardClick} onMouseEnter={handleMouseEnter}>
       <div 
         className="relative bg-card rounded-2xl overflow-hidden shadow-card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-1"
       >
