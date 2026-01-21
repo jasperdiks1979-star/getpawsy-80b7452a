@@ -427,26 +427,26 @@ export const BlogPostsManager = () => {
               <FileText className="w-5 h-5" />
               Manage Blog Posts
             </CardTitle>
-            <div className="flex items-center gap-2">
-              {postsWithoutImagesCount > 0 && (
-                <Button 
-                  variant="outline" 
-                  onClick={handleBatchGenerateImages}
-                  disabled={batchGenerating}
-                >
-                  {batchGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating {batchProgress.current}/{batchProgress.total}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Generate {postsWithoutImagesCount} Missing Images
-                    </>
-                  )}
-                </Button>
-              )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleBatchGenerateImages}
+                disabled={batchGenerating || postsWithoutImagesCount === 0}
+              >
+                {batchGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating {batchProgress.current}/{batchProgress.total}
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {postsWithoutImagesCount > 0 
+                      ? `Generate ${postsWithoutImagesCount} Missing Images`
+                      : 'All Images Generated'}
+                  </>
+                )}
+              </Button>
               <Button onClick={handleCreate}>
                 <Plus className="w-4 h-4 mr-2" />
                 New Post
