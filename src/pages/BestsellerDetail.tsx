@@ -69,21 +69,25 @@ import {
 } from '@/components/ui/breadcrumb';
 
 // Generate JSON-LD structured data for product
-const generateProductJsonLd = (product: {
-  id: string;
-  name: string;
-  price: number;
-  compare_at_price?: number | null;
-  image_url?: string | null;
-  images?: string[] | null;
-  description?: string | null;
-  category?: string | null;
-  stock?: number | null;
-}, bestseller: {
-  seo_description?: string | null;
-  hero_headline?: string | null;
-  slug: string;
-}) => {
+const generateProductJsonLd = (
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    compare_at_price?: number | null;
+    image_url?: string | null;
+    images?: string[] | null;
+    description?: string | null;
+    category?: string | null;
+    stock?: number | null;
+  },
+  bestseller: {
+    seo_description?: string | null;
+    hero_headline?: string | null;
+    slug: string;
+  },
+  reviews: Array<{ rating: number; title?: string; content?: string | null }> = []
+) => {
   const availability = product.stock && product.stock > 0 
     ? 'https://schema.org/InStock' 
     : 'https://schema.org/OutOfStock';
@@ -94,6 +98,11 @@ const generateProductJsonLd = (product: {
     : product.image_url 
       ? [product.image_url] 
       : [];
+
+  const hasReviews = reviews.length > 0;
+  const averageRating = hasReviews
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : null;
 
   return {
     '@context': 'https://schema.org',
@@ -147,13 +156,27 @@ const generateProductJsonLd = (product: {
         }
       }
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      reviewCount: '128',
-      bestRating: '5',
-      worstRating: '1'
-    }
+    // Only include aggregateRating and review when actual reviews exist
+    ...(hasReviews && averageRating && {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: averageRating.toFixed(1),
+        reviewCount: reviews.length.toString(),
+        bestRating: '5',
+        worstRating: '1'
+      },
+      review: reviews.slice(0, 5).map((review) => ({
+        '@type': 'Review',
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: review.rating.toString(),
+          bestRating: '5',
+          worstRating: '1'
+        },
+        name: review.title || 'Product Review',
+        reviewBody: review.content || ''
+      }))
+    })
   };
 };
 
@@ -431,8 +454,8 @@ const BestsellerDetail = () => {
     ? Math.round((1 - product.price / product.compare_at_price) * 100)
     : 0;
 
-  // Generate structured data
-  const productJsonLd = generateProductJsonLd(product, bestseller);
+  // Generate structured data with actual reviews
+  const productJsonLd = generateProductJsonLd(product, bestseller, reviews);
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(product.name, bestseller.slug);
 
   return (
