@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +34,22 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    console.log(`Sending newsletter confirmation to: ${email}`);
+
+    // Get the preference_token for this subscriber
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: subscriber } = await supabaseAdmin
+      .from('newsletter_subscribers')
+      .select('preference_token')
+      .eq('email', email.toLowerCase())
+      .single();
+
+    const preferenceToken = subscriber?.preference_token || '';
 
     console.log(`Sending newsletter confirmation to: ${email}`);
 
@@ -174,7 +191,8 @@ const handler = async (req: Request): Promise<Response> => {
                       <a href="https://getpawsy.pet/privacy" style="color: #a1a1aa; text-decoration: underline;">Privacy Policy</a>
                     </p>
                     <p style="margin: 0; color: #a1a1aa; font-size: 11px;">
-                      <a href="https://getpawsy.pet/unsubscribe?token=${btoa(email)}" style="color: #a1a1aa; text-decoration: underline;">Unsubscribe from newsletter</a>
+                      ${preferenceToken ? `<a href="https://getpawsy.pet/newsletter-preferences?token=${preferenceToken}" style="color: #a1a1aa; text-decoration: underline;">Manage Preferences</a> | ` : ''}
+                      <a href="https://getpawsy.pet/unsubscribe?token=${btoa(email)}" style="color: #a1a1aa; text-decoration: underline;">Unsubscribe</a>
                     </p>
                   </td>
                 </tr>
