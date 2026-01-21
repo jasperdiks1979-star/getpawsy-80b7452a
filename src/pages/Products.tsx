@@ -215,17 +215,16 @@ const Products = () => {
           // Check if selected is a parent category - if so, include products from its subcategories
           const subcategorySlugs = parentToSubcategories[selectedSlug] || parentToSubcategories[selectedLower] || [];
           if (subcategorySlugs.length > 0) {
-            // Check if product's category matches any subcategory
+            // Check if product's category matches any subcategory EXACTLY
+            // No partial matching to avoid cross-species contamination
             return subcategorySlugs.some(subSlug => 
               productCategory === subSlug || 
-              productCategorySlug === subSlug ||
-              productCategory.includes(subSlug) ||
-              subSlug.includes(productCategory)
+              productCategorySlug === subSlug
             );
           }
           
-          // Fallback: partial matching for edge cases
-          return productCategory.includes(selectedSlug) || selectedSlug.includes(productCategory);
+          // No fallback partial matching - this caused cross-category pollution
+          return false;
         });
       });
     }
