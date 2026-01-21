@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText, Bell } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
@@ -31,6 +31,7 @@ const ContactMessagesManager = lazy(() => import("@/components/admin/ContactMess
 const BestsellerManager = lazy(() => import("@/components/admin/BestsellerManager").then(module => ({ default: module.BestsellerManager })));
 const BlogPostsManager = lazy(() => import("@/components/admin/BlogPostsManager").then(module => ({ default: module.BlogPostsManager })));
 const AbandonedCartsManager = lazy(() => import("@/components/admin/AbandonedCartsManager").then(module => ({ default: module.AbandonedCartsManager })));
+const StockNotificationsManager = lazy(() => import("@/components/admin/StockNotificationsManager").then(module => ({ default: module.StockNotificationsManager })));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -996,6 +997,12 @@ const Admin = () => {
                 <TabsTrigger value="abandoned" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Clock className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Abandoned</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Stock notificatie aanmeldingen">
+                <TabsTrigger value="stock-notifications" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <Bell className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Stock</span>
                 </TabsTrigger>
               </TouchTooltip>
               <TouchTooltip content="Nieuwsbrief abonnees">
@@ -2231,6 +2238,25 @@ const Admin = () => {
                 </Card>
               }>
                 <AbandonedCartsManager />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Stock Notifications Tab */}
+          <TabsContent value="stock-notifications">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Stock notificaties laden...</span>
+                    <div className="space-y-3 w-full mt-4">
+                      {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+                    </div>
+                  </div>
+                </Card>
+              }>
+                <StockNotificationsManager />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
