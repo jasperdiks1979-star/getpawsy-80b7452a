@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Check, Gift, Heart, Brain, Timer, Shield, Truck, Star, ArrowRight } from 'lucide-react';
@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { trackNewsletterSignup } from '@/lib/analytics';
-import { useNavigate } from 'react-router-dom';
+import { trackNewsletterSignup, trackEvent } from '@/lib/analytics';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
+import { useUTMTracking, type UTMParams } from '@/hooks/useUTMTracking';
 
 const DISCOUNT_CODE = 'SLOWFEEDER25';
 
@@ -18,6 +19,18 @@ export default function SlowFeederOffer() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const utmParams = useUTMTracking();
+
+  // Track page view with UTM params
+  useEffect(() => {
+    if (Object.keys(utmParams).length > 0) {
+      trackEvent('lead_magnet_view', {
+        page: 'slow_feeder_offer',
+        ...utmParams
+      });
+    }
+  }, [utmParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,17 +43,30 @@ export default function SlowFeederOffer() {
     setIsSubmitting(true);
 
     try {
+      // Build preferences with UTM tracking data
+      const preferences = {
+        dogs: true,
+        promotions: true,
+        new_products: true,
+        lead_magnet: 'slow_feeder_25',
+        signup_source: 'slow_feeder_landing_page',
+        ...(utmParams.utm_source && { utm_source: utmParams.utm_source }),
+        ...(utmParams.utm_medium && { utm_medium: utmParams.utm_medium }),
+        ...(utmParams.utm_campaign && { utm_campaign: utmParams.utm_campaign }),
+        ...(utmParams.utm_term && { utm_term: utmParams.utm_term }),
+        ...(utmParams.utm_content && { utm_content: utmParams.utm_content }),
+        ...(utmParams.gclid && { gclid: utmParams.gclid }),
+        ...(utmParams.fbclid && { fbclid: utmParams.fbclid }),
+        ...(utmParams.landing_page && { landing_page: utmParams.landing_page }),
+        signup_timestamp: new Date().toISOString()
+      };
+
       const { error } = await supabase
         .from('newsletter_subscribers')
         .insert({ 
           email, 
           is_active: true,
-          preferences: {
-            dogs: true,
-            promotions: true,
-            new_products: true,
-            lead_magnet: 'slow_feeder_25'
-          }
+          preferences
         });
 
       if (error && error.code !== '23505') {
@@ -48,6 +74,13 @@ export default function SlowFeederOffer() {
       }
 
       setIsSuccess(true);
+      
+      // Track conversion with UTM params
+      trackEvent('lead_magnet_signup', {
+        page: 'slow_feeder_landing_page',
+        discount_code: DISCOUNT_CODE,
+        ...utmParams
+      });
       trackNewsletterSignup('slow_feeder_landing_page');
       localStorage.setItem('getpawsy_discount_code', DISCOUNT_CODE);
 
