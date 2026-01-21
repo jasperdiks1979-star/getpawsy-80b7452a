@@ -31,7 +31,9 @@ import { ShippingCountdown } from '@/components/products/ShippingCountdown';
 import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
 import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCarousel';
 import { FrequentlyBoughtTogether } from '@/components/products/FrequentlyBoughtTogether';
+import { CompleteTheLook } from '@/components/products/CompleteTheLook';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
+import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -180,6 +182,15 @@ const ProductDetail = () => {
     category: product?.category || null,
     productName: product?.name || '',
     maxItems: 8,
+    enabled: !!product?.id,
+  });
+
+  // Fetch complementary products for "Complete the Look"
+  const { data: complementaryProducts, isLoading: complementaryLoading } = useCompleteTheLook({
+    productId: product?.id || '',
+    productName: product?.name || '',
+    category: product?.category || null,
+    maxItems: 4,
     enabled: !!product?.id,
   });
 
@@ -1427,6 +1438,27 @@ const ProductDetail = () => {
               }))}
               bundleDiscount={10}
               maxItems={2}
+              sourceProductId={product.id}
+              sourceProductName={product.name}
+            />
+          </div>
+        )}
+
+        {/* Complete the Look */}
+        {complementaryProducts && complementaryProducts.length > 0 && (
+          <div className="mt-16">
+            <CompleteTheLook
+              products={complementaryProducts.map(p => ({
+                id: p.id,
+                name: p.name,
+                price: Number(p.price),
+                compare_at_price: p.compare_at_price ? Number(p.compare_at_price) : null,
+                image_url: p.image_url,
+                slug: (p as { slug?: string }).slug,
+                category: p.category,
+              }))}
+              isLoading={complementaryLoading}
+              currentProductName={product.name}
               sourceProductId={product.id}
               sourceProductName={product.name}
             />
