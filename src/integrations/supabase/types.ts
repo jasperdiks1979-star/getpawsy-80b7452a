@@ -618,6 +618,45 @@ export type Database = {
         }
         Relationships: []
       }
+      product_bundles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_percentage: number
+          id: string
+          is_active: boolean
+          name: string
+          product_ids: string[]
+          times_purchased: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_percentage?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          product_ids: string[]
+          times_purchased?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_percentage?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          product_ids?: string[]
+          times_purchased?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_categories: {
         Row: {
           category_id: string
