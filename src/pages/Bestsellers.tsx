@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Award, Star, TrendingUp, Sparkles, ArrowRight, ShoppingCart, Heart, Home } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,11 @@ interface SellingPoint {
   icon: string;
   title: string;
   description: string;
+}
+
+interface ProductReview {
+  product_id: string;
+  rating: number;
 }
 
 interface BestsellerWithProduct {
@@ -266,6 +271,36 @@ const Bestsellers = () => {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch all reviews for bestseller products
+  const productIds = bestsellers?.map(b => b.product.id) || [];
+  const { data: allReviews = [] } = useQuery({
+    queryKey: ['bestsellers-reviews', productIds],
+    queryFn: async () => {
+      if (productIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('product_reviews')
+        .select('product_id, rating')
+        .in('product_id', productIds);
+
+      if (error) throw error;
+      return data as ProductReview[];
+    },
+    enabled: productIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Calculate aggregate stats from real reviews
+  const reviewStats = useMemo(() => {
+    if (allReviews.length === 0) {
+      return { averageRating: 0, totalReviews: 0 };
+    }
+    const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
+    return {
+      averageRating: totalRating / allReviews.length,
+      totalReviews: allReviews.length,
+    };
+  }, [allReviews]);
+
   // Track product impressions when bestsellers load
   useEffect(() => {
     if (bestsellers && bestsellers.length > 0 && !hasTrackedImpressions.current) {
@@ -412,13 +447,19 @@ const Bestsellers = () => {
               <div className="text-center">
                 <div className="flex items-center justify-center gap-1 text-2xl md:text-3xl font-bold text-primary">
                   <Star className="w-6 h-6 fill-primary" />
-                  4.9
+                  {reviewStats.totalReviews > 0 
+                    ? reviewStats.averageRating.toFixed(1) 
+                    : '—'}
                 </div>
                 <p className="text-sm text-muted-foreground">Avg. Rating</p>
               </div>
               <div className="text-center">
-                <div className="text-2xl md:text-3xl font-bold text-primary">10k+</div>
-                <p className="text-sm text-muted-foreground">Happy Customers</p>
+                <div className="text-2xl md:text-3xl font-bold text-primary">
+                  {reviewStats.totalReviews > 0 ? reviewStats.totalReviews : '—'}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {reviewStats.totalReviews === 1 ? 'Review' : 'Reviews'}
+                </p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-1 text-2xl md:text-3xl font-bold text-primary">
