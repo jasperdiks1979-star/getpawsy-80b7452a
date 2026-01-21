@@ -203,7 +203,7 @@ serve(async (req) => {
       // Sync single order
       const { data, error } = await supabaseAdmin
         .from("orders")
-        .select("id, cj_order_id, cj_order_status, tracking_number, status")
+        .select("id, cj_order_id, cj_order_status, tracking_number, status, customer_email, shipping_address")
         .eq("id", singleOrderId)
         .not("cj_order_id", "is", null)
         .single();
@@ -216,7 +216,7 @@ serve(async (req) => {
       // Get all orders with CJ order ID that are not yet delivered
       const { data: orders, error: ordersError } = await supabaseAdmin
         .from("orders")
-        .select("id, cj_order_id, cj_order_status, tracking_number, status")
+        .select("id, cj_order_id, cj_order_status, tracking_number, status, customer_email, shipping_address")
         .not("cj_order_id", "is", null)
         .not("status", "in", "(delivered,cancelled)")
         .order("created_at", { ascending: false })
@@ -266,10 +266,18 @@ serve(async (req) => {
           updateData.status = newStatus;
         }
 
+        // Track if we have new tracking info to send notification
+        let shouldSendNotification = false;
+        let newTrackingNumber: string | null = null;
+        let newTrackingCarrier: string | null = null;
+
         // If tracking number available, update it
         if (cjDetails.trackingNumber && cjDetails.trackingNumber !== order.tracking_number) {
           updateData.tracking_number = cjDetails.trackingNumber;
           updateData.tracking_carrier = mapCarrierName(cjDetails.logisticName || "");
+          newTrackingNumber = cjDetails.trackingNumber;
+          newTrackingCarrier = updateData.tracking_carrier;
+          shouldSendNotification = true; // New tracking = send notification
 
           // Get detailed tracking info
           const trackingInfo = await getCJTrackingInfo(accessToken, cjDetails.trackingNumber);
@@ -298,6 +306,44 @@ serve(async (req) => {
             if (trackingInfo.trackingStatus?.toLowerCase().includes("deliver")) {
               updateData.status = "delivered";
             }
+          }
+        }
+
+        // Send shipping notification email if we have new tracking info
+        if (shouldSendNotification && order.customer_email && newTrackingNumber) {
+          try {
+            const shippingAddress = order.shipping_address as { name?: string } | null;
+            const customerName = shippingAddress?.name || "";
+            
+            console.log(`[SYNC-CJ-TRACKING] Sending shipping notification to ${order.customer_email}`);
+            
+            const notifyResponse = await fetch(
+              `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-shipping-notification`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+                },
+                body: JSON.stringify({
+                  orderId: order.id,
+                  trackingNumber: newTrackingNumber,
+                  trackingCarrier: newTrackingCarrier,
+                  customerEmail: order.customer_email,
+                  customerName,
+                }),
+              }
+            );
+            
+            if (notifyResponse.ok) {
+              console.log(`[SYNC-CJ-TRACKING] Shipping notification sent for order ${order.id}`);
+            } else {
+              const errorText = await notifyResponse.text();
+              console.error(`[SYNC-CJ-TRACKING] Failed to send notification: ${errorText}`);
+            }
+          } catch (notifyError) {
+            console.error(`[SYNC-CJ-TRACKING] Error sending notification:`, notifyError);
+            // Don't fail the sync if notification fails
           }
         }
 
