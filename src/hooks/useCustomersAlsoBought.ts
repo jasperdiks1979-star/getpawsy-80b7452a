@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Json } from '@/integrations/supabase/types';
 
 interface OrderItem {
   id: string;
@@ -49,7 +48,7 @@ export const useCustomersAlsoBought = (productId: string, limit = 4) => {
         const { data: orders, error: ordersError } = await supabase
           .from('orders')
           .select('items')
-          .eq('status', 'paid')
+          .in('status', ['paid', 'processing', 'shipped', 'delivered'])
           .limit(500);
 
         if (ordersError) {
@@ -119,20 +118,27 @@ export const useCustomersAlsoBought = (productId: string, limit = 4) => {
         }
 
         // Merge with frequency data and sort
-        const enrichedProducts: CoPurchaseProduct[] = (productDetails || [])
-          .filter(product => product.id !== null)
-          .map(product => ({
-            id: product.id!,
-            name: product.name || '',
-            price: product.price || 0,
-            image_url: product.image_url,
-            category: product.category,
-            frequency: coPurchaseCounts[product.id!]?.count || 0,
-          }))
-          .filter(p => p.frequency > 0)
-          .sort((a, b) => b.frequency - a.frequency);
-
-        setProducts(enrichedProducts);
+        const enrichedProducts: CoPurchaseProduct[] = [];
+        
+        if (productDetails && Array.isArray(productDetails)) {
+          for (const product of productDetails) {
+            const p = product as { id: string | null; name: string | null; price: number | null; image_url: string | null; category: string | null };
+            if (p.id) {
+              enrichedProducts.push({
+                id: p.id,
+                name: p.name || '',
+                price: p.price || 0,
+                image_url: p.image_url || null,
+                category: p.category || null,
+                frequency: coPurchaseCounts[p.id]?.count || 0,
+              });
+            }
+          }
+        }
+        
+        enrichedProducts.sort((a, b) => b.frequency - a.frequency);
+        const filteredProducts = enrichedProducts.filter(p => p.frequency > 0);
+        setProducts(filteredProducts);
       } catch (err) {
         console.error('Error in useCustomersAlsoBought:', err);
         setError('Failed to load recommendations');

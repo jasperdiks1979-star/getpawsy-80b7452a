@@ -41,6 +41,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to access product_bundles table (not yet in generated types)
+const bundlesTable = () => supabase.from('product_bundles' as any);
+
 interface OrderItem {
   id: string;
   name: string;
@@ -96,13 +99,12 @@ export const BundleSuggestionsWidget = () => {
   const { data: bundles, isLoading: bundlesLoading } = useQuery({
     queryKey: ['product-bundles'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('product_bundles')
+      const { data, error } = await bundlesTable()
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Bundle[];
+      return (data || []) as unknown as Bundle[];
     },
   });
 
@@ -220,8 +222,7 @@ export const BundleSuggestionsWidget = () => {
       productIds: string[]; 
       discountPercentage: number 
     }) => {
-      const { error } = await supabase
-        .from('product_bundles')
+      const { error } = await bundlesTable()
         .insert({
           name: data.name,
           description: data.description || null,
@@ -252,8 +253,7 @@ export const BundleSuggestionsWidget = () => {
       discountPercentage: number;
       isActive: boolean;
     }) => {
-      const { error } = await supabase
-        .from('product_bundles')
+      const { error } = await bundlesTable()
         .update({
           name: data.name,
           description: data.description || null,
@@ -278,8 +278,7 @@ export const BundleSuggestionsWidget = () => {
   // Delete bundle mutation
   const deleteBundleMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('product_bundles')
+      const { error } = await bundlesTable()
         .delete()
         .eq('id', id);
 
@@ -299,8 +298,7 @@ export const BundleSuggestionsWidget = () => {
   // Toggle bundle active status
   const toggleBundleMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      const { error } = await supabase
-        .from('product_bundles')
+      const { error } = await bundlesTable()
         .update({ is_active: isActive })
         .eq('id', id);
 
