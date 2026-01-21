@@ -490,6 +490,7 @@ const ProductDetail = () => {
         product={{
           id: product.id,
           name: product.name || '',
+          slug: product.slug,
           description: product.description,
           price: Number(product.price),
           compare_at_price: product.compare_at_price ? Number(product.compare_at_price) : null,
