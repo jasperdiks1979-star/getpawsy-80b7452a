@@ -43,3 +43,7 @@ Disallow: /profile
 Disallow: /orders
 Disallow: /checkout
 Disallow: /payment-success
+
+# Disallow API endpoints (not meant to be indexed)
+Disallow: /api/
+Disallow: /api/*
