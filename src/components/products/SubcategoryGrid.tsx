@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Subcategory {
   id: string;
@@ -13,9 +14,35 @@ interface Subcategory {
 interface SubcategoryGridProps {
   subcategories: Subcategory[];
   parentCategoryName: string;
+  isLoading?: boolean;
 }
 
-export const SubcategoryGrid = ({ subcategories, parentCategoryName }: SubcategoryGridProps) => {
+const SubcategoryGridSkeleton = () => (
+  <div className="mb-10">
+    <div className="flex items-center justify-between mb-4">
+      <Skeleton className="h-7 w-48" />
+      <Skeleton className="h-4 w-24" />
+    </div>
+    
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div key={index} className="relative aspect-square rounded-xl overflow-hidden">
+          <Skeleton className="w-full h-full" />
+          <div className="absolute bottom-0 left-0 right-0 p-3">
+            <Skeleton className="h-4 w-3/4 mb-1" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+export const SubcategoryGrid = ({ subcategories, parentCategoryName, isLoading }: SubcategoryGridProps) => {
+  if (isLoading) {
+    return <SubcategoryGridSkeleton />;
+  }
+
   if (!subcategories || subcategories.length === 0) return null;
 
   return (
@@ -48,6 +75,7 @@ export const SubcategoryGrid = ({ subcategories, parentCategoryName }: Subcatego
                     alt={subcategory.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
