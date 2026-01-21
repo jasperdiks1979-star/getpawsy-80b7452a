@@ -798,13 +798,27 @@ const BestsellerDetail = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.3 + i * 0.1 }}
                       >
-                        <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+                        <Star 
+                          className={`w-5 h-5 ${
+                            i < Math.round(averageRating) 
+                              ? 'fill-amber-400 text-amber-400' 
+                              : 'fill-muted text-muted'
+                          }`} 
+                        />
                       </motion.div>
                     ))}
                   </div>
                   <div className="flex-1">
-                    <span className="font-semibold">4.9</span>
-                    <span className="text-sm text-muted-foreground ml-1">(128+ reviews)</span>
+                    {reviews.length > 0 ? (
+                      <>
+                        <span className="font-semibold">{averageRating.toFixed(1)}</span>
+                        <span className="text-sm text-muted-foreground ml-1">
+                          ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">No reviews yet</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Users className="w-4 h-4" />
@@ -1489,9 +1503,20 @@ const BestsellerDetail = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <Star 
+                      key={i} 
+                      className={`w-4 h-4 ${
+                        i < Math.round(averageRating) 
+                          ? 'fill-amber-400 text-amber-400' 
+                          : 'fill-muted text-muted'
+                      }`} 
+                    />
                   ))}
-                  <span className="text-sm text-muted-foreground ml-1">4.9/5 rating</span>
+                  <span className="text-sm text-muted-foreground ml-1">
+                    {reviews.length > 0 
+                      ? `${averageRating.toFixed(1)}/5 rating` 
+                      : 'No reviews yet'}
+                  </span>
                 </div>
               </motion.div>
             </motion.div>
