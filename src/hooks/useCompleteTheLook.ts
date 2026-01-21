@@ -3,17 +3,16 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ProductPublic {
-  id: string;
-  name: string;
+  id: string | null;
+  name: string | null;
   description: string | null;
-  price: number;
+  price: number | null;
   compare_at_price: number | null;
   image_url: string | null;
   images: string[] | null;
   category: string | null;
   stock: number | null;
   is_active: boolean | null;
-  slug?: string | null;
   variants: unknown;
 }
 
@@ -199,13 +198,13 @@ export const useCompleteTheLook = ({
       
       const { types, keywords } = complementaryConfig;
       
-      // Fetch candidate products
+      // Fetch candidate products - optimized query
       const { data: products, error } = await supabase
         .from('products_public')
-        .select('*')
+        .select('id, name, description, price, compare_at_price, image_url, images, category, stock, is_active, variants')
         .eq('is_active', true)
         .neq('id', productId)
-        .limit(100);
+        .limit(50); // Reduced from 100 for better performance
       
       if (error) throw error;
       if (!products || products.length === 0) return [];
@@ -214,13 +213,14 @@ export const useCompleteTheLook = ({
       const scoredProducts = products
         .map(product => {
           let score = 0;
-          const name = product.name.toLowerCase();
-          const productCategory = product.category?.toLowerCase() || '';
+          const name = (product.name || '').toLowerCase();
+          const productCategory = (product.category || '').toLowerCase();
           
           // Check for complementary type matches
           for (const type of types) {
             if (name.includes(type) || productCategory.includes(type)) {
               score += 30;
+              break; // Only count once
             }
           }
           
@@ -228,6 +228,7 @@ export const useCompleteTheLook = ({
           for (const keyword of keywords) {
             if (name.includes(keyword)) {
               score += 10;
+              break; // Only count once
             }
           }
           
@@ -240,21 +241,21 @@ export const useCompleteTheLook = ({
           
           // Small bonus for being in a related category
           if (category && productCategory && productCategory !== category.toLowerCase()) {
-            // Different category but same pet = good complementary
             score += 5;
           }
           
           return { product, score };
         })
-        .filter(({ score }) => score >= 30) // Minimum threshold
+        .filter(({ score }) => score >= 30)
         .sort((a, b) => b.score - a.score)
         .slice(0, maxItems)
-        .map(({ product }) => product);
+        .map(({ product }) => product as ProductPublic);
       
       return scoredProducts;
     },
     enabled: enabled && !!productId && !!complementaryConfig,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // Increased to 10 minutes
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
 };
 
