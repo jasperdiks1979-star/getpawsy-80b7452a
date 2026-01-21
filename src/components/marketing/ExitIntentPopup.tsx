@@ -74,12 +74,16 @@ export function ExitIntentPopup() {
       if (error) {
         if (error.code === '23505') {
           setIsSuccess(true);
+          // Save discount code for checkout
+          localStorage.setItem('getpawsy_discount_code', DISCOUNT_CODE);
         } else {
           throw error;
         }
       } else {
         setIsSuccess(true);
         trackNewsletterSignup('exit_intent_popup');
+        // Save discount code for checkout
+        localStorage.setItem('getpawsy_discount_code', DISCOUNT_CODE);
       }
     } catch (error) {
       console.error('Newsletter signup error:', error);

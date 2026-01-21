@@ -54,12 +54,16 @@ export function WelcomePopup() {
         if (error.code === '23505') {
           // Duplicate email - still show success since they're already subscribed
           setIsSuccess(true);
+          // Save discount code for checkout
+          localStorage.setItem('getpawsy_discount_code', DISCOUNT_CODE);
         } else {
           throw error;
         }
       } else {
         setIsSuccess(true);
         trackNewsletterSignup('welcome_popup');
+        // Save discount code for checkout
+        localStorage.setItem('getpawsy_discount_code', DISCOUNT_CODE);
       }
     } catch (error) {
       console.error('Newsletter signup error:', error);
