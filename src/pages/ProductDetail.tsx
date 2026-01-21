@@ -27,6 +27,7 @@ import FormattedDescription from '@/components/products/FormattedDescription';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
 import { StockNotificationForm } from '@/components/products/StockNotificationForm';
+import { ShippingCountdown } from '@/components/products/ShippingCountdown';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -968,6 +969,9 @@ const ProductDetail = () => {
                 productName={product.name || ''} 
               />
             )}
+
+            {/* Shipping Countdown Timer */}
+            <ShippingCountdown cutoffHour={15} />
 
             {/* Shipping Time */}
             {product.shipping_time && (
