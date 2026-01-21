@@ -68,6 +68,8 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { ShippingCountdown } from '@/components/products/ShippingCountdown';
+import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 
 // Generate JSON-LD structured data for product
 const generateProductJsonLd = (
@@ -232,6 +234,7 @@ const BestsellerDetail = () => {
   const { triggerAddToCart } = useCartAnimation();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { trigger } = useHaptic();
+  const { addToRecentlyViewed, getRecentlyViewedIds } = useRecentlyViewed();
   
   // Image gallery state
   const [selectedImage, setSelectedImage] = useState(0);
@@ -343,6 +346,31 @@ const BestsellerDetail = () => {
     enabled: !!product?.id,
   });
 
+  // Get recently viewed product IDs (excluding current product)
+  const recentlyViewedIds = getRecentlyViewedIds(product?.id);
+
+  // Fetch recently viewed products
+  const { data: recentlyViewedProducts } = useQuery({
+    queryKey: ['recently-viewed-products', recentlyViewedIds],
+    queryFn: async () => {
+      if (recentlyViewedIds.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from('products_public')
+        .select('*')
+        .eq('is_active', true)
+        .in('id', recentlyViewedIds);
+      
+      if (error) throw error;
+      
+      // Sort by the order in recentlyViewedIds
+      return data?.sort((a, b) => 
+        recentlyViewedIds.indexOf(a.id) - recentlyViewedIds.indexOf(b.id)
+      ) || [];
+    },
+    enabled: recentlyViewedIds.length > 0,
+  });
+
   // Build images array
   const productImagesArray = Array.isArray(product?.images) ? product.images : [];
   const rawImages = productImagesArray.length > 0 
@@ -378,12 +406,17 @@ const BestsellerDetail = () => {
     }
   }, [selectedImage]);
 
-  // Reset selected image and quantity when product changes
+  // Reset selected image and quantity when product changes, add to recently viewed
   useEffect(() => {
     setSelectedImage(0);
     setQuantity(1);
     setShowStickyBar(false);
-  }, [slug]);
+    
+    // Add current product to recently viewed
+    if (product?.id) {
+      addToRecentlyViewed(product.id);
+    }
+  }, [slug, product?.id, addToRecentlyViewed]);
 
   // Show/hide sticky bar based on main add-to-cart button visibility
   useEffect(() => {
@@ -1450,6 +1483,15 @@ const BestsellerDetail = () => {
                   </div>
                 </Carousel>
               </motion.div>
+            </div>
+          </section>
+        )}
+
+        {/* Recently Viewed Products Carousel */}
+        {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
+          <section className="py-16 lg:py-20 bg-muted/20">
+            <div className="container px-4">
+              <RecentlyViewedCarousel products={recentlyViewedProducts} />
             </div>
           </section>
         )}
