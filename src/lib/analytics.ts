@@ -231,7 +231,7 @@ export const trackCrossSellImpression = (
     category?: string;
     position?: number;
   }>,
-  crossSellType: 'related_products' | 'frequently_bought' | 'upsell' | 'cart_upsell' = 'related_products'
+  crossSellType: 'related_products' | 'frequently_bought' | 'upsell' | 'cart_upsell' | 'customers_also_bought' = 'related_products'
 ): void => {
   trackEvent('view_item_list', {
     item_list_id: `cross_sell_${crossSellType}`,
@@ -260,7 +260,7 @@ export const trackCrossSellClick = (
     category?: string; 
     position?: number;
   },
-  crossSellType: 'related_products' | 'frequently_bought' | 'upsell' | 'cart_upsell' = 'related_products'
+  crossSellType: 'related_products' | 'frequently_bought' | 'upsell' | 'cart_upsell' | 'customers_also_bought' = 'related_products'
 ): void => {
   // Standard select_item event for GA4 ecommerce
   trackEvent('select_item', {
@@ -301,7 +301,7 @@ export const trackCrossSellAddToCart = (
     position?: number;
   },
   quantity: number = 1,
-  crossSellType: 'related_products' | 'frequently_bought' | 'upsell' | 'cart_upsell' = 'related_products'
+  crossSellType: 'related_products' | 'frequently_bought' | 'upsell' | 'cart_upsell' | 'customers_also_bought' = 'related_products'
 ): void => {
   // Standard add_to_cart event
   trackEvent('add_to_cart', {
