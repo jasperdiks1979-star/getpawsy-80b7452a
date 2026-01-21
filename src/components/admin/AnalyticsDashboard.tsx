@@ -115,6 +115,32 @@ interface GA4ConversionsResponse {
   conversionsBySource?: GA4Report;
 }
 
+interface GA4CrossSellResponse {
+  metrics?: {
+    impressions: number;
+    clicks: number;
+    addToCarts: number;
+    clickRate: number;
+    addToCartRate: number;
+    totalRevenue: number;
+    totalPurchases: number;
+    avgOrderValue: number;
+  };
+  topProducts?: {
+    name: string;
+    views: number;
+    addToCarts: number;
+    purchases: number;
+    revenue: number;
+  }[];
+  bySource?: {
+    source: string;
+    impressions: number;
+    clicks: number;
+    addToCarts: number;
+  }[];
+}
+
 // Helper to parse GA4 response into usable format
 const parseTrafficData = (report: GA4Report | undefined) => {
   if (!report?.rows) return [];
@@ -378,6 +404,22 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     funnel: { sessions: 0, addToCarts: 0, checkouts: 0, purchases: 0, revenue: 0 },
     revenueByDate: [] as { date: string; revenue: number; purchases: number; transactions: number }[],
     conversionsBySource: [] as { channel: string; sessions: number; purchases: number; revenue: number }[]
+  });
+
+  // Cross-sell data states
+  const [crossSellData, setCrossSellData] = useState({
+    metrics: {
+      impressions: 0,
+      clicks: 0,
+      addToCarts: 0,
+      clickRate: 0,
+      addToCartRate: 0,
+      totalRevenue: 0,
+      totalPurchases: 0,
+      avgOrderValue: 0
+    },
+    topProducts: [] as { name: string; views: number; addToCarts: number; purchases: number; revenue: number }[],
+    bySource: [] as { source: string; impressions: number; clicks: number; addToCarts: number }[]
   });
 
   // Helper function to get date range for API
@@ -656,6 +698,35 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     }
   }, [getDateRangeParams, invokeFunction]);
 
+  const fetchCrossSellData = useCallback(async () => {
+    try {
+      const dateParams = getDateRangeParams();
+      const { data, error: fetchError } = await invokeFunction<GA4CrossSellResponse>('ga4-analytics', {
+        body: { reportType: 'crosssell', ...dateParams }
+      });
+
+      if (fetchError) throw fetchError;
+      if (!data) return;
+
+      setCrossSellData({
+        metrics: data.metrics || {
+          impressions: 0,
+          clicks: 0,
+          addToCarts: 0,
+          clickRate: 0,
+          addToCartRate: 0,
+          totalRevenue: 0,
+          totalPurchases: 0,
+          avgOrderValue: 0
+        },
+        topProducts: data.topProducts || [],
+        bySource: data.bySource || []
+      });
+    } catch (err) {
+      console.error('Error fetching cross-sell data:', err);
+    }
+  }, [getDateRangeParams, invokeFunction]);
+
   useEffect(() => {
     if (!isConfigured) return;
 
@@ -696,6 +767,12 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     fetchConversionsData();
   }, [isConfigured, activeTab, fetchConversionsData]);
 
+  // Fetch cross-sell data when tab changes
+  useEffect(() => {
+    if (!isConfigured || activeTab !== 'crosssell') return;
+    fetchCrossSellData();
+  }, [isConfigured, activeTab, fetchCrossSellData]);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchOverviewData();
@@ -703,6 +780,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
     if (activeTab === 'ecommerce') await fetchEcommerceData();
     if (activeTab === 'demographics') await fetchDemographicsData();
     if (activeTab === 'conversions') await fetchConversionsData();
+    if (activeTab === 'crosssell') await fetchCrossSellData();
     setIsRefreshing(false);
     toast.success('Analytics data vernieuwd');
   };
@@ -1160,6 +1238,10 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
           <TabsTrigger value="ecommerce" className="flex items-center gap-2">
             <ShoppingCart className="w-4 h-4" />
             E-commerce
+          </TabsTrigger>
+          <TabsTrigger value="crosssell" className="flex items-center gap-2">
+            <MousePointerClick className="w-4 h-4" />
+            Cross-sell
           </TabsTrigger>
         </TabsList>
 
@@ -2020,6 +2102,232 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                       <Bar dataKey="sessions" fill="hsl(25, 65%, 45%)" radius={[4, 4, 0, 0]} name="Sessies" />
                     </BarChart>
                   </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Cross-sell Tab */}
+        <TabsContent value="crosssell" className="space-y-6">
+          {/* Cross-sell Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              title="Impressies"
+              value={crossSellData.metrics.impressions.toLocaleString()}
+              icon={<Eye className="w-5 h-5" />}
+              subtitle="Cross-sell weergaven"
+              loading={isLoading}
+            />
+            <MetricCard
+              title="Clicks"
+              value={crossSellData.metrics.clicks.toLocaleString()}
+              icon={<MousePointerClick className="w-5 h-5" />}
+              subtitle={`${crossSellData.metrics.clickRate.toFixed(1)}% CTR`}
+              loading={isLoading}
+            />
+            <MetricCard
+              title="Add to Cart"
+              value={crossSellData.metrics.addToCarts.toLocaleString()}
+              icon={<ShoppingCart className="w-5 h-5" />}
+              subtitle={`${crossSellData.metrics.addToCartRate.toFixed(1)}% van clicks`}
+              loading={isLoading}
+            />
+            <MetricCard
+              title="Totale Omzet"
+              value={`€${crossSellData.metrics.totalRevenue.toFixed(2)}`}
+              icon={<DollarSign className="w-5 h-5" />}
+              subtitle={`${crossSellData.metrics.totalPurchases} aankopen`}
+              loading={isLoading}
+            />
+          </div>
+
+          {/* Cross-sell Funnel */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Cross-sell Conversie Funnel
+              </CardTitle>
+              <CardDescription>Van impressie tot aankoop</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-32 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-muted/30 rounded-lg">
+                    <div className="text-2xl font-bold">{crossSellData.metrics.impressions.toLocaleString()}</div>
+                    <p className="text-sm text-muted-foreground">Impressies</p>
+                    <p className="text-xs text-muted-foreground mt-1">100%</p>
+                  </div>
+                  <div className="text-center p-4 bg-muted/40 rounded-lg">
+                    <div className="text-2xl font-bold">{crossSellData.metrics.clicks.toLocaleString()}</div>
+                    <p className="text-sm text-muted-foreground">Clicks</p>
+                    <p className="text-xs text-primary mt-1">{crossSellData.metrics.clickRate.toFixed(1)}%</p>
+                  </div>
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold">{crossSellData.metrics.addToCarts.toLocaleString()}</div>
+                    <p className="text-sm text-muted-foreground">Add to Cart</p>
+                    <p className="text-xs text-primary mt-1">{crossSellData.metrics.addToCartRate.toFixed(1)}%</p>
+                  </div>
+                  <div className="text-center p-4 bg-primary/10 rounded-lg">
+                    <div className="text-2xl font-bold text-primary">{crossSellData.metrics.totalPurchases.toLocaleString()}</div>
+                    <p className="text-sm text-muted-foreground">Aankopen</p>
+                    <p className="text-xs text-primary mt-1">
+                      {crossSellData.metrics.addToCarts > 0 
+                        ? ((crossSellData.metrics.totalPurchases / crossSellData.metrics.addToCarts) * 100).toFixed(1) 
+                        : '0'}%
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top Cross-sell Products */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Top Cross-sell Producten
+                </CardTitle>
+                <CardDescription>Best presterende cross-sell aanbevelingen</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="h-48 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : crossSellData.topProducts.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    Geen cross-sell data beschikbaar. Zorg ervoor dat e-commerce tracking actief is.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {crossSellData.topProducts.slice(0, 6).map((product, index) => {
+                      const conversionRate = product.views > 0 
+                        ? ((product.addToCarts / product.views) * 100).toFixed(1) 
+                        : '0';
+                      return (
+                        <div key={product.name} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg font-bold text-muted-foreground">#{index + 1}</span>
+                            <div>
+                              <p className="font-medium truncate max-w-[150px]">{product.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {product.views} views → {product.addToCarts} cart → {product.purchases} gekocht
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-green-600">€{product.revenue.toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground">{conversionRate}% conv.</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Cross-sell by Source/Location */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Layers className="w-5 h-5" />
+                  Cross-sell per Locatie
+                </CardTitle>
+                <CardDescription>Prestaties per plaatsing op de site</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="h-48 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : crossSellData.bySource.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    Geen locatie data beschikbaar
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {crossSellData.bySource.slice(0, 6).map((source) => {
+                      const maxImpressions = crossSellData.bySource[0]?.impressions || 1;
+                      const clickRate = source.impressions > 0 
+                        ? ((source.clicks / source.impressions) * 100).toFixed(1) 
+                        : '0';
+                      return (
+                        <div key={source.source} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium truncate max-w-[150px]">{source.source}</span>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>{source.impressions.toLocaleString()} views</span>
+                              <span>{clickRate}% CTR</span>
+                              <Badge variant="outline">{source.addToCarts} cart</Badge>
+                            </div>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div 
+                              className="bg-primary h-2 rounded-full transition-all"
+                              style={{ width: `${(source.impressions / maxImpressions) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Revenue Attribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                Revenue Attributie
+              </CardTitle>
+              <CardDescription>Omzet gegenereerd via cross-sell aanbevelingen</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-32 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-6 bg-green-500/10 rounded-lg">
+                    <div className="text-4xl font-bold text-green-600 mb-2">
+                      €{crossSellData.metrics.totalRevenue.toFixed(2)}
+                    </div>
+                    <p className="text-muted-foreground">Totale Omzet</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      via cross-sell
+                    </p>
+                  </div>
+                  <div className="text-center p-6 bg-primary/10 rounded-lg">
+                    <div className="text-4xl font-bold text-primary mb-2">
+                      €{crossSellData.metrics.avgOrderValue.toFixed(2)}
+                    </div>
+                    <p className="text-muted-foreground">Gem. Bestelwaarde</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      per transactie
+                    </p>
+                  </div>
+                  <div className="text-center p-6 bg-secondary/50 rounded-lg">
+                    <div className="text-4xl font-bold text-secondary-foreground mb-2">
+                      {crossSellData.metrics.totalPurchases}
+                    </div>
+                    <p className="text-muted-foreground">Totaal Aankopen</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      via aanbevelingen
+                    </p>
+                  </div>
                 </div>
               )}
             </CardContent>

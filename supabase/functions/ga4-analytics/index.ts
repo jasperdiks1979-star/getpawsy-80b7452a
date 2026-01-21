@@ -499,6 +499,111 @@ serve(async (req) => {
         revenueByDate,
         conversionsBySource
       };
+    } else if (reportType === 'crosssell') {
+      // Cross-sell analytics - fetch cross-sell specific events
+      // deno-lint-ignore no-explicit-any
+      type AnyRow = any;
+      
+      const [crossSellImpressions, crossSellClicks, crossSellAddToCarts, crossSellRevenue, crossSellByProduct, crossSellBySource] = await Promise.all([
+        // Cross-sell impressions (view_item_list with cross-sell context)
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
+          dimensions: [{ name: 'eventName' }],
+          metrics: [{ name: 'eventCount' }],
+        }).then(data => {
+          // Filter for view_item_list events
+          const viewItemListRow = data.rows?.find((r: AnyRow) => 
+            r.dimensionValues?.[0]?.value === 'view_item_list'
+          );
+          return parseInt(viewItemListRow?.metricValues?.[0]?.value || '0');
+        }).catch(() => 0),
+        // Cross-sell clicks (select_item events)
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
+          dimensions: [{ name: 'eventName' }],
+          metrics: [{ name: 'eventCount' }],
+        }).then(data => {
+          const selectItemRow = data.rows?.find((r: AnyRow) => 
+            r.dimensionValues?.[0]?.value === 'select_item'
+          );
+          return parseInt(selectItemRow?.metricValues?.[0]?.value || '0');
+        }).catch(() => 0),
+        // Cross-sell add to cart (add_to_cart events)
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
+          dimensions: [{ name: 'eventName' }],
+          metrics: [{ name: 'eventCount' }],
+        }).then(data => {
+          const addToCartRow = data.rows?.find((r: AnyRow) => 
+            r.dimensionValues?.[0]?.value === 'add_to_cart'
+          );
+          return parseInt(addToCartRow?.metricValues?.[0]?.value || '0');
+        }).catch(() => 0),
+        // Revenue from e-commerce
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
+          metrics: [
+            { name: 'totalRevenue' },
+            { name: 'ecommercePurchases' }
+          ]
+        }).catch(() => ({ rows: [] })),
+        // Top products clicked/added via cross-sell
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
+          dimensions: [{ name: 'itemName' }],
+          metrics: [
+            { name: 'itemsViewed' },
+            { name: 'itemsAddedToCart' },
+            { name: 'itemsPurchased' },
+            { name: 'itemRevenue' }
+          ],
+          orderBys: [{ metric: { metricName: 'itemsAddedToCart' }, desc: true }],
+          limit: 10
+        }).catch(() => ({ rows: [] })),
+        // Cross-sell performance by item list (source location)
+        runReport(accessToken, propertyId, {
+          dateRanges: [{ startDate: dateStart, endDate: dateEnd }],
+          dimensions: [{ name: 'itemListName' }],
+          metrics: [
+            { name: 'itemsViewed' },
+            { name: 'itemsClickedInList' },
+            { name: 'itemsAddedToCart' }
+          ],
+          orderBys: [{ metric: { metricName: 'itemsViewed' }, desc: true }],
+          limit: 10
+        }).catch(() => ({ rows: [] }))
+      ]);
+
+      // Calculate metrics
+      const revenueRow = crossSellRevenue?.rows?.[0];
+      const totalRevenue = parseFloat(revenueRow?.metricValues?.[0]?.value || '0');
+      const totalPurchases = parseInt(revenueRow?.metricValues?.[1]?.value || '0');
+
+      result = {
+        metrics: {
+          impressions: crossSellImpressions,
+          clicks: crossSellClicks,
+          addToCarts: crossSellAddToCarts,
+          clickRate: crossSellImpressions > 0 ? (crossSellClicks / crossSellImpressions) * 100 : 0,
+          addToCartRate: crossSellClicks > 0 ? (crossSellAddToCarts / crossSellClicks) * 100 : 0,
+          totalRevenue,
+          totalPurchases,
+          avgOrderValue: totalPurchases > 0 ? totalRevenue / totalPurchases : 0
+        },
+        topProducts: crossSellByProduct?.rows?.map((row: AnyRow) => ({
+          name: row.dimensionValues?.[0]?.value || 'Unknown',
+          views: parseInt(row.metricValues?.[0]?.value || '0'),
+          addToCarts: parseInt(row.metricValues?.[1]?.value || '0'),
+          purchases: parseInt(row.metricValues?.[2]?.value || '0'),
+          revenue: parseFloat(row.metricValues?.[3]?.value || '0')
+        })) || [],
+        bySource: crossSellBySource?.rows?.map((row: AnyRow) => ({
+          source: row.dimensionValues?.[0]?.value || 'Unknown',
+          impressions: parseInt(row.metricValues?.[0]?.value || '0'),
+          clicks: parseInt(row.metricValues?.[1]?.value || '0'),
+          addToCarts: parseInt(row.metricValues?.[2]?.value || '0')
+        })) || []
+      };
     }
 
     console.log('Successfully fetched GA4 data');
