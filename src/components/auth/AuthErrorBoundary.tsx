@@ -81,9 +81,9 @@ const AuthErrorFallback = ({ error, isAuthError, onRetry }: AuthErrorFallbackPro
             <div className="mx-auto w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
               <AlertTriangle className="w-6 h-6 text-amber-600" />
             </div>
-            <CardTitle>Sessie Verlopen</CardTitle>
+            <CardTitle>Session Expired</CardTitle>
             <CardDescription>
-              Je sessie is verlopen of ongeldig. Probeer je sessie te vernieuwen of log opnieuw in.
+              Your session has expired or is invalid. Please try refreshing your session or sign in again.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -93,7 +93,7 @@ const AuthErrorFallback = ({ error, isAuthError, onRetry }: AuthErrorFallbackPro
               variant="default"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Sessie Vernieuwen
+              Refresh Session
             </Button>
             <Button 
               onClick={handleSignOut} 
@@ -101,11 +101,11 @@ const AuthErrorFallback = ({ error, isAuthError, onRetry }: AuthErrorFallbackPro
               variant="outline"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Opnieuw Inloggen
+              Sign In Again
             </Button>
             {error && (
               <p className="text-xs text-muted-foreground text-center mt-4">
-                Fout: {error.message}
+                Error: {error.message}
               </p>
             )}
           </CardContent>
@@ -121,9 +121,9 @@ const AuthErrorFallback = ({ error, isAuthError, onRetry }: AuthErrorFallbackPro
           <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
             <AlertTriangle className="w-6 h-6 text-red-600" />
           </div>
-          <CardTitle>Er is iets misgegaan</CardTitle>
+          <CardTitle>Something went wrong</CardTitle>
           <CardDescription>
-            Er is een onverwachte fout opgetreden. Probeer de pagina te vernieuwen.
+            An unexpected error occurred. Please try refreshing the page.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -133,18 +133,18 @@ const AuthErrorFallback = ({ error, isAuthError, onRetry }: AuthErrorFallbackPro
             variant="default"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Opnieuw Proberen
+            Try Again
           </Button>
           <Button 
             onClick={() => window.location.reload()} 
             className="w-full"
             variant="outline"
           >
-            Pagina Vernieuwen
+            Refresh Page
           </Button>
           {error && (
             <p className="text-xs text-muted-foreground text-center mt-4">
-              Fout: {error.message}
+              Error: {error.message}
             </p>
           )}
         </CardContent>

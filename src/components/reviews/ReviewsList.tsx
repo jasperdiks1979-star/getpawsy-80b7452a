@@ -1,7 +1,6 @@
 import { Star, User, ThumbsUp, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
-import { nl } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,7 +50,7 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
 
       if (error) throw error;
       
-      toast.success('Bedankt voor je feedback!');
+      toast.success('Thanks for your feedback!');
       onReviewDeleted(); // Refresh reviews
     } catch (error) {
       console.error('Error updating helpful count:', error);
@@ -69,7 +68,7 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
           <Star className="w-8 h-8 text-muted-foreground" />
         </div>
         <p className="text-muted-foreground">
-          Nog geen reviews. Wees de eerste die een review schrijft!
+          No reviews yet. Be the first to write a review!
         </p>
       </motion.div>
     );
@@ -121,7 +120,7 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
             {ratingDistribution.map(({ rating, count, percentage }) => (
               <div key={rating} className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground w-12">
-                  {rating} ster{rating !== 1 ? 'ren' : ''}
+                  {rating} star{rating !== 1 ? 's' : ''}
                 </span>
                 <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                   <motion.div
@@ -143,7 +142,7 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
       {/* Reviews List */}
       <AnimatePresence mode="popLayout">
         {reviews.map((review, idx) => {
-          const displayName = 'Geverifieerde koper';
+          const displayName = 'Verified buyer';
           const isOwner = user?.id === review.user_id;
 
           return (
@@ -172,7 +171,6 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
                       <span className="text-sm text-muted-foreground">
                         {formatDistanceToNow(new Date(review.created_at), {
                           addSuffix: true,
-                          locale: nl,
                         })}
                       </span>
                     </div>
@@ -212,7 +210,7 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
                         onClick={() => handleHelpful(review.id, review.helpful_count)}
                       >
                         <ThumbsUp className="w-4 h-4" />
-                        Nuttig ({review.helpful_count})
+                        Helpful ({review.helpful_count})
                       </Button>
 
                       {isOwner && (

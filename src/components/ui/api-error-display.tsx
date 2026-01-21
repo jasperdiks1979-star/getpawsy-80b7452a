@@ -45,12 +45,12 @@ export const ApiErrorDisplay = ({
     <Alert variant="destructive" className={className}>
       <AlertCircle className="h-4 w-4" />
       <AlertTitle>
-        {isAuthError ? 'Authenticatie Fout' : 'Er is een fout opgetreden'}
+        {isAuthError ? 'Authentication Error' : 'An error occurred'}
       </AlertTitle>
       <AlertDescription className="mt-2">
         <p className="mb-3">
           {isAuthError 
-            ? 'Je sessie is verlopen of ongeldig. Probeer je sessie te vernieuwen of log opnieuw in.'
+            ? 'Your session has expired or is invalid. Please try refreshing your session or sign in again.'
             : errorMessage
           }
         </p>
@@ -63,7 +63,7 @@ export const ApiErrorDisplay = ({
                 onClick={handleRefreshSession}
               >
                 <RefreshCw className="w-3 h-3 mr-1" />
-                Sessie Vernieuwen
+                Refresh Session
               </Button>
               {showSignOut && (
                 <Button 
@@ -72,7 +72,7 @@ export const ApiErrorDisplay = ({
                   onClick={handleSignOut}
                 >
                   <LogOut className="w-3 h-3 mr-1" />
-                  Opnieuw Inloggen
+                  Sign In Again
                 </Button>
               )}
             </>
@@ -84,7 +84,7 @@ export const ApiErrorDisplay = ({
                 onClick={onRetry}
               >
                 <RefreshCw className="w-3 h-3 mr-1" />
-                Opnieuw Proberen
+                Try Again
               </Button>
             )
           )}
