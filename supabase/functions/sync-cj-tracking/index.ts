@@ -303,8 +303,70 @@ serve(async (req) => {
               lastUpdated: new Date().toISOString(),
             };
 
+            const statusLower = trackingInfo.trackingStatus?.toLowerCase() || "";
+            const latestDetail = trackingInfo.trackingDetails?.[0]?.description?.toLowerCase() || "";
+
+            // Check for delivery issues - detect problems in tracking status
+            const issueKeywords = ["failed", "exception", "returned", "undeliverable", "refused", "held", "customs", "problem", "unable"];
+            const hasDeliveryIssue = issueKeywords.some(keyword => 
+              statusLower.includes(keyword) || latestDetail.includes(keyword)
+            );
+
+            if (hasDeliveryIssue) {
+              // Determine issue type
+              let issueType: "failed_delivery" | "returned" | "stuck" | "exception" | "lost" = "exception";
+              let issueDescription = `Tracking status: ${trackingInfo.trackingStatus}`;
+
+              if (statusLower.includes("return") || latestDetail.includes("return")) {
+                issueType = "returned";
+                issueDescription = "Het pakket wordt teruggestuurd naar de afzender.";
+              } else if (statusLower.includes("fail") || latestDetail.includes("fail") || latestDetail.includes("unable")) {
+                issueType = "failed_delivery";
+                issueDescription = "Aflevering is mislukt. Het pakket kon niet worden bezorgd.";
+              } else if (statusLower.includes("held") || statusLower.includes("customs")) {
+                issueType = "stuck";
+                issueDescription = "Het pakket is vastgehouden, mogelijk bij de douane.";
+              } else if (statusLower.includes("refused")) {
+                issueType = "failed_delivery";
+                issueDescription = "Het pakket is geweigerd door de ontvanger.";
+              }
+
+              if (latestDetail) {
+                issueDescription += ` Details: ${trackingInfo.trackingDetails?.[0]?.description}`;
+              }
+
+              // Send admin notification
+              try {
+                const shippingAddress = order.shipping_address as { name?: string } | null;
+                const customerName = shippingAddress?.name || "";
+
+                console.log(`[SYNC-CJ-TRACKING] Delivery issue detected for order ${order.id}: ${issueType}`);
+
+                await fetch(
+                  `${Deno.env.get("SUPABASE_URL")}/functions/v1/notify-delivery-issue`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+                    },
+                    body: JSON.stringify({
+                      orderId: order.id,
+                      customerEmail: order.customer_email,
+                      customerName,
+                      trackingNumber: order.tracking_number,
+                      issueType,
+                      issueDescription,
+                    }),
+                  }
+                );
+              } catch (issueNotifyError) {
+                console.error(`[SYNC-CJ-TRACKING] Error sending issue notification:`, issueNotifyError);
+              }
+            }
+
             // Check if package is delivered
-            if (trackingInfo.trackingStatus?.toLowerCase().includes("deliver")) {
+            if (statusLower.includes("deliver") && !hasDeliveryIssue) {
               // Only send delivery notification if status is changing to delivered
               if (order.status !== "delivered") {
                 shouldSendDeliveryNotification = true;
