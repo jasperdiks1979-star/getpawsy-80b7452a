@@ -239,8 +239,10 @@ const BestsellerDetail = () => {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [showStickyBar, setShowStickyBar] = useState(false);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const addToCartButtonRef = useRef<HTMLButtonElement>(null);
+  const mainAddToCartRef = useRef<HTMLDivElement>(null);
   
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
@@ -380,7 +382,28 @@ const BestsellerDetail = () => {
   useEffect(() => {
     setSelectedImage(0);
     setQuantity(1);
+    setShowStickyBar(false);
   }, [slug]);
+
+  // Show/hide sticky bar based on main add-to-cart button visibility
+  useEffect(() => {
+    if (!mainAddToCartRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Show sticky bar when main button is NOT visible
+        setShowStickyBar(!entry.isIntersecting);
+      },
+      {
+        threshold: 0,
+        rootMargin: '-100px 0px 0px 0px',
+      }
+    );
+
+    observer.observe(mainAddToCartRef.current);
+
+    return () => observer.disconnect();
+  }, [product]);
 
   const inStock = product?.stock !== null && product?.stock !== undefined && product.stock > 0;
 
@@ -948,8 +971,8 @@ const BestsellerDetail = () => {
                   </span>
                 </div>
 
-                {/* Action Buttons - Premium */}
-                <div className="flex gap-3">
+                {/* Action Buttons - Premium - tracked for sticky bar visibility */}
+                <div ref={mainAddToCartRef} className="flex gap-3">
                   <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button 
                       ref={addToCartButtonRef}
@@ -1547,93 +1570,101 @@ const BestsellerDetail = () => {
           onClose={() => setLightboxOpen(false)}
         />
 
-        {/* Sticky Mobile Add-to-Cart Bar */}
-        <motion.div 
-          className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-xl border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-safe"
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.5 }}
-        >
-          <div className="px-4 py-3">
-            <div className="flex items-center gap-3">
-              {/* Product thumbnail & info */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-border/50 shadow-sm">
-                  <img
-                    src={images[0]}
-                    alt={product?.name || ''}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{product?.name}</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-primary">${product?.price.toFixed(2)}</span>
-                    {product?.compare_at_price && product.compare_at_price > product.price && (
-                      <span className="text-xs text-muted-foreground line-through">${product.compare_at_price.toFixed(2)}</span>
-                    )}
+        {/* Sticky Mobile Add-to-Cart Bar - Shows when main button is out of view */}
+        <AnimatePresence>
+          {showStickyBar && (
+            <motion.div 
+              className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-xl border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-safe"
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
+              <div className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  {/* Product thumbnail & info */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-border/50 shadow-sm">
+                      <img
+                        src={images[0]}
+                        alt={product?.name || ''}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{product?.name}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-primary">${product?.price.toFixed(2)}</span>
+                        {product?.compare_at_price && product.compare_at_price > product.price && (
+                          <span className="text-xs text-muted-foreground line-through">${product.compare_at_price.toFixed(2)}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quantity & Add button */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Compact quantity selector */}
+                    <div className="flex items-center rounded-full bg-muted/50 border border-border/50">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full hover:bg-background"
+                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                        disabled={quantity <= 1}
+                      >
+                        <Minus className="w-3 h-3" />
+                      </Button>
+                      <span className="w-6 text-center text-sm font-medium">{quantity}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full hover:bg-background"
+                        onClick={() => setQuantity(q => Math.min(10, q + 1))}
+                        disabled={quantity >= 10}
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
+
+                    {/* Add to Cart button */}
+                    <motion.div whileTap={{ scale: 0.95 }}>
+                      <Button
+                        onClick={handleAddToCart}
+                        disabled={!inStock}
+                        className="h-11 px-5 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 gap-2"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        <span className="font-semibold">Add</span>
+                      </Button>
+                    </motion.div>
                   </div>
                 </div>
-              </div>
 
-              {/* Quantity & Add button */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Compact quantity selector */}
-                <div className="flex items-center rounded-full bg-muted/50 border border-border/50">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full hover:bg-background"
-                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                    disabled={quantity <= 1}
-                  >
-                    <Minus className="w-3 h-3" />
-                  </Button>
-                  <span className="w-6 text-center text-sm font-medium">{quantity}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full hover:bg-background"
-                    onClick={() => setQuantity(q => Math.min(10, q + 1))}
-                    disabled={quantity >= 10}
-                  >
-                    <Plus className="w-3 h-3" />
-                  </Button>
+                {/* Trust indicators */}
+                <div className="flex items-center justify-center gap-4 mt-2 pt-2 border-t border-border/30">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Truck className="w-3 h-3 text-primary" />
+                    <span>Free Shipping</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Shield className="w-3 h-3 text-primary" />
+                    <span>30-Day Returns</span>
+                  </div>
+                  {inStock && (
+                    <div className="flex items-center gap-1 text-xs text-emerald-600">
+                      <Check className="w-3 h-3" />
+                      <span>In Stock</span>
+                    </div>
+                  )}
                 </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                {/* Add to Cart button */}
-                <motion.div whileTap={{ scale: 0.95 }}>
-                  <Button
-                    onClick={handleAddToCart}
-                    disabled={!inStock}
-                    className="h-11 px-5 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 gap-2"
-                  >
-                    <ShoppingCart className="w-4 h-4" />
-                    <span className="font-semibold">Add</span>
-                  </Button>
-                </motion.div>
-              </div>
-            </div>
-
-            {/* Trust indicators */}
-            <div className="flex items-center justify-center gap-4 mt-2 pt-2 border-t border-border/30">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Truck className="w-3 h-3 text-primary" />
-                <span>Free Shipping</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Shield className="w-3 h-3 text-primary" />
-                <span>30-Day Returns</span>
-              </div>
-              {inStock && (
-                <div className="flex items-center gap-1 text-xs text-emerald-600">
-                  <Check className="w-3 h-3" />
-                  <span>In Stock</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
+        {/* Spacer for sticky bar on mobile */}
+        <div className={`md:hidden transition-all ${showStickyBar ? 'h-24' : 'h-0'}`} />
       </Layout>
   );
 };

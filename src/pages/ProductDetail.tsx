@@ -57,6 +57,7 @@ const ProductDetail = () => {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { addToRecentlyViewed, getRecentlyViewedIds } = useRecentlyViewed();
   const addToCartButtonRef = useRef<HTMLButtonElement>(null);
+  const mainAddToCartRef = useRef<HTMLDivElement>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
@@ -64,6 +65,7 @@ const ProductDetail = () => {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [autoplayPaused, setAutoplayPaused] = useState(false);
+  const [showStickyBar, setShowStickyBar] = useState(false);
   const autoplayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -349,6 +351,26 @@ const ProductDetail = () => {
       }
     };
   }, []);
+
+  // Show/hide sticky bar based on main add-to-cart button visibility
+  useEffect(() => {
+    if (!mainAddToCartRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Show sticky bar when main button is NOT visible
+        setShowStickyBar(!entry.isIntersecting);
+      },
+      {
+        threshold: 0,
+        rootMargin: '-100px 0px 0px 0px', // Trigger a bit before it's completely out of view
+      }
+    );
+
+    observer.observe(mainAddToCartRef.current);
+
+    return () => observer.disconnect();
+  }, [product]);
 
   if (isLoading) {
     return (
@@ -985,8 +1007,9 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Quantity & Actions */}
+            {/* Quantity & Actions - tracked for sticky bar visibility */}
             <motion.div 
+              ref={mainAddToCartRef}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -1442,86 +1465,91 @@ const ProductDetail = () => {
         alt={product.name}
       />
 
-      {/* Sticky Add to Cart - Mobile Only */}
-      <motion.div
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.5 }}
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] safe-area-bottom"
-      >
-        <div className="px-4 py-3 flex items-center gap-3">
-          {/* Price */}
-          <div className="flex-shrink-0">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-bold text-primary">
-                ${Number(product.price).toFixed(2)}
-              </span>
-              {product.compare_at_price && (
-                <span className="text-xs text-muted-foreground line-through">
-                  ${Number(product.compare_at_price).toFixed(2)}
-                </span>
-              )}
+      {/* Sticky Add to Cart - Mobile Only - Shows when main button is out of view */}
+      <AnimatePresence>
+        {showStickyBar && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] safe-area-bottom"
+          >
+            <div className="px-4 py-3 flex items-center gap-3">
+              {/* Price */}
+              <div className="flex-shrink-0">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-bold text-primary">
+                    ${Number(product.price).toFixed(2)}
+                  </span>
+                  {product.compare_at_price && (
+                    <span className="text-xs text-muted-foreground line-through">
+                      ${Number(product.compare_at_price).toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                {inStock ? (
+                  <span className="text-xs text-success">In Stock</span>
+                ) : (
+                  <span className="text-xs text-destructive">Out of Stock</span>
+                )}
+              </div>
+
+              {/* Quantity Selector */}
+              <div className="flex items-center gap-1 bg-muted rounded-full p-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full"
+                  onClick={() => {
+                    haptic.selection();
+                    setQuantity(Math.max(1, quantity - 1));
+                  }}
+                  disabled={quantity <= 1}
+                >
+                  <Minus className="w-3 h-3" />
+                </Button>
+                <span className="w-6 text-center text-sm font-medium">{quantity}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full"
+                  onClick={() => {
+                    haptic.selection();
+                    setQuantity(quantity + 1);
+                  }}
+                >
+                  <Plus className="w-3 h-3" />
+                </Button>
+              </div>
+
+              {/* Add to Cart Button */}
+              <Button
+                className="flex-1 gap-2 rounded-full font-semibold shadow-soft"
+                size="lg"
+                onClick={handleAddToCart}
+                disabled={!inStock}
+              >
+                <ShoppingCart className="w-4 h-4" />
+                Add to Cart
+              </Button>
+
+              {/* Wishlist Button */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-11 w-11 flex-shrink-0 rounded-full border-2"
+                onClick={handleWishlistToggle}
+              >
+                <Heart className={`w-5 h-5 transition-colors ${inWishlist ? 'fill-destructive text-destructive' : ''}`} />
+              </Button>
             </div>
-            {inStock ? (
-              <span className="text-xs text-success">In Stock</span>
-            ) : (
-              <span className="text-xs text-destructive">Out of Stock</span>
-            )}
-          </div>
-
-          {/* Quantity Selector */}
-          <div className="flex items-center gap-1 bg-muted rounded-full p-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full"
-              onClick={() => {
-                haptic.selection();
-                setQuantity(Math.max(1, quantity - 1));
-              }}
-              disabled={quantity <= 1}
-            >
-              <Minus className="w-3 h-3" />
-            </Button>
-            <span className="w-6 text-center text-sm font-medium">{quantity}</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full"
-              onClick={() => {
-                haptic.selection();
-                setQuantity(quantity + 1);
-              }}
-            >
-              <Plus className="w-3 h-3" />
-            </Button>
-          </div>
-
-          {/* Add to Cart Button */}
-          <Button
-            className="flex-1 gap-2 rounded-full font-semibold shadow-soft"
-            size="lg"
-            onClick={handleAddToCart}
-            disabled={!inStock}
-          >
-            <ShoppingCart className="w-4 h-4" />
-            Add to Cart
-          </Button>
-
-          {/* Wishlist Button */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-11 w-11 flex-shrink-0 rounded-full border-2"
-            onClick={handleWishlistToggle}
-          >
-            <Heart className={`w-5 h-5 transition-colors ${inWishlist ? 'fill-destructive text-destructive' : ''}`} />
-          </Button>
-        </div>
-      </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Spacer for sticky bar on mobile */}
-      <div className="h-20 md:hidden" />
+      <div className={`md:hidden transition-all ${showStickyBar ? 'h-20' : 'h-0'}`} />
     </Layout>
   );
 };
