@@ -67,6 +67,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { ShippingCountdown } from '@/components/products/ShippingCountdown';
 
 // Generate JSON-LD structured data for product
 const generateProductJsonLd = (
@@ -897,6 +898,9 @@ const BestsellerDetail = () => {
                     </>
                   )}
                 </motion.div>
+
+                {/* Shipping Countdown Timer */}
+                <ShippingCountdown cutoffHour={15} />
 
                 {/* Shipping Info */}
                 {product.shipping_time && (
