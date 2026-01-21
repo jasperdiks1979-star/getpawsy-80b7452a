@@ -502,6 +502,8 @@ const Index = () => {
                     <img 
                       src={`${category.image_url || categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}?v=4`}
                       alt={category.name}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-115"
                       onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'; }}
                     />
@@ -669,6 +671,8 @@ const Index = () => {
                             <img 
                               src={testimonial.avatar} 
                               alt={testimonial.name}
+                              loading="lazy"
+                              decoding="async"
                               className="w-12 h-12 rounded-full object-cover ring-2 ring-secondary"
                             />
                             <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-success flex items-center justify-center">

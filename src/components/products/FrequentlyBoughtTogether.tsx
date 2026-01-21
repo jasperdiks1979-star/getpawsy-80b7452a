@@ -389,6 +389,8 @@ export const FrequentlyBoughtTogether = ({
                   <img
                     src={product.image_url || '/placeholder.svg'}
                     alt={product.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-lg mb-2"
                   />
                 </Link>
