@@ -28,18 +28,26 @@ interface CompleteTheLookProps {
 }
 
 const CompleteTheLookSkeleton = () => (
-  <div className="bg-gradient-to-br from-accent/30 via-background to-primary/5 rounded-2xl p-6 border border-accent/20 space-y-6">
+  <div className="bg-gradient-to-br from-accent/30 via-background to-primary/5 rounded-2xl p-6 border border-accent/20">
     {/* Header Skeleton */}
-    <div className="flex items-center gap-3">
-      <Skeleton className="w-10 h-10 rounded-xl" />
-      <div className="space-y-2">
-        <Skeleton className="h-6 w-44" />
-        <Skeleton className="h-4 w-56" />
+    <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3">
+        <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-36 md:w-44" />
+          <Skeleton className="h-4 w-44 md:w-56" />
+        </div>
+      </div>
+      {/* Navigation arrows skeleton - Desktop only */}
+      <div className="hidden md:flex items-center gap-2">
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-8 w-8 rounded-full" />
       </div>
     </div>
+    
     {/* Products Carousel Skeleton */}
-    <div className="flex gap-4 overflow-hidden">
-      {[...Array(4)].map((_, i) => (
+    <div className="flex gap-4 overflow-hidden -mx-2 px-2">
+      {Array.from({ length: 4 }).map((_, i) => (
         <div 
           key={i} 
           className="flex-shrink-0 w-[160px] md:w-[200px]"
@@ -53,11 +61,16 @@ const CompleteTheLookSkeleton = () => (
                 <Skeleton className="h-5 w-14" />
                 <Skeleton className="h-3 w-10" />
               </div>
-              <Skeleton className="h-8 w-full rounded-md" />
+              <Skeleton className="h-8 w-full rounded-lg" />
             </div>
           </div>
         </div>
       ))}
+    </div>
+    
+    {/* Mobile swipe indicator skeleton */}
+    <div className="flex md:hidden justify-center mt-3">
+      <Skeleton className="h-3 w-24" />
     </div>
   </div>
 );

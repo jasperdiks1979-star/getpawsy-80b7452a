@@ -102,10 +102,10 @@ export const CustomersAlsoBought = ({
       <div className="space-y-6">
         {/* Header Skeleton */}
         <div className="flex items-center gap-3">
-          <Skeleton className="w-10 h-10 rounded-full" />
+          <Skeleton className="w-10 h-10 rounded-full shrink-0" />
           <div className="space-y-2">
-            <Skeleton className="h-6 w-52" />
-            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-5 w-44 md:w-52" />
+            <Skeleton className="h-4 w-36 md:w-40" />
           </div>
         </div>
         {/* Products Grid Skeleton */}
@@ -121,7 +121,12 @@ export const CustomersAlsoBought = ({
                 <Skeleton className="h-4 w-3/4" />
                 <div className="flex items-center justify-between gap-2 pt-1">
                   <Skeleton className="h-5 w-16" />
-                  <Skeleton className="h-8 w-16 rounded-md" />
+                  <Skeleton className="h-8 w-16 rounded-lg" />
+                </div>
+                {/* Frequency indicator skeleton */}
+                <div className="flex items-center gap-1">
+                  <Skeleton className="w-1.5 h-1.5 rounded-full" />
+                  <Skeleton className="h-2.5 w-24" />
                 </div>
               </div>
             </div>
