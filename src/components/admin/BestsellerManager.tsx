@@ -14,7 +14,9 @@ import {
   EyeOff,
   CheckSquare,
   Square,
-  MinusSquare
+  MinusSquare,
+  Filter,
+  FilterX
 } from 'lucide-react';
 import {
   DndContext,
@@ -246,8 +248,11 @@ export const BestsellerManager = () => {
   const [editingBestseller, setEditingBestseller] = useState<Bestseller | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [tableSearchQuery, setTableSearchQuery] = useState('');
   const [localBestsellers, setLocalBestsellers] = useState<Bestseller[] | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [seoFilter, setSeoFilter] = useState<'all' | 'complete' | 'incomplete'>('all');
 
   // DnD sensors
   const sensors = useSensors(
@@ -287,7 +292,43 @@ export const BestsellerManager = () => {
   });
 
   // Use local state for immediate UI updates, fall back to query data
-  const displayBestsellers = localBestsellers ?? bestsellers;
+  const baseBestsellers = localBestsellers ?? bestsellers;
+
+  // Filtered bestsellers based on search and filters
+  const displayBestsellers = useMemo(() => {
+    if (!baseBestsellers) return [];
+    
+    return baseBestsellers.filter(bestseller => {
+      // Search filter
+      const searchQuery = tableSearchQuery.toLowerCase().trim();
+      if (searchQuery) {
+        const matchesSearch = 
+          bestseller.products?.name?.toLowerCase().includes(searchQuery) ||
+          bestseller.slug?.toLowerCase().includes(searchQuery) ||
+          bestseller.products?.category?.toLowerCase().includes(searchQuery);
+        if (!matchesSearch) return false;
+      }
+
+      // Status filter
+      if (statusFilter === 'active' && !bestseller.is_active) return false;
+      if (statusFilter === 'inactive' && bestseller.is_active) return false;
+
+      // SEO filter
+      if (seoFilter === 'complete' && !bestseller.seo_title) return false;
+      if (seoFilter === 'incomplete' && bestseller.seo_title) return false;
+
+      return true;
+    });
+  }, [baseBestsellers, tableSearchQuery, statusFilter, seoFilter]);
+
+  // Check if any filters are active
+  const hasActiveFilters = statusFilter !== 'all' || seoFilter !== 'all' || tableSearchQuery.trim() !== '';
+
+  const clearAllFilters = () => {
+    setStatusFilter('all');
+    setSeoFilter('all');
+    setTableSearchQuery('');
+  };
 
   // Selection helpers
   const allSelected = displayBestsellers && displayBestsellers.length > 0 && 
@@ -753,7 +794,112 @@ export const BestsellerManager = () => {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
+      </Dialog>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/30 rounded-lg border">
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Filters:</span>
+        </div>
+        
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px] max-w-[300px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Zoek bestseller..."
+            value={tableSearchQuery}
+            onChange={(e) => setTableSearchQuery(e.target.value)}
+            className="pl-9 pr-9 h-9"
+          />
+          {tableSearchQuery && (
+            <button
+              onClick={() => setTableSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Status filter */}
+        <div className="flex items-center gap-1 bg-background rounded-md border p-1">
+          <Button
+            size="sm"
+            variant={statusFilter === 'all' ? 'secondary' : 'ghost'}
+            onClick={() => setStatusFilter('all')}
+            className="h-7 px-3 text-xs"
+          >
+            Alle
+          </Button>
+          <Button
+            size="sm"
+            variant={statusFilter === 'active' ? 'secondary' : 'ghost'}
+            onClick={() => setStatusFilter('active')}
+            className="h-7 px-3 text-xs gap-1"
+          >
+            <Eye className="w-3 h-3" />
+            Actief
+          </Button>
+          <Button
+            size="sm"
+            variant={statusFilter === 'inactive' ? 'secondary' : 'ghost'}
+            onClick={() => setStatusFilter('inactive')}
+            className="h-7 px-3 text-xs gap-1"
+          >
+            <EyeOff className="w-3 h-3" />
+            Inactief
+          </Button>
+        </div>
+
+        {/* SEO filter */}
+        <div className="flex items-center gap-1 bg-background rounded-md border p-1">
+          <Button
+            size="sm"
+            variant={seoFilter === 'all' ? 'secondary' : 'ghost'}
+            onClick={() => setSeoFilter('all')}
+            className="h-7 px-3 text-xs"
+          >
+            Alle SEO
+          </Button>
+          <Button
+            size="sm"
+            variant={seoFilter === 'complete' ? 'secondary' : 'ghost'}
+            onClick={() => setSeoFilter('complete')}
+            className="h-7 px-3 text-xs gap-1"
+          >
+            <CheckSquare className="w-3 h-3" />
+            Compleet
+          </Button>
+          <Button
+            size="sm"
+            variant={seoFilter === 'incomplete' ? 'secondary' : 'ghost'}
+            onClick={() => setSeoFilter('incomplete')}
+            className="h-7 px-3 text-xs gap-1"
+          >
+            <Square className="w-3 h-3" />
+            Incompleet
+          </Button>
+        </div>
+
+        {/* Clear filters */}
+        {hasActiveFilters && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={clearAllFilters}
+            className="h-7 px-3 text-xs gap-1 text-muted-foreground hover:text-foreground"
+          >
+            <FilterX className="w-3 h-3" />
+            Wis filters
+          </Button>
+        )}
+
+        {/* Results count */}
+        <div className="ml-auto text-sm text-muted-foreground">
+          {displayBestsellers.length} van {baseBestsellers?.length || 0} bestsellers
+        </div>
+      </div>
       </div>
 
       {/* Bulk action bar */}
