@@ -27,10 +27,12 @@ import {
   Eye,
   MousePointerClick,
   BarChart3,
-  TrendingUp
+  TrendingUp,
+  ChartLine
 } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
+import { CampaignStatisticsView } from "./CampaignStatisticsView";
 
 interface Preferences {
   product_updates: boolean;
@@ -67,6 +69,8 @@ export function EmailCampaignManager() {
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [showStatistics, setShowStatistics] = useState(false);
+  const [statisticsCampaign, setStatisticsCampaign] = useState<Campaign | null>(null);
   
   const [newCampaign, setNewCampaign] = useState({
     subject: "",
@@ -78,6 +82,19 @@ export function EmailCampaignManager() {
       new_arrivals: false,
     } as Preferences,
   });
+
+  // If viewing statistics, show the statistics view
+  if (showStatistics && statisticsCampaign) {
+    return (
+      <CampaignStatisticsView 
+        campaign={statisticsCampaign} 
+        onBack={() => {
+          setShowStatistics(false);
+          setStatisticsCampaign(null);
+        }} 
+      />
+    );
+  }
 
   // Fetch campaigns
   const { data: campaigns, isLoading: campaignsLoading } = useQuery({
@@ -438,10 +455,23 @@ export function EmailCampaignManager() {
                             )}
                           </div>
                         </div>
-                        <Badge variant="default" className="bg-green-500 shrink-0">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Verzonden
-                        </Badge>
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge variant="default" className="bg-green-500 shrink-0">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Verzonden
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setStatisticsCampaign(campaign);
+                              setShowStatistics(true);
+                            }}
+                          >
+                            <ChartLine className="h-4 w-4 mr-2" />
+                            Statistieken
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
