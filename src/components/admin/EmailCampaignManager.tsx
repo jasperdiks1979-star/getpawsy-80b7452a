@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -505,12 +505,11 @@ export function EmailCampaignManager() {
 
             <div className="space-y-2">
               <Label htmlFor="content">Inhoud</Label>
-              <Textarea
-                id="content"
+              <RichTextEditor
+                content={newCampaign.content}
+                onChange={(content) => setNewCampaign((prev) => ({ ...prev, content }))}
                 placeholder="Schrijf hier je nieuwsbrief..."
-                rows={8}
-                value={newCampaign.content}
-                onChange={(e) => setNewCampaign((prev) => ({ ...prev, content: e.target.value }))}
+                className="min-h-[250px]"
               />
             </div>
 
@@ -577,15 +576,16 @@ export function EmailCampaignManager() {
             <DialogTitle>Preview: {selectedCampaign?.subject}</DialogTitle>
           </DialogHeader>
           
-          <div className="border rounded-lg p-6 bg-muted/20">
+          <div className="border rounded-lg bg-muted/20 max-h-[60vh] overflow-y-auto">
             <div className="bg-gradient-to-r from-primary to-purple-500 p-6 rounded-t-lg text-center">
               <h1 className="text-2xl font-bold text-white">🐾 GetPawsy</h1>
             </div>
-            <div className="bg-white p-6 rounded-b-lg">
+            <div className="bg-white dark:bg-background p-6 rounded-b-lg">
               <h2 className="text-xl font-semibold mb-4">{selectedCampaign?.subject}</h2>
-              <div className="text-muted-foreground whitespace-pre-wrap">
-                {selectedCampaign?.content}
-              </div>
+              <div 
+                className="prose prose-sm dark:prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: selectedCampaign?.content || "" }}
+              />
             </div>
           </div>
         </DialogContent>
