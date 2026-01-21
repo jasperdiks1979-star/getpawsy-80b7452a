@@ -28,20 +28,34 @@ interface CompleteTheLookProps {
 }
 
 const CompleteTheLookSkeleton = () => (
-  <div className="space-y-4">
+  <div className="bg-gradient-to-br from-accent/30 via-background to-primary/5 rounded-2xl p-6 border border-accent/20 space-y-6">
+    {/* Header Skeleton */}
     <div className="flex items-center gap-3">
       <Skeleton className="w-10 h-10 rounded-xl" />
       <div className="space-y-2">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-4 w-64" />
+        <Skeleton className="h-6 w-44" />
+        <Skeleton className="h-4 w-56" />
       </div>
     </div>
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    {/* Products Carousel Skeleton */}
+    <div className="flex gap-4 overflow-hidden">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="space-y-3">
-          <Skeleton className="aspect-square rounded-xl" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-20" />
+        <div 
+          key={i} 
+          className="flex-shrink-0 w-[160px] md:w-[200px]"
+        >
+          <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+            <Skeleton className="aspect-square w-full" />
+            <div className="p-3 space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <div className="flex items-baseline gap-1.5 pt-1">
+                <Skeleton className="h-5 w-14" />
+                <Skeleton className="h-3 w-10" />
+              </div>
+              <Skeleton className="h-8 w-full rounded-md" />
+            </div>
+          </div>
         </div>
       ))}
     </div>
