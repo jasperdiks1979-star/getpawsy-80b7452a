@@ -169,9 +169,12 @@ const handler = async (req: Request): Promise<Response> => {
                     <p style="margin: 0 0 8px 0; color: #71717a; font-size: 13px;">
                       You're receiving this because you subscribed at getpawsy.pet
                     </p>
-                    <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
+                    <p style="margin: 0 0 12px 0; color: #a1a1aa; font-size: 12px;">
                       © ${new Date().getFullYear()} GetPawsy. All rights reserved.<br>
                       <a href="https://getpawsy.pet/privacy" style="color: #a1a1aa; text-decoration: underline;">Privacy Policy</a>
+                    </p>
+                    <p style="margin: 0; color: #a1a1aa; font-size: 11px;">
+                      <a href="https://getpawsy.pet/unsubscribe?token=${btoa(email)}" style="color: #a1a1aa; text-decoration: underline;">Unsubscribe from newsletter</a>
                     </p>
                   </td>
                 </tr>
