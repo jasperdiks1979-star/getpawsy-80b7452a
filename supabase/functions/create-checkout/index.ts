@@ -34,10 +34,10 @@ interface CheckoutRequest {
 const DISCOUNT_CODE_MAP: Record<string, string> = {
   "WELCOME10": "oq9OCWlu",
   "DONTGO15": "dfTnk1lW",
-  "BUNDLE10": "bundle_10_off",
-  "BUNDLE15": "bundle_15_off",
-  "BUNDLE18": "bundle_18_off",
-  "BUNDLE20": "bundle_20_off",
+  "BUNDLE10": "BtVGjBLG",
+  "BUNDLE15": "HFLKdq0J",
+  "BUNDLE18": "HJHBWcew",
+  "BUNDLE20": "MhlvpT13",
 };
 
 serve(async (req) => {
