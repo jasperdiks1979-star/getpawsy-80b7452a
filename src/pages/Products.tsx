@@ -19,6 +19,7 @@ import { CategoryFilter } from '@/components/products/CategoryFilter';
 import { supabase } from '@/integrations/supabase/client';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { useProductRatings } from '@/hooks/useProductRatings';
 import { CategorySchema } from '@/components/seo/CategorySchema';
 import { generateCategoryMetaDescription, getKeywordsForCategory } from '@/lib/seo-keywords';
 import { trackViewItemList } from '@/lib/analytics';
@@ -53,6 +54,7 @@ const Products = () => {
   const { getRecentlyViewedIds } = useRecentlyViewed();
   const recentlyViewedIds = getRecentlyViewedIds();
   const hasTrackedImpressions = useRef(false);
+
   // Fetch products from database
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['products'],
@@ -68,6 +70,12 @@ const Products = () => {
       return data;
     },
   });
+
+  // Get all product IDs for ratings query
+  const productIds = useMemo(() => products?.map(p => p.id).filter((id): id is string => !!id) || [], [products]);
+  
+  // Fetch ratings for all products
+  const { data: ratingsMap } = useProductRatings(productIds);
 
   // Set max price based on products
   useEffect(() => {
@@ -624,6 +632,8 @@ const Products = () => {
                         ? `Products - Search: ${searchQuery}` 
                         : 'All Products';
                     
+                    const productRating = product.id ? ratingsMap?.[product.id] : undefined;
+                    
                     return (
                       <StaggeredItem
                         key={product.id}
@@ -634,6 +644,8 @@ const Products = () => {
                           listId={listId}
                           listName={listName}
                           position={index}
+                          rating={productRating?.averageRating}
+                          reviewCount={productRating?.reviewCount}
                         />
                       {/* Quick View Button */}
                       <Button
@@ -702,9 +714,17 @@ const Products = () => {
               <h2 className="text-xl font-display font-semibold">Recently Viewed</h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {recentlyViewedProducts.slice(0, 4).map((recentProduct) => (
-                <ProductCard key={recentProduct.id} product={recentProduct as Product} />
-              ))}
+              {recentlyViewedProducts.slice(0, 4).map((recentProduct) => {
+                const productRating = recentProduct.id ? ratingsMap?.[recentProduct.id] : undefined;
+                return (
+                  <ProductCard 
+                    key={recentProduct.id} 
+                    product={recentProduct as Product}
+                    rating={productRating?.averageRating}
+                    reviewCount={productRating?.reviewCount}
+                  />
+                );
+              })}
             </div>
           </div>
         </section>

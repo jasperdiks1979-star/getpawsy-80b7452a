@@ -10,9 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StarRating } from '@/components/ui/star-rating';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { useProductRatings } from '@/hooks/useProductRatings';
 import { toast } from 'sonner';
 import { trackViewItemList, trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
 import {
@@ -56,10 +58,12 @@ interface BestsellerWithProduct {
   };
 }
 
-const BestsellerCard = ({ bestseller, index, onSelect }: { 
+const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: { 
   bestseller: BestsellerWithProduct; 
   index: number;
   onSelect: () => void;
+  rating?: number;
+  reviewCount?: number;
 }) => {
   const { addItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
@@ -172,6 +176,13 @@ const BestsellerCard = ({ bestseller, index, onSelect }: {
               {bestseller.hero_headline || bestseller.product.name}
             </h3>
 
+            {/* Rating */}
+            {rating !== undefined && reviewCount !== undefined && reviewCount > 0 && (
+              <div>
+                <StarRating rating={rating} reviewCount={reviewCount} size="sm" />
+              </div>
+            )}
+
             {/* Subheadline */}
             {bestseller.hero_subheadline && (
               <p className="text-sm text-muted-foreground line-clamp-2">
@@ -271,8 +282,11 @@ const Bestsellers = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch all reviews for bestseller products
-  const productIds = bestsellers?.map(b => b.product.id) || [];
+  // Fetch ratings using the hook
+  const productIds = useMemo(() => bestsellers?.map(b => b.product.id) || [], [bestsellers]);
+  const { data: ratingsMap } = useProductRatings(productIds);
+
+  // Fetch all reviews for aggregate stats
   const { data: allReviews = [] } = useQuery({
     queryKey: ['bestsellers-reviews', productIds],
     queryFn: async () => {
@@ -489,14 +503,19 @@ const Bestsellers = () => {
             </div>
           ) : bestsellers && bestsellers.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {bestsellers.map((bestseller, index) => (
-                <BestsellerCard 
-                  key={bestseller.id} 
-                  bestseller={bestseller} 
-                  index={index} 
-                  onSelect={() => handleProductSelect(bestseller, index)}
-                />
-              ))}
+              {bestsellers.map((bestseller, index) => {
+                const productRating = ratingsMap?.[bestseller.product.id];
+                return (
+                  <BestsellerCard 
+                    key={bestseller.id} 
+                    bestseller={bestseller} 
+                    index={index} 
+                    onSelect={() => handleProductSelect(bestseller, index)}
+                    rating={productRating?.averageRating}
+                    reviewCount={productRating?.reviewCount}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12">
