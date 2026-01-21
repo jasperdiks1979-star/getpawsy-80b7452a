@@ -29,6 +29,8 @@ import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkelet
 import { StockNotificationForm } from '@/components/products/StockNotificationForm';
 import { ShippingCountdown } from '@/components/products/ShippingCountdown';
 import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
+import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCarousel';
+import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -171,22 +173,13 @@ const ProductDetail = () => {
     enabled: !!id,
   });
 
-  // Fetch related products
-  const { data: relatedProducts } = useQuery({
-    queryKey: ['related-products', product?.category],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products_public')
-        .select('*')
-        .eq('is_active', true)
-        .eq('category', product?.category || '')
-        .neq('id', id || '')
-        .limit(4);
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!product?.category,
+  // Fetch related products with enhanced category and keyword matching
+  const { data: relatedProducts, isLoading: relatedLoading } = useRelatedProducts({
+    productId: product?.id || '',
+    category: product?.category || null,
+    productName: product?.name || '',
+    maxItems: 8,
+    enabled: !!product?.id,
   });
 
   // Get recently viewed product IDs (excluding current product)
@@ -1409,34 +1402,17 @@ const ProductDetail = () => {
           </div>
         </motion.section>
 
-        {/* Related Products */}
-        {relatedProducts && relatedProducts.length > 0 && (
-          <motion.section 
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="mt-20 w-full max-w-full overflow-hidden"
-          >
-            <div className="text-center mb-10">
-              <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-2">
-                You May Also Like
-              </h2>
-              <p className="text-muted-foreground">Discover more great products</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((relatedProduct, idx) => (
-                <motion.div
-                  key={relatedProduct.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 + idx * 0.1 }}
-                >
-                  <ProductCard product={relatedProduct} />
-                </motion.div>
-              ))}
-            </div>
-          </motion.section>
-        )}
+        {/* Related Products Carousel */}
+        <div className="mt-20">
+          <RelatedProductsCarousel 
+            products={relatedProducts || []}
+            isLoading={relatedLoading}
+            title="You May Also Like"
+            subtitle="Products that complement your choice"
+            listId="related-products"
+            listName="Related Products"
+          />
+        </div>
 
         {/* Recently Viewed Products Carousel */}
         {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
