@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 
@@ -11,16 +11,16 @@ interface FlyingItem {
 
 interface CartAnimationContextType {
   triggerAddToCart: (image: string, startElement?: HTMLElement | null) => void;
-  cartIconRef: React.RefObject<HTMLDivElement>;
+  cartIconRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const CartAnimationContext = createContext<CartAnimationContextType | undefined>(undefined);
 
-export const CartAnimationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CartAnimationProvider = ({ children }: { children: React.ReactNode }) => {
   const [flyingItems, setFlyingItems] = useState<FlyingItem[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
-  const cartIconRef = useRef<HTMLDivElement>(null);
+  const cartIconRef = useRef<HTMLDivElement | null>(null);
   const idCounter = useRef(0);
 
   const triggerAddToCart = useCallback((image: string, startElement?: HTMLElement | null) => {
@@ -65,8 +65,14 @@ export const CartAnimationProvider: React.FC<{ children: React.ReactNode }> = ({
     return { x: window.innerWidth - 60, y: 60 };
   };
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    triggerAddToCart,
+    cartIconRef,
+  }), [triggerAddToCart]);
+
   return (
-    <CartAnimationContext.Provider value={{ triggerAddToCart, cartIconRef }}>
+    <CartAnimationContext.Provider value={contextValue}>
       {children}
       
       {/* Flying items layer */}

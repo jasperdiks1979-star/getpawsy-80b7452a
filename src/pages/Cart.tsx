@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Home } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Home, Truck, ShieldCheck, Clock, Gift, Star } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import {
@@ -13,12 +14,19 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+
+const FREE_SHIPPING_THRESHOLD = 50;
+
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
 
   const shipping = 0; // Free shipping on all orders
   const tax = totalPrice * 0.08;
   const total = totalPrice + shipping + tax;
+  
+  // Calculate progress to free shipping
+  const shippingProgress = Math.min((totalPrice / FREE_SHIPPING_THRESHOLD) * 100, 100);
+  const amountToFreeShipping = Math.max(FREE_SHIPPING_THRESHOLD - totalPrice, 0);
 
   if (items.length === 0) {
     return (
@@ -145,6 +153,28 @@ const Cart = () => {
             <div className="bg-card rounded-xl shadow-card p-6 sticky top-24">
               <h2 className="text-xl font-bold mb-4">Order Summary</h2>
               
+              {/* Free Shipping Progress */}
+              {totalPrice < FREE_SHIPPING_THRESHOLD ? (
+                <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Truck className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">
+                      Add ${amountToFreeShipping.toFixed(2)} more for FREE shipping!
+                    </span>
+                  </div>
+                  <Progress value={shippingProgress} className="h-2" />
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                      🎉 You qualify for FREE shipping!
+                    </span>
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
@@ -167,9 +197,16 @@ const Cart = () => {
                 <span className="text-primary">${total.toFixed(2)}</span>
               </div>
 
+              {/* Urgency element */}
+              <div className="mt-4 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 text-center">
+                <div className="flex items-center justify-center gap-1 text-amber-700 dark:text-amber-400 text-xs font-medium">
+                  <Clock className="w-3 h-3" />
+                  <span>Order within 2 hours for same-day processing</span>
+                </div>
+              </div>
 
-              <Link to="/checkout" className="block mt-6">
-                <Button size="lg" className="w-full gap-2">
+              <Link to="/checkout" className="block mt-4">
+                <Button size="lg" className="w-full gap-2 shadow-lg hover:shadow-xl transition-shadow">
                   Proceed to Checkout
                   <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -181,10 +218,20 @@ const Cart = () => {
                 </Button>
               </Link>
 
-              {/* Trust badges */}
-              <div className="mt-6 pt-4 border-t text-center text-xs text-muted-foreground">
-                <p>🔒 Secure checkout powered by Stripe</p>
-                <p className="mt-1">🇺🇸 Ships from US warehouse</p>
+              {/* Enhanced Trust badges */}
+              <div className="mt-6 pt-4 border-t space-y-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <ShieldCheck className="w-4 h-4 text-green-600" />
+                  <span>Secure checkout powered by Stripe</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Truck className="w-4 h-4 text-primary" />
+                  <span>Ships from US warehouse • 5-10 days delivery</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Star className="w-4 h-4 text-amber-500" />
+                  <span>30-day hassle-free returns</span>
+                </div>
               </div>
             </div>
           </div>
