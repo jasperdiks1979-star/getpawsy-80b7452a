@@ -877,6 +877,45 @@ export type Database = {
         }
         Relationships: []
       }
+      remarketing_emails: {
+        Row: {
+          clicked_at: string | null
+          converted_at: string | null
+          created_at: string
+          customer_email: string
+          email_type: string
+          id: string
+          opened_at: string | null
+          order_id: string
+          product_upsold: string
+          sent_at: string
+        }
+        Insert: {
+          clicked_at?: string | null
+          converted_at?: string | null
+          created_at?: string
+          customer_email: string
+          email_type: string
+          id?: string
+          opened_at?: string | null
+          order_id: string
+          product_upsold: string
+          sent_at?: string
+        }
+        Update: {
+          clicked_at?: string | null
+          converted_at?: string | null
+          created_at?: string
+          customer_email?: string
+          email_type?: string
+          id?: string
+          opened_at?: string | null
+          order_id?: string
+          product_upsold?: string
+          sent_at?: string
+        }
+        Relationships: []
+      }
       saved_google_ads: {
         Row: {
           created_at: string
