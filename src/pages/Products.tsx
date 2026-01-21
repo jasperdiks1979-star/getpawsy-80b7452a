@@ -153,6 +153,24 @@ const Products = () => {
     enabled: recentlyViewedIds.length > 0,
   });
 
+  // Build a map of parent category slugs to their subcategory slugs/names
+  const parentToSubcategories = useMemo(() => {
+    if (!categories) return {};
+    const map: Record<string, string[]> = {};
+    
+    // Find parent categories (no parent_id)
+    const parentCategories = categories.filter(c => !c.parent_id);
+    
+    parentCategories.forEach(parent => {
+      // Find all subcategories for this parent
+      const subcats = categories.filter(c => c.parent_id === parent.id);
+      map[parent.slug] = subcats.map(c => c.slug);
+      map[parent.name.toLowerCase()] = subcats.map(c => c.name.toLowerCase());
+    });
+    
+    return map;
+  }, [categories]);
+
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     let result = [...products];
@@ -174,21 +192,39 @@ const Products = () => {
     });
 
     // Filter by category - match against both name and slug formats
+    // Also include products from subcategories when a parent category is selected
     if (selectedCategories.length > 0) {
       result = result.filter(p => {
         if (!p.category) return false;
         const productCategory = p.category.toLowerCase();
+        const productCategorySlug = productCategory.replace(/\s+/g, '-').replace(/&/g, '');
         
         return selectedCategories.some(selected => {
           const selectedLower = selected.toLowerCase();
           // Convert display name to slug format (e.g., "Bird Cages" -> "bird-cages")
           const selectedSlug = selectedLower.replace(/\s+/g, '-').replace(/&/g, '');
           
-          // Match against category name or slug
-          return productCategory === selectedLower || 
-                 productCategory === selectedSlug ||
-                 productCategory.includes(selectedSlug) ||
-                 selectedSlug.includes(productCategory);
+          // Direct match against category name or slug
+          if (productCategory === selectedLower || 
+              productCategory === selectedSlug ||
+              productCategorySlug === selectedSlug) {
+            return true;
+          }
+          
+          // Check if selected is a parent category - if so, include products from its subcategories
+          const subcategorySlugs = parentToSubcategories[selectedSlug] || parentToSubcategories[selectedLower] || [];
+          if (subcategorySlugs.length > 0) {
+            // Check if product's category matches any subcategory
+            return subcategorySlugs.some(subSlug => 
+              productCategory === subSlug || 
+              productCategorySlug === subSlug ||
+              productCategory.includes(subSlug) ||
+              subSlug.includes(productCategory)
+            );
+          }
+          
+          // Fallback: partial matching for edge cases
+          return productCategory.includes(selectedSlug) || selectedSlug.includes(productCategory);
         });
       });
     }
@@ -212,7 +248,7 @@ const Products = () => {
     }
 
     return result;
-  }, [products, searchQuery, selectedCategories, sortBy, priceRange]);
+  }, [products, searchQuery, selectedCategories, sortBy, priceRange, parentToSubcategories]);
 
   // Infinite scroll
   const {
