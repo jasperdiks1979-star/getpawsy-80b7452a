@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { Filter, SlidersHorizontal, Loader2, X, Eye, Clock, Home } from 'lucide-react';
@@ -40,6 +40,7 @@ const sortOptions = [
 
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const categoryParam = searchParams.get('category');
   const searchParam = searchParams.get('search');
   
@@ -54,6 +55,31 @@ const Products = () => {
   const { getRecentlyViewedIds } = useRecentlyViewed();
   const recentlyViewedIds = getRecentlyViewedIds();
   const hasTrackedImpressions = useRef(false);
+
+  // Helper function to convert display name to slug
+  const toSlug = (str: string): string => {
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/&/g, 'and')
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  };
+
+  // Check if category param needs redirect to slug format
+  // Redirect URLs with spaces/special chars to SEO-friendly slug format
+  useEffect(() => {
+    if (categoryParam) {
+      const slug = toSlug(categoryParam);
+      // If the category contains spaces, uppercase, or special chars, redirect to slug version
+      if (categoryParam !== slug && categoryParam.includes(' ') || categoryParam !== categoryParam.toLowerCase()) {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('category', slug);
+        navigate(`/products?${newParams.toString()}`, { replace: true });
+      }
+    }
+  }, [categoryParam, navigate, searchParams]);
 
   // Fetch products from database
   const { data: products, isLoading: productsLoading } = useQuery({
@@ -318,10 +344,12 @@ const Products = () => {
     (searchQuery ? 1 : 0);
 
   const toggleCategory = (categoryName: string) => {
+    // Convert to slug format for URL consistency
+    const categorySlug = toSlug(categoryName);
     setSelectedCategories(prev =>
-      prev.includes(categoryName)
-        ? prev.filter(c => c !== categoryName)
-        : [...prev, categoryName]
+      prev.some(c => toSlug(c) === categorySlug)
+        ? prev.filter(c => toSlug(c) !== categorySlug)
+        : [...prev, categorySlug]
     );
   };
 
@@ -407,7 +435,7 @@ const Products = () => {
         <title>{pageTitle}</title>
         <meta name="description" content={metaDescription} />
         <meta name="keywords" content={metaKeywords} />
-        <link rel="canonical" href={`https://getpawsy.pet/products${categoryParam ? `?category=${encodeURIComponent(categoryParam)}` : ''}`} />
+        <link rel="canonical" href={`https://getpawsy.pet/products${categoryParam ? `?category=${categoryParam}` : ''}`} />
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={metaDescription} />
         <meta property="og:type" content="website" />

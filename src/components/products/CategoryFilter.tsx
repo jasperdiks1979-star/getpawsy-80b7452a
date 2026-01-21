@@ -45,6 +45,17 @@ const CategoryImage = ({ imageUrl, name }: { imageUrl?: string | null; name: str
   );
 };
 
+// Helper function to convert name to slug
+const toSlug = (str: string): string => {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, 'and')
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+};
+
 export const CategoryFilter = ({
   categories,
   selectedCategories,
@@ -228,15 +239,25 @@ export const CategoryFilter = ({
     return directCount + childrenCount;
   };
 
+  // Check if category is selected (compare both slug and name for backwards compatibility)
+  const isCategorySelected = (category: CategoryNode): boolean => {
+    const categorySlug = category.slug || toSlug(category.name);
+    return selectedCategories.some(selected => 
+      selected === categorySlug || 
+      selected === category.name ||
+      toSlug(selected) === categorySlug
+    );
+  };
+
   const isParentSelected = (category: CategoryNode): boolean => {
-    if (selectedCategories.includes(category.name)) return true;
+    if (isCategorySelected(category)) return true;
     return category.children.some((child) => isParentSelected(child));
   };
 
   const renderCategory = (category: CategoryNode, depth: number = 0) => {
     const hasChildren = category.children.length > 0;
     const isOpen = expandedIds.includes(category.id);
-    const isSelected = selectedCategories.includes(category.name);
+    const isSelected = isCategorySelected(category);
     const hasSelectedChildren = category.children.some((child) =>
       isParentSelected(child)
     );
@@ -410,7 +431,12 @@ export const CategoryFilter = ({
           </div>
           <div className="flex flex-wrap gap-1.5">
             {popularCategories.map((cat) => {
-              const isSelected = selectedCategories.includes(cat.name);
+              const catSlug = cat.slug || toSlug(cat.name);
+              const isSelected = selectedCategories.some(selected => 
+                selected === catSlug || 
+                selected === cat.name ||
+                toSlug(selected) === catSlug
+              );
               return (
                 <motion.div
                   key={cat.id}

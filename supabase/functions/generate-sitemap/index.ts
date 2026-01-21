@@ -320,16 +320,27 @@ function generateCategoriesSitemap(
   today: string
 ): string {
   let urls = "";
-  const addedCategories = new Set<string>();
+  const addedSlugs = new Set<string>();
 
-  // Add categories from database
+  // Helper to convert name to slug
+  const toSlug = (str: string): string => {
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/&/g, 'and')
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  };
+
+  // Add categories from database - use slug from DB
   for (const category of dbCategories) {
-    const categoryName = category.name.toLowerCase();
-    if (!addedCategories.has(categoryName)) {
-      addedCategories.add(categoryName);
+    const categorySlug = category.slug || toSlug(category.name);
+    if (!addedSlugs.has(categorySlug)) {
+      addedSlugs.add(categorySlug);
       urls += `
   <url>
-    <loc>${BASE_URL}/products?category=${encodeURIComponent(category.name)}</loc>
+    <loc>${BASE_URL}/products?category=${categorySlug}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -337,14 +348,14 @@ function generateCategoriesSitemap(
     }
   }
 
-  // Add categories from products that aren't in DB
+  // Add categories from products that aren't in DB - convert to slug
   for (const category of productCategories) {
-    const categoryName = category.toLowerCase();
-    if (!addedCategories.has(categoryName)) {
-      addedCategories.add(categoryName);
+    const categorySlug = toSlug(category);
+    if (!addedSlugs.has(categorySlug)) {
+      addedSlugs.add(categorySlug);
       urls += `
   <url>
-    <loc>${BASE_URL}/products?category=${encodeURIComponent(category)}</loc>
+    <loc>${BASE_URL}/products?category=${categorySlug}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -352,7 +363,7 @@ function generateCategoriesSitemap(
     }
   }
 
-  console.log(`Categories sitemap: ${addedCategories.size} categories`);
+  console.log(`Categories sitemap: ${addedSlugs.size} categories`);
 
   return `${xmlHeader()}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
