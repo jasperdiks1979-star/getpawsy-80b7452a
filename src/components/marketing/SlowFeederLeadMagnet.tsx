@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { trackNewsletterSignup } from '@/lib/analytics';
+import { trackNewsletterSignup, trackEvent } from '@/lib/analytics';
 import { useNavigate } from 'react-router-dom';
+import { getStoredUTMParams } from '@/hooks/useUTMTracking';
 
 const POPUP_STORAGE_KEY = 'getpawsy_slowfeeder_popup_seen';
 const POPUP_DELAY_MS = 15000; // Show after 15 seconds on dog-related pages
@@ -97,18 +98,34 @@ export function SlowFeederLeadMagnet({
     setIsSubmitting(true);
 
     try {
+      // Get UTM params from storage
+      const utmParams = getStoredUTMParams();
+      
+      // Build preferences with UTM tracking data
+      const preferences = {
+        dogs: true,
+        promotions: true,
+        new_products: true,
+        lead_magnet: 'slow_feeder_25',
+        signup_source: 'slow_feeder_popup',
+        ...(utmParams.utm_source && { utm_source: utmParams.utm_source }),
+        ...(utmParams.utm_medium && { utm_medium: utmParams.utm_medium }),
+        ...(utmParams.utm_campaign && { utm_campaign: utmParams.utm_campaign }),
+        ...(utmParams.utm_term && { utm_term: utmParams.utm_term }),
+        ...(utmParams.utm_content && { utm_content: utmParams.utm_content }),
+        ...(utmParams.gclid && { gclid: utmParams.gclid }),
+        ...(utmParams.fbclid && { fbclid: utmParams.fbclid }),
+        ...(utmParams.landing_page && { landing_page: utmParams.landing_page }),
+        signup_timestamp: new Date().toISOString()
+      };
+
       // Subscribe to newsletter with preferences
       const { error } = await supabase
         .from('newsletter_subscribers')
         .insert({ 
           email, 
           is_active: true,
-          preferences: {
-            dogs: true,
-            promotions: true,
-            new_products: true,
-            lead_magnet: 'slow_feeder_25'
-          }
+          preferences
         });
 
       if (error) {
@@ -116,22 +133,30 @@ export function SlowFeederLeadMagnet({
           // Already subscribed - update preferences and still give discount
           await supabase
             .from('newsletter_subscribers')
-            .update({ 
-              preferences: {
-                dogs: true,
-                promotions: true,
-                new_products: true,
-                lead_magnet: 'slow_feeder_25'
-              }
-            })
+            .update({ preferences })
             .eq('email', email);
           setIsSuccess(true);
           localStorage.setItem('getpawsy_discount_code', DISCOUNT_CODE);
+          
+          // Track conversion event
+          trackEvent('lead_magnet_signup', {
+            page: 'slow_feeder_popup',
+            discount_code: DISCOUNT_CODE,
+            existing_subscriber: true,
+            ...utmParams
+          });
         } else {
           throw error;
         }
       } else {
         setIsSuccess(true);
+        
+        // Track conversion event
+        trackEvent('lead_magnet_signup', {
+          page: 'slow_feeder_popup',
+          discount_code: DISCOUNT_CODE,
+          ...utmParams
+        });
         trackNewsletterSignup('slow_feeder_lead_magnet');
         localStorage.setItem('getpawsy_discount_code', DISCOUNT_CODE);
         
@@ -141,7 +166,8 @@ export function SlowFeederLeadMagnet({
             body: { 
               email,
               discountCode: DISCOUNT_CODE,
-              source: 'slow_feeder_lead_magnet'
+              source: 'slow_feeder_lead_magnet',
+              utmParams
             }
           });
         } catch (emailError) {
