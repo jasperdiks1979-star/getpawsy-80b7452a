@@ -66,18 +66,23 @@ serve(async (req) => {
 
     // Generate image prompt based on blog post content
     const categoryThemes: Record<string, string> = {
+      Dogs: "happy dog, pet care, warm lighting, professional pet photography style",
+      Cats: "cute cat, feline care, cozy atmosphere, professional pet photography style",
+      Fish: "beautiful aquarium, tropical fish, underwater photography, vibrant colors",
+      General: "various pets, pet supplies, warm home environment, lifestyle photography",
+      // Legacy Dutch categories for backwards compatibility
       honden: "happy dog, pet care, warm lighting, professional pet photography style",
       katten: "cute cat, feline care, cozy atmosphere, professional pet photography style",
       vissen: "beautiful aquarium, tropical fish, underwater photography, vibrant colors",
       algemeen: "various pets, pet supplies, warm home environment, lifestyle photography",
     };
 
-    const theme = categoryThemes[category] || categoryThemes.algemeen;
+    const theme = categoryThemes[category] || categoryThemes.General;
     
     const imagePrompt = `Create a professional, high-quality blog header image for a pet care article titled "${title}". 
 Style: ${theme}. 
 Context: ${excerpt?.substring(0, 150) || title}. 
-Requirements: 16:9 aspect ratio, clean composition, vibrant but natural colors, no text overlays, suitable for a professional pet store blog. Ultra high resolution.`;
+Requirements: 16:9 aspect ratio, clean composition, vibrant but natural colors, no text overlays, suitable for a professional pet store blog. Ultra high resolution, sharp, realistic photography style.`;
 
     console.log("Generating image with prompt:", imagePrompt);
 
