@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
-import { MailX, CheckCircle, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
+import { MailX, CheckCircle, AlertCircle, Loader2, ArrowLeft, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 
-type UnsubscribeStatus = 'loading' | 'confirming' | 'success' | 'error' | 'invalid';
+type UnsubscribeStatus = 'loading' | 'confirming' | 'success' | 'error' | 'invalid' | 'resubscribed';
 
 const Unsubscribe = () => {
   const [searchParams] = useSearchParams();
@@ -39,7 +39,7 @@ const Unsubscribe = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('unsubscribe-newsletter', {
-        body: { token },
+        body: { token, action: 'unsubscribe' },
       });
 
       if (error) throw error;
@@ -47,6 +47,26 @@ const Unsubscribe = () => {
       setStatus('success');
     } catch (error: any) {
       console.error('Unsubscribe error:', error);
+      setErrorMessage(error.message || 'Something went wrong. Please try again.');
+      setStatus('error');
+    }
+  };
+
+  const handleResubscribe = async () => {
+    if (!token) return;
+
+    setStatus('loading');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('unsubscribe-newsletter', {
+        body: { token, action: 'resubscribe' },
+      });
+
+      if (error) throw error;
+
+      setStatus('resubscribed');
+    } catch (error: any) {
+      console.error('Resubscribe error:', error);
       setErrorMessage(error.message || 'Something went wrong. Please try again.');
       setStatus('error');
     }
@@ -131,7 +151,41 @@ const Unsubscribe = () => {
               You've been removed from our newsletter.
             </p>
             <p className="text-muted-foreground mb-8">
-              We're sad to see you go! You can always resubscribe on our website if you change your mind.
+              We're sad to see you go! Changed your mind?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button onClick={handleResubscribe} size="lg" className="gap-2">
+                <Mail className="w-4 h-4" />
+                Re-subscribe
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link to="/">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Homepage
+                </Link>
+              </Button>
+            </div>
+          </motion.div>
+        );
+
+      case 'resubscribed':
+        return (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center"
+          >
+            <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-10 h-10 text-green-600" />
+            </div>
+            <h1 className="text-3xl font-display font-bold text-foreground mb-4">
+              Welcome Back! 🎉
+            </h1>
+            <p className="text-muted-foreground text-lg mb-2">
+              You've been re-subscribed to our newsletter.
+            </p>
+            <p className="text-muted-foreground mb-8">
+              Great to have you back! You'll receive our latest pet tips and exclusive offers again.
             </p>
             <Button asChild size="lg">
               <Link to="/">
