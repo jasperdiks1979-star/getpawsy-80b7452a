@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { trackCrossSellImpression, trackBundleAddToCart } from '@/lib/analytics';
@@ -26,7 +27,73 @@ interface FrequentlyBoughtTogetherProps {
   maxItems?: number;
   sourceProductId?: string;
   sourceProductName?: string;
+  isLoading?: boolean;
 }
+
+// Skeleton component for loading state
+const FrequentlyBoughtTogetherSkeleton = () => (
+  <div className="bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl p-6 border border-primary/10 space-y-6">
+    {/* Header Skeleton */}
+    <div className="flex items-center gap-2">
+      <Skeleton className="w-9 h-9 rounded-full" />
+      <div className="space-y-2">
+        <Skeleton className="h-6 w-56" />
+        <Skeleton className="h-4 w-44" />
+      </div>
+    </div>
+
+    {/* Products Row Skeleton */}
+    <div className="flex flex-wrap items-center justify-center gap-3">
+      {[...Array(4)].map((_, index) => (
+        <div key={index} className="flex items-center gap-3">
+          {index > 0 && (
+            <Skeleton className="w-8 h-8 rounded-full" />
+          )}
+          <div className="relative flex flex-col items-center p-3 rounded-xl border-2 border-muted bg-card">
+            <Skeleton className="absolute top-2 left-2 w-4 h-4 rounded" />
+            <Skeleton className="w-20 h-20 md:w-24 md:h-24 rounded-lg mb-2" />
+            <Skeleton className="h-3 w-16 mb-1" />
+            <Skeleton className="h-4 w-12" />
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Discount Progress Skeleton */}
+    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="w-4 h-4 rounded" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <Skeleton className="h-6 w-16" />
+      </div>
+      <Skeleton className="h-3 w-full rounded-full" />
+      <div className="flex justify-between mt-2">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="flex flex-col items-center gap-0.5">
+            <Skeleton className="h-3 w-6" />
+            <Skeleton className="h-2 w-10" />
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Price Summary Skeleton */}
+    <div className="bg-card rounded-xl p-4 border shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-28" />
+          <div className="flex items-baseline gap-2">
+            <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        </div>
+        <Skeleton className="h-11 w-[180px] rounded-md" />
+      </div>
+    </div>
+  </div>
+);
 
 // Dynamic discount tiers based on number of selected items
 const DISCOUNT_TIERS = [
@@ -54,6 +121,7 @@ export const FrequentlyBoughtTogether = ({
   maxItems = 3,
   sourceProductId,
   sourceProductName,
+  isLoading = false,
 }: FrequentlyBoughtTogetherProps) => {
   const { addItem } = useCart();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -108,6 +176,11 @@ export const FrequentlyBoughtTogether = ({
 
     return () => observer.disconnect();
   }, [bundleProducts, sourceProductId, sourceProductName, currentProduct]);
+
+  // Show skeleton when loading
+  if (isLoading) {
+    return <FrequentlyBoughtTogetherSkeleton />;
+  }
 
   if (bundleProducts.length === 0) return null;
 
