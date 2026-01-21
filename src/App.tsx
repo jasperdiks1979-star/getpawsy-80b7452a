@@ -117,6 +117,7 @@ const Blog = lazyWithRetry(() => import("./pages/Blog"));
 const BlogPost = lazyWithRetry(() => import("./pages/BlogPost"));
 const Sitemap = lazyWithRetry(() => import("./pages/Sitemap"));
 const Unsubscribe = lazyWithRetry(() => import("./pages/Unsubscribe"));
+const NewsletterPreferences = lazyWithRetry(() => import("./pages/NewsletterPreferences"));
 
 const queryClient = new QueryClient();
 
@@ -187,6 +188,7 @@ const App = () => {
                         <Route path="/blog/:slug" element={<BlogPost />} />
                         <Route path="/sitemap.xml" element={<Sitemap />} />
                         <Route path="/unsubscribe" element={<Unsubscribe />} />
+                        <Route path="/newsletter-preferences" element={<NewsletterPreferences />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
