@@ -7,12 +7,27 @@ import {
   Loader2, 
   GripVertical,
   ExternalLink,
-  Eye,
-  EyeOff,
   Edit,
   Search,
   X
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,13 +41,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -71,6 +79,145 @@ interface Bestseller {
   products?: Product;
 }
 
+// Sortable row component for drag-and-drop
+interface SortableRowProps {
+  bestseller: Bestseller;
+  isGenerating: boolean;
+  onGenerateSEO: (bestseller: Bestseller) => void;
+  onEdit: (bestseller: Bestseller) => void;
+  onToggleActive: (bestseller: Bestseller) => void;
+  onDelete: (id: string) => void;
+}
+
+const SortableRow = ({ 
+  bestseller, 
+  isGenerating, 
+  onGenerateSEO, 
+  onEdit, 
+  onToggleActive, 
+  onDelete 
+}: SortableRowProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: bestseller.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style} className={isDragging ? 'bg-muted/50' : ''}>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded touch-none"
+          >
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <Badge variant="outline">{bestseller.rank}</Badge>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-3">
+          {bestseller.products?.image_url && (
+            <img
+              src={bestseller.products.image_url}
+              alt=""
+              className="w-12 h-12 rounded-lg object-cover"
+            />
+          )}
+          <div>
+            <div className="font-medium">{bestseller.products?.name}</div>
+            <div className="text-sm text-muted-foreground">
+              ${bestseller.products?.price} • /{bestseller.slug}
+            </div>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>
+        {bestseller.seo_title ? (
+          <Badge variant="secondary" className="bg-green-100 text-green-700">
+            SEO Compleet
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-amber-600 border-amber-300">
+            Geen SEO
+          </Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={bestseller.is_active}
+            onCheckedChange={() => onToggleActive(bestseller)}
+          />
+          <span className="text-sm">
+            {bestseller.is_active ? 'Actief' : 'Inactief'}
+          </span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onGenerateSEO(bestseller)}
+            disabled={isGenerating}
+            className="gap-1"
+          >
+            {isGenerating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            AI SEO
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onEdit(bestseller)}
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            asChild
+          >
+            <a
+              href={`/bestseller/${bestseller.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => {
+              if (confirm('Weet je zeker dat je deze bestseller wilt verwijderen?')) {
+                onDelete(bestseller.id);
+              }
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
+
 export const BestsellerManager = () => {
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -79,6 +226,19 @@ export const BestsellerManager = () => {
   const [editingBestseller, setEditingBestseller] = useState<Bestseller | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [localBestsellers, setLocalBestsellers] = useState<Bestseller[] | null>(null);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Fetch bestsellers
   const { data: bestsellers, isLoading: bestsellersLoading } = useQuery({
@@ -100,9 +260,13 @@ export const BestsellerManager = () => {
         .order('rank');
 
       if (error) throw error;
+      setLocalBestsellers(data as Bestseller[]);
       return data as Bestseller[];
     },
   });
+
+  // Use local state for immediate UI updates, fall back to query data
+  const displayBestsellers = localBestsellers ?? bestsellers;
 
   // Fetch products not already bestsellers
   const { data: availableProducts } = useQuery({
@@ -147,6 +311,62 @@ export const BestsellerManager = () => {
     }
   };
 
+  // Reorder mutation
+  const reorderMutation = useMutation({
+    mutationFn: async (updates: { id: string; rank: number }[]) => {
+      // Update all ranks in parallel
+      const promises = updates.map(({ id, rank }) =>
+        supabase
+          .from('bestsellers')
+          .update({ rank })
+          .eq('id', id)
+      );
+      
+      const results = await Promise.all(promises);
+      const error = results.find(r => r.error)?.error;
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bestsellers'] });
+      toast.success('Volgorde opgeslagen');
+    },
+    onError: (error) => {
+      console.error('Error reordering bestsellers:', error);
+      toast.error('Fout bij opslaan volgorde');
+      // Revert to server state
+      setLocalBestsellers(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-bestsellers'] });
+    },
+  });
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id && displayBestsellers) {
+      const oldIndex = displayBestsellers.findIndex((b) => b.id === active.id);
+      const newIndex = displayBestsellers.findIndex((b) => b.id === over.id);
+
+      const newOrder = arrayMove(displayBestsellers, oldIndex, newIndex);
+      
+      // Update ranks based on new order
+      const updatedBestsellers = newOrder.map((item, index) => ({
+        ...item,
+        rank: index + 1,
+      }));
+
+      // Optimistic update
+      setLocalBestsellers(updatedBestsellers);
+
+      // Save to database
+      const updates = updatedBestsellers.map((b) => ({
+        id: b.id,
+        rank: b.rank,
+      }));
+      reorderMutation.mutate(updates);
+    }
+  };
+
   // Add bestseller mutation
   const addMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -158,7 +378,7 @@ export const BestsellerManager = () => {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 
-      const nextRank = (bestsellers?.length || 0) + 1;
+      const nextRank = (displayBestsellers?.length || 0) + 1;
 
       const { error } = await supabase
         .from('bestsellers')
@@ -176,6 +396,7 @@ export const BestsellerManager = () => {
       queryClient.invalidateQueries({ queryKey: ['available-products-for-bestseller'] });
       setIsAddDialogOpen(false);
       setSelectedProduct('');
+      setLocalBestsellers(null);
       toast.success('Product toegevoegd als bestseller');
     },
     onError: (error) => {
@@ -203,6 +424,7 @@ export const BestsellerManager = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-bestsellers'] });
       setIsEditDialogOpen(false);
       setEditingBestseller(null);
+      setLocalBestsellers(null);
       toast.success('Bestseller bijgewerkt');
     },
     onError: (error) => {
@@ -224,6 +446,7 @@ export const BestsellerManager = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-bestsellers'] });
       queryClient.invalidateQueries({ queryKey: ['available-products-for-bestseller'] });
+      setLocalBestsellers(null);
       toast.success('Bestseller verwijderd');
     },
     onError: (error) => {
@@ -265,6 +488,10 @@ export const BestsellerManager = () => {
         .eq('id', bestseller.id);
 
       if (updateError) throw updateError;
+      
+      queryClient.invalidateQueries({ queryKey: ['admin-bestsellers'] });
+      setLocalBestsellers(null);
+      toast.success('SEO content gegenereerd');
     } catch (error) {
       console.error('Error generating SEO:', error);
       toast.error('Fout bij genereren SEO content');
@@ -393,122 +620,56 @@ export const BestsellerManager = () => {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-      ) : bestsellers && bestsellers.length > 0 ? (
+      ) : displayBestsellers && displayBestsellers.length > 0 ? (
         <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">#</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>SEO Status</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Acties</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {bestsellers.map((bestseller) => (
-                <TableRow key={bestseller.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
-                      <Badge variant="outline">{bestseller.rank}</Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      {bestseller.products?.image_url && (
-                        <img
-                          src={bestseller.products.image_url}
-                          alt=""
-                          className="w-12 h-12 rounded-lg object-cover"
-                        />
-                      )}
-                      <div>
-                        <div className="font-medium">{bestseller.products?.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          ${bestseller.products?.price} • /{bestseller.slug}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {bestseller.seo_title ? (
-                      <Badge variant="secondary" className="bg-green-100 text-green-700">
-                        SEO Compleet
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-amber-600 border-amber-300">
-                        Geen SEO
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={bestseller.is_active}
-                        onCheckedChange={() => toggleActive(bestseller)}
-                      />
-                      <span className="text-sm">
-                        {bestseller.is_active ? 'Actief' : 'Inactief'}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => generateSEO(bestseller)}
-                        disabled={isGenerating}
-                        className="gap-1"
-                      >
-                        {isGenerating ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Sparkles className="w-4 h-4" />
-                        )}
-                        AI SEO
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingBestseller(bestseller);
-                          setIsEditDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        asChild
-                      >
-                        <a
-                          href={`/bestseller/${bestseller.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          if (confirm('Weet je zeker dat je deze bestseller wilt verwijderen?')) {
-                            deleteMutation.mutate(bestseller.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="bg-muted/30 px-4 py-2 border-b flex items-center gap-2 text-sm text-muted-foreground">
+            <GripVertical className="w-4 h-4" />
+            <span>Sleep om de volgorde te wijzigen</span>
+            {reorderMutation.isPending && (
+              <span className="ml-auto flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Opslaan...
+              </span>
+            )}
+          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-20">#</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead>SEO Status</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Acties</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <SortableContext
+                items={displayBestsellers.map((b) => b.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <TableBody>
+                  {displayBestsellers.map((bestseller) => (
+                    <SortableRow
+                      key={bestseller.id}
+                      bestseller={bestseller}
+                      isGenerating={isGenerating}
+                      onGenerateSEO={generateSEO}
+                      onEdit={(b) => {
+                        setEditingBestseller(b);
+                        setIsEditDialogOpen(true);
+                      }}
+                      onToggleActive={toggleActive}
+                      onDelete={(id) => deleteMutation.mutate(id)}
+                    />
+                  ))}
+                </TableBody>
+              </SortableContext>
+            </Table>
+          </DndContext>
         </div>
       ) : (
         <div className="text-center py-12 border rounded-lg bg-muted/30">
