@@ -30,6 +30,7 @@ const OrdersManager = lazy(() => import("@/components/admin/OrdersManager").then
 const ContactMessagesManager = lazy(() => import("@/components/admin/ContactMessagesManager").then(module => ({ default: module.ContactMessagesManager })));
 const BestsellerManager = lazy(() => import("@/components/admin/BestsellerManager").then(module => ({ default: module.BestsellerManager })));
 const BlogPostsManager = lazy(() => import("@/components/admin/BlogPostsManager").then(module => ({ default: module.BlogPostsManager })));
+const AbandonedCartsManager = lazy(() => import("@/components/admin/AbandonedCartsManager").then(module => ({ default: module.AbandonedCartsManager })));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -989,6 +990,12 @@ const Admin = () => {
                 <TabsTrigger value="orders" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Orders</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Achtergelaten winkelwagens">
+                <TabsTrigger value="abandoned" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <Clock className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Abandoned</span>
                 </TabsTrigger>
               </TouchTooltip>
               <TouchTooltip content="Nieuwsbrief abonnees">
@@ -2205,6 +2212,25 @@ const Admin = () => {
                 </Card>
               }>
                 <OrdersManager />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Abandoned Carts Tab */}
+          <TabsContent value="abandoned">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Achtergelaten winkelwagens laden...</span>
+                    <div className="space-y-3 w-full mt-4">
+                      {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+                    </div>
+                  </div>
+                </Card>
+              }>
+                <AbandonedCartsManager />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
