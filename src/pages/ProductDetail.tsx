@@ -30,6 +30,7 @@ import { StockNotificationForm } from '@/components/products/StockNotificationFo
 import { ShippingCountdown } from '@/components/products/ShippingCountdown';
 import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
 import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCarousel';
+import { FrequentlyBoughtTogether } from '@/components/products/FrequentlyBoughtTogether';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import {
   Breadcrumb,
@@ -1402,8 +1403,38 @@ const ProductDetail = () => {
           </div>
         </motion.section>
 
+        {/* Frequently Bought Together */}
+        {relatedProducts && relatedProducts.length >= 2 && (
+          <div className="mt-16">
+            <FrequentlyBoughtTogether
+              currentProduct={{
+                id: product.id,
+                name: product.name,
+                price: Number(product.price),
+                compare_at_price: product.compare_at_price ? Number(product.compare_at_price) : null,
+                image_url: product.image_url,
+                slug: product.slug,
+                category: product.category,
+              }}
+              relatedProducts={relatedProducts.map(p => ({
+                id: p.id,
+                name: p.name,
+                price: Number(p.price),
+                compare_at_price: p.compare_at_price ? Number(p.compare_at_price) : null,
+                image_url: p.image_url,
+                slug: (p as { slug?: string }).slug,
+                category: p.category,
+              }))}
+              bundleDiscount={10}
+              maxItems={2}
+              sourceProductId={product.id}
+              sourceProductName={product.name}
+            />
+          </div>
+        )}
+
         {/* Related Products Carousel */}
-        <div className="mt-20">
+        <div className="mt-16">
           <RelatedProductsCarousel 
             products={relatedProducts || []}
             isLoading={relatedLoading}
