@@ -1,11 +1,13 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,11 +19,18 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Mail, Search, Trash2, UserX, UserCheck, Download, Users } from 'lucide-react';
+import { Mail, Search, Trash2, UserX, UserCheck, Download, Users, Settings, Package, Heart, Gift, Sparkles, PieChart, BarChart3, TrendingUp, Copy } from 'lucide-react';
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
+
+interface Preferences {
+  product_updates: boolean;
+  pet_care_tips: boolean;
+  promotions: boolean;
+  new_arrivals: boolean;
+}
 
 interface Subscriber {
   id: string;
@@ -29,6 +38,8 @@ interface Subscriber {
   is_active: boolean;
   subscribed_at: string;
   unsubscribed_at: string | null;
+  preferences: Preferences;
+  preference_token: string | null;
 }
 
 // Virtualized table component for subscribers
@@ -139,9 +150,17 @@ function VirtualizedSubscriberTable({
   );
 }
 
+const preferenceLabels: Record<keyof Preferences, { label: string; icon: typeof Package; color: string }> = {
+  product_updates: { label: 'Product Updates', icon: Package, color: 'text-blue-500 bg-blue-100' },
+  pet_care_tips: { label: 'Pet Care Tips', icon: Heart, color: 'text-pink-500 bg-pink-100' },
+  promotions: { label: 'Promoties', icon: Gift, color: 'text-green-500 bg-green-100' },
+  new_arrivals: { label: 'Nieuwe Producten', icon: Sparkles, color: 'text-purple-500 bg-purple-100' },
+};
+
 export const NewsletterSubscribers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('subscribers');
   const queryClient = useQueryClient();
 
   const { data: subscribers, isLoading, refetch } = useQuery({
@@ -153,9 +172,48 @@ export const NewsletterSubscribers = () => {
         .order('subscribed_at', { ascending: false });
       
       if (error) throw error;
-      return data as Subscriber[];
+      
+      const defaultPrefs: Preferences = { product_updates: true, pet_care_tips: true, promotions: true, new_arrivals: true };
+      
+      // Map to ensure proper typing
+      return (data || []).map(row => ({
+        ...row,
+        preferences: (row.preferences as unknown as Preferences) || defaultPrefs
+      })) as Subscriber[];
     },
   });
+
+  // Calculate preference statistics
+  const preferenceStats = useMemo(() => {
+    if (!subscribers) return null;
+    
+    const activeSubscribers = subscribers.filter(s => s.is_active);
+    const total = activeSubscribers.length;
+    
+    if (total === 0) return null;
+    
+    const stats = {
+      product_updates: { count: 0, percentage: 0 },
+      pet_care_tips: { count: 0, percentage: 0 },
+      promotions: { count: 0, percentage: 0 },
+      new_arrivals: { count: 0, percentage: 0 },
+    };
+    
+    activeSubscribers.forEach(sub => {
+      const prefs = sub.preferences || { product_updates: true, pet_care_tips: true, promotions: true, new_arrivals: true };
+      (Object.keys(stats) as Array<keyof Preferences>).forEach(key => {
+        if (prefs[key]) {
+          stats[key].count++;
+        }
+      });
+    });
+    
+    (Object.keys(stats) as Array<keyof Preferences>).forEach(key => {
+      stats[key].percentage = Math.round((stats[key].count / total) * 100);
+    });
+    
+    return { stats, total };
+  }, [subscribers]);
 
   const handleRefresh = useCallback(async () => {
     await refetch();
@@ -226,6 +284,16 @@ export const NewsletterSubscribers = () => {
     toast.success('CSV geëxporteerd');
   };
 
+  const handleCopyPreferenceLink = (token: string | null) => {
+    if (!token) {
+      toast.error('Geen preference link beschikbaar');
+      return;
+    }
+    const link = `https://getpawsy.pet/newsletter-preferences?token=${token}`;
+    navigator.clipboard.writeText(link);
+    toast.success('Link gekopieerd naar klembord');
+  };
+
   const filteredSubscribers = subscribers?.filter(s =>
     s.email.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
@@ -278,58 +346,225 @@ export const NewsletterSubscribers = () => {
         </Card>
       </div>
 
-      {/* Subscribers Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="w-5 h-5" />
-              Nieuwsbrief Abonnees
-            </CardTitle>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Zoek op e-mail..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-full sm:w-64"
-                />
+      {/* Tabs for Subscribers and Preferences */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="subscribers" className="gap-2">
+            <Mail className="w-4 h-4" />
+            Abonnees
+          </TabsTrigger>
+          <TabsTrigger value="preferences" className="gap-2">
+            <PieChart className="w-4 h-4" />
+            Voorkeuren
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="subscribers" className="mt-6">
+          {/* Subscribers Table */}
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="w-5 h-5" />
+                  Nieuwsbrief Abonnees
+                </CardTitle>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Zoek op e-mail..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-9 w-full sm:w-64"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleExportCSV}
+                    disabled={!subscribers || subscribers.length === 0}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                onClick={handleExportCSV}
-                disabled={!subscribers || subscribers.length === 0}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <TableSkeleton 
-              columns={4} 
-              rows={8}
-              headerWidths={["w-48", "w-36", "w-20", "w-24"]}
-              cellWidths={["w-44", "w-32", "w-16", "w-20"]}
-            />
-          ) : filteredSubscribers.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Mail className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Geen abonnees gevonden</p>
-            </div>
-          ) : (
-            <VirtualizedSubscriberTable 
-              subscribers={filteredSubscribers}
-              onToggleActive={(id, isActive) => toggleActiveMutation.mutate({ id, is_active: isActive })}
-              onDelete={(id) => setDeleteId(id)}
-              isToggling={toggleActiveMutation.isPending}
-            />
-          )}
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <TableSkeleton 
+                  columns={4} 
+                  rows={8}
+                  headerWidths={["w-48", "w-36", "w-20", "w-24"]}
+                  cellWidths={["w-44", "w-32", "w-16", "w-20"]}
+                />
+              ) : filteredSubscribers.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Mail className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Geen abonnees gevonden</p>
+                </div>
+              ) : (
+                <VirtualizedSubscriberTable 
+                  subscribers={filteredSubscribers}
+                  onToggleActive={(id, isActive) => toggleActiveMutation.mutate({ id, is_active: isActive })}
+                  onDelete={(id) => setDeleteId(id)}
+                  isToggling={toggleActiveMutation.isPending}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="preferences" className="mt-6 space-y-6">
+          {/* Preference Statistics */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Voorkeuren Statistieken
+              </CardTitle>
+              <CardDescription>
+                Overzicht van welke e-mail categorieën actieve abonnees willen ontvangen
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!preferenceStats ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <PieChart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Geen actieve abonnees</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {(Object.entries(preferenceStats.stats) as Array<[keyof Preferences, { count: number; percentage: number }]>).map(([key, data]) => {
+                    const { label, icon: Icon, color } = preferenceLabels[key];
+                    return (
+                      <div key={key} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${color.split(' ')[1]}`}>
+                              <Icon className={`w-4 h-4 ${color.split(' ')[0]}`} />
+                            </div>
+                            <span className="font-medium">{label}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-lg">{data.percentage}%</span>
+                            <span className="text-sm text-muted-foreground ml-2">
+                              ({data.count}/{preferenceStats.total})
+                            </span>
+                          </div>
+                        </div>
+                        <Progress value={data.percentage} className="h-2" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Individual Preferences Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Individuele Voorkeuren
+              </CardTitle>
+              <CardDescription>
+                Bekijk de voorkeuren per abonnee
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <TableSkeleton columns={6} rows={5} />
+              ) : !subscribers || subscribers.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Geen abonnees</p>
+                </div>
+              ) : (
+                <div className="rounded-lg border overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">E-mail</th>
+                          <th className="px-4 py-3 text-center text-sm font-medium text-muted-foreground">
+                            <span title="Product Updates"><Package className="w-4 h-4 mx-auto" /></span>
+                          </th>
+                          <th className="px-4 py-3 text-center text-sm font-medium text-muted-foreground">
+                            <span title="Pet Care Tips"><Heart className="w-4 h-4 mx-auto" /></span>
+                          </th>
+                          <th className="px-4 py-3 text-center text-sm font-medium text-muted-foreground">
+                            <span title="Promoties"><Gift className="w-4 h-4 mx-auto" /></span>
+                          </th>
+                          <th className="px-4 py-3 text-center text-sm font-medium text-muted-foreground">
+                            <span title="Nieuwe Producten"><Sparkles className="w-4 h-4 mx-auto" /></span>
+                          </th>
+                          <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Link</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subscribers.filter(s => s.is_active).slice(0, 50).map((subscriber) => {
+                          const prefs = subscriber.preferences || { product_updates: true, pet_care_tips: true, promotions: true, new_arrivals: true };
+                          return (
+                            <tr key={subscriber.id} className="border-b hover:bg-muted/50">
+                              <td className="px-4 py-3 text-sm font-medium truncate max-w-[200px]">
+                                {subscriber.email}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {prefs.product_updates ? (
+                                  <Badge className="bg-green-100 text-green-700 text-xs">Aan</Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs">Uit</Badge>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {prefs.pet_care_tips ? (
+                                  <Badge className="bg-green-100 text-green-700 text-xs">Aan</Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs">Uit</Badge>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {prefs.promotions ? (
+                                  <Badge className="bg-green-100 text-green-700 text-xs">Aan</Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs">Uit</Badge>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {prefs.new_arrivals ? (
+                                  <Badge className="bg-green-100 text-green-700 text-xs">Aan</Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs">Uit</Badge>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCopyPreferenceLink(subscriber.preference_token)}
+                                  title="Kopieer preference link"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {subscribers.filter(s => s.is_active).length > 50 && (
+                    <div className="px-4 py-3 text-center text-sm text-muted-foreground bg-muted/30">
+                      Toont eerste 50 van {subscribers.filter(s => s.is_active).length} actieve abonnees
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
