@@ -9,7 +9,12 @@ import {
   ExternalLink,
   Edit,
   Search,
-  X
+  X,
+  Eye,
+  EyeOff,
+  CheckSquare,
+  Square,
+  MinusSquare
 } from 'lucide-react';
 import {
   DndContext,
@@ -34,6 +39,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -83,6 +89,8 @@ interface Bestseller {
 interface SortableRowProps {
   bestseller: Bestseller;
   isGenerating: boolean;
+  isSelected: boolean;
+  onSelect: (id: string, checked: boolean) => void;
   onGenerateSEO: (bestseller: Bestseller) => void;
   onEdit: (bestseller: Bestseller) => void;
   onToggleActive: (bestseller: Bestseller) => void;
@@ -91,7 +99,9 @@ interface SortableRowProps {
 
 const SortableRow = ({ 
   bestseller, 
-  isGenerating, 
+  isGenerating,
+  isSelected,
+  onSelect,
   onGenerateSEO, 
   onEdit, 
   onToggleActive, 
@@ -113,7 +123,17 @@ const SortableRow = ({
   };
 
   return (
-    <TableRow ref={setNodeRef} style={style} className={isDragging ? 'bg-muted/50' : ''}>
+    <TableRow 
+      ref={setNodeRef} 
+      style={style} 
+      className={`${isDragging ? 'bg-muted/50' : ''} ${isSelected ? 'bg-primary/5' : ''}`}
+    >
+      <TableCell>
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => onSelect(bestseller.id, checked as boolean)}
+        />
+      </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
           <button
@@ -227,6 +247,7 @@ export const BestsellerManager = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [localBestsellers, setLocalBestsellers] = useState<Bestseller[] | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // DnD sensors
   const sensors = useSensors(
@@ -267,6 +288,34 @@ export const BestsellerManager = () => {
 
   // Use local state for immediate UI updates, fall back to query data
   const displayBestsellers = localBestsellers ?? bestsellers;
+
+  // Selection helpers
+  const allSelected = displayBestsellers && displayBestsellers.length > 0 && 
+    displayBestsellers.every(b => selectedIds.has(b.id));
+  const someSelected = displayBestsellers && displayBestsellers.some(b => selectedIds.has(b.id));
+  const selectedCount = selectedIds.size;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked && displayBestsellers) {
+      setSelectedIds(new Set(displayBestsellers.map(b => b.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelect = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
 
   // Fetch products not already bestsellers
   const { data: availableProducts } = useQuery({
@@ -311,10 +360,103 @@ export const BestsellerManager = () => {
     }
   };
 
+  // Bulk activate mutation
+  const bulkActivateMutation = useMutation({
+    mutationFn: async ({ ids, isActive }: { ids: string[]; isActive: boolean }) => {
+      const { error } = await supabase
+        .from('bestsellers')
+        .update({ is_active: isActive })
+        .in('id', ids);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, { isActive }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bestsellers'] });
+      setLocalBestsellers(null);
+      clearSelection();
+      toast.success(`${selectedCount} bestsellers ${isActive ? 'geactiveerd' : 'gedeactiveerd'}`);
+    },
+    onError: (error) => {
+      console.error('Error bulk updating:', error);
+      toast.error('Fout bij bijwerken bestsellers');
+    },
+  });
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from('bestsellers')
+        .delete()
+        .in('id', ids);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bestsellers'] });
+      queryClient.invalidateQueries({ queryKey: ['available-products-for-bestseller'] });
+      setLocalBestsellers(null);
+      clearSelection();
+      toast.success(`${selectedCount} bestsellers verwijderd`);
+    },
+    onError: (error) => {
+      console.error('Error bulk deleting:', error);
+      toast.error('Fout bij verwijderen bestsellers');
+    },
+  });
+
+  // Bulk generate SEO mutation
+  const bulkGenerateSEOMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const bestsellersToGenerate = displayBestsellers?.filter(b => ids.includes(b.id)) || [];
+      
+      for (const bestseller of bestsellersToGenerate) {
+        if (!bestseller.products) continue;
+        
+        const { data, error } = await supabase.functions.invoke('generate-bestseller-seo', {
+          body: {
+            productName: bestseller.products.name,
+            productDescription: bestseller.products.description || '',
+            category: bestseller.products.category || 'Huisdier',
+            price: bestseller.products.price,
+          },
+        });
+
+        if (error) throw error;
+
+        const updateData: Record<string, unknown> = {
+          seo_title: data.seo_title,
+          seo_description: data.seo_description,
+          hero_headline: data.hero_headline,
+          hero_subheadline: data.hero_subheadline,
+          selling_points: data.selling_points,
+          long_description: data.long_description,
+          meta_keywords: data.meta_keywords,
+        };
+
+        const { error: updateError } = await supabase
+          .from('bestsellers')
+          .update(updateData)
+          .eq('id', bestseller.id);
+
+        if (updateError) throw updateError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bestsellers'] });
+      setLocalBestsellers(null);
+      clearSelection();
+      toast.success(`SEO gegenereerd voor ${selectedCount} bestsellers`);
+    },
+    onError: (error) => {
+      console.error('Error bulk generating SEO:', error);
+      toast.error('Fout bij genereren SEO content');
+    },
+  });
+
   // Reorder mutation
   const reorderMutation = useMutation({
     mutationFn: async (updates: { id: string; rank: number }[]) => {
-      // Update all ranks in parallel
       const promises = updates.map(({ id, rank }) =>
         supabase
           .from('bestsellers')
@@ -333,7 +475,6 @@ export const BestsellerManager = () => {
     onError: (error) => {
       console.error('Error reordering bestsellers:', error);
       toast.error('Fout bij opslaan volgorde');
-      // Revert to server state
       setLocalBestsellers(null);
       queryClient.invalidateQueries({ queryKey: ['admin-bestsellers'] });
     },
@@ -349,16 +490,13 @@ export const BestsellerManager = () => {
 
       const newOrder = arrayMove(displayBestsellers, oldIndex, newIndex);
       
-      // Update ranks based on new order
       const updatedBestsellers = newOrder.map((item, index) => ({
         ...item,
         rank: index + 1,
       }));
 
-      // Optimistic update
       setLocalBestsellers(updatedBestsellers);
 
-      // Save to database
       const updates = updatedBestsellers.map((b) => ({
         id: b.id,
         rank: b.rank,
@@ -507,6 +645,8 @@ export const BestsellerManager = () => {
     });
   };
 
+  const isBulkActionPending = bulkActivateMutation.isPending || bulkDeleteMutation.isPending || bulkGenerateSEOMutation.isPending;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -616,6 +756,88 @@ export const BestsellerManager = () => {
         </Dialog>
       </div>
 
+      {/* Bulk action bar */}
+      {selectedCount > 0 && (
+        <div className="bg-muted/50 border rounded-lg p-4 flex items-center justify-between gap-4 animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary" className="text-sm">
+              {selectedCount} geselecteerd
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearSelection}
+              className="text-muted-foreground"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Deselecteer
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => bulkActivateMutation.mutate({ ids: Array.from(selectedIds), isActive: true })}
+              disabled={isBulkActionPending}
+              className="gap-1"
+            >
+              {bulkActivateMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+              Activeren
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => bulkActivateMutation.mutate({ ids: Array.from(selectedIds), isActive: false })}
+              disabled={isBulkActionPending}
+              className="gap-1"
+            >
+              {bulkActivateMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <EyeOff className="w-4 h-4" />
+              )}
+              Deactiveren
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => bulkGenerateSEOMutation.mutate(Array.from(selectedIds))}
+              disabled={isBulkActionPending}
+              className="gap-1"
+            >
+              {bulkGenerateSEOMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              AI SEO
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => {
+                if (confirm(`Weet je zeker dat je ${selectedCount} bestsellers wilt verwijderen?`)) {
+                  bulkDeleteMutation.mutate(Array.from(selectedIds));
+                }
+              }}
+              disabled={isBulkActionPending}
+              className="gap-1"
+            >
+              {bulkDeleteMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              Verwijderen
+            </Button>
+          </div>
+        </div>
+      )}
+
       {bestsellersLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -640,6 +862,20 @@ export const BestsellerManager = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <button
+                      onClick={() => handleSelectAll(!allSelected)}
+                      className="flex items-center justify-center"
+                    >
+                      {allSelected ? (
+                        <CheckSquare className="w-4 h-4 text-primary" />
+                      ) : someSelected ? (
+                        <MinusSquare className="w-4 h-4 text-primary" />
+                      ) : (
+                        <Square className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  </TableHead>
                   <TableHead className="w-20">#</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead>SEO Status</TableHead>
@@ -657,6 +893,8 @@ export const BestsellerManager = () => {
                       key={bestseller.id}
                       bestseller={bestseller}
                       isGenerating={isGenerating}
+                      isSelected={selectedIds.has(bestseller.id)}
+                      onSelect={handleSelect}
                       onGenerateSEO={generateSEO}
                       onEdit={(b) => {
                         setEditingBestseller(b);
