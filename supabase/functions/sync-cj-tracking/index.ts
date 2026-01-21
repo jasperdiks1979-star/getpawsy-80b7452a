@@ -267,7 +267,8 @@ serve(async (req) => {
         }
 
         // Track if we have new tracking info to send notification
-        let shouldSendNotification = false;
+        let shouldSendShippingNotification = false;
+        let shouldSendDeliveryNotification = false;
         let newTrackingNumber: string | null = null;
         let newTrackingCarrier: string | null = null;
 
@@ -277,7 +278,7 @@ serve(async (req) => {
           updateData.tracking_carrier = mapCarrierName(cjDetails.logisticName || "");
           newTrackingNumber = cjDetails.trackingNumber;
           newTrackingCarrier = updateData.tracking_carrier;
-          shouldSendNotification = true; // New tracking = send notification
+          shouldSendShippingNotification = true; // New tracking = send shipping notification
 
           // Get detailed tracking info
           const trackingInfo = await getCJTrackingInfo(accessToken, cjDetails.trackingNumber);
@@ -304,13 +305,17 @@ serve(async (req) => {
 
             // Check if package is delivered
             if (trackingInfo.trackingStatus?.toLowerCase().includes("deliver")) {
+              // Only send delivery notification if status is changing to delivered
+              if (order.status !== "delivered") {
+                shouldSendDeliveryNotification = true;
+              }
               updateData.status = "delivered";
             }
           }
         }
 
         // Send shipping notification email if we have new tracking info
-        if (shouldSendNotification && order.customer_email && newTrackingNumber) {
+        if (shouldSendShippingNotification && order.customer_email && newTrackingNumber) {
           try {
             const shippingAddress = order.shipping_address as { name?: string } | null;
             const customerName = shippingAddress?.name || "";
@@ -339,10 +344,46 @@ serve(async (req) => {
               console.log(`[SYNC-CJ-TRACKING] Shipping notification sent for order ${order.id}`);
             } else {
               const errorText = await notifyResponse.text();
-              console.error(`[SYNC-CJ-TRACKING] Failed to send notification: ${errorText}`);
+              console.error(`[SYNC-CJ-TRACKING] Failed to send shipping notification: ${errorText}`);
             }
           } catch (notifyError) {
-            console.error(`[SYNC-CJ-TRACKING] Error sending notification:`, notifyError);
+            console.error(`[SYNC-CJ-TRACKING] Error sending shipping notification:`, notifyError);
+            // Don't fail the sync if notification fails
+          }
+        }
+
+        // Send delivery notification email if order just got delivered
+        if (shouldSendDeliveryNotification && order.customer_email) {
+          try {
+            const shippingAddress = order.shipping_address as { name?: string } | null;
+            const customerName = shippingAddress?.name || "";
+            
+            console.log(`[SYNC-CJ-TRACKING] Sending delivery notification to ${order.customer_email}`);
+            
+            const deliveryResponse = await fetch(
+              `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-delivery-notification`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+                },
+                body: JSON.stringify({
+                  orderId: order.id,
+                  customerEmail: order.customer_email,
+                  customerName,
+                }),
+              }
+            );
+            
+            if (deliveryResponse.ok) {
+              console.log(`[SYNC-CJ-TRACKING] Delivery notification sent for order ${order.id}`);
+            } else {
+              const errorText = await deliveryResponse.text();
+              console.error(`[SYNC-CJ-TRACKING] Failed to send delivery notification: ${errorText}`);
+            }
+          } catch (deliveryError) {
+            console.error(`[SYNC-CJ-TRACKING] Error sending delivery notification:`, deliveryError);
             // Don't fail the sync if notification fails
           }
         }
