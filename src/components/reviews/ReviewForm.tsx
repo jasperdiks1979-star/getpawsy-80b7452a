@@ -11,9 +11,9 @@ import { Link } from 'react-router-dom';
 import { z } from 'zod';
 
 const reviewSchema = z.object({
-  title: z.string().trim().min(3, 'Titel moet minimaal 3 tekens bevatten').max(100, 'Titel mag maximaal 100 tekens bevatten'),
-  content: z.string().trim().max(1000, 'Review mag maximaal 1000 tekens bevatten').optional(),
-  rating: z.number().min(1, 'Selecteer een beoordeling').max(5),
+  title: z.string().trim().min(3, 'Title must be at least 3 characters').max(100, 'Title can be at most 100 characters'),
+  content: z.string().trim().max(1000, 'Review can be at most 1000 characters').optional(),
+  rating: z.number().min(1, 'Please select a rating').max(5),
 });
 
 interface ReviewFormProps {
@@ -48,7 +48,7 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
     }
 
     if (!user) {
-      toast.error('Je moet ingelogd zijn om een review te plaatsen');
+      toast.error('You must be logged in to submit a review');
       return;
     }
 
@@ -65,14 +65,14 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
 
       if (error) throw error;
 
-      toast.success('Bedankt voor je review! 🎉');
+      toast.success('Thanks for your review! 🎉');
       setRating(0);
       setTitle('');
       setContent('');
       onReviewSubmitted();
     } catch (error: any) {
       console.error('Error submitting review:', error);
-      toast.error('Er ging iets mis bij het plaatsen van je review');
+      toast.error('Something went wrong while submitting your review');
     } finally {
       setIsSubmitting(false);
     }
@@ -86,10 +86,10 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
         className="bg-muted/30 rounded-2xl p-6 text-center"
       >
         <p className="text-muted-foreground mb-4">
-          Log in om een review te plaatsen
+          Sign in to leave a review
         </p>
         <Link to="/auth">
-          <Button className="btn-organic">Inloggen</Button>
+          <Button className="btn-organic">Sign In</Button>
         </Link>
       </motion.div>
     );
@@ -103,13 +103,13 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
       className="bg-muted/30 rounded-2xl p-6 space-y-4"
     >
       <h3 className="font-display font-semibold text-lg text-foreground">
-        Schrijf een review
+        Write a review
       </h3>
 
       {/* Star Rating */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground">
-          Jouw beoordeling
+          Your rating
         </label>
         <div className="flex items-center gap-1">
           {[1, 2, 3, 4, 5].map((star) => (
@@ -133,7 +133,7 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
             </motion.button>
           ))}
           <span className="ml-2 text-sm text-muted-foreground">
-            {rating > 0 ? `${rating} ster${rating > 1 ? 'ren' : ''}` : 'Selecteer'}
+            {rating > 0 ? `${rating} star${rating > 1 ? 's' : ''}` : 'Select'}
           </span>
         </div>
         {errors.rating && (
@@ -144,11 +144,11 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
       {/* Title */}
       <div className="space-y-2">
         <label htmlFor="review-title" className="text-sm font-medium text-foreground">
-          Titel
+          Title
         </label>
         <Input
           id="review-title"
-          placeholder="Geef je review een titel..."
+          placeholder="Give your review a title..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="rounded-xl"
@@ -162,11 +162,11 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
       {/* Content */}
       <div className="space-y-2">
         <label htmlFor="review-content" className="text-sm font-medium text-foreground">
-          Je ervaring <span className="text-muted-foreground">(optioneel)</span>
+          Your experience <span className="text-muted-foreground">(optional)</span>
         </label>
         <Textarea
           id="review-content"
-          placeholder="Vertel over je ervaring met dit product..."
+          placeholder="Tell us about your experience with this product..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
           className="rounded-xl min-h-[100px]"
@@ -189,12 +189,12 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
         {isSubmitting ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            Verzenden...
+            Submitting...
           </>
         ) : (
           <>
             <Send className="w-4 h-4" />
-            Review plaatsen
+            Submit Review
           </>
         )}
       </Button>

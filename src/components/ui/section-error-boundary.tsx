@@ -56,10 +56,10 @@ export class SectionErrorBoundary extends Component<SectionErrorBoundaryProps, S
               <AlertCircle className="w-8 h-8 text-destructive" />
             </div>
             <h3 className="text-lg font-semibold mb-2">
-              Er is iets misgegaan
+              Something went wrong
             </h3>
             <p className="text-muted-foreground text-sm mb-4">
-              Er is een onverwachte fout opgetreden. Probeer de pagina te vernieuwen.
+              An unexpected error occurred. Please try refreshing the page.
             </p>
             <div className="flex flex-col gap-2">
               <Button 
@@ -67,17 +67,17 @@ export class SectionErrorBoundary extends Component<SectionErrorBoundaryProps, S
                 className="gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
-                Opnieuw Proberen
+                Try Again
               </Button>
               <Button 
                 variant="outline"
                 onClick={this.handlePageRefresh}
               >
-                Pagina Vernieuwen
+                Refresh Page
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-4">
-              Fout: {errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage}
+              Error: {errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage}
             </p>
           </div>
         </div>
