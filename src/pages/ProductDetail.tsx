@@ -1436,8 +1436,7 @@ const ProductDetail = () => {
                 slug: (p as { slug?: string }).slug,
                 category: p.category,
               }))}
-              bundleDiscount={10}
-              maxItems={2}
+              maxItems={3}
               sourceProductId={product.id}
               sourceProductName={product.name}
             />
