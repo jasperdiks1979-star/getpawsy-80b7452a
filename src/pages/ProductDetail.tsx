@@ -28,6 +28,7 @@ import { ProductSchema } from '@/components/seo/ProductSchema';
 import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
 import { StockNotificationForm } from '@/components/products/StockNotificationForm';
 import { ShippingCountdown } from '@/components/products/ShippingCountdown';
+import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -1421,38 +1422,11 @@ const ProductDetail = () => {
           </motion.section>
         )}
 
-        {/* Recently Viewed Products */}
+        {/* Recently Viewed Products Carousel */}
         {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
-          <motion.section 
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="mt-16 w-full max-w-full overflow-hidden"
-          >
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-secondary/20 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-secondary-foreground" />
-              </div>
-              <div>
-              <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
-                Recently Viewed
-              </h2>
-              <p className="text-sm text-muted-foreground">Products you viewed earlier</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {recentlyViewedProducts.slice(0, 4).map((recentProduct, idx) => (
-                <motion.div
-                  key={recentProduct.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 + idx * 0.1 }}
-                >
-                  <ProductCard product={recentProduct} />
-                </motion.div>
-              ))}
-            </div>
-          </motion.section>
+          <div className="mt-16">
+            <RecentlyViewedCarousel products={recentlyViewedProducts} />
+          </div>
         )}
       </div>
 
