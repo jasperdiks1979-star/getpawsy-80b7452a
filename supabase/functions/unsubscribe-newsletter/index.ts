@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface UnsubscribeRequest {
   token: string;
+  action?: 'unsubscribe' | 'resubscribe';
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -18,7 +19,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { token }: UnsubscribeRequest = await req.json();
+    const { token, action = 'unsubscribe' }: UnsubscribeRequest = await req.json();
 
     if (!token) {
       return new Response(
@@ -47,7 +48,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Processing unsubscribe request for: ${email}`);
+    console.log(`Processing ${action} request for: ${email}`);
 
     // Initialize Supabase admin client
     const supabaseAdmin = createClient(
@@ -55,7 +56,144 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Update the subscriber to inactive
+    // Handle resubscribe action
+    if (action === 'resubscribe') {
+      const { data, error } = await supabaseAdmin
+        .from('newsletter_subscribers')
+        .update({ 
+          is_active: true, 
+          unsubscribed_at: null 
+        })
+        .eq('email', email.toLowerCase())
+        .eq('is_active', false)
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No matching inactive record - check if already active
+          const { data: existingData } = await supabaseAdmin
+            .from('newsletter_subscribers')
+            .select()
+            .eq('email', email.toLowerCase())
+            .eq('is_active', true)
+            .single();
+
+          if (existingData) {
+            return new Response(
+              JSON.stringify({ success: true, message: "Already subscribed" }),
+              { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+
+          // No record at all - create new subscription
+          const { error: insertError } = await supabaseAdmin
+            .from('newsletter_subscribers')
+            .insert({ email: email.toLowerCase(), is_active: true });
+
+          if (insertError) {
+            console.error("Insert error:", insertError);
+            throw insertError;
+          }
+        } else {
+          console.error("Database error:", error);
+          throw error;
+        }
+      }
+
+      console.log(`Successfully resubscribed: ${email}`);
+
+      // Send welcome back email
+      const resendApiKey = Deno.env.get("RESEND_API_KEY");
+      if (resendApiKey) {
+        const welcomeBackHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Welcome Back to GetPawsy Newsletter!</title>
+          </head>
+          <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+              <tr>
+                <td align="center">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    <!-- Header -->
+                    <tr>
+                      <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 32px 40px; text-align: center;">
+                        <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                          🐾 Welcome Back!
+                        </h1>
+                      </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                      <td style="padding: 40px; text-align: center;">
+                        <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 24px; font-weight: 600;">
+                          Great to have you back! 🎉
+                        </h2>
+                        <p style="margin: 0 0 24px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                          You've successfully re-subscribed to the GetPawsy newsletter. We're thrilled to have you back in our pet-loving community!
+                        </p>
+                        <p style="margin: 0 0 32px 0; color: #71717a; font-size: 14px; line-height: 1.6;">
+                          Get ready for exclusive deals, pet care tips, and new product announcements delivered straight to your inbox.
+                        </p>
+                        
+                        <!-- CTA Button -->
+                        <a href="https://getpawsy.pet" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                          Shop Now
+                        </a>
+                      </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                      <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
+                        <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px;">
+                          <a href="https://getpawsy.pet/unsubscribe?token=${btoa(email)}" style="color: #71717a; text-decoration: underline;">Unsubscribe</a>
+                        </p>
+                        <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
+                          © ${new Date().getFullYear()} GetPawsy. All rights reserved.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
+        `;
+
+        try {
+          await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${resendApiKey}`,
+            },
+            body: JSON.stringify({
+              from: "GetPawsy <noreply@getpawsy.pet>",
+              to: [email],
+              subject: "Welcome back to GetPawsy! 🐾",
+              html: welcomeBackHtml,
+            }),
+          });
+          console.log("Welcome back email sent");
+        } catch (emailError) {
+          console.error("Failed to send welcome back email:", emailError);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Successfully resubscribed" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Handle unsubscribe action
     const { data, error } = await supabaseAdmin
       .from('newsletter_subscribers')
       .update({ 
