@@ -1,0 +1,560 @@
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { 
+  Send, 
+  Plus, 
+  Mail, 
+  Users, 
+  Clock, 
+  CheckCircle2, 
+  Package, 
+  Heart, 
+  Tag, 
+  Sparkles,
+  Loader2,
+  Trash2,
+  Eye
+} from "lucide-react";
+import { format } from "date-fns";
+import { nl } from "date-fns/locale";
+
+interface Preferences {
+  product_updates: boolean;
+  pet_care_tips: boolean;
+  promotions: boolean;
+  new_arrivals: boolean;
+}
+
+interface Campaign {
+  id: string;
+  subject: string;
+  content: string;
+  target_preferences: Preferences;
+  sent_count: number;
+  status: string;
+  sent_at: string | null;
+  created_at: string;
+}
+
+const preferenceLabels = {
+  product_updates: { label: "Product Updates", icon: Package },
+  pet_care_tips: { label: "Verzorgingstips", icon: Heart },
+  promotions: { label: "Aanbiedingen", icon: Tag },
+  new_arrivals: { label: "Nieuwe Producten", icon: Sparkles },
+};
+
+export function EmailCampaignManager() {
+  const queryClient = useQueryClient();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  
+  const [newCampaign, setNewCampaign] = useState({
+    subject: "",
+    content: "",
+    target_preferences: {
+      product_updates: false,
+      pet_care_tips: false,
+      promotions: false,
+      new_arrivals: false,
+    } as Preferences,
+  });
+
+  // Fetch campaigns
+  const { data: campaigns, isLoading: campaignsLoading } = useQuery({
+    queryKey: ["email-campaigns"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("email_campaigns")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return (data || []).map((c) => ({
+        ...c,
+        target_preferences: c.target_preferences as unknown as Preferences,
+      })) as Campaign[];
+    },
+  });
+
+  // Fetch subscriber counts per preference
+  const { data: subscriberStats } = useQuery({
+    queryKey: ["subscriber-preference-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("newsletter_subscribers")
+        .select("preferences")
+        .eq("is_active", true);
+      
+      if (error) throw error;
+      
+      const counts = {
+        product_updates: 0,
+        pet_care_tips: 0,
+        promotions: 0,
+        new_arrivals: 0,
+        total: data?.length || 0,
+      };
+      
+      data?.forEach((sub) => {
+        const prefs = sub.preferences as unknown as Preferences;
+        if (prefs?.product_updates) counts.product_updates++;
+        if (prefs?.pet_care_tips) counts.pet_care_tips++;
+        if (prefs?.promotions) counts.promotions++;
+        if (prefs?.new_arrivals) counts.new_arrivals++;
+      });
+      
+      return counts;
+    },
+  });
+
+  // Calculate estimated reach
+  const estimatedReach = useMemo(() => {
+    if (!subscriberStats) return 0;
+    
+    const { target_preferences } = newCampaign;
+    let reach = 0;
+    
+    if (target_preferences.product_updates) reach = Math.max(reach, subscriberStats.product_updates);
+    if (target_preferences.pet_care_tips) reach = Math.max(reach, subscriberStats.pet_care_tips);
+    if (target_preferences.promotions) reach = Math.max(reach, subscriberStats.promotions);
+    if (target_preferences.new_arrivals) reach = Math.max(reach, subscriberStats.new_arrivals);
+    
+    return reach;
+  }, [newCampaign.target_preferences, subscriberStats]);
+
+  // Create campaign mutation
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase
+        .from("email_campaigns")
+        .insert([{
+          subject: newCampaign.subject,
+          content: newCampaign.content,
+          target_preferences: JSON.parse(JSON.stringify(newCampaign.target_preferences)),
+          status: "draft",
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-campaigns"] });
+      setShowCreateDialog(false);
+      setNewCampaign({
+        subject: "",
+        content: "",
+        target_preferences: {
+          product_updates: false,
+          pet_care_tips: false,
+          promotions: false,
+          new_arrivals: false,
+        },
+      });
+      toast.success("Campagne aangemaakt!");
+    },
+    onError: (error) => {
+      toast.error(`Fout bij aanmaken: ${error.message}`);
+    },
+  });
+
+  // Send campaign mutation
+  const sendMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      const { data, error } = await supabase.functions.invoke("send-email-campaign", {
+        body: { campaignId },
+      });
+      
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["email-campaigns"] });
+      setShowSendConfirm(false);
+      setSelectedCampaign(null);
+      toast.success(`Campagne verzonden naar ${data.sentCount} abonnees!`);
+    },
+    onError: (error) => {
+      toast.error(`Fout bij verzenden: ${error.message}`);
+    },
+  });
+
+  // Delete campaign mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      const { error } = await supabase
+        .from("email_campaigns")
+        .delete()
+        .eq("id", campaignId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-campaigns"] });
+      toast.success("Campagne verwijderd!");
+    },
+    onError: (error) => {
+      toast.error(`Fout bij verwijderen: ${error.message}`);
+    },
+  });
+
+  const handlePreferenceToggle = (key: keyof Preferences) => {
+    setNewCampaign((prev) => ({
+      ...prev,
+      target_preferences: {
+        ...prev.target_preferences,
+        [key]: !prev.target_preferences[key],
+      },
+    }));
+  };
+
+  const hasSelectedPreference = Object.values(newCampaign.target_preferences).some(Boolean);
+
+  const draftCampaigns = campaigns?.filter((c) => c.status === "draft") || [];
+  const sentCampaigns = campaigns?.filter((c) => c.status === "sent") || [];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">E-mail Campagnes</h2>
+          <p className="text-muted-foreground">
+            Verstuur nieuwsbrieven naar abonnees op basis van hun voorkeuren
+          </p>
+        </div>
+        <Button onClick={() => setShowCreateDialog(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nieuwe Campagne
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Object.entries(preferenceLabels).map(([key, { label, icon: Icon }]) => (
+          <Card key={key}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{label}</p>
+                  <p className="text-2xl font-bold">
+                    {subscriberStats?.[key as keyof Preferences] || 0}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Tabs defaultValue="drafts">
+        <TabsList>
+          <TabsTrigger value="drafts" className="gap-2">
+            <Clock className="h-4 w-4" />
+            Concepten ({draftCampaigns.length})
+          </TabsTrigger>
+          <TabsTrigger value="sent" className="gap-2">
+            <CheckCircle2 className="h-4 w-4" />
+            Verzonden ({sentCampaigns.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="drafts" className="mt-4">
+          {campaignsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : draftCampaigns.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Geen concepten. Maak een nieuwe campagne aan.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {draftCampaigns.map((campaign) => (
+                <Card key={campaign.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate">{campaign.subject}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                          {campaign.content}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {Object.entries(campaign.target_preferences).map(
+                            ([key, value]) =>
+                              value && (
+                                <Badge key={key} variant="secondary" className="text-xs">
+                                  {preferenceLabels[key as keyof Preferences]?.label}
+                                </Badge>
+                              )
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCampaign(campaign);
+                            setShowPreviewDialog(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteMutation.mutate(campaign.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCampaign(campaign);
+                            setShowSendConfirm(true);
+                          }}
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          Versturen
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="sent" className="mt-4">
+          {sentCampaigns.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nog geen campagnes verzonden.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {sentCampaigns.map((campaign) => (
+                <Card key={campaign.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate">{campaign.subject}</h3>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Users className="h-4 w-4" />
+                            {campaign.sent_count} ontvangers
+                          </span>
+                          {campaign.sent_at && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {format(new Date(campaign.sent_at), "d MMM yyyy 'om' HH:mm", { locale: nl })}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {Object.entries(campaign.target_preferences).map(
+                            ([key, value]) =>
+                              value && (
+                                <Badge key={key} variant="outline" className="text-xs">
+                                  {preferenceLabels[key as keyof Preferences]?.label}
+                                </Badge>
+                              )
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant="default" className="bg-green-500">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Verzonden
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Create Campaign Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Nieuwe E-mail Campagne</DialogTitle>
+            <DialogDescription>
+              Maak een nieuwe nieuwsbrief en selecteer de doelgroep
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="subject">Onderwerp</Label>
+              <Input
+                id="subject"
+                placeholder="Bijv: Nieuwe wintercollectie voor je huisdier! 🐾"
+                value={newCampaign.subject}
+                onChange={(e) => setNewCampaign((prev) => ({ ...prev, subject: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="content">Inhoud</Label>
+              <Textarea
+                id="content"
+                placeholder="Schrijf hier je nieuwsbrief..."
+                rows={8}
+                value={newCampaign.content}
+                onChange={(e) => setNewCampaign((prev) => ({ ...prev, content: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label>Doelgroep (selecteer één of meer voorkeuren)</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(preferenceLabels).map(([key, { label, icon: Icon }]) => (
+                  <div
+                    key={key}
+                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                      newCampaign.target_preferences[key as keyof Preferences]
+                        ? "border-primary bg-primary/5"
+                        : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => handlePreferenceToggle(key as keyof Preferences)}
+                  >
+                    <Checkbox
+                      checked={newCampaign.target_preferences[key as keyof Preferences]}
+                      onCheckedChange={() => handlePreferenceToggle(key as keyof Preferences)}
+                    />
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {subscriberStats?.[key as keyof Preferences] || 0} abonnees
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {hasSelectedPreference && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                  <Users className="h-4 w-4" />
+                  <span>Geschat bereik: <strong className="text-foreground">{estimatedReach}</strong> abonnees</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Annuleren
+            </Button>
+            <Button
+              onClick={() => createMutation.mutate()}
+              disabled={!newCampaign.subject || !newCampaign.content || !hasSelectedPreference || createMutation.isPending}
+            >
+              {createMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
+              Campagne Aanmaken
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Preview: {selectedCampaign?.subject}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="border rounded-lg p-6 bg-muted/20">
+            <div className="bg-gradient-to-r from-primary to-purple-500 p-6 rounded-t-lg text-center">
+              <h1 className="text-2xl font-bold text-white">🐾 GetPawsy</h1>
+            </div>
+            <div className="bg-white p-6 rounded-b-lg">
+              <h2 className="text-xl font-semibold mb-4">{selectedCampaign?.subject}</h2>
+              <div className="text-muted-foreground whitespace-pre-wrap">
+                {selectedCampaign?.content}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Confirmation Dialog */}
+      <Dialog open={showSendConfirm} onOpenChange={setShowSendConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Campagne Versturen</DialogTitle>
+            <DialogDescription>
+              Weet je zeker dat je deze campagne wilt versturen?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="font-medium">{selectedCampaign?.subject}</p>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {selectedCampaign && Object.entries(selectedCampaign.target_preferences).map(
+                ([key, value]) =>
+                  value && (
+                    <Badge key={key} variant="secondary" className="text-xs">
+                      {preferenceLabels[key as keyof Preferences]?.label}
+                    </Badge>
+                  )
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSendConfirm(false)}>
+              Annuleren
+            </Button>
+            <Button
+              onClick={() => selectedCampaign && sendMutation.mutate(selectedCampaign.id)}
+              disabled={sendMutation.isPending}
+            >
+              {sendMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Verzenden...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Versturen
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
