@@ -1104,19 +1104,174 @@ ${keywords.join(", ")}
               </Card>
             </div>
 
-            <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/30 space-y-2">
-              <h4 className="font-medium text-sm flex items-center gap-2">
-                💡 Hoe te gebruiken in Google Ads Editor
-              </h4>
-              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                <li>Download Google Ads Editor van <a href="https://ads.google.com/home/tools/ads-editor/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">ads.google.com</a></li>
-                <li>Open Google Ads Editor en log in met je account</li>
-                <li>Ga naar Account → Import → Import from file</li>
-                <li>Selecteer eerst de "campaigns_structure.csv" om de campagnes aan te maken</li>
-                <li>Importeer daarna "responsive_ads.csv" voor de advertenties</li>
-                <li>Importeer als laatste "keywords.csv" voor de zoekwoorden</li>
-                <li>Review alle items en klik op "Post" om te publiceren</li>
-              </ol>
+            {/* Complete Step-by-Step Guide */}
+            <div className="space-y-4">
+              <div className="p-5 border-2 border-primary/20 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 space-y-4">
+                <h4 className="font-semibold text-lg flex items-center gap-2">
+                  🚀 Complete Stap-voor-Stap Handleiding: Google Ads Live Krijgen
+                </h4>
+                
+                {/* Step 1 */}
+                <div className="space-y-2 p-4 bg-background rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
+                    <h5 className="font-medium">Google Ads Account Aanmaken</h5>
+                  </div>
+                  <div className="ml-9 space-y-2 text-sm text-muted-foreground">
+                    <p>Als je nog geen account hebt:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Ga naar <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">ads.google.com</a></li>
+                      <li>Klik op "Nu starten" en log in met je Google account</li>
+                      <li>Kies "Nieuwe campagne maken" → "Ga naar Expert mode"</li>
+                      <li>Stel je betalingsgegevens in (creditcard of PayPal)</li>
+                    </ul>
+                    <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-800 dark:text-amber-200 text-xs">
+                      💡 <strong>Tip:</strong> Gebruik eerst een klein dagelijks budget (bijv. $10-20) om te testen
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="space-y-2 p-4 bg-background rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
+                    <h5 className="font-medium">Google Ads Editor Downloaden</h5>
+                  </div>
+                  <div className="ml-9 space-y-2 text-sm text-muted-foreground">
+                    <p>Voor bulk uploads heb je de desktop editor nodig:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Download van <a href="https://ads.google.com/home/tools/ads-editor/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Google Ads Editor</a> (gratis)</li>
+                      <li>Installeer en open de applicatie</li>
+                      <li>Log in met hetzelfde Google account als je Ads account</li>
+                      <li>Klik op "Download" om je huidige account te synchroniseren</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="space-y-2 p-4 bg-background rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
+                    <h5 className="font-medium">CSV Bestanden Downloaden</h5>
+                  </div>
+                  <div className="ml-9 space-y-2 text-sm text-muted-foreground">
+                    <p>Download alle drie de CSV bestanden hierboven:</p>
+                    <ol className="list-decimal list-inside space-y-1">
+                      <li><strong>getpawsy_campaigns_structure.csv</strong> - Campagne instellingen</li>
+                      <li><strong>getpawsy_responsive_ads.csv</strong> - Advertenties (15 stuks)</li>
+                      <li><strong>getpawsy_keywords.csv</strong> - Zoekwoorden (150 stuks)</li>
+                    </ol>
+                  </div>
+                </div>
+
+                {/* Step 4 */}
+                <div className="space-y-2 p-4 bg-background rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">4</div>
+                    <h5 className="font-medium">Importeren in Google Ads Editor</h5>
+                  </div>
+                  <div className="ml-9 space-y-2 text-sm text-muted-foreground">
+                    <p>Importeer in deze volgorde:</p>
+                    <ol className="list-decimal list-inside space-y-2">
+                      <li>
+                        <strong>Campagnes eerst:</strong><br/>
+                        Account → Import → Import from CSV → Selecteer "campaigns_structure.csv"
+                      </li>
+                      <li>
+                        <strong>Daarna advertenties:</strong><br/>
+                        Account → Import → Import from CSV → Selecteer "responsive_ads.csv"
+                      </li>
+                      <li>
+                        <strong>Als laatste keywords:</strong><br/>
+                        Account → Import → Import from CSV → Selecteer "keywords.csv"
+                      </li>
+                    </ol>
+                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-blue-800 dark:text-blue-200 text-xs">
+                      💡 <strong>Let op:</strong> Na elke import zie je een preview. Controleer of alles goed staat en klik op "Process"
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 5 */}
+                <div className="space-y-2 p-4 bg-background rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">5</div>
+                    <h5 className="font-medium">Controleren & Aanpassen</h5>
+                  </div>
+                  <div className="ml-9 space-y-2 text-sm text-muted-foreground">
+                    <p>Voordat je publiceert, controleer deze instellingen:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li><strong>Budget:</strong> Pas het dagelijks budget aan (standaard $20/dag per campagne)</li>
+                      <li><strong>Locatie:</strong> Standaard op "United States" - pas aan indien nodig</li>
+                      <li><strong>Taal:</strong> Standaard op "English" - pas aan indien nodig</li>
+                      <li><strong>Biedstrategie:</strong> "Maximize Conversions" - werkt goed voor beginners</li>
+                    </ul>
+                    <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/30 rounded text-green-800 dark:text-green-200 text-xs">
+                      ✅ <strong>Aanbevolen:</strong> Start met 1 campagne (bijv. GPS Dog Fence) om te testen
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 6 */}
+                <div className="space-y-2 p-4 bg-background rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">6</div>
+                    <h5 className="font-medium">Live Zetten (Posten)</h5>
+                  </div>
+                  <div className="ml-9 space-y-2 text-sm text-muted-foreground">
+                    <p>Als alles er goed uitziet:</p>
+                    <ol className="list-decimal list-inside space-y-1">
+                      <li>Klik op <strong>"Post"</strong> in de toolbar (of Ctrl+P / Cmd+P)</li>
+                      <li>Selecteer alle wijzigingen die je wilt publiceren</li>
+                      <li>Klik op <strong>"Post"</strong> om te uploaden naar Google Ads</li>
+                      <li>Wacht tot de upload voltooid is (kan 1-2 minuten duren)</li>
+                    </ol>
+                    <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-800 dark:text-amber-200 text-xs">
+                      ⏰ <strong>Review tijd:</strong> Google keurt advertenties meestal binnen 24 uur goed, soms binnen een paar uur
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 7 */}
+                <div className="space-y-2 p-4 bg-background rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center font-bold text-sm">7</div>
+                    <h5 className="font-medium text-green-700 dark:text-green-400">Conversie Tracking Instellen (Belangrijk!)</h5>
+                  </div>
+                  <div className="ml-9 space-y-2 text-sm text-muted-foreground">
+                    <p>Zonder conversie tracking weet Google niet welke ads werken:</p>
+                    <ol className="list-decimal list-inside space-y-1">
+                      <li>Ga naar <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Ads</a> (online)</li>
+                      <li>Tools & Settings → Measurement → Conversions</li>
+                      <li>Klik op "+ New conversion action" → Website</li>
+                      <li>Voer je website URL in: <code className="px-1 py-0.5 bg-muted rounded">https://getpawsy.pet</code></li>
+                      <li>Kies "Purchase" als conversie type</li>
+                      <li>Installeer de Google Tag (we hebben dit al via Google Analytics 4)</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Troubleshooting */}
+              <div className="p-4 border rounded-lg bg-muted/30 space-y-2">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  🔧 Veelvoorkomende Problemen
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-muted-foreground">
+                  <div className="p-2 bg-background rounded border">
+                    <strong className="text-foreground">Import error:</strong> Controleer of je de CSV's in de juiste volgorde importeert (campagnes → ads → keywords)
+                  </div>
+                  <div className="p-2 bg-background rounded border">
+                    <strong className="text-foreground">Ad afgekeurd:</strong> Pas headlines aan die claims bevatten en voeg een privacybeleid toe
+                  </div>
+                  <div className="p-2 bg-background rounded border">
+                    <strong className="text-foreground">Geen vertoningen:</strong> Verhoog je dagelijks budget of pas de biedingen aan
+                  </div>
+                  <div className="p-2 bg-background rounded border">
+                    <strong className="text-foreground">Low Quality Score:</strong> Verbeter je landingspagina's met relevante content en snelle laadtijd
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Campaign Preview Table */}
