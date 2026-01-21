@@ -840,19 +840,25 @@ export const BestsellerManager = () => {
 
           {/* Active Status */}
           <div className="bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20 rounded-xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/20 rounded-lg">
-                <Eye className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold">{stats.active}</p>
-                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                    {stats.activePercent}%
-                  </Badge>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                  <Eye className="w-5 h-5 text-green-600" />
                 </div>
-                <p className="text-sm text-muted-foreground">Actief ({stats.inactive} inactief)</p>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-2xl font-bold">{stats.active}</p>
+                    <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                      {stats.activePercent}%
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Actief ({stats.inactive} inactief)</p>
+                </div>
               </div>
+              <Progress 
+                value={stats.activePercent} 
+                className="h-2 bg-green-100" 
+              />
             </div>
           </div>
 
