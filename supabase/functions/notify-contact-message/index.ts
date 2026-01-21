@@ -212,7 +212,8 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    const emailResponse = await resend.emails.send({
+    // Send admin notification email
+    const adminEmailResponse = await resend.emails.send({
       from: "Pawsy <noreply@getpawsy.pet>",
       to: [adminEmail],
       subject: `📬 New Contact: ${safeSubjectLabel} from ${safeName}`,
@@ -220,9 +221,96 @@ const handler = async (req: Request): Promise<Response> => {
       reply_to: email,
     });
 
-    console.log("Admin notification email sent successfully:", emailResponse);
+    console.log("Admin notification email sent successfully:", adminEmailResponse);
 
-    return new Response(JSON.stringify({ success: true, emailResponse }), {
+    // Send customer confirmation email
+    const customerConfirmationHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>We received your message!</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 32px 40px; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                      🐾 GetPawsy
+                    </h1>
+                  </td>
+                </tr>
+                
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 40px;">
+                    <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 24px; font-weight: 600;">
+                      Thanks for reaching out, ${safeName}! 💌
+                    </h2>
+                    <p style="margin: 0 0 24px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                      We've received your message and our team will get back to you within <strong>24-48 business hours</strong>.
+                    </p>
+                    
+                    <!-- Message Summary Box -->
+                    <div style="background-color: #f4f4f5; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                      <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Your message</p>
+                      <p style="margin: 0 0 16px 0; color: #18181b; font-size: 14px; font-weight: 500;">Subject: ${safeSubjectLabel}</p>
+                      <p style="margin: 0; color: #52525b; font-size: 14px; line-height: 1.5; white-space: pre-wrap;">${safeMessage.substring(0, 200)}${safeMessage.length > 200 ? '...' : ''}</p>
+                    </div>
+                    
+                    <p style="margin: 0 0 24px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                      In the meantime, you might find answers to common questions in our <a href="https://getpawsy.pet/faq" style="color: #f97316; text-decoration: none; font-weight: 500;">FAQ section</a>.
+                    </p>
+                    
+                    <!-- CTA Button -->
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="padding: 8px 0;">
+                          <a href="https://getpawsy.pet/products" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                            Continue Shopping
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
+                    <p style="margin: 0 0 8px 0; color: #71717a; font-size: 13px;">
+                      Need urgent help? Reply to this email or contact us at
+                    </p>
+                    <a href="mailto:support@getpawsy.pet" style="color: #f97316; font-size: 14px; font-weight: 500; text-decoration: none;">support@getpawsy.pet</a>
+                    <p style="margin: 16px 0 0 0; color: #a1a1aa; font-size: 12px;">
+                      © ${new Date().getFullYear()} GetPawsy. All rights reserved.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const customerEmailResponse = await resend.emails.send({
+      from: "GetPawsy Support <noreply@getpawsy.pet>",
+      to: [email],
+      subject: `We received your message! 🐾`,
+      html: customerConfirmationHtml,
+      reply_to: adminEmail,
+    });
+
+    console.log("Customer confirmation email sent successfully:", customerEmailResponse);
+
+    return new Response(JSON.stringify({ success: true, adminEmailResponse, customerEmailResponse }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
