@@ -49,7 +49,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { nl } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 
 interface BlogPost {
   id: string;
@@ -94,9 +94,9 @@ const emptyFormData: BlogPostFormData = {
   content: '',
   excerpt: '',
   featured_image: '',
-  category: 'algemeen',
+  category: 'General',
   tags: '',
-  author_name: 'Pawsy Team',
+  author_name: 'Pet Care Team',
   is_published: false,
   reading_time_minutes: 5,
   meta_title: '',
@@ -104,9 +104,14 @@ const emptyFormData: BlogPostFormData = {
   meta_keywords: '',
 };
 
-const categories = ['honden', 'katten', 'vissen', 'algemeen'];
+const categories = ['Dogs', 'Cats', 'Fish', 'General'];
 
 const categoryColors: Record<string, string> = {
+  Dogs: 'bg-amber-100 text-amber-700',
+  Cats: 'bg-pink-100 text-pink-700',
+  Fish: 'bg-blue-100 text-blue-700',
+  General: 'bg-emerald-100 text-emerald-700',
+  // Legacy Dutch categories for backwards compatibility
   honden: 'bg-amber-100 text-amber-700',
   katten: 'bg-pink-100 text-pink-700',
   vissen: 'bg-blue-100 text-blue-700',
@@ -123,6 +128,8 @@ export const BlogPostsManager = () => {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [formData, setFormData] = useState<BlogPostFormData>(emptyFormData);
   const [generatingImageFor, setGeneratingImageFor] = useState<string | null>(null);
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
   // Fetch all blog posts (including unpublished for admin)
   const { data: posts, isLoading } = useQuery({
@@ -171,7 +178,7 @@ export const BlogPostsManager = () => {
       }
     },
     onSuccess: () => {
-      toast.success(selectedPost ? 'Blog post bijgewerkt!' : 'Blog post aangemaakt!');
+      toast.success(selectedPost ? 'Blog post updated!' : 'Blog post created!');
       queryClient.invalidateQueries({ queryKey: ['admin-blog-posts'] });
       queryClient.invalidateQueries({ queryKey: ['blog-posts'] });
       setDialogOpen(false);
@@ -179,7 +186,7 @@ export const BlogPostsManager = () => {
       setFormData(emptyFormData);
     },
     onError: (error: Error) => {
-      toast.error('Opslaan mislukt', { description: error.message });
+      toast.error('Save failed', { description: error.message });
     },
   });
 
@@ -193,14 +200,14 @@ export const BlogPostsManager = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Blog post verwijderd');
+      toast.success('Blog post deleted');
       queryClient.invalidateQueries({ queryKey: ['admin-blog-posts'] });
       queryClient.invalidateQueries({ queryKey: ['blog-posts'] });
       setDeleteDialogOpen(false);
       setSelectedPost(null);
     },
     onError: (error: Error) => {
-      toast.error('Verwijderen mislukt', { description: error.message });
+      toast.error('Delete failed', { description: error.message });
     },
   });
 
@@ -217,12 +224,12 @@ export const BlogPostsManager = () => {
       if (error) throw error;
     },
     onSuccess: (_, { isPublished }) => {
-      toast.success(isPublished ? 'Blog post gepubliceerd!' : 'Blog post gedepubliceerd');
+      toast.success(isPublished ? 'Blog post published!' : 'Blog post unpublished');
       queryClient.invalidateQueries({ queryKey: ['admin-blog-posts'] });
       queryClient.invalidateQueries({ queryKey: ['blog-posts'] });
     },
     onError: (error: Error) => {
-      toast.error('Status wijzigen mislukt', { description: error.message });
+      toast.error('Status change failed', { description: error.message });
     },
   });
 
@@ -257,17 +264,94 @@ export const BlogPostsManager = () => {
       return response.json();
     },
     onSuccess: () => {
-      toast.success('Afbeelding gegenereerd!');
+      toast.success('Image generated!');
       queryClient.invalidateQueries({ queryKey: ['admin-blog-posts'] });
       queryClient.invalidateQueries({ queryKey: ['blog-posts'] });
     },
     onError: (error: Error) => {
-      toast.error('Genereren mislukt', { description: error.message });
+      toast.error('Generation failed', { description: error.message });
     },
     onSettled: () => {
       setGeneratingImageFor(null);
     },
   });
+
+  // Batch generate images for posts without images
+  const handleBatchGenerateImages = async () => {
+    if (!posts) return;
+    
+    const postsWithoutImages = posts.filter(post => !post.featured_image);
+    if (postsWithoutImages.length === 0) {
+      toast.info('All posts already have images');
+      return;
+    }
+
+    setBatchGenerating(true);
+    setBatchProgress({ current: 0, total: postsWithoutImages.length });
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error('Not authenticated');
+      setBatchGenerating(false);
+      return;
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < postsWithoutImages.length; i++) {
+      const post = postsWithoutImages[i];
+      setBatchProgress({ current: i + 1, total: postsWithoutImages.length });
+
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-blog-image`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              postId: post.id,
+              title: post.title,
+              category: post.category,
+              excerpt: post.excerpt,
+            }),
+          }
+        );
+
+        if (response.ok) {
+          successCount++;
+          toast.success(`Generated image for: ${post.title.substring(0, 30)}...`);
+        } else {
+          const error = await response.json();
+          errorCount++;
+          console.error(`Failed to generate image for ${post.title}:`, error);
+          
+          // If rate limited, wait longer
+          if (response.status === 429) {
+            toast.warning('Rate limited, waiting 30 seconds...');
+            await new Promise(resolve => setTimeout(resolve, 30000));
+          }
+        }
+      } catch (error) {
+        errorCount++;
+        console.error(`Error generating image for ${post.title}:`, error);
+      }
+
+      // Small delay between requests to avoid rate limiting
+      if (i < postsWithoutImages.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
+
+    setBatchGenerating(false);
+    queryClient.invalidateQueries({ queryKey: ['admin-blog-posts'] });
+    queryClient.invalidateQueries({ queryKey: ['blog-posts'] });
+    
+    toast.success(`Batch complete: ${successCount} generated, ${errorCount} failed`);
+  };
 
   const handleEdit = (post: BlogPost) => {
     setSelectedPost(post);
@@ -331,6 +415,9 @@ export const BlogPostsManager = () => {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
+  // Count posts without images
+  const postsWithoutImagesCount = posts?.filter(post => !post.featured_image).length || 0;
+
   return (
     <div className="space-y-6">
       <Card>
@@ -338,12 +425,33 @@ export const BlogPostsManager = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />
-              Blog Posts Beheren
+              Manage Blog Posts
             </CardTitle>
-            <Button onClick={handleCreate}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nieuwe Post
-            </Button>
+            <div className="flex items-center gap-2">
+              {postsWithoutImagesCount > 0 && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleBatchGenerateImages}
+                  disabled={batchGenerating}
+                >
+                  {batchGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating {batchProgress.current}/{batchProgress.total}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate {postsWithoutImagesCount} Missing Images
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button onClick={handleCreate}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Post
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -352,7 +460,7 @@ export const BlogPostsManager = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Zoeken op titel of excerpt..."
+                placeholder="Search by title or excerpt..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -360,10 +468,10 @@ export const BlogPostsManager = () => {
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Categorie" />
+                <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle categorieën</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat} className="capitalize">{cat}</SelectItem>
                 ))}
@@ -374,9 +482,9 @@ export const BlogPostsManager = () => {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle status</SelectItem>
-                <SelectItem value="published">Gepubliceerd</SelectItem>
-                <SelectItem value="draft">Concept</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -448,12 +556,12 @@ export const BlogPostsManager = () => {
                           {post.is_published ? (
                             <Badge variant="default" className="gap-1">
                               <Eye className="w-3 h-3" />
-                              Gepubliceerd
+                              Published
                             </Badge>
                           ) : (
                             <Badge variant="secondary" className="gap-1">
                               <EyeOff className="w-3 h-3" />
-                              Concept
+                              Draft
                             </Badge>
                           )}
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -467,7 +575,7 @@ export const BlogPostsManager = () => {
                           {post.published_at && (
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              {format(new Date(post.published_at), 'd MMM yyyy', { locale: nl })}
+                              {format(new Date(post.published_at), 'd MMM yyyy', { locale: enUS })}
                             </span>
                           )}
                         </div>
@@ -475,7 +583,7 @@ export const BlogPostsManager = () => {
                         <div className="flex items-center gap-2">
                           <Button size="sm" variant="outline" onClick={() => handleEdit(post)}>
                             <Pencil className="w-3 h-3 mr-1" />
-                            Bewerken
+                            Edit
                           </Button>
                           <Button 
                             size="sm" 
@@ -520,13 +628,13 @@ export const BlogPostsManager = () => {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedPost ? 'Blog Post Bewerken' : 'Nieuwe Blog Post'}
+              {selectedPost ? 'Edit Blog Post' : 'New Blog Post'}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Titel *</Label>
+                <Label htmlFor="title">Title *</Label>
                 <Input
                   id="title"
                   value={formData.title}
@@ -699,14 +807,14 @@ export const BlogPostsManager = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-destructive" />
-              Blog Post Verwijderen
+              Delete Blog Post
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Weet je zeker dat je "{selectedPost?.title}" wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+              Are you sure you want to delete "{selectedPost?.title}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => selectedPost && deleteMutation.mutate(selectedPost.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -716,7 +824,7 @@ export const BlogPostsManager = () => {
               ) : (
                 <Trash2 className="w-4 h-4 mr-2" />
               )}
-              Verwijderen
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
