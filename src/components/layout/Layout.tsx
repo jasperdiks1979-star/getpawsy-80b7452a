@@ -2,6 +2,7 @@ import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { ScrollToTop } from '../ui/scroll-to-top';
 import { PageTransition } from '../ui/page-transition';
+import { WelcomePopup } from '../marketing/WelcomePopup';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ export const Layout = ({ children }: LayoutProps) => {
       </PageTransition>
       <Footer />
       <ScrollToTop />
+      <WelcomePopup />
     </div>
   );
 };
