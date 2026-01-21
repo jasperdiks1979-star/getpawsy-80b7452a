@@ -194,6 +194,14 @@ function generateStaticSitemap(today: string): string {
     <priority>0.9</priority>
   </url>
   
+  <!-- Bestsellers -->
+  <url>
+    <loc>${BASE_URL}/bestsellers</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
   <!-- Blog Index -->
   <url>
     <loc>${BASE_URL}/blog</loc>
@@ -234,33 +242,41 @@ function generateStaticSitemap(today: string): string {
     <priority>0.4</priority>
   </url>
   
-  <!-- Return Policy -->
+  <!-- Track Order -->
   <url>
-    <loc>${BASE_URL}/return-policy</loc>
+    <loc>${BASE_URL}/track</loc>
     <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   
-  <!-- Privacy Policy -->
+  <!-- Return Policy - Correct route is /returns -->
   <url>
-    <loc>${BASE_URL}/privacy-policy</loc>
+    <loc>${BASE_URL}/returns</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  
+  <!-- Privacy Policy - Correct route is /privacy -->
+  <url>
+    <loc>${BASE_URL}/privacy</loc>
     <lastmod>${today}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   
-  <!-- Terms of Service -->
+  <!-- Terms of Service - Correct route is /terms -->
   <url>
-    <loc>${BASE_URL}/terms-of-service</loc>
+    <loc>${BASE_URL}/terms</loc>
     <lastmod>${today}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   
-  <!-- Cookie Policy -->
+  <!-- Cookie Policy - Correct route is /cookies -->
   <url>
-    <loc>${BASE_URL}/cookie-policy</loc>
+    <loc>${BASE_URL}/cookies</loc>
     <lastmod>${today}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
