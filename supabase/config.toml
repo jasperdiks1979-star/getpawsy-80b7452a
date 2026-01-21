@@ -47,3 +47,9 @@ verify_jwt = false
 
 [functions.generate-blog-image]
 verify_jwt = false
+
+[functions.sync-cj-tracking]
+verify_jwt = false
+
+[functions.create-cj-order]
+verify_jwt = false
