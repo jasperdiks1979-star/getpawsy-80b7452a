@@ -34,6 +34,7 @@ import { FrequentlyBoughtTogether } from '@/components/products/FrequentlyBought
 import { CompleteTheLook } from '@/components/products/CompleteTheLook';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
+import { CustomersAlsoBought } from '@/components/products/CustomersAlsoBought';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -1476,6 +1477,15 @@ const ProductDetail = () => {
             sourceProductId={product.id}
             sourceProductName={product.name}
             crossSellType="related_products"
+          />
+        </div>
+
+        {/* Customers Also Bought - Based on Real Purchase Data */}
+        <div className="mt-16">
+          <CustomersAlsoBought
+            productId={product.id}
+            productName={product.name}
+            maxItems={4}
           />
         </div>
 
