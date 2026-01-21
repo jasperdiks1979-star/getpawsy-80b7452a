@@ -186,7 +186,7 @@ export const CustomersAlsoBought = ({
 
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-bold text-primary">
-                    ${product.price.toFixed(2)}
+                    €{product.price.toFixed(2)}
                   </span>
                   
                   <Button
