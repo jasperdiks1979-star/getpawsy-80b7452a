@@ -41,6 +41,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -857,19 +858,25 @@ export const BestsellerManager = () => {
 
           {/* SEO Status */}
           <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 rounded-xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/20 rounded-lg">
-                <BarChart3 className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold">{stats.seoComplete}</p>
-                  <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
-                    {stats.seoPercent}%
-                  </Badge>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <BarChart3 className="w-5 h-5 text-blue-600" />
                 </div>
-                <p className="text-sm text-muted-foreground">SEO compleet ({stats.seoIncomplete} incompleet)</p>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-2xl font-bold">{stats.seoComplete}</p>
+                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                      {stats.seoPercent}%
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">SEO compleet ({stats.seoIncomplete} incompleet)</p>
+                </div>
               </div>
+              <Progress 
+                value={stats.seoPercent} 
+                className="h-2 bg-blue-100" 
+              />
             </div>
           </div>
 
