@@ -8,6 +8,7 @@ import { useHaptic } from '@/hooks/useHaptic';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OptimizedImage } from '@/components/ui/optimized-image';
+import { StarRating } from '@/components/ui/star-rating';
 import { toast } from 'sonner';
 import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
 
@@ -39,13 +40,17 @@ interface ProductCardProps {
   listId?: string;
   listName?: string;
   position?: number;
+  rating?: number;
+  reviewCount?: number;
 }
 
 export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(({ 
   product, 
   listId = 'products', 
   listName = 'Products',
-  position = 0 
+  position = 0,
+  rating,
+  reviewCount,
 }, ref) => {
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
@@ -201,6 +206,13 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
           <h3 className="font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-lg leading-snug">
             {product.name}
           </h3>
+
+          {/* Rating Stars */}
+          {rating !== undefined && reviewCount !== undefined && reviewCount > 0 && (
+            <div className="mt-2">
+              <StarRating rating={rating} reviewCount={reviewCount} size="sm" />
+            </div>
+          )}
 
           {/* Price */}
           <div className="flex items-center gap-2 mt-3">

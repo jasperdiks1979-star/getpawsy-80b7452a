@@ -1,10 +1,13 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Award, ArrowRight, Star } from 'lucide-react';
+import { Award, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { StarRating } from '@/components/ui/star-rating';
 import { supabase } from '@/integrations/supabase/client';
+import { useProductRatings } from '@/hooks/useProductRatings';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -51,6 +54,15 @@ export const BestsellersSection = () => {
       return data?.filter(b => b.products) || [];
     },
   });
+
+  // Get product IDs for ratings
+  const productIds = useMemo(() => 
+    bestsellers?.map(b => b.products?.id).filter((id): id is string => !!id) || [], 
+    [bestsellers]
+  );
+  
+  // Fetch ratings
+  const { data: ratingsMap } = useProductRatings(productIds);
 
   // Don't render if no bestsellers
   if (!isLoading && (!bestsellers || bestsellers.length === 0)) {
@@ -99,6 +111,8 @@ export const BestsellersSection = () => {
               const discount = product.compare_at_price 
                 ? Math.round((1 - product.price / product.compare_at_price) * 100)
                 : 0;
+
+              const productRating = ratingsMap?.[product.id];
 
               return (
                 <motion.div
@@ -164,12 +178,15 @@ export const BestsellersSection = () => {
                       </h3>
 
                       {/* Rating */}
-                      <div className="flex items-center gap-1 mb-2">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        ))}
-                        <span className="text-xs text-muted-foreground ml-1">4.9</span>
-                      </div>
+                      {productRating && productRating.reviewCount > 0 ? (
+                        <div className="mb-2">
+                          <StarRating 
+                            rating={productRating.averageRating} 
+                            reviewCount={productRating.reviewCount}
+                            size="sm"
+                          />
+                        </div>
+                      ) : null}
 
                       {/* Price */}
                       <div className="flex items-baseline gap-2">
