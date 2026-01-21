@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Plus, ShoppingCart, Sparkles } from 'lucide-react';
+import { Check, Plus, ShoppingCart, Sparkles, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { trackCrossSellImpression, trackBundleAddToCart } from '@/lib/analytics';
@@ -27,16 +28,23 @@ interface FrequentlyBoughtTogetherProps {
 }
 
 // Dynamic discount tiers based on number of selected items
-const DISCOUNT_TIERS: Record<number, { percentage: number; code: string }> = {
-  2: { percentage: 10, code: 'BUNDLE10' },
-  3: { percentage: 15, code: 'BUNDLE15' },
-  4: { percentage: 18, code: 'BUNDLE18' },
-  5: { percentage: 20, code: 'BUNDLE20' },
-};
+const DISCOUNT_TIERS = [
+  { count: 2, percentage: 10, code: 'BUNDLE10' },
+  { count: 3, percentage: 15, code: 'BUNDLE15' },
+  { count: 4, percentage: 18, code: 'BUNDLE18' },
+  { count: 5, percentage: 20, code: 'BUNDLE20' },
+];
+
+const MAX_DISCOUNT = 20;
 
 const getDiscountForCount = (count: number): { percentage: number; code: string } => {
-  if (count >= 5) return DISCOUNT_TIERS[5];
-  return DISCOUNT_TIERS[count] || { percentage: 0, code: '' };
+  const tier = DISCOUNT_TIERS.slice().reverse().find(t => count >= t.count);
+  return tier ? { percentage: tier.percentage, code: tier.code } : { percentage: 0, code: '' };
+};
+
+const getNextTier = (count: number): { count: number; percentage: number } | null => {
+  const nextTier = DISCOUNT_TIERS.find(t => t.count > count);
+  return nextTier ? { count: nextTier.count, percentage: nextTier.percentage } : null;
 };
 
 export const FrequentlyBoughtTogether = ({
@@ -289,6 +297,98 @@ export const FrequentlyBoughtTogether = ({
         })}
       </div>
 
+      {/* Discount Progress Bar */}
+      <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <span className="text-sm font-medium text-green-700 dark:text-green-300">
+              Bundle Savings
+            </span>
+          </div>
+          <motion.span
+            key={bundleDiscount}
+            initial={{ scale: 1.3, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="text-lg font-bold text-green-600 dark:text-green-400"
+          >
+            {bundleDiscount}% OFF
+          </motion.span>
+        </div>
+        
+        {/* Progress bar with tier markers */}
+        <div className="relative">
+          <Progress 
+            value={(bundleDiscount / MAX_DISCOUNT) * 100} 
+            className="h-3 bg-green-100 dark:bg-green-900/40"
+          />
+          
+          {/* Tier markers */}
+          <div className="absolute top-0 left-0 right-0 h-3 flex items-center pointer-events-none">
+            {DISCOUNT_TIERS.map((tier, idx) => (
+              <div
+                key={tier.count}
+                className="absolute flex flex-col items-center"
+                style={{ left: `${(tier.percentage / MAX_DISCOUNT) * 100}%` }}
+              >
+                <div 
+                  className={`w-1.5 h-1.5 rounded-full transform -translate-x-1/2 transition-colors duration-300 ${
+                    bundleDiscount >= tier.percentage 
+                      ? 'bg-white dark:bg-green-200' 
+                      : 'bg-green-300 dark:bg-green-700'
+                  }`}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Tier labels */}
+        <div className="flex justify-between mt-2 text-xs">
+          {DISCOUNT_TIERS.map((tier) => (
+            <div 
+              key={tier.count}
+              className={`flex flex-col items-center transition-colors duration-300 ${
+                bundleDiscount >= tier.percentage 
+                  ? 'text-green-700 dark:text-green-300 font-medium' 
+                  : 'text-green-500/60 dark:text-green-600'
+              }`}
+            >
+              <span>{tier.percentage}%</span>
+              <span className="text-[10px]">{tier.count} items</span>
+            </div>
+          ))}
+        </div>
+        
+        {/* Next tier hint */}
+        {(() => {
+          const nextTier = getNextTier(selectedProducts.length);
+          if (nextTier && selectedProducts.length >= 2) {
+            return (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 text-xs text-center text-green-600 dark:text-green-400 font-medium"
+              >
+                🎯 Add {nextTier.count - selectedProducts.length} more item{nextTier.count - selectedProducts.length > 1 ? 's' : ''} to unlock {nextTier.percentage}% discount!
+              </motion.p>
+            );
+          }
+          if (selectedProducts.length >= 5) {
+            return (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 text-xs text-center text-green-600 dark:text-green-400 font-medium"
+              >
+                🎉 Maximum discount unlocked!
+              </motion.p>
+            );
+          }
+          return null;
+        })()}
+      </div>
+
       {/* Price Summary */}
       <div className="bg-card rounded-xl p-4 border shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -298,9 +398,14 @@ export const FrequentlyBoughtTogether = ({
                 {selectedProducts.length} items selected
               </span>
               {selectedProducts.length >= 2 && (
-                <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
+                <motion.span
+                  key={bundleDiscount}
+                  initial={{ scale: 1.2 }}
+                  animate={{ scale: 1 }}
+                  className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full"
+                >
                   {bundleDiscount}% OFF
-                </span>
+                </motion.span>
               )}
             </div>
             
@@ -310,13 +415,23 @@ export const FrequentlyBoughtTogether = ({
                   ${originalTotal.toFixed(2)}
                 </span>
               )}
-              <span className="text-2xl font-bold text-primary">
+              <motion.span
+                key={bundleTotal.toFixed(2)}
+                initial={{ scale: 1.1 }}
+                animate={{ scale: 1 }}
+                className="text-2xl font-bold text-primary"
+              >
                 ${bundleTotal.toFixed(2)}
-              </span>
+              </motion.span>
               {discountAmount > 0 && (
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                <motion.span
+                  key={discountAmount.toFixed(2)}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="text-sm font-medium text-green-600 dark:text-green-400"
+                >
                   Save ${discountAmount.toFixed(2)}
-                </span>
+                </motion.span>
               )}
             </div>
           </div>
