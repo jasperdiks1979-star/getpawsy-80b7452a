@@ -1389,6 +1389,9 @@ const BestsellerDetail = () => {
               subtitle="Products that complement your choice"
               listId="bestseller-related-products"
               listName="Bestseller Related Products"
+              sourceProductId={product?.id || ''}
+              sourceProductName={product?.name || ''}
+              crossSellType="related_products"
             />
           </div>
         </section>
