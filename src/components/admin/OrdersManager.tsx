@@ -42,6 +42,18 @@ interface ShippingAddress {
   country?: string;
 }
 
+interface CJShippingInfo {
+  trackingNumber?: string;
+  logisticName?: string;
+  status?: string;
+  details?: Array<{
+    date: string;
+    status: string;
+    description: string;
+  }>;
+  lastUpdated?: string;
+}
+
 interface Order {
   id: string;
   user_id: string | null;
@@ -55,6 +67,9 @@ interface Order {
   items: OrderItem[];
   tracking_number: string | null;
   tracking_carrier: string | null;
+  cj_order_id: string | null;
+  cj_order_status: string | null;
+  cj_shipping_info: CJShippingInfo | null;
   created_at: string;
   updated_at: string;
 }
@@ -66,6 +81,23 @@ const CARRIER_TRACKING_URLS: Record<string, string> = {
   dhl: "https://www.dhl.com/us-en/home/tracking.html?tracking-id=",
   ontrac: "https://www.ontrac.com/tracking/?number=",
   lasership: "https://www.lasership.com/track/",
+  cjpacket: "https://track.yw56.com.cn/cn/querydel?nums=",
+  chinapost: "https://track.yw56.com.cn/cn/querydel?nums=",
+  yuntrack: "https://www.yuntrack.com/Track/Detail?",
+  "4px": "https://track.4px.com/#/result/0/",
+  other: "",
+};
+
+const CJ_STATUS_LABELS: Record<string, string> = {
+  CREATED: "Aangemaakt",
+  PENDING: "In afwachting",
+  AWAITING_PAYMENT: "Wacht op betaling",
+  IN_CART: "In winkelwagen",
+  UNSHIPPED: "Nog niet verzonden",
+  SHIPPED: "Verzonden",
+  DELIVERED: "Afgeleverd",
+  CANCELLED: "Geannuleerd",
+  ON_HOLD: "In wacht",
 };
 
 const CARRIER_LABELS: Record<string, string> = {
@@ -75,6 +107,13 @@ const CARRIER_LABELS: Record<string, string> = {
   dhl: "DHL",
   ontrac: "OnTrac",
   lasership: "LaserShip",
+  cjpacket: "CJ Packet",
+  chinapost: "China Post",
+  yuntrack: "Yuntrack",
+  "4px": "4PX",
+  postnl: "PostNL",
+  dpd: "DPD",
+  other: "Anders",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -251,6 +290,7 @@ export function OrdersManager() {
         ...order,
         items: (order.items as unknown as OrderItem[]) || [],
         shipping_address: order.shipping_address as unknown as ShippingAddress | null,
+        cj_shipping_info: order.cj_shipping_info as unknown as CJShippingInfo | null,
       })) as Order[];
     },
   });
@@ -303,6 +343,40 @@ export function OrdersManager() {
     },
     onError: (error) => {
       toast.error(`Fout bij bijwerken: ${error.message}`);
+    },
+  });
+
+  // Sync CJ tracking mutation
+  const syncCJTrackingMutation = useMutation({
+    mutationFn: async (orderId?: string) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Niet ingelogd");
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-cj-tracking`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify(orderId ? { orderId } : {}),
+        }
+      );
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Sync mislukt");
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast.success(`${data.synced}/${data.total} orders gesynchroniseerd`);
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+    },
+    onError: (error) => {
+      toast.error(`Sync fout: ${error.message}`);
     },
   });
 
@@ -491,6 +565,15 @@ export function OrdersManager() {
               Bestellingen
             </span>
             <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => syncCJTrackingMutation.mutate(undefined)}
+                disabled={syncCJTrackingMutation.isPending}
+              >
+                <Truck className="w-4 h-4 mr-2" />
+                {syncCJTrackingMutation.isPending ? "Syncing..." : "Sync CJ"}
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -733,6 +816,84 @@ export function OrdersManager() {
                   </div>
                 )}
               </div>
+
+              {/* CJ Dropshipping Info */}
+              {selectedOrder.cj_order_id && (
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Package className="w-4 h-4" />
+                      CJ Dropshipping
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => syncCJTrackingMutation.mutate(selectedOrder.id)}
+                      disabled={syncCJTrackingMutation.isPending}
+                    >
+                      <RefreshCw className={`w-3 h-3 mr-1 ${syncCJTrackingMutation.isPending ? 'animate-spin' : ''}`} />
+                      Sync
+                    </Button>
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">CJ Order ID</p>
+                        <code className="text-xs bg-muted px-2 py-1 rounded">{selectedOrder.cj_order_id}</code>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">CJ Status</p>
+                        <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                          {CJ_STATUS_LABELS[selectedOrder.cj_order_status || ""] || selectedOrder.cj_order_status || "Onbekend"}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* CJ Shipping Details */}
+                    {selectedOrder.cj_shipping_info && (
+                      <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Truck className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium">
+                              {selectedOrder.cj_shipping_info.logisticName || "Verzending"}
+                            </span>
+                            {selectedOrder.cj_shipping_info.trackingNumber && (
+                              <code className="text-xs bg-background px-2 py-1 rounded">
+                                {selectedOrder.cj_shipping_info.trackingNumber}
+                              </code>
+                            )}
+                          </div>
+                          {selectedOrder.cj_shipping_info.status && (
+                            <Badge variant="outline" className="text-xs">
+                              {selectedOrder.cj_shipping_info.status}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {/* Tracking timeline */}
+                        {selectedOrder.cj_shipping_info.details && selectedOrder.cj_shipping_info.details.length > 0 && (
+                          <div className="mt-3 pt-3 border-t space-y-2 max-h-40 overflow-y-auto">
+                            <p className="text-xs text-muted-foreground font-medium">Tracking historie</p>
+                            {selectedOrder.cj_shipping_info.details.slice(0, 5).map((detail, index) => (
+                              <div key={index} className="text-xs flex gap-2">
+                                <span className="text-muted-foreground shrink-0">{detail.date}</span>
+                                <span>{detail.description || detail.status}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {selectedOrder.cj_shipping_info.lastUpdated && (
+                          <p className="text-xs text-muted-foreground pt-2">
+                            Laatst bijgewerkt: {new Date(selectedOrder.cj_shipping_info.lastUpdated).toLocaleString("nl-NL")}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Stripe Info */}
               {(selectedOrder.stripe_session_id || selectedOrder.stripe_payment_intent_id) && (
