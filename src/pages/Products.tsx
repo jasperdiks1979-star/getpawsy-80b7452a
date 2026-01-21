@@ -7,6 +7,7 @@ import { Layout } from '@/components/layout/Layout';
 import { ProductCard, Product } from '@/components/products/ProductCard';
 import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
+import { SubcategoryGrid } from '@/components/products/SubcategoryGrid';
 import { StaggeredGrid, StaggeredItem } from '@/components/ui/staggered-animation';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -464,6 +465,35 @@ const Products = () => {
             Showing {displayCount > totalCount ? totalCount : displayCount} of {totalCount} product{totalCount !== 1 ? 's' : ''}
           </p>
         </div>
+
+        {/* Subcategory Grid - Show when viewing a parent category */}
+        {categoryParam && categories && (() => {
+          // Find the current category
+          const currentCategory = categories.find(c => 
+            c.slug === categoryParam || c.name.toLowerCase() === categoryParam.toLowerCase()
+          );
+          
+          // If it's a parent category (no parent_id), show its subcategories
+          if (currentCategory && !currentCategory.parent_id) {
+            const subcategories = categories
+              .filter(c => c.parent_id === currentCategory.id)
+              .map(c => ({
+                ...c,
+                productCount: productCounts[c.name] || 0
+              }))
+              .sort((a, b) => (b.productCount || 0) - (a.productCount || 0));
+            
+            if (subcategories.length > 0) {
+              return (
+                <SubcategoryGrid 
+                  subcategories={subcategories} 
+                  parentCategoryName={currentCategory.name} 
+                />
+              );
+            }
+          }
+          return null;
+        })()}
 
         {/* Active Filters */}
         {activeFiltersCount > 0 && (
