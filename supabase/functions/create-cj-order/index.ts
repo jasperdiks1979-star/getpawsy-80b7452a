@@ -112,33 +112,84 @@ async function getProductVariant(
     return null;
   }
 
-  // If we have variants and a variant name, find the matching variant
-  if (product.variants && variantName) {
+  // Check if product has variants - we MUST use variant ID (vid), not product ID (pid)
+  if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
     const variants = product.variants as Array<{
       vid: string;
       variantSku: string;
-      variantNameEn: string;
+      variantNameEn?: string;
+      variantKey?: string;
     }>;
     
-    const matchingVariant = variants.find(
-      (v: any) => v.variantNameEn?.toLowerCase() === variantName.toLowerCase()
-    );
-    
-    if (matchingVariant) {
-      return { vid: matchingVariant.vid, sku: matchingVariant.variantSku };
+    // If a variant name was specified, try to find matching variant
+    if (variantName) {
+      const matchingVariant = variants.find(
+        (v: any) => 
+          v.variantNameEn?.toLowerCase() === variantName.toLowerCase() ||
+          v.variantKey?.toLowerCase().includes(variantName.toLowerCase())
+      );
+      
+      if (matchingVariant) {
+        console.log("[CREATE-CJ-ORDER] Found matching variant:", matchingVariant.vid);
+        return { vid: matchingVariant.vid, sku: matchingVariant.variantSku };
+      }
     }
     
-    // If no exact match, use the first variant
-    if (variants.length > 0) {
-      return { vid: variants[0].vid, sku: variants[0].variantSku };
-    }
+    // Use the first variant if no match or no variant name specified
+    const firstVariant = variants[0];
+    console.log("[CREATE-CJ-ORDER] Using first variant:", firstVariant.vid);
+    return { vid: firstVariant.vid, sku: firstVariant.variantSku };
   }
 
-  // No variants, use the product's CJ ID as vid (for products without variants)
+  // Fallback: If no variants, try to use cj_product_id (but this may not work for all products)
+  console.warn("[CREATE-CJ-ORDER] Product has no variants, using cj_product_id as fallback");
   if (product.cj_product_id) {
     return { vid: product.cj_product_id, sku: product.sku || "" };
   }
 
+  return null;
+}
+
+// Calculate freight and get available shipping methods
+async function calculateFreight(
+  accessToken: string,
+  products: CJOrderProduct[],
+  startCountryCode: string,
+  endCountryCode: string,
+  zip?: string
+): Promise<{ logisticName: string; logisticPrice: number; logisticAging: string } | null> {
+  console.log("[CREATE-CJ-ORDER] Calculating freight for:", products);
+
+  const response = await fetch(`${CJ_API_BASE}/logistic/freightCalculate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "CJ-Access-Token": accessToken,
+    },
+    body: JSON.stringify({
+      startCountryCode,
+      endCountryCode,
+      zip: zip || "",
+      products: products.map(p => ({ vid: p.vid, quantity: p.quantity })),
+    }),
+  });
+
+  const data = await response.json();
+  console.log("[CREATE-CJ-ORDER] Freight response:", JSON.stringify(data));
+
+  if (data.result && data.data && data.data.length > 0) {
+    // Sort by price and pick the cheapest option
+    const sortedOptions = data.data.sort((a: any, b: any) => a.logisticPrice - b.logisticPrice);
+    const bestOption = sortedOptions[0];
+    console.log("[CREATE-CJ-ORDER] Selected shipping:", bestOption.logisticName, "- $", bestOption.logisticPrice);
+    return {
+      logisticName: bestOption.logisticName,
+      logisticPrice: bestOption.logisticPrice,
+      logisticAging: bestOption.logisticAging,
+    };
+  }
+
+  console.error("[CREATE-CJ-ORDER] No shipping options available");
   return null;
 }
 
@@ -149,6 +200,7 @@ async function createCJOrder(
 ): Promise<{ success: boolean; orderId?: string; error?: string }> {
   console.log("[CREATE-CJ-ORDER] Creating CJ order:", orderData.orderNumber);
   console.log("[CREATE-CJ-ORDER] Products:", JSON.stringify(orderData.products));
+  console.log("[CREATE-CJ-ORDER] Shipping method:", orderData.logisticName);
 
   const response = await fetch(`${CJ_API_BASE}/shopping/order/createOrder`, {
     method: "POST",
@@ -162,8 +214,12 @@ async function createCJOrder(
   const data = await response.json();
   console.log("[CREATE-CJ-ORDER] CJ Create order response:", JSON.stringify(data));
 
-  if (data.result && data.data?.orderId) {
-    return { success: true, orderId: data.data.orderId };
+  if (data.result && data.data) {
+    // CJ API returns orderId directly as data (string) or as data.orderId
+    const orderId = typeof data.data === 'string' ? data.data : data.data.orderId;
+    if (orderId) {
+      return { success: true, orderId };
+    }
   }
 
   return { success: false, error: data.message || "Unknown error" };
@@ -269,6 +325,19 @@ serve(async (req) => {
       throw new Error("No valid CJ products found in order");
     }
 
+    // Calculate freight to get available shipping methods
+    const shippingInfo = await calculateFreight(
+      accessToken,
+      cjProducts,
+      "US", // Ship from US warehouse
+      countryCode,
+      address.postal_code
+    );
+
+    if (!shippingInfo) {
+      throw new Error("No shipping methods available for this order");
+    }
+
     // Create CJ order
     const cjOrderData: CJOrderRequest = {
       orderNumber: orderId.slice(0, 20), // CJ has 20 char limit
@@ -282,6 +351,7 @@ serve(async (req) => {
       shippingPhone: shippingDetails.phone || "",
       products: cjProducts,
       fromCountryCode: "US", // Always ship from US warehouse
+      logisticName: shippingInfo.logisticName,
       remark: `GetPawsy Order ${orderId.slice(0, 8)}`,
     };
 
