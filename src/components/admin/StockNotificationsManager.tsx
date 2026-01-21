@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { 
   Bell, 
@@ -18,7 +25,8 @@ import {
   Users,
   TrendingUp,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Filter
 } from 'lucide-react';
 import {
   Table,
@@ -52,8 +60,11 @@ interface StockNotification {
   };
 }
 
+type StatusFilter = 'all' | 'pending' | 'notified';
+
 export function StockNotificationsManager() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
@@ -154,13 +165,26 @@ export function StockNotificationsManager() {
 
   // Filter notifications
   const filteredNotifications = useMemo(() => {
-    if (!searchTerm) return notifications;
-    const search = searchTerm.toLowerCase();
-    return notifications.filter(n => 
-      n.email.toLowerCase().includes(search) ||
-      n.product?.name?.toLowerCase().includes(search)
-    );
-  }, [notifications, searchTerm]);
+    let filtered = notifications;
+    
+    // Apply status filter
+    if (statusFilter === 'pending') {
+      filtered = filtered.filter(n => !n.notified_at);
+    } else if (statusFilter === 'notified') {
+      filtered = filtered.filter(n => n.notified_at);
+    }
+    
+    // Apply search filter
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(n => 
+        n.email.toLowerCase().includes(search) ||
+        n.product?.name?.toLowerCase().includes(search)
+      );
+    }
+    
+    return filtered;
+  }, [notifications, searchTerm, statusFilter]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('nl-NL', {
@@ -294,8 +318,8 @@ export function StockNotificationsManager() {
               <Bell className="w-5 h-5" />
               Stock Notificatie Aanmeldingen
             </CardTitle>
-            <div className="flex gap-2">
-              <div className="relative flex-1 md:w-64">
+            <div className="flex flex-wrap gap-2">
+              <div className="relative flex-1 md:w-64 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Zoek op email of product..."
@@ -304,6 +328,17 @@ export function StockNotificationsManager() {
                   className="pl-9"
                 />
               </div>
+              <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+                <SelectTrigger className="w-[160px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Filter status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle statussen</SelectItem>
+                  <SelectItem value="pending">Wachtend</SelectItem>
+                  <SelectItem value="notified">Verstuurd</SelectItem>
+                </SelectContent>
+              </Select>
               <Button variant="outline" size="icon" onClick={() => refetch()}>
                 <RefreshCw className="w-4 h-4" />
               </Button>
@@ -329,8 +364,19 @@ export function StockNotificationsManager() {
             <div className="text-center py-12">
               <Bell className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                {searchTerm ? 'Geen resultaten gevonden' : 'Nog geen stock notificatie aanmeldingen'}
+                {searchTerm || statusFilter !== 'all' 
+                  ? 'Geen resultaten gevonden voor deze filters' 
+                  : 'Nog geen stock notificatie aanmeldingen'}
               </p>
+              {(searchTerm || statusFilter !== 'all') && (
+                <Button 
+                  variant="link" 
+                  onClick={() => { setSearchTerm(''); setStatusFilter('all'); }}
+                  className="mt-2"
+                >
+                  Filters wissen
+                </Button>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
