@@ -41,8 +41,17 @@ import {
   History,
   Trash2,
   Eye,
-  Download
+  Download,
+  Package
 } from "lucide-react";
+import { 
+  exportAllGoogleAds, 
+  campaignData,
+  generateResponsiveAdsCSV,
+  generateKeywordsCSV,
+  generateCampaignStructureCSV,
+  downloadCSV
+} from "@/utils/googleAdsExport";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -582,6 +591,10 @@ ${keywords.join(", ")}
           <History className="w-4 h-4" />
           Opgeslagen ({savedAds?.length || 0})
         </TabsTrigger>
+        <TabsTrigger value="bulk-export" className="flex items-center gap-2">
+          <Package className="w-4 h-4" />
+          Bulk Export
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="generator" className="space-y-6">
@@ -955,6 +968,197 @@ ${keywords.join(", ")}
             </CardContent>
           </Card>
         )}
+      </TabsContent>
+
+      {/* Bulk Export Tab */}
+      <TabsContent value="bulk-export" className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-primary" />
+              Bulk Export - Alle Campagnes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="p-4 bg-muted rounded-lg space-y-4">
+              <h3 className="font-medium flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Pre-built Campagne Pakket
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Dit pakket bevat 15 professionele advertentievarianten voor 3 topproducten, 
+                geoptimaliseerd voor de Amerikaanse markt:
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-3 border rounded-lg bg-background">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-4 h-4 text-primary" />
+                    <span className="font-medium text-sm">GPS Dog Fence</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">$109.99 • 5 varianten</p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    <Badge variant="outline" className="text-xs">Tech-Forward</Badge>
+                    <Badge variant="outline" className="text-xs">Safety</Badge>
+                  </div>
+                </div>
+                
+                <div className="p-3 border rounded-lg bg-background">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-4 h-4 text-primary" />
+                    <span className="font-medium text-sm">Pet Carrier Backpack</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">$87.99 • 5 varianten</p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    <Badge variant="outline" className="text-xs">Travel</Badge>
+                    <Badge variant="outline" className="text-xs">Adventure</Badge>
+                  </div>
+                </div>
+                
+                <div className="p-3 border rounded-lg bg-background">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-4 h-4 text-primary" />
+                    <span className="font-medium text-sm">Slow Feeder Bowl</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">$45.99 • 5 varianten</p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    <Badge variant="outline" className="text-xs">Budget</Badge>
+                    <Badge variant="outline" className="text-xs">Health</Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                <Button 
+                  onClick={() => exportAllGoogleAds()}
+                  className="flex-1"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Alle CSV's (3 bestanden)
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border-dashed">
+                <CardContent className="pt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium text-sm">Campaign Structure</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Campagne instellingen: budget, biedstrategie, locatie targeting
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => downloadCSV(generateCampaignStructureCSV(), "getpawsy_campaigns_structure.csv")}
+                  >
+                    <Download className="w-3 h-3 mr-2" />
+                    Download
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border-dashed">
+                <CardContent className="pt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Type className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium text-sm">Responsive Ads</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    15 advertenties met headlines, descriptions en display paths
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => downloadCSV(generateResponsiveAdsCSV(), "getpawsy_responsive_ads.csv")}
+                  >
+                    <Download className="w-3 h-3 mr-2" />
+                    Download
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border-dashed">
+                <CardContent className="pt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium text-sm">Keywords</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    75 keywords in phrase & exact match voor alle campagnes
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => downloadCSV(generateKeywordsCSV(), "getpawsy_keywords.csv")}
+                  >
+                    <Download className="w-3 h-3 mr-2" />
+                    Download
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/30 space-y-2">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                💡 Hoe te gebruiken in Google Ads Editor
+              </h4>
+              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Download Google Ads Editor van <a href="https://ads.google.com/home/tools/ads-editor/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">ads.google.com</a></li>
+                <li>Open Google Ads Editor en log in met je account</li>
+                <li>Ga naar Account → Import → Import from file</li>
+                <li>Selecteer eerst de "campaigns_structure.csv" om de campagnes aan te maken</li>
+                <li>Importeer daarna "responsive_ads.csv" voor de advertenties</li>
+                <li>Importeer als laatste "keywords.csv" voor de zoekwoorden</li>
+                <li>Review alle items en klik op "Post" om te publiceren</li>
+              </ol>
+            </div>
+
+            {/* Campaign Preview Table */}
+            <div className="space-y-3">
+              <h3 className="font-medium">Campagne Overzicht ({campaignData.length} advertenties)</h3>
+              <div className="border rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted">
+                      <tr>
+                        <th className="text-left p-2 font-medium">Campaign</th>
+                        <th className="text-left p-2 font-medium">Ad Group</th>
+                        <th className="text-left p-2 font-medium">Headlines</th>
+                        <th className="text-left p-2 font-medium">Keywords</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {campaignData.map((ad, index) => (
+                        <tr key={index} className="border-t hover:bg-muted/50">
+                          <td className="p-2 font-medium text-xs">{ad.campaign}</td>
+                          <td className="p-2 text-xs">{ad.adGroup}</td>
+                          <td className="p-2">
+                            <div className="flex flex-wrap gap-1">
+                              {ad.headlines.slice(0, 2).map((h, i) => (
+                                <Badge key={i} variant="secondary" className="text-xs truncate max-w-[150px]">
+                                  {h}
+                                </Badge>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="p-2 text-xs text-muted-foreground">
+                            {ad.keywords.slice(0, 2).join(", ")}...
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </TabsContent>
     </Tabs>
   );
