@@ -305,7 +305,7 @@ export const trackCrossSellAddToCart = (
 ): void => {
   // Standard add_to_cart event
   trackEvent('add_to_cart', {
-    currency: 'EUR',
+    currency: 'USD',
     value: addedItem.price * quantity,
     items: [{
       item_id: addedItem.id,
@@ -328,6 +328,53 @@ export const trackCrossSellAddToCart = (
     position: addedItem.position,
     quantity,
     value: addedItem.price * quantity,
-    currency: 'EUR',
+    currency: 'USD',
+  });
+};
+
+// Bundle tracking for Frequently Bought Together
+export const trackBundleImpression = (
+  bundleItems: Array<{ item_id: string; item_name: string; price: number }>,
+  bundleDiscount: number,
+  sourceProductId?: string,
+  sourceProductName?: string
+): void => {
+  trackEvent('view_promotion', {
+    promotion_id: 'frequently_bought_together',
+    promotion_name: 'Frequently Bought Together Bundle',
+    items: bundleItems,
+    bundle_discount: bundleDiscount,
+    source_product_id: sourceProductId,
+    source_product_name: sourceProductName,
+  });
+};
+
+export const trackBundleAddToCart = (
+  bundleItems: Array<{ item_id: string; item_name: string; price: number }>,
+  bundleTotal: number,
+  bundleDiscount: number,
+  savingsAmount: number,
+  sourceProductId?: string,
+  sourceProductName?: string
+): void => {
+  trackEvent('add_to_cart', {
+    currency: 'USD',
+    value: bundleTotal,
+    items: bundleItems.map((item, index) => ({
+      ...item,
+      index,
+      quantity: 1,
+    })),
+  });
+
+  trackEvent('bundle_add_to_cart', {
+    bundle_type: 'frequently_bought_together',
+    bundle_size: bundleItems.length,
+    bundle_total: bundleTotal,
+    bundle_discount_percent: bundleDiscount,
+    savings_amount: savingsAmount,
+    source_product_id: sourceProductId,
+    source_product_name: sourceProductName,
+    item_ids: bundleItems.map(i => i.item_id),
   });
 };
