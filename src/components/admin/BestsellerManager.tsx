@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, 
@@ -9,7 +9,9 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
-  Edit
+  Edit,
+  Search,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,6 +78,7 @@ export const BestsellerManager = () => {
   const [selectedProduct, setSelectedProduct] = useState<string>('');
   const [editingBestseller, setEditingBestseller] = useState<Bestseller | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState('');
 
   // Fetch bestsellers
   const { data: bestsellers, isLoading: bestsellersLoading } = useQuery({
@@ -122,6 +125,27 @@ export const BestsellerManager = () => {
       return (allProducts as Product[]).filter(p => !existingIds.has(p.id));
     },
   });
+
+  // Filter products based on search query
+  const filteredProducts = useMemo(() => {
+    if (!availableProducts) return [];
+    if (!productSearchQuery.trim()) return availableProducts;
+    
+    const query = productSearchQuery.toLowerCase().trim();
+    return availableProducts.filter(product => 
+      product.name.toLowerCase().includes(query) ||
+      product.category?.toLowerCase().includes(query)
+    );
+  }, [availableProducts, productSearchQuery]);
+
+  // Reset search when dialog closes
+  const handleAddDialogChange = (open: boolean) => {
+    setIsAddDialogOpen(open);
+    if (!open) {
+      setProductSearchQuery('');
+      setSelectedProduct('');
+    }
+  };
 
   // Add bestseller mutation
   const addMutation = useMutation({
@@ -266,47 +290,90 @@ export const BestsellerManager = () => {
           </p>
         </div>
         
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={handleAddDialogChange}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="w-4 h-4" />
               Bestseller toevoegen
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Product toevoegen als bestseller</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
+              {/* Search input */}
+              <div className="space-y-2">
+                <Label>Zoek product</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Zoek op naam of categorie..."
+                    value={productSearchQuery}
+                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                    className="pl-9 pr-9"
+                  />
+                  {productSearchQuery && (
+                    <button
+                      onClick={() => setProductSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {filteredProducts.length} van {availableProducts?.length || 0} producten
+                </p>
+              </div>
+
+              {/* Product list */}
               <div className="space-y-2">
                 <Label>Selecteer product</Label>
-                <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Kies een product..." />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {availableProducts?.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        <div className="flex items-center gap-2">
-                          {product.image_url && (
+                <div className="border rounded-lg max-h-[300px] overflow-y-auto">
+                  {filteredProducts.length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      {productSearchQuery 
+                        ? 'Geen producten gevonden voor deze zoekopdracht' 
+                        : 'Geen beschikbare producten'}
+                    </div>
+                  ) : (
+                    <div className="divide-y">
+                      {filteredProducts.map((product) => (
+                        <button
+                          key={product.id}
+                          onClick={() => setSelectedProduct(product.id)}
+                          className={`w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors ${
+                            selectedProduct === product.id 
+                              ? 'bg-primary/10 border-l-2 border-l-primary' 
+                              : ''
+                          }`}
+                        >
+                          {product.image_url ? (
                             <img 
                               src={product.image_url} 
                               alt="" 
-                              className="w-8 h-8 rounded object-cover"
+                              className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                             />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-muted flex-shrink-0" />
                           )}
-                          <div>
-                            <div className="font-medium">{product.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              ${product.price} - {product.category}
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium truncate">{product.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              ${product.price} • {product.category || 'Geen categorie'}
                             </div>
                           </div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                          {selectedProduct === product.id && (
+                            <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
               <Button 
                 className="w-full"
                 onClick={() => selectedProduct && addMutation.mutate(selectedProduct)}
