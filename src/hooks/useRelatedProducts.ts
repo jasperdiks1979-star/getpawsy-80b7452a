@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRecentlyViewed } from './useRecentlyViewed';
 
 interface ProductPublic {
   id: string;
@@ -22,6 +23,10 @@ interface UseRelatedProductsOptions {
   productName?: string;
   maxItems?: number;
   enabled?: boolean;
+}
+
+interface BrowsingContext {
+  recentlyViewedCategories: string[];
 }
 
 /**
@@ -64,9 +69,14 @@ const extractKeywords = (name: string): string[] => {
 };
 
 /**
- * Scores a product based on relevance to keywords
+ * Scores a product based on relevance to keywords and browsing context
  */
-const scoreProduct = (product: ProductPublic, keywords: string[], category: string | null): number => {
+const scoreProduct = (
+  product: ProductPublic,
+  keywords: string[],
+  category: string | null,
+  browsingContext?: BrowsingContext
+): number => {
   let score = 0;
   const productName = product.name.toLowerCase();
   const productCategory = product.category?.toLowerCase() || '';
@@ -91,6 +101,11 @@ const scoreProduct = (product: ProductPublic, keywords: string[], category: stri
     }
   });
 
+  // PERSONALIZATION: Boost products from recently viewed categories
+  if (browsingContext?.recentlyViewedCategories.includes(productCategory)) {
+    score += 15;
+  }
+
   return score;
 };
 
@@ -101,10 +116,29 @@ export const useRelatedProducts = ({
   maxItems = 8,
   enabled = true,
 }: UseRelatedProductsOptions) => {
+  const { getRecentlyViewedIds } = useRecentlyViewed();
+  const recentlyViewedIds = getRecentlyViewedIds(productId);
+
   return useQuery({
-    queryKey: ['related-products-enhanced', productId, category, maxItems],
+    queryKey: ['related-products-enhanced', productId, category, maxItems, recentlyViewedIds.slice(0, 5).join(',')],
     queryFn: async () => {
       const keywords = extractKeywords(productName);
+
+      // Build browsing context for personalization
+      let browsingContext: BrowsingContext = { recentlyViewedCategories: [] };
+      
+      if (recentlyViewedIds.length > 0) {
+        const { data: viewedProducts } = await supabase
+          .from('products_public')
+          .select('category')
+          .in('id', recentlyViewedIds.slice(0, 10));
+
+        if (viewedProducts) {
+          browsingContext.recentlyViewedCategories = viewedProducts
+            .map(p => p.category?.toLowerCase())
+            .filter((c): c is string => !!c);
+        }
+      }
       
       // Fetch products from same category and potentially related categories
       const { data: categoryProducts, error: catError } = await supabase
@@ -112,16 +146,16 @@ export const useRelatedProducts = ({
         .select('*')
         .eq('is_active', true)
         .neq('id', productId)
-        .limit(50);
+        .limit(60);
       
       if (catError) throw catError;
       if (!categoryProducts || categoryProducts.length === 0) return [];
 
-      // Score and sort products by relevance
+      // Score and sort products by relevance with personalization
       const scoredProducts = categoryProducts
         .map(product => ({
           product,
-          score: scoreProduct(product, keywords, category),
+          score: scoreProduct(product, keywords, category, browsingContext),
         }))
         .filter(({ score }) => score > 0)
         .sort((a, b) => b.score - a.score)
@@ -153,6 +187,6 @@ export const useRelatedProducts = ({
       return scoredProducts;
     },
     enabled: enabled && !!productId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 3 * 60 * 1000, // 3 minutes (shorter for personalized content)
   });
 };
