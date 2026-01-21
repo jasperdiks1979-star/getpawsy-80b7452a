@@ -59,6 +59,89 @@ async function sendOrderConfirmationEmail(
   }
 }
 
+// Helper function to send admin notification email
+async function sendAdminOrderNotification(
+  orderId: string,
+  customerEmail: string,
+  customerName: string | undefined,
+  items: any[],
+  totalAmount: number,
+  currency: string,
+  shippingAddress: any
+): Promise<void> {
+  try {
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const adminEmail = "info@getpawsy.pet";
+    
+    if (!resendApiKey) {
+      console.error("[STRIPE-WEBHOOK] Missing RESEND_API_KEY for admin notification");
+      return;
+    }
+
+    console.log("[STRIPE-WEBHOOK] Sending admin notification email to:", adminEmail);
+
+    const itemsList = items.map((item: any) => 
+      `• ${item.name} (${item.quantity}x) - €${(item.price * item.quantity).toFixed(2)}`
+    ).join('\n');
+
+    const addressText = shippingAddress?.address ? 
+      `${shippingAddress.name || customerName || 'Onbekend'}
+${shippingAddress.address.line1 || ''}
+${shippingAddress.address.line2 || ''}
+${shippingAddress.address.postal_code || ''} ${shippingAddress.address.city || ''}
+${shippingAddress.address.country || ''}` : 'Geen adres beschikbaar';
+
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Pawsy Orders <alerts@getpawsy.pet>",
+        to: [adminEmail],
+        subject: `🛒 Nieuwe bestelling #${orderId.slice(0, 8)} - €${totalAmount.toFixed(2)}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #10B981;">🎉 Nieuwe bestelling ontvangen!</h1>
+            
+            <div style="background: #F3F4F6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h2 style="margin-top: 0;">Bestellingsgegevens</h2>
+              <p><strong>Order ID:</strong> ${orderId}</p>
+              <p><strong>Totaalbedrag:</strong> €${totalAmount.toFixed(2)} ${currency.toUpperCase()}</p>
+              <p><strong>Klant:</strong> ${customerName || 'Onbekend'}</p>
+              <p><strong>Email:</strong> ${customerEmail}</p>
+            </div>
+            
+            <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h2 style="margin-top: 0;">Producten</h2>
+              <pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${itemsList}</pre>
+            </div>
+            
+            <div style="background: #E0E7FF; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h2 style="margin-top: 0;">Verzendadres</h2>
+              <pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${addressText}</pre>
+            </div>
+            
+            <p style="color: #6B7280; font-size: 12px;">
+              Je ontvangt deze email omdat er een nieuwe bestelling is geplaatst op getpawsy.pet
+            </p>
+          </div>
+        `,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[STRIPE-WEBHOOK] Failed to send admin notification:", errorText);
+    } else {
+      console.log("[STRIPE-WEBHOOK] Admin notification email sent successfully");
+    }
+  } catch (error) {
+    console.error("[STRIPE-WEBHOOK] Error sending admin notification:", error);
+  }
+}
+
 // Helper function to create CJ Dropshipping order
 async function createCJDropshippingOrder(orderId: string): Promise<void> {
   try {
@@ -237,6 +320,17 @@ serve(async (req) => {
         } else {
           console.warn("[STRIPE-WEBHOOK] No customer email available for confirmation");
         }
+
+        // Send admin notification email about new order
+        await sendAdminOrderNotification(
+          orderId,
+          customerEmail || 'onbekend@email.com',
+          customerName || undefined,
+          items,
+          totalValue,
+          session.currency || "eur",
+          session.shipping_details
+        );
 
         // Create CJ Dropshipping order automatically after successful payment
         await createCJDropshippingOrder(orderId);
