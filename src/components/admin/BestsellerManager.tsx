@@ -696,6 +696,7 @@ export const BestsellerManager = () => {
     if (!baseBestsellers) return null;
     
     const total = baseBestsellers.length;
+    const maxBestsellers = 50; // Maximum recommended bestsellers
     const active = baseBestsellers.filter(b => b.is_active).length;
     const inactive = total - active;
     const seoComplete = baseBestsellers.filter(b => b.seo_title).length;
@@ -704,11 +705,13 @@ export const BestsellerManager = () => {
     
     return {
       total,
+      maxBestsellers,
       active,
       inactive,
       seoComplete,
       seoIncomplete,
       manual,
+      totalPercent: Math.round((total / maxBestsellers) * 100),
       activePercent: total > 0 ? Math.round((active / total) * 100) : 0,
       seoPercent: total > 0 ? Math.round((seoComplete / total) * 100) : 0,
     };
@@ -827,14 +830,25 @@ export const BestsellerManager = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Total Bestsellers */}
           <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/20 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-primary" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/20 rounded-lg">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-2xl font-bold">{stats.total}</p>
+                    <Badge variant="secondary" className="text-xs">
+                      {stats.totalPercent}%
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">van max {stats.maxBestsellers}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-sm text-muted-foreground">Totaal bestsellers</p>
-              </div>
+              <Progress 
+                value={stats.totalPercent} 
+                className="h-2" 
+              />
             </div>
           </div>
 
