@@ -30,24 +30,26 @@ interface FrequentlyBoughtTogetherProps {
   isLoading?: boolean;
 }
 
-// Skeleton component for loading state
+// Skeleton component for loading state with shimmer animations
 const FrequentlyBoughtTogetherSkeleton = () => (
-  <div className="bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl p-6 border border-primary/10 space-y-6">
+  <div className="bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl p-6 border border-primary/10">
     {/* Header Skeleton */}
-    <div className="flex items-center gap-2">
-      <Skeleton className="w-9 h-9 rounded-full" />
-      <div className="space-y-2">
-        <Skeleton className="h-6 w-56" />
-        <Skeleton className="h-4 w-44" />
+    <div className="flex items-center gap-3 mb-6">
+      <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+      <div className="space-y-2 flex-1">
+        <Skeleton className="h-5 w-48 md:w-56" />
+        <Skeleton className="h-4 w-40 md:w-44" />
       </div>
     </div>
 
     {/* Products Row Skeleton */}
-    <div className="flex flex-wrap items-center justify-center gap-3">
-      {[...Array(4)].map((_, index) => (
+    <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+      {Array.from({ length: 4 }).map((_, index) => (
         <div key={index} className="flex items-center gap-3">
           {index > 0 && (
-            <Skeleton className="w-8 h-8 rounded-full" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted">
+              <Skeleton className="w-4 h-4 rounded" />
+            </div>
           )}
           <div className="relative flex flex-col items-center p-3 rounded-xl border-2 border-muted bg-card">
             <Skeleton className="absolute top-2 left-2 w-4 h-4 rounded" />
@@ -60,18 +62,18 @@ const FrequentlyBoughtTogetherSkeleton = () => (
     </div>
 
     {/* Discount Progress Skeleton */}
-    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
+    <div className="mb-4 p-4 bg-muted/30 rounded-xl border border-muted">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Skeleton className="w-4 h-4 rounded" />
           <Skeleton className="h-4 w-24" />
         </div>
-        <Skeleton className="h-6 w-16" />
+        <Skeleton className="h-6 w-16 rounded-md" />
       </div>
-      <Skeleton className="h-3 w-full rounded-full" />
-      <div className="flex justify-between mt-2">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="flex flex-col items-center gap-0.5">
+      <Skeleton className="h-3 w-full rounded-full mb-2" />
+      <div className="flex justify-between">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex flex-col items-center gap-1">
             <Skeleton className="h-3 w-6" />
             <Skeleton className="h-2 w-10" />
           </div>
@@ -89,7 +91,7 @@ const FrequentlyBoughtTogetherSkeleton = () => (
             <Skeleton className="h-4 w-16" />
           </div>
         </div>
-        <Skeleton className="h-11 w-[180px] rounded-md" />
+        <Skeleton className="h-11 w-full md:w-[180px] rounded-lg" />
       </div>
     </div>
   </div>
