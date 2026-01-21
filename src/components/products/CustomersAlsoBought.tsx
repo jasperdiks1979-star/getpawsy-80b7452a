@@ -99,14 +99,31 @@ export const CustomersAlsoBought = ({
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-64" />
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-10 h-10 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-52" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        </div>
+        {/* Products Grid Skeleton */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="space-y-2">
-              <Skeleton className="aspect-square w-full rounded-lg" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
+            <div 
+              key={i} 
+              className="bg-card rounded-xl border shadow-sm overflow-hidden"
+            >
+              <Skeleton className="aspect-square w-full" />
+              <div className="p-3 space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-8 w-16 rounded-md" />
+                </div>
+              </div>
             </div>
           ))}
         </div>
