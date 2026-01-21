@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Sparkles, TrendingUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +8,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { 
+  trackCrossSellImpression, 
+  trackCrossSellClick, 
+  trackCrossSellAddToCart 
+} from '@/lib/analytics';
 
 interface CartUpsellProps {
   currentItemIds: string[];
@@ -134,8 +139,77 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
   });
 
   const isLoading = isLoadingCart || isLoadingUpsell;
+  const hasTrackedImpression = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleQuickAdd = (product: typeof upsellProducts[0]) => {
+  // Track impression when upsell products are visible
+  useEffect(() => {
+    if (upsellProducts && upsellProducts.length > 0 && !hasTrackedImpression.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && !hasTrackedImpression.current) {
+            hasTrackedImpression.current = true;
+            trackCrossSellImpression(
+              'cart',
+              'Shopping Cart',
+              upsellProducts.map((p, idx) => ({
+                id: p.id,
+                name: p.name,
+                price: Number(p.price) || 0,
+                category: p.category || undefined,
+                position: idx,
+              })),
+              'cart_upsell'
+            );
+          }
+        },
+        { threshold: 0.3 }
+      );
+
+      if (containerRef.current) {
+        observer.observe(containerRef.current);
+      }
+
+      return () => observer.disconnect();
+    }
+  }, [upsellProducts]);
+
+  // Reset impression tracking when cart items change
+  useEffect(() => {
+    hasTrackedImpression.current = false;
+  }, [baseProductIds.join(',')]);
+
+  const handleProductClick = useCallback((product: typeof upsellProducts[0], position: number) => {
+    trackCrossSellClick(
+      'cart',
+      'Shopping Cart',
+      {
+        id: product.id,
+        name: product.name,
+        price: Number(product.price) || 0,
+        category: product.category || undefined,
+        position,
+      },
+      'cart_upsell'
+    );
+  }, []);
+
+  const handleQuickAdd = useCallback((product: typeof upsellProducts[0], position: number) => {
+    // Track add to cart from cross-sell
+    trackCrossSellAddToCart(
+      'cart',
+      'Shopping Cart',
+      {
+        id: product.id,
+        name: product.name,
+        price: Number(product.price) || 0,
+        category: product.category || undefined,
+        position,
+      },
+      1,
+      'cart_upsell'
+    );
+
     addItem({
       id: product.id,
       name: product.name,
@@ -143,7 +217,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
       image: product.image_url || '/placeholder.svg',
     });
     toast.success(`${product.name} added to cart!`);
-  };
+  }, [addItem]);
 
   // Show skeleton while loading
   if (isLoading) {
@@ -158,7 +232,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
 
   if (variant === 'compact') {
     return (
-      <div className="space-y-3">
+      <div ref={containerRef} className="space-y-3">
         <h3 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
           <Sparkles className="w-4 h-4" />
           You might also like
@@ -172,7 +246,11 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
               transition={{ delay: index * 0.1 }}
               className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
-              <Link to={`/product/${product.id}`} className="shrink-0">
+              <Link 
+                to={`/product/${product.id}`} 
+                className="shrink-0"
+                onClick={() => handleProductClick(product, index)}
+              >
                 <img
                   src={product.image_url || '/placeholder.svg'}
                   alt={product.name}
@@ -180,7 +258,10 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
                 />
               </Link>
               <div className="flex-1 min-w-0">
-                <Link to={`/product/${product.id}`}>
+                <Link 
+                  to={`/product/${product.id}`}
+                  onClick={() => handleProductClick(product, index)}
+                >
                   <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                     {product.name}
                   </p>
@@ -193,7 +274,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
                 size="sm"
                 variant="ghost"
                 className="shrink-0 h-8 w-8 p-0 hover:bg-primary hover:text-primary-foreground"
-                onClick={() => handleQuickAdd(product)}
+                onClick={() => handleQuickAdd(product, index)}
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -205,7 +286,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
   }
 
   return (
-    <div className="space-y-4">
+    <div ref={containerRef} className="space-y-4">
       <div className="flex items-center gap-2">
         <TrendingUp className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold">Customers Also Bought</h3>
@@ -219,7 +300,11 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
             transition={{ delay: index * 0.1 }}
             className="group bg-card rounded-xl overflow-hidden shadow-card hover:shadow-lg transition-all"
           >
-            <Link to={`/product/${product.id}`} className="block">
+            <Link 
+              to={`/product/${product.id}`} 
+              className="block"
+              onClick={() => handleProductClick(product, index)}
+            >
               <div className="aspect-square overflow-hidden bg-muted">
                 <img
                   src={product.image_url || '/placeholder.svg'}
@@ -229,7 +314,10 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
               </div>
             </Link>
             <div className="p-3">
-              <Link to={`/product/${product.id}`}>
+              <Link 
+                to={`/product/${product.id}`}
+                onClick={() => handleProductClick(product, index)}
+              >
                 <h4 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors mb-1">
                   {product.name}
                 </h4>
@@ -242,7 +330,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
                   size="sm"
                   variant="secondary"
                   className="h-8 gap-1 text-xs"
-                  onClick={() => handleQuickAdd(product)}
+                  onClick={() => handleQuickAdd(product, index)}
                 >
                   <Plus className="w-3 h-3" />
                   Add

@@ -1,9 +1,10 @@
-import { useRef } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ProductCard, Product } from '@/components/products/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { trackCrossSellImpression, trackCrossSellClick } from '@/lib/analytics';
 
 interface RelatedProductsCarouselProps {
   products: Product[];
@@ -12,6 +13,9 @@ interface RelatedProductsCarouselProps {
   subtitle?: string;
   listId?: string;
   listName?: string;
+  sourceProductId?: string;
+  sourceProductName?: string;
+  crossSellType?: 'related_products' | 'frequently_bought' | 'upsell' | 'cart_upsell';
 }
 
 const CarouselSkeleton = () => (
@@ -35,8 +39,66 @@ export const RelatedProductsCarousel = ({
   subtitle = 'Discover products that complement your choice',
   listId = 'related-products',
   listName = 'Related Products',
+  sourceProductId = '',
+  sourceProductName = '',
+  crossSellType = 'related_products',
 }: RelatedProductsCarouselProps) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const hasTrackedImpression = useRef(false);
+
+  // Track impression when carousel becomes visible
+  useEffect(() => {
+    if (products.length > 0 && sourceProductId && !hasTrackedImpression.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && !hasTrackedImpression.current) {
+            hasTrackedImpression.current = true;
+            trackCrossSellImpression(
+              sourceProductId,
+              sourceProductName,
+              products.map((p, idx) => ({
+                id: p.id,
+                name: p.name,
+                price: Number(p.price) || 0,
+                category: p.category || undefined,
+                position: idx,
+              })),
+              crossSellType
+            );
+          }
+        },
+        { threshold: 0.5 }
+      );
+
+      if (scrollContainerRef.current) {
+        observer.observe(scrollContainerRef.current);
+      }
+
+      return () => observer.disconnect();
+    }
+  }, [products, sourceProductId, sourceProductName, crossSellType]);
+
+  // Reset impression tracking when source product changes
+  useEffect(() => {
+    hasTrackedImpression.current = false;
+  }, [sourceProductId]);
+
+  const handleProductClick = useCallback((product: Product, position: number) => {
+    if (sourceProductId) {
+      trackCrossSellClick(
+        sourceProductId,
+        sourceProductName,
+        {
+          id: product.id,
+          name: product.name,
+          price: Number(product.price) || 0,
+          category: product.category || undefined,
+          position,
+        },
+        crossSellType
+      );
+    }
+  }, [sourceProductId, sourceProductName, crossSellType]);
 
   if (isLoading) {
     return (
@@ -133,6 +195,7 @@ export const RelatedProductsCarousel = ({
               transition={{ delay: 0.1 * Math.min(idx, 5) }}
               className="flex-shrink-0 w-[45%] sm:w-[35%] md:w-[28%] lg:w-[22%] xl:w-[18%]"
               style={{ scrollSnapAlign: 'start' }}
+              onClick={() => handleProductClick(product, idx)}
             >
               <ProductCard 
                 product={product} 

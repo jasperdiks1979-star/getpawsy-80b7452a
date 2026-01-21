@@ -219,3 +219,115 @@ export const trackSelectItem = (
     }],
   });
 };
+
+// Cross-sell / Related Products tracking
+export const trackCrossSellImpression = (
+  sourceProductId: string,
+  sourceProductName: string,
+  relatedItems: Array<{ 
+    id: string; 
+    name: string; 
+    price: number; 
+    category?: string;
+    position?: number;
+  }>,
+  crossSellType: 'related_products' | 'frequently_bought' | 'upsell' | 'cart_upsell' = 'related_products'
+): void => {
+  trackEvent('view_item_list', {
+    item_list_id: `cross_sell_${crossSellType}`,
+    item_list_name: `Cross-sell: ${crossSellType.replace(/_/g, ' ')}`,
+    cross_sell_type: crossSellType,
+    source_product_id: sourceProductId,
+    source_product_name: sourceProductName,
+    items: relatedItems.map((item, index) => ({
+      item_id: item.id,
+      item_name: item.name,
+      price: item.price,
+      item_category: item.category,
+      index: item.position ?? index,
+      currency: 'EUR',
+    })),
+  });
+};
+
+export const trackCrossSellClick = (
+  sourceProductId: string,
+  sourceProductName: string,
+  clickedItem: { 
+    id: string; 
+    name: string; 
+    price: number; 
+    category?: string; 
+    position?: number;
+  },
+  crossSellType: 'related_products' | 'frequently_bought' | 'upsell' | 'cart_upsell' = 'related_products'
+): void => {
+  // Standard select_item event for GA4 ecommerce
+  trackEvent('select_item', {
+    item_list_id: `cross_sell_${crossSellType}`,
+    item_list_name: `Cross-sell: ${crossSellType.replace(/_/g, ' ')}`,
+    items: [{
+      item_id: clickedItem.id,
+      item_name: clickedItem.name,
+      price: clickedItem.price,
+      item_category: clickedItem.category,
+      index: clickedItem.position,
+      currency: 'EUR',
+    }],
+  });
+
+  // Custom cross-sell click event for detailed analysis
+  trackEvent('cross_sell_click', {
+    source_product_id: sourceProductId,
+    source_product_name: sourceProductName,
+    clicked_product_id: clickedItem.id,
+    clicked_product_name: clickedItem.name,
+    clicked_product_price: clickedItem.price,
+    clicked_product_category: clickedItem.category,
+    cross_sell_type: crossSellType,
+    position: clickedItem.position,
+    currency: 'EUR',
+  });
+};
+
+export const trackCrossSellAddToCart = (
+  sourceProductId: string,
+  sourceProductName: string,
+  addedItem: { 
+    id: string; 
+    name: string; 
+    price: number; 
+    category?: string; 
+    position?: number;
+  },
+  quantity: number = 1,
+  crossSellType: 'related_products' | 'frequently_bought' | 'upsell' | 'cart_upsell' = 'related_products'
+): void => {
+  // Standard add_to_cart event
+  trackEvent('add_to_cart', {
+    currency: 'EUR',
+    value: addedItem.price * quantity,
+    items: [{
+      item_id: addedItem.id,
+      item_name: addedItem.name,
+      price: addedItem.price,
+      item_category: addedItem.category,
+      quantity,
+    }],
+  });
+
+  // Custom cross-sell add to cart event
+  trackEvent('cross_sell_add_to_cart', {
+    source_product_id: sourceProductId,
+    source_product_name: sourceProductName,
+    added_product_id: addedItem.id,
+    added_product_name: addedItem.name,
+    added_product_price: addedItem.price,
+    added_product_category: addedItem.category,
+    cross_sell_type: crossSellType,
+    position: addedItem.position,
+    quantity,
+    value: addedItem.price * quantity,
+    currency: 'EUR',
+  });
+};
