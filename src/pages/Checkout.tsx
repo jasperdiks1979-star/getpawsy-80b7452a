@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from 'react';
 import { Link } from 'react-router-dom';
-import { CreditCard, Lock, Loader2, ShieldCheck, FileText, Home, ShoppingCart } from 'lucide-react';
+import { CreditCard, Lock, Loader2, ShieldCheck, FileText, Home, ShoppingCart, Tag, CheckCircle, X } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -164,9 +164,47 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [email, setEmail] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountApplied, setDiscountApplied] = useState<string | null>(null);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+
+  // Valid discount codes
+  const VALID_DISCOUNT_CODES: Record<string, { discount: number; label: string }> = {
+    'WELCOME10': { discount: 10, label: 'Welcome 10% Off' },
+    'DONTGO15': { discount: 15, label: "Don't Go 15% Off" },
+  };
 
   const shipping = 0; // Free shipping on all orders
-  const total = totalPrice + shipping;
+  const discountPercent = discountApplied ? VALID_DISCOUNT_CODES[discountApplied]?.discount || 0 : 0;
+  const discountAmount = (totalPrice * discountPercent) / 100;
+  const total = totalPrice - discountAmount + shipping;
+
+  // Check for discount code in localStorage (from popups)
+  useEffect(() => {
+    const savedCode = localStorage.getItem('getpawsy_discount_code');
+    if (savedCode && VALID_DISCOUNT_CODES[savedCode]) {
+      setDiscountCode(savedCode);
+      setDiscountApplied(savedCode);
+      localStorage.removeItem('getpawsy_discount_code'); // Use only once
+    }
+  }, []);
+
+  const handleApplyDiscount = () => {
+    const normalizedCode = discountCode.toUpperCase().trim();
+    if (VALID_DISCOUNT_CODES[normalizedCode]) {
+      setDiscountApplied(normalizedCode);
+      setDiscountError(null);
+    } else {
+      setDiscountError('Invalid discount code');
+      setDiscountApplied(null);
+    }
+  };
+
+  const handleRemoveDiscount = () => {
+    setDiscountApplied(null);
+    setDiscountCode('');
+    setDiscountError(null);
+  };
 
   // Set email from authenticated user
   useEffect(() => {
@@ -267,6 +305,7 @@ const Checkout = () => {
             image: item.image,
           })),
           customerEmail: email,
+          discountCode: discountApplied || undefined,
         },
       });
 
@@ -483,6 +522,52 @@ const Checkout = () => {
                 ))}
               </div>
 
+              {/* Discount Code Input */}
+              <div className="mb-4">
+                <Label htmlFor="discount" className="text-sm font-medium mb-2 block">Discount Code</Label>
+                {discountApplied ? (
+                  <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <span className="flex-1 text-sm font-medium text-green-700 dark:text-green-300">
+                      {VALID_DISCOUNT_CODES[discountApplied].label} applied!
+                    </span>
+                    <button
+                      onClick={handleRemoveDiscount}
+                      className="p-1 hover:bg-green-200 dark:hover:bg-green-800 rounded transition-colors"
+                    >
+                      <X className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="discount"
+                        placeholder="Enter code"
+                        value={discountCode}
+                        onChange={(e) => {
+                          setDiscountCode(e.target.value.toUpperCase());
+                          setDiscountError(null);
+                        }}
+                        className="pl-9 uppercase"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleApplyDiscount}
+                      disabled={!discountCode}
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                )}
+                {discountError && (
+                  <p className="text-xs text-destructive mt-1">{discountError}</p>
+                )}
+              </div>
+
               <Separator className="my-4" />
 
               <div className="space-y-2 text-sm">
@@ -490,6 +575,12 @@ const Checkout = () => {
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>${totalPrice.toFixed(2)}</span>
                 </div>
+                {discountApplied && (
+                  <div className="flex justify-between text-green-600 dark:text-green-400">
+                    <span>Discount ({discountPercent}%)</span>
+                    <span>-${discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
                   <span className="text-green-600">Free</span>

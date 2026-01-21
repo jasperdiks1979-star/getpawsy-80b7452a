@@ -18,6 +18,7 @@ interface CartItem {
 interface CheckoutRequest {
   items: CartItem[];
   customerEmail?: string;
+  discountCode?: string;
   shippingAddress?: {
     firstName: string;
     lastName: string;
@@ -28,6 +29,12 @@ interface CheckoutRequest {
     country: string;
   };
 }
+
+// Map discount codes to Stripe coupon IDs
+const DISCOUNT_CODE_MAP: Record<string, string> = {
+  "WELCOME10": "oq9OCWlu",
+  "DONTGO15": "dfTnk1lW",
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -57,7 +64,7 @@ serve(async (req) => {
     );
 
     // Parse request body
-    const { items, customerEmail, shippingAddress }: CheckoutRequest = await req.json();
+    const { items, customerEmail, discountCode, shippingAddress }: CheckoutRequest = await req.json();
 
     if (!items || items.length === 0) {
       throw new Error("No items in cart");
@@ -114,10 +121,24 @@ serve(async (req) => {
       items: JSON.stringify(items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity }))),
       total_items: totalItems.toString(),
       total_value: totalAmount.toFixed(2),
+      discount_code: discountCode || "",
     };
 
+    // Prepare discount configuration
+    const discounts: Stripe.Checkout.SessionCreateParams.Discount[] = [];
+    if (discountCode) {
+      const normalizedCode = discountCode.toUpperCase().trim();
+      const couponId = DISCOUNT_CODE_MAP[normalizedCode];
+      if (couponId) {
+        discounts.push({ coupon: couponId });
+        console.log("[CREATE-CHECKOUT] Applying discount code:", normalizedCode, "->", couponId);
+      } else {
+        console.log("[CREATE-CHECKOUT] Invalid discount code:", normalizedCode);
+      }
+    }
+
     // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
       line_items: lineItems,
@@ -128,7 +149,15 @@ serve(async (req) => {
       success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/checkout`,
       metadata: orderMetadata,
-    });
+      allow_promotion_codes: discounts.length === 0, // Allow manual entry if no code pre-applied
+    };
+
+    // Only add discounts if we have a valid code
+    if (discounts.length > 0) {
+      sessionConfig.discounts = discounts;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     console.log("[CREATE-CHECKOUT] Session created:", session.id);
 
