@@ -1,0 +1,213 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+interface ShippingNotificationRequest {
+  orderId: string;
+  trackingNumber: string;
+  trackingCarrier: string;
+  customerEmail: string;
+  customerName?: string;
+}
+
+// Carrier tracking URLs
+const CARRIER_TRACKING_URLS: Record<string, string> = {
+  usps: "https://tools.usps.com/go/TrackConfirmAction?tLabels=",
+  ups: "https://www.ups.com/track?tracknum=",
+  fedex: "https://www.fedex.com/fedextrack/?trknbr=",
+  dhl: "https://www.dhl.com/us-en/home/tracking.html?tracking-id=",
+  postnl: "https://postnl.nl/tracktrace/?B=",
+  dpd: "https://tracking.dpd.de/status/nl_NL/parcel/",
+  cjpacket: "https://track.yw56.com.cn/en/querydel?nums=",
+  chinapost: "https://track.yw56.com.cn/en/querydel?nums=",
+  yuntrack: "https://www.yuntrack.com/Track/Detail?",
+  "4px": "https://track.4px.com/#/result/0/",
+  other: "",
+};
+
+const CARRIER_NAMES: Record<string, string> = {
+  usps: "USPS",
+  ups: "UPS",
+  fedex: "FedEx",
+  dhl: "DHL",
+  postnl: "PostNL",
+  dpd: "DPD",
+  cjpacket: "CJ Packet",
+  chinapost: "China Post",
+  yuntrack: "Yuntrack",
+  "4px": "4PX",
+  other: "Vervoerder",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { orderId, trackingNumber, trackingCarrier, customerEmail, customerName }: ShippingNotificationRequest = await req.json();
+
+    if (!orderId || !trackingNumber || !customerEmail) {
+      throw new Error("Missing required fields: orderId, trackingNumber, or customerEmail");
+    }
+
+    console.log(`[SHIPPING-NOTIFICATION] Sending email for order ${orderId} to ${customerEmail}`);
+
+    const carrier = trackingCarrier || "other";
+    const carrierName = CARRIER_NAMES[carrier] || carrier;
+    const trackingUrl = CARRIER_TRACKING_URLS[carrier] 
+      ? `${CARRIER_TRACKING_URLS[carrier]}${trackingNumber}`
+      : null;
+
+    const firstName = customerName?.split(" ")[0] || "Klant";
+
+    const emailHtml = `
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Je bestelling is onderweg!</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background-color: #f4f4f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                🚚 Je bestelling is onderweg!
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Hoi ${firstName},
+              </p>
+              <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Goed nieuws! Je bestelling is verzonden en is nu onderweg naar jou. 🎉
+              </p>
+              
+              <!-- Tracking Box -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fff7ed; border-radius: 8px; margin-bottom: 30px;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <p style="margin: 0 0 8px; color: #9a3412; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                      Tracking Informatie
+                    </p>
+                    <p style="margin: 0 0 4px; color: #374151; font-size: 14px;">
+                      <strong>Vervoerder:</strong> ${carrierName}
+                    </p>
+                    <p style="margin: 0 0 16px; color: #374151; font-size: 14px;">
+                      <strong>Trackingnummer:</strong> <code style="background: #ffffff; padding: 2px 8px; border-radius: 4px; font-family: monospace;">${trackingNumber}</code>
+                    </p>
+                    ${trackingUrl ? `
+                    <a href="${trackingUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+                      📦 Volg je pakket
+                    </a>
+                    ` : ''}
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Order Reference -->
+              <p style="margin: 0 0 20px; color: #6b7280; font-size: 14px;">
+                <strong>Bestelnummer:</strong> ${orderId.slice(0, 8).toUpperCase()}
+              </p>
+              
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Houd er rekening mee dat het enkele dagen kan duren voordat je pakket arriveert, afhankelijk van je locatie.
+              </p>
+              
+              <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                Bedankt voor je bestelling bij GetPawsy! 🐾
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">
+                Vragen over je bestelling? Neem contact met ons op!
+              </p>
+              <a href="https://getpawsy.lovable.app/contact" style="color: #f97316; text-decoration: none; font-weight: 500;">
+                Contact opnemen
+              </a>
+              <p style="margin: 20px 0 0; color: #9ca3af; font-size: 12px;">
+                © ${new Date().getFullYear()} GetPawsy. Alle rechten voorbehouden.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (!RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY not configured");
+    }
+
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: "GetPawsy <noreply@getpawsy.nl>",
+        to: [customerEmail],
+        subject: `🚚 Je bestelling is onderweg! - Trackingnummer: ${trackingNumber}`,
+        html: emailHtml,
+      }),
+    });
+
+    const emailData = await emailResponse.json();
+
+    if (!emailResponse.ok) {
+      throw new Error(emailData.message || "Failed to send email");
+    }
+
+    console.log("[SHIPPING-NOTIFICATION] Email sent successfully:", emailData);
+
+    // Log to database that notification was sent
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    await supabaseAdmin
+      .from("orders")
+      .update({
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", orderId);
+
+    return new Response(
+      JSON.stringify({ success: true, emailId: emailData.id }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+
+  } catch (error: any) {
+    console.error("[SHIPPING-NOTIFICATION] Error:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+});
