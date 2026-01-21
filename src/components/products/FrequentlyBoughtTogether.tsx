@@ -1,7 +1,8 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Plus, ShoppingCart, Sparkles, TrendingUp } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Check, Plus, ShoppingCart, Sparkles, TrendingUp, PartyPopper } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
@@ -57,7 +58,9 @@ export const FrequentlyBoughtTogether = ({
   const { addItem } = useCart();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isAdding, setIsAdding] = useState(false);
+  const [hasUnlockedMax, setHasUnlockedMax] = useState(false);
   const impressionTracked = useRef(false);
+  const maxDiscountCelebrated = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Select top related products for the bundle
@@ -120,6 +123,57 @@ export const FrequentlyBoughtTogether = ({
     ? (originalTotal * bundleDiscount) / 100 
     : 0;
   const bundleTotal = originalTotal - discountAmount;
+
+  // Confetti celebration for max discount
+  const triggerConfetti = useCallback(() => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        return;
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+
+      // Burst from left
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        colors: ['#22c55e', '#16a34a', '#4ade80', '#86efac', '#fbbf24', '#f59e0b'],
+      });
+      
+      // Burst from right
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        colors: ['#22c55e', '#16a34a', '#4ade80', '#86efac', '#fbbf24', '#f59e0b'],
+      });
+    }, 250);
+  }, []);
+
+  // Watch for max discount unlock
+  useEffect(() => {
+    if (selectedProducts.length >= 5 && !maxDiscountCelebrated.current) {
+      maxDiscountCelebrated.current = true;
+      setHasUnlockedMax(true);
+      triggerConfetti();
+      
+      // Reset celebration flag after animation
+      setTimeout(() => {
+        setHasUnlockedMax(false);
+      }, 4000);
+    } else if (selectedProducts.length < 5) {
+      maxDiscountCelebrated.current = false;
+    }
+  }, [selectedProducts.length, triggerConfetti]);
 
   const toggleProduct = (productId: string) => {
     // Don't allow deselecting the current product
@@ -376,13 +430,41 @@ export const FrequentlyBoughtTogether = ({
           }
           if (selectedProducts.length >= 5) {
             return (
-              <motion.p
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-3 text-xs text-center text-green-600 dark:text-green-400 font-medium"
-              >
-                🎉 Maximum discount unlocked!
-              </motion.p>
+              <AnimatePresence>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-3 flex items-center justify-center gap-2"
+                >
+                  <motion.div
+                    animate={hasUnlockedMax ? { 
+                      rotate: [0, -10, 10, -10, 10, 0],
+                      scale: [1, 1.2, 1.2, 1.2, 1.2, 1]
+                    } : {}}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <PartyPopper className="w-5 h-5 text-amber-500" />
+                  </motion.div>
+                  <motion.p
+                    animate={hasUnlockedMax ? {
+                      scale: [1, 1.1, 1],
+                    } : {}}
+                    transition={{ duration: 0.4, repeat: hasUnlockedMax ? 2 : 0 }}
+                    className="text-sm font-bold bg-gradient-to-r from-green-600 via-emerald-500 to-green-600 bg-clip-text text-transparent"
+                  >
+                    Maximum 20% discount unlocked!
+                  </motion.p>
+                  <motion.div
+                    animate={hasUnlockedMax ? { 
+                      rotate: [0, 10, -10, 10, -10, 0],
+                      scale: [1, 1.2, 1.2, 1.2, 1.2, 1]
+                    } : {}}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <PartyPopper className="w-5 h-5 text-amber-500 transform scale-x-[-1]" />
+                  </motion.div>
+                </motion.div>
+              </AnimatePresence>
             );
           }
           return null;
