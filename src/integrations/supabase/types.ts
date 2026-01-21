@@ -352,41 +352,94 @@ export type Database = {
         }
         Relationships: []
       }
+      email_campaign_events: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          email: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          link_url: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          email: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          link_url?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          email?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          link_url?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_campaigns: {
         Row: {
+          click_count: number
           content: string
           created_at: string
           created_by: string | null
           id: string
+          open_count: number
           sent_at: string | null
           sent_count: number
           status: string
           subject: string
           target_preferences: Json
+          unique_clicks: number
+          unique_opens: number
           updated_at: string
         }
         Insert: {
+          click_count?: number
           content: string
           created_at?: string
           created_by?: string | null
           id?: string
+          open_count?: number
           sent_at?: string | null
           sent_count?: number
           status?: string
           subject: string
           target_preferences?: Json
+          unique_clicks?: number
+          unique_opens?: number
           updated_at?: string
         }
         Update: {
+          click_count?: number
           content?: string
           created_at?: string
           created_by?: string | null
           id?: string
+          open_count?: number
           sent_at?: string | null
           sent_count?: number
           status?: string
           subject?: string
           target_preferences?: Json
+          unique_clicks?: number
+          unique_opens?: number
           updated_at?: string
         }
         Relationships: []

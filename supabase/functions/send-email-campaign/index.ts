@@ -114,8 +114,14 @@ const handler = async (req: Request): Promise<Response> => {
       await Promise.all(
         batch.map(async (subscriber) => {
           try {
-            const unsubscribeUrl = `https://getpawsy.pet/unsubscribe?email=${encodeURIComponent(subscriber.email)}`;
+            const encodedEmail = encodeURIComponent(subscriber.email);
+            const unsubscribeUrl = `https://getpawsy.pet/unsubscribe?email=${encodedEmail}`;
             const preferencesUrl = `https://getpawsy.pet/newsletter-preferences?token=${subscriber.preference_token}`;
+            
+            // Tracking URLs
+            const trackingPixelUrl = `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/track-email-event?c=${campaignId}&e=${encodedEmail}&t=open`;
+            const trackClickUrl = (url: string) => 
+              `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/track-email-event?c=${campaignId}&e=${encodedEmail}&t=click&url=${encodeURIComponent(url)}`;
 
             const emailHtml = `
 <!DOCTYPE html>
@@ -150,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
           <!-- CTA Button -->
           <tr>
             <td style="padding: 0 30px 40px 30px; text-align: center;">
-              <a href="https://getpawsy.pet" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+              <a href="${trackClickUrl('https://getpawsy.pet')}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                 Shop Nu bij GetPawsy
               </a>
             </td>
@@ -163,7 +169,7 @@ const handler = async (req: Request): Promise<Response> => {
                 Je ontvangt deze e-mail omdat je je hebt aangemeld voor onze nieuwsbrief.
               </p>
               <p style="margin: 0;">
-                <a href="${preferencesUrl}" style="color: #3b82f6; text-decoration: none; font-size: 13px;">Voorkeuren beheren</a>
+                <a href="${trackClickUrl(preferencesUrl)}" style="color: #3b82f6; text-decoration: none; font-size: 13px;">Voorkeuren beheren</a>
                 <span style="color: #d1d5db; margin: 0 10px;">|</span>
                 <a href="${unsubscribeUrl}" style="color: #6b7280; text-decoration: none; font-size: 13px;">Uitschrijven</a>
               </p>
@@ -173,6 +179,8 @@ const handler = async (req: Request): Promise<Response> => {
             </td>
           </tr>
         </table>
+        <!-- Tracking Pixel -->
+        <img src="${trackingPixelUrl}" width="1" height="1" style="display:none;" alt="" />
       </td>
     </tr>
   </table>

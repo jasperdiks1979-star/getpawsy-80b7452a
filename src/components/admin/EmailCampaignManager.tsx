@@ -24,7 +24,10 @@ import {
   Sparkles,
   Loader2,
   Trash2,
-  Eye
+  Eye,
+  MousePointerClick,
+  BarChart3,
+  TrendingUp
 } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -42,6 +45,10 @@ interface Campaign {
   content: string;
   target_preferences: Preferences;
   sent_count: number;
+  open_count: number;
+  click_count: number;
+  unique_opens: number;
+  unique_clicks: number;
   status: string;
   sent_at: string | null;
   created_at: string;
@@ -357,43 +364,89 @@ export function EmailCampaignManager() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {sentCampaigns.map((campaign) => (
-                <Card key={campaign.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold truncate">{campaign.subject}</h3>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Users className="h-4 w-4" />
-                            {campaign.sent_count} ontvangers
-                          </span>
-                          {campaign.sent_at && (
+              {sentCampaigns.map((campaign) => {
+                const openRate = campaign.sent_count > 0 
+                  ? ((campaign.unique_opens / campaign.sent_count) * 100).toFixed(1) 
+                  : "0.0";
+                const clickRate = campaign.unique_opens > 0 
+                  ? ((campaign.unique_clicks / campaign.unique_opens) * 100).toFixed(1) 
+                  : "0.0";
+                
+                return (
+                  <Card key={campaign.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold truncate">{campaign.subject}</h3>
+                          <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                             <span className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              {format(new Date(campaign.sent_at), "d MMM yyyy 'om' HH:mm", { locale: nl })}
+                              <Users className="h-4 w-4" />
+                              {campaign.sent_count} verzonden
                             </span>
-                          )}
+                            {campaign.sent_at && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                {format(new Date(campaign.sent_at), "d MMM yyyy 'om' HH:mm", { locale: nl })}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Statistics */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 p-3 bg-muted/50 rounded-lg">
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                                <Eye className="h-3.5 w-3.5" />
+                                <span className="text-xs">Opens</span>
+                              </div>
+                              <p className="text-lg font-bold">{campaign.unique_opens}</p>
+                              <p className="text-xs text-muted-foreground">{campaign.open_count} totaal</p>
+                            </div>
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                                <TrendingUp className="h-3.5 w-3.5" />
+                                <span className="text-xs">Open Rate</span>
+                              </div>
+                              <p className="text-lg font-bold text-green-600">{openRate}%</p>
+                              <p className="text-xs text-muted-foreground">uniek</p>
+                            </div>
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                                <MousePointerClick className="h-3.5 w-3.5" />
+                                <span className="text-xs">Clicks</span>
+                              </div>
+                              <p className="text-lg font-bold">{campaign.unique_clicks}</p>
+                              <p className="text-xs text-muted-foreground">{campaign.click_count} totaal</p>
+                            </div>
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                                <BarChart3 className="h-3.5 w-3.5" />
+                                <span className="text-xs">Click Rate</span>
+                              </div>
+                              <p className="text-lg font-bold text-blue-600">{clickRate}%</p>
+                              <p className="text-xs text-muted-foreground">van opens</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {Object.entries(campaign.target_preferences).map(
+                              ([key, value]) =>
+                                value && (
+                                  <Badge key={key} variant="outline" className="text-xs">
+                                    {preferenceLabels[key as keyof Preferences]?.label}
+                                  </Badge>
+                                )
+                            )}
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {Object.entries(campaign.target_preferences).map(
-                            ([key, value]) =>
-                              value && (
-                                <Badge key={key} variant="outline" className="text-xs">
-                                  {preferenceLabels[key as keyof Preferences]?.label}
-                                </Badge>
-                              )
-                          )}
-                        </div>
+                        <Badge variant="default" className="bg-green-500 shrink-0">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Verzonden
+                        </Badge>
                       </div>
-                      <Badge variant="default" className="bg-green-500">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Verzonden
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
