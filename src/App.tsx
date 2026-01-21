@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { CartProvider } from "@/contexts/CartContext";
 import { CartAnimationProvider } from "@/contexts/CartAnimationContext";
@@ -189,6 +189,13 @@ const App = () => {
                         <Route path="/sitemap.xml" element={<Sitemap />} />
                         <Route path="/unsubscribe" element={<Unsubscribe />} />
                         <Route path="/newsletter-preferences" element={<NewsletterPreferences />} />
+                        
+                        {/* Legacy URL redirects for SEO */}
+                        <Route path="/return-policy" element={<Navigate to="/returns" replace />} />
+                        <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />
+                        <Route path="/terms-of-service" element={<Navigate to="/terms" replace />} />
+                        <Route path="/cookie-policy" element={<Navigate to="/cookies" replace />} />
+                        
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
