@@ -88,7 +88,7 @@ export const CategoryManager = () => {
     await refetch();
   }, [refetch]);
 
-  // Fetch product counts per category
+  // Fetch product counts per category - match by slug
   const { data: productCounts } = useQuery({
     queryKey: ['category-product-counts'],
     queryFn: async () => {
@@ -99,9 +99,11 @@ export const CategoryManager = () => {
       
       if (error) throw error;
       
+      // Count products by their category slug
       const counts: Record<string, number> = {};
       data?.forEach(product => {
         if (product.category) {
+          // Store count by the slug value from products.category
           counts[product.category] = (counts[product.category] || 0) + 1;
         }
       });
@@ -299,7 +301,7 @@ export const CategoryManager = () => {
       cat.slug,
       cat.description || '',
       cat.image_url || '',
-      productCounts?.[cat.name] || 0,
+      productCounts?.[cat.slug] || productCounts?.[cat.name.toLowerCase()] || 0,
       new Date(cat.created_at).toLocaleDateString('nl-NL'),
     ]);
 
@@ -452,7 +454,7 @@ export const CategoryManager = () => {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {productCounts?.[category.name] || 0} producten
+                            {productCounts?.[category.slug] || productCounts?.[category.name.toLowerCase()] || 0} producten
                           </Badge>
                         </TableCell>
                         <TableCell className="max-w-xs truncate text-muted-foreground">
