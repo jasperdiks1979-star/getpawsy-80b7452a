@@ -176,6 +176,84 @@ async function createCJDropshippingOrder(orderId: string): Promise<void> {
   }
 }
 
+// Helper function to track remarketing conversions
+// deno-lint-ignore no-explicit-any
+async function trackRemarketingConversion(
+  supabaseAdmin: any,
+  customerEmail: string,
+  orderId: string
+): Promise<void> {
+  try {
+    console.log("[STRIPE-WEBHOOK] Checking remarketing conversions for:", customerEmail);
+
+    // Find any remarketing emails sent to this customer that were clicked but not yet converted
+    // We attribute conversion to emails clicked within the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data: remarketingEmails, error: fetchError } = await supabaseAdmin
+      .from("remarketing_emails")
+      .select("id, email_type, clicked_at, sent_at")
+      .eq("customer_email", customerEmail)
+      .is("converted_at", null)
+      .gte("sent_at", thirtyDaysAgo.toISOString())
+      .order("sent_at", { ascending: false });
+
+    if (fetchError) {
+      console.error("[STRIPE-WEBHOOK] Error fetching remarketing emails:", fetchError);
+      return;
+    }
+
+    if (!remarketingEmails || remarketingEmails.length === 0) {
+      console.log("[STRIPE-WEBHOOK] No unconverted remarketing emails found for:", customerEmail);
+      return;
+    }
+
+    // Cast to proper type
+    type RemarketingEmail = { id: string; email_type: string; clicked_at: string | null; sent_at: string };
+    const emails = remarketingEmails as unknown as RemarketingEmail[];
+
+    // Mark all relevant remarketing emails as converted
+    // We attribute to the most recently clicked email, or the most recent email if none clicked
+    const now = new Date().toISOString();
+    
+    // First priority: clicked emails (they interacted)
+    const clickedEmails = emails.filter(e => e.clicked_at);
+    
+    if (clickedEmails.length > 0) {
+      // Mark the most recent clicked email as the primary conversion
+      const primaryConversion = clickedEmails[0];
+      // deno-lint-ignore no-explicit-any
+      const { error: updateError } = await (supabaseAdmin as any)
+        .from("remarketing_emails")
+        .update({ converted_at: now })
+        .eq("id", primaryConversion.id);
+
+      if (updateError) {
+        console.error("[STRIPE-WEBHOOK] Error updating remarketing conversion:", updateError);
+      } else {
+        console.log(`[STRIPE-WEBHOOK] Remarketing conversion tracked! Email type: ${primaryConversion.email_type}, Customer: ${customerEmail}`);
+      }
+    } else {
+      // No clicks, but they received emails - attribute to most recent opened or sent
+      const mostRecentEmail = emails[0];
+      // deno-lint-ignore no-explicit-any
+      const { error: updateError } = await (supabaseAdmin as any)
+        .from("remarketing_emails")
+        .update({ converted_at: now })
+        .eq("id", mostRecentEmail.id);
+
+      if (updateError) {
+        console.error("[STRIPE-WEBHOOK] Error updating remarketing conversion:", updateError);
+      } else {
+        console.log(`[STRIPE-WEBHOOK] Remarketing view-through conversion tracked! Email type: ${mostRecentEmail.email_type}, Customer: ${customerEmail}`);
+      }
+    }
+  } catch (error) {
+    console.error("[STRIPE-WEBHOOK] Error tracking remarketing conversion:", error);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -334,6 +412,11 @@ serve(async (req) => {
 
         // Create CJ Dropshipping order automatically after successful payment
         await createCJDropshippingOrder(orderId);
+
+        // Track remarketing conversions
+        if (customerEmail) {
+          await trackRemarketingConversion(supabaseAdmin, customerEmail, orderId);
+        }
 
         break;
       }
