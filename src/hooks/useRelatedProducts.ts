@@ -187,6 +187,7 @@ export const useRelatedProducts = ({
       return scoredProducts;
     },
     enabled: enabled && !!productId,
-    staleTime: 3 * 60 * 1000, // 3 minutes (shorter for personalized content)
+    staleTime: 10 * 60 * 1000, // 10 minutes - increased for better caching
+    gcTime: 30 * 60 * 1000, // 30 minutes garbage collection time
   });
 };

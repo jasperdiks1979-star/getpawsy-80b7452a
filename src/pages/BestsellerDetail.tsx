@@ -41,13 +41,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel';
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { PinchZoomImage } from '@/components/ui/pinch-zoom-image';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
@@ -71,6 +65,7 @@ import { ShippingCountdown } from '@/components/products/ShippingCountdown';
 import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
 import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCarousel';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { useRecentlyViewedProducts } from '@/hooks/useRecentlyViewedProducts';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 
 // Generate JSON-LD structured data for product
@@ -333,29 +328,12 @@ const BestsellerDetail = () => {
     enabled: !!product?.id,
   });
 
-  // Get recently viewed product IDs (excluding current product)
+  // Get recently viewed product IDs (excluding current product) - for adding to history
   const recentlyViewedIds = getRecentlyViewedIds(product?.id);
 
-  // Fetch recently viewed products
-  const { data: recentlyViewedProducts } = useQuery({
-    queryKey: ['recently-viewed-products', recentlyViewedIds],
-    queryFn: async () => {
-      if (recentlyViewedIds.length === 0) return [];
-      
-      const { data, error } = await supabase
-        .from('products_public')
-        .select('*')
-        .eq('is_active', true)
-        .in('id', recentlyViewedIds);
-      
-      if (error) throw error;
-      
-      // Sort by the order in recentlyViewedIds
-      return data?.sort((a, b) => 
-        recentlyViewedIds.indexOf(a.id) - recentlyViewedIds.indexOf(b.id)
-      ) || [];
-    },
-    enabled: recentlyViewedIds.length > 0,
+  // Fetch recently viewed products with React Query caching
+  const { data: recentlyViewedProducts, isLoading: recentlyViewedLoading } = useRecentlyViewedProducts({
+    excludeProductId: product?.id,
   });
 
   // Build images array
@@ -1397,10 +1375,17 @@ const BestsellerDetail = () => {
         </section>
 
         {/* Recently Viewed Products Carousel */}
-        {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
+        {(recentlyViewedLoading || (recentlyViewedProducts && recentlyViewedProducts.length > 0)) && (
           <section className="py-16 lg:py-20 bg-muted/20">
             <div className="container px-4">
-              <RecentlyViewedCarousel products={recentlyViewedProducts} />
+              <RecentlyViewedCarousel 
+                products={(recentlyViewedProducts || []).map(p => ({
+                  ...p,
+                  created_at: p.created_at || new Date().toISOString(),
+                  updated_at: p.updated_at || new Date().toISOString(),
+                }))} 
+                isLoading={recentlyViewedLoading}
+              />
             </div>
           </section>
         )}

@@ -14,6 +14,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useCartAnimation } from '@/contexts/CartAnimationContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { useRecentlyViewedProducts } from '@/hooks/useRecentlyViewedProducts';
 import { useHaptic } from '@/hooks/useHaptic';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -195,29 +196,12 @@ const ProductDetail = () => {
     enabled: !!product?.id,
   });
 
-  // Get recently viewed product IDs (excluding current product)
+  // Get recently viewed product IDs (excluding current product) - for adding to history
   const recentlyViewedIds = getRecentlyViewedIds(id);
 
-  // Fetch recently viewed products
-  const { data: recentlyViewedProducts } = useQuery({
-    queryKey: ['recently-viewed-products', recentlyViewedIds],
-    queryFn: async () => {
-      if (recentlyViewedIds.length === 0) return [];
-      
-      const { data, error } = await supabase
-        .from('products_public')
-        .select('*')
-        .eq('is_active', true)
-        .in('id', recentlyViewedIds);
-      
-      if (error) throw error;
-      
-      // Sort by the order in recentlyViewedIds
-      return data?.sort((a, b) => 
-        recentlyViewedIds.indexOf(a.id) - recentlyViewedIds.indexOf(b.id)
-      ) || [];
-    },
-    enabled: recentlyViewedIds.length > 0,
+  // Fetch recently viewed products with React Query caching
+  const { data: recentlyViewedProducts, isLoading: recentlyViewedLoading } = useRecentlyViewedProducts({
+    excludeProductId: id,
   });
 
   // Fetch product reviews
@@ -1491,9 +1475,16 @@ const ProductDetail = () => {
         </div>
 
         {/* Recently Viewed Products Carousel */}
-        {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
+        {(recentlyViewedLoading || (recentlyViewedProducts && recentlyViewedProducts.length > 0)) && (
           <div className="mt-16">
-            <RecentlyViewedCarousel products={recentlyViewedProducts} />
+            <RecentlyViewedCarousel 
+              products={(recentlyViewedProducts || []).map(p => ({
+                ...p,
+                created_at: p.created_at || new Date().toISOString(),
+                updated_at: p.updated_at || new Date().toISOString(),
+              }))} 
+              isLoading={recentlyViewedLoading}
+            />
           </div>
         )}
       </div>
