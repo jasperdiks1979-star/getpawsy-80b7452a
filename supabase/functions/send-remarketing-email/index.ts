@@ -6,14 +6,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Email templates for different days
+// Base URL for tracking
+const TRACKING_BASE_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/track-remarketing-event";
+
+// Helper to wrap links with tracking
+const wrapLink = (originalUrl: string, remarketingId: string): string => {
+  const encodedUrl = encodeURIComponent(originalUrl);
+  return `${TRACKING_BASE_URL}?r=${remarketingId}&t=click&url=${encodedUrl}`;
+};
+
+// Helper to generate tracking pixel
+const getTrackingPixel = (remarketingId: string): string => {
+  return `<img src="${TRACKING_BASE_URL}?r=${remarketingId}&t=open" width="1" height="1" style="display:none;" alt="" />`;
+};
+
+// Email templates for different days - now with remarketingId parameter for tracking
 const emailTemplates = {
   day_14: {
     subject: "🎒 Je hond is klaar voor avontuur! 10% korting op Pet Carrier",
     productName: "Pet Carrier Backpack",
     discountCode: "SLOWFEEDER10",
     discountPercent: 10,
-    getHtml: (customerName: string) => `
+    getHtml: (customerName: string, remarketingId: string) => {
+      const productLink = wrapLink(
+        "https://getpawsy.pet/bestseller/pet-carrier-backpack?utm_source=remarketing&utm_medium=email&utm_campaign=day14_upsell&discount=SLOWFEEDER10",
+        remarketingId
+      );
+      const unsubscribeLink = wrapLink("https://getpawsy.pet/unsubscribe", remarketingId);
+      
+      return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -53,7 +74,7 @@ const emailTemplates = {
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 35px 0;">
-        <a href="https://getpawsy.pet/bestseller/pet-carrier-backpack?utm_source=remarketing&utm_medium=email&utm_campaign=day14_upsell&discount=SLOWFEEDER10" 
+        <a href="${productLink}" 
            style="display: inline-block; background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 30px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 15px rgba(255,107,53,0.3);">
           Bekijk Pet Carrier →
         </a>
@@ -73,20 +94,29 @@ const emailTemplates = {
     <div style="background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #eee;">
       <p style="color: #888; font-size: 12px; margin: 0;">
         Je ontvangt deze email omdat je onlangs een aankoop deed bij GetPawsy.<br>
-        <a href="https://getpawsy.pet/unsubscribe" style="color: #FF6B35;">Uitschrijven</a>
+        <a href="${unsubscribeLink}" style="color: #FF6B35;">Uitschrijven</a>
       </p>
     </div>
   </div>
+  ${getTrackingPixel(remarketingId)}
 </body>
 </html>
-    `,
+    `;
+    },
   },
   day_21: {
     subject: "🛡️ Bescherm je huisdier ook buitenshuis - 15% korting!",
     productName: "GPS Dog Fence",
     discountCode: "SAFEPET15",
     discountPercent: 15,
-    getHtml: (customerName: string) => `
+    getHtml: (customerName: string, remarketingId: string) => {
+      const productLink = wrapLink(
+        "https://getpawsy.pet/bestseller/gps-dog-fence?utm_source=remarketing&utm_medium=email&utm_campaign=day21_upsell&discount=SAFEPET15",
+        remarketingId
+      );
+      const unsubscribeLink = wrapLink("https://getpawsy.pet/unsubscribe", remarketingId);
+      
+      return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -143,7 +173,7 @@ const emailTemplates = {
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 35px 0;">
-        <a href="https://getpawsy.pet/bestseller/gps-dog-fence?utm_source=remarketing&utm_medium=email&utm_campaign=day21_upsell&discount=SAFEPET15" 
+        <a href="${productLink}" 
            style="display: inline-block; background: linear-gradient(135deg, #2D5A27 0%, #4A7C43 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 30px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 15px rgba(45,90,39,0.3);">
           Bekijk GPS Fence →
         </a>
@@ -163,20 +193,29 @@ const emailTemplates = {
     <div style="background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #eee;">
       <p style="color: #888; font-size: 12px; margin: 0;">
         Je ontvangt deze email omdat je onlangs een aankoop deed bij GetPawsy.<br>
-        <a href="https://getpawsy.pet/unsubscribe" style="color: #2D5A27;">Uitschrijven</a>
+        <a href="${unsubscribeLink}" style="color: #2D5A27;">Uitschrijven</a>
       </p>
     </div>
   </div>
+  ${getTrackingPixel(remarketingId)}
 </body>
 </html>
-    `,
+    `;
+    },
   },
   day_30: {
     subject: "🎁 Laatste kans: Complete Pet Care Bundle - 20% korting!",
     productName: "Bundle Deal",
     discountCode: "BUNDLE20",
     discountPercent: 20,
-    getHtml: (customerName: string) => `
+    getHtml: (customerName: string, remarketingId: string) => {
+      const productLink = wrapLink(
+        "https://getpawsy.pet/products?utm_source=remarketing&utm_medium=email&utm_campaign=day30_bundle&discount=BUNDLE20",
+        remarketingId
+      );
+      const unsubscribeLink = wrapLink("https://getpawsy.pet/unsubscribe", remarketingId);
+      
+      return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -233,7 +272,7 @@ const emailTemplates = {
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 35px 0;">
-        <a href="https://getpawsy.pet/products?utm_source=remarketing&utm_medium=email&utm_campaign=day30_bundle&discount=BUNDLE20" 
+        <a href="${productLink}" 
            style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 30px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 15px rgba(139,92,246,0.3);">
           Claim Bundle Deal →
         </a>
@@ -260,13 +299,15 @@ const emailTemplates = {
     <div style="background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #eee;">
       <p style="color: #888; font-size: 12px; margin: 0;">
         Je ontvangt deze email omdat je onlangs een aankoop deed bij GetPawsy.<br>
-        <a href="https://getpawsy.pet/unsubscribe" style="color: #8B5CF6;">Uitschrijven</a>
+        <a href="${unsubscribeLink}" style="color: #8B5CF6;">Uitschrijven</a>
       </p>
     </div>
   </div>
+  ${getTrackingPixel(remarketingId)}
 </body>
 </html>
-    `,
+    `;
+    },
   },
 };
 
@@ -375,8 +416,28 @@ serve(async (req) => {
           continue;
         }
 
-        // Send the email via Resend
+        // First, create the remarketing email record to get the ID for tracking
         try {
+          const { data: remarketingRecord, error: insertError } = await supabase
+            .from("remarketing_emails")
+            .insert({
+              order_id: order.id,
+              customer_email: order.customer_email,
+              email_type: emailType,
+              product_upsold: template.productName,
+            })
+            .select("id")
+            .single();
+
+          if (insertError || !remarketingRecord) {
+            console.error("Error creating remarketing record:", insertError);
+            results.errors.push(`Failed to create record for ${order.customer_email}: ${insertError?.message}`);
+            continue;
+          }
+
+          const remarketingId = remarketingRecord.id;
+
+          // Now send the email with tracking
           const emailResponse = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: {
@@ -387,31 +448,19 @@ serve(async (req) => {
               from: "GetPawsy <noreply@getpawsy.pet>",
               to: [order.customer_email],
               subject: template.subject,
-              html: template.getHtml(order.customer_email.split("@")[0]),
+              html: template.getHtml(order.customer_email.split("@")[0], remarketingId),
             }),
           });
 
           if (!emailResponse.ok) {
             const errorText = await emailResponse.text();
+            // Delete the record if email failed
+            await supabase.from("remarketing_emails").delete().eq("id", remarketingId);
             throw new Error(`Resend API error: ${errorText}`);
           }
 
-          // Log the sent email
-          const { error: insertError } = await supabase
-            .from("remarketing_emails")
-            .insert({
-              order_id: order.id,
-              customer_email: order.customer_email,
-              email_type: emailType,
-              product_upsold: template.productName,
-            });
-
-          if (insertError) {
-            console.error("Error logging email:", insertError);
-          }
-
           results.sent++;
-          console.log(`Sent ${emailType} email to ${order.customer_email}`);
+          console.log(`Sent ${emailType} email to ${order.customer_email} with tracking ID ${remarketingId}`);
 
         } catch (emailError: unknown) {
           console.error("Error sending email:", emailError);

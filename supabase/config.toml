@@ -71,3 +71,9 @@ verify_jwt = false
 
 [functions.track-email-event]
 verify_jwt = false
+
+[functions.send-remarketing-email]
+verify_jwt = false
+
+[functions.track-remarketing-event]
+verify_jwt = false
