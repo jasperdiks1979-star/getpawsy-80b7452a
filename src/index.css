@@ -554,3 +554,40 @@
 .safe-area-top {
   padding-top: env(safe-area-inset-top, 0px);
 }
+
+/* Internal Linking Styles for Blog Posts */
+.blog-content .internal-link,
+.blog-article-content .internal-link {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.blog-content .internal-link:hover,
+.blog-article-content .internal-link:hover {
+  color: hsl(var(--primary) / 0.8);
+  text-decoration-style: solid;
+}
+
+.blog-content .internal-link-product,
+.blog-article-content .internal-link-product {
+  background: linear-gradient(to bottom, transparent 60%, hsl(var(--primary) / 0.1) 60%);
+}
+
+.blog-content .internal-link-category,
+.blog-article-content .internal-link-category {
+  background: linear-gradient(to bottom, transparent 60%, hsl(var(--secondary) / 0.3) 60%);
+}
+
+.dark .blog-content .internal-link-product,
+.dark .blog-article-content .internal-link-product {
+  background: linear-gradient(to bottom, transparent 60%, hsl(var(--primary) / 0.2) 60%);
+}
+
+.dark .blog-content .internal-link-category,
+.dark .blog-article-content .internal-link-category {
+  background: linear-gradient(to bottom, transparent 60%, hsl(var(--secondary) / 0.2) 60%);
+}

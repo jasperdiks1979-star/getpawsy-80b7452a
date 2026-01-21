@@ -11,6 +11,7 @@ import { BlogPostDetailSkeleton } from '@/components/blog/BlogPostDetailSkeleton
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { generateBlogMetaDescription } from '@/lib/seo-keywords';
+import { useInternalLinking } from '@/hooks/useInternalLinking';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -183,14 +184,25 @@ const BlogPostPage = () => {
     }
   };
 
+  // Apply internal linking to content
+  const { processedContent: linkedContent } = useInternalLinking(post?.content || '', {
+    maxLinksPerKeyword: 1,
+    maxTotalLinks: 8,
+    minWordsBetweenLinks: 40,
+    enabled: !!post?.content,
+  });
+
   // Render content - supports both HTML (from rich text editor) and legacy markdown
   const renderContent = (content: string) => {
+    // Use linked content for HTML content
+    const contentToRender = linkedContent || content;
+    
     // Check if content is HTML (from rich text editor)
-    if (content.includes('<p>') || content.includes('<h1>') || content.includes('<h2>') || content.includes('<ul>') || content.includes('<ol>')) {
+    if (contentToRender.includes('<p>') || contentToRender.includes('<h1>') || contentToRender.includes('<h2>') || contentToRender.includes('<ul>') || contentToRender.includes('<ol>')) {
       return (
         <div 
           className="blog-content"
-          dangerouslySetInnerHTML={{ __html: content }}
+          dangerouslySetInnerHTML={{ __html: contentToRender }}
         />
       );
     }
