@@ -118,6 +118,7 @@ const BlogPost = lazyWithRetry(() => import("./pages/BlogPost"));
 const Sitemap = lazyWithRetry(() => import("./pages/Sitemap"));
 const Unsubscribe = lazyWithRetry(() => import("./pages/Unsubscribe"));
 const NewsletterPreferences = lazyWithRetry(() => import("./pages/NewsletterPreferences"));
+const SlowFeederOffer = lazyWithRetry(() => import("./pages/SlowFeederOffer"));
 
 const queryClient = new QueryClient();
 
@@ -189,6 +190,7 @@ const App = () => {
                         <Route path="/sitemap.xml" element={<Sitemap />} />
                         <Route path="/unsubscribe" element={<Unsubscribe />} />
                         <Route path="/newsletter-preferences" element={<NewsletterPreferences />} />
+                        <Route path="/slow-feeder-offer" element={<SlowFeederOffer />} />
                         
                         {/* Legacy URL redirects for SEO */}
                         <Route path="/return-policy" element={<Navigate to="/returns" replace />} />

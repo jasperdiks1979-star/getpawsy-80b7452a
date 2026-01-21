@@ -38,6 +38,7 @@ const DISCOUNT_CODE_MAP: Record<string, string> = {
   "BUNDLE15": "HFLKdq0J",
   "BUNDLE18": "HJHBWcew",
   "BUNDLE20": "MhlvpT13",
+  "SLOWFEEDER25": "7tjpXiXi",
 };
 
 serve(async (req) => {

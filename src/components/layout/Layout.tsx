@@ -4,6 +4,7 @@ import { ScrollToTop } from '../ui/scroll-to-top';
 import { PageTransition } from '../ui/page-transition';
 import { WelcomePopup } from '../marketing/WelcomePopup';
 import { ExitIntentPopup } from '../marketing/ExitIntentPopup';
+import { SlowFeederLeadMagnet } from '../marketing/SlowFeederLeadMagnet';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <ScrollToTop />
       <WelcomePopup />
       <ExitIntentPopup />
+      <SlowFeederLeadMagnet />
     </div>
   );
 };
