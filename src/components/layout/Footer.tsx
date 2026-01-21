@@ -50,6 +50,13 @@ export const Footer = () => {
         }
       } else {
         toast.success('Thanks for subscribing! 🎉');
+        
+        // Send confirmation email (don't block on this)
+        supabase.functions.invoke('send-newsletter-confirmation', {
+          body: { email: result.data },
+        }).catch((emailError) => {
+          console.error('Failed to send confirmation email:', emailError);
+        });
       }
       setEmail('');
     } catch (error) {
