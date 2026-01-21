@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Heart, Truck, Shield, Minus, Plus, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock, MessageSquare, Ruler, Weight, Box, Info, Home } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -52,6 +52,7 @@ interface ProductVariant {
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
@@ -113,28 +114,36 @@ const ProductDetail = () => {
   };
 
   // Fetch product from database - supports both UUID and slug
+  // If accessed via UUID, redirect to slug-based URL for SEO
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: async () => {
       if (!id) return null;
 
-      // If it's a valid UUID, query by id
+      // If it's a valid UUID, query by id and redirect to slug
       if (isValidUUID(id)) {
         const { data, error } = await supabase
-          .from('products_public')
+          .from('products')
           .select('*')
           .eq('id', id)
           .maybeSingle();
         
         if (error) throw error;
+        
+        // If product has a slug, redirect to the slug-based URL
+        if (data?.slug) {
+          navigate(`/product/${data.slug}`, { replace: true });
+          return data;
+        }
+        
         return data;
       }
 
       // Otherwise, try to find by slug first
       const { data: slugData, error: slugError } = await supabase
-        .from('products_public')
+        .from('products')
         .select('*')
-        .eq('slug' as never, id)
+        .eq('slug', id)
         .maybeSingle();
       
       if (slugError) throw slugError;
@@ -143,7 +152,7 @@ const ProductDetail = () => {
       // Fallback: try to find by name (for legacy URLs)
       const searchName = id.replace(/-/g, ' ').toLowerCase();
       const { data, error } = await supabase
-        .from('products_public')
+        .from('products')
         .select('*')
         .ilike('name', `%${searchName}%`)
         .eq('is_active', true)
@@ -151,6 +160,12 @@ const ProductDetail = () => {
         .maybeSingle();
       
       if (error) throw error;
+      
+      // If found by name and has a slug, redirect to slug URL
+      if (data?.slug && data.slug !== id) {
+        navigate(`/product/${data.slug}`, { replace: true });
+      }
+      
       return data;
     },
     enabled: !!id,
