@@ -8,7 +8,6 @@ import { ProductCard, Product } from '@/components/products/ProductCard';
 import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { SubcategoryGrid } from '@/components/products/SubcategoryGrid';
-import { StaggeredGrid, StaggeredItem } from '@/components/ui/staggered-animation';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -647,7 +646,7 @@ const Products = () => {
             {/* Products */}
             {!isLoading && visibleItems.length > 0 && (
               <>
-                <StaggeredGrid className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {visibleItems.map((product, index) => {
                     const listId = categoryParam 
                       ? `products_${categoryParam.toLowerCase().replace(/\s+/g, '_')}` 
@@ -663,7 +662,7 @@ const Products = () => {
                     const productRating = product.id ? ratingsMap?.[product.id] : undefined;
                     
                     return (
-                      <StaggeredItem
+                      <div
                         key={product.id}
                         className="relative group"
                       >
@@ -689,13 +688,13 @@ const Products = () => {
                         <Eye className="w-4 h-4" />
                         Quick View
                       </Button>
-                      </StaggeredItem>
+                      </div>
                     );
                   })}
-                </StaggeredGrid>
+                </div>
                 
                 {/* Infinite Scroll Loader */}
-                <div ref={loaderRef} className="flex justify-center py-8">
+                <div ref={loaderRef} className="flex justify-center py-8 min-h-[1px]">
                   {isLoadingMore && (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 className="w-5 h-5 animate-spin" />
