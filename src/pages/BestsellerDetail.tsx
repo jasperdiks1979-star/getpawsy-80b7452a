@@ -69,7 +69,9 @@ import {
 } from '@/components/ui/breadcrumb';
 import { ShippingCountdown } from '@/components/products/ShippingCountdown';
 import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
+import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCarousel';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 
 // Generate JSON-LD structured data for product
 const generateProductJsonLd = (
@@ -322,27 +324,12 @@ const BestsellerDetail = () => {
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
     : 0;
 
-  // Fetch related products (same category, excluding current product)
-  const { data: relatedProducts = [] } = useQuery({
-    queryKey: ['related-products', product?.id, product?.category],
-    queryFn: async () => {
-      if (!product?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('products_public')
-        .select('id, name, price, compare_at_price, image_url, category')
-        .eq('is_active', true)
-        .neq('id', product.id)
-        .limit(8);
-
-      if (error) throw error;
-      
-      // Prioritize same category, then fill with other products
-      const sameCategory = data?.filter(p => p.category === product.category) || [];
-      const otherProducts = data?.filter(p => p.category !== product.category) || [];
-      
-      return [...sameCategory, ...otherProducts].slice(0, 8);
-    },
+  // Fetch related products with enhanced category and keyword matching
+  const { data: relatedProducts = [], isLoading: relatedLoading } = useRelatedProducts({
+    productId: product?.id || '',
+    category: product?.category || null,
+    productName: product?.name || '',
+    maxItems: 8,
     enabled: !!product?.id,
   });
 
@@ -1393,99 +1380,18 @@ const BestsellerDetail = () => {
         </section>
 
         {/* Related Products Carousel */}
-        {relatedProducts.length > 0 && (
-          <section className="py-16 lg:py-20">
-            <div className="container px-4">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="mb-10"
-              >
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                  <div>
-                    <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      You May Also Like
-                    </Badge>
-                    <h2 className="text-3xl lg:text-4xl font-display font-bold">
-                      Related Products
-                    </h2>
-                  </div>
-                  <Link to="/products">
-                    <Button variant="outline" className="gap-2 rounded-full">
-                      View All Products
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-              >
-                <Carousel
-                  opts={{
-                    align: "start",
-                    loop: true,
-                  }}
-                  className="w-full"
-                >
-                  <CarouselContent className="-ml-4">
-                    {relatedProducts.map((relatedProduct) => (
-                      <CarouselItem key={relatedProduct.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
-                        <Link to={`/products/${relatedProduct.id}`}>
-                          <motion.div
-                            whileHover={{ y: -5 }}
-                            className="bg-background rounded-2xl border border-border/50 overflow-hidden shadow-soft hover:shadow-lg transition-all duration-300 group"
-                          >
-                            {/* Image */}
-                            <div className="relative aspect-square overflow-hidden bg-muted/30">
-                              <img
-                                src={relatedProduct.image_url || '/placeholder.svg'}
-                                alt={relatedProduct.name || ''}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              />
-                              {relatedProduct.compare_at_price && relatedProduct.price && relatedProduct.compare_at_price > relatedProduct.price && (
-                                <Badge className="absolute top-3 left-3 bg-red-500 text-white border-0">
-                                  -{Math.round(((relatedProduct.compare_at_price - relatedProduct.price) / relatedProduct.compare_at_price) * 100)}%
-                                </Badge>
-                              )}
-                            </div>
-
-                            {/* Content */}
-                            <div className="p-4">
-                              <h3 className="font-semibold text-sm line-clamp-2 mb-2 group-hover:text-primary transition-colors">
-                                {relatedProduct.name}
-                              </h3>
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg font-bold text-primary">
-                                  ${relatedProduct.price?.toFixed(2)}
-                                </span>
-                                {relatedProduct.compare_at_price && relatedProduct.price && relatedProduct.compare_at_price > relatedProduct.price && (
-                                  <span className="text-sm text-muted-foreground line-through">
-                                    ${relatedProduct.compare_at_price.toFixed(2)}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </motion.div>
-                        </Link>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <div className="hidden md:block">
-                    <CarouselPrevious className="-left-4 lg:-left-6" />
-                    <CarouselNext className="-right-4 lg:-right-6" />
-                  </div>
-                </Carousel>
-              </motion.div>
-            </div>
-          </section>
-        )}
+        <section className="py-16 lg:py-20">
+          <div className="container px-4">
+            <RelatedProductsCarousel 
+              products={relatedProducts}
+              isLoading={relatedLoading}
+              title="You May Also Like"
+              subtitle="Products that complement your choice"
+              listId="bestseller-related-products"
+              listName="Bestseller Related Products"
+            />
+          </div>
+        </section>
 
         {/* Recently Viewed Products Carousel */}
         {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
