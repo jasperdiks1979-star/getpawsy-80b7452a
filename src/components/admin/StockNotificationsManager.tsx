@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { 
   Bell, 
@@ -54,6 +55,8 @@ interface StockNotification {
 export function StockNotificationsManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch stock notifications with product info
@@ -109,6 +112,27 @@ export function StockNotificationsManager() {
     },
   });
 
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from('stock_notifications')
+        .delete()
+        .in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-stock-notifications'] });
+      toast.success(`${selectedIds.size} notificaties verwijderd`);
+      setSelectedIds(new Set());
+      setShowBulkDeleteDialog(false);
+    },
+    onError: (error) => {
+      console.error('Bulk delete error:', error);
+      toast.error('Kon notificaties niet verwijderen');
+    },
+  });
+
   // Calculate statistics
   const stats = useMemo(() => {
     const pending = notifications.filter(n => !n.notified_at);
@@ -147,6 +171,28 @@ export function StockNotificationsManager() {
       minute: '2-digit',
     });
   };
+
+  // Selection helpers
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredNotifications.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredNotifications.map(n => n.id)));
+    }
+  };
+
+  const isAllSelected = filteredNotifications.length > 0 && selectedIds.size === filteredNotifications.length;
+  const isSomeSelected = selectedIds.size > 0 && selectedIds.size < filteredNotifications.length;
 
   return (
     <div className="space-y-6">
@@ -261,6 +307,16 @@ export function StockNotificationsManager() {
               <Button variant="outline" size="icon" onClick={() => refetch()}>
                 <RefreshCw className="w-4 h-4" />
               </Button>
+              {selectedIds.size > 0 && (
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setShowBulkDeleteDialog(true)}
+                  className="gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Verwijder ({selectedIds.size})
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -281,6 +337,16 @@ export function StockNotificationsManager() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Checkbox
+                        checked={isAllSelected}
+                        ref={(el) => {
+                          if (el) (el as any).indeterminate = isSomeSelected;
+                        }}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Selecteer alle"
+                      />
+                    </TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Status</TableHead>
@@ -290,7 +356,14 @@ export function StockNotificationsManager() {
                 </TableHeader>
                 <TableBody>
                   {filteredNotifications.map((notification) => (
-                    <TableRow key={notification.id}>
+                    <TableRow key={notification.id} className={selectedIds.has(notification.id) ? 'bg-muted/50' : ''}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(notification.id)}
+                          onCheckedChange={() => toggleSelect(notification.id)}
+                          aria-label={`Selecteer ${notification.email}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           {notification.product?.image_url && (
@@ -373,6 +446,33 @@ export function StockNotificationsManager() {
                 <Trash2 className="w-4 h-4 mr-2" />
               )}
               Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Notificaties verwijderen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je {selectedIds.size} notificatie{selectedIds.size > 1 ? 's' : ''} wilt verwijderen? 
+              Deze klanten ontvangen dan geen melding meer wanneer de producten weer op voorraad zijn.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleteMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
+              Verwijder {selectedIds.size} notificatie{selectedIds.size > 1 ? 's' : ''}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
