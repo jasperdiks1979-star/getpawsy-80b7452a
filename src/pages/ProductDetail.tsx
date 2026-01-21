@@ -26,6 +26,7 @@ import { calculateSellingPrice } from '@/lib/pricing';
 import FormattedDescription from '@/components/products/FormattedDescription';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
+import { StockNotificationForm } from '@/components/products/StockNotificationForm';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -959,6 +960,14 @@ const ProductDetail = () => {
                 {inStock ? `In Stock (${product.stock} available)` : 'Out of Stock'}
               </span>
             </div>
+
+            {/* Stock Notification Form - Show when out of stock */}
+            {!inStock && (
+              <StockNotificationForm 
+                productId={product.id} 
+                productName={product.name || ''} 
+              />
+            )}
 
             {/* Shipping Time */}
             {product.shipping_time && (
