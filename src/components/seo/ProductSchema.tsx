@@ -5,6 +5,7 @@ interface ProductSchemaProps {
   product: {
     id: string;
     name: string;
+    slug?: string | null;
     description?: string | null;
     price: number;
     compare_at_price?: number | null;
@@ -58,6 +59,9 @@ export function ProductSchema({
   const images = product.images?.filter(Boolean) || [];
   const primaryImage = images[0] || product.image_url || `${baseUrl}/og-image.png`;
 
+  // Use slug for SEO-friendly URLs, fallback to id
+  const productPath = product.slug || product.id;
+
   // Truncate product name for Google (max 150 chars recommended)
   const truncatedName = product.name.length > 150 
     ? product.name.slice(0, 147) + '...' 
@@ -79,7 +83,7 @@ export function ProductSchema({
     category: product.category || 'Pet Supplies',
     offers: {
       '@type': 'Offer',
-      url: `${baseUrl}/product/${product.id}`,
+      url: `${baseUrl}/product/${productPath}`,
       priceCurrency: 'USD',
       price: product.price.toFixed(2),
       priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -176,10 +180,12 @@ export function ProductSchema({
         '@type': 'ListItem',
         position: product.category ? 4 : 3,
         name: product.name,
-        item: `${baseUrl}/product/${product.id}`,
+        item: `${baseUrl}/product/${productPath}`,
       },
     ],
   };
+
+  const productUrl = `${baseUrl}/product/${productPath}`;
 
   return (
     <Helmet>
@@ -187,14 +193,19 @@ export function ProductSchema({
       <title>{`${product.name} | GetPawsy - Premium Pet Products`}</title>
       <meta name="description" content={metaDescription} />
       <meta name="keywords" content={keywords.join(', ')} />
-      <link rel="canonical" href={`${baseUrl}/product/${product.id}`} />
+      <link rel="canonical" href={productUrl} />
+
+      {/* Hreflang Tags for International SEO */}
+      <link rel="alternate" hrefLang="en" href={productUrl} />
+      <link rel="alternate" hrefLang="en-US" href={productUrl} />
+      <link rel="alternate" hrefLang="x-default" href={productUrl} />
 
       {/* Open Graph */}
       <meta property="og:type" content="product" />
       <meta property="og:title" content={`${product.name} | GetPawsy`} />
       <meta property="og:description" content={metaDescription} />
       <meta property="og:image" content={primaryImage} />
-      <meta property="og:url" content={`${baseUrl}/product/${product.id}`} />
+      <meta property="og:url" content={productUrl} />
       <meta property="og:site_name" content="GetPawsy" />
       <meta property="product:price:amount" content={product.price.toString()} />
       <meta property="product:price:currency" content="USD" />
@@ -206,6 +217,9 @@ export function ProductSchema({
       <meta name="twitter:title" content={`${product.name} | GetPawsy`} />
       <meta name="twitter:description" content={metaDescription} />
       <meta name="twitter:image" content={primaryImage} />
+
+      {/* Robots */}
+      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
 
       {/* JSON-LD Structured Data */}
       <script type="application/ld+json">
