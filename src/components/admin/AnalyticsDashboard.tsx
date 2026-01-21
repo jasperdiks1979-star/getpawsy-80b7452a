@@ -66,6 +66,7 @@ import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import { useDashboardWidgets } from "@/hooks/useDashboardWidgets";
 import { DashboardWidgetBuilder } from "./DashboardWidgetBuilder";
+import { CoPurchasedProductsWidget } from "./CoPurchasedProductsWidget";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 // Types for GA4 API responses
@@ -2284,6 +2285,9 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               </CardContent>
             </Card>
           </div>
+
+          {/* Co-Purchased Products Widget */}
+          <CoPurchasedProductsWidget />
 
           {/* Revenue Attribution */}
           <Card>
