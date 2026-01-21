@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.send-email-campaign]
 verify_jwt = false
+
+[functions.track-email-event]
+verify_jwt = false
