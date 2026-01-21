@@ -824,6 +824,7 @@ export const BestsellerManager = () => {
             </div>
           </DialogContent>
       </Dialog>
+      </div>
 
       {/* Statistics Cards */}
       {stats && (
@@ -1028,7 +1029,6 @@ export const BestsellerManager = () => {
         <div className="ml-auto text-sm text-muted-foreground">
           {displayBestsellers.length} van {baseBestsellers?.length || 0} bestsellers
         </div>
-      </div>
       </div>
 
       {/* Bulk action bar */}
