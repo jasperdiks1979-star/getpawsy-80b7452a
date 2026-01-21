@@ -159,7 +159,7 @@ const CheckoutSkeleton = memo(() => (
 CheckoutSkeleton.displayName = 'CheckoutSkeleton';
 
 const Checkout = () => {
-  const { items, totalPrice } = useCart();
+  const { items, totalPrice, setAbandonedCartEmail } = useCart();
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [email, setEmail] = useState('');
@@ -172,8 +172,17 @@ const Checkout = () => {
   useEffect(() => {
     if (user?.email) {
       setEmail(user.email);
+      setAbandonedCartEmail(user.email);
     }
-  }, [user]);
+  }, [user, setAbandonedCartEmail]);
+  
+  // Update abandoned cart email when user enters email
+  const handleEmailChange = (newEmail: string) => {
+    setEmail(newEmail);
+    if (newEmail && newEmail.includes('@')) {
+      setAbandonedCartEmail(newEmail);
+    }
+  };
 
   // Track checkout activity for visitor map
   const trackCheckoutActivity = async () => {
@@ -338,7 +347,12 @@ const Checkout = () => {
                     required 
                     placeholder="your@email.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    onBlur={() => {
+                      if (email && email.includes('@')) {
+                        setAbandonedCartEmail(email);
+                      }
+                    }}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     You will receive your order confirmation here

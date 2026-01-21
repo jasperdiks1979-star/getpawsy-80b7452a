@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      abandoned_carts: {
+        Row: {
+          cart_items: Json
+          cart_total: number
+          created_at: string
+          customer_email: string | null
+          id: string
+          recovered_at: string | null
+          reminder_count: number
+          reminder_sent_at: string | null
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          cart_items?: Json
+          cart_total?: number
+          created_at?: string
+          customer_email?: string | null
+          id?: string
+          recovered_at?: string | null
+          reminder_count?: number
+          reminder_sent_at?: string | null
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          cart_items?: Json
+          cart_total?: number
+          created_at?: string
+          customer_email?: string | null
+          id?: string
+          recovered_at?: string | null
+          reminder_count?: number
+          reminder_sent_at?: string | null
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bestsellers: {
         Row: {
           created_at: string

@@ -26,7 +26,7 @@ const PaymentSuccess = () => {
         })),
         totalPrice
       );
-      clearCart();
+      clearCart(true); // Mark as recovered
       setTracked(true);
     } else if (!tracked && sessionId && items.length === 0) {
       // Cart already cleared (e.g., page refresh after purchase)

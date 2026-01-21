@@ -67,7 +67,7 @@ const Cart = () => {
 
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Shopping Cart</h1>
-          <Button variant="ghost" onClick={clearCart} className="text-muted-foreground">
+          <Button variant="ghost" onClick={() => clearCart()} className="text-muted-foreground">
             Clear Cart
           </Button>
         </div>

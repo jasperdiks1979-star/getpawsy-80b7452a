@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -17,12 +17,23 @@ interface CartContextType {
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
-  clearCart: () => void;
+  clearCart: (markRecovered?: boolean) => void;
+  setAbandonedCartEmail: (email: string) => void;
   totalItems: number;
   totalPrice: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+
+// Get or create a persistent session ID for abandoned cart tracking
+const getCartSessionId = (): string => {
+  let sessionId = localStorage.getItem('pawsy-cart-session-id');
+  if (!sessionId) {
+    sessionId = `cart-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    localStorage.setItem('pawsy-cart-session-id', sessionId);
+  }
+  return sessionId;
+};
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -30,15 +41,95 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const saved = localStorage.getItem('pawsy-cart');
       return saved ? JSON.parse(saved) : [];
     } catch {
-      // If parsing fails, clear corrupted data
       localStorage.removeItem('pawsy-cart');
       return [];
     }
   });
+  
+  const abandonedCartEmail = useRef<string | null>(localStorage.getItem('pawsy-cart-email'));
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync cart to abandoned_carts table
+  const syncAbandonedCart = useCallback(async (cartItems: CartItem[], email?: string | null) => {
+    if (cartItems.length === 0) return;
+    
+    const sessionId = getCartSessionId();
+    const customerEmail = email || abandonedCartEmail.current;
+    const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    
+    // Simplify items to JSON-compatible format
+    const simplifiedItems = cartItems.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      image: item.image,
+      quantity: item.quantity,
+      variant: item.variant || null,
+    }));
+    
+    try {
+      // Check if cart already exists for this session
+      const { data: existingCart } = await supabase
+        .from('abandoned_carts')
+        .select('id')
+        .eq('session_id', sessionId)
+        .is('recovered_at', null)
+        .maybeSingle();
+
+      if (existingCart) {
+        // Update existing cart - use type assertion for JSONB
+        const { error } = await supabase
+          .from('abandoned_carts')
+          .update({
+            cart_items: JSON.parse(JSON.stringify(simplifiedItems)),
+            cart_total: cartTotal,
+            customer_email: customerEmail,
+          })
+          .eq('id', existingCart.id);
+        if (error) console.error('Error updating abandoned cart:', error);
+      } else {
+        // Insert new cart - use type assertion for JSONB
+        const { error } = await supabase
+          .from('abandoned_carts')
+          .insert([{
+            session_id: sessionId,
+            customer_email: customerEmail,
+            cart_items: JSON.parse(JSON.stringify(simplifiedItems)),
+            cart_total: cartTotal,
+          }]);
+        if (error) console.error('Error inserting abandoned cart:', error);
+      }
+    } catch (error) {
+      console.error('Error syncing abandoned cart:', error);
+    }
+  }, []);
+
+  // Debounced sync - wait 2 seconds after last cart change
+  const debouncedSync = useCallback((cartItems: CartItem[]) => {
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+    syncTimeoutRef.current = setTimeout(() => {
+      syncAbandonedCart(cartItems);
+    }, 2000);
+  }, [syncAbandonedCart]);
 
   useEffect(() => {
     localStorage.setItem('pawsy-cart', JSON.stringify(items));
-  }, [items]);
+    if (items.length > 0) {
+      debouncedSync(items);
+    }
+  }, [items, debouncedSync]);
+
+  // Set email for abandoned cart tracking
+  const setAbandonedCartEmail = useCallback((email: string) => {
+    abandonedCartEmail.current = email;
+    localStorage.setItem('pawsy-cart-email', email);
+    // Immediately sync with email
+    if (items.length > 0) {
+      syncAbandonedCart(items, email);
+    }
+  }, [items, syncAbandonedCart]);
 
   // Track cart activity for visitor map
   const trackCartActivity = useCallback(async () => {
@@ -143,7 +234,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = useCallback(async (markRecovered = false) => {
+    if (markRecovered && items.length > 0) {
+      // Mark cart as recovered in database
+      const sessionId = getCartSessionId();
+      try {
+        await supabase
+          .from('abandoned_carts')
+          .update({ recovered_at: new Date().toISOString() })
+          .eq('session_id', sessionId)
+          .is('recovered_at', null);
+      } catch (error) {
+        console.error('Error marking cart as recovered:', error);
+      }
+      // Generate new session ID for future carts
+      localStorage.removeItem('pawsy-cart-session-id');
+    }
+    setItems([]);
+  }, [items.length]);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -155,6 +263,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       removeItem,
       updateQuantity,
       clearCart,
+      setAbandonedCartEmail,
       totalItems,
       totalPrice
     }}>
