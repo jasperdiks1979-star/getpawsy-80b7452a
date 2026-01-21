@@ -1416,7 +1416,7 @@ const ProductDetail = () => {
         </motion.section>
 
         {/* Frequently Bought Together */}
-        {relatedProducts && relatedProducts.length >= 2 && (
+        {(relatedLoading || (relatedProducts && relatedProducts.length >= 2)) && (
           <div className="mt-16">
             <FrequentlyBoughtTogether
               currentProduct={{
@@ -1428,7 +1428,7 @@ const ProductDetail = () => {
                 slug: product.slug,
                 category: product.category,
               }}
-              relatedProducts={relatedProducts.map(p => ({
+              relatedProducts={(relatedProducts || []).map(p => ({
                 id: p.id,
                 name: p.name,
                 price: Number(p.price),
@@ -1440,6 +1440,7 @@ const ProductDetail = () => {
               maxItems={3}
               sourceProductId={product.id}
               sourceProductName={product.name}
+              isLoading={relatedLoading}
             />
           </div>
         )}
