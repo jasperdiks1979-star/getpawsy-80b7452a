@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Cookie, X, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 type ConsentPreferences = {
   necessary: boolean;
@@ -69,12 +70,15 @@ export const CookieConsent = () => {
     }
   };
 
-  const saveConsent = (prefs: ConsentPreferences) => {
+  const saveConsent = (prefs: ConsentPreferences, showToast = false) => {
     localStorage.setItem(CONSENT_KEY, 'true');
     localStorage.setItem(CONSENT_PREFERENCES_KEY, JSON.stringify(prefs));
     applyConsent(prefs);
     setShowBanner(false);
     setShowSettings(false);
+    if (showToast) {
+      toast.success('Cookie preferences saved! 🍪');
+    }
   };
 
   const acceptAll = () => {
@@ -100,7 +104,7 @@ export const CookieConsent = () => {
   };
 
   const savePreferences = () => {
-    saveConsent(preferences);
+    saveConsent(preferences, true);
   };
 
   const togglePreference = (key: keyof ConsentPreferences) => {
