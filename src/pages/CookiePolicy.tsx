@@ -203,16 +203,20 @@ const CookiePolicy = () => {
                   If you have questions about our use of cookies, please contact us:
                 </p>
                 <div className="bg-muted/30 rounded-2xl p-6">
-                  <div className="flex items-center gap-3 mb-2">
+                  <div className="flex items-center gap-3 mb-4">
                     <Mail className="w-5 h-5 text-primary" />
-                    <a href="mailto:privacy@getpawsy.pet" className="text-primary hover:underline">
-                      privacy@getpawsy.pet
+                    <a href="mailto:support@getpawsy.pet" className="text-primary hover:underline">
+                      support@getpawsy.pet
                     </a>
                   </div>
-                  <p className="text-muted-foreground m-0">
-                    GetPawsy LLC<br />
-                    United States
-                  </p>
+                  <div className="text-muted-foreground space-y-1">
+                    <p className="m-0 font-semibold text-foreground">Skidzo (Eenmanszaak)</p>
+                    <p className="m-0">De Haasstraat 11</p>
+                    <p className="m-0">7312 VG Apeldoorn</p>
+                    <p className="m-0">Nederland</p>
+                    <p className="m-0 mt-3 text-sm">KvK: 78156955</p>
+                    <p className="m-0 text-sm">BTW: NL101001964B02</p>
+                  </div>
                 </div>
               </section>
             </div>
