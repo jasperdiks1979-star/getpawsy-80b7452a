@@ -35,9 +35,25 @@ export const CookieConsent = () => {
       const savedPreferences = localStorage.getItem(CONSENT_PREFERENCES_KEY);
       if (savedPreferences) {
         const parsed = JSON.parse(savedPreferences);
+        setPreferences(parsed);
         applyConsent(parsed);
       }
     }
+  }, []);
+
+  // Listen for custom event to reopen cookie settings
+  useEffect(() => {
+    const handleOpenCookieSettings = () => {
+      const savedPreferences = localStorage.getItem(CONSENT_PREFERENCES_KEY);
+      if (savedPreferences) {
+        setPreferences(JSON.parse(savedPreferences));
+      }
+      setShowSettings(true);
+      setShowBanner(true);
+    };
+
+    window.addEventListener('open-cookie-settings', handleOpenCookieSettings);
+    return () => window.removeEventListener('open-cookie-settings', handleOpenCookieSettings);
   }, []);
 
   const applyConsent = (prefs: ConsentPreferences) => {
