@@ -8,14 +8,14 @@ const Shipping = () => {
   const shippingMethods = [
     {
       name: 'Standard Shipping',
-      time: '7-15 business days',
+      time: '7-21 business days',
       price: 'FREE',
-      description: 'Free standard shipping on all orders within the USA',
+      description: 'Free standard shipping on all orders worldwide',
       icon: Truck,
     },
     {
       name: 'Express Shipping',
-      time: '3-7 business days',
+      time: '5-10 business days',
       price: 'From $9.99',
       description: 'Faster delivery for urgent orders (where available)',
       icon: Package,
@@ -50,12 +50,12 @@ const Shipping = () => {
   ];
 
   const carriers = [
-    { name: 'USPS', description: 'United States Postal Service' },
+    { name: 'DHL', description: 'DHL Express Worldwide' },
     { name: 'UPS', description: 'United Parcel Service' },
     { name: 'FedEx', description: 'Federal Express' },
-    { name: 'DHL', description: 'DHL Express' },
-    { name: 'OnTrac', description: 'Regional carrier (West Coast)' },
-    { name: 'LaserShip', description: 'Regional carrier (East Coast)' },
+    { name: 'PostNL', description: 'Netherlands Postal Service' },
+    { name: 'USPS', description: 'United States Postal Service' },
+    { name: 'Local Carriers', description: 'Regional delivery partners' },
   ];
 
   return (
@@ -89,7 +89,7 @@ const Shipping = () => {
                 </span>
               </div>
               <p className="text-muted-foreground">
-                Enjoy free standard shipping on every order within the United States. No minimum purchase required.
+                Enjoy free standard shipping on every order worldwide. No minimum purchase required.
               </p>
             </div>
 
@@ -185,24 +185,23 @@ const Shipping = () => {
                 <div className="flex items-start gap-4 mb-4">
                   <MapPin className="w-6 h-6 text-primary flex-shrink-0" />
                   <div>
-                    <h3 className="font-semibold text-foreground mb-2">United States Only</h3>
+                    <h3 className="font-semibold text-foreground mb-2">Worldwide Shipping</h3>
                     <p className="text-muted-foreground">
-                      We currently ship to all 50 US states, including Alaska and Hawaii. 
-                      Please note that shipping to Alaska, Hawaii, and US territories may take 
-                      additional time.
+                      We ship to most countries worldwide. Delivery times vary by location. 
+                      Most orders arrive within 7-21 business days depending on your destination.
                     </p>
                   </div>
                 </div>
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm text-amber-800 dark:text-amber-200 font-medium mb-1">
-                        International Shipping
+                      <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-1">
+                        Customs & Import Duties
                       </p>
-                      <p className="text-sm text-amber-700 dark:text-amber-300">
-                        We do not currently offer international shipping. We are working on 
-                        expanding our service areas. Please check back later for updates.
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        International orders may be subject to customs fees and import duties. 
+                        These charges are the responsibility of the recipient and vary by country.
                       </p>
                     </div>
                   </div>
