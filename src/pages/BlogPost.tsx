@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { generateBlogMetaDescription } from '@/lib/seo-keywords';
 import { useInternalLinking } from '@/hooks/useInternalLinking';
+import { sanitizeHtml } from '@/lib/sanitize';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -202,7 +203,7 @@ const BlogPostPage = () => {
       return (
         <div 
           className="blog-content"
-          dangerouslySetInnerHTML={{ __html: contentToRender }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(contentToRender) }}
         />
       );
     }
@@ -240,7 +241,7 @@ const BlogPostPage = () => {
         }
         // Handle inline bold
         const formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        return <p key={i} className="mb-3" dangerouslySetInnerHTML={{ __html: formattedLine }} />;
+        return <p key={i} className="mb-3" dangerouslySetInnerHTML={{ __html: sanitizeHtml(formattedLine) }} />;
       });
   };
 

@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { calculateSellingPrice } from "@/lib/pricing";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { 
   Package, 
   Loader2, 
@@ -350,7 +351,7 @@ export function CJProductPreview({
                 <div 
                   className="text-sm text-muted-foreground prose prose-sm max-w-none"
                   dangerouslySetInnerHTML={{ 
-                    __html: details?.description || product.description || '' 
+                    __html: sanitizeHtml(details?.description || product.description || '')
                   }}
                 />
               </div>
