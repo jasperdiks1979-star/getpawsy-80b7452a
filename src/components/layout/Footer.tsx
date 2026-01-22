@@ -271,61 +271,70 @@ export const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="border-t border-background/10">
-          <div className="container px-4 md:px-6 py-6">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-sm text-background/50 flex items-center gap-1">
-                © {currentYear} GetPawsy. Made with <Heart className="w-3.5 h-3.5 text-accent fill-accent" /> for pets.
-              </p>
-              
-              <div className="flex flex-wrap justify-center gap-6 text-sm text-background/50">
-                <Link to="/privacy" className="hover:text-primary transition-colors">
-                  Privacy Policy
-                </Link>
-                <Link to="/terms" className="hover:text-primary transition-colors">
-                  Terms of Service
-                </Link>
-                <Link to="/cookies" className="hover:text-primary transition-colors">
-                  Cookie Policy
-                </Link>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <button className="hover:text-primary transition-colors inline-flex items-center gap-1">
-                      <RotateCcw className="w-3 h-3" />
-                      Reset App Data
-                    </button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Reset App Data?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will clear your shopping cart, wishlist, and recently viewed products. 
-                        This can help fix display issues but cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          localStorage.clear();
-                          toast.success('App data cleared! Refreshing...');
-                          setTimeout(() => window.location.reload(), 1000);
-                        }}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Reset Data
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+        <div className="container px-4 md:px-6 py-6">
+            <div className="flex flex-col gap-4">
+              {/* Business Registration Info */}
+              <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs text-background/40 border-b border-background/10 pb-4">
+                <span>GetPawsy B.V.</span>
+                <span>KvK: 12345678</span>
+                <span>BTW: NL123456789B01</span>
               </div>
+              
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <p className="text-sm text-background/50 flex items-center gap-1">
+                  © {currentYear} GetPawsy. Made with <Heart className="w-3.5 h-3.5 text-accent fill-accent" /> for pets.
+                </p>
+                
+                <div className="flex flex-wrap justify-center gap-6 text-sm text-background/50">
+                  <Link to="/privacy" className="hover:text-primary transition-colors">
+                    Privacy Policy
+                  </Link>
+                  <Link to="/terms" className="hover:text-primary transition-colors">
+                    Terms of Service
+                  </Link>
+                  <Link to="/cookies" className="hover:text-primary transition-colors">
+                    Cookie Policy
+                  </Link>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button className="hover:text-primary transition-colors inline-flex items-center gap-1">
+                        <RotateCcw className="w-3 h-3" />
+                        Reset App Data
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Reset App Data?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will clear your shopping cart, wishlist, and recently viewed products. 
+                          This can help fix display issues but cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            localStorage.clear();
+                            toast.success('App data cleared! Refreshing...');
+                            setTimeout(() => window.location.reload(), 1000);
+                          }}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Reset Data
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
 
-              {/* Payment methods placeholder */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-background/40">Payment methods:</span>
-                <div className="flex gap-1">
-                  {['💳', '🏦', '📱'].map((icon, idx) => (
-                    <span key={idx} className="text-lg">{icon}</span>
-                  ))}
+                {/* Payment methods placeholder */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-background/40">Payment methods:</span>
+                  <div className="flex gap-1">
+                    {['💳', '🏦', '📱'].map((icon, idx) => (
+                      <span key={idx} className="text-lg">{icon}</span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
