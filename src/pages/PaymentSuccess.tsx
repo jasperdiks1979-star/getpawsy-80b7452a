@@ -7,6 +7,17 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { trackPurchase } from '@/lib/analytics';
 
+// Declare gtag for TypeScript
+declare global {
+  interface Window {
+    gtag: (
+      command: 'event' | 'config' | 'js',
+      action: string,
+      params?: Record<string, unknown>
+    ) => void;
+  }
+}
+
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
@@ -16,6 +27,7 @@ const PaymentSuccess = () => {
   useEffect(() => {
     // Track purchase conversion and clear cart only once
     if (!tracked && sessionId && items.length > 0) {
+      // Track GA4 purchase event
       trackPurchase(
         sessionId,
         items.map(item => ({
@@ -26,6 +38,21 @@ const PaymentSuccess = () => {
         })),
         totalPrice
       );
+
+      // Track Google Ads conversion
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'conversion', {
+          send_to: 'AW-17894436603/PURCHASE', // Replace PURCHASE with your conversion label if needed
+          value: totalPrice,
+          currency: 'USD',
+          transaction_id: sessionId,
+        });
+        console.debug('[Google Ads] Conversion tracked:', {
+          value: totalPrice,
+          transaction_id: sessionId,
+        });
+      }
+
       clearCart(true); // Mark as recovered
       setTracked(true);
     } else if (!tracked && sessionId && items.length === 0) {
