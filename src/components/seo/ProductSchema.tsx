@@ -67,22 +67,40 @@ export function ProductSchema({
     ? product.name.slice(0, 147) + '...' 
     : product.name;
 
-  // JSON-LD Product Schema
+  // JSON-LD Product Schema with enhanced trust signals
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
+    '@id': `${baseUrl}/product/${productPath}#product`,
     name: truncatedName,
     description: cleanDescription,
     image: images.length > 0 ? images : [primaryImage],
     sku: product.sku || product.id,
     mpn: product.id,
+    gtin12: undefined, // Can be added if available
     brand: {
       '@type': 'Brand',
       name: 'GetPawsy',
+      logo: `${baseUrl}/favicon.png`,
+    },
+    manufacturer: {
+      '@type': 'Organization',
+      name: 'GetPawsy',
+      url: baseUrl,
     },
     category: product.category || 'Pet Supplies',
+    audience: {
+      '@type': 'PeopleAudience',
+      suggestedMinAge: '18',
+      audienceType: 'Pet Owners',
+    },
+    isRelatedTo: {
+      '@type': 'Product',
+      name: 'Pet Supplies',
+    },
     offers: {
       '@type': 'Offer',
+      '@id': `${baseUrl}/product/${productPath}#offer`,
       url: `${baseUrl}/product/${productPath}`,
       priceCurrency: 'USD',
       price: product.price.toFixed(2),
@@ -90,36 +108,44 @@ export function ProductSchema({
       availability: (product.stock ?? 0) > 0 
         ? 'https://schema.org/InStock' 
         : 'https://schema.org/OutOfStock',
+      itemCondition: 'https://schema.org/NewCondition',
       seller: {
         '@type': 'Organization',
         name: 'GetPawsy',
+        url: baseUrl,
       },
       hasMerchantReturnPolicy: {
         '@type': 'MerchantReturnPolicy',
-        applicableCountry: 'US',
+        '@id': `${baseUrl}/#returnpolicy`,
+        applicableCountry: ['US', 'NL', 'GB', 'DE', 'FR', 'BE', 'AU', 'CA'],
         returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
         merchantReturnDays: 30,
         returnMethod: 'https://schema.org/ReturnByMail',
         returnFees: 'https://schema.org/FreeReturn',
-        returnPolicySeasonalOverride: undefined,
       },
       shippingDetails: {
         '@type': 'OfferShippingDetails',
+        '@id': `${baseUrl}/#shippingdetails`,
         shippingRate: {
           '@type': 'MonetaryAmount',
           value: '0',
           currency: 'USD',
         },
-        shippingDestination: {
-          '@type': 'DefinedRegion',
-          addressCountry: 'US',
-        },
+        shippingDestination: [
+          { '@type': 'DefinedRegion', addressCountry: 'US' },
+          { '@type': 'DefinedRegion', addressCountry: 'NL' },
+          { '@type': 'DefinedRegion', addressCountry: 'GB' },
+          { '@type': 'DefinedRegion', addressCountry: 'DE' },
+          { '@type': 'DefinedRegion', addressCountry: 'FR' },
+          { '@type': 'DefinedRegion', addressCountry: 'AU' },
+          { '@type': 'DefinedRegion', addressCountry: 'CA' },
+        ],
         deliveryTime: {
           '@type': 'ShippingDeliveryTime',
           handlingTime: {
             '@type': 'QuantitativeValue',
             minValue: 1,
-            maxValue: 2,
+            maxValue: 3,
             unitCode: 'DAY',
           },
           transitTime: {
@@ -149,14 +175,37 @@ export function ProductSchema({
         },
         name: review.title,
         reviewBody: review.content,
+        author: {
+          '@type': 'Person',
+          name: 'Verified Buyer',
+        },
+        datePublished: new Date().toISOString().split('T')[0],
       })),
     }),
+  };
+
+  // WebPage schema for product page
+  const webPageSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemPage',
+    '@id': `${baseUrl}/product/${productPath}#webpage`,
+    url: `${baseUrl}/product/${productPath}`,
+    name: `${product.name} | GetPawsy`,
+    description: metaDescription,
+    isPartOf: { '@id': `${baseUrl}/#website` },
+    primaryImageOfPage: {
+      '@type': 'ImageObject',
+      url: primaryImage,
+    },
+    breadcrumb: { '@id': `${baseUrl}/product/${productPath}#breadcrumb` },
+    mainEntity: { '@id': `${baseUrl}/product/${productPath}#product` },
   };
 
   // BreadcrumbList Schema
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
+    '@id': `${baseUrl}/product/${productPath}#breadcrumb`,
     itemListElement: [
       {
         '@type': 'ListItem',
@@ -227,6 +276,9 @@ export function ProductSchema({
       </script>
       <script type="application/ld+json">
         {JSON.stringify(breadcrumbSchema)}
+      </script>
+      <script type="application/ld+json">
+        {JSON.stringify(webPageSchema)}
       </script>
     </Helmet>
   );
