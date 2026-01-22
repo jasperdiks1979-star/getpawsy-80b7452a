@@ -123,7 +123,7 @@ const TermsOfService = () => {
                   5. Shipping and Delivery
                 </h2>
                 <p className="text-muted-foreground mb-4">
-                  We currently ship within the United States. Please note:
+                  We ship to most countries worldwide. Please note:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
                   <li>Shipping times are estimates and not guaranteed</li>
@@ -159,8 +159,8 @@ const TermsOfService = () => {
                 </h2>
                 <p className="text-muted-foreground">
                   All content on this website, including text, graphics, logos, images, and software, is the 
-                  property of GetPawsy or its content suppliers and is protected by United States and international 
-                  copyright laws. You may not reproduce, distribute, modify, or create derivative works from any 
+                  property of GetPawsy or its content suppliers and is protected by international copyright 
+                  laws. You may not reproduce, distribute, modify, or create derivative works from any 
                   content without our express written permission.
                 </p>
               </section>
@@ -356,17 +356,18 @@ const TermsOfService = () => {
                 </h2>
                 <p className="text-muted-foreground mb-4">
                   These Terms of Service shall be governed by and construed in accordance with the laws of 
-                  the United States, without regard to conflict of law principles.
+                  the Netherlands, without regard to conflict of law principles.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  <strong>Arbitration Agreement:</strong> Any dispute, controversy, or claim arising out of 
+                  <strong>Dispute Resolution:</strong> Any dispute, controversy, or claim arising out of 
                   or relating to these Terms of Service or any product purchased through our website shall 
-                  be resolved through binding arbitration, rather than in court, except as otherwise provided 
-                  herein. You waive your right to participate in a class action lawsuit or class-wide arbitration.
+                  first be attempted to be resolved through good faith negotiations. If negotiations fail, 
+                  disputes shall be submitted to the competent court in the Netherlands.
                 </p>
                 <p className="text-muted-foreground">
-                  The arbitration shall be conducted in accordance with the rules of the American Arbitration 
-                  Association. The decision of the arbitrator shall be final and binding.
+                  For EU consumers: You may also be entitled to use the EU Online Dispute Resolution platform 
+                  at <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" 
+                  className="text-primary hover:underline">https://ec.europa.eu/consumers/odr</a>.
                 </p>
               </section>
 
