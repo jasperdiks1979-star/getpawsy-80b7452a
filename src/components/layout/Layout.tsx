@@ -5,6 +5,7 @@ import { PageTransition } from '../ui/page-transition';
 import { WelcomePopup } from '../marketing/WelcomePopup';
 import { ExitIntentPopup } from '../marketing/ExitIntentPopup';
 import { SlowFeederLeadMagnet } from '../marketing/SlowFeederLeadMagnet';
+import { CookieConsent } from '../marketing/CookieConsent';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <WelcomePopup />
       <ExitIntentPopup />
       <SlowFeederLeadMagnet />
+      <CookieConsent />
     </div>
   );
 };
