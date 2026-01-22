@@ -188,6 +188,11 @@ const App = () => {
                         <Route path="/blog" element={<Blog />} />
                         <Route path="/blog/:slug" element={<BlogPost />} />
                         <Route path="/sitemap.xml" element={<Sitemap />} />
+                        <Route path="/sitemap-static.xml" element={<Sitemap />} />
+                        <Route path="/sitemap-products.xml" element={<Sitemap />} />
+                        <Route path="/sitemap-categories.xml" element={<Sitemap />} />
+                        <Route path="/sitemap-bestsellers.xml" element={<Sitemap />} />
+                        <Route path="/sitemap-blog.xml" element={<Sitemap />} />
                         <Route path="/unsubscribe" element={<Unsubscribe />} />
                         <Route path="/newsletter-preferences" element={<NewsletterPreferences />} />
                         <Route path="/slow-feeder-offer" element={<SlowFeederOffer />} />

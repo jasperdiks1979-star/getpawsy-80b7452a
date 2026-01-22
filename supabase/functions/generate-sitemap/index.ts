@@ -6,7 +6,8 @@ const corsHeaders = {
 };
 
 const BASE_URL = "https://getpawsy.pet";
-const FUNCTION_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap";
+// Use primary domain for sitemap URLs to avoid cloaking detection
+const SITEMAP_BASE_URL = "https://getpawsy.pet";
 
 interface Product {
   id: string;
@@ -131,7 +132,7 @@ Deno.serve(async (req) => {
       `${xmlHeader()}
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>${FUNCTION_URL}?type=static</loc>
+    <loc>${SITEMAP_BASE_URL}/sitemap-static.xml</loc>
     <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
   </sitemap>
 </sitemapindex>`,
@@ -145,31 +146,31 @@ function generateSitemapIndex(today: string): string {
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Static Pages Sitemap -->
   <sitemap>
-    <loc>${FUNCTION_URL}?type=static</loc>
+    <loc>${SITEMAP_BASE_URL}/sitemap-static.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   
   <!-- Products Sitemap -->
   <sitemap>
-    <loc>${FUNCTION_URL}?type=products</loc>
+    <loc>${SITEMAP_BASE_URL}/sitemap-products.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   
   <!-- Categories Sitemap -->
   <sitemap>
-    <loc>${FUNCTION_URL}?type=categories</loc>
+    <loc>${SITEMAP_BASE_URL}/sitemap-categories.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   
   <!-- Bestsellers Sitemap -->
   <sitemap>
-    <loc>${FUNCTION_URL}?type=bestsellers</loc>
+    <loc>${SITEMAP_BASE_URL}/sitemap-bestsellers.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   
   <!-- Blog Posts Sitemap -->
   <sitemap>
-    <loc>${FUNCTION_URL}?type=blog</loc>
+    <loc>${SITEMAP_BASE_URL}/sitemap-blog.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
 </sitemapindex>`;
