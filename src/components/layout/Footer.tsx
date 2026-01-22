@@ -275,8 +275,8 @@ export const Footer = () => {
             <div className="flex flex-col gap-4">
               {/* Business Registration Info */}
               <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs text-background/40 border-b border-background/10 pb-4">
-                <span>GetPawsy B.V.</span>
-                <span>KvK: 12345678</span>
+                <span>Skidzo (Eenmanszaak)</span>
+                <span>KvK: 78156955</span>
                 <span>BTW: NL123456789B01</span>
               </div>
               
