@@ -70,14 +70,14 @@ export const CookieConsent = () => {
     }
   };
 
-  const saveConsent = (prefs: ConsentPreferences, showToast = false) => {
+  const saveConsent = (prefs: ConsentPreferences, message?: string) => {
     localStorage.setItem(CONSENT_KEY, 'true');
     localStorage.setItem(CONSENT_PREFERENCES_KEY, JSON.stringify(prefs));
     applyConsent(prefs);
     setShowBanner(false);
     setShowSettings(false);
-    if (showToast) {
-      toast.success('Cookie preferences saved! 🍪');
+    if (message) {
+      toast.success(message);
     }
   };
 
@@ -89,7 +89,7 @@ export const CookieConsent = () => {
       marketing: true,
     };
     setPreferences(allAccepted);
-    saveConsent(allAccepted);
+    saveConsent(allAccepted, 'All cookies accepted! 🍪');
   };
 
   const acceptNecessary = () => {
@@ -100,11 +100,11 @@ export const CookieConsent = () => {
       marketing: false,
     };
     setPreferences(onlyNecessary);
-    saveConsent(onlyNecessary);
+    saveConsent(onlyNecessary, 'Only necessary cookies enabled 🍪');
   };
 
   const savePreferences = () => {
-    saveConsent(preferences, true);
+    saveConsent(preferences, 'Cookie preferences saved! 🍪');
   };
 
   const togglePreference = (key: keyof ConsentPreferences) => {
