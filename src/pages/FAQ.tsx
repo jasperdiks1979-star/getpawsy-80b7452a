@@ -39,15 +39,15 @@ const FAQ = () => {
       questions: [
         {
           question: 'How long does shipping take?',
-          answer: 'Standard shipping typically takes 7-15 business days within the United States. Processing time is 1-3 business days before your order ships.',
+          answer: 'Standard shipping typically takes 7-21 business days depending on your location. Processing time is 1-3 business days before your order ships.',
         },
         {
           question: 'Do you offer free shipping?',
-          answer: 'Yes! We offer FREE standard shipping on all orders within the United States. No minimum purchase required.',
+          answer: 'Yes! We offer FREE standard shipping on all orders worldwide. No minimum purchase required.',
         },
         {
           question: 'Do you ship internationally?',
-          answer: 'Currently, we only ship within the United States (all 50 states including Alaska and Hawaii). We are working on expanding to international destinations.',
+          answer: 'Yes! We ship to most countries worldwide. Delivery times vary by location, typically 7-21 business days. International orders may be subject to customs fees and import duties.',
         },
         {
           question: 'How can I track my order?',
@@ -55,11 +55,11 @@ const FAQ = () => {
         },
         {
           question: 'What carriers do you use?',
-          answer: 'We work with USPS, UPS, FedEx, DHL, and regional carriers like OnTrac and LaserShip. The carrier is selected based on your location and the items ordered.',
+          answer: 'We work with DHL, UPS, FedEx, PostNL, and regional delivery partners. The carrier is selected based on your location and the items ordered.',
         },
         {
           question: 'What if my package is lost or delayed?',
-          answer: 'If your package has not arrived within 45 days of dispatch (for US orders), please contact us. We will investigate with the carrier and provide a resolution.',
+          answer: 'If your package has not arrived within 45 days of dispatch, please contact us. We will investigate with the carrier and provide a resolution.',
         },
       ],
     },
