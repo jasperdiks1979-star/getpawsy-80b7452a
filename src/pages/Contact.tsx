@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
-import { Mail, Phone, Clock, Send, MessageSquare, CheckCircle, MapPin } from 'lucide-react';
+import { Mail, Clock, Send, MessageSquare, CheckCircle, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -94,24 +94,17 @@ const Contact = () => {
       href: 'mailto:support@getpawsy.pet',
     },
     {
-      icon: Phone,
-      title: 'Call Us',
-      content: '+1 (800) 123-4567',
-      description: 'Mon-Fri, 9 AM - 6 PM EST',
-      href: 'tel:+18001234567',
-    },
-    {
       icon: Clock,
       title: 'Business Hours',
       content: 'Monday - Friday',
-      description: '9:00 AM - 6:00 PM EST',
+      description: '9:00 AM - 6:00 PM CET',
       href: null,
     },
     {
       icon: MapPin,
       title: 'Location',
-      content: 'United States',
-      description: 'Shipping within USA only',
+      content: 'Apeldoorn, Netherlands',
+      description: 'Worldwide shipping available',
       href: null,
     },
   ];
