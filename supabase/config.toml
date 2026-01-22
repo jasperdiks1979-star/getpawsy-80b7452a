@@ -77,3 +77,30 @@ verify_jwt = false
 
 [functions.track-remarketing-event]
 verify_jwt = false
+
+[functions.generate-sitemap]
+verify_jwt = false
+
+[functions.unsubscribe-newsletter]
+verify_jwt = false
+
+[functions.send-newsletter-confirmation]
+verify_jwt = false
+
+[functions.send-stock-notification]
+verify_jwt = false
+
+[functions.send-abandoned-cart-email]
+verify_jwt = false
+
+[functions.lookup-guest-order]
+verify_jwt = false
+
+[functions.recategorize-products]
+verify_jwt = false
+
+[functions.google-merchant-feed]
+verify_jwt = false
+
+[functions.generate-product-summary]
+verify_jwt = false
