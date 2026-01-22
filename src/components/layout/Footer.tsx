@@ -202,10 +202,6 @@ export const Footer = () => {
                   <Mail className="w-4 h-4" />
                   <span>support@getpawsy.pet</span>
                 </a>
-                <a href="tel:+18001234567" className="flex items-center gap-3 text-sm text-background/70 hover:text-primary transition-colors">
-                  <Phone className="w-4 h-4" />
-                  <span>+1 (800) 123-4567</span>
-                </a>
                 <div className="flex items-center gap-3 text-sm text-background/70">
                   <MapPin className="w-4 h-4" />
                   <span>Apeldoorn, Nederland 🇳🇱</span>

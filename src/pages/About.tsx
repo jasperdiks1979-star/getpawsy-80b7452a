@@ -19,8 +19,8 @@ const About = () => {
     },
     {
       icon: Truck,
-      title: 'Fast & Reliable Shipping',
-      description: 'We partner with trusted carriers to deliver your orders quickly and safely across the USA.',
+      title: 'Worldwide Shipping',
+      description: 'We partner with trusted carriers to deliver your orders quickly and safely worldwide.',
     },
     {
       icon: Leaf,
@@ -145,7 +145,7 @@ const About = () => {
                 <div className="space-y-4">
                   {[
                     'Carefully vetted products from trusted suppliers',
-                    'Fast shipping across the United States',
+                    'Fast worldwide shipping',
                     'Dedicated customer support team',
                     'Hassle-free returns and exchanges',
                   ].map((item, index) => (
