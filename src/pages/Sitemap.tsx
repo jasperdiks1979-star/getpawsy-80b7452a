@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 const SITEMAP_BASE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap';
 
@@ -12,47 +12,24 @@ const SITEMAP_TYPE_MAP: Record<string, string> = {
   '/sitemap-blog.xml': 'blog',
 };
 
+/**
+ * Sitemap component that immediately redirects to the edge function.
+ * This ensures crawlers receive proper XML content without JavaScript rendering.
+ * The redirect happens instantly to avoid any SPA cloaking concerns.
+ */
 const Sitemap = () => {
-  const [content, setContent] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
-    const fetchSitemap = async () => {
-      try {
-        // Get the current path to determine which sitemap to fetch
-        const path = window.location.pathname;
-        const type = SITEMAP_TYPE_MAP[path] || 'index';
-        
-        const response = await fetch(`${SITEMAP_BASE_URL}?type=${type}`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch sitemap: ${response.status}`);
-        }
-        
-        const xml = await response.text();
-        setContent(xml);
-      } catch (err) {
-        console.error('Sitemap fetch error:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      }
-    };
-
-    fetchSitemap();
+    // Get the current path to determine which sitemap to fetch
+    const path = window.location.pathname;
+    const type = SITEMAP_TYPE_MAP[path] || 'index';
+    
+    // Immediately redirect to the edge function URL
+    // This ensures crawlers get XML directly without waiting for React
+    window.location.replace(`${SITEMAP_BASE_URL}?type=${type}`);
   }, []);
 
-  if (error) {
-    return <div>Error loading sitemap: {error}</div>;
-  }
-
-  if (!content) {
-    return null;
-  }
-
-  // Render XML content directly
-  return (
-    <pre style={{ margin: 0, fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-      {content}
-    </pre>
-  );
+  // Show nothing while redirecting - this prevents any content flash
+  return null;
 };
 
 export default Sitemap;
