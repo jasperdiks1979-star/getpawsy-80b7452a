@@ -208,7 +208,7 @@ export const Footer = () => {
                 </a>
                 <div className="flex items-center gap-3 text-sm text-background/70">
                   <MapPin className="w-4 h-4" />
-                  <span>Ships from USA 🇺🇸</span>
+                  <span>Apeldoorn, Nederland 🇳🇱</span>
                 </div>
               </div>
             </div>
