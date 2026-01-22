@@ -247,12 +247,12 @@ serve(async (req) => {
 
     console.log(`Admin verified for user: ${userId}`);
 
-    // Check rate limit (10 requests per hour for sync-stock - expensive operation)
+    // Check rate limit (30 requests per hour for sync-stock)
     const { data: rateLimitData, error: rateLimitError } = await adminSupabase
       .rpc('check_rate_limit', {
         p_user_id: userId,
         p_function_name: 'sync-stock',
-        p_max_requests: 10,
+        p_max_requests: 30,
         p_window_minutes: 60
       });
 
