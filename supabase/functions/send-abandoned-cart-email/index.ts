@@ -76,18 +76,18 @@ const handler = async (req: Request): Promise<Response> => {
             </td>
             <td style="padding: 12px; border-bottom: 1px solid #eee;">
               <strong>${item.name}</strong><br>
-              <span style="color: #666;">Aantal: ${item.quantity}</span>
+              <span style="color: #666;">Qty: ${item.quantity}</span>
             </td>
             <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">
-              €${(item.price * item.quantity).toFixed(2)}
+              $${(item.price * item.quantity).toFixed(2)}
             </td>
           </tr>
         `).join("");
 
         const isFirstReminder = cart.reminder_count === 0;
         const subject = isFirstReminder 
-          ? "Je hebt nog items in je winkelwagen! 🛒" 
-          : "We missen je! Kom je bestelling afronden? 💕";
+          ? "You left items in your cart! 🛒" 
+          : "We miss you! Come complete your order 💕";
 
         const emailHtml = `
           <!DOCTYPE html>
@@ -100,18 +100,18 @@ const handler = async (req: Request): Promise<Response> => {
             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: linear-gradient(135deg, #FF6B9D 0%, #C44569 100%); padding: 30px; text-align: center; border-radius: 16px 16px 0 0;">
                 <h1 style="color: white; margin: 0; font-size: 28px;">GetPawsy</h1>
-                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Premium huisdierproducten</p>
+                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Premium Pet Products</p>
               </div>
               
               <div style="background: white; padding: 30px; border-radius: 0 0 16px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                 <h2 style="color: #333; margin: 0 0 20px 0;">
-                  ${isFirstReminder ? "Hé, je bent iets vergeten! 🐾" : "We missen je! 💕"}
+                  ${isFirstReminder ? "Hey, you forgot something! 🐾" : "We miss you! 💕"}
                 </h2>
                 
                 <p style="color: #666; line-height: 1.6;">
                   ${isFirstReminder 
-                    ? "Je hebt nog een paar geweldige producten in je winkelwagen achtergelaten. Maak je bestelling af voordat ze uitverkocht zijn!"
-                    : "Je winkelwagen wacht nog steeds op je! Deze producten zijn nog beschikbaar, maar misschien niet lang meer."}
+                    ? "You left some great products in your cart. Complete your order before they sell out!"
+                    : "Your cart is still waiting for you! These products are still available, but maybe not for long."}
                 </p>
                 
                 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
@@ -120,9 +120,9 @@ const handler = async (req: Request): Promise<Response> => {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colspan="2" style="padding: 16px 12px; font-weight: bold; font-size: 18px;">Totaal:</td>
+                      <td colspan="2" style="padding: 16px 12px; font-weight: bold; font-size: 18px;">Total:</td>
                       <td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 18px; color: #C44569;">
-                        €${cart.cart_total.toFixed(2)}
+                        $${cart.cart_total.toFixed(2)}
                       </td>
                     </tr>
                   </tfoot>
@@ -131,17 +131,17 @@ const handler = async (req: Request): Promise<Response> => {
                 <div style="text-align: center; margin: 30px 0;">
                   <a href="https://getpawsy.lovable.app/cart" 
                      style="display: inline-block; background: linear-gradient(135deg, #FF6B9D 0%, #C44569 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 30px; font-weight: bold; font-size: 16px;">
-                    Bestelling Afronden →
+                    Complete Your Order →
                   </a>
                 </div>
                 
                 <p style="color: #999; font-size: 14px; text-align: center; margin-top: 30px;">
-                  Heb je vragen? Neem contact met ons op via info@getpawsy.pet
+                  Questions? Contact us at support@getpawsy.pet
                 </p>
               </div>
               
               <p style="color: #999; font-size: 12px; text-align: center; margin-top: 20px;">
-                Je ontvangt deze email omdat je items hebt toegevoegd aan je winkelwagen op GetPawsy.
+                You're receiving this email because you added items to your cart at GetPawsy.
               </p>
             </div>
           </body>

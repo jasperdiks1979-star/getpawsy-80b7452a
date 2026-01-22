@@ -27,11 +27,11 @@ serve(async (req) => {
 
     const emailHtml = `
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Je bestelling is afgeleverd!</title>
+  <title>Your order has been delivered!</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa;">
   <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
@@ -41,57 +41,57 @@ serve(async (req) => {
         <span style="font-size: 40px;">✅</span>
       </div>
       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">
-        Je bestelling is afgeleverd!
+        Your order has been delivered!
       </h1>
       <p style="color: rgba(255,255,255,0.9); margin: 15px 0 0; font-size: 16px;">
-        Goed nieuws - je pakket is aangekomen!
+        Great news - your package has arrived!
       </p>
     </div>
 
     <!-- Content -->
     <div style="padding: 40px 30px;">
       <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-        Beste ${customerName || "klant"},
+        Hi ${customerName || "there"},
       </p>
       
       <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
-        Geweldig nieuws! Je bestelling <strong style="color: #10b981;">#${orderId.slice(0, 8).toUpperCase()}</strong> is succesvol afgeleverd. We hopen dat je blij bent met je nieuwe aankoop! 🎉
+        Wonderful news! Your order <strong style="color: #10b981;">#${orderId.slice(0, 8).toUpperCase()}</strong> has been successfully delivered. We hope you're happy with your new purchase! 🎉
       </p>
 
       <!-- Success Box -->
       <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border-left: 4px solid #10b981;">
         <div style="display: flex; align-items: center; margin-bottom: 10px;">
           <span style="font-size: 24px; margin-right: 10px;">📦</span>
-          <span style="color: #065f46; font-weight: 600; font-size: 16px;">Aflevering bevestigd</span>
+          <span style="color: #065f46; font-weight: 600; font-size: 16px;">Delivery confirmed</span>
         </div>
         <p style="color: #047857; margin: 0; font-size: 14px;">
-          Je bestelling is vandaag afgeleverd op het bezorgadres.
+          Your order was delivered today to your shipping address.
         </p>
       </div>
 
       <!-- Pet Care Tip -->
       <div style="background-color: #fef3c7; border-radius: 12px; padding: 20px; margin: 25px 0;">
         <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.6;">
-          <strong>💡 Tip:</strong> Laat je huisdier rustig wennen aan nieuwe producten. Begin met korte introducties en beloon positief gedrag!
+          <strong>💡 Tip:</strong> Let your pet get used to new products gradually. Start with short introductions and reward positive behavior!
         </p>
       </div>
 
       <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 25px 0;">
-        Tevreden met je aankoop? We horen het graag! Deel je ervaring met andere dierenliefhebbers.
+        Happy with your purchase? We'd love to hear from you! Share your experience with other pet lovers.
       </p>
 
       <!-- Review CTA -->
       <div style="text-align: center; margin: 30px 0;">
         <a href="https://getpawsy.lovable.app" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; padding: 14px 35px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-          Bekijk meer producten
+          Shop More Products
         </a>
       </div>
 
       <!-- Questions Box -->
       <div style="background-color: #f3f4f6; border-radius: 12px; padding: 20px; margin-top: 30px;">
         <p style="color: #4b5563; font-size: 14px; margin: 0; line-height: 1.6;">
-          <strong>Vragen of problemen?</strong><br>
-          Ons klantenservice team staat voor je klaar! Neem contact met ons op via onze website.
+          <strong>Questions or issues?</strong><br>
+          Our customer service team is here to help! Contact us via our website.
         </p>
       </div>
     </div>
@@ -99,10 +99,10 @@ serve(async (req) => {
     <!-- Footer -->
     <div style="background-color: #1f2937; padding: 30px; text-align: center;">
       <p style="color: #9ca3af; font-size: 14px; margin: 0 0 10px;">
-        Bedankt voor je aankoop bij GetPawsy! 🐾
+        Thank you for shopping at GetPawsy! 🐾
       </p>
       <p style="color: #6b7280; font-size: 12px; margin: 0;">
-        © ${new Date().getFullYear()} GetPawsy. Alle rechten voorbehouden.
+        © ${new Date().getFullYear()} GetPawsy. All rights reserved.
       </p>
     </div>
   </div>
@@ -122,9 +122,9 @@ serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "GetPawsy <noreply@getpawsy.nl>",
+        from: "GetPawsy <noreply@getpawsy.pet>",
         to: [customerEmail],
-        subject: `✅ Je bestelling is afgeleverd! - Order #${orderId.slice(0, 8).toUpperCase()}`,
+        subject: `✅ Your order has been delivered! - Order #${orderId.slice(0, 8).toUpperCase()}`,
         html: emailHtml,
       }),
     });

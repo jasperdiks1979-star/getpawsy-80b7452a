@@ -63,15 +63,15 @@ serve(async (req) => {
       ? `${CARRIER_TRACKING_URLS[carrier]}${trackingNumber}`
       : null;
 
-    const firstName = customerName?.split(" ")[0] || "Klant";
+    const firstName = customerName?.split(" ")[0] || "there";
 
     const emailHtml = `
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Je bestelling is onderweg!</title>
+  <title>Your order is on its way!</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background-color: #f4f4f5;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -83,7 +83,7 @@ serve(async (req) => {
           <tr>
             <td style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 40px 30px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
-                🚚 Je bestelling is onderweg!
+                🚚 Your order is on its way!
               </h1>
             </td>
           </tr>
@@ -92,10 +92,10 @@ serve(async (req) => {
           <tr>
             <td style="padding: 40px 30px;">
               <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                Hoi ${firstName},
+                Hi ${firstName},
               </p>
               <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
-                Goed nieuws! Je bestelling is verzonden en is nu onderweg naar jou. 🎉
+                Great news! Your order has been shipped and is now on its way to you. 🎉
               </p>
               
               <!-- Tracking Box -->
@@ -103,17 +103,17 @@ serve(async (req) => {
                 <tr>
                   <td style="padding: 24px;">
                     <p style="margin: 0 0 8px; color: #9a3412; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-                      Tracking Informatie
+                      Tracking Information
                     </p>
                     <p style="margin: 0 0 4px; color: #374151; font-size: 14px;">
-                      <strong>Vervoerder:</strong> ${carrierName}
+                      <strong>Carrier:</strong> ${carrierName}
                     </p>
                     <p style="margin: 0 0 16px; color: #374151; font-size: 14px;">
-                      <strong>Trackingnummer:</strong> <code style="background: #ffffff; padding: 2px 8px; border-radius: 4px; font-family: monospace;">${trackingNumber}</code>
+                      <strong>Tracking number:</strong> <code style="background: #ffffff; padding: 2px 8px; border-radius: 4px; font-family: monospace;">${trackingNumber}</code>
                     </p>
                     ${trackingUrl ? `
                     <a href="${trackingUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
-                      📦 Volg je pakket
+                      📦 Track your package
                     </a>
                     ` : ''}
                   </td>
@@ -122,15 +122,15 @@ serve(async (req) => {
               
               <!-- Order Reference -->
               <p style="margin: 0 0 20px; color: #6b7280; font-size: 14px;">
-                <strong>Bestelnummer:</strong> ${orderId.slice(0, 8).toUpperCase()}
+                <strong>Order number:</strong> ${orderId.slice(0, 8).toUpperCase()}
               </p>
               
               <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                Houd er rekening mee dat het enkele dagen kan duren voordat je pakket arriveert, afhankelijk van je locatie.
+                Please note that it may take a few days for your package to arrive, depending on your location.
               </p>
               
               <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                Bedankt voor je bestelling bij GetPawsy! 🐾
+                Thank you for your order at GetPawsy! 🐾
               </p>
             </td>
           </tr>
@@ -139,13 +139,13 @@ serve(async (req) => {
           <tr>
             <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">
-                Vragen over je bestelling? Neem contact met ons op!
+                Questions about your order? Contact us!
               </p>
               <a href="https://getpawsy.lovable.app/contact" style="color: #f97316; text-decoration: none; font-weight: 500;">
-                Contact opnemen
+                Get in touch
               </a>
               <p style="margin: 20px 0 0; color: #9ca3af; font-size: 12px;">
-                © ${new Date().getFullYear()} GetPawsy. Alle rechten voorbehouden.
+                © ${new Date().getFullYear()} GetPawsy. All rights reserved.
               </p>
             </td>
           </tr>
@@ -170,9 +170,9 @@ serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "GetPawsy <noreply@getpawsy.nl>",
+        from: "GetPawsy <noreply@getpawsy.pet>",
         to: [customerEmail],
-        subject: `🚚 Je bestelling is onderweg! - Trackingnummer: ${trackingNumber}`,
+        subject: `🚚 Your order is on its way! - Tracking: ${trackingNumber}`,
         html: emailHtml,
       }),
     });
