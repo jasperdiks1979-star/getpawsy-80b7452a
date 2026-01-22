@@ -277,7 +277,7 @@ export const Footer = () => {
               <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs text-background/40 border-b border-background/10 pb-4">
                 <span>Skidzo (Eenmanszaak)</span>
                 <span>KvK: 78156955</span>
-                <span>BTW: NL123456789B01</span>
+                <span>BTW: NL101001964B02</span>
               </div>
               
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
