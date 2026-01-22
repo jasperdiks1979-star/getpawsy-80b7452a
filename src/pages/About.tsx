@@ -36,23 +36,6 @@ const About = () => {
     { number: '24/7', label: 'Customer Support' },
   ];
 
-  const team = [
-    {
-      name: 'Sarah Johnson',
-      role: 'Founder & CEO',
-      description: 'Lifelong pet lover with 15+ years in e-commerce.',
-    },
-    {
-      name: 'Michael Chen',
-      role: 'Product Curator',
-      description: 'Expert in pet nutrition and product quality.',
-    },
-    {
-      name: 'Emma Williams',
-      role: 'Customer Experience',
-      description: 'Dedicated to making every pet parent smile.',
-    },
-  ];
 
   return (
     <Layout>
@@ -216,46 +199,6 @@ const About = () => {
           </div>
         </section>
 
-        {/* Team Section */}
-        <section className="py-20 lg:py-28">
-          <div className="container px-4 md:px-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-                Meet Our Team
-              </h2>
-              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Passionate pet lovers dedicated to serving you and your furry friends.
-              </p>
-            </motion.div>
-
-            <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-              {team.map((member, index) => (
-                <motion.div
-                  key={member.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="text-center"
-                >
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-10 h-10 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-display font-semibold text-foreground mb-1">
-                    {member.name}
-                  </h3>
-                  <p className="text-primary font-medium mb-2">{member.role}</p>
-                  <p className="text-muted-foreground text-sm">{member.description}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* CTA Section */}
         <section className="py-20 lg:py-28 bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10">
