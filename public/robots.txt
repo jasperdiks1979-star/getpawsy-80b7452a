@@ -25,16 +25,9 @@ User-agent: *
 Allow: /
 Crawl-delay: 2
 
-# Sitemap Index (contains all individual sitemaps)
-Sitemap: https://getpawsy.pet/sitemap.xml
-
-# Individual sitemaps served via primary domain:
-# - Index: /sitemap.xml
-# - Static pages: /sitemap-static.xml
-# - Products: /sitemap-products.xml
-# - Categories: /sitemap-categories.xml
-# - Bestsellers: /sitemap-bestsellers.xml
-# - Blog: /sitemap-blog.xml
+# Sitemap Index - Direct XML served via edge function (no JavaScript required)
+# This ensures Google receives proper XML content immediately without SPA rendering
+Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=index
 
 # Disallow admin and private pages
 Disallow: /admin
