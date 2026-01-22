@@ -196,8 +196,20 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate user - require admin role
+    // Check if this is a cron job call (internal scheduled call via Authorization header)
     const authHeader = req.headers.get('Authorization');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    // If the Authorization header contains the service role key, it's a cron job
+    if (authHeader === `Bearer ${serviceRoleKey}`) {
+      console.log('=== Cron job triggered stock sync (bypassing rate limit) ===');
+      const result = await syncAllProductStock();
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Authenticate user - require admin role (authHeader already defined above)
     if (!authHeader?.startsWith('Bearer ')) {
       console.error('No authorization header provided');
       return new Response(
