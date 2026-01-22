@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, Send, ArrowRight, RotateCcw } from 'lucide-react';
+import { Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, Send, ArrowRight, RotateCcw, Cookie } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -291,6 +291,13 @@ export const Footer = () => {
                   <Link to="/cookies" className="hover:text-primary transition-colors">
                     Cookie Policy
                   </Link>
+                  <button 
+                    onClick={() => window.dispatchEvent(new CustomEvent('open-cookie-settings'))}
+                    className="hover:text-primary transition-colors inline-flex items-center gap-1"
+                  >
+                    <Cookie className="w-3 h-3" />
+                    Cookie Settings
+                  </button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <button className="hover:text-primary transition-colors inline-flex items-center gap-1">
