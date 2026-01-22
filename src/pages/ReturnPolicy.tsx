@@ -39,7 +39,7 @@ const ReturnPolicy = () => {
     },
     {
       question: 'What if my package never arrived?',
-      answer: 'For packages shipped to the USA that have not arrived within 45 days of dispatch, please contact us. We will investigate with the carrier and provide either a refund or replacement. Please note that tracking must show the package was not delivered.',
+      answer: 'For packages that have not arrived within 45 days of dispatch, please contact us. We will investigate with the carrier and provide either a refund or replacement. Please note that tracking must show the package was not delivered.',
     },
     {
       question: 'Can I cancel my order?',
@@ -207,7 +207,7 @@ const ReturnPolicy = () => {
                   We understand that waiting for your order can be frustrating. Our shipping delay policy is as follows:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                  <li><strong>USA Orders:</strong> If your order has not arrived within 45 days of dispatch, 
+                  <li><strong>Standard Orders:</strong> If your order has not arrived within 45 days of dispatch, 
                   you may request a refund or replacement.</li>
                   <li><strong>Tracking Issues:</strong> If tracking shows no updates for an extended period, 
                   please contact us so we can investigate.</li>
@@ -295,7 +295,7 @@ const ReturnPolicy = () => {
                   </div>
                   <p className="text-muted-foreground m-0">
                     Response time: Within 24-48 hours<br />
-                    Available: Monday - Friday, 9 AM - 6 PM EST
+                    Available: Monday - Friday, 9 AM - 6 PM CET
                   </p>
                 </div>
               </section>
