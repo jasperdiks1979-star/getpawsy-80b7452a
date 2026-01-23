@@ -37,7 +37,9 @@ import {
   exportAllAsExcel,
   excelColorPresets,
   defaultExcelColors,
-  type ExcelColorScheme
+  excelSheetOptions,
+  type ExcelColorScheme,
+  type ExcelSheetKey
 } from '@/utils/googleAdsExport';
 import {
   DropdownMenu,
@@ -107,15 +109,29 @@ const DownloadAds = () => {
     }
   });
 
-  // Save color preferences to localStorage when they change
+  // Selected sheets for Excel export
+  const [selectedSheets, setSelectedSheets] = useState<ExcelSheetKey[]>(() => {
+    try {
+      const saved = localStorage.getItem('excelSelectedSheets');
+      if (saved) {
+        return JSON.parse(saved) as ExcelSheetKey[];
+      }
+    } catch {
+      // ignore
+    }
+    return ['campaigns', 'ads', 'keywords', 'sitelinks', 'images'];
+  });
+
+  // Save preferences to localStorage when they change
   useEffect(() => {
     try {
       localStorage.setItem('excelColorPreferences', JSON.stringify(excelColors));
       localStorage.setItem('excelColorPreset', selectedPreset);
+      localStorage.setItem('excelSelectedSheets', JSON.stringify(selectedSheets));
     } catch (e) {
-      console.error('Error saving color preferences:', e);
+      console.error('Error saving preferences:', e);
     }
-  }, [excelColors, selectedPreset]);
+  }, [excelColors, selectedPreset, selectedSheets]);
 
   // Load sheets export history
   const loadSheetsHistory = async () => {
@@ -366,17 +382,38 @@ const DownloadAds = () => {
   };
 
   const handleDownloadExcel = async () => {
+    if (selectedSheets.length === 0) {
+      toast.error('Selecteer minimaal één sheet om te exporteren');
+      return;
+    }
     setIsExportingExcel(true);
     try {
-      await exportAllAsExcel(excelColors);
+      await exportAllAsExcel(excelColors, selectedSheets);
       setDownloaded(['campaigns', 'ads', 'keywords', 'sitelinks', 'images', 'excel']);
-      toast.success('Excel bestand gedownload');
+      toast.success(`Excel bestand gedownload (${selectedSheets.length} sheets)`);
     } catch (error) {
       console.error('Error exporting to Excel:', error);
       toast.error('Excel export mislukt');
     } finally {
       setIsExportingExcel(false);
     }
+  };
+
+  const toggleSheet = (sheet: ExcelSheetKey) => {
+    setSelectedSheets(prev => 
+      prev.includes(sheet) 
+        ? prev.filter(s => s !== sheet)
+        : [...prev, sheet]
+    );
+  };
+
+  const toggleAllSheets = () => {
+    if (selectedSheets.length === excelSheetOptions.length) {
+      setSelectedSheets([]);
+    } else {
+      setSelectedSheets(excelSheetOptions.map(s => s.key));
+    }
+  };
   };
 
   const handlePresetChange = (presetName: string) => {
@@ -519,6 +556,40 @@ const DownloadAds = () => {
               <PopoverContent className="w-80" align="start">
                 <div className="space-y-4">
                   <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm font-medium">Sheets selecteren</Label>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={toggleAllSheets}
+                        className="text-xs h-6 px-2"
+                      >
+                        {selectedSheets.length === excelSheetOptions.length ? 'Deselecteer alles' : 'Selecteer alles'}
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {excelSheetOptions.map((sheet) => (
+                        <Button
+                          key={sheet.key}
+                          size="sm"
+                          variant={selectedSheets.includes(sheet.key) ? "default" : "outline"}
+                          onClick={() => toggleSheet(sheet.key)}
+                          className="text-xs gap-1"
+                          style={selectedSheets.includes(sheet.key) ? { 
+                            backgroundColor: `#${excelColors[sheet.key]}` 
+                          } : undefined}
+                        >
+                          {selectedSheets.includes(sheet.key) && <Check className="h-3 w-3" />}
+                          {sheet.label}
+                        </Button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {selectedSheets.length} van {excelSheetOptions.length} sheets geselecteerd
+                    </p>
+                  </div>
+                  
+                  <div className="border-t pt-4">
                     <Label className="text-sm font-medium">Kleurenschema</Label>
                     <div className="grid grid-cols-3 gap-2 mt-2">
                       {Object.keys(excelColorPresets).map((preset) => (
