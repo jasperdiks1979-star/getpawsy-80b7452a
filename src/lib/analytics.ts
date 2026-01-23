@@ -378,3 +378,77 @@ export const trackBundleAddToCart = (
     item_ids: bundleItems.map(i => i.item_id),
   });
 };
+
+// Did You Mean / Search Fallback Tracking
+export const trackDidYouMeanImpression = (
+  searchQuery: string,
+  resultsCount: number,
+  suggestedCategories: string[],
+  suggestedProductCount: number
+): void => {
+  trackEvent('did_you_mean_impression', {
+    search_query: searchQuery,
+    original_results_count: resultsCount,
+    suggested_categories: suggestedCategories,
+    suggested_product_count: suggestedProductCount,
+    has_zero_results: resultsCount === 0,
+  });
+};
+
+export const trackDidYouMeanCategoryClick = (
+  searchQuery: string,
+  categoryName: string,
+  categorySlug: string,
+  resultsCount: number
+): void => {
+  trackEvent('did_you_mean_category_click', {
+    search_query: searchQuery,
+    category_name: categoryName,
+    category_slug: categorySlug,
+    original_results_count: resultsCount,
+    has_zero_results: resultsCount === 0,
+  });
+};
+
+export const trackDidYouMeanProductClick = (
+  searchQuery: string,
+  productId: string,
+  productName: string,
+  productPrice: number,
+  position: number,
+  resultsCount: number
+): void => {
+  trackEvent('did_you_mean_product_click', {
+    search_query: searchQuery,
+    product_id: productId,
+    product_name: productName,
+    product_price: productPrice,
+    position,
+    original_results_count: resultsCount,
+    has_zero_results: resultsCount === 0,
+    currency: 'EUR',
+  });
+
+  // Also fire standard select_item for ecommerce tracking
+  trackEvent('select_item', {
+    item_list_id: 'did_you_mean_suggestions',
+    item_list_name: 'Did You Mean Suggestions',
+    items: [{
+      item_id: productId,
+      item_name: productName,
+      price: productPrice,
+      index: position,
+      currency: 'EUR',
+    }],
+  });
+};
+
+export const trackDidYouMeanViewAllClick = (
+  searchQuery: string,
+  resultsCount: number
+): void => {
+  trackEvent('did_you_mean_view_all_click', {
+    search_query: searchQuery,
+    original_results_count: resultsCount,
+  });
+};
