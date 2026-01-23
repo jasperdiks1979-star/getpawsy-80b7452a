@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useQuery } from '@tanstack/react-query';
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { 
@@ -336,19 +336,21 @@ const BestsellerDetail = () => {
     excludeProductId: product?.id,
   });
 
-  // Build images array
-  const productImagesArray = Array.isArray(product?.images) ? product.images : [];
-  const rawImages = productImagesArray.length > 0 
-    ? productImagesArray.filter((img): img is string => 
-        typeof img === 'string' && 
-        img.startsWith('http') && 
-        !img.includes('undefined')
-      )
-    : [];
-  
-  const images = rawImages.length > 0 
-    ? rawImages 
-    : (product?.image_url ? [product.image_url] : ['/placeholder.svg']);
+  // Build images array - using useMemo to ensure stable reference
+  const images = React.useMemo(() => {
+    const productImagesArray = Array.isArray(product?.images) ? product.images : [];
+    const rawImages = productImagesArray.length > 0 
+      ? productImagesArray.filter((img): img is string => 
+          typeof img === 'string' && 
+          img.startsWith('http') && 
+          !img.includes('undefined')
+        )
+      : [];
+    
+    return rawImages.length > 0 
+      ? rawImages 
+      : (product?.image_url ? [product.image_url] : ['/placeholder.svg']);
+  }, [product?.images, product?.image_url]);
 
   // Image navigation handlers
   const handlePrevImage = () => {
@@ -403,7 +405,42 @@ const BestsellerDetail = () => {
     return () => observer.disconnect();
   }, [product]);
 
-  const inStock = product?.stock !== null && product?.stock !== undefined && product.stock > 0;
+  // Move early returns AFTER all hooks to comply with React hooks rules
+  // This is critical to prevent "Rendered more hooks than during the previous render" error
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container px-4 py-20">
+          <div className="animate-pulse space-y-8">
+            <div className="h-8 bg-muted rounded w-1/3" />
+            <div className="grid lg:grid-cols-2 gap-12">
+              <div className="aspect-square bg-muted rounded-3xl" />
+              <div className="space-y-4">
+                <div className="h-12 bg-muted rounded w-3/4" />
+                <div className="h-6 bg-muted rounded w-1/2" />
+                <div className="h-32 bg-muted rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error || !bestseller || !product) {
+    return (
+      <Layout>
+        <div className="container px-4 py-20 text-center">
+          <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
+          <Button onClick={() => navigate('/products')}>
+            View All Products
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  const inStock = product.stock !== null && product.stock !== undefined && product.stock > 0;
 
   const handleAddToCart = () => {
     if (!product || !inStock) return;
@@ -438,39 +475,6 @@ const BestsellerDetail = () => {
         : 'Added to wishlist'
     );
   };
-
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="container px-4 py-20">
-          <div className="animate-pulse space-y-8">
-            <div className="h-8 bg-muted rounded w-1/3" />
-            <div className="grid lg:grid-cols-2 gap-12">
-              <div className="aspect-square bg-muted rounded-3xl" />
-              <div className="space-y-4">
-                <div className="h-12 bg-muted rounded w-3/4" />
-                <div className="h-6 bg-muted rounded w-1/2" />
-                <div className="h-32 bg-muted rounded" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (error || !bestseller || !product) {
-    return (
-      <Layout>
-        <div className="container px-4 py-20 text-center">
-          <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
-          <Button onClick={() => navigate('/products')}>
-            View All Products
-          </Button>
-        </div>
-      </Layout>
-    );
-  }
 
   const discount = product.compare_at_price 
     ? Math.round((1 - product.price / product.compare_at_price) * 100)
