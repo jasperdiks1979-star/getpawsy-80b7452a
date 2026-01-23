@@ -841,6 +841,48 @@ function parseCSVToArray(csv: string): string[][] {
   });
 }
 
+// Data validation options for different column types
+const dataValidationOptions = {
+  campaignStatus: ['Enabled', 'Paused', 'Removed'],
+  adGroupStatus: ['Enabled', 'Paused', 'Removed'],
+  adStatus: ['Enabled', 'Paused'],
+  keywordMatchType: ['Exact', 'Phrase', 'Broad'],
+  keywordStatus: ['Enabled', 'Paused'],
+  biddingStrategy: ['Maximize conversions', 'Maximize clicks', 'Target CPA', 'Target ROAS', 'Manual CPC'],
+  campaignType: ['Search', 'Display', 'Shopping', 'Video', 'Performance Max'],
+  adType: ['Responsive search ad', 'Expanded text ad'],
+  sitelinkStatus: ['Enabled', 'Paused'],
+  imageAssetType: ['MARKETING_IMAGE', 'SQUARE_MARKETING_IMAGE', 'LOGO', 'LANDSCAPE_LOGO']
+};
+
+// Column to validation mapping per sheet
+const sheetValidationConfig: Record<string, Record<string, string[]>> = {
+  'Campaigns': {
+    'Campaign Status': dataValidationOptions.campaignStatus,
+    'Ad Group Status': dataValidationOptions.adGroupStatus,
+    'Bidding Strategy': dataValidationOptions.biddingStrategy,
+    'Campaign Type': dataValidationOptions.campaignType
+  },
+  'Ads': {
+    'Campaign Status': dataValidationOptions.campaignStatus,
+    'Ad Group Status': dataValidationOptions.adGroupStatus,
+    'Status': dataValidationOptions.adStatus,
+    'Ad Type': dataValidationOptions.adType
+  },
+  'Keywords': {
+    'Campaign Status': dataValidationOptions.campaignStatus,
+    'Ad Group Status': dataValidationOptions.adGroupStatus,
+    'Status': dataValidationOptions.keywordStatus,
+    'Match Type': dataValidationOptions.keywordMatchType
+  },
+  'Sitelinks': {
+    'Status': dataValidationOptions.sitelinkStatus
+  },
+  'Images': {
+    'Asset Type': dataValidationOptions.imageAssetType
+  }
+};
+
 // Export all files as Excel (.xlsx) with multiple sheets and styled headers
 export async function exportAllAsExcel(): Promise<void> {
   const XLSX = await import('xlsx-js-style');
@@ -870,13 +912,14 @@ export async function exportAllAsExcel(): Promise<void> {
     }
   };
   
-  // Helper to add CSV data as sheet with styling
+  // Helper to add CSV data as sheet with styling and validation
   const addSheet = (csvContent: string, sheetName: string, accentColor: string) => {
     const data = parseCSVToArray(csvContent);
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     
     // Get range of cells
     const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    const headers = data[0] || [];
     
     // Apply header styling to first row
     for (let col = range.s.c; col <= range.e.c; col++) {
@@ -898,6 +941,45 @@ export async function exportAllAsExcel(): Promise<void> {
             worksheet[cellRef].s = evenRowStyle;
           }
         }
+      }
+    }
+    
+    // Add data validation for specific columns
+    const validationConfig = sheetValidationConfig[sheetName];
+    if (validationConfig && range.e.r > 0) {
+      const dataValidations: Array<{
+        sqref: string;
+        type: string;
+        operator: string;
+        formula1: string;
+        showDropDown: boolean;
+        showErrorMessage: boolean;
+        errorTitle: string;
+        error: string;
+      }> = [];
+      
+      headers.forEach((header, colIndex) => {
+        const options = validationConfig[header];
+        if (options) {
+          const colLetter = XLSX.utils.encode_col(colIndex);
+          // Apply to all data rows (skip header)
+          const sqref = `${colLetter}2:${colLetter}${range.e.r + 1}`;
+          
+          dataValidations.push({
+            sqref,
+            type: 'list',
+            operator: 'equal',
+            formula1: `"${options.join(',')}"`,
+            showDropDown: true,
+            showErrorMessage: true,
+            errorTitle: 'Ongeldige waarde',
+            error: `Kies een waarde uit de lijst: ${options.join(', ')}`
+          });
+        }
+      });
+      
+      if (dataValidations.length > 0) {
+        worksheet['!dataValidation'] = dataValidations;
       }
     }
     
