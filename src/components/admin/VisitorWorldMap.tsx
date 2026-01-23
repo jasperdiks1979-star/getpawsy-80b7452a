@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X, Radio, RotateCw, ExternalLink, Target, Sparkles } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X, Radio, RotateCw, ExternalLink, Target, Sparkles, Vibrate, Smartphone } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -81,9 +81,9 @@ export const VisitorWorldMap = () => {
     const saved = localStorage.getItem("cart-notifications-enabled");
     return saved !== null ? saved === "true" : false;
   });
-  const [soundEnabled, setSoundEnabled] = useState(() => {
-    const saved = localStorage.getItem("notification-sound-enabled");
-    return saved !== null ? saved === "true" : true;
+  const [notificationMode, setNotificationMode] = useState<"sound" | "vibrate" | "off">(() => {
+    const saved = localStorage.getItem("notification-mode");
+    return (saved as "sound" | "vibrate" | "off") || "sound";
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenMinimal, setFullscreenMinimal] = useState(false);
@@ -137,8 +137,6 @@ export const VisitorWorldMap = () => {
 
   // Play notification sound
   const playNotificationSound = useCallback(() => {
-    if (!soundEnabled) return;
-    
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       
@@ -175,7 +173,29 @@ export const VisitorWorldMap = () => {
     } catch (e) {
       console.log("Could not play notification sound:", e);
     }
-  }, [soundEnabled]);
+  }, []);
+
+  // Trigger vibration for mobile
+  const triggerVibration = useCallback(() => {
+    try {
+      if ("vibrate" in navigator) {
+        // Pattern: vibrate 200ms, pause 100ms, vibrate 200ms, pause 100ms, vibrate 300ms
+        navigator.vibrate([200, 100, 200, 100, 300]);
+      }
+    } catch (e) {
+      console.log("Vibration not supported:", e);
+    }
+  }, []);
+
+  // Unified notification handler
+  const triggerNotification = useCallback(() => {
+    if (notificationMode === "sound") {
+      playNotificationSound();
+    } else if (notificationMode === "vibrate") {
+      triggerVibration();
+    }
+    // If "off", do nothing
+  }, [notificationMode, playNotificationSound, triggerVibration]);
 
   // Save notification preferences
   useEffect(() => {
@@ -187,8 +207,8 @@ export const VisitorWorldMap = () => {
   }, [cartNotifications]);
 
   useEffect(() => {
-    localStorage.setItem("notification-sound-enabled", String(soundEnabled));
-  }, [soundEnabled]);
+    localStorage.setItem("notification-mode", notificationMode);
+  }, [notificationMode]);
 
   // Save hot spots preference
   useEffect(() => {
@@ -287,7 +307,7 @@ export const VisitorWorldMap = () => {
           
           // Show notification for new checkouts
           if (newActivity.activity_type === "checkout" && checkoutNotifications) {
-            if (soundEnabled) playNotificationSound();
+            triggerNotification();
             toast({
               title: "🎉 Nieuwe checkout!",
               description: `Een klant uit ${location} is aan het afrekenen`,
@@ -297,7 +317,7 @@ export const VisitorWorldMap = () => {
           
           // Show notification for new cart additions
           if (newActivity.activity_type === "cart" && cartNotifications) {
-            if (soundEnabled) playNotificationSound();
+            triggerNotification();
             toast({
               title: "🛒 Nieuw in winkelwagen!",
               description: `Een klant uit ${location} heeft iets toegevoegd`,
@@ -328,7 +348,7 @@ export const VisitorWorldMap = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch, playNotificationSound, checkoutNotifications, cartNotifications, soundEnabled, timeRange]);
+  }, [refetch, triggerNotification, checkoutNotifications, cartNotifications, notificationMode, timeRange]);
 
   // Initialize map
   useEffect(() => {
@@ -1352,21 +1372,33 @@ export const VisitorWorldMap = () => {
                 </Label>
               </div>
               
-              {/* Sound Toggle */}
-              <div className="flex items-center gap-1.5 border-l border-border pl-3">
-                <Switch
-                  id="sound-toggle"
-                  checked={soundEnabled}
-                  onCheckedChange={setSoundEnabled}
-                />
-                <Label htmlFor="sound-toggle" className="flex items-center gap-1 cursor-pointer text-xs">
-                  {soundEnabled ? (
-                    <Volume2 className="w-3 h-3 text-green-500" />
-                  ) : (
-                    <VolumeX className="w-3 h-3 text-muted-foreground" />
-                  )}
-                  Geluid
-                </Label>
+              {/* Notification Mode Selector */}
+              <div className="flex items-center gap-2 border-l border-border pl-3">
+                <Select value={notificationMode} onValueChange={(value) => setNotificationMode(value as "sound" | "vibrate" | "off")}>
+                  <SelectTrigger className="h-7 w-[110px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sound">
+                      <div className="flex items-center gap-2">
+                        <Volume2 className="w-3 h-3 text-green-500" />
+                        <span>Geluid</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="vibrate">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="w-3 h-3 text-blue-500" />
+                        <span>Trillen</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="off">
+                      <div className="flex items-center gap-2">
+                        <VolumeX className="w-3 h-3 text-muted-foreground" />
+                        <span>Uit</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
