@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Eye, ShoppingCart, CreditCard } from "lucide-react";
+import { Users, Eye, ShoppingCart, CreditCard, MapPin } from "lucide-react";
 
 interface Stats {
   total: number;
@@ -152,6 +153,14 @@ export const LiveVisitorBadge = () => {
           <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
             Laatste 15 min
           </div>
+
+          <Link 
+            to="/live-map" 
+            className="mt-2 flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium py-1.5 px-3 rounded-md transition-colors"
+          >
+            <MapPin className="h-3.5 w-3.5" />
+            Live Map
+          </Link>
         </div>
       )}
     </div>
