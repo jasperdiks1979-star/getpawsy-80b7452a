@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send } from 'lucide-react';
+import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -37,12 +37,52 @@ type FileType = 'campaigns' | 'ads' | 'keywords' | 'sitelinks' | 'images';
 
 const DownloadAds = () => {
   const [downloaded, setDownloaded] = useState<string[]>([]);
+  const [copied, setCopied] = useState<string[]>([]);
   const [isZipping, setIsZipping] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileType | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [email, setEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
   const stats = getCampaignStats();
+
+  const handleCopyToClipboard = async (type: FileType) => {
+    const content = getCSVContent(type);
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(prev => [...prev, type]);
+      toast.success(`${type} gekopieerd naar clipboard`);
+      
+      // Reset copied state after 3 seconds
+      setTimeout(() => {
+        setCopied(prev => prev.filter(id => id !== type));
+      }, 3000);
+    } catch (error) {
+      toast.error('Kopiëren mislukt');
+    }
+  };
+
+  const handleCopyAll = async () => {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const allContent = [
+      `=== CAMPAIGNS (${timestamp}) ===\n${generateCampaignStructureCSV()}`,
+      `\n\n=== ADS ===\n${generateResponsiveAdsCSV()}`,
+      `\n\n=== KEYWORDS ===\n${generateKeywordsCSV()}`,
+      `\n\n=== SITELINKS ===\n${generateSitelinksCSV()}`,
+      `\n\n=== IMAGES ===\n${generateImageAssetsCSV()}`,
+    ].join('');
+    
+    try {
+      await navigator.clipboard.writeText(allContent);
+      setCopied(['campaigns', 'ads', 'keywords', 'sitelinks', 'images']);
+      toast.success('Alle data gekopieerd naar clipboard');
+      
+      setTimeout(() => {
+        setCopied([]);
+      }, 3000);
+    } catch (error) {
+      toast.error('Kopiëren mislukt');
+    }
+  };
 
   const getCSVContent = (type: FileType): string => {
     switch (type) {
@@ -176,7 +216,7 @@ const DownloadAds = () => {
           </CardContent>
         </Card>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
           <Button 
             onClick={handleDownloadZip}
             size="lg"
@@ -188,7 +228,21 @@ const DownloadAds = () => {
             ) : (
               <Archive className="h-5 w-5" />
             )}
-            {isZipping ? 'Creating...' : 'ZIP'}
+            ZIP
+          </Button>
+          
+          <Button 
+            onClick={handleCopyAll}
+            size="lg"
+            variant="secondary"
+            className="gap-2"
+          >
+            {copied.length === 5 ? (
+              <ClipboardCheck className="h-5 w-5" />
+            ) : (
+              <Copy className="h-5 w-5" />
+            )}
+            Copy
           </Button>
           
           <Button 
@@ -208,7 +262,7 @@ const DownloadAds = () => {
             className="gap-2"
           >
             <Download className="h-5 w-5" />
-            Losse CSVs
+            CSVs
           </Button>
         </div>
 
@@ -222,32 +276,37 @@ const DownloadAds = () => {
                   <p className="font-medium truncate">{file.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{file.desc}</p>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-1 shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setPreviewFile(file.id)}
-                    className="gap-1"
+                    className="gap-1 px-2"
                   >
                     <Eye className="h-4 w-4" />
-                    <span className="hidden sm:inline">Preview</span>
+                  </Button>
+                  <Button
+                    variant={copied.includes(file.id) ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => handleCopyToClipboard(file.id)}
+                    className="gap-1 px-2"
+                  >
+                    {copied.includes(file.id) ? (
+                      <ClipboardCheck className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
                   </Button>
                   <Button
                     variant={downloaded.includes(file.id) ? "secondary" : "outline"}
                     size="sm"
                     onClick={() => handleDownload(file.id)}
-                    className="gap-1"
+                    className="gap-1 px-2"
                   >
                     {downloaded.includes(file.id) ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        <span className="hidden sm:inline">Done</span>
-                      </>
+                      <Check className="h-4 w-4" />
                     ) : (
-                      <>
-                        <Download className="h-4 w-4" />
-                        <span className="hidden sm:inline">CSV</span>
-                      </>
+                      <Download className="h-4 w-4" />
                     )}
                   </Button>
                 </div>
