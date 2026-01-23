@@ -107,3 +107,6 @@ verify_jwt = false
 
 [functions.fix-variant-data]
 verify_jwt = false
+
+[functions.batch-generate-blog-images]
+verify_jwt = false
