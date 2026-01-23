@@ -841,37 +841,87 @@ function parseCSVToArray(csv: string): string[][] {
   });
 }
 
-// Export all files as Excel (.xlsx) with multiple sheets
+// Export all files as Excel (.xlsx) with multiple sheets and styled headers
 export async function exportAllAsExcel(): Promise<void> {
-  const XLSX = await import('xlsx');
+  const XLSX = await import('xlsx-js-style');
   const timestamp = new Date().toISOString().split('T')[0];
   
   // Create workbook
   const workbook = XLSX.utils.book_new();
   
-  // Helper to add CSV data as sheet
-  const addSheet = (csvContent: string, sheetName: string) => {
+  // Define header style with brand colors
+  const headerStyle = {
+    fill: { fgColor: { rgb: "2563EB" } }, // Blue background
+    font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+    alignment: { horizontal: "center", vertical: "center" },
+    border: {
+      top: { style: "thin", color: { rgb: "1E40AF" } },
+      bottom: { style: "thin", color: { rgb: "1E40AF" } },
+      left: { style: "thin", color: { rgb: "1E40AF" } },
+      right: { style: "thin", color: { rgb: "1E40AF" } }
+    }
+  };
+  
+  // Alternating row styles
+  const evenRowStyle = {
+    fill: { fgColor: { rgb: "F3F4F6" } },
+    border: {
+      bottom: { style: "thin", color: { rgb: "E5E7EB" } }
+    }
+  };
+  
+  // Helper to add CSV data as sheet with styling
+  const addSheet = (csvContent: string, sheetName: string, accentColor: string) => {
     const data = parseCSVToArray(csvContent);
     const worksheet = XLSX.utils.aoa_to_sheet(data);
+    
+    // Get range of cells
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    
+    // Apply header styling to first row
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: col });
+      if (worksheet[cellRef]) {
+        worksheet[cellRef].s = {
+          ...headerStyle,
+          fill: { fgColor: { rgb: accentColor } }
+        };
+      }
+    }
+    
+    // Apply alternating row styles
+    for (let row = 1; row <= range.e.r; row++) {
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+        if (worksheet[cellRef]) {
+          if (row % 2 === 0) {
+            worksheet[cellRef].s = evenRowStyle;
+          }
+        }
+      }
+    }
     
     // Set column widths based on content
     const colWidths = data[0]?.map((_, colIndex) => {
       const maxWidth = Math.max(
         ...data.slice(0, 50).map(row => (row[colIndex] || '').length)
       );
-      return { wch: Math.min(Math.max(maxWidth, 10), 50) };
+      return { wch: Math.min(Math.max(maxWidth, 12), 50) };
     }) || [];
     worksheet['!cols'] = colWidths;
+    
+    // Freeze first row
+    worksheet['!freeze'] = { xSplit: 0, ySplit: 1 };
     
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
   };
   
-  // Add all sheets
-  addSheet(generateCampaignStructureCSV(), 'Campaigns');
-  addSheet(generateResponsiveAdsCSV(), 'Ads');
-  addSheet(generateKeywordsCSV(), 'Keywords');
-  addSheet(generateSitelinksCSV(), 'Sitelinks');
-  addSheet(generateImageAssetsCSV(), 'Images');
+  // Add all sheets with different accent colors
+  addSheet(generateCampaignStructureCSV(), 'Campaigns', '2563EB');   // Blue
+  addSheet(generateResponsiveAdsCSV(), 'Ads', '7C3AED');             // Purple
+  addSheet(generateKeywordsCSV(), 'Keywords', '059669');             // Green
+  addSheet(generateSitelinksCSV(), 'Sitelinks', 'EA580C');           // Orange
+  addSheet(generateImageAssetsCSV(), 'Images', 'DC2626');            // Red
   
   // Generate Excel file
   const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
