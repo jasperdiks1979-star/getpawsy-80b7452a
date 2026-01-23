@@ -8,63 +8,114 @@
 
 // Pet-related synonyms mapping (supports bilingual search)
 const SYNONYMS: Record<string, string[]> = {
-  // Animals
-  'dog': ['hond', 'puppy', 'pup', 'canine', 'honden', 'puppies'],
-  'hond': ['dog', 'puppy', 'pup', 'canine', 'honden', 'puppies'],
-  'cat': ['kat', 'kitten', 'poes', 'katten', 'kittens', 'feline'],
-  'kat': ['cat', 'kitten', 'poes', 'katten', 'kittens', 'feline'],
-  'bird': ['vogel', 'parrot', 'papegaai', 'vogels', 'birds'],
-  'vogel': ['bird', 'parrot', 'papegaai', 'vogels', 'birds'],
-  'fish': ['vis', 'aquarium', 'vissen', 'fishes'],
-  'vis': ['fish', 'aquarium', 'vissen', 'fishes'],
-  'rabbit': ['konijn', 'bunny', 'konijnen', 'rabbits'],
-  'konijn': ['rabbit', 'bunny', 'konijnen', 'rabbits'],
-  'hamster': ['hamsters', 'knaagdier', 'rodent'],
-  'guinea pig': ['cavia', 'guinea pigs', 'cavias'],
-  'cavia': ['guinea pig', 'guinea pigs', 'cavias'],
-  'reptile': ['reptiel', 'lizard', 'hagedis', 'snake', 'slang'],
-  'reptiel': ['reptile', 'lizard', 'hagedis', 'snake', 'slang'],
+  // === ANIMALS ===
+  'dog': ['hond', 'puppy', 'pup', 'canine', 'honden', 'puppies', 'pooch', 'doggy', 'doggie', 'pups'],
+  'hond': ['dog', 'puppy', 'pup', 'canine', 'honden', 'puppies', 'pooch', 'doggy'],
+  'cat': ['kat', 'kitten', 'poes', 'katten', 'kittens', 'feline', 'kitty', 'kitties', 'cats'],
+  'kat': ['cat', 'kitten', 'poes', 'katten', 'kittens', 'feline', 'kitty'],
+  'bird': ['vogel', 'parrot', 'papegaai', 'vogels', 'birds', 'parakeet', 'budgie', 'cockatiel', 'canary', 'finch'],
+  'vogel': ['bird', 'parrot', 'papegaai', 'vogels', 'birds', 'parakeet', 'budgie'],
+  'fish': ['vis', 'aquarium', 'vissen', 'fishes', 'tropical', 'goldfish', 'betta', 'guppy', 'tetra'],
+  'vis': ['fish', 'aquarium', 'vissen', 'fishes', 'tropical'],
+  'rabbit': ['konijn', 'bunny', 'konijnen', 'rabbits', 'bunnies', 'hare'],
+  'konijn': ['rabbit', 'bunny', 'konijnen', 'rabbits', 'bunnies'],
+  'hamster': ['hamsters', 'knaagdier', 'rodent', 'dwarf hamster', 'syrian'],
+  'guinea pig': ['cavia', 'guinea pigs', 'cavias', 'cavy', 'cavies'],
+  'cavia': ['guinea pig', 'guinea pigs', 'cavias', 'cavy'],
+  'reptile': ['reptiel', 'lizard', 'hagedis', 'snake', 'slang', 'gecko', 'turtle', 'tortoise', 'bearded dragon', 'iguana'],
+  'reptiel': ['reptile', 'lizard', 'hagedis', 'snake', 'slang', 'gecko'],
   
-  // Products
-  'bed': ['mand', 'kussen', 'slaapplaats', 'beds', 'cushion', 'pillow'],
+  // === BEDS & SLEEPING ===
+  'bed': ['mand', 'kussen', 'slaapplaats', 'beds', 'cushion', 'pillow', 'mattress', 'sleeping', 'cozy', 'nest', 'donut bed', 'orthopedic'],
   'mand': ['bed', 'basket', 'beds', 'baskets'],
-  'toy': ['speelgoed', 'speeltje', 'toys', 'speeltjes'],
-  'speelgoed': ['toy', 'toys', 'speeltje', 'speeltjes'],
-  'food': ['voer', 'eten', 'voeding', 'foods', 'snack', 'treat'],
-  'voer': ['food', 'eten', 'voeding', 'foods', 'snack', 'treat'],
-  'collar': ['halsband', 'collars', 'halsbanden'],
-  'halsband': ['collar', 'collars', 'halsbanden'],
-  'leash': ['riem', 'lijn', 'leashes', 'riemen'],
-  'riem': ['leash', 'lijn', 'leashes', 'riemen'],
-  'bowl': ['bak', 'kom', 'voerbak', 'bowls', 'bakken'],
-  'bak': ['bowl', 'kom', 'voerbak', 'bowls', 'bakken'],
-  'cage': ['kooi', 'hok', 'cages', 'kooien'],
-  'kooi': ['cage', 'hok', 'cages', 'kooien'],
-  'carrier': ['transportbox', 'draagtas', 'carriers', 'reismand'],
-  'transportbox': ['carrier', 'draagtas', 'carriers', 'reismand'],
-  'brush': ['borstel', 'kam', 'grooming', 'verzorging'],
-  'borstel': ['brush', 'kam', 'grooming', 'verzorging'],
-  'litter': ['kattenbak', 'strooisel', 'litter box'],
-  'kattenbak': ['litter', 'litter box', 'strooisel'],
-  'scratching': ['krab', 'krabpaal', 'scratch', 'scratching post'],
-  'krabpaal': ['scratching', 'scratching post', 'krab', 'scratch'],
-  'house': ['huis', 'huisje', 'hok', 'houses'],
-  'huisje': ['house', 'huis', 'hok', 'houses'],
-  'fountain': ['fontein', 'drinkfontein', 'water fountain'],
-  'fontein': ['fountain', 'drinkfontein', 'water fountain'],
-  'feeder': ['voerbak', 'automatische voerbak', 'feeders'],
-  'gps': ['tracker', 'tracking', 'locatie'],
-  'tracker': ['gps', 'tracking', 'locatie'],
+  'cushion': ['pillow', 'pad', 'mat', 'kussen', 'bedding'],
+  'blanket': ['throw', 'fleece', 'cover', 'deken', 'blankets'],
   
-  // Attributes
-  'automatic': ['automatisch', 'auto'],
-  'automatisch': ['automatic', 'auto'],
-  'interactive': ['interactief', 'smart', 'slim'],
+  // === TOYS & PLAY ===
+  'toy': ['speelgoed', 'speeltje', 'toys', 'speeltjes', 'plaything', 'chew', 'squeaky', 'plush', 'ball', 'rope'],
+  'speelgood': ['toy', 'toys', 'speeltje', 'speeltjes'],
+  'ball': ['balls', 'fetch', 'tennis ball', 'chew ball'],
+  'chew': ['chews', 'chewing', 'gnaw', 'teething', 'dental toy'],
+  'plush': ['stuffed', 'soft toy', 'cuddly', 'squeaky'],
+  'puzzle': ['interactive', 'brain', 'mental', 'enrichment', 'stimulation'],
+  
+  // === FOOD & FEEDING ===
+  'food': ['voer', 'eten', 'voeding', 'foods', 'snack', 'treat', 'kibble', 'wet food', 'dry food', 'nutrition', 'diet', 'meal'],
+  'voer': ['food', 'eten', 'voeding', 'foods', 'snack', 'treat'],
+  'treat': ['treats', 'snack', 'snacks', 'reward', 'biscuit', 'jerky', 'dental treat'],
+  'bowl': ['bak', 'kom', 'voerbak', 'bowls', 'bakken', 'dish', 'feeder', 'water bowl', 'food bowl'],
+  'bak': ['bowl', 'kom', 'voerbak', 'bowls', 'bakken', 'dish'],
+  'feeder': ['voerbak', 'automatische voerbak', 'feeders', 'dispenser', 'automatic feeder', 'slow feeder', 'puzzle feeder'],
+  'fountain': ['fontein', 'drinkfontein', 'water fountain', 'drinking', 'water dispenser'],
+  'fontein': ['fountain', 'drinkfontein', 'water fountain'],
+  
+  // === COLLARS & LEASHES ===
+  'collar': ['halsband', 'collars', 'halsbanden', 'necklace', 'neck', 'tag collar', 'breakaway'],
+  'halsband': ['collar', 'collars', 'halsbanden'],
+  'leash': ['riem', 'lijn', 'leashes', 'riemen', 'lead', 'leads', 'walking', 'retractable'],
+  'riem': ['leash', 'lijn', 'leashes', 'riemen', 'lead'],
+  'harness': ['harnesses', 'vest', 'body harness', 'no-pull', 'step-in', 'tuig'],
+  
+  // === HOUSING & CAGES ===
+  'cage': ['kooi', 'hok', 'cages', 'kooien', 'enclosure', 'habitat', 'hutch', 'pen', 'crate'],
+  'kooi': ['cage', 'hok', 'cages', 'kooien', 'enclosure'],
+  'carrier': ['transportbox', 'draagtas', 'carriers', 'reismand', 'crate', 'travel', 'transport', 'pet bag', 'backpack carrier'],
+  'transportbox': ['carrier', 'draagtas', 'carriers', 'reismand', 'crate'],
+  'house': ['huis', 'huisje', 'hok', 'houses', 'shelter', 'hideout', 'hideaway', 'igloo', 'den'],
+  'huisje': ['house', 'huis', 'hok', 'houses', 'shelter'],
+  'crate': ['kennel', 'carrier', 'cage', 'travel crate', 'wire crate'],
+  'tank': ['aquarium', 'terrarium', 'vivarium', 'enclosure'],
+  
+  // === GROOMING & CARE ===
+  'brush': ['borstel', 'kam', 'grooming', 'verzorging', 'comb', 'deshedding', 'slicker', 'bristle'],
+  'borstel': ['brush', 'kam', 'grooming', 'verzorging', 'comb'],
+  'shampoo': ['wash', 'bath', 'soap', 'cleanser', 'conditioner', 'bathing'],
+  'nail': ['nails', 'claw', 'claws', 'trimmer', 'clipper', 'grinder'],
+  'grooming': ['care', 'hygiene', 'cleaning', 'maintenance', 'verzorging'],
+  
+  // === CAT-SPECIFIC ===
+  'litter': ['kattenbak', 'strooisel', 'litter box', 'cat litter', 'kitty litter', 'sand'],
+  'kattenbak': ['litter', 'litter box', 'strooisel'],
+  'scratching': ['krab', 'krabpaal', 'scratch', 'scratching post', 'scratcher', 'scratch pad', 'sisal'],
+  'krabpaal': ['scratching', 'scratching post', 'krab', 'scratch', 'cat tree'],
+  'cat tree': ['krabpaal', 'climbing', 'tower', 'condo', 'perch', 'cat furniture', 'activity center'],
+  'catnip': ['catmint', 'cat grass', 'silvervine'],
+  
+  // === TECH & ACCESSORIES ===
+  'gps': ['tracker', 'tracking', 'locatie', 'location', 'finder', 'smart tag', 'airtag'],
+  'tracker': ['gps', 'tracking', 'locatie', 'location', 'finder'],
+  'camera': ['monitor', 'pet cam', 'webcam', 'surveillance', 'treat cam'],
+  'smart': ['automatic', 'electronic', 'wifi', 'app', 'connected', 'intelligent'],
+  
+  // === HEALTH & SAFETY ===
+  'medicine': ['medication', 'supplement', 'vitamin', 'health', 'wellness'],
+  'flea': ['tick', 'pest', 'parasite', 'prevention', 'treatment'],
+  'dental': ['teeth', 'oral', 'toothbrush', 'toothpaste', 'chew'],
+  'calming': ['anxiety', 'stress', 'relaxing', 'soothing', 'comfort'],
+  
+  // === TRAINING ===
+  'training': ['train', 'obedience', 'behavior', 'learning', 'clicker'],
+  'potty': ['toilet', 'pee pad', 'training pad', 'housebreaking', 'puppy pad'],
+  'clicker': ['training', 'positive reinforcement', 'reward'],
+  
+  // === TRAVEL & OUTDOOR ===
+  'travel': ['trip', 'journey', 'car', 'airplane', 'portable', 'on-the-go'],
+  'stroller': ['buggy', 'pushchair', 'pet pram', 'carrier', 'wagon'],
+  'outdoor': ['buiten', 'outside', 'buitenshuis', 'garden', 'yard', 'patio', 'weatherproof'],
+  'buiten': ['outdoor', 'outside', 'buitenshuis', 'garden'],
+  'indoor': ['binnen', 'inside', 'binnenshuis', 'home', 'house'],
+  'binnen': ['indoor', 'inside', 'binnenshuis', 'home'],
+  
+  // === ATTRIBUTES ===
+  'automatic': ['automatisch', 'auto', 'self', 'programmable', 'timed'],
+  'automatisch': ['automatic', 'auto', 'self'],
+  'interactive': ['interactief', 'smart', 'slim', 'electronic', 'motion', 'sensor'],
   'interactief': ['interactive', 'smart', 'slim'],
-  'outdoor': ['buiten', 'outside', 'buitenshuis'],
-  'buiten': ['outdoor', 'outside', 'buitenshuis'],
-  'indoor': ['binnen', 'inside', 'binnenshuis'],
-  'binnen': ['indoor', 'inside', 'binnenshuis'],
+  'large': ['big', 'xl', 'extra large', 'giant', 'jumbo', 'groot'],
+  'small': ['mini', 'tiny', 'xs', 'extra small', 'petite', 'klein'],
+  'medium': ['mid', 'regular', 'standard', 'average'],
+  'waterproof': ['water resistant', 'weatherproof', 'rainproof', 'splash proof'],
+  'washable': ['machine wash', 'cleanable', 'removable cover'],
 };
 
 // Calculate Levenshtein distance between two strings
