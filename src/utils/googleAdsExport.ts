@@ -591,21 +591,19 @@ export function generateCampaignStructureCSV(): string {
 }
 
 // Generate Sitelinks CSV - Google Ads Editor format
-// Reference: https://support.google.com/google-ads/answer/6093368
+// Reference: https://support.google.com/google-ads/editor/answer/57747
 export function generateSitelinksCSV(): string {
-  // Google Ads Editor requires these exact column headers for sitelink extensions
+  // Google Ads Editor sitelink format - exact column headers from documentation
+  // Note: "Sitelink text" / "Link text" are the recognized headers
   const headers = [
-    "Action",
-    "Customer ID",
     "Campaign",
     "Sitelink text",
     "Description 1",
-    "Description 2",
+    "Description 2", 
     "Final URL",
     "Start date",
     "End date",
     "Device preference",
-    "Scheduling",
     "Status"
   ];
   
@@ -643,18 +641,15 @@ export function generateSitelinksCSV(): string {
   campaigns.forEach(campaign => {
     sitelinks.forEach(sitelink => {
       rows.push([
-        "Add",           // Action: Add, Remove, or Set
-        "",              // Customer ID: leave empty, auto-filled by Editor
-        campaign,        // Campaign name
+        campaign,        // Campaign name (must match existing campaign)
         sitelink.text,   // Sitelink text (max 25 chars)
         sitelink.desc1,  // Description 1 (max 35 chars)
         sitelink.desc2,  // Description 2 (max 35 chars)
         sitelink.url,    // Final URL
-        "",              // Start date (optional)
-        "",              // End date (optional)
-        "",              // Device preference (All, Mobile, or empty)
-        "",              // Scheduling (optional)
-        "Enabled"        // Status
+        "",              // Start date (optional, YYYY-MM-DD format)
+        "",              // End date (optional, YYYY-MM-DD format)
+        "All",           // Device preference: All, Mobile, or Desktop
+        "Enabled"        // Status: Enabled, Paused, or Removed
       ]);
     });
   });
