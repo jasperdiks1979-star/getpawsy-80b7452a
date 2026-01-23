@@ -187,6 +187,7 @@ const BlogPostPage = () => {
   };
 
   // Apply internal linking to content
+  // IMPORTANT: This hook MUST be called unconditionally before any early returns
   const { processedContent: linkedContent } = useInternalLinking(post?.content || '', {
     maxLinksPerKeyword: 1,
     maxTotalLinks: 8,
@@ -195,6 +196,7 @@ const BlogPostPage = () => {
   });
 
   // Render content - supports both HTML (from rich text editor) and legacy markdown
+  // This is a regular function, not a hook, so it can be defined anywhere
   const renderContent = (content: string) => {
     // Use linked content for HTML content
     const contentToRender = linkedContent || content;
@@ -246,6 +248,7 @@ const BlogPostPage = () => {
       });
   };
 
+  // Early returns MUST be after all hooks to comply with React hooks rules
   if (isLoading) {
     return (
       <Layout>
