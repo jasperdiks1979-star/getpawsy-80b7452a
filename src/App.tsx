@@ -157,8 +157,8 @@ const App = () => {
                 </AnimatePresence>
                 <Toaster />
                 <Sonner />
-                <LiveCheckoutWidget />
                 <BrowserRouter>
+                  <LiveCheckoutWidget />
                   <ScrollToTop />
                   <RouteErrorBoundary>
                     <Suspense fallback={<RouteLoader />}>
