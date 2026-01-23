@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { RefreshCw, Play, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
+import { RefreshCw, Play, CheckCircle, AlertCircle, ArrowRight, X, RotateCcw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   CATEGORY_KEYWORD_MAP, 
   EXCLUSION_KEYWORDS, 
@@ -84,6 +85,7 @@ function matchProductToCategory(
 export function ProductRecategorizer() {
   const queryClient = useQueryClient();
   const [results, setResults] = useState<RecategorizationResult[]>([]);
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -115,6 +117,7 @@ export function ProductRecategorizer() {
   const analyzeProducts = () => {
     setIsAnalyzing(true);
     setResults([]);
+    setExcludedIds(new Set()); // Reset exclusions on new analysis
     setProgress(0);
 
     const newResults: RecategorizationResult[] = [];
@@ -143,10 +146,23 @@ export function ProductRecategorizer() {
     setIsAnalyzing(false);
   };
 
-  // Apply recategorization
+  // Toggle exclusion for a product
+  const toggleExclusion = (productId: string) => {
+    setExcludedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(productId)) {
+        next.delete(productId);
+      } else {
+        next.add(productId);
+      }
+      return next;
+    });
+  };
+
+  // Apply recategorization (excluding excluded products)
   const applyMutation = useMutation({
     mutationFn: async () => {
-      const changedProducts = results.filter(r => r.changed);
+      const changedProducts = results.filter(r => r.changed && !excludedIds.has(r.productId));
       let completed = 0;
 
       for (const result of changedProducts) {
@@ -199,7 +215,8 @@ export function ProductRecategorizer() {
     },
   });
 
-  const changedCount = results.filter(r => r.changed).length;
+  const changedCount = results.filter(r => r.changed && !excludedIds.has(r.productId)).length;
+  const excludedCount = results.filter(r => r.changed && excludedIds.has(r.productId)).length;
   const unchangedCount = results.filter(r => !r.changed).length;
 
   return (
@@ -259,62 +276,91 @@ export function ProductRecategorizer() {
 
         {results.length > 0 && (
           <div className="space-y-4">
-            <div className="flex gap-4 flex-wrap">
+            <div className="flex gap-4 flex-wrap items-center">
               <Badge variant="default" className="text-sm">
                 <CheckCircle className="mr-1 h-3 w-3" />
                 {changedCount} te wijzigen
               </Badge>
+              {excludedCount > 0 && (
+                <Badge variant="outline" className="text-sm border-destructive text-destructive">
+                  <X className="mr-1 h-3 w-3" />
+                  {excludedCount} uitgesloten
+                </Badge>
+              )}
               <Badge variant="secondary" className="text-sm">
                 {unchangedCount} ongewijzigd
               </Badge>
               <div className="flex gap-2 items-center text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-green-500" />
-                  High: {results.filter(r => r.changed && r.confidence === 'high').length}
+                  High: {results.filter(r => r.changed && !excludedIds.has(r.productId) && r.confidence === 'high').length}
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-yellow-500" />
-                  Medium: {results.filter(r => r.changed && r.confidence === 'medium').length}
+                  Medium: {results.filter(r => r.changed && !excludedIds.has(r.productId) && r.confidence === 'medium').length}
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-orange-500" />
-                  Low: {results.filter(r => r.changed && r.confidence === 'low').length}
+                  Low: {results.filter(r => r.changed && !excludedIds.has(r.productId) && r.confidence === 'low').length}
                 </span>
               </div>
+              {excludedCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setExcludedIds(new Set())}
+                  className="text-xs h-6"
+                >
+                  <RotateCcw className="mr-1 h-3 w-3" />
+                  Reset exclusies
+                </Button>
+              )}
             </div>
 
             <ScrollArea className="h-[400px] rounded-md border">
               <div className="p-4 space-y-2">
-                {results.filter(r => r.changed).slice(0, 100).map((result) => (
-                  <div 
-                    key={result.productId}
-                    className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 text-sm"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{result.productName}</p>
-                      <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                        <span className="text-destructive">{result.oldCategory || 'Geen'}</span>
-                        <ArrowRight className="h-3 w-3" />
-                        <span className="text-primary font-medium">{result.newCategory}</span>
+                {results.filter(r => r.changed).slice(0, 100).map((result) => {
+                  const isExcluded = excludedIds.has(result.productId);
+                  return (
+                    <div 
+                      key={result.productId}
+                      className={`flex items-center gap-2 p-2 rounded-lg text-sm transition-all ${
+                        isExcluded 
+                          ? 'bg-destructive/10 opacity-60 line-through' 
+                          : 'bg-muted/50'
+                      }`}
+                    >
+                      <Checkbox
+                        checked={!isExcluded}
+                        onCheckedChange={() => toggleExclusion(result.productId)}
+                        className="shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{result.productName}</p>
+                        <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                          <span className="text-destructive">{result.oldCategory || 'Geen'}</span>
+                          <ArrowRight className="h-3 w-3" />
+                          <span className="text-primary font-medium">{result.newCategory}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1 items-end">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            result.confidence === 'high' 
+                              ? 'border-green-500 text-green-700 bg-green-50' 
+                              : result.confidence === 'medium'
+                              ? 'border-yellow-500 text-yellow-700 bg-yellow-50'
+                              : 'border-orange-500 text-orange-700 bg-orange-50'
+                          }`}
+                        >
+                          {result.confidence === 'high' ? '✓ High' : result.confidence === 'medium' ? '◐ Medium' : '◯ Low'}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">Score: {result.score}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-1 items-end">
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs ${
-                          result.confidence === 'high' 
-                            ? 'border-green-500 text-green-700 bg-green-50' 
-                            : result.confidence === 'medium'
-                            ? 'border-yellow-500 text-yellow-700 bg-yellow-50'
-                            : 'border-orange-500 text-orange-700 bg-orange-50'
-                        }`}
-                      >
-                        {result.confidence === 'high' ? '✓ High' : result.confidence === 'medium' ? '◐ Medium' : '◯ Low'}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">Score: {result.score}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {results.filter(r => r.changed).length > 100 && (
                   <p className="text-center text-muted-foreground text-sm py-2">
                     ... en {results.filter(r => r.changed).length - 100} meer
