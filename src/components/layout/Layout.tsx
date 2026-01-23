@@ -6,6 +6,7 @@ import { WelcomePopup } from '../marketing/WelcomePopup';
 import { ExitIntentPopup } from '../marketing/ExitIntentPopup';
 import { SlowFeederLeadMagnet } from '../marketing/SlowFeederLeadMagnet';
 import { CookieConsent } from '../marketing/CookieConsent';
+import { LiveVisitorBadge } from '../admin/LiveVisitorBadge';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export const Layout = ({ children }: LayoutProps) => {
       </PageTransition>
       <Footer />
       <ScrollToTop />
+      <LiveVisitorBadge />
       <WelcomePopup />
       <ExitIntentPopup />
       <SlowFeederLeadMagnet />
