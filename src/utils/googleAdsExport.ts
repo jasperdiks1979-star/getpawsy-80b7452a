@@ -812,6 +812,101 @@ export async function exportAllAsZip(): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+// Parse CSV string to 2D array
+function parseCSVToArray(csv: string): string[][] {
+  const lines = csv.trim().split('\n');
+  return lines.map(line => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current);
+    return result;
+  });
+}
+
+// Export all files as Excel (.xlsx) with multiple sheets
+export async function exportAllAsExcel(): Promise<void> {
+  const XLSX = await import('xlsx');
+  const timestamp = new Date().toISOString().split('T')[0];
+  
+  // Create workbook
+  const workbook = XLSX.utils.book_new();
+  
+  // Helper to add CSV data as sheet
+  const addSheet = (csvContent: string, sheetName: string) => {
+    const data = parseCSVToArray(csvContent);
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    
+    // Set column widths based on content
+    const colWidths = data[0]?.map((_, colIndex) => {
+      const maxWidth = Math.max(
+        ...data.slice(0, 50).map(row => (row[colIndex] || '').length)
+      );
+      return { wch: Math.min(Math.max(maxWidth, 10), 50) };
+    }) || [];
+    worksheet['!cols'] = colWidths;
+    
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+  };
+  
+  // Add all sheets
+  addSheet(generateCampaignStructureCSV(), 'Campaigns');
+  addSheet(generateResponsiveAdsCSV(), 'Ads');
+  addSheet(generateKeywordsCSV(), 'Keywords');
+  addSheet(generateSitelinksCSV(), 'Sitelinks');
+  addSheet(generateImageAssetsCSV(), 'Images');
+  
+  // Generate Excel file
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const filename = `getpawsy_google_ads_${timestamp}.xlsx`;
+  
+  // Check if Web Share API is available (iOS Safari)
+  if (navigator.share && navigator.canShare) {
+    const file = new File([blob], filename, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const shareData = { files: [file] };
+    
+    if (navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') {
+          return;
+        }
+      }
+    }
+  }
+  
+  // Fallback: regular download
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // Get campaign statistics
 export function getCampaignStats() {
   const campaigns = [...new Set(campaignData.map(ad => ad.campaign))];
