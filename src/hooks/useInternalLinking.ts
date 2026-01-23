@@ -70,15 +70,25 @@ export const useInternalLinking = (
 
   // Process content with internal links
   const processedContent = useMemo(() => {
-    if (!content || !enabled || (products.length === 0 && categories.length === 0)) {
+    // Safety checks
+    if (!content || typeof content !== 'string' || !enabled) {
+      return content || '';
+    }
+    
+    if (products.length === 0 && categories.length === 0) {
       return content;
     }
 
-    return addInternalLinks(content, products, categories, {
-      maxLinksPerKeyword,
-      maxTotalLinks,
-      minWordsBetweenLinks,
-    });
+    try {
+      return addInternalLinks(content, products, categories, {
+        maxLinksPerKeyword,
+        maxTotalLinks,
+        minWordsBetweenLinks,
+      });
+    } catch (error) {
+      console.error('Error processing internal links:', error);
+      return content;
+    }
   }, [content, products, categories, maxLinksPerKeyword, maxTotalLinks, minWordsBetweenLinks, enabled]);
 
   return {
