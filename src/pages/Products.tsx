@@ -8,6 +8,7 @@ import { ProductCard, Product } from '@/components/products/ProductCard';
 import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { SubcategoryGrid } from '@/components/products/SubcategoryGrid';
+import { DidYouMeanSection } from '@/components/products/DidYouMeanSection';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -571,6 +572,16 @@ const Products = () => {
               Clear All
             </Button>
           </div>
+        )}
+
+        {/* Did You Mean Section - Shows when search param is present */}
+        {searchParam && categories && products && (
+          <DidYouMeanSection
+            searchQuery={searchQuery}
+            categories={categories}
+            products={products as any}
+            resultsCount={totalCount}
+          />
         )}
 
         <div className="flex flex-col lg:flex-row gap-8">
