@@ -34,7 +34,9 @@ import {
   CalendarIcon,
   Download,
   FileText,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Sparkles,
+  Search
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -68,6 +70,7 @@ import { useDashboardWidgets } from "@/hooks/useDashboardWidgets";
 import { DashboardWidgetBuilder } from "./DashboardWidgetBuilder";
 import { CoPurchasedProductsWidget } from "./CoPurchasedProductsWidget";
 import { BundleSuggestionsWidget } from "./BundleSuggestionsWidget";
+import { DidYouMeanAnalytics } from "./DidYouMeanAnalytics";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 // Types for GA4 API responses
@@ -1245,6 +1248,10 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
             <MousePointerClick className="w-4 h-4" />
             Cross-sell
           </TabsTrigger>
+          <TabsTrigger value="didyoumean" className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4" />
+            Did You Mean
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -2340,6 +2347,14 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Did You Mean Tab */}
+        <TabsContent value="didyoumean" className="space-y-6">
+          <DidYouMeanAnalytics 
+            startDate={dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined}
+            endDate={dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined}
+          />
         </TabsContent>
       </Tabs>
     </div>
