@@ -398,10 +398,19 @@ function extractListItems(text: string): string[] {
  * Format text with highlighted keywords (bold markers)
  */
 function formatTextWithHighlights(text: string): React.ReactNode {
+  // Safety check: ensure text is a string
+  if (typeof text !== 'string') {
+    console.warn('formatTextWithHighlights received non-string:', typeof text);
+    return String(text || '');
+  }
+  
   // Find quoted text or important phrases to highlight
   const parts = text.split(/(".*?"|\d+(?:\.\d+)?(?:\s*(?:inch|inches|cm|lbs?|kg|mm|"|'))?)/g);
   
   return parts.map((part, idx) => {
+    // Safety: ensure part is a string before processing
+    if (typeof part !== 'string') return String(part || '');
+    
     // Highlight quoted text
     if (part.startsWith('"') && part.endsWith('"')) {
       return <strong key={idx} className="text-foreground font-medium">{part}</strong>;
