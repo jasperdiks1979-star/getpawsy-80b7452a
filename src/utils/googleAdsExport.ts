@@ -577,8 +577,8 @@ export function generateCampaignStructureCSV(): string {
     "15.00", // Adjusted budget for new account
     "Maximize Conversions",
     "Google Search; Search Partners",
-    "United States; United Kingdom; Canada; Australia; Netherlands",
-    "English; Dutch",
+    "United States",
+    "English",
     "Enabled"
   ]);
   
@@ -651,6 +651,62 @@ export function generateSitelinksCSV(): string {
   return csvContent;
 }
 
+// Generate Image Assets CSV for Google Ads
+export function generateImageAssetsCSV(): string {
+  const headers = [
+    "Campaign",
+    "Image URL",
+    "Image Type",
+    "Asset Name"
+  ];
+  
+  const campaigns = [...new Set(campaignData.map(ad => ad.campaign))];
+  
+  // Image assets hosted on getpawsy.pet
+  const imageAssets = [
+    {
+      url: "https://getpawsy.pet/ads/google-ads-square.jpg",
+      type: "Square (1:1)",
+      name: "GetPawsy Square Logo"
+    },
+    {
+      url: "https://getpawsy.pet/ads/google-ads-landscape.jpg",
+      type: "Landscape (1.91:1)",
+      name: "GetPawsy Landscape Banner"
+    },
+    {
+      url: "https://getpawsy.pet/ads/google-ads-logo.png",
+      type: "Logo Square (1:1)",
+      name: "GetPawsy Logo Square"
+    },
+    {
+      url: "https://getpawsy.pet/ads/google-ads-logo-landscape.png",
+      type: "Logo Landscape (4:1)",
+      name: "GetPawsy Logo Landscape"
+    }
+  ];
+  
+  const rows: string[][] = [];
+  
+  campaigns.forEach(campaign => {
+    imageAssets.forEach(asset => {
+      rows.push([
+        campaign,
+        asset.url,
+        asset.type,
+        asset.name
+      ]);
+    });
+  });
+  
+  const csvContent = [
+    headers.join(","),
+    ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))
+  ].join("\n");
+  
+  return csvContent;
+}
+
 // Download helper
 export function downloadCSV(content: string, filename: string): void {
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
@@ -682,6 +738,10 @@ export function exportAllGoogleAds(): void {
   setTimeout(() => {
     downloadCSV(generateSitelinksCSV(), `getpawsy_sitelinks_${timestamp}.csv`);
   }, 1500);
+  
+  setTimeout(() => {
+    downloadCSV(generateImageAssetsCSV(), `getpawsy_images_${timestamp}.csv`);
+  }, 2000);
 }
 
 // Get campaign statistics
