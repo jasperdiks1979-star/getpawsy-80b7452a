@@ -398,13 +398,20 @@ const ProductDetail = () => {
     );
   }
 
-  // Redirect to products page if product not found
+  // Redirect to products page with search parameter if product not found
   useEffect(() => {
-    if (!isLoading && !product) {
-      toast.info('Product not found, redirecting to products page...');
-      navigate('/products', { replace: true });
+    if (!isLoading && !product && id) {
+      // Extract keywords from the slug/id for search
+      const searchKeywords = id
+        .replace(/-/g, ' ')  // Convert hyphens to spaces
+        .replace(/[^a-zA-Z\s]/g, '')  // Remove non-letter characters
+        .trim();
+      
+      const searchParam = searchKeywords ? `?search=${encodeURIComponent(searchKeywords)}` : '';
+      toast.info('Product niet gevonden, we zoeken vergelijkbare producten...');
+      navigate(`/products${searchParam}`, { replace: true });
     }
-  }, [isLoading, product, navigate]);
+  }, [isLoading, product, navigate, id]);
 
   if (!product) {
     return (
