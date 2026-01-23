@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, X } from 'lucide-react';
+import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -17,6 +17,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import {
   generateCampaignStructureCSV,
   generateResponsiveAdsCSV,
@@ -35,6 +39,9 @@ const DownloadAds = () => {
   const [downloaded, setDownloaded] = useState<string[]>([]);
   const [isZipping, setIsZipping] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileType | null>(null);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [email, setEmail] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const stats = getCampaignStats();
 
   const getCSVContent = (type: FileType): string => {
@@ -94,6 +101,41 @@ const DownloadAds = () => {
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!email || !email.includes('@')) {
+      toast.error('Voer een geldig e-mailadres in');
+      return;
+    }
+
+    setIsSending(true);
+    const timestamp = new Date().toISOString().split('T')[0];
+
+    try {
+      const csvFiles = [
+        { filename: `getpawsy_campaigns_${timestamp}.csv`, content: generateCampaignStructureCSV() },
+        { filename: `getpawsy_ads_${timestamp}.csv`, content: generateResponsiveAdsCSV() },
+        { filename: `getpawsy_keywords_${timestamp}.csv`, content: generateKeywordsCSV() },
+        { filename: `getpawsy_sitelinks_${timestamp}.csv`, content: generateSitelinksCSV() },
+        { filename: `getpawsy_images_${timestamp}.csv`, content: generateImageAssetsCSV() },
+      ];
+
+      const { data, error } = await supabase.functions.invoke('send-ads-csv-email', {
+        body: { email, csvFiles },
+      });
+
+      if (error) throw error;
+
+      toast.success(`CSV bestanden verzonden naar ${email}`);
+      setShowEmailDialog(false);
+      setEmail('');
+    } catch (error: any) {
+      console.error('Error sending email:', error);
+      toast.error('Fout bij het verzenden van de email');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const files: { id: FileType; name: string; desc: string }[] = [
     { id: 'campaigns', name: 'Campaign Structure', desc: `${stats.campaigns} campaigns - US only targeting` },
     { id: 'ads', name: 'Responsive Search Ads', desc: `${stats.adGroups} ad groups, ${stats.headlines} headlines` },
@@ -134,7 +176,7 @@ const DownloadAds = () => {
           </CardContent>
         </Card>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Button 
             onClick={handleDownloadZip}
             size="lg"
@@ -146,7 +188,17 @@ const DownloadAds = () => {
             ) : (
               <Archive className="h-5 w-5" />
             )}
-            {isZipping ? 'Creating ZIP...' : 'Download als ZIP'}
+            {isZipping ? 'Creating...' : 'ZIP'}
+          </Button>
+          
+          <Button 
+            onClick={() => setShowEmailDialog(true)}
+            size="lg"
+            variant="secondary"
+            className="gap-2"
+          >
+            <Mail className="h-5 w-5" />
+            Email
           </Button>
           
           <Button 
@@ -156,7 +208,7 @@ const DownloadAds = () => {
             className="gap-2"
           >
             <Download className="h-5 w-5" />
-            Download Individueel
+            Losse CSVs
           </Button>
         </div>
 
@@ -278,6 +330,50 @@ const DownloadAds = () => {
                 </Button>
               )}
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              CSV bestanden per email versturen
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mailadres</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="jouw@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isSending}
+              />
+            </div>
+            
+            <p className="text-sm text-muted-foreground">
+              Alle 5 CSV bestanden worden als bijlage verzonden met import instructies.
+            </p>
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowEmailDialog(false)} disabled={isSending}>
+              Annuleren
+            </Button>
+            <Button onClick={handleSendEmail} disabled={isSending} className="gap-2">
+              {isSending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              {isSending ? 'Verzenden...' : 'Verstuur'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
