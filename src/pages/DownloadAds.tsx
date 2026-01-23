@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink } from 'lucide-react';
+import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -44,7 +44,16 @@ const DownloadAds = () => {
   const [email, setEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isExportingSheets, setIsExportingSheets] = useState(false);
+  const [previewSearch, setPreviewSearch] = useState('');
+  const [previewColumnFilter, setPreviewColumnFilter] = useState<number | null>(null);
   const stats = getCampaignStats();
+
+  // Reset search when preview file changes
+  const handlePreviewOpen = (fileId: FileType) => {
+    setPreviewSearch('');
+    setPreviewColumnFilter(null);
+    setPreviewFile(fileId);
+  };
 
   const handleCopyToClipboard = async (type: FileType) => {
     const content = getCSVContent(type);
@@ -158,6 +167,23 @@ const DownloadAds = () => {
     const csv = getCSVContent(previewFile);
     return parseCSV(csv);
   }, [previewFile]);
+
+  const filteredPreviewData = useMemo(() => {
+    if (!previewData) return null;
+    if (!previewSearch.trim()) return previewData;
+    
+    const searchLower = previewSearch.toLowerCase();
+    const filteredRows = previewData.rows.filter(row => {
+      if (previewColumnFilter !== null) {
+        // Filter only specific column
+        return row[previewColumnFilter]?.toLowerCase().includes(searchLower);
+      }
+      // Filter all columns
+      return row.some(cell => cell?.toLowerCase().includes(searchLower));
+    });
+    
+    return { headers: previewData.headers, rows: filteredRows };
+  }, [previewData, previewSearch, previewColumnFilter]);
 
   const handleDownload = (type: FileType) => {
     const timestamp = new Date().toISOString().split('T')[0];
@@ -335,7 +361,7 @@ const DownloadAds = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setPreviewFile(file.id)}
+                    onClick={() => handlePreviewOpen(file.id)}
                     className="gap-1 px-2"
                   >
                     <Eye className="h-4 w-4" />
@@ -383,44 +409,106 @@ const DownloadAds = () => {
       {/* Preview Dialog */}
       <Dialog open={!!previewFile} onOpenChange={(open) => !open && setPreviewFile(null)}>
         <DialogContent className="max-w-4xl max-h-[85vh] p-0">
-          <DialogHeader className="p-4 pb-2 border-b">
+          <DialogHeader className="p-4 pb-2 border-b space-y-3">
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2">
                 <FileSpreadsheet className="h-5 w-5" />
                 {previewFile && getFileName(previewFile)}
               </DialogTitle>
             </div>
+            
+            {/* Search and Filter */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Zoeken in alle kolommen..."
+                  value={previewSearch}
+                  onChange={(e) => setPreviewSearch(e.target.value)}
+                  className="pl-9 pr-9"
+                />
+                {previewSearch && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                    onClick={() => setPreviewSearch('')}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              
+              {previewData && previewData.headers.length > 0 && (
+                <select
+                  value={previewColumnFilter ?? ''}
+                  onChange={(e) => setPreviewColumnFilter(e.target.value === '' ? null : Number(e.target.value))}
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Alle kolommen</option>
+                  {previewData.headers.map((header, i) => (
+                    <option key={i} value={i}>{header}</option>
+                  ))}
+                </select>
+              )}
+            </div>
           </DialogHeader>
           
-          <ScrollArea className="max-h-[60vh]">
-            {previewData && (
+          <ScrollArea className="max-h-[55vh]">
+            {filteredPreviewData && (
               <div className="p-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {previewData.headers.map((header, i) => (
-                        <TableHead key={i} className="whitespace-nowrap text-xs font-semibold">
-                          {header}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {previewData.rows.slice(0, 50).map((row, rowIndex) => (
-                      <TableRow key={rowIndex}>
-                        {row.map((cell, cellIndex) => (
-                          <TableCell key={cellIndex} className="text-xs max-w-[200px] truncate" title={cell}>
-                            {cell || '-'}
-                          </TableCell>
+                {filteredPreviewData.rows.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Geen resultaten gevonden voor "{previewSearch}"</p>
+                  </div>
+                ) : (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          {filteredPreviewData.headers.map((header, i) => (
+                            <TableHead 
+                              key={i} 
+                              className={`whitespace-nowrap text-xs font-semibold cursor-pointer hover:bg-muted/50 ${previewColumnFilter === i ? 'bg-primary/10' : ''}`}
+                              onClick={() => setPreviewColumnFilter(previewColumnFilter === i ? null : i)}
+                            >
+                              {header}
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredPreviewData.rows.slice(0, 100).map((row, rowIndex) => (
+                          <TableRow key={rowIndex}>
+                            {row.map((cell, cellIndex) => (
+                              <TableCell 
+                                key={cellIndex} 
+                                className={`text-xs max-w-[200px] truncate ${previewColumnFilter === cellIndex ? 'bg-primary/5' : ''}`} 
+                                title={cell}
+                              >
+                                {previewSearch && cell?.toLowerCase().includes(previewSearch.toLowerCase()) ? (
+                                  <span dangerouslySetInnerHTML={{
+                                    __html: cell.replace(
+                                      new RegExp(`(${previewSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
+                                      '<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">$1</mark>'
+                                    )
+                                  }} />
+                                ) : (
+                                  cell || '-'
+                                )}
+                              </TableCell>
+                            ))}
+                          </TableRow>
                         ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {previewData.rows.length > 50 && (
-                  <p className="text-xs text-muted-foreground text-center mt-4">
-                    Showing first 50 of {previewData.rows.length} rows
-                  </p>
+                      </TableBody>
+                    </Table>
+                    {filteredPreviewData.rows.length > 100 && (
+                      <p className="text-xs text-muted-foreground text-center mt-4">
+                        Showing first 100 of {filteredPreviewData.rows.length} matching rows
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -428,7 +516,8 @@ const DownloadAds = () => {
           
           <div className="p-4 border-t flex justify-between items-center">
             <p className="text-xs text-muted-foreground">
-              {previewData?.rows.length || 0} rows total
+              {filteredPreviewData?.rows.length || 0} {previewSearch ? 'matching' : 'total'} rows
+              {previewSearch && previewData && ` (of ${previewData.rows.length})`}
             </p>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setPreviewFile(null)}>
