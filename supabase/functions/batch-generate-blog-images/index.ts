@@ -23,31 +23,49 @@ Deno.serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Parse request body for optional limit parameter
+    let limit = 3; // Default to 3 images per batch to avoid timeout
+    try {
+      const body = await req.json();
+      if (body.limit && typeof body.limit === 'number') {
+        limit = Math.min(body.limit, 10); // Max 10 per batch
+      }
+    } catch {
+      // No body or invalid JSON, use default limit
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("Starting batch blog image generation...");
+    console.log(`Starting batch blog image generation (limit: ${limit})...`);
 
-    // Get all blog posts without featured images
+    // Get blog posts without featured images, limited to avoid timeout
     const { data: posts, error: fetchError } = await supabase
       .from("blog_posts")
       .select("id, title, category, excerpt")
       .or("featured_image.is.null,featured_image.eq.")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(limit);
 
     if (fetchError) {
       throw new Error(`Failed to fetch posts: ${fetchError.message}`);
     }
 
+    // Count total remaining
+    const { count: totalRemaining } = await supabase
+      .from("blog_posts")
+      .select("id", { count: 'exact', head: true })
+      .or("featured_image.is.null,featured_image.eq.");
+
     if (!posts || posts.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, message: "No posts without images found", generated: 0 }),
+        JSON.stringify({ success: true, message: "No posts without images found", generated: 0, remaining: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Found ${posts.length} posts without images`);
+    console.log(`Processing ${posts.length} posts (${totalRemaining} total without images)`);
 
     const results: { postId: string; title: string; success: boolean; imageUrl?: string; error?: string }[] = [];
 
@@ -163,13 +181,15 @@ Requirements: 16:9 aspect ratio, clean composition, vibrant but natural colors, 
     }
 
     const successCount = results.filter(r => r.success).length;
+    const remaining = (totalRemaining || 0) - successCount;
     
     return new Response(
       JSON.stringify({
         success: true,
         message: `Generated ${successCount} of ${posts.length} images`,
         generated: successCount,
-        total: posts.length,
+        processed: posts.length,
+        remaining: remaining > 0 ? remaining : 0,
         results
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
