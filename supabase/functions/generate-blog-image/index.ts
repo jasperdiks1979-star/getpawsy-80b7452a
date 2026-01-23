@@ -23,10 +23,10 @@ serve(async (req) => {
 
     // Verify admin role or service key
     const authHeader = req.headers.get("Authorization");
-    const serviceKeyHeader = req.headers.get("X-Service-Key");
     
-    // Allow service key bypass for internal operations
-    const isServiceCall = serviceKeyHeader === supabaseServiceKey;
+    // Allow service role key in Authorization header for internal/batch operations
+    const token = authHeader?.replace("Bearer ", "") || "";
+    const isServiceCall = token === supabaseServiceKey;
     
     if (!isServiceCall) {
       if (!authHeader) {
