@@ -166,21 +166,21 @@ export const DidYouMeanSection = ({
           <Sparkles className="w-4 h-4 text-primary" />
         </div>
         <h2 className="font-semibold text-lg">
-          {resultsCount === 0 ? 'Bedoelde je misschien...' : 'Gerelateerde suggesties'}
+          {resultsCount === 0 ? 'Did you mean...' : 'Related suggestions'}
         </h2>
       </div>
       
       {resultsCount === 0 && (
         <p className="text-muted-foreground text-sm mb-4">
-          We konden geen exacte resultaten vinden voor "{searchQuery}". 
-          Bekijk deze alternatieven:
+          We couldn't find exact results for "{searchQuery}". 
+          Check out these alternatives:
         </p>
       )}
 
       {/* Suggested Categories */}
       {suggestedCategories.length > 0 && (
         <div className="mb-4">
-          <p className="text-sm font-medium mb-2 text-muted-foreground">Categorieën:</p>
+          <p className="text-sm font-medium mb-2 text-muted-foreground">Categories:</p>
           <div className="flex flex-wrap gap-2">
             {suggestedCategories.map((cat) => (
               <Link 
@@ -204,7 +204,7 @@ export const DidYouMeanSection = ({
       {/* Suggested Products */}
       {suggestedProducts.length > 0 && (
         <div>
-          <p className="text-sm font-medium mb-3 text-muted-foreground">Populaire producten:</p>
+          <p className="text-sm font-medium mb-3 text-muted-foreground">Popular products:</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
             {suggestedProducts.map((product, index) => (
               <Link 
@@ -226,7 +226,7 @@ export const DidYouMeanSection = ({
                       {product.name}
                     </p>
                     <p className="text-xs text-primary font-semibold mt-1">
-                      €{Number(product.price).toFixed(2)}
+                      ${Number(product.price).toFixed(2)}
                     </p>
                   </CardContent>
                 </Card>
@@ -242,7 +242,7 @@ export const DidYouMeanSection = ({
           <Link to="/products" onClick={handleViewAllClick}>
             <Button variant="outline" size="sm" className="gap-2">
               <Search className="w-4 h-4" />
-              Bekijk alle producten
+              View all products
             </Button>
           </Link>
         </div>
