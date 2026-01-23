@@ -49,6 +49,7 @@ import {
 import { 
   exportAllGoogleAds, 
   exportAllAsZip,
+  exportImageAssetsZip,
   campaignData,
   generateResponsiveAdsCSV,
   generateKeywordsCSV,
@@ -1137,23 +1138,32 @@ ${keywords.join(", ")}
                 </CardContent>
               </Card>
 
-              <Card className="border-dashed">
+              <Card className="border-dashed border-primary/30 bg-primary/5">
                 <CardContent className="pt-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium text-sm">Image Instructions</span>
+                    <ImageIcon className="w-4 h-4 text-primary" />
+                    <span className="font-medium text-sm">Image Assets ZIP</span>
+                    <Badge variant="secondary" className="text-xs">Nieuw</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Handleiding voor image assets (handmatige setup vereist)
+                    Alle afbeeldingen in 1 ZIP - direct importeren in Google Ads Editor
                   </p>
                   <Button 
-                    variant="outline" 
                     size="sm" 
                     className="w-full"
+                    onClick={() => exportImageAssetsZip()}
+                  >
+                    <Package className="w-3 h-3 mr-2" />
+                    Download ZIP
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full text-xs"
                     onClick={() => downloadCSV(generateImageAssetsInstructions(), "getpawsy_images_instructions.txt")}
                   >
-                    <Download className="w-3 h-3 mr-2" />
-                    Download
+                    <FileText className="w-3 h-3 mr-2" />
+                    Alleen handleiding
                   </Button>
                 </CardContent>
               </Card>

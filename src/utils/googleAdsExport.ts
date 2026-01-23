@@ -875,6 +875,145 @@ export async function exportAllAsZip(): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+// Image assets configuration for Google Ads
+const imageAssets = [
+  {
+    name: 'getpawsy_square_1200x1200.jpg',
+    url: 'https://getpawsy.pet/ads/google-ads-square.jpg',
+    type: 'Marketing Square (1:1)'
+  },
+  {
+    name: 'getpawsy_landscape_1200x628.jpg', 
+    url: 'https://getpawsy.pet/ads/google-ads-landscape.jpg',
+    type: 'Marketing Landscape (1.91:1)'
+  },
+  {
+    name: 'getpawsy_logo_square_1200x1200.png',
+    url: 'https://getpawsy.pet/ads/google-ads-logo.png',
+    type: 'Logo Square (1:1)'
+  },
+  {
+    name: 'getpawsy_logo_landscape_1200x300.png',
+    url: 'https://getpawsy.pet/ads/google-ads-logo-landscape.png',
+    type: 'Logo Landscape (4:1)'
+  }
+];
+
+// Export image assets as a ZIP folder for Google Ads Editor import
+// Use: Account → Import → Import image assets from files → Select folder
+export async function exportImageAssetsZip(): Promise<void> {
+  const JSZip = (await import('jszip')).default;
+  const zip = new JSZip();
+  const timestamp = new Date().toISOString().split('T')[0];
+  
+  // Create a folder inside the ZIP for better organization
+  const imagesFolder = zip.folder('getpawsy_image_assets');
+  
+  if (!imagesFolder) {
+    throw new Error('Failed to create images folder in ZIP');
+  }
+  
+  // Fetch and add each image to the ZIP
+  const fetchPromises = imageAssets.map(async (asset) => {
+    try {
+      const response = await fetch(asset.url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${asset.name}: ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      imagesFolder.file(asset.name, arrayBuffer);
+      return { success: true, name: asset.name };
+    } catch (error) {
+      console.error(`Error fetching ${asset.name}:`, error);
+      return { success: false, name: asset.name, error };
+    }
+  });
+  
+  const results = await Promise.all(fetchPromises);
+  const failedDownloads = results.filter(r => !r.success);
+  
+  if (failedDownloads.length > 0) {
+    console.warn('Some images failed to download:', failedDownloads);
+  }
+  
+  // Add a README with import instructions
+  const readme = `
+================================================================================
+                    GETPAWSY IMAGE ASSETS - IMPORT INSTRUCTIONS
+================================================================================
+
+Deze map bevat alle image assets voor je Google Ads campagnes.
+
+HOE TE IMPORTEREN IN GOOGLE ADS EDITOR:
+────────────────────────────────────────
+
+1. Pak deze ZIP uit naar een map op je computer
+
+2. Open Google Ads Editor
+
+3. Ga naar: Account → Import → Import image assets from files
+
+4. Selecteer de "getpawsy_image_assets" map
+
+5. Klik "Import" - alle afbeeldingen worden automatisch toegevoegd
+
+6. De afbeeldingen verschijnen onder: Shared Library → Assets → Images
+
+INHOUD VAN DEZE MAP:
+────────────────────
+${imageAssets.map(a => `• ${a.name} - ${a.type}`).join('\n')}
+
+BELANGRIJK:
+────────────
+• Bestandsnamen bevatten de afmetingen voor eenvoudige identificatie
+• Na import kun je afbeeldingen toewijzen aan campagnes via rechtermuisknop
+• Alle afbeeldingen zijn geoptimaliseerd voor Google Ads vereisten
+
+Generated: ${new Date().toLocaleString('nl-NL')}
+================================================================================
+`;
+  
+  imagesFolder.file('README.txt', readme.trim());
+  
+  // Generate and download the ZIP
+  const content = await zip.generateAsync({ type: 'blob' });
+  const filename = `getpawsy_image_assets_${timestamp}.zip`;
+  
+  // Check if Web Share API is available (iOS Safari)
+  if (navigator.share && navigator.canShare) {
+    const file = new File([content], filename, { type: 'application/zip' });
+    const shareData = { files: [file] };
+    
+    if (navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') {
+          return;
+        }
+      }
+    }
+  }
+  
+  // Fallback: regular download
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(content);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// Get list of image assets for display purposes
+export function getImageAssetsList() {
+  return imageAssets;
+}
+
 // Parse CSV string to 2D array
 function parseCSVToArray(csv: string): string[][] {
   const lines = csv.trim().split('\n');
