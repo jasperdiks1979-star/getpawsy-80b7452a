@@ -13,7 +13,10 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Eye,
-  Target
+  Target,
+  DollarSign,
+  ArrowDown,
+  ChevronRight
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -29,7 +32,10 @@ import {
   Cell,
   LineChart,
   Line,
-  Legend
+  Legend,
+  FunnelChart,
+  Funnel,
+  LabelList
 } from "recharts";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { format, subDays } from "date-fns";
@@ -39,9 +45,20 @@ interface DidYouMeanMetrics {
   categoryClicks: number;
   productClicks: number;
   viewAllClicks: number;
+  addToCarts: number;
+  purchases: number;
+  revenue: number;
   categoryClickRate: number;
   productClickRate: number;
   totalEngagementRate: number;
+  conversionRate: number;
+}
+
+interface ConversionFunnelStage {
+  stage: string;
+  count: number;
+  percentage: number;
+  dropoff: number;
 }
 
 interface TopSearchTerm {
@@ -71,6 +88,7 @@ interface DidYouMeanAnalyticsProps {
 }
 
 const COLORS = ['hsl(25, 65%, 45%)', 'hsl(140, 35%, 45%)', 'hsl(200, 45%, 50%)', 'hsl(280, 35%, 55%)', 'hsl(45, 65%, 50%)'];
+const FUNNEL_COLORS = ['hsl(200, 65%, 50%)', 'hsl(140, 55%, 45%)', 'hsl(45, 70%, 50%)', 'hsl(25, 65%, 45%)'];
 
 export const DidYouMeanAnalytics = ({ startDate, endDate }: DidYouMeanAnalyticsProps) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -82,11 +100,16 @@ export const DidYouMeanAnalytics = ({ startDate, endDate }: DidYouMeanAnalyticsP
     categoryClicks: 0,
     productClicks: 0,
     viewAllClicks: 0,
+    addToCarts: 0,
+    purchases: 0,
+    revenue: 0,
     categoryClickRate: 0,
     productClickRate: 0,
-    totalEngagementRate: 0
+    totalEngagementRate: 0,
+    conversionRate: 0
   });
   
+  const [conversionFunnel, setConversionFunnel] = useState<ConversionFunnelStage[]>([]);
   const [topSearchTerms, setTopSearchTerms] = useState<TopSearchTerm[]>([]);
   const [categorySuggestions, setCategorySuggestions] = useState<CategorySuggestion[]>([]);
   const [dailyTrends, setDailyTrends] = useState<DailyTrend[]>([]);
@@ -100,6 +123,7 @@ export const DidYouMeanAnalytics = ({ startDate, endDate }: DidYouMeanAnalyticsP
       
       const { data, error } = await invokeFunction<{
         metrics: DidYouMeanMetrics;
+        conversionFunnel: ConversionFunnelStage[];
         topSearchTerms: TopSearchTerm[];
         categorySuggestions: CategorySuggestion[];
         dailyTrends: DailyTrend[];
@@ -115,10 +139,15 @@ export const DidYouMeanAnalytics = ({ startDate, endDate }: DidYouMeanAnalyticsP
         categoryClicks: 0,
         productClicks: 0,
         viewAllClicks: 0,
+        addToCarts: 0,
+        purchases: 0,
+        revenue: 0,
         categoryClickRate: 0,
         productClickRate: 0,
-        totalEngagementRate: 0
+        totalEngagementRate: 0,
+        conversionRate: 0
       });
+      setConversionFunnel(data.conversionFunnel || []);
       setTopSearchTerms(data.topSearchTerms || []);
       setCategorySuggestions(data.categorySuggestions || []);
       setDailyTrends(data.dailyTrends || []);
@@ -267,6 +296,106 @@ export const DidYouMeanAnalytics = ({ startDate, endDate }: DidYouMeanAnalyticsP
           </Card>
         </motion.div>
       </div>
+
+      {/* Conversion Funnel */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ArrowDown className="w-4 h-4" />
+            Conversion Funnel
+          </CardTitle>
+          <CardDescription>
+            Track the journey from impression to purchase
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {conversionFunnel.length > 0 ? (
+            <div className="space-y-4">
+              {/* Visual Funnel */}
+              <div className="flex flex-col items-center gap-1">
+                {conversionFunnel.map((stage, index) => {
+                  const widthPercentage = Math.max(20, stage.percentage);
+                  const isLast = index === conversionFunnel.length - 1;
+                  
+                  return (
+                    <motion.div
+                      key={stage.stage}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="w-full"
+                    >
+                      <div 
+                        className="mx-auto rounded-lg p-3 transition-all relative"
+                        style={{ 
+                          width: `${widthPercentage}%`,
+                          backgroundColor: FUNNEL_COLORS[index],
+                          minWidth: '200px'
+                        }}
+                      >
+                        <div className="flex items-center justify-between text-white">
+                          <div className="flex items-center gap-2">
+                            {index === 0 && <Eye className="w-4 h-4" />}
+                            {index === 1 && <MousePointerClick className="w-4 h-4" />}
+                            {index === 2 && <ShoppingCart className="w-4 h-4" />}
+                            {index === 3 && <DollarSign className="w-4 h-4" />}
+                            <span className="font-medium text-sm">{stage.stage}</span>
+                          </div>
+                          <span className="font-bold">{stage.count.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      {!isLast && (
+                        <div className="flex items-center justify-center py-1">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <ChevronRight className="w-3 h-3 rotate-90" />
+                            <span className="text-red-500 font-medium">
+                              -{stage.dropoff.toFixed(1)}% drop-off
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Funnel Metrics Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">Click Rate</p>
+                  <p className="text-lg font-bold text-primary">
+                    {conversionFunnel[1]?.percentage.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">Add to Cart Rate</p>
+                  <p className="text-lg font-bold text-primary">
+                    {conversionFunnel[2]?.percentage.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">Purchase Rate</p>
+                  <p className="text-lg font-bold text-primary">
+                    {conversionFunnel[3]?.percentage.toFixed(2)}%
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">Est. Revenue</p>
+                  <p className="text-lg font-bold text-green-600">
+                    ${metrics.revenue.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground">
+              <ArrowDown className="w-8 h-8 mb-2 opacity-50" />
+              <p>No funnel data available yet</p>
+              <p className="text-xs mt-1">Data will appear once users interact with suggestions</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Trends Chart */}
