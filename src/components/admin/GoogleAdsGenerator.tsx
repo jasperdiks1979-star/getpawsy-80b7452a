@@ -50,6 +50,7 @@ import {
   exportAllGoogleAds, 
   exportAllAsZip,
   exportImageAssetsZip,
+  exportCompleteCampaignPackage,
   campaignData,
   generateResponsiveAdsCSV,
   generateKeywordsCSV,
@@ -94,6 +95,8 @@ export function GoogleAdsGenerator() {
   const [targetAudience, setTargetAudience] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloadingPackage, setIsDownloadingPackage] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<string>("");
   const [generatedAds, setGeneratedAds] = useState<GeneratedAd[]>([]);
   const [selectedSavedAd, setSelectedSavedAd] = useState<SavedAd | null>(null);
   const [finalUrl, setFinalUrl] = useState("https://getpawsy.pet");
@@ -1034,21 +1037,79 @@ ${keywords.join(", ")}
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              {/* COMPLETE PACKAGE - Primary CTA */}
+              <div className="p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-xl border-2 border-primary/30">
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="flex-1 text-center sm:text-left">
+                    <h4 className="font-semibold text-lg flex items-center gap-2 justify-center sm:justify-start">
+                      <Sparkles className="w-5 h-5 text-primary" />
+                      Complete Campaign Package
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Alle CSV's + alle afbeeldingen in één ZIP • Direct importeerbaar in Google Ads Editor
+                    </p>
+                  </div>
+                  <Button 
+                    size="lg"
+                    className="w-full sm:w-auto min-w-[220px]"
+                    onClick={async () => {
+                      setIsDownloadingPackage(true);
+                      setDownloadProgress('Voorbereiden...');
+                      try {
+                        await exportCompleteCampaignPackage((stage, percent) => {
+                          setDownloadProgress(`${stage} (${percent}%)`);
+                        });
+                        toast.success('Complete Campaign Package gedownload!');
+                      } catch (error) {
+                        console.error('Download failed:', error);
+                        toast.error('Download mislukt. Probeer opnieuw.');
+                      } finally {
+                        setIsDownloadingPackage(false);
+                        setDownloadProgress('');
+                      }
+                    }}
+                    disabled={isDownloadingPackage}
+                  >
+                    {isDownloadingPackage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {downloadProgress || 'Downloaden...'}
+                      </>
+                    ) : (
+                      <>
+                        <Package className="w-4 h-4 mr-2" />
+                        Download Complete Package
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Alternative downloads */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button 
+                  variant="outline"
                   onClick={() => exportAllAsZip()}
                   className="flex-1"
                 >
-                  <Package className="w-4 h-4 mr-2" />
-                  Download als ZIP (aanbevolen)
+                  <FileText className="w-4 h-4 mr-2" />
+                  Alleen CSV's (ZIP)
                 </Button>
                 <Button 
                   variant="outline"
+                  onClick={() => exportImageAssetsZip()}
+                  className="flex-1"
+                >
+                  <ImageIcon className="w-4 h-4 mr-2" />
+                  Alleen Images (ZIP)
+                </Button>
+                <Button 
+                  variant="ghost"
                   onClick={() => exportAllGoogleAds()}
                   className="flex-1"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download Losse CSV's
+                  Losse CSV's
                 </Button>
               </div>
             </div>
