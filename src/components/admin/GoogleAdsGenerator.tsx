@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { 
   exportAllGoogleAds, 
+  exportAllAsZip,
   campaignData,
   generateResponsiveAdsCSV,
   generateKeywordsCSV,
@@ -1034,11 +1035,19 @@ ${keywords.join(", ")}
 
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button 
+                  onClick={() => exportAllAsZip()}
+                  className="flex-1"
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Download als ZIP (aanbevolen)
+                </Button>
+                <Button 
+                  variant="outline"
                   onClick={() => exportAllGoogleAds()}
                   className="flex-1"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download Alle CSV's (5 bestanden)
+                  Download Losse CSV's
                 </Button>
               </div>
             </div>
