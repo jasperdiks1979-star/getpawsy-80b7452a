@@ -1,22 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CheckCircle, Package, ArrowRight, Loader2 } from 'lucide-react';
+import { CheckCircle, Package, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
-import { trackPurchase } from '@/lib/analytics';
-
-// Declare gtag for TypeScript
-declare global {
-  interface Window {
-    gtag: (
-      command: 'event' | 'config' | 'js',
-      action: string,
-      params?: Record<string, unknown>
-    ) => void;
-  }
-}
+import { trackPurchase, trackGoogleAdsConversion, trackGoogleAdsPageView } from '@/lib/analytics';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -39,24 +28,38 @@ const PaymentSuccess = () => {
         totalPrice
       );
 
-      // Track Google Ads conversion
-      if (typeof window !== 'undefined' && window.gtag) {
-        window.gtag('event', 'conversion', {
-          send_to: 'AW-17894436603/PURCHASE', // Replace PURCHASE with your conversion label if needed
-          value: totalPrice,
-          currency: 'USD',
-          transaction_id: sessionId,
-        });
-        console.debug('[Google Ads] Conversion tracked:', {
-          value: totalPrice,
-          transaction_id: sessionId,
-        });
-      }
+      // Track Google Ads purchase conversion with enhanced data
+      trackGoogleAdsConversion({
+        transactionId: sessionId,
+        value: totalPrice,
+        currency: 'USD',
+        items: items.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+      });
+
+      // Track Google Ads remarketing page view
+      trackGoogleAdsPageView('purchase', items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+      })));
 
       clearCart(true); // Mark as recovered
       setTracked(true);
+      
+      console.debug('[PaymentSuccess] Conversion tracking completed:', {
+        sessionId,
+        totalPrice,
+        itemCount: items.length,
+      });
     } else if (!tracked && sessionId && items.length === 0) {
       // Cart already cleared (e.g., page refresh after purchase)
+      // Still track the page view for remarketing
+      trackGoogleAdsPageView('purchase');
       setTracked(true);
     }
   }, [sessionId, items, totalPrice, clearCart, tracked]);

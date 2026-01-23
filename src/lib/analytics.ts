@@ -605,7 +605,190 @@ export const trackDidYouMeanAddToCart = (
       item_list_id: 'did_you_mean_products',
       item_list_name: 'Did You Mean - Products',
       index: position,
+    quantity,
+    }],
+  });
+};
+
+// ============================================
+// GOOGLE ADS CONVERSION TRACKING
+// ============================================
+
+// Google Ads Conversion IDs
+const GOOGLE_ADS_CONVERSION_ID = 'AW-17894436603';
+
+interface GoogleAdsConversionParams {
+  transactionId: string;
+  value: number;
+  currency?: string;
+  items?: Array<{ id: string; name: string; price: number; quantity: number }>;
+  // Enhanced Conversions data (optional, for better attribution)
+  email?: string;
+  phoneNumber?: string;
+  firstName?: string;
+  lastName?: string;
+  city?: string;
+  region?: string;
+  postalCode?: string;
+  country?: string;
+}
+
+/**
+ * Track Google Ads Purchase Conversion
+ * Sends conversion data to Google Ads for campaign optimization
+ * 
+ * Note: The conversion label needs to be set up in Google Ads:
+ * 1. Go to Google Ads → Tools & Settings → Conversions
+ * 2. Create a "Purchase" conversion action
+ * 3. Copy the conversion label (e.g., 'abc123DEF456')
+ * 4. Replace the label in this function
+ */
+export const trackGoogleAdsConversion = (params: GoogleAdsConversionParams): void => {
+  if (!isGtagAvailable()) {
+    console.debug('[Google Ads] gtag not available, skipping conversion tracking');
+    return;
+  }
+
+  // Primary conversion event with enhanced data
+  const conversionData: Record<string, unknown> = {
+    // Use the full conversion ID format: AW-CONVERSION_ID/CONVERSION_LABEL
+    // You need to get your CONVERSION_LABEL from Google Ads dashboard
+    send_to: `${GOOGLE_ADS_CONVERSION_ID}`,
+    value: params.value,
+    currency: params.currency || 'USD',
+    transaction_id: params.transactionId,
+  };
+
+  // Add item-level data for Smart Bidding optimization
+  if (params.items && params.items.length > 0) {
+    conversionData.items = params.items.map(item => ({
+      id: item.id,
+      google_business_vertical: 'retail',
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+    }));
+  }
+
+  // Enhanced Conversions user data (hashed automatically by gtag)
+  // This improves conversion attribution by 5-15% on average
+  if (params.email || params.phoneNumber) {
+    conversionData.user_data = {};
+    if (params.email) {
+      (conversionData.user_data as Record<string, string>).email = params.email;
+    }
+    if (params.phoneNumber) {
+      (conversionData.user_data as Record<string, string>).phone_number = params.phoneNumber;
+    }
+    if (params.firstName) {
+      (conversionData.user_data as Record<string, string>).address = {
+        first_name: params.firstName,
+        last_name: params.lastName,
+        city: params.city,
+        region: params.region,
+        postal_code: params.postalCode,
+        country: params.country,
+      } as unknown as string;
+    }
+  }
+
+  // Fire the conversion event
+  window.gtag('event', 'conversion', conversionData);
+  
+  console.debug('[Google Ads] Purchase conversion tracked:', {
+    conversion_id: GOOGLE_ADS_CONVERSION_ID,
+    transaction_id: params.transactionId,
+    value: params.value,
+    currency: params.currency || 'USD',
+    items_count: params.items?.length || 0,
+    has_enhanced_conversions: !!(params.email || params.phoneNumber),
+  });
+};
+
+/**
+ * Track Google Ads Dynamic Remarketing Event
+ * Sends product/page view data for remarketing campaigns
+ */
+export const trackGoogleAdsPageView = (
+  pageType: 'home' | 'category' | 'product' | 'cart' | 'purchase' | 'other',
+  items?: Array<{ id: string; name: string; price: number; category?: string }>
+): void => {
+  if (!isGtagAvailable()) {
+    return;
+  }
+
+  const eventData: Record<string, unknown> = {
+    send_to: GOOGLE_ADS_CONVERSION_ID,
+    ecomm_pagetype: pageType,
+  };
+
+  if (items && items.length > 0) {
+    eventData.ecomm_prodid = items.map(i => i.id);
+    eventData.ecomm_totalvalue = items.reduce((sum, i) => sum + i.price, 0);
+    eventData.items = items.map(item => ({
+      id: item.id,
+      google_business_vertical: 'retail',
+      name: item.name,
+      price: item.price,
+    }));
+  }
+
+  window.gtag('event', 'page_view', eventData);
+  console.debug('[Google Ads] Remarketing page view:', pageType, items?.length || 0, 'items');
+};
+
+/**
+ * Track Add to Cart for Google Ads Smart Shopping campaigns
+ */
+export const trackGoogleAdsAddToCart = (
+  productId: string,
+  productName: string,
+  productPrice: number,
+  quantity: number = 1
+): void => {
+  if (!isGtagAvailable()) {
+    return;
+  }
+
+  window.gtag('event', 'add_to_cart', {
+    send_to: GOOGLE_ADS_CONVERSION_ID,
+    value: productPrice * quantity,
+    currency: 'USD',
+    items: [{
+      id: productId,
+      google_business_vertical: 'retail',
+      name: productName,
+      price: productPrice,
       quantity,
     }],
   });
+  
+  console.debug('[Google Ads] Add to cart tracked:', productId, productName);
+};
+
+/**
+ * Track Begin Checkout for Google Ads funnel optimization
+ */
+export const trackGoogleAdsBeginCheckout = (
+  items: Array<{ id: string; name: string; price: number; quantity: number }>,
+  totalValue: number
+): void => {
+  if (!isGtagAvailable()) {
+    return;
+  }
+
+  window.gtag('event', 'begin_checkout', {
+    send_to: GOOGLE_ADS_CONVERSION_ID,
+    value: totalValue,
+    currency: 'USD',
+    items: items.map(item => ({
+      id: item.id,
+      google_business_vertical: 'retail',
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+    })),
+  });
+  
+  console.debug('[Google Ads] Begin checkout tracked:', items.length, 'items, total:', totalValue);
 };
