@@ -11,6 +11,7 @@ import {
   trackDidYouMeanProductClick,
   trackDidYouMeanViewAllClick
 } from '@/lib/analytics';
+import { findBestMatches, expandQueryWithSynonyms, hasFuzzyMatch } from '@/lib/fuzzy-search';
 
 interface Category {
   id: string;
@@ -42,50 +43,70 @@ export const DidYouMeanSection = ({
 }: DidYouMeanSectionProps) => {
   const hasTrackedImpression = useRef(false);
 
-  // Find matching categories based on search query
+  // Find matching categories using fuzzy search with synonyms
   const suggestedCategories = useMemo(() => {
     if (!searchQuery || !categories) return [];
     
-    const queryWords = searchQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    // Use fuzzy matching with synonyms for better results
+    const matches = findBestMatches(
+      categories,
+      searchQuery,
+      (cat) => `${cat.name} ${cat.slug}`,
+      4
+    );
     
-    return categories
-      .filter(cat => {
-        const catName = cat.name.toLowerCase();
-        const catSlug = cat.slug.toLowerCase();
-        return queryWords.some(word => 
-          catName.includes(word) || catSlug.includes(word) ||
-          word.includes(catName.split(' ')[0]) || word.includes(catSlug.split('-')[0])
-        );
-      })
-      .slice(0, 4);
+    // If no fuzzy matches, fall back to simple includes check
+    if (matches.length === 0) {
+      const queryWords = searchQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      const expandedTerms = expandQueryWithSynonyms(searchQuery);
+      
+      return categories
+        .filter(cat => {
+          const catText = `${cat.name} ${cat.slug}`.toLowerCase();
+          return expandedTerms.some(term => catText.includes(term)) ||
+                 hasFuzzyMatch(catText, queryWords, 0.7);
+        })
+        .slice(0, 4);
+    }
+    
+    return matches;
   }, [searchQuery, categories]);
 
-  // Get popular products that might be relevant
+  // Get relevant products using fuzzy search with synonyms
   const suggestedProducts = useMemo(() => {
     if (!searchQuery || !products) return [];
     
-    const queryWords = searchQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    // Use advanced fuzzy matching with synonyms
+    const matches = findBestMatches(
+      products.filter(p => p.id && p.name), // Only include valid products
+      searchQuery,
+      (p) => `${p.name || ''} ${p.category || ''}`,
+      6
+    );
     
-    // First try exact matches in product name
-    let matches = products.filter(p => {
-      const name = p.name?.toLowerCase() || '';
-      return queryWords.some(word => name.includes(word));
-    });
-    
-    // If no matches, try category matches
+    // If no fuzzy matches, try with expanded synonyms
     if (matches.length === 0) {
-      matches = products.filter(p => {
-        const category = p.category?.toLowerCase() || '';
-        return queryWords.some(word => category.includes(word));
+      const expandedTerms = expandQueryWithSynonyms(searchQuery);
+      const queryWords = searchQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      
+      const synonymMatches = products.filter(p => {
+        if (!p.name) return false;
+        const productText = `${p.name} ${p.category || ''}`.toLowerCase();
+        return expandedTerms.some(term => productText.includes(term)) ||
+               hasFuzzyMatch(productText, queryWords, 0.65);
       });
+      
+      if (synonymMatches.length > 0) {
+        return synonymMatches.slice(0, 6);
+      }
     }
     
-    // If still no matches and no results, show some popular products
+    // If still no matches and no results, show popular products
     if (matches.length === 0 && resultsCount === 0) {
-      matches = products.slice(0, 6);
+      return products.filter(p => p.id && p.name).slice(0, 6);
     }
     
-    return matches.slice(0, 6);
+    return matches;
   }, [searchQuery, products, resultsCount]);
 
   // Track impression when section becomes visible
