@@ -18,6 +18,79 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Authenticate user - require admin role
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.error('No authorization header provided');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const authSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await authSupabase.auth.getClaims(token);
+
+    if (claimsError || !claimsData?.claims) {
+      console.error('JWT verification failed:', claimsError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = claimsData.claims.sub;
+    console.log(`Authenticated user: ${userId}`);
+
+    // Check if user is admin
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: roleData, error: roleError } = await adminSupabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleError || !roleData) {
+      console.error('Admin check failed:', roleError || 'User is not admin');
+      return new Response(
+        JSON.stringify({ error: 'Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Admin verified for user: ${userId}`);
+
+    // Check rate limit (10 requests per hour for batch image generation)
+    const { data: rateLimitData, error: rateLimitError } = await adminSupabase
+      .rpc('check_rate_limit', {
+        p_user_id: userId,
+        p_function_name: 'batch-generate-blog-images',
+        p_max_requests: 10,
+        p_window_minutes: 60
+      });
+
+    if (rateLimitError) {
+      console.error('Rate limit check failed:', rateLimitError);
+    } else if (rateLimitData && rateLimitData.length > 0 && !rateLimitData[0].allowed) {
+      console.log(`Rate limit exceeded for user: ${userId}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded',
+          reset_at: rateLimitData[0].reset_at
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
@@ -34,14 +107,10 @@ Deno.serve(async (req) => {
       // No body or invalid JSON, use default limit
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     console.log(`Starting batch blog image generation (limit: ${limit})...`);
 
     // Get blog posts without featured images, limited to avoid timeout
-    const { data: posts, error: fetchError } = await supabase
+    const { data: posts, error: fetchError } = await adminSupabase
       .from("blog_posts")
       .select("id, title, category, excerpt")
       .or("featured_image.is.null,featured_image.eq.")
@@ -53,7 +122,7 @@ Deno.serve(async (req) => {
     }
 
     // Count total remaining
-    const { count: totalRemaining } = await supabase
+    const { count: totalRemaining } = await adminSupabase
       .from("blog_posts")
       .select("id", { count: 'exact', head: true })
       .or("featured_image.is.null,featured_image.eq.");
@@ -142,7 +211,7 @@ Requirements: 16:9 aspect ratio, clean composition, vibrant but natural colors, 
 
         const fileName = `blog-${post.id}-${Date.now()}.${imageType}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await adminSupabase.storage
           .from("blog-images")
           .upload(fileName, bytes, {
             contentType: `image/${imageType}`,
@@ -154,10 +223,10 @@ Requirements: 16:9 aspect ratio, clean composition, vibrant but natural colors, 
           continue;
         }
 
-        const { data: urlData } = supabase.storage.from("blog-images").getPublicUrl(fileName);
+        const { data: urlData } = adminSupabase.storage.from("blog-images").getPublicUrl(fileName);
         const publicUrl = urlData.publicUrl;
 
-        const { error: updateError } = await supabase
+        const { error: updateError } = await adminSupabase
           .from("blog_posts")
           .update({ featured_image: publicUrl })
           .eq("id", post.id);
