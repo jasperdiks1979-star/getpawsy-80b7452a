@@ -414,7 +414,6 @@ const DownloadAds = () => {
       setSelectedSheets(excelSheetOptions.map(s => s.key));
     }
   };
-  };
 
   const handlePresetChange = (presetName: string) => {
     setSelectedPreset(presetName);
@@ -1049,3 +1048,4 @@ const DownloadAds = () => {
 };
 
 export default DownloadAds;
+
