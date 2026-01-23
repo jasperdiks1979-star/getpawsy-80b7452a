@@ -883,8 +883,71 @@ const sheetValidationConfig: Record<string, Record<string, string[]>> = {
   }
 };
 
+// Default Excel color scheme
+export const defaultExcelColors = {
+  campaigns: '2563EB',   // Blue
+  ads: '7C3AED',         // Purple
+  keywords: '059669',    // Green
+  sitelinks: 'EA580C',   // Orange
+  images: 'DC2626',      // Red
+  evenRow: 'F3F4F6',     // Light gray
+  border: 'E5E7EB'       // Border gray
+};
+
+// Preset color schemes
+export const excelColorPresets: Record<string, typeof defaultExcelColors> = {
+  default: defaultExcelColors,
+  ocean: {
+    campaigns: '0EA5E9',
+    ads: '06B6D4',
+    keywords: '14B8A6',
+    sitelinks: '0D9488',
+    images: '0891B2',
+    evenRow: 'F0FDFA',
+    border: 'CCFBF1'
+  },
+  sunset: {
+    campaigns: 'F59E0B',
+    ads: 'EF4444',
+    keywords: 'EC4899',
+    sitelinks: 'F97316',
+    images: 'DC2626',
+    evenRow: 'FFF7ED',
+    border: 'FED7AA'
+  },
+  forest: {
+    campaigns: '16A34A',
+    ads: '15803D',
+    keywords: '166534',
+    sitelinks: '22C55E',
+    images: '4ADE80',
+    evenRow: 'F0FDF4',
+    border: 'BBF7D0'
+  },
+  monochrome: {
+    campaigns: '374151',
+    ads: '4B5563',
+    keywords: '6B7280',
+    sitelinks: '1F2937',
+    images: '111827',
+    evenRow: 'F9FAFB',
+    border: 'E5E7EB'
+  },
+  corporate: {
+    campaigns: '1E40AF',
+    ads: '1E3A8A',
+    keywords: '1D4ED8',
+    sitelinks: '2563EB',
+    images: '3B82F6',
+    evenRow: 'EFF6FF',
+    border: 'BFDBFE'
+  }
+};
+
+export type ExcelColorScheme = typeof defaultExcelColors;
+
 // Export all files as Excel (.xlsx) with multiple sheets and styled headers
-export async function exportAllAsExcel(): Promise<void> {
+export async function exportAllAsExcel(colors: ExcelColorScheme = defaultExcelColors): Promise<void> {
   const XLSX = await import('xlsx-js-style');
   const timestamp = new Date().toISOString().split('T')[0];
   
@@ -906,9 +969,9 @@ export async function exportAllAsExcel(): Promise<void> {
   
   // Alternating row styles
   const evenRowStyle = {
-    fill: { fgColor: { rgb: "F3F4F6" } },
+    fill: { fgColor: { rgb: colors.evenRow } },
     border: {
-      bottom: { style: "thin", color: { rgb: "E5E7EB" } }
+      bottom: { style: "thin", color: { rgb: colors.border } }
     }
   };
   
@@ -998,12 +1061,12 @@ export async function exportAllAsExcel(): Promise<void> {
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
   };
   
-  // Add all sheets with different accent colors
-  addSheet(generateCampaignStructureCSV(), 'Campaigns', '2563EB');   // Blue
-  addSheet(generateResponsiveAdsCSV(), 'Ads', '7C3AED');             // Purple
-  addSheet(generateKeywordsCSV(), 'Keywords', '059669');             // Green
-  addSheet(generateSitelinksCSV(), 'Sitelinks', 'EA580C');           // Orange
-  addSheet(generateImageAssetsCSV(), 'Images', 'DC2626');            // Red
+  // Add all sheets with custom colors
+  addSheet(generateCampaignStructureCSV(), 'Campaigns', colors.campaigns);
+  addSheet(generateResponsiveAdsCSV(), 'Ads', colors.ads);
+  addSheet(generateKeywordsCSV(), 'Keywords', colors.keywords);
+  addSheet(generateSitelinksCSV(), 'Sitelinks', colors.sitelinks);
+  addSheet(generateImageAssetsCSV(), 'Images', colors.images);
   
   // Generate Excel file
   const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });

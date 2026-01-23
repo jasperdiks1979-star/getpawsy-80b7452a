@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown, FileX } from 'lucide-react';
+import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown, FileX, Palette, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -34,8 +34,24 @@ import {
   getCampaignStats,
   exportAllGoogleAds,
   exportAllAsZip,
-  exportAllAsExcel
+  exportAllAsExcel,
+  excelColorPresets,
+  defaultExcelColors,
+  type ExcelColorScheme
 } from '@/utils/googleAdsExport';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 type FileType = 'campaigns' | 'ads' | 'keywords' | 'sitelinks' | 'images';
 
@@ -67,6 +83,9 @@ const DownloadAds = () => {
   const [sheetsExports, setSheetsExports] = useState<SheetsExport[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isDeletingExport, setIsDeletingExport] = useState<string | null>(null);
+  const [excelColors, setExcelColors] = useState<ExcelColorScheme>(defaultExcelColors);
+  const [selectedPreset, setSelectedPreset] = useState<string>('default');
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const stats = getCampaignStats();
 
   // Load sheets export history
@@ -320,7 +339,7 @@ const DownloadAds = () => {
   const handleDownloadExcel = async () => {
     setIsExportingExcel(true);
     try {
-      await exportAllAsExcel();
+      await exportAllAsExcel(excelColors);
       setDownloaded(['campaigns', 'ads', 'keywords', 'sitelinks', 'images', 'excel']);
       toast.success('Excel bestand gedownload');
     } catch (error) {
@@ -329,6 +348,28 @@ const DownloadAds = () => {
     } finally {
       setIsExportingExcel(false);
     }
+  };
+
+  const handlePresetChange = (presetName: string) => {
+    setSelectedPreset(presetName);
+    setExcelColors(excelColorPresets[presetName] || defaultExcelColors);
+  };
+
+  const handleCustomColorChange = (key: keyof ExcelColorScheme, value: string) => {
+    // Remove # if present and convert to uppercase
+    const hexColor = value.replace('#', '').toUpperCase();
+    setExcelColors(prev => ({ ...prev, [key]: hexColor }));
+    setSelectedPreset('custom');
+  };
+
+  const colorLabels: Record<keyof ExcelColorScheme, string> = {
+    campaigns: 'Campaigns',
+    ads: 'Ads',
+    keywords: 'Keywords',
+    sitelinks: 'Sitelinks',
+    images: 'Images',
+    evenRow: 'Even rijen',
+    border: 'Randen'
   };
 
   const handleSendEmail = async () => {
@@ -421,20 +462,84 @@ const DownloadAds = () => {
             ZIP
           </Button>
           
-          <Button 
-            onClick={handleDownloadExcel}
-            size="lg"
-            variant="secondary"
-            className="gap-2"
-            disabled={isExportingExcel}
-          >
-            {isExportingExcel ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <FileX className="h-5 w-5" />
-            )}
-            Excel
-          </Button>
+          <div className="flex gap-1">
+            <Button 
+              onClick={handleDownloadExcel}
+              size="lg"
+              variant="secondary"
+              className="gap-2 rounded-r-none"
+              disabled={isExportingExcel}
+            >
+              {isExportingExcel ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <FileX className="h-5 w-5" />
+              )}
+              Excel
+            </Button>
+            <Popover open={showColorPicker} onOpenChange={setShowColorPicker}>
+              <PopoverTrigger asChild>
+                <Button 
+                  size="lg"
+                  variant="secondary"
+                  className="px-2 rounded-l-none border-l border-background/20"
+                >
+                  <Palette className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="start">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium">Kleurenschema</Label>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      {Object.keys(excelColorPresets).map((preset) => (
+                        <Button
+                          key={preset}
+                          size="sm"
+                          variant={selectedPreset === preset ? "default" : "outline"}
+                          onClick={() => handlePresetChange(preset)}
+                          className="capitalize text-xs"
+                        >
+                          {preset === 'default' ? 'Standaard' : preset}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="border-t pt-4">
+                    <Label className="text-sm font-medium">Aangepaste kleuren</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {(Object.keys(excelColors) as Array<keyof ExcelColorScheme>).map((key) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={`#${excelColors[key]}`}
+                            onChange={(e) => handleCustomColorChange(key, e.target.value)}
+                            className="w-8 h-8 rounded cursor-pointer border-0"
+                          />
+                          <span className="text-xs text-muted-foreground">{colorLabels[key]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 pt-2 border-t">
+                    <div className="flex flex-wrap gap-1">
+                      {['campaigns', 'ads', 'keywords', 'sitelinks', 'images'].map((key) => (
+                        <div
+                          key={key}
+                          className="w-6 h-6 rounded text-[10px] text-white flex items-center justify-center font-medium"
+                          style={{ backgroundColor: `#${excelColors[key as keyof ExcelColorScheme]}` }}
+                        >
+                          {key[0].toUpperCase()}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           
           <Button 
             onClick={handleExportToSheets}
