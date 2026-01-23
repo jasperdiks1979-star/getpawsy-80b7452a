@@ -707,9 +707,30 @@ export function generateImageAssetsCSV(): string {
   return csvContent;
 }
 
-// Download helper
-export function downloadCSV(content: string, filename: string): void {
+// Download helper with iOS Files app support
+export async function downloadCSV(content: string, filename: string): Promise<void> {
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  
+  // Check if Web Share API is available (iOS Safari supports this)
+  if (navigator.share && navigator.canShare) {
+    const file = new File([blob], filename, { type: "text/csv" });
+    const shareData = { files: [file] };
+    
+    // Check if we can share files
+    if (navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        // User cancelled or share failed, fall back to regular download
+        if ((err as Error).name === 'AbortError') {
+          return; // User cancelled, don't show error
+        }
+      }
+    }
+  }
+  
+  // Fallback: regular download for desktop browsers
   const link = document.createElement("a");
   const url = URL.createObjectURL(blob);
   link.setAttribute("href", url);
@@ -718,6 +739,7 @@ export function downloadCSV(content: string, filename: string): void {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // Export all files as a zip-like bundle (individual downloads)
