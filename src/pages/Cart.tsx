@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
 import { CartUpsell } from '@/components/cart/CartUpsell';
+import { safeString, safeNumber } from '@/lib/safe-render';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -98,14 +99,14 @@ const Cart = () => {
                 <div className="flex-1 min-w-0">
                   <Link to={`/product/${item.id}`}>
                     <h3 className="font-semibold hover:text-primary transition-colors">
-                      {item.name}
+                      {safeString(item.name)}
                     </h3>
                   </Link>
                   {item.variant && (
-                    <p className="text-sm text-muted-foreground">{item.variant}</p>
+                    <p className="text-sm text-muted-foreground">{safeString(item.variant)}</p>
                   )}
                   <p className="text-lg font-bold text-primary mt-1">
-                    ${item.price.toFixed(2)}
+                    ${safeNumber(item.price).toFixed(2)}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">

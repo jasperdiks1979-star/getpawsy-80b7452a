@@ -30,6 +30,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useProductRatings } from '@/hooks/useProductRatings';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { safeString, safeNumber } from '@/lib/safe-render';
 
 // Wishlist item skeleton component
 const WishlistItemSkeleton = memo(() => (
@@ -314,11 +315,11 @@ const Wishlist = () => {
                     <Link to={`/product/${product.id}`}>
                       {product.category && (
                         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                          {product.category}
+                          {safeString(product.category)}
                         </p>
                       )}
                       <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                        {product.name}
+                        {safeString(product.name)}
                       </h3>
                     </Link>
 
@@ -332,11 +333,11 @@ const Wishlist = () => {
                     {/* Price */}
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-lg font-bold text-primary">
-                        ${Number(product.price).toFixed(2)}
+                        ${safeNumber(product.price).toFixed(2)}
                       </span>
                       {product.compare_at_price && (
                         <span className="text-sm text-muted-foreground line-through">
-                          ${Number(product.compare_at_price).toFixed(2)}
+                          ${safeNumber(product.compare_at_price).toFixed(2)}
                         </span>
                       )}
                     </div>

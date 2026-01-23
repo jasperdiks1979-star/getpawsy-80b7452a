@@ -25,6 +25,7 @@ import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
+import { safeString, safeNumber, safeCurrency } from "@/lib/safe-render";
 
 interface OrderItem {
   id: string;
@@ -217,10 +218,10 @@ function VirtualizedOrdersTable({
                   {order.id.slice(0, 8)}...
                 </div>
                 <div className="w-36 px-4 py-4 text-sm flex items-center">
-                  {format(new Date(order.created_at), "d MMM HH:mm", { locale: nl })}
+                  {order.created_at ? format(new Date(order.created_at), "d MMM HH:mm", { locale: nl }) : '-'}
                 </div>
                 <div className="flex-1 px-4 py-4 text-sm truncate flex items-center">
-                  {order.customer_email || "Onbekend"}
+                  {safeString(order.customer_email) || "Onbekend"}
                 </div>
                 <div className="w-40 px-4 py-2 flex items-center">
                   <Select
@@ -247,7 +248,7 @@ function VirtualizedOrdersTable({
                   </Select>
                 </div>
                 <div className="w-28 px-4 py-4 text-sm font-medium text-right flex items-center justify-end">
-                  {formatCurrency(Number(order.total_amount), order.currency)}
+                  {formatCurrency(safeNumber(order.total_amount), safeString(order.currency) || 'eur')}
                 </div>
                 <div className="w-24 px-4 py-4 flex items-center justify-end">
                   <Button
@@ -679,7 +680,7 @@ export function OrdersManager() {
                 <div>
                   <p className="text-sm text-muted-foreground">Totaal</p>
                   <p className="text-lg font-bold text-primary">
-                    {formatCurrency(Number(selectedOrder.total_amount), selectedOrder.currency)}
+                    {formatCurrency(safeNumber(selectedOrder.total_amount), safeString(selectedOrder.currency) || 'eur')}
                   </p>
                 </div>
               </div>
@@ -690,15 +691,15 @@ export function OrdersManager() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">E-mail</p>
-                    <p>{selectedOrder.customer_email || "Onbekend"}</p>
+                    <p>{safeString(selectedOrder.customer_email) || "Onbekend"}</p>
                   </div>
                   {selectedOrder.shipping_address && (
                     <div>
                       <p className="text-muted-foreground">Verzendadres</p>
-                      <p>{selectedOrder.shipping_address.name}</p>
-                      <p>{selectedOrder.shipping_address.address}</p>
-                      <p>{selectedOrder.shipping_address.postal_code} {selectedOrder.shipping_address.city}</p>
-                      <p>{selectedOrder.shipping_address.country}</p>
+                      <p>{safeString(selectedOrder.shipping_address.name)}</p>
+                      <p>{safeString(selectedOrder.shipping_address.address)}</p>
+                      <p>{safeString(selectedOrder.shipping_address.postal_code)} {safeString(selectedOrder.shipping_address.city)}</p>
+                      <p>{safeString(selectedOrder.shipping_address.country)}</p>
                     </div>
                   )}
                 </div>
@@ -718,13 +719,13 @@ export function OrdersManager() {
                         />
                       )}
                       <div className="flex-1">
-                        <p className="font-medium text-sm">{item.name}</p>
+                        <p className="font-medium text-sm">{safeString(item.name)}</p>
                         <p className="text-xs text-muted-foreground">
-                          Aantal: {item.quantity}
+                          Aantal: {safeNumber(item.quantity)}
                         </p>
                       </div>
                       <p className="font-medium">
-                        {formatCurrency(item.price * item.quantity, selectedOrder.currency)}
+                        {formatCurrency(safeNumber(item.price) * safeNumber(item.quantity), safeString(selectedOrder.currency) || 'eur')}
                       </p>
                     </div>
                   ))}
@@ -839,12 +840,12 @@ export function OrdersManager() {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground">CJ Order ID</p>
-                        <code className="text-xs bg-muted px-2 py-1 rounded">{selectedOrder.cj_order_id}</code>
+                        <code className="text-xs bg-muted px-2 py-1 rounded">{safeString(selectedOrder.cj_order_id)}</code>
                       </div>
                       <div>
                         <p className="text-muted-foreground">CJ Status</p>
                         <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                          {CJ_STATUS_LABELS[selectedOrder.cj_order_status || ""] || selectedOrder.cj_order_status || "Onbekend"}
+                          {CJ_STATUS_LABELS[safeString(selectedOrder.cj_order_status)] || safeString(selectedOrder.cj_order_status) || "Onbekend"}
                         </Badge>
                       </div>
                     </div>
@@ -856,17 +857,17 @@ export function OrdersManager() {
                           <div className="flex items-center gap-2">
                             <Truck className="w-4 h-4 text-primary" />
                             <span className="text-sm font-medium">
-                              {selectedOrder.cj_shipping_info.logisticName || "Verzending"}
+                              {safeString(selectedOrder.cj_shipping_info.logisticName) || "Verzending"}
                             </span>
                             {selectedOrder.cj_shipping_info.trackingNumber && (
                               <code className="text-xs bg-background px-2 py-1 rounded">
-                                {selectedOrder.cj_shipping_info.trackingNumber}
+                                {safeString(selectedOrder.cj_shipping_info.trackingNumber)}
                               </code>
                             )}
                           </div>
                           {selectedOrder.cj_shipping_info.status && (
                             <Badge variant="outline" className="text-xs">
-                              {selectedOrder.cj_shipping_info.status}
+                              {safeString(selectedOrder.cj_shipping_info.status)}
                             </Badge>
                           )}
                         </div>
@@ -877,8 +878,8 @@ export function OrdersManager() {
                             <p className="text-xs text-muted-foreground font-medium">Tracking historie</p>
                             {selectedOrder.cj_shipping_info.details.slice(0, 5).map((detail, index) => (
                               <div key={index} className="text-xs flex gap-2">
-                                <span className="text-muted-foreground shrink-0">{detail.date}</span>
-                                <span>{detail.description || detail.status}</span>
+                                <span className="text-muted-foreground shrink-0">{safeString(detail.date)}</span>
+                                <span>{safeString(detail.description) || safeString(detail.status)}</span>
                               </div>
                             ))}
                           </div>
