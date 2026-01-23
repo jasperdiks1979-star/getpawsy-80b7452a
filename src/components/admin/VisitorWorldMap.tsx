@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X, Radio, RotateCw, ExternalLink, Target, Sparkles, Vibrate, Smartphone } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X, Radio, RotateCw, ExternalLink, Target, Sparkles, Vibrate, Smartphone, BellRing } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 interface VisitorActivity {
   id: string;
@@ -98,6 +99,15 @@ export const VisitorWorldMap = () => {
   const spinIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const userInteractingRef = useRef(false);
   const hotSpotMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  
+  // Push notifications hook
+  const { 
+    isSupported: pushSupported, 
+    permission: pushPermission, 
+    pushEnabled, 
+    sendNotification, 
+    togglePush 
+  } = usePushNotifications();
 
   // Toggle fullscreen mode
   const toggleFullscreen = useCallback((minimal: boolean = false) => {
@@ -313,6 +323,15 @@ export const VisitorWorldMap = () => {
               description: `Een klant uit ${location} is aan het afrekenen`,
               duration: 5000,
             });
+            // Send browser push notification
+            if (pushEnabled) {
+              sendNotification({
+                title: "🎉 Nieuwe checkout!",
+                body: `Een klant uit ${location} is aan het afrekenen`,
+                tag: `checkout-${newActivity.id}`,
+                requireInteraction: true,
+              });
+            }
           }
           
           // Show notification for new cart additions
@@ -323,6 +342,14 @@ export const VisitorWorldMap = () => {
               description: `Een klant uit ${location} heeft iets toegevoegd`,
               duration: 4000,
             });
+            // Send browser push notification
+            if (pushEnabled) {
+              sendNotification({
+                title: "🛒 Nieuw in winkelwagen!",
+                body: `Een klant uit ${location} heeft iets toegevoegd`,
+                tag: `cart-${newActivity.id}`,
+              });
+            }
           }
           
           if (timeRange !== "live") {
@@ -348,7 +375,7 @@ export const VisitorWorldMap = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch, triggerNotification, checkoutNotifications, cartNotifications, notificationMode, timeRange]);
+  }, [refetch, triggerNotification, checkoutNotifications, cartNotifications, notificationMode, timeRange, pushEnabled, sendNotification]);
 
   // Initialize map
   useEffect(() => {
@@ -1400,6 +1427,35 @@ export const VisitorWorldMap = () => {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Browser Push Notifications Toggle */}
+              {pushSupported && (
+                <div className="flex items-center gap-1.5 border-l border-border pl-3">
+                  <Switch
+                    id="push-notifications"
+                    checked={pushEnabled}
+                    onCheckedChange={(checked) => togglePush(checked)}
+                  />
+                  <Label 
+                    htmlFor="push-notifications" 
+                    className="flex items-center gap-1 cursor-pointer text-xs"
+                    title={
+                      pushPermission === "denied" 
+                        ? "Push notificaties geblokkeerd in browser" 
+                        : pushEnabled 
+                          ? "Browser push notificaties actief" 
+                          : "Schakel browser push notificaties in"
+                    }
+                  >
+                    {pushEnabled ? (
+                      <BellRing className="w-3 h-3 text-purple-500" />
+                    ) : (
+                      <BellOff className="w-3 h-3 text-muted-foreground" />
+                    )}
+                    <span className="hidden sm:inline">Push</span>
+                  </Label>
+                </div>
+              )}
             </div>
 
             {/* Export Button */}
