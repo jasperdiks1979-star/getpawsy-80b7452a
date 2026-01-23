@@ -121,6 +121,7 @@ const ProductDetail = () => {
   };
 
   // Fetch product from database - supports both UUID and slug
+  // Uses products_public view which is publicly accessible
   // If accessed via UUID, redirect to slug-based URL for SEO
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
@@ -130,7 +131,7 @@ const ProductDetail = () => {
       // If it's a valid UUID, query by id and redirect to slug
       if (isValidUUID(id)) {
         const { data, error } = await supabase
-          .from('products')
+          .from('products_public')
           .select('*')
           .eq('id', id)
           .maybeSingle();
@@ -148,7 +149,7 @@ const ProductDetail = () => {
 
       // Otherwise, try to find by slug first
       const { data: slugData, error: slugError } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .eq('slug', id)
         .maybeSingle();
@@ -159,7 +160,7 @@ const ProductDetail = () => {
       // Fallback: try to find by name (for legacy URLs)
       const searchName = id.replace(/-/g, ' ').toLowerCase();
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('*')
         .ilike('name', `%${searchName}%`)
         .eq('is_active', true)

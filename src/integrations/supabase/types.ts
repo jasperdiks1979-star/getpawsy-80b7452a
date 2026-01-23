@@ -1152,6 +1152,7 @@ export type Database = {
           price: number | null
           shipping_time: string | null
           sku: string | null
+          slug: string | null
           stock: number | null
           supplier_name: string | null
           updated_at: string | null
@@ -1172,6 +1173,7 @@ export type Database = {
           price?: number | null
           shipping_time?: string | null
           sku?: string | null
+          slug?: string | null
           stock?: number | null
           supplier_name?: string | null
           updated_at?: string | null
@@ -1192,6 +1194,7 @@ export type Database = {
           price?: number | null
           shipping_time?: string | null
           sku?: string | null
+          slug?: string | null
           stock?: number | null
           supplier_name?: string | null
           updated_at?: string | null
