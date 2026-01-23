@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { safeString } from "@/lib/safe-render";
 
 interface LiveStats {
   totalVisitors: number;
@@ -281,11 +282,11 @@ export const LiveCheckoutWidget = () => {
                           <div className="flex items-center gap-1.5">
                             <MapPin className="w-3 h-3 text-green-500" />
                             <span className="truncate max-w-[120px]">
-                              {checkout.city || checkout.country || "Onbekend"}
+                              {safeString(checkout.city) || safeString(checkout.country) || "Onbekend"}
                             </span>
                           </div>
                           <span className="text-muted-foreground">
-                            {formatTime(checkout.created_at)}
+                            {formatTime(safeString(checkout.created_at))}
                           </span>
                         </div>
                       ))}
