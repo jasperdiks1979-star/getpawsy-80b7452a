@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown, FileX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -33,7 +33,8 @@ import {
   downloadCSV,
   getCampaignStats,
   exportAllGoogleAds,
-  exportAllAsZip
+  exportAllAsZip,
+  exportAllAsExcel
 } from '@/utils/googleAdsExport';
 
 type FileType = 'campaigns' | 'ads' | 'keywords' | 'sitelinks' | 'images';
@@ -52,6 +53,7 @@ const DownloadAds = () => {
   const [downloaded, setDownloaded] = useState<string[]>([]);
   const [copied, setCopied] = useState<string[]>([]);
   const [isZipping, setIsZipping] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileType | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
@@ -315,6 +317,20 @@ const DownloadAds = () => {
     }
   };
 
+  const handleDownloadExcel = async () => {
+    setIsExportingExcel(true);
+    try {
+      await exportAllAsExcel();
+      setDownloaded(['campaigns', 'ads', 'keywords', 'sitelinks', 'images', 'excel']);
+      toast.success('Excel bestand gedownload');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast.error('Excel export mislukt');
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
   const handleSendEmail = async () => {
     if (!email || !email.includes('@')) {
       toast.error('Voer een geldig e-mailadres in');
@@ -390,7 +406,7 @@ const DownloadAds = () => {
           </CardContent>
         </Card>
 
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-5">
+        <div className="grid gap-3 grid-cols-3 sm:grid-cols-6">
           <Button 
             onClick={handleDownloadZip}
             size="lg"
@@ -403,6 +419,21 @@ const DownloadAds = () => {
               <Archive className="h-5 w-5" />
             )}
             ZIP
+          </Button>
+          
+          <Button 
+            onClick={handleDownloadExcel}
+            size="lg"
+            variant="secondary"
+            className="gap-2"
+            disabled={isExportingExcel}
+          >
+            {isExportingExcel ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <FileX className="h-5 w-5" />
+            )}
+            Excel
           </Button>
           
           <Button 
