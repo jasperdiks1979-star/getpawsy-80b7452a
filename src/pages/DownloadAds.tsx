@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown, FileX, Palette, ChevronDown } from 'lucide-react';
+import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown, FileX, Palette, ChevronDown, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -552,7 +552,7 @@ const DownloadAds = () => {
                     </div>
                   </div>
                   
-                  <div className="flex gap-2 pt-2 border-t">
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t">
                     <div className="flex flex-wrap gap-1">
                       {['campaigns', 'ads', 'keywords', 'sitelinks', 'images'].map((key) => (
                         <div
@@ -564,6 +564,18 @@ const DownloadAds = () => {
                         </div>
                       ))}
                     </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setExcelColors(defaultExcelColors);
+                        setSelectedPreset('default');
+                      }}
+                      className="gap-1 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Reset
+                    </Button>
                   </div>
                 </div>
               </PopoverContent>
