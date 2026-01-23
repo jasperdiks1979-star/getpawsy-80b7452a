@@ -24,11 +24,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+  // Determine trigger source
+  const authHeader = req.headers.get('authorization');
+  const triggeredBy = authHeader?.includes('service_role') ? 'cron' : 'manual';
+
+  try {
     console.log('Starting automatic variant data fix...');
 
     // Fetch all products with variants
@@ -43,6 +47,16 @@ Deno.serve(async (req) => {
 
     if (!products || products.length === 0) {
       console.log('No products with variants found');
+      
+      // Log the run
+      await supabase.from('variant_fix_logs').insert({
+        products_fixed: 0,
+        total_variants_fixed: 0,
+        fixed_products: [],
+        triggered_by: triggeredBy,
+        success: true
+      });
+
       return new Response(
         JSON.stringify({ success: true, message: 'No products with variants found', fixed: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -106,6 +120,15 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     };
 
+    // Log the run to database
+    await supabase.from('variant_fix_logs').insert({
+      products_fixed: fixedCount,
+      total_variants_fixed: totalVariantsFixed,
+      fixed_products: fixedProducts,
+      triggered_by: triggeredBy,
+      success: true
+    });
+
     console.log('Fix completed:', summary);
 
     return new Response(
@@ -116,6 +139,17 @@ Deno.serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error in fix-variant-data:', error);
+
+    // Log the error
+    await supabase.from('variant_fix_logs').insert({
+      products_fixed: 0,
+      total_variants_fixed: 0,
+      fixed_products: [],
+      triggered_by: triggeredBy,
+      success: false,
+      error_message: errorMessage
+    });
+
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
