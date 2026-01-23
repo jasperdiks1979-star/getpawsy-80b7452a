@@ -1036,6 +1036,39 @@ export type Database = {
         }
         Relationships: []
       }
+      variant_fix_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          fixed_products: Json | null
+          id: string
+          products_fixed: number
+          success: boolean
+          total_variants_fixed: number
+          triggered_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          fixed_products?: Json | null
+          id?: string
+          products_fixed?: number
+          success?: boolean
+          total_variants_fixed?: number
+          triggered_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          fixed_products?: Json | null
+          id?: string
+          products_fixed?: number
+          success?: boolean
+          total_variants_fixed?: number
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       visitor_activity: {
         Row: {
           activity_type: string
