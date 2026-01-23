@@ -1,205 +1,489 @@
 // Google Ads Campaign Export Utility
 // Formats ad data for bulk upload to Google Ads Editor
+// Updated: January 2026 - Optimized for GetPawsy.pet
 
 export interface AdVariant {
   campaign: string;
   adGroup: string;
-  headlines: string[];
-  descriptions: string[];
-  displayPaths: string[];
+  headlines: string[]; // Max 30 chars each, up to 15 headlines
+  descriptions: string[]; // Max 90 chars each, up to 4 descriptions
+  displayPaths: string[]; // Max 15 chars each
   keywords: string[];
   finalUrl: string;
 }
 
 export const campaignData: AdVariant[] = [
-  // GPS Dog Fence Tracker - 5 variants
+  // =====================
+  // GPS DOG FENCE TRACKER
+  // =====================
   {
     campaign: "GPS Dog Fence - Search",
     adGroup: "Core Benefits",
-    headlines: ["Advanced GPS Dog Fence", "Keep Your Dog Safe & Secure", "Wireless Fence - No Wires"],
-    descriptions: [
-      "Create an invisible boundary for your pet. No buried wires, just easy GPS setup.",
-      "Precision satellite technology keeps your dog in the safe zone. Water-resistant & durable."
+    headlines: [
+      "GPS Dog Fence Tracker",
+      "Keep Your Dog Safe",
+      "Wireless Pet Boundary",
+      "No Buried Wires Needed",
+      "Real-Time Dog Tracking",
+      "Safe Zone Alerts"
     ],
-    displayPaths: ["Dog-Safety", "Wireless-Fence"],
-    keywords: ["GPS dog fence", "wireless pet containment", "portable dog fence", "GPS tracking collar", "electric dog fence"],
-    finalUrl: "https://getpawsy.pet/products"
+    descriptions: [
+      "Create invisible boundaries for your pet with satellite GPS. Easy 5-minute setup.",
+      "Precision GPS keeps your dog safe. Water-resistant IPX6 design. Free shipping!"
+    ],
+    displayPaths: ["GPS-Fence", "Dog-Safety"],
+    keywords: [
+      "gps dog fence", "wireless dog fence", "gps pet containment", "invisible dog fence gps",
+      "portable dog fence", "gps tracking collar dog", "wireless pet boundary", "dog fence no wires"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=dog-collars-leashes"
   },
   {
     campaign: "GPS Dog Fence - Search",
-    adGroup: "Urgency & Fear",
-    headlines: ["Stop Your Dog From Escaping", "Order Now - Limited Stock", "Protect Your Pet Today"],
-    descriptions: [
-      "Stop escape artists in their tracks. Receive instant alerts if your dog leaves the yard.",
-      "Ensure your dog's safety today. Easy setup works for any yard or park. Shop now!"
+    adGroup: "Escape Prevention",
+    headlines: [
+      "Stop Dog Escapes Now",
+      "Instant Boundary Alerts",
+      "Escape-Proof Your Yard",
+      "Track Your Dog Live",
+      "Peace of Mind for Dogs",
+      "Never Lose Your Pet"
     ],
-    displayPaths: ["Pet-Alerts", "Fast-Shipping"],
-    keywords: ["dog escape tracker", "containment system", "anti-lost dog collar", "GPS boundary alert", "smart dog collar"],
-    finalUrl: "https://getpawsy.pet/products"
-  },
-  {
-    campaign: "GPS Dog Fence - Search",
-    adGroup: "Social Proof",
-    headlines: ["Top-Rated GPS Dog Collar", "Join 10,000+ Happy Owners", "Reliable Pet Containment"],
     descriptions: [
-      "The trusted choice for American pet owners. Durable IPX6 waterproof construction.",
-      "Join thousands of satisfied dog parents. High-accuracy GPS for ultimate peace of mind."
+      "Get instant alerts when your dog crosses the boundary. Works anywhere, anytime.",
+      "Stop escape artists with real-time GPS alerts. Trusted by 10,000+ pet parents."
     ],
-    displayPaths: ["Safe-Pets", "Trusted-GPS"],
-    keywords: ["best dog fence", "top rated GPS collar", "reliable dog tracker", "pet safety device", "dog fence reviews"],
-    finalUrl: "https://getpawsy.pet/products"
+    displayPaths: ["Pet-Safety", "GPS-Alerts"],
+    keywords: [
+      "dog escape prevention", "anti escape dog collar", "dog boundary alert", "gps alert collar",
+      "dog tracker escape", "lost dog prevention", "dog containment system", "smart dog fence"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=dog-collars-leashes"
   },
   {
     campaign: "GPS Dog Fence - Search",
     adGroup: "Travel & Outdoor",
-    headlines: ["The Portable Dog Fence", "Take Safety on Every Trip", "Perfect for Parks & Travel"],
-    descriptions: [
-      "Setting up boundaries at parks or campsites is a breeze. No permanent wires needed.",
-      "Wireless GPS protection wherever you go. Ideal for active dogs and traveling owners."
+    headlines: [
+      "Portable Dog Fence",
+      "Perfect for Camping",
+      "Travel With Your Dog",
+      "Park & Beach Ready",
+      "Take Safety Anywhere",
+      "Outdoor Dog Freedom"
     ],
-    displayPaths: ["Travel-Dog", "Portable-Fence"],
-    keywords: ["portable pet fence", "camping with dogs", "travel dog tracker", "outdoor dog safety", "mobile dog fence"],
-    finalUrl: "https://getpawsy.pet/products"
+    descriptions: [
+      "Set up safe zones at parks, beaches, or campsites in seconds. No wires needed.",
+      "The ultimate travel companion for active dogs. Adjustable radius 32-2887 feet."
+    ],
+    displayPaths: ["Travel", "Portable"],
+    keywords: [
+      "portable dog fence camping", "travel dog containment", "hiking dog fence", "beach dog fence",
+      "camping pet safety", "outdoor dog tracker", "mobile dog fence", "vacation dog gear"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=dog-collars-leashes"
   },
   {
     campaign: "GPS Dog Fence - Search",
-    adGroup: "Tech-Forward",
-    headlines: ["Stop Digging & Burying Wires", "Modern GPS Fence Technology", "Save on Complex Installation"],
-    descriptions: [
-      "Ditch the shovel. Our 2-in-1 GPS collar uses satellites to create safe zones instantly.",
-      "Adjustable radius from 32 to 2887 feet. The modern solution for smart pet owners."
+    adGroup: "Tech Features",
+    headlines: [
+      "2-in-1 GPS Collar",
+      "Satellite Technology",
+      "10-Day Battery Life",
+      "IPX6 Waterproof",
+      "App-Controlled Fence",
+      "Smart Pet Tech"
     ],
-    displayPaths: ["Easy-Setup", "Smart-Collar"],
-    keywords: ["wireless dog barrier", "no dig dog fence", "satellite dog fence", "gps containment system", "easy install fence"],
-    finalUrl: "https://getpawsy.pet/products"
+    descriptions: [
+      "Advanced GPS with 10-day battery. Track location & set boundaries from your phone.",
+      "IPX6 waterproof rating. Works in all weather. Modern solution for smart pet owners."
+    ],
+    displayPaths: ["Smart-Tech", "GPS-Collar"],
+    keywords: [
+      "smart dog collar gps", "gps collar app", "dog tracker long battery", "waterproof gps dog collar",
+      "satellite dog tracker", "modern dog fence", "tech dog collar", "digital pet fence"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=dog-collars-leashes"
   },
-  
-  // Pet Carrier Backpack - 5 variants
+
+  // ====================
+  // PET CARRIER BACKPACK
+  // ====================
   {
     campaign: "Pet Carrier Backpack - Search",
-    adGroup: "Comfort & Design",
-    headlines: ["Extra-Roomy Pet Backpack", "Expandable Comfort for Pets", "Top-Rated Dog & Cat Carrier"],
-    descriptions: [
-      "Give your pet 2x more space with our unique back extension. Breathable & ultra-comfy.",
-      "Premium mesh panels & padded straps for the ultimate pet travel experience. Shop now!"
+    adGroup: "Expandable Design",
+    headlines: [
+      "Expandable Pet Carrier",
+      "2X More Space for Pets",
+      "Breathable Pet Backpack",
+      "Comfy Cat & Dog Bag",
+      "Premium Pet Travel",
+      "Extra-Large Pet Bag"
     ],
-    displayPaths: ["Pet-Travel", "Backpacks"],
-    keywords: ["expandable pet carrier", "cat backpack carrier", "small dog backpack", "breathable pet bag", "pet travel gear"],
-    finalUrl: "https://getpawsy.pet/products"
+    descriptions: [
+      "Give your pet 2x more space with expandable back panel. Breathable mesh design.",
+      "Premium padded straps for your comfort. Holds pets up to 26 lbs. Free shipping!"
+    ],
+    displayPaths: ["Backpacks", "Pet-Travel"],
+    keywords: [
+      "expandable pet carrier", "pet backpack carrier", "cat backpack", "small dog carrier backpack",
+      "breathable pet bag", "extra large pet carrier", "roomy cat backpack", "comfortable pet bag"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=bags"
   },
   {
     campaign: "Pet Carrier Backpack - Search",
-    adGroup: "Outdoor Adventure",
-    headlines: ["Take Your Pet Anyplace", "Hiking Gear for Small Dogs", "Adventurous Cat Backpacks"],
-    descriptions: [
-      "The perfect hiking companion for pets up to 26 lbs. Built for safety & outdoor fun.",
-      "Durable, lightweight, and adventure-ready. Folds flat for easy storage between trips."
+    adGroup: "Adventure & Hiking",
+    headlines: [
+      "Hiking Pet Backpack",
+      "Adventure With Pets",
+      "Outdoor Cat Carrier",
+      "Trail-Ready Pet Bag",
+      "Explore Together",
+      "Active Pet Owners"
     ],
-    displayPaths: ["Outdoor", "Pet-Adventures"],
-    keywords: ["dog hiking backpack", "cat carrier for hiking", "adventure pet gear", "outdoor cat bag", "active pet owner"],
-    finalUrl: "https://getpawsy.pet/products"
+    descriptions: [
+      "Take your pet on every adventure. Durable, lightweight design for hiking & trails.",
+      "Built for outdoor enthusiasts. Secure safety buckles. Folds flat for easy storage."
+    ],
+    displayPaths: ["Hiking", "Adventure"],
+    keywords: [
+      "hiking pet backpack", "dog hiking carrier", "outdoor cat carrier", "adventure pet bag",
+      "trail pet carrier", "camping with pets", "nature pet gear", "active pet owner gear"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=bags"
   },
   {
     campaign: "Pet Carrier Backpack - Search",
     adGroup: "Airline Travel",
-    headlines: ["Airline Approved Carrier", "Stress-Free Flying With Pets", "Ultimate Travel Pet Bag"],
-    descriptions: [
-      "Designed for the jet-setting pet. Comfortable, secure, and airline-compliant design.",
-      "Navigate the airport with ease using our padded straps and safety buckle system."
+    headlines: [
+      "Airline Approved Bag",
+      "Fly With Your Pet",
+      "TSA Pet Carrier",
+      "Cabin-Ready Pet Bag",
+      "Stress-Free Flying",
+      "Travel Pet Essentials"
     ],
-    displayPaths: ["Flights", "Travel-Safe"],
-    keywords: ["airline approved pet carrier", "pet travel backpack", "flying with a cat", "TSA pet carrier", "cat flight bag"],
-    finalUrl: "https://getpawsy.pet/products"
+    descriptions: [
+      "Airline compliant design fits under most seats. Navigate airports with ease.",
+      "Designed for jet-setting pets. Secure, comfortable, and flight-ready. Order now!"
+    ],
+    displayPaths: ["Airline", "Travel"],
+    keywords: [
+      "airline approved pet carrier", "pet carrier for flying", "tsa pet carrier", "cabin pet bag",
+      "flying with cat", "plane pet carrier", "airline cat backpack", "travel pet carrier"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=bags"
   },
   {
     campaign: "Pet Carrier Backpack - Search",
-    adGroup: "Social Proof",
-    headlines: ["Safe & Secure Pet Travel", "Trusted by 10,000+ Owners", "Premium Quality Pet Carrier"],
-    descriptions: [
-      "Join 1,000s of happy pet parents. Secure safety buckles and durable mesh windows.",
-      "Highly rated for safety and durability. The go-to choice for vet visits and trips."
+    adGroup: "Vet & Errands",
+    headlines: [
+      "Vet Visit Carrier",
+      "Easy Pet Transport",
+      "Hands-Free Pet Bag",
+      "Secure Pet Carrier",
+      "Daily Pet Errands",
+      "Safe & Comfortable"
     ],
-    displayPaths: ["Best-Sellers", "Top-Rated"],
-    keywords: ["safe cat carrier", "dog carrier for vet", "sturdy pet backpack", "highest rated pet bag", "best dog backpack"],
-    finalUrl: "https://getpawsy.pet/products"
-  },
-  {
-    campaign: "Pet Carrier Backpack - Search",
-    adGroup: "Urgency & Promo",
-    headlines: ["Limited Time Offer: 20% Off", "Upgrade Your Pet's Ride", "Order Today for Free Shipping"],
     descriptions: [
-      "Don't let your pet miss out! Get the expandable backpack that's selling out fast.",
-      "Final hours to save on the most comfortable pet backpack of 2025. Shop now!"
+      "Make vet visits stress-free. Secure safety buckles keep your pet calm and safe.",
+      "Perfect for daily errands. Hands-free design with padded shoulder straps."
     ],
-    displayPaths: ["Flash-Sale", "Limited-Offer"],
-    keywords: ["pet carrier sale", "cheap dog backpack", "best cat carrier 2025", "discount pet gear", "expandable pet bag"],
-    finalUrl: "https://getpawsy.pet/products"
+    displayPaths: ["Vet-Visits", "Daily-Use"],
+    keywords: [
+      "pet carrier for vet", "cat carrier vet visit", "hands free pet carrier", "secure pet transport",
+      "daily pet carrier", "errands with pet", "safe cat carrier", "dog carrier transport"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=bags"
   },
-  
-  // Slow Feeder Bowl - 5 variants
+
+  // ================
+  // SLOW FEEDER BOWL
+  // ================
   {
     campaign: "Slow Feeder Bowl - Search",
     adGroup: "Health Benefits",
-    headlines: ["Stop Fast Eating Today", "Better Digestion For Dogs", "Prevents Bloat & Choking"],
-    descriptions: [
-      "Slow down your pet's eating by 10x with our interactive maze bowl. Healthy and fun!",
-      "Improve your pet's digestion and prevent bloating. Safe, BPA-free, and easy to clean."
+    headlines: [
+      "Slow Feeder Dog Bowl",
+      "Stop Fast Eating",
+      "Prevent Dog Bloating",
+      "Healthy Eating Habits",
+      "Better Digestion",
+      "Anti-Choke Bowl"
     ],
-    displayPaths: ["Dog-Health", "Slow-Feeder"],
-    keywords: ["dog slow feeder bowl", "prevent dog bloating", "pet digestive health", "maze dog bowl", "cat slow feeder"],
-    finalUrl: "https://getpawsy.pet/products"
-  },
-  {
-    campaign: "Slow Feeder Bowl - Search",
-    adGroup: "Budget & Urgency",
-    headlines: ["Flash Sale: 50% Off Bowl", "Limited Stock Feeder Toy", "Treat Your Pet Today"],
     descriptions: [
-      "Don't let your dog gulp their food. Get the #1 slow feeder bowl while supplies last!",
-      "Huge savings on the ultimate pet enrichment toy. Order now before we sell out!"
+      "Slow down eating by 10x with maze design. Prevents bloating and improves digestion.",
+      "BPA-free, non-slip, and easy to clean. Vet-recommended for healthier mealtimes."
     ],
-    displayPaths: ["Special-Offer", "Sale-Today"],
-    keywords: ["affordable dog toys", "dog bowl sale", "cheap pet puzzle", "best budget dog bowl", "pet feeder discount"],
-    finalUrl: "https://getpawsy.pet/products"
-  },
-  {
-    campaign: "Slow Feeder Bowl - Search",
-    adGroup: "Social Proof",
-    headlines: ["Voted Best Pet Puzzle", "Join 50,000+ Happy Pets", "5-Star Rated Dog Feeder"],
-    descriptions: [
-      "The pet parents' choice for reducing anxiety and improving IQ. Read our 5-star reviews!",
-      "Trusted by thousands of US dog owners. Durable, non-slip, and vet-recommended design."
+    displayPaths: ["Health", "Slow-Feed"],
+    keywords: [
+      "slow feeder dog bowl", "anti gulp dog bowl", "slow eating bowl", "prevent dog bloat",
+      "maze dog bowl", "healthy dog bowl", "anti choke bowl", "digestion dog bowl"
     ],
-    displayPaths: ["Top-Rated", "Best-Sellers"],
-    keywords: ["best rated dog puzzle", "vetted pet products", "top dog feeder 2025", "expert dog toys", "safe pet bowls"],
-    finalUrl: "https://getpawsy.pet/products"
+    finalUrl: "https://getpawsy.pet/products?category=feeding"
   },
   {
     campaign: "Slow Feeder Bowl - Search",
     adGroup: "Mental Enrichment",
-    headlines: ["Boost Your Dog's IQ", "End Dog Boredom Now", "Interactive Mental Fun"],
-    descriptions: [
-      "Turn mealtime into playtime. Challenge your dog's mind with this fun puzzle feeder!",
-      "A mental workout for your pet. Perfect for reducing anxiety and keeping dogs busy."
+    headlines: [
+      "Dog Puzzle Feeder",
+      "Mental Stimulation",
+      "End Dog Boredom",
+      "Interactive Dog Bowl",
+      "Brain Games for Dogs",
+      "Fun Mealtime Toy"
     ],
-    displayPaths: ["Pet-Training", "IQ-Toys"],
-    keywords: ["dog puzzle toys", "mental enrichment dog", "interactive dog feeder", "dog anxiety relief", "pet training bowl"],
-    finalUrl: "https://getpawsy.pet/products"
+    descriptions: [
+      "Turn mealtime into playtime. Challenge your dog's mind with this puzzle feeder.",
+      "Reduce anxiety and boredom. Perfect mental enrichment for active dogs."
+    ],
+    displayPaths: ["Puzzle", "Enrichment"],
+    keywords: [
+      "dog puzzle feeder", "interactive dog bowl", "mental stimulation dog", "dog enrichment toy",
+      "brain games dog", "puzzle bowl dog", "iq dog feeder", "dog boredom solution"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=feeding"
   },
   {
     campaign: "Slow Feeder Bowl - Search",
-    adGroup: "First-Time Owners",
-    headlines: ["Puppy Essentials 101", "New Pet Owner Must-Have", "Easy-to-Clean Dog Bowl"],
-    descriptions: [
-      "The perfect starter kit addition for new pet parents. Safe, non-slip, and easy to wash.",
-      "Ensure your new puppy grows up healthy. Prevent fast eating with this simple tool."
+    adGroup: "Cat Slow Feeder",
+    headlines: [
+      "Cat Slow Feeder",
+      "Stop Cat Vomiting",
+      "Healthy Cat Eating",
+      "Anti-Regurgitation",
+      "Cat Puzzle Bowl",
+      "Better Cat Digestion"
     ],
-    displayPaths: ["New-Pet", "Puppy-Care"],
-    keywords: ["puppy supplies list", "new dog owner tips", "first time cat owner", "non slip dog bowl", "bpa free pet bowl"],
-    finalUrl: "https://getpawsy.pet/products"
+    descriptions: [
+      "Prevent vomiting from fast eating. Maze design slows cats down naturally.",
+      "Perfect for cats who eat too fast. Non-slip base and easy to clean. Shop now!"
+    ],
+    displayPaths: ["Cat-Health", "Slow-Feed"],
+    keywords: [
+      "cat slow feeder", "cat anti vomit bowl", "slow eating cat bowl", "cat puzzle feeder",
+      "cat digestion bowl", "stop cat regurgitation", "healthy cat bowl", "interactive cat bowl"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=feeding"
+  },
+
+  // =================
+  // CAT PRODUCTS
+  // =================
+  {
+    campaign: "Cat Supplies - Search",
+    adGroup: "Cat Furniture",
+    headlines: [
+      "Cat Trees & Towers",
+      "Premium Cat Furniture",
+      "Multi-Level Cat Tree",
+      "Scratching Post Tower",
+      "Cozy Cat Climbing",
+      "Happy Indoor Cats"
+    ],
+    descriptions: [
+      "Multi-level cat trees with scratching posts, platforms, and cozy hideaways.",
+      "Keep your cat active and entertained. Durable construction. Free shipping!"
+    ],
+    displayPaths: ["Cat-Trees", "Furniture"],
+    keywords: [
+      "cat tree", "cat tower", "cat furniture", "scratching post cat tree", "multi level cat tree",
+      "cat climbing tree", "indoor cat tree", "large cat tower"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=cat-furniture"
+  },
+  {
+    campaign: "Cat Supplies - Search",
+    adGroup: "Cat Beds",
+    headlines: [
+      "Cozy Cat Beds",
+      "Calming Cat Bed",
+      "Warm Cat Sleeping",
+      "Plush Cat Nest",
+      "Cat Cave Beds",
+      "Luxury Cat Comfort"
+    ],
+    descriptions: [
+      "Ultra-soft cat beds for maximum comfort. Calming design reduces cat anxiety.",
+      "Give your cat the perfect nap spot. Machine washable. Various sizes available."
+    ],
+    displayPaths: ["Cat-Beds", "Comfort"],
+    keywords: [
+      "cat bed", "calming cat bed", "cat cave bed", "plush cat bed", "warm cat bed",
+      "cozy cat sleeping", "donut cat bed", "cat anxiety bed"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=cat-beds"
+  },
+  {
+    campaign: "Cat Supplies - Search",
+    adGroup: "Cat Toys",
+    headlines: [
+      "Interactive Cat Toys",
+      "Chase Toys for Cats",
+      "Feather Cat Wands",
+      "Laser Cat Toys",
+      "Cat Entertainment",
+      "Keep Cats Active"
+    ],
+    descriptions: [
+      "Interactive toys to keep your cat entertained for hours. Stimulate natural instincts.",
+      "From feather wands to laser pointers. Everything your cat needs to play and exercise."
+    ],
+    displayPaths: ["Cat-Toys", "Play"],
+    keywords: [
+      "cat toys", "interactive cat toy", "feather wand cat", "laser toy cat", "cat chase toys",
+      "cat entertainment", "kitten toys", "cat exercise toys"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=chase-toys"
+  },
+
+  // =================
+  // DOG PRODUCTS
+  // =================
+  {
+    campaign: "Dog Supplies - Search",
+    adGroup: "Dog Beds",
+    headlines: [
+      "Orthopedic Dog Beds",
+      "Memory Foam Dog Bed",
+      "Cozy Dog Sleeping",
+      "Joint Support Bed",
+      "Large Dog Beds",
+      "Calming Dog Bed"
+    ],
+    descriptions: [
+      "Orthopedic memory foam beds for dogs of all sizes. Perfect for senior dogs.",
+      "Give your pup the best sleep. Machine washable covers. Free shipping on orders!"
+    ],
+    displayPaths: ["Dog-Beds", "Comfort"],
+    keywords: [
+      "dog bed", "orthopedic dog bed", "memory foam dog bed", "large dog bed", "calming dog bed",
+      "senior dog bed", "cozy dog bed", "waterproof dog bed"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=pet-beds"
+  },
+  {
+    campaign: "Dog Supplies - Search",
+    adGroup: "Dog Collars & Leashes",
+    headlines: [
+      "Durable Dog Collars",
+      "Premium Dog Leashes",
+      "Reflective Dog Gear",
+      "Adjustable Collars",
+      "Walking Essentials",
+      "Safe Dog Walking"
+    ],
+    descriptions: [
+      "High-quality collars and leashes for daily walks. Reflective for night safety.",
+      "Durable construction for active dogs. Adjustable sizing for perfect fit."
+    ],
+    displayPaths: ["Collars", "Leashes"],
+    keywords: [
+      "dog collar", "dog leash", "reflective dog collar", "durable dog leash", "adjustable dog collar",
+      "walking dog gear", "night safety collar", "strong dog leash"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=dog-collars-leashes"
+  },
+  {
+    campaign: "Dog Supplies - Search",
+    adGroup: "Dog Toys",
+    headlines: [
+      "Durable Dog Toys",
+      "Chew Toys for Dogs",
+      "Interactive Dog Play",
+      "Fetch Toys Dogs",
+      "Tough Dog Toys",
+      "Exercise Dog Toys"
+    ],
+    descriptions: [
+      "Durable toys built to last. Perfect for aggressive chewers and active play.",
+      "From fetch toys to puzzles. Keep your dog entertained and mentally stimulated."
+    ],
+    displayPaths: ["Dog-Toys", "Play"],
+    keywords: [
+      "dog toys", "durable dog toys", "chew toys dog", "interactive dog toy", "fetch toys",
+      "tough dog toys", "dog puzzle toy", "dog exercise toys"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=toys"
+  },
+
+  // =================
+  // GROOMING
+  // =================
+  {
+    campaign: "Pet Grooming - Search",
+    adGroup: "Grooming Tools",
+    headlines: [
+      "Pet Grooming Tools",
+      "Deshedding Brushes",
+      "Nail Clippers Pets",
+      "Professional Grooming",
+      "At-Home Pet Care",
+      "Reduce Pet Shedding"
+    ],
+    descriptions: [
+      "Professional grooming tools for at-home use. Reduce shedding and keep coats healthy.",
+      "From brushes to nail clippers. Everything you need for a well-groomed pet."
+    ],
+    displayPaths: ["Grooming", "Pet-Care"],
+    keywords: [
+      "pet grooming tools", "dog brush", "cat brush", "deshedding tool", "pet nail clippers",
+      "grooming kit pet", "reduce shedding", "pet hair brush"
+    ],
+    finalUrl: "https://getpawsy.pet/products?category=grooming"
+  },
+
+  // =================
+  // BRAND CAMPAIGNS
+  // =================
+  {
+    campaign: "GetPawsy Brand - Search",
+    adGroup: "Brand Awareness",
+    headlines: [
+      "GetPawsy Pet Shop",
+      "Premium Pet Supplies",
+      "Happy Pets Worldwide",
+      "Quality Pet Products",
+      "Trusted Pet Store",
+      "Free Global Shipping"
+    ],
+    descriptions: [
+      "Your one-stop shop for premium pet supplies. Dogs, cats, birds & small pets.",
+      "Trusted by pet parents worldwide. Free shipping on all orders. Shop now!"
+    ],
+    displayPaths: ["Shop", "Pet-Supplies"],
+    keywords: [
+      "getpawsy", "get pawsy", "pawsy pet shop", "online pet store", "pet supplies online",
+      "buy pet products", "pet shop free shipping", "quality pet supplies"
+    ],
+    finalUrl: "https://getpawsy.pet"
+  },
+  {
+    campaign: "GetPawsy Brand - Search",
+    adGroup: "Free Shipping",
+    headlines: [
+      "Free Worldwide Ship",
+      "No Minimum Order",
+      "Fast Pet Delivery",
+      "Shop Pet Supplies",
+      "Delivered to You",
+      "Order Today"
+    ],
+    descriptions: [
+      "Free worldwide shipping on all pet products. No minimum order required.",
+      "Quality pet supplies delivered to your door. Trusted by 10,000+ pet parents."
+    ],
+    displayPaths: ["Free-Ship", "Worldwide"],
+    keywords: [
+      "pet supplies free shipping", "pet store free delivery", "buy pet products online",
+      "pet shop worldwide shipping", "cheap pet supplies", "pet products delivery"
+    ],
+    finalUrl: "https://getpawsy.pet"
   }
 ];
 
 // Generate Responsive Search Ads CSV (Google Ads Editor format)
+// Includes up to 15 headlines and 4 descriptions per ad
 export function generateResponsiveAdsCSV(): string {
   const headers = [
     "Campaign",
@@ -207,6 +491,9 @@ export function generateResponsiveAdsCSV(): string {
     "Headline 1",
     "Headline 2",
     "Headline 3",
+    "Headline 4",
+    "Headline 5",
+    "Headline 6",
     "Description 1",
     "Description 2",
     "Path 1",
@@ -221,6 +508,9 @@ export function generateResponsiveAdsCSV(): string {
     ad.headlines[0] || "",
     ad.headlines[1] || "",
     ad.headlines[2] || "",
+    ad.headlines[3] || "",
+    ad.headlines[4] || "",
+    ad.headlines[5] || "",
     ad.descriptions[0] || "",
     ad.descriptions[1] || "",
     ad.displayPaths[0] || "",
@@ -284,13 +574,74 @@ export function generateCampaignStructureCSV(): string {
   const rows = campaigns.map(campaign => [
     campaign,
     "Search",
-    "20.00",
+    "15.00", // Adjusted budget for new account
     "Maximize Conversions",
     "Google Search; Search Partners",
-    "United States",
-    "English",
+    "United States; United Kingdom; Canada; Australia; Netherlands",
+    "English; Dutch",
     "Enabled"
   ]);
+  
+  const csvContent = [
+    headers.join(","),
+    ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))
+  ].join("\n");
+  
+  return csvContent;
+}
+
+// Generate Sitelinks CSV
+export function generateSitelinksCSV(): string {
+  const headers = [
+    "Campaign",
+    "Sitelink Text",
+    "Final URL",
+    "Description Line 1",
+    "Description Line 2"
+  ];
+  
+  const campaigns = [...new Set(campaignData.map(ad => ad.campaign))];
+  
+  const sitelinks = [
+    {
+      text: "Dog Supplies",
+      url: "https://getpawsy.pet/products?category=dogs",
+      desc1: "Everything for your dog",
+      desc2: "Collars, toys, beds & more"
+    },
+    {
+      text: "Cat Essentials",
+      url: "https://getpawsy.pet/products?category=cats",
+      desc1: "Premium cat products",
+      desc2: "Trees, beds, toys & feeders"
+    },
+    {
+      text: "GPS Pet Trackers",
+      url: "https://getpawsy.pet/products?category=dog-collars-leashes",
+      desc1: "Never lose your pet",
+      desc2: "Real-time GPS tracking"
+    },
+    {
+      text: "Free Shipping",
+      url: "https://getpawsy.pet/shipping",
+      desc1: "Worldwide free delivery",
+      desc2: "No minimum order required"
+    }
+  ];
+  
+  const rows: string[][] = [];
+  
+  campaigns.forEach(campaign => {
+    sitelinks.forEach(sitelink => {
+      rows.push([
+        campaign,
+        sitelink.text,
+        sitelink.url,
+        sitelink.desc1,
+        sitelink.desc2
+      ]);
+    });
+  });
   
   const csvContent = [
     headers.join(","),
@@ -315,14 +666,36 @@ export function downloadCSV(content: string, filename: string): void {
 
 // Export all files as a zip-like bundle (individual downloads)
 export function exportAllGoogleAds(): void {
-  // Download all three CSVs
-  downloadCSV(generateCampaignStructureCSV(), "getpawsy_campaigns_structure.csv");
+  const timestamp = new Date().toISOString().split('T')[0];
+  
+  // Download all CSVs with timestamps
+  downloadCSV(generateCampaignStructureCSV(), `getpawsy_campaigns_${timestamp}.csv`);
   
   setTimeout(() => {
-    downloadCSV(generateResponsiveAdsCSV(), "getpawsy_responsive_ads.csv");
+    downloadCSV(generateResponsiveAdsCSV(), `getpawsy_ads_${timestamp}.csv`);
   }, 500);
   
   setTimeout(() => {
-    downloadCSV(generateKeywordsCSV(), "getpawsy_keywords.csv");
+    downloadCSV(generateKeywordsCSV(), `getpawsy_keywords_${timestamp}.csv`);
   }, 1000);
+  
+  setTimeout(() => {
+    downloadCSV(generateSitelinksCSV(), `getpawsy_sitelinks_${timestamp}.csv`);
+  }, 1500);
+}
+
+// Get campaign statistics
+export function getCampaignStats() {
+  const campaigns = [...new Set(campaignData.map(ad => ad.campaign))];
+  const totalAdGroups = campaignData.length;
+  const totalKeywords = campaignData.reduce((sum, ad) => sum + ad.keywords.length * 2, 0); // x2 for phrase + exact
+  const totalHeadlines = campaignData.reduce((sum, ad) => sum + ad.headlines.length, 0);
+  
+  return {
+    campaigns: campaigns.length,
+    adGroups: totalAdGroups,
+    keywords: totalKeywords,
+    headlines: totalHeadlines,
+    campaignNames: campaigns
+  };
 }
