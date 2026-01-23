@@ -975,6 +975,39 @@ export async function exportAllAsExcel(colors: ExcelColorScheme = defaultExcelCo
     }
   };
   
+  // Conditional formatting styles based on cell values
+  const conditionalStyles: Record<string, { fill: { fgColor: { rgb: string } }; font: { color: { rgb: string }; bold?: boolean } }> = {
+    // Status values
+    'Paused': { fill: { fgColor: { rgb: 'FEE2E2' } }, font: { color: { rgb: 'DC2626' } } },
+    'Removed': { fill: { fgColor: { rgb: 'FEE2E2' } }, font: { color: { rgb: '991B1B' }, bold: true } },
+    'Enabled': { fill: { fgColor: { rgb: 'DCFCE7' } }, font: { color: { rgb: '16A34A' } } },
+    // Match types
+    'Exact': { fill: { fgColor: { rgb: 'DBEAFE' } }, font: { color: { rgb: '2563EB' } } },
+    'Phrase': { fill: { fgColor: { rgb: 'E0E7FF' } }, font: { color: { rgb: '4F46E5' } } },
+    'Broad': { fill: { fgColor: { rgb: 'FEF3C7' } }, font: { color: { rgb: 'D97706' } } },
+    // Bidding strategies
+    'Maximize conversions': { fill: { fgColor: { rgb: 'D1FAE5' } }, font: { color: { rgb: '059669' } } },
+    'Maximize clicks': { fill: { fgColor: { rgb: 'CFFAFE' } }, font: { color: { rgb: '0891B2' } } },
+    'Target CPA': { fill: { fgColor: { rgb: 'FCE7F3' } }, font: { color: { rgb: 'DB2777' } } },
+    'Target ROAS': { fill: { fgColor: { rgb: 'FDF4FF' } }, font: { color: { rgb: 'A855F7' } } },
+    'Manual CPC': { fill: { fgColor: { rgb: 'F3F4F6' } }, font: { color: { rgb: '6B7280' } } },
+    // Campaign types
+    'Search': { fill: { fgColor: { rgb: 'DBEAFE' } }, font: { color: { rgb: '2563EB' } } },
+    'Display': { fill: { fgColor: { rgb: 'FEF3C7' } }, font: { color: { rgb: 'D97706' } } },
+    'Shopping': { fill: { fgColor: { rgb: 'D1FAE5' } }, font: { color: { rgb: '059669' } } },
+    'Video': { fill: { fgColor: { rgb: 'FEE2E2' } }, font: { color: { rgb: 'DC2626' } } },
+    'Performance Max': { fill: { fgColor: { rgb: 'E0E7FF' } }, font: { color: { rgb: '4F46E5' } } },
+    // Ad types
+    'Responsive search ad': { fill: { fgColor: { rgb: 'DBEAFE' } }, font: { color: { rgb: '2563EB' } } },
+    'Expanded text ad': { fill: { fgColor: { rgb: 'F3F4F6' } }, font: { color: { rgb: '6B7280' } } }
+  };
+  
+  // Columns that should have conditional formatting applied
+  const conditionalColumns = [
+    'Campaign Status', 'Ad Group Status', 'Status', 
+    'Match Type', 'Bidding Strategy', 'Campaign Type', 'Ad Type'
+  ];
+  
   // Helper to add CSV data as sheet with styling and validation
   const addSheet = (csvContent: string, sheetName: string, accentColor: string) => {
     const data = parseCSVToArray(csvContent);
@@ -983,6 +1016,14 @@ export async function exportAllAsExcel(colors: ExcelColorScheme = defaultExcelCo
     // Get range of cells
     const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
     const headers = data[0] || [];
+    
+    // Find column indices that need conditional formatting
+    const conditionalColumnIndices = headers.reduce((acc, header, index) => {
+      if (conditionalColumns.includes(header)) {
+        acc[index] = header;
+      }
+      return acc;
+    }, {} as Record<number, string>);
     
     // Apply header styling to first row
     for (let col = range.s.c; col <= range.e.c; col++) {
@@ -995,12 +1036,23 @@ export async function exportAllAsExcel(colors: ExcelColorScheme = defaultExcelCo
       }
     }
     
-    // Apply alternating row styles
+    // Apply alternating row styles and conditional formatting
     for (let row = 1; row <= range.e.r; row++) {
       for (let col = range.s.c; col <= range.e.c; col++) {
         const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
         if (worksheet[cellRef]) {
-          if (row % 2 === 0) {
+          const cellValue = worksheet[cellRef].v?.toString() || '';
+          
+          // Check if this column should have conditional formatting
+          if (conditionalColumnIndices[col] && conditionalStyles[cellValue]) {
+            worksheet[cellRef].s = {
+              ...conditionalStyles[cellValue],
+              alignment: { horizontal: "center" },
+              border: {
+                bottom: { style: "thin", color: { rgb: colors.border } }
+              }
+            };
+          } else if (row % 2 === 0) {
             worksheet[cellRef].s = evenRowStyle;
           }
         }
