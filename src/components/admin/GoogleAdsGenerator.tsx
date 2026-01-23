@@ -42,7 +42,9 @@ import {
   Trash2,
   Eye,
   Download,
-  Package
+  Package,
+  ExternalLink,
+  Image as ImageIcon
 } from "lucide-react";
 import { 
   exportAllGoogleAds, 
@@ -50,6 +52,8 @@ import {
   generateResponsiveAdsCSV,
   generateKeywordsCSV,
   generateCampaignStructureCSV,
+  generateSitelinksCSV,
+  generateImageAssetsInstructions,
   downloadCSV
 } from "@/utils/googleAdsExport";
 import { format } from "date-fns";
@@ -1034,12 +1038,12 @@ ${keywords.join(", ")}
                   className="flex-1"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download Alle CSV's (3 bestanden)
+                  Download Alle CSV's (5 bestanden)
                 </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <Card className="border-dashed">
                 <CardContent className="pt-4 space-y-3">
                   <div className="flex items-center gap-2">
@@ -1096,6 +1100,48 @@ ${keywords.join(", ")}
                     size="sm" 
                     className="w-full"
                     onClick={() => downloadCSV(generateKeywordsCSV(), "getpawsy_keywords.csv")}
+                  >
+                    <Download className="w-3 h-3 mr-2" />
+                    Download
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border-dashed">
+                <CardContent className="pt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium text-sm">Sitelinks</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    4 sitelinks per campagne voor extra links onder je advertenties
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => downloadCSV(generateSitelinksCSV(), "getpawsy_sitelinks.csv")}
+                  >
+                    <Download className="w-3 h-3 mr-2" />
+                    Download
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border-dashed">
+                <CardContent className="pt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium text-sm">Image Instructions</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Handleiding voor image assets (handmatige setup vereist)
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => downloadCSV(generateImageAssetsInstructions(), "getpawsy_images_instructions.txt")}
                   >
                     <Download className="w-3 h-3 mr-2" />
                     Download
