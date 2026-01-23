@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X, History, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -21,6 +21,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
+import { nl } from 'date-fns/locale';
 import {
   generateCampaignStructureCSV,
   generateResponsiveAdsCSV,
@@ -35,18 +38,76 @@ import {
 
 type FileType = 'campaigns' | 'ads' | 'keywords' | 'sitelinks' | 'images';
 
+interface SheetsExport {
+  id: string;
+  spreadsheet_id: string;
+  spreadsheet_url: string;
+  title: string;
+  product_count: number;
+  created_at: string;
+}
+
 const DownloadAds = () => {
+  const { user } = useAuth();
   const [downloaded, setDownloaded] = useState<string[]>([]);
   const [copied, setCopied] = useState<string[]>([]);
   const [isZipping, setIsZipping] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileType | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [email, setEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isExportingSheets, setIsExportingSheets] = useState(false);
   const [previewSearch, setPreviewSearch] = useState('');
   const [previewColumnFilter, setPreviewColumnFilter] = useState<number | null>(null);
+  const [sheetsExports, setSheetsExports] = useState<SheetsExport[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isDeletingExport, setIsDeletingExport] = useState<string | null>(null);
   const stats = getCampaignStats();
+
+  // Load sheets export history
+  const loadSheetsHistory = async () => {
+    if (!user) return;
+    setIsLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('google_sheets_exports')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      setSheetsExports((data || []) as SheetsExport[]);
+    } catch (error) {
+      console.error('Error loading sheets history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const handleDeleteExport = async (id: string) => {
+    setIsDeletingExport(id);
+    try {
+      const { error } = await supabase
+        .from('google_sheets_exports')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      setSheetsExports(prev => prev.filter(e => e.id !== id));
+      toast.success('Export verwijderd');
+    } catch (error) {
+      console.error('Error deleting export:', error);
+      toast.error('Verwijderen mislukt');
+    } finally {
+      setIsDeletingExport(null);
+    }
+  };
+
+  const handleOpenHistory = () => {
+    loadSheetsHistory();
+    setShowHistoryDialog(true);
+  };
 
   // Reset search when preview file changes
   const handlePreviewOpen = (fileId: FileType) => {
@@ -110,7 +171,8 @@ const DownloadAds = () => {
       const { data, error } = await supabase.functions.invoke('export-to-sheets', {
         body: { 
           sheets, 
-          spreadsheetTitle: `GetPawsy Google Ads - ${timestamp}` 
+          spreadsheetTitle: `GetPawsy Google Ads - ${timestamp}`,
+          productCount: stats.campaigns
         },
       });
 
@@ -124,6 +186,11 @@ const DownloadAds = () => {
           },
         });
         window.open(data.url, '_blank');
+        
+        // Refresh history if dialog is open
+        if (showHistoryDialog) {
+          loadSheetsHistory();
+        }
       }
     } catch (error: any) {
       console.error('Error exporting to sheets:', error);
@@ -346,6 +413,18 @@ const DownloadAds = () => {
             CSVs
           </Button>
         </div>
+
+        {/* History Button */}
+        {user && (
+          <Button
+            onClick={handleOpenHistory}
+            variant="ghost"
+            className="w-full gap-2 text-muted-foreground"
+          >
+            <History className="h-4 w-4" />
+            Bekijk eerdere Google Sheets exports
+          </Button>
+        )}
 
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground text-center">Of bekijk en download individueel:</p>
@@ -576,6 +655,83 @@ const DownloadAds = () => {
                 <Send className="h-4 w-4" />
               )}
               {isSending ? 'Verzenden...' : 'Verstuur'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sheets History Dialog */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="max-w-2xl max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Eerdere Google Sheets Exports
+            </DialogTitle>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[60vh]">
+            {isLoadingHistory ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : sheetsExports.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Sheet className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p>Geen eerdere exports gevonden</p>
+                <p className="text-sm mt-1">Maak je eerste Google Sheets export om hem hier te zien</p>
+              </div>
+            ) : (
+              <div className="space-y-2 pr-4">
+                {sheetsExports.map((exportItem) => (
+                  <Card key={exportItem.id} className="overflow-hidden">
+                    <div className="flex items-center justify-between p-4 gap-3">
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <p className="font-medium truncate">{exportItem.title}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>{format(new Date(exportItem.created_at), 'dd MMM yyyy, HH:mm', { locale: nl })}</span>
+                          {exportItem.product_count > 0 && (
+                            <span>• {exportItem.product_count} campagnes</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => window.open(exportItem.spreadsheet_url, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Open
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteExport(exportItem.id)}
+                          disabled={isDeletingExport === exportItem.id}
+                        >
+                          {isDeletingExport === exportItem.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+          
+          <div className="flex justify-between items-center pt-2 border-t">
+            <p className="text-xs text-muted-foreground">
+              {sheetsExports.length} export{sheetsExports.length !== 1 ? 's' : ''} gevonden
+            </p>
+            <Button variant="outline" onClick={() => setShowHistoryDialog(false)}>
+              Sluiten
             </Button>
           </div>
         </DialogContent>
