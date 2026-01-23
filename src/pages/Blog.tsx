@@ -33,7 +33,8 @@ interface BlogPost {
   category: string;
   tags: string[];
   author_name: string;
-  published_at: string;
+  published_at: string | null;
+  created_at?: string;
   reading_time_minutes: number;
   meta_title: string | null;
   meta_description: string | null;
@@ -59,9 +60,9 @@ const Blog = () => {
     queryFn: async () => {
       let query = supabase
         .from('blog_posts')
-        .select('id, title, slug, excerpt, featured_image, category, tags, author_name, published_at, reading_time_minutes, meta_title, meta_description')
+        .select('id, title, slug, excerpt, featured_image, category, tags, author_name, published_at, created_at, reading_time_minutes, meta_title, meta_description')
         .eq('is_published', true)
-        .order('published_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (selectedCategory) {
         query = query.eq('category', selectedCategory);
@@ -324,11 +325,13 @@ const Blog = () => {
                       <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
                         {post.excerpt}
                       </p>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <div className="flex items-center gap-3">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {format(new Date(post.published_at), 'MMM d, yyyy', { locale: enUS })}
+                            {post.published_at && new Date(post.published_at).getFullYear() > 1971
+                              ? format(new Date(post.published_at), 'MMM d, yyyy', { locale: enUS })
+                              : format(new Date(post.created_at || Date.now()), 'MMM d, yyyy', { locale: enUS })}
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />

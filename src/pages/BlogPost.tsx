@@ -32,7 +32,8 @@ interface BlogPost {
   category: string;
   tags: string[];
   author_name: string;
-  published_at: string;
+  published_at: string | null;
+  created_at: string;
   reading_time_minutes: number;
   meta_title: string | null;
   meta_description: string | null;
@@ -399,7 +400,9 @@ const BlogPostPage = () => {
             </span>
             <span className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              {format(new Date(post.published_at), 'MMMM d, yyyy', { locale: enUS })}
+              {post.published_at && new Date(post.published_at).getFullYear() > 1971
+                ? format(new Date(post.published_at), 'MMMM d, yyyy', { locale: enUS })
+                : format(new Date(post.created_at), 'MMMM d, yyyy', { locale: enUS })}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
