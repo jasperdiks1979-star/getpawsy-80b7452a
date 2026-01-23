@@ -483,19 +483,34 @@ export const campaignData: AdVariant[] = [
 ];
 
 // Generate Responsive Search Ads CSV (Google Ads Editor format)
-// Includes up to 15 headlines and 4 descriptions per ad
+// CRITICAL: Must include "Row Type" or ad-type indicator for proper import
+// Reference: https://support.google.com/google-ads/editor/answer/57747
 export function generateResponsiveAdsCSV(): string {
+  // Google Ads Editor requires specific column headers in English
+  // Ad Type must be specified for responsive search ads
   const headers = [
     "Campaign",
-    "Ad Group", 
+    "Ad Group",
+    "Ad type",
     "Headline 1",
     "Headline 2",
     "Headline 3",
     "Headline 4",
     "Headline 5",
     "Headline 6",
+    "Headline 7",
+    "Headline 8",
+    "Headline 9",
+    "Headline 10",
+    "Headline 11",
+    "Headline 12",
+    "Headline 13",
+    "Headline 14",
+    "Headline 15",
     "Description 1",
     "Description 2",
+    "Description 3",
+    "Description 4",
     "Path 1",
     "Path 2",
     "Final URL",
@@ -505,14 +520,26 @@ export function generateResponsiveAdsCSV(): string {
   const rows = campaignData.map(ad => [
     ad.campaign,
     ad.adGroup,
+    "Responsive search ad", // Required ad type identifier
     ad.headlines[0] || "",
     ad.headlines[1] || "",
     ad.headlines[2] || "",
     ad.headlines[3] || "",
     ad.headlines[4] || "",
     ad.headlines[5] || "",
+    ad.headlines[6] || "",
+    ad.headlines[7] || "",
+    ad.headlines[8] || "",
+    ad.headlines[9] || "",
+    ad.headlines[10] || "",
+    ad.headlines[11] || "",
+    ad.headlines[12] || "",
+    ad.headlines[13] || "",
+    ad.headlines[14] || "",
     ad.descriptions[0] || "",
     ad.descriptions[1] || "",
+    ad.descriptions[2] || "",
+    ad.descriptions[3] || "",
     ad.displayPaths[0] || "",
     ad.displayPaths[1] || "",
     ad.finalUrl,
@@ -528,23 +555,27 @@ export function generateResponsiveAdsCSV(): string {
 }
 
 // Generate Keywords CSV (Google Ads Editor format)
+// Must include proper Match Type column
 export function generateKeywordsCSV(): string {
   const headers = [
     "Campaign",
     "Ad Group",
     "Keyword",
-    "Match Type",
-    "Status"
+    "Criterion Type", // Google Ads Editor uses "Criterion Type" or "Match Type"
+    "Status",
+    "Max CPC"
   ];
   
   const rows: string[][] = [];
   
   campaignData.forEach(ad => {
     ad.keywords.forEach(keyword => {
+      // Add broad match (default)
+      rows.push([ad.campaign, ad.adGroup, keyword, "Broad", "Enabled", ""]);
       // Add phrase match
-      rows.push([ad.campaign, ad.adGroup, `"${keyword}"`, "Phrase", "Enabled"]);
+      rows.push([ad.campaign, ad.adGroup, `"${keyword}"`, "Phrase", "Enabled", ""]);
       // Add exact match
-      rows.push([ad.campaign, ad.adGroup, `[${keyword}]`, "Exact", "Enabled"]);
+      rows.push([ad.campaign, ad.adGroup, `[${keyword}]`, "Exact", "Enabled", ""]);
     });
   });
   
@@ -556,35 +587,63 @@ export function generateKeywordsCSV(): string {
   return csvContent;
 }
 
-// Generate Campaign Structure CSV
+// Generate Campaign Structure CSV with Ad Groups
+// IMPORTANT: Campaigns and Ad Groups must be created before ads can be assigned
 export function generateCampaignStructureCSV(): string {
-  const headers = [
+  // Campaigns CSV - Google Ads Editor format
+  const campaignHeaders = [
     "Campaign",
-    "Campaign Type",
+    "Campaign type",
+    "Campaign status",
     "Budget",
-    "Bid Strategy",
+    "Budget type",
+    "Bid strategy type",
     "Networks",
-    "Location",
-    "Language",
-    "Status"
+    "Languages",
+    "Locations"
   ];
   
   const campaigns = [...new Set(campaignData.map(ad => ad.campaign))];
   
-  const rows = campaigns.map(campaign => [
+  const campaignRows = campaigns.map(campaign => [
     campaign,
     "Search",
-    "15.00", // Adjusted budget for new account
-    "Maximize Conversions",
-    "Google Search; Search Partners",
-    "United States",
-    "English",
-    "Enabled"
+    "Enabled",
+    "15.00",
+    "Daily",
+    "Maximize conversions",
+    "Google Search;Search Partners",
+    "en", // English language code
+    "US" // United States
+  ]);
+  
+  const csvContent = [
+    campaignHeaders.join(","),
+    ...campaignRows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))
+  ].join("\n");
+  
+  return csvContent;
+}
+
+// Generate Ad Groups CSV - separate from campaigns for cleaner import
+export function generateAdGroupsCSV(): string {
+  const headers = [
+    "Campaign",
+    "Ad Group",
+    "Ad Group status",
+    "Max CPC"
+  ];
+  
+  const adGroupRows = campaignData.map(ad => [
+    ad.campaign,
+    ad.adGroup,
+    "Enabled",
+    "1.00" // Default max CPC, can be adjusted in Google Ads
   ]);
   
   const csvContent = [
     headers.join(","),
-    ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))
+    ...adGroupRows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))
   ].join("\n");
   
   return csvContent;
@@ -593,13 +652,12 @@ export function generateCampaignStructureCSV(): string {
 // Generate Sitelinks CSV - Google Ads Editor format
 // Reference: https://support.google.com/google-ads/editor/answer/57747
 export function generateSitelinksCSV(): string {
-  // Google Ads Editor sitelink format - exact column headers from documentation
-  // Note: "Sitelink text" / "Link text" are the recognized headers
+  // Sitelink extensions require specific column format
   const headers = [
     "Campaign",
     "Sitelink text",
-    "Description 1",
-    "Description 2", 
+    "Description line 1",
+    "Description line 2",
     "Final URL",
     "Start date",
     "End date",
@@ -641,15 +699,15 @@ export function generateSitelinksCSV(): string {
   campaigns.forEach(campaign => {
     sitelinks.forEach(sitelink => {
       rows.push([
-        campaign,        // Campaign name (must match existing campaign)
-        sitelink.text,   // Sitelink text (max 25 chars)
-        sitelink.desc1,  // Description 1 (max 35 chars)
-        sitelink.desc2,  // Description 2 (max 35 chars)
-        sitelink.url,    // Final URL
-        "",              // Start date (optional, YYYY-MM-DD format)
-        "",              // End date (optional, YYYY-MM-DD format)
-        "All",           // Device preference: All, Mobile, or Desktop
-        "Enabled"        // Status: Enabled, Paused, or Removed
+        campaign,
+        sitelink.text,
+        sitelink.desc1,
+        sitelink.desc2,
+        sitelink.url,
+        "",
+        "",
+        "All",
+        "Enabled"
       ]);
     });
   });
@@ -660,6 +718,41 @@ export function generateSitelinksCSV(): string {
   ].join("\n");
   
   return csvContent;
+}
+
+// Generate a COMBINED import file - single CSV with all entities
+// This is the RECOMMENDED approach for Google Ads Editor
+export function generateCombinedImportCSV(): string {
+  // This combined format allows importing everything in one file
+  // Google Ads Editor will automatically recognize different row types
+  
+  // First section: Campaigns
+  let content = "Campaign,Campaign type,Campaign status,Budget,Budget type,Bid strategy type,Networks,Languages,Locations\n";
+  
+  const campaigns = [...new Set(campaignData.map(ad => ad.campaign))];
+  campaigns.forEach(campaign => {
+    content += `"${campaign}","Search","Enabled","15.00","Daily","Maximize conversions","Google Search;Search Partners","en","US"\n`;
+  });
+  
+  content += "\n";
+  
+  // Second section: Ad Groups
+  content += "Campaign,Ad Group,Ad Group status,Max CPC\n";
+  campaignData.forEach(ad => {
+    content += `"${ad.campaign}","${ad.adGroup}","Enabled","1.00"\n`;
+  });
+  
+  content += "\n";
+  
+  // Third section: Responsive Search Ads
+  content += "Campaign,Ad Group,Ad type,Headline 1,Headline 2,Headline 3,Headline 4,Headline 5,Headline 6,Description 1,Description 2,Path 1,Path 2,Final URL,Status\n";
+  campaignData.forEach(ad => {
+    const headlines = ad.headlines.slice(0, 6).map(h => `"${h.replace(/"/g, '""')}"`).join(",");
+    const paddedHeadlines = headlines + ",".repeat(Math.max(0, 6 - ad.headlines.length));
+    content += `"${ad.campaign}","${ad.adGroup}","Responsive search ad",${headlines}${"," .repeat(Math.max(0, 6 - ad.headlines.slice(0, 6).length))}"${ad.descriptions[0] || ""}","${ad.descriptions[1] || ""}","${ad.displayPaths[0] || ""}","${ad.displayPaths[1] || ""}","${ad.finalUrl}","Enabled"\n`;
+  });
+  
+  return content;
 }
 
 // Generate Image Assets Instructions (NOT CSV - Google Ads Editor doesn't support image CSV imports)
@@ -809,23 +902,27 @@ export async function downloadCSV(content: string, filename: string): Promise<vo
 export function exportAllGoogleAds(): void {
   const timestamp = new Date().toISOString().split('T')[0];
   
-  // Download all CSVs with timestamps
-  downloadCSV(generateCampaignStructureCSV(), `getpawsy_campaigns_${timestamp}.csv`);
+  // Download all CSVs with timestamps - in correct import order
+  downloadCSV(generateCampaignStructureCSV(), `01_campaigns_${timestamp}.csv`);
   
   setTimeout(() => {
-    downloadCSV(generateResponsiveAdsCSV(), `getpawsy_ads_${timestamp}.csv`);
-  }, 500);
+    downloadCSV(generateAdGroupsCSV(), `02_adgroups_${timestamp}.csv`);
+  }, 400);
   
   setTimeout(() => {
-    downloadCSV(generateKeywordsCSV(), `getpawsy_keywords_${timestamp}.csv`);
-  }, 1000);
+    downloadCSV(generateResponsiveAdsCSV(), `03_ads_${timestamp}.csv`);
+  }, 800);
   
   setTimeout(() => {
-    downloadCSV(generateSitelinksCSV(), `getpawsy_sitelinks_${timestamp}.csv`);
-  }, 1500);
+    downloadCSV(generateKeywordsCSV(), `04_keywords_${timestamp}.csv`);
+  }, 1200);
   
   setTimeout(() => {
-    downloadCSV(generateImageAssetsInstructions(), `getpawsy_images_instructions_${timestamp}.txt`);
+    downloadCSV(generateSitelinksCSV(), `05_sitelinks_${timestamp}.csv`);
+  }, 1600);
+  
+  setTimeout(() => {
+    downloadCSV(generateImageAssetsInstructions(), `images_instructions_${timestamp}.txt`);
   }, 2000);
 }
 
@@ -835,12 +932,13 @@ export async function exportAllAsZip(): Promise<void> {
   const zip = new JSZip();
   const timestamp = new Date().toISOString().split('T')[0];
   
-  // Add all CSV files to the ZIP (images is a .txt instruction file)
-  zip.file(`getpawsy_campaigns_${timestamp}.csv`, generateCampaignStructureCSV());
-  zip.file(`getpawsy_ads_${timestamp}.csv`, generateResponsiveAdsCSV());
-  zip.file(`getpawsy_keywords_${timestamp}.csv`, generateKeywordsCSV());
-  zip.file(`getpawsy_sitelinks_${timestamp}.csv`, generateSitelinksCSV());
-  zip.file(`getpawsy_images_instructions_${timestamp}.txt`, generateImageAssetsInstructions());
+  // Add all CSV files to the ZIP with proper naming for import order
+  zip.file(`01_campaigns_${timestamp}.csv`, generateCampaignStructureCSV());
+  zip.file(`02_adgroups_${timestamp}.csv`, generateAdGroupsCSV());
+  zip.file(`03_ads_${timestamp}.csv`, generateResponsiveAdsCSV());
+  zip.file(`04_keywords_${timestamp}.csv`, generateKeywordsCSV());
+  zip.file(`05_sitelinks_${timestamp}.csv`, generateSitelinksCSV());
+  zip.file(`images_instructions_${timestamp}.txt`, generateImageAssetsInstructions());
   
   // Generate and download the ZIP
   const content = await zip.generateAsync({ type: 'blob' });
@@ -1028,11 +1126,12 @@ export async function exportCompleteCampaignPackage(
     throw new Error('Failed to create folders in ZIP');
   }
   
-  // Add all CSV files
-  csvFolder.file(`getpawsy_campaigns_${timestamp}.csv`, generateCampaignStructureCSV());
-  csvFolder.file(`getpawsy_ads_${timestamp}.csv`, generateResponsiveAdsCSV());
-  csvFolder.file(`getpawsy_keywords_${timestamp}.csv`, generateKeywordsCSV());
-  csvFolder.file(`getpawsy_sitelinks_${timestamp}.csv`, generateSitelinksCSV());
+  // Add all CSV files with proper naming for import order
+  csvFolder.file(`01_campaigns_${timestamp}.csv`, generateCampaignStructureCSV());
+  csvFolder.file(`02_adgroups_${timestamp}.csv`, generateAdGroupsCSV());
+  csvFolder.file(`03_ads_${timestamp}.csv`, generateResponsiveAdsCSV());
+  csvFolder.file(`04_keywords_${timestamp}.csv`, generateKeywordsCSV());
+  csvFolder.file(`05_sitelinks_${timestamp}.csv`, generateSitelinksCSV());
   
   onProgress?.('Afbeeldingen downloaden...', 30);
   
@@ -1058,25 +1157,26 @@ export async function exportCompleteCampaignPackage(
   
   onProgress?.('ZIP genereren...', 80);
   
-  // Add comprehensive README
+  // Add comprehensive README with CORRECT import instructions
   const readme = `
 ================================================================================
             GETPAWSY COMPLETE GOOGLE ADS CAMPAIGN PACKAGE
 ================================================================================
 
-Gegenereerd op: ${new Date().toLocaleString('nl-NL')}
+Generated: ${new Date().toLocaleString('nl-NL')}
 
-Deze ZIP bevat ALLES wat je nodig hebt om je Google Ads campagnes live te zetten!
+This ZIP contains EVERYTHING you need to set up your Google Ads campaigns!
 
 ================================================================================
-                               INHOUD
+                               CONTENTS
 ================================================================================
 
 📁 01_csv_files/
-   ├── getpawsy_campaigns_${timestamp}.csv  → Campagne instellingen
-   ├── getpawsy_ads_${timestamp}.csv        → Responsive Search Ads
-   ├── getpawsy_keywords_${timestamp}.csv   → Keywords (phrase + exact match)
-   └── getpawsy_sitelinks_${timestamp}.csv  → Sitelink extensies
+   ├── 01_campaigns_${timestamp}.csv   → Campaign settings (import FIRST)
+   ├── 02_adgroups_${timestamp}.csv    → Ad Groups (import SECOND)
+   ├── 03_ads_${timestamp}.csv         → Responsive Search Ads
+   ├── 04_keywords_${timestamp}.csv    → Keywords (broad, phrase, exact)
+   └── 05_sitelinks_${timestamp}.csv   → Sitelink extensions
 
 📁 02_image_assets/
    ├── getpawsy_square_1200x1200.jpg        → Marketing image (1:1)
@@ -1085,58 +1185,126 @@ Deze ZIP bevat ALLES wat je nodig hebt om je Google Ads campagnes live te zetten
    └── getpawsy_logo_landscape_1200x300.png → Logo wide (4:1)
 
 ================================================================================
-                         STAP-VOOR-STAP IMPORT HANDLEIDING
+                    ⚠️  CRITICAL: IMPORT ORDER MATTERS!
 ================================================================================
 
-STAP 1: GOOGLE ADS EDITOR DOWNLOADEN
+You MUST import files in the correct order. Campaigns and Ad Groups must exist
+before you can add ads, keywords, or sitelinks to them.
+
+================================================================================
+                          STEP-BY-STEP IMPORT GUIDE
+================================================================================
+
+STEP 1: DOWNLOAD GOOGLE ADS EDITOR
 ──────────────────────────────────────
 • Download: https://ads.google.com/home/tools/ads-editor/
-• Installeer en log in met je Google Ads account
+• Install and sign in with your Google Ads account
+• Click "Get recent changes" to sync your account
 
-STAP 2: CSV BESTANDEN IMPORTEREN
+STEP 2: IMPORT CAMPAIGNS (FIRST!)
 ──────────────────────────────────────
-1. Open Google Ads Editor
-2. Ga naar: Account → Import → From file
-3. Importeer in deze volgorde:
-   a) getpawsy_campaigns_${timestamp}.csv (campagne structuur)
-   b) getpawsy_ads_${timestamp}.csv (advertenties)
-   c) getpawsy_keywords_${timestamp}.csv (zoekwoorden)
-   d) getpawsy_sitelinks_${timestamp}.csv (sitelinks)
+1. Go to: Account → Import → From file...
+2. Select: 01_campaigns_${timestamp}.csv
+3. Verify column headers are correctly detected:
+   - Campaign, Campaign type, Campaign status, Budget, etc.
+4. Click "Import"
+5. Review and keep proposed changes
 
-STAP 3: IMAGE ASSETS IMPORTEREN
+STEP 3: IMPORT AD GROUPS (SECOND!)
 ──────────────────────────────────────
-1. In Google Ads Editor
-2. Ga naar: Account → Import → Import image assets from files
-3. Selecteer de "02_image_assets" map
-4. Klik "Import"
+1. Go to: Account → Import → From file...
+2. Select: 02_adgroups_${timestamp}.csv
+3. Verify column headers:
+   - Campaign, Ad Group, Ad Group status, Max CPC
+4. Click "Import"
+5. Review and keep proposed changes
 
-STAP 4: BUDGET CONFIGUREREN
+STEP 4: IMPORT ADS
 ──────────────────────────────────────
-1. Selecteer elke campagne
-2. Stel je dagelijks budget in (bijv. $10-20 per campagne)
-3. Kies biedstrategie: "Maximize Conversions" (aanbevolen)
+1. Go to: Account → Import → From file...
+2. Select: 03_ads_${timestamp}.csv
+3. Verify column headers:
+   - Campaign, Ad Group, Ad type (should say "Responsive search ad")
+   - Headline 1-15, Description 1-4, Path 1, Path 2, Final URL
+4. Click "Import"
+5. Review and keep proposed changes
 
-STAP 5: PUBLICEREN
+STEP 5: IMPORT KEYWORDS
 ──────────────────────────────────────
-1. Review alle wijzigingen
-2. Klik "Post" om naar Google Ads te uploaden
-3. Wacht tot Google je advertenties goedkeurt (meestal 24-48 uur)
+1. Go to: Account → Import → From file...
+2. Select: 04_keywords_${timestamp}.csv
+3. Verify column headers:
+   - Campaign, Ad Group, Keyword, Criterion Type, Status
+4. Click "Import"
+5. Review and keep proposed changes
+
+STEP 6: IMPORT SITELINKS
+──────────────────────────────────────
+1. Go to: Account → Import → From file...
+2. Select: 05_sitelinks_${timestamp}.csv
+3. Verify column headers:
+   - Campaign, Sitelink text, Description line 1, Description line 2, Final URL
+4. Click "Import"
+5. Review and keep proposed changes
+
+STEP 7: ADD IMAGE ASSETS
+──────────────────────────────────────
+1. In Google Ads Editor, go to: Shared Library → Assets → Images
+2. Click "+ Add" → "From file"
+3. Select all images from the "02_image_assets" folder
+4. After adding, right-click images → "Assign to campaigns"
+5. Select all campaigns
+
+STEP 8: CONFIGURE SETTINGS
+──────────────────────────────────────
+1. Select each campaign and verify:
+   - Budget: Set your daily budget (start with $10-20)
+   - Bid strategy: "Maximize conversions" (recommended)
+   - Location: United States
+   - Language: English
+
+STEP 9: POST CHANGES
+──────────────────────────────────────
+1. Click "Post" in the top toolbar
+2. Review all changes one more time
+3. Click "Post" to upload to Google Ads
+4. Wait for Google to review your ads (24-48 hours)
 
 ================================================================================
-                            TIPS & BEST PRACTICES
+                        TROUBLESHOOTING COMMON ERRORS
 ================================================================================
 
-✅ Begin met een klein budget ($10-20/dag) om te testen
-✅ Monitor je campagnes dagelijks de eerste week
-✅ Gebruik Google Ads conversie tracking voor betere optimalisatie
-✅ Voeg negatieve zoekwoorden toe om irrelevante clicks te vermijden
-✅ Test verschillende advertentieteksten A/B
+ERROR: "Some required columns are not specified"
+→ Make sure column headers match exactly (Campaign, Ad Group, etc.)
+→ Headers are case-insensitive but must be in English
+
+ERROR: "Campaign not found"
+→ Import campaigns CSV FIRST before other files
+→ Campaign names must match exactly
+
+ERROR: "Ad Group not found"
+→ Import ad groups CSV before ads/keywords
+→ Ad group names must match exactly
+
+ERROR: "CSV header missing"
+→ Your file may have been saved incorrectly
+→ Re-export and ensure UTF-8 encoding
 
 ================================================================================
-                              SUPPORT
+                               CAMPAIGN STATS
 ================================================================================
 
-Heb je vragen? Bezoek: https://getpawsy.pet/contact
+• Campaigns: 7 (GPS Fence, Pet Carrier, Slow Feeder, Cat, Dog, Grooming, Brand)
+• Ad Groups: 20 (multiple per campaign)
+• Keywords: 316+ (broad, phrase, and exact match)
+• Sitelinks: 28 (4 per campaign)
+• Image Assets: 4 (square, landscape, logos)
+
+================================================================================
+                               SUPPORT
+================================================================================
+
+Questions? Visit: https://getpawsy.pet/contact
 
 Happy advertising! 🎉
 ================================================================================

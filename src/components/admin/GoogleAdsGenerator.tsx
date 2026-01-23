@@ -55,12 +55,14 @@ import {
   generateResponsiveAdsCSV,
   generateKeywordsCSV,
   generateCampaignStructureCSV,
+  generateAdGroupsCSV,
   generateSitelinksCSV,
   generateImageAssetsInstructions,
   downloadCSV
 } from "@/utils/googleAdsExport";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
+import { Users } from "lucide-react";
 
 interface GeneratedAd {
   headlines: string[];
@@ -1114,21 +1116,44 @@ ${keywords.join(", ")}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              <Card className="border-dashed">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <Card className="border-dashed border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
                 <CardContent className="pt-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium text-sm">Campaign Structure</span>
+                    <FileText className="w-4 h-4 text-amber-600" />
+                    <span className="font-medium text-sm">1. Campaigns</span>
+                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Eerst!</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Campagne instellingen: budget, biedstrategie, locatie targeting
+                    Campagne instellingen: budget, biedstrategie, targeting
                   </p>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="w-full"
-                    onClick={() => downloadCSV(generateCampaignStructureCSV(), "getpawsy_campaigns_structure.csv")}
+                    className="w-full border-amber-300 hover:bg-amber-100"
+                    onClick={() => downloadCSV(generateCampaignStructureCSV(), "01_campaigns.csv")}
+                  >
+                    <Download className="w-3 h-3 mr-2" />
+                    Download
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border-dashed border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
+                <CardContent className="pt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-amber-600" />
+                    <span className="font-medium text-sm">2. Ad Groups</span>
+                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">2e!</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Advertentiegroepen per campagne met CPC biedingen
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full border-amber-300 hover:bg-amber-100"
+                    onClick={() => downloadCSV(generateAdGroupsCSV(), "02_adgroups.csv")}
                   >
                     <Download className="w-3 h-3 mr-2" />
                     Download
@@ -1140,16 +1165,16 @@ ${keywords.join(", ")}
                 <CardContent className="pt-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <Type className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium text-sm">Responsive Ads</span>
+                    <span className="font-medium text-sm">3. Ads</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    15 advertenties met headlines, descriptions en display paths
+                    20 Responsive Search Ads met headlines & descriptions
                   </p>
                   <Button 
                     variant="outline" 
                     size="sm" 
                     className="w-full"
-                    onClick={() => downloadCSV(generateResponsiveAdsCSV(), "getpawsy_responsive_ads.csv")}
+                    onClick={() => downloadCSV(generateResponsiveAdsCSV(), "03_ads.csv")}
                   >
                     <Download className="w-3 h-3 mr-2" />
                     Download
@@ -1161,16 +1186,16 @@ ${keywords.join(", ")}
                 <CardContent className="pt-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <Tag className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium text-sm">Keywords</span>
+                    <span className="font-medium text-sm">4. Keywords</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    75 keywords in phrase & exact match voor alle campagnes
+                    Keywords in broad, phrase & exact match
                   </p>
                   <Button 
                     variant="outline" 
                     size="sm" 
                     className="w-full"
-                    onClick={() => downloadCSV(generateKeywordsCSV(), "getpawsy_keywords.csv")}
+                    onClick={() => downloadCSV(generateKeywordsCSV(), "04_keywords.csv")}
                   >
                     <Download className="w-3 h-3 mr-2" />
                     Download
@@ -1182,16 +1207,16 @@ ${keywords.join(", ")}
                 <CardContent className="pt-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium text-sm">Sitelinks</span>
+                    <span className="font-medium text-sm">5. Sitelinks</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    4 sitelinks per campagne voor extra links onder je advertenties
+                    4 sitelinks per campagne voor extra CTR
                   </p>
                   <Button 
                     variant="outline" 
                     size="sm" 
                     className="w-full"
-                    onClick={() => downloadCSV(generateSitelinksCSV(), "getpawsy_sitelinks.csv")}
+                    onClick={() => downloadCSV(generateSitelinksCSV(), "05_sitelinks.csv")}
                   >
                     <Download className="w-3 h-3 mr-2" />
                     Download
@@ -1203,11 +1228,10 @@ ${keywords.join(", ")}
                 <CardContent className="pt-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <ImageIcon className="w-4 h-4 text-primary" />
-                    <span className="font-medium text-sm">Image Assets ZIP</span>
-                    <Badge variant="secondary" className="text-xs">Nieuw</Badge>
+                    <span className="font-medium text-sm">6. Images</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Alle afbeeldingen in 1 ZIP - direct importeren in Google Ads Editor
+                    Logo & marketing afbeeldingen (handmatig toevoegen)
                   </p>
                   <Button 
                     size="sm" 
@@ -1217,17 +1241,26 @@ ${keywords.join(", ")}
                     <Package className="w-3 h-3 mr-2" />
                     Download ZIP
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full text-xs"
-                    onClick={() => downloadCSV(generateImageAssetsInstructions(), "getpawsy_images_instructions.txt")}
-                  >
-                    <FileText className="w-3 h-3 mr-2" />
-                    Alleen handleiding
-                  </Button>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Critical import order warning */}
+            <div className="p-4 border-2 border-amber-300 rounded-lg bg-amber-50 dark:bg-amber-950/30 space-y-2">
+              <h4 className="font-semibold text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                ⚠️ BELANGRIJK: Import Volgorde
+              </h4>
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                <strong>Campagnes en Ad Groups moeten EERST bestaan</strong> voordat je advertenties, keywords of sitelinks kunt toevoegen. 
+                Importeer altijd in deze volgorde:
+              </p>
+              <ol className="list-decimal list-inside text-sm text-amber-700 dark:text-amber-300 space-y-1">
+                <li><strong>01_campaigns.csv</strong> → Campagne structuur aanmaken</li>
+                <li><strong>02_adgroups.csv</strong> → Ad Groups aanmaken binnen campagnes</li>
+                <li><strong>03_ads.csv</strong> → Ads toevoegen aan ad groups</li>
+                <li><strong>04_keywords.csv</strong> → Keywords toevoegen aan ad groups</li>
+                <li><strong>05_sitelinks.csv</strong> → Sitelinks toevoegen aan campagnes</li>
+              </ol>
             </div>
 
             {/* Complete Step-by-Step Guide */}
@@ -1281,39 +1314,44 @@ ${keywords.join(", ")}
                     <h5 className="font-medium">CSV Bestanden Downloaden</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Download alle drie de CSV bestanden hierboven:</p>
+                    <p>Download de CSV bestanden hierboven of gebruik de Complete Package:</p>
                     <ol className="list-decimal list-inside space-y-1">
-                      <li><strong>getpawsy_campaigns_structure.csv</strong> - Campagne instellingen</li>
-                      <li><strong>getpawsy_responsive_ads.csv</strong> - Advertenties (15 stuks)</li>
-                      <li><strong>getpawsy_keywords.csv</strong> - Zoekwoorden (150 stuks)</li>
+                      <li><strong>01_campaigns.csv</strong> - Campagne instellingen</li>
+                      <li><strong>02_adgroups.csv</strong> - Advertentiegroepen</li>
+                      <li><strong>03_ads.csv</strong> - Responsive Search Ads</li>
+                      <li><strong>04_keywords.csv</strong> - Zoekwoorden</li>
+                      <li><strong>05_sitelinks.csv</strong> - Sitelink extensies</li>
                     </ol>
                   </div>
                 </div>
 
                 {/* Step 4 */}
-                <div className="space-y-2 p-4 bg-background rounded-lg border">
+                <div className="space-y-2 p-4 bg-background rounded-lg border border-amber-200 dark:border-amber-800">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">4</div>
-                    <h5 className="font-medium">Importeren in Google Ads Editor</h5>
+                    <div className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm">4</div>
+                    <h5 className="font-medium text-amber-700 dark:text-amber-400">Importeren in Google Ads Editor (VOLGORDE CRUCIAAL!)</h5>
                   </div>
                   <div className="ml-9 space-y-2 text-sm text-muted-foreground">
-                    <p>Importeer in deze volgorde:</p>
+                    <p><strong>Importeer in EXACT deze volgorde:</strong></p>
                     <ol className="list-decimal list-inside space-y-2">
                       <li>
-                        <strong>Campagnes eerst:</strong><br/>
-                        Account → Import → Import from CSV → Selecteer "campaigns_structure.csv"
+                        <strong>Campagnes eerst:</strong> Account → Import → From file... → 01_campaigns.csv
                       </li>
                       <li>
-                        <strong>Daarna advertenties:</strong><br/>
-                        Account → Import → Import from CSV → Selecteer "responsive_ads.csv"
+                        <strong>Ad Groups tweede:</strong> Account → Import → From file... → 02_adgroups.csv
                       </li>
                       <li>
-                        <strong>Als laatste keywords:</strong><br/>
-                        Account → Import → Import from CSV → Selecteer "keywords.csv"
+                        <strong>Daarna advertenties:</strong> Account → Import → From file... → 03_ads.csv
+                      </li>
+                      <li>
+                        <strong>Keywords:</strong> Account → Import → From file... → 04_keywords.csv
+                      </li>
+                      <li>
+                        <strong>Sitelinks:</strong> Account → Import → From file... → 05_sitelinks.csv
                       </li>
                     </ol>
-                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-blue-800 dark:text-blue-200 text-xs">
-                      💡 <strong>Let op:</strong> Na elke import zie je een preview. Controleer of alles goed staat en klik op "Process"
+                    <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-800 dark:text-amber-200 text-xs">
+                      ⚠️ <strong>Belangrijk:</strong> Campagnes en Ad Groups moeten EERST bestaan voordat ads/keywords kunnen worden toegevoegd!
                     </div>
                   </div>
                 </div>
