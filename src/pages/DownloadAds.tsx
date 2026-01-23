@@ -1,7 +1,22 @@
-import { useState } from 'react';
-import { Download, FileSpreadsheet, Check, Archive, Loader2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   generateCampaignStructureCSV,
   generateResponsiveAdsCSV,
@@ -14,32 +29,53 @@ import {
   exportAllAsZip
 } from '@/utils/googleAdsExport';
 
+type FileType = 'campaigns' | 'ads' | 'keywords' | 'sitelinks' | 'images';
+
 const DownloadAds = () => {
   const [downloaded, setDownloaded] = useState<string[]>([]);
   const [isZipping, setIsZipping] = useState(false);
+  const [previewFile, setPreviewFile] = useState<FileType | null>(null);
   const stats = getCampaignStats();
 
-  const handleDownload = (type: string) => {
-    const timestamp = new Date().toISOString().split('T')[0];
-    
+  const getCSVContent = (type: FileType): string => {
     switch (type) {
       case 'campaigns':
-        downloadCSV(generateCampaignStructureCSV(), `getpawsy_campaigns_${timestamp}.csv`);
-        break;
+        return generateCampaignStructureCSV();
       case 'ads':
-        downloadCSV(generateResponsiveAdsCSV(), `getpawsy_ads_${timestamp}.csv`);
-        break;
+        return generateResponsiveAdsCSV();
       case 'keywords':
-        downloadCSV(generateKeywordsCSV(), `getpawsy_keywords_${timestamp}.csv`);
-        break;
+        return generateKeywordsCSV();
       case 'sitelinks':
-        downloadCSV(generateSitelinksCSV(), `getpawsy_sitelinks_${timestamp}.csv`);
-        break;
+        return generateSitelinksCSV();
       case 'images':
-        downloadCSV(generateImageAssetsCSV(), `getpawsy_images_${timestamp}.csv`);
-        break;
+        return generateImageAssetsCSV();
     }
+  };
+
+  const parseCSV = (csv: string): { headers: string[]; rows: string[][] } => {
+    const lines = csv.trim().split('\n');
+    if (lines.length === 0) return { headers: [], rows: [] };
     
+    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+    const rows = lines.slice(1).map(line => {
+      // Handle quoted values with commas
+      const matches = line.match(/("([^"]|"")*"|[^,]*)(,|$)/g) || [];
+      return matches.map(m => m.replace(/,\s*$/, '').replace(/^"|"$/g, '').replace(/""/g, '"').trim());
+    });
+    
+    return { headers, rows };
+  };
+
+  const previewData = useMemo(() => {
+    if (!previewFile) return null;
+    const csv = getCSVContent(previewFile);
+    return parseCSV(csv);
+  }, [previewFile]);
+
+  const handleDownload = (type: FileType) => {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `getpawsy_${type}_${timestamp}.csv`;
+    downloadCSV(getCSVContent(type), filename);
     setDownloaded(prev => [...prev, type]);
   };
 
@@ -58,13 +94,17 @@ const DownloadAds = () => {
     }
   };
 
-  const files = [
+  const files: { id: FileType; name: string; desc: string }[] = [
     { id: 'campaigns', name: 'Campaign Structure', desc: `${stats.campaigns} campaigns - US only targeting` },
     { id: 'ads', name: 'Responsive Search Ads', desc: `${stats.adGroups} ad groups, ${stats.headlines} headlines` },
     { id: 'keywords', name: 'Keywords', desc: `${stats.keywords} keywords (phrase + exact match)` },
     { id: 'sitelinks', name: 'Sitelinks', desc: '4 sitelinks per campaign' },
     { id: 'images', name: 'Image Assets', desc: '4 image URLs (logos + banners)' },
   ];
+
+  const getFileName = (id: FileType) => {
+    return files.find(f => f.id === id)?.name || id;
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -121,33 +161,44 @@ const DownloadAds = () => {
         </div>
 
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground text-center">Of download individueel:</p>
+          <p className="text-sm text-muted-foreground text-center">Of bekijk en download individueel:</p>
           
           {files.map((file) => (
             <Card key={file.id} className="overflow-hidden">
-              <div className="flex items-center justify-between p-4">
-                <div className="space-y-1">
-                  <p className="font-medium">{file.name}</p>
-                  <p className="text-xs text-muted-foreground">{file.desc}</p>
+              <div className="flex items-center justify-between p-4 gap-2">
+                <div className="space-y-1 flex-1 min-w-0">
+                  <p className="font-medium truncate">{file.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{file.desc}</p>
                 </div>
-                <Button
-                  variant={downloaded.includes(file.id) ? "secondary" : "outline"}
-                  size="sm"
-                  onClick={() => handleDownload(file.id)}
-                  className="gap-1"
-                >
-                  {downloaded.includes(file.id) ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      Done
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4" />
-                      CSV
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPreviewFile(file.id)}
+                    className="gap-1"
+                  >
+                    <Eye className="h-4 w-4" />
+                    <span className="hidden sm:inline">Preview</span>
+                  </Button>
+                  <Button
+                    variant={downloaded.includes(file.id) ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => handleDownload(file.id)}
+                    className="gap-1"
+                  >
+                    {downloaded.includes(file.id) ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        <span className="hidden sm:inline">Done</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        <span className="hidden sm:inline">CSV</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}
@@ -162,6 +213,74 @@ const DownloadAds = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewFile} onOpenChange={(open) => !open && setPreviewFile(null)}>
+        <DialogContent className="max-w-4xl max-h-[85vh] p-0">
+          <DialogHeader className="p-4 pb-2 border-b">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5" />
+                {previewFile && getFileName(previewFile)}
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[60vh]">
+            {previewData && (
+              <div className="p-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {previewData.headers.map((header, i) => (
+                        <TableHead key={i} className="whitespace-nowrap text-xs font-semibold">
+                          {header}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {previewData.rows.slice(0, 50).map((row, rowIndex) => (
+                      <TableRow key={rowIndex}>
+                        {row.map((cell, cellIndex) => (
+                          <TableCell key={cellIndex} className="text-xs max-w-[200px] truncate" title={cell}>
+                            {cell || '-'}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {previewData.rows.length > 50 && (
+                  <p className="text-xs text-muted-foreground text-center mt-4">
+                    Showing first 50 of {previewData.rows.length} rows
+                  </p>
+                )}
+              </div>
+            )}
+          </ScrollArea>
+          
+          <div className="p-4 border-t flex justify-between items-center">
+            <p className="text-xs text-muted-foreground">
+              {previewData?.rows.length || 0} rows total
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setPreviewFile(null)}>
+                Sluiten
+              </Button>
+              {previewFile && (
+                <Button onClick={() => {
+                  handleDownload(previewFile);
+                  setPreviewFile(null);
+                }} className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Download CSV
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
