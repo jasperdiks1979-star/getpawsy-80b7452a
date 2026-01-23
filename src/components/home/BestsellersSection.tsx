@@ -9,6 +9,7 @@ import { StarRating } from '@/components/ui/star-rating';
 import { supabase } from '@/integrations/supabase/client';
 import { useProductRatings } from '@/hooks/useProductRatings';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
+import { safeString, safePrice } from '@/lib/safe-render';
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -170,13 +171,13 @@ export const BestsellersSection = () => {
                       {/* Category */}
                       {product.category && (
                         <p className="text-xs text-primary font-medium mb-1 truncate">
-                          {product.category}
+                          {safeString(product.category)}
                         </p>
                       )}
 
                       {/* Product Name */}
                       <h3 className="font-semibold text-sm mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                        {bestseller.hero_headline || product.name}
+                        {safeString(bestseller.hero_headline) || safeString(product.name)}
                       </h3>
 
                       {/* Rating */}
@@ -193,11 +194,11 @@ export const BestsellersSection = () => {
                       {/* Price */}
                       <div className="flex items-baseline gap-2">
                         <span className="text-lg font-bold text-primary">
-                          ${product.price.toFixed(2)}
+                          ${safePrice(product.price)}
                         </span>
                         {product.compare_at_price && (
                           <span className="text-sm text-muted-foreground line-through">
-                            ${product.compare_at_price.toFixed(2)}
+                            ${safePrice(product.compare_at_price)}
                           </span>
                         )}
                       </div>

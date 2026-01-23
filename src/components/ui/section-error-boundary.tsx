@@ -21,15 +21,29 @@ export class SectionErrorBoundary extends Component<SectionErrorBoundaryProps, S
   }
 
   static getDerivedStateFromError(error: Error): SectionErrorBoundaryState {
-    // Safely extract error message
-    const errorMessage = error?.message || 'Unknown error occurred';
+    // Safely extract error message - handle all edge cases
+    let errorMessage = 'Unknown error occurred';
+    try {
+      if (error && typeof error.message === 'string') {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object') {
+        errorMessage = JSON.stringify(error).substring(0, 200);
+      }
+    } catch {
+      errorMessage = 'Error extracting message';
+    }
     return { hasError: true, error, errorMessage };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    const sectionName = this.props.sectionName || 'Unknown';
-    const errorMsg = error?.message || 'No error message';
-    console.error(`Error in section "${sectionName}":`, errorMsg, errorInfo?.componentStack || '');
+    try {
+      const sectionName = this.props.sectionName || 'Unknown';
+      const errorMsg = error?.message || 'No error message';
+      const stack = errorInfo?.componentStack || '';
+      console.error(`Error in section "${sectionName}":`, errorMsg, stack);
+    } catch (e) {
+      console.error('Error in componentDidCatch:', e);
+    }
   }
 
   handleRetry = () => {
@@ -47,7 +61,16 @@ export class SectionErrorBoundary extends Component<SectionErrorBoundaryProps, S
       }
 
       const sectionName = this.props.sectionName || '';
-      const errorMessage = this.state.errorMessage || 'Unknown error';
+      let displayError = 'An unexpected error occurred';
+      try {
+        if (this.state.errorMessage && typeof this.state.errorMessage === 'string') {
+          displayError = this.state.errorMessage.length > 100 
+            ? this.state.errorMessage.substring(0, 100) + '...' 
+            : this.state.errorMessage;
+        }
+      } catch {
+        displayError = 'Error displaying message';
+      }
 
       return (
         <div className="py-12 px-4">
@@ -56,7 +79,7 @@ export class SectionErrorBoundary extends Component<SectionErrorBoundaryProps, S
               <AlertCircle className="w-8 h-8 text-destructive" />
             </div>
             <h3 className="text-lg font-semibold mb-2">
-              Something went wrong
+              Something went wrong{sectionName ? ` in ${sectionName}` : ''}
             </h3>
             <p className="text-muted-foreground text-sm mb-4">
               An unexpected error occurred. Please try refreshing the page.
@@ -77,7 +100,7 @@ export class SectionErrorBoundary extends Component<SectionErrorBoundaryProps, S
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-4">
-              Error: {errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage}
+              Error: {displayError}
             </p>
           </div>
         </div>

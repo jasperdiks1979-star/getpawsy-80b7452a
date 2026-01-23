@@ -12,6 +12,7 @@ import { OptimizedImage } from '@/components/ui/optimized-image';
 import { StarRating } from '@/components/ui/star-rating';
 import { toast } from 'sonner';
 import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
+import { safeString, safePrice } from '@/lib/safe-render';
 
 export interface Product {
   id: string;
@@ -211,11 +212,11 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
         <div className="p-5">
           {product.category && (
             <p className="text-xs text-primary font-medium uppercase tracking-wider mb-2">
-              {product.category}
+              {safeString(product.category)}
             </p>
           )}
           <h3 className="font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-lg leading-snug">
-            {product.name}
+            {safeString(product.name)}
           </h3>
 
           {/* Rating Stars */}
@@ -228,11 +229,11 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
           {/* Price */}
           <div className="flex items-center gap-2 mt-3">
             <span className="text-xl font-bold text-primary">
-              ${Number(product.price).toFixed(2)}
+              ${safePrice(product.price)}
             </span>
             {product.compare_at_price && (
               <span className="text-sm text-muted-foreground line-through">
-                ${Number(product.compare_at_price).toFixed(2)}
+                ${safePrice(product.compare_at_price)}
               </span>
             )}
           </div>

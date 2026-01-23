@@ -17,6 +17,7 @@ import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { BestsellersSection } from '@/components/home/BestsellersSection';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
+import { safeString } from '@/lib/safe-render';
 const features = [
   {
     icon: Truck,
@@ -533,7 +534,7 @@ const Index = () => {
                       {/* Content with slide-up animation */}
                       <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300">
                         <h3 className="font-display font-semibold text-lg text-white mb-1 transform translate-y-0 group-hover:-translate-y-1 transition-transform duration-300">
-                          {category.name}
+                          {safeString(category.name)}
                         </h3>
                         <p className="text-white/0 text-sm group-hover:text-white/80 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75">
                           Bekijk producten →
