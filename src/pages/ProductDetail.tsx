@@ -225,6 +225,7 @@ const ProductDetail = () => {
   };
 
   // Parse variants from JSON and ensure prices are calculated correctly
+  // Also ensure all string properties are properly converted to avoid React error #310
   const variants: ProductVariant[] = useMemo(() => {
     if (!product?.variants || !Array.isArray(product.variants)) return [];
     
@@ -235,6 +236,11 @@ const ProductDetail = () => {
       const variantPrice = Number(variant.variantSellPrice) || 0;
       const variantWeight = Number(variant.variantWeight) || productWeight;
       
+      // CRITICAL: Ensure all potentially-renderable properties are strings, not objects
+      // This prevents React error #310 "Objects are not valid as a React child"
+      const safeVariantKey = typeof variant.variantKey === 'string' ? variant.variantKey : '';
+      const safeVariantNameEn = typeof variant.variantNameEn === 'string' ? variant.variantNameEn : '';
+      
       // Check if the variant price seems like a cost price (much lower than product selling price)
       // If variantSellPrice is less than 40% of product price, it's likely still the cost price
       const isProbablyCostPrice = variantPrice > 0 && variantPrice < productPrice * 0.4;
@@ -244,13 +250,19 @@ const ProductDetail = () => {
         const pricing = calculateSellingPrice(variantPrice, variantWeight);
         return {
           ...variant,
+          variantKey: safeVariantKey,
+          variantNameEn: safeVariantNameEn,
           variantCostPrice: variantPrice,
           variantSellPrice: pricing.sellingPrice,
         };
       }
       
-      // Price seems correct, use as-is
-      return variant;
+      // Price seems correct, use as-is but with safe string values
+      return {
+        ...variant,
+        variantKey: safeVariantKey,
+        variantNameEn: safeVariantNameEn,
+      };
     });
   }, [product]);
 
@@ -1337,12 +1349,12 @@ const ProductDetail = () => {
                         {variant.variantImage && (
                           <img 
                             src={variant.variantImage} 
-                            alt={variant.variantNameEn}
+                            alt={variant.variantNameEn || variant.variantKey || 'Product variant'}
                             className="w-full aspect-square rounded-lg object-cover mb-3"
                           />
                         )}
                         <p className="text-sm font-medium line-clamp-2 text-foreground">
-                          {variant.variantNameEn}
+                          {variant.variantNameEn || variant.variantKey || 'Option'}
                         </p>
                         {variant.variantSellPrice && (
                           <p className="text-xs text-primary mt-1 font-semibold">
