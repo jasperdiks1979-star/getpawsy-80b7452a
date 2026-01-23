@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.generate-product-summary]
 verify_jwt = false
+
+[functions.fix-variant-data]
+verify_jwt = false
