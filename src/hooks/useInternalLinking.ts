@@ -34,18 +34,21 @@ export const useInternalLinking = (
     enabled = true,
   } = options;
 
-  // Fetch products for linking - use products table which has actual slugs
+  // Fetch products for linking - use products_public view which is publicly accessible
   const { data: products = [] } = useQuery({
     queryKey: ['internal-linking-products'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('products_public')
         .select('id, name, slug, category')
         .eq('is_active', true)
         .not('slug', 'is', null)
         .limit(100);
       
-      if (error) return [];
+      if (error) {
+        console.error('Error fetching products for internal linking:', error);
+        return [];
+      }
       return (data || []) as Product[];
     },
     enabled,
