@@ -1,6 +1,12 @@
-// Fuzzy Search & Synonym Matching Utility
+/**
+ * Fuzzy Search & Synonym Matching Utility
+ * 
+ * Provides fuzzy text matching with typo tolerance and synonym expansion
+ * for improved search results. Supports both English and Dutch terms
+ * to help users find products regardless of language used in search.
+ */
 
-// Pet-related synonyms (Dutch & English)
+// Pet-related synonyms mapping (supports bilingual search)
 const SYNONYMS: Record<string, string[]> = {
   // Animals
   'dog': ['hond', 'puppy', 'pup', 'canine', 'honden', 'puppies'],
