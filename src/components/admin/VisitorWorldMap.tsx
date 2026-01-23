@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X, Radio, RotateCw, ExternalLink } from "lucide-react";
+import { Globe, Users, ShoppingCart, CreditCard, RefreshCw, Flame, MapPin, Calendar, Clock, Download, TrendingUp, BarChart3, ZoomIn, ZoomOut, RotateCcw, Filter, Volume2, VolumeX, Bell, BellOff, Map as MapIcon, Maximize2, Minimize2, X, Radio, RotateCw, ExternalLink, Target, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -91,8 +91,13 @@ export const VisitorWorldMap = () => {
     const saved = localStorage.getItem("map-auto-rotate");
     return saved !== null ? saved === "true" : false;
   });
+  const [showHotSpots, setShowHotSpots] = useState(() => {
+    const saved = localStorage.getItem("map-hot-spots");
+    return saved !== null ? saved === "true" : true;
+  });
   const spinIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const userInteractingRef = useRef(false);
+  const hotSpotMarkersRef = useRef<mapboxgl.Marker[]>([]);
 
   // Toggle fullscreen mode
   const toggleFullscreen = useCallback((minimal: boolean = false) => {
@@ -184,6 +189,11 @@ export const VisitorWorldMap = () => {
   useEffect(() => {
     localStorage.setItem("notification-sound-enabled", String(soundEnabled));
   }, [soundEnabled]);
+
+  // Save hot spots preference
+  useEffect(() => {
+    localStorage.setItem("map-hot-spots", String(showHotSpots));
+  }, [showHotSpots]);
 
   // Update map projection when toggle changes
   useEffect(() => {
@@ -643,6 +653,182 @@ export const VisitorWorldMap = () => {
     });
   }, [filteredActivities, mapLoaded, showHeatmap, activityFilter]);
 
+  // Update hot spot markers when data changes
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    // Remove existing hot spot markers
+    hotSpotMarkersRef.current.forEach((marker) => marker.remove());
+    hotSpotMarkersRef.current = [];
+
+    if (!showHotSpots || showHeatmap) return;
+
+    // Add hot spot markers after topLocations is calculated (we'll use a timeout to ensure calculation is done)
+    const addHotSpotMarkers = () => {
+      if (!filteredActivities || filteredActivities.length === 0) return;
+
+      // Calculate hot spots inline for the effect
+      const cityMap = new Map<string, { 
+        sessions: Set<string>; 
+        checkoutSessions: Set<string>;
+        activities: VisitorActivity[];
+      }>();
+
+      filteredActivities.forEach((activity) => {
+        const city = activity.city || "Onbekend";
+        const country = activity.country || "Onbekend";
+        if (city === "Onbekend") return;
+
+        const cityKey = `${city}, ${country}`;
+        if (!cityMap.has(cityKey)) {
+          cityMap.set(cityKey, { 
+            sessions: new Set(),
+            checkoutSessions: new Set(),
+            activities: []
+          });
+        }
+        const cityStats = cityMap.get(cityKey)!;
+        cityStats.sessions.add(activity.session_id);
+        if (activity.activity_type === "checkout") cityStats.checkoutSessions.add(activity.session_id);
+        if (activity.latitude && activity.longitude) cityStats.activities.push(activity);
+      });
+
+      const hotSpots = Array.from(cityMap.entries())
+        .map(([name, stats]) => {
+          const visitors = stats.sessions.size;
+          const checkoutUsers = stats.checkoutSessions.size;
+          const checkoutRate = visitors > 0 ? (checkoutUsers / visitors) * 100 : 0;
+          
+          const avgLat = stats.activities.length > 0 
+            ? stats.activities.reduce((sum, a) => sum + (a.latitude || 0), 0) / stats.activities.length 
+            : null;
+          const avgLng = stats.activities.length > 0 
+            ? stats.activities.reduce((sum, a) => sum + (a.longitude || 0), 0) / stats.activities.length 
+            : null;
+          
+          return { name, visitors, checkoutUsers, checkoutRate, latitude: avgLat, longitude: avgLng };
+        })
+        .filter(spot => spot.visitors >= 2 && spot.checkoutRate > 0 && spot.latitude && spot.longitude)
+        .sort((a, b) => b.checkoutRate - a.checkoutRate)
+        .slice(0, 5);
+
+      // Create hot spot markers with special styling
+      hotSpots.forEach((spot, index) => {
+        const size = 60 + (5 - index) * 10; // Larger for higher conversion
+        const pulseSize = size * 2;
+        
+        const el = document.createElement("div");
+        el.className = "hot-spot-marker";
+        el.style.cssText = `
+          width: ${size}px;
+          height: ${size}px;
+          position: relative;
+          pointer-events: auto;
+          cursor: pointer;
+        `;
+
+        // Outer pulsing ring
+        const pulseRing = document.createElement("div");
+        pulseRing.style.cssText = `
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: ${pulseSize}px;
+          height: ${pulseSize}px;
+          transform: translate(-50%, -50%);
+          border: 3px solid rgba(34, 197, 94, 0.6);
+          border-radius: 50%;
+          animation: hotSpotPulse 2s ease-out infinite;
+        `;
+        el.appendChild(pulseRing);
+
+        // Inner glowing circle
+        const innerCircle = document.createElement("div");
+        innerCircle.style.cssText = `
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: ${size * 0.6}px;
+          height: ${size * 0.6}px;
+          transform: translate(-50%, -50%);
+          background: radial-gradient(circle, rgba(34, 197, 94, 0.8) 0%, rgba(34, 197, 94, 0.3) 50%, transparent 70%);
+          border-radius: 50%;
+          box-shadow: 0 0 ${size}px rgba(34, 197, 94, 0.8), 0 0 ${size * 2}px rgba(34, 197, 94, 0.4);
+        `;
+        el.appendChild(innerCircle);
+
+        // Center badge with conversion rate
+        const badge = document.createElement("div");
+        badge.style.cssText = `
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+          color: white;
+          font-size: 11px;
+          font-weight: bold;
+          padding: 4px 8px;
+          border-radius: 12px;
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        `;
+        badge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>${spot.checkoutRate.toFixed(0)}%`;
+        el.appendChild(badge);
+
+        // Add hot spot animation styles
+        if (!document.getElementById("hot-spot-styles")) {
+          const style = document.createElement("style");
+          style.id = "hot-spot-styles";
+          style.textContent = `
+            @keyframes hotSpotPulse {
+              0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+              100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+            }
+          `;
+          document.head.appendChild(style);
+        }
+
+        // Create popup
+        const popupContent = `
+          <div style="padding: 10px; min-width: 180px;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+              <span style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;">🔥 HOT SPOT #${index + 1}</span>
+            </div>
+            <strong style="font-size: 14px;">${spot.name}</strong>
+            <div style="margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div style="text-align: center; padding: 6px; background: rgba(34, 197, 94, 0.1); border-radius: 6px;">
+                <div style="font-size: 18px; font-weight: bold; color: #22c55e;">${spot.checkoutRate.toFixed(1)}%</div>
+                <div style="font-size: 10px; color: #666;">Conversie</div>
+              </div>
+              <div style="text-align: center; padding: 6px; background: rgba(59, 130, 246, 0.1); border-radius: 6px;">
+                <div style="font-size: 18px; font-weight: bold; color: #3b82f6;">${spot.visitors}</div>
+                <div style="font-size: 10px; color: #666;">Bezoekers</div>
+              </div>
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: #666; text-align: center;">
+              ${spot.checkoutUsers} van ${spot.visitors} bezoekers geconverteerd
+            </div>
+          </div>
+        `;
+
+        const popup = new mapboxgl.Popup({ offset: 25, closeButton: false }).setHTML(popupContent);
+
+        const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
+          .setLngLat([spot.longitude!, spot.latitude!])
+          .setPopup(popup)
+          .addTo(map.current!);
+
+        hotSpotMarkersRef.current.push(marker);
+      });
+    };
+
+    addHotSpotMarkers();
+  }, [filteredActivities, mapLoaded, showHotSpots, showHeatmap]);
+
   // Count activities by type (from filtered data)
   const counts = {
     browsing: filteredActivities?.filter(a => a.activity_type === "browsing").length || 0,
@@ -657,7 +843,7 @@ export const VisitorWorldMap = () => {
 
   // Calculate top locations with conversion rates
   const topLocations = (() => {
-    if (!filteredActivities) return { countries: [], cities: [], summary: { totalVisitors: 0, browsingOnly: 0, addedToCart: 0, completed: 0 } };
+    if (!filteredActivities) return { countries: [], cities: [], hotSpots: [], summary: { totalVisitors: 0, browsingOnly: 0, addedToCart: 0, completed: 0 } };
 
     // Track sessions by their highest activity level
     const sessionHighestActivity = new Map<string, "browsing" | "cart" | "checkout">();
@@ -775,9 +961,41 @@ export const VisitorWorldMap = () => {
       else if (level === "checkout") completed++;
     });
 
+    // Calculate hot spots - cities with high conversion rates (min 3 visitors, checkout rate > 0)
+    const hotSpots = Array.from(cityMap.entries())
+      .map(([name, stats]) => {
+        const visitors = stats.sessions.size;
+        const checkoutUsers = stats.checkoutSessions.size;
+        const checkoutRate = visitors > 0 ? (checkoutUsers / visitors) * 100 : 0;
+        
+        // Find average coordinates for this city
+        const cityActivities = filteredActivities.filter(a => 
+          a.city === name.split(", ")[0] && a.latitude && a.longitude
+        );
+        const avgLat = cityActivities.length > 0 
+          ? cityActivities.reduce((sum, a) => sum + (a.latitude || 0), 0) / cityActivities.length 
+          : null;
+        const avgLng = cityActivities.length > 0 
+          ? cityActivities.reduce((sum, a) => sum + (a.longitude || 0), 0) / cityActivities.length 
+          : null;
+        
+        return {
+          name,
+          visitors,
+          checkoutUsers,
+          checkoutRate,
+          latitude: avgLat,
+          longitude: avgLng,
+        };
+      })
+      .filter(spot => spot.visitors >= 2 && spot.checkoutRate > 0 && spot.latitude && spot.longitude)
+      .sort((a, b) => b.checkoutRate - a.checkoutRate)
+      .slice(0, 5);
+
     return { 
       countries, 
       cities, 
+      hotSpots,
       summary: {
         totalVisitors: sessionHighestActivity.size,
         browsingOnly,
@@ -937,6 +1155,15 @@ export const VisitorWorldMap = () => {
           <Button
             variant="secondary"
             size="sm"
+            onClick={() => setShowHotSpots(!showHotSpots)}
+            className={`bg-background/90 backdrop-blur-sm shadow-md ${showHotSpots ? "ring-2 ring-green-500" : ""}`}
+          >
+            <Sparkles className={`w-4 h-4 ${showHotSpots ? "text-green-500" : ""}`} />
+            <span className="ml-2">Hot Spots</span>
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setShowHeatmap(!showHeatmap)}
             className={`bg-background/90 backdrop-blur-sm shadow-md ${showHeatmap ? "ring-2 ring-orange-500" : ""}`}
           >
@@ -1066,6 +1293,20 @@ export const VisitorWorldMap = () => {
                 <span className="text-sm">
                   {showHeatmap ? "Heatmap" : "Markers"}
                 </span>
+              </Label>
+            </div>
+
+            {/* Hot Spots Toggle */}
+            <div className="flex items-center gap-2 px-2 border-l border-border">
+              <Switch
+                id="hotspots-toggle"
+                checked={showHotSpots}
+                onCheckedChange={setShowHotSpots}
+                disabled={showHeatmap}
+              />
+              <Label htmlFor="hotspots-toggle" className="flex items-center gap-1.5 cursor-pointer">
+                <Sparkles className={`w-4 h-4 ${showHotSpots && !showHeatmap ? "text-green-500" : "text-muted-foreground"}`} />
+                <span className="text-sm">Hot Spots</span>
               </Label>
             </div>
 
