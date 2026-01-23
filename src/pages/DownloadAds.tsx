@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X, History, Trash2 } from 'lucide-react';
+import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -60,6 +60,8 @@ const DownloadAds = () => {
   const [isExportingSheets, setIsExportingSheets] = useState(false);
   const [previewSearch, setPreviewSearch] = useState('');
   const [previewColumnFilter, setPreviewColumnFilter] = useState<number | null>(null);
+  const [sortColumn, setSortColumn] = useState<number | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [sheetsExports, setSheetsExports] = useState<SheetsExport[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isDeletingExport, setIsDeletingExport] = useState<string | null>(null);
@@ -109,11 +111,28 @@ const DownloadAds = () => {
     setShowHistoryDialog(true);
   };
 
-  // Reset search when preview file changes
+  // Reset search and sort when preview file changes
   const handlePreviewOpen = (fileId: FileType) => {
     setPreviewSearch('');
     setPreviewColumnFilter(null);
+    setSortColumn(null);
+    setSortDirection('asc');
     setPreviewFile(fileId);
+  };
+
+  const handleSort = (columnIndex: number) => {
+    if (sortColumn === columnIndex) {
+      // Toggle direction or reset
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else {
+        setSortColumn(null);
+        setSortDirection('asc');
+      }
+    } else {
+      setSortColumn(columnIndex);
+      setSortDirection('asc');
+    }
   };
 
   const handleCopyToClipboard = async (type: FileType) => {
@@ -237,20 +256,42 @@ const DownloadAds = () => {
 
   const filteredPreviewData = useMemo(() => {
     if (!previewData) return null;
-    if (!previewSearch.trim()) return previewData;
     
-    const searchLower = previewSearch.toLowerCase();
-    const filteredRows = previewData.rows.filter(row => {
-      if (previewColumnFilter !== null) {
-        // Filter only specific column
-        return row[previewColumnFilter]?.toLowerCase().includes(searchLower);
-      }
-      // Filter all columns
-      return row.some(cell => cell?.toLowerCase().includes(searchLower));
-    });
+    let rows = [...previewData.rows];
     
-    return { headers: previewData.headers, rows: filteredRows };
-  }, [previewData, previewSearch, previewColumnFilter]);
+    // Apply search filter
+    if (previewSearch.trim()) {
+      const searchLower = previewSearch.toLowerCase();
+      rows = rows.filter(row => {
+        if (previewColumnFilter !== null) {
+          return row[previewColumnFilter]?.toLowerCase().includes(searchLower);
+        }
+        return row.some(cell => cell?.toLowerCase().includes(searchLower));
+      });
+    }
+    
+    // Apply sorting
+    if (sortColumn !== null) {
+      rows.sort((a, b) => {
+        const aVal = a[sortColumn] || '';
+        const bVal = b[sortColumn] || '';
+        
+        // Try numeric comparison first
+        const aNum = parseFloat(aVal.replace(/[^0-9.-]/g, ''));
+        const bNum = parseFloat(bVal.replace(/[^0-9.-]/g, ''));
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+        }
+        
+        // Fall back to string comparison
+        const comparison = aVal.localeCompare(bVal, 'nl', { sensitivity: 'base' });
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+    
+    return { headers: previewData.headers, rows };
+  }, [previewData, previewSearch, previewColumnFilter, sortColumn, sortDirection]);
 
   const handleDownload = (type: FileType) => {
     const timestamp = new Date().toISOString().split('T')[0];
@@ -549,10 +590,29 @@ const DownloadAds = () => {
                           {filteredPreviewData.headers.map((header, i) => (
                             <TableHead 
                               key={i} 
-                              className={`whitespace-nowrap text-xs font-semibold cursor-pointer hover:bg-muted/50 ${previewColumnFilter === i ? 'bg-primary/10' : ''}`}
-                              onClick={() => setPreviewColumnFilter(previewColumnFilter === i ? null : i)}
+                              className={`whitespace-nowrap text-xs font-semibold cursor-pointer hover:bg-muted/50 select-none ${sortColumn === i ? 'bg-primary/10' : ''} ${previewColumnFilter === i ? 'ring-1 ring-primary/30' : ''}`}
+                              onClick={() => handleSort(i)}
                             >
-                              {header}
+                              <div className="flex items-center gap-1">
+                                <span 
+                                  className="flex-1"
+                                  onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    setPreviewColumnFilter(previewColumnFilter === i ? null : i);
+                                  }}
+                                >
+                                  {header}
+                                </span>
+                                {sortColumn === i ? (
+                                  sortDirection === 'asc' ? (
+                                    <ArrowUp className="h-3 w-3 text-primary" />
+                                  ) : (
+                                    <ArrowDown className="h-3 w-3 text-primary" />
+                                  )
+                                ) : (
+                                  <ArrowUpDown className="h-3 w-3 opacity-30" />
+                                )}
+                              </div>
                             </TableHead>
                           ))}
                         </TableRow>
