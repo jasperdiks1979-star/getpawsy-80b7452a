@@ -444,6 +444,36 @@ export type Database = {
         }
         Relationships: []
       }
+      google_sheets_exports: {
+        Row: {
+          created_at: string
+          id: string
+          product_count: number
+          spreadsheet_id: string
+          spreadsheet_url: string
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_count?: number
+          spreadsheet_id: string
+          spreadsheet_url: string
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_count?: number
+          spreadsheet_id?: string
+          spreadsheet_url?: string
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       loss_making_notifications: {
         Row: {
           created_at: string

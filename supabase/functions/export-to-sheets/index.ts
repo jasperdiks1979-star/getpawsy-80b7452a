@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,7 @@ interface SheetData {
 interface ExportRequest {
   sheets: SheetData[];
   spreadsheetTitle: string;
+  productCount?: number;
 }
 
 async function getAccessToken(serviceAccountJson: string): Promise<string> {
@@ -122,7 +124,22 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
     }
 
-    const { sheets, spreadsheetTitle }: ExportRequest = await req.json();
+    // Get user from authorization header
+    const authHeader = req.headers.get("authorization");
+    let userId: string | null = null;
+    
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseKey, {
+        global: { headers: { Authorization: authHeader } }
+      });
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id || null;
+    }
+
+    const { sheets, spreadsheetTitle, productCount }: ExportRequest = await req.json();
     
     if (!sheets || sheets.length === 0) {
       throw new Error("No sheet data provided");
@@ -232,6 +249,21 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
+
+    // Save export record if user is authenticated
+    if (userId) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+      
+      await supabaseAdmin.from("google_sheets_exports").insert({
+        user_id: userId,
+        spreadsheet_id: spreadsheetId,
+        spreadsheet_url: spreadsheetUrl,
+        title: spreadsheetTitle,
+        product_count: productCount || 0,
+      });
+    }
 
     return new Response(
       JSON.stringify({ 
