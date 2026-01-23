@@ -399,27 +399,37 @@ function extractListItems(text: string): string[] {
  */
 function formatTextWithHighlights(text: string): React.ReactNode {
   // Safety check: ensure text is a string
+  if (text === null || text === undefined) {
+    return '';
+  }
+  if (typeof text === 'object') {
+    console.warn('formatTextWithHighlights received object, converting to empty string');
+    return '';
+  }
   if (typeof text !== 'string') {
     console.warn('formatTextWithHighlights received non-string:', typeof text);
-    return String(text || '');
+    return String(text);
   }
   
   // Find quoted text or important phrases to highlight
   const parts = text.split(/(".*?"|\d+(?:\.\d+)?(?:\s*(?:inch|inches|cm|lbs?|kg|mm|"|'))?)/g);
   
   return parts.map((part, idx) => {
-    // Safety: ensure part is a string before processing
-    if (typeof part !== 'string') return String(part || '');
+    // Safety: ensure part is a valid string before processing
+    if (part === null || part === undefined) return '';
+    if (typeof part === 'object') return '';
+    const safePart = String(part);
+    if (!safePart) return '';
     
     // Highlight quoted text
-    if (part.startsWith('"') && part.endsWith('"')) {
-      return <strong key={idx} className="text-foreground font-medium">{part}</strong>;
+    if (safePart.startsWith('"') && safePart.endsWith('"')) {
+      return <strong key={idx} className="text-foreground font-medium">{safePart}</strong>;
     }
     // Highlight measurements
-    if (/^\d+(?:\.\d+)?(?:\s*(?:inch|inches|cm|lbs?|kg|mm|"|'))?$/i.test(part)) {
-      return <strong key={idx} className="text-foreground font-medium">{part}</strong>;
+    if (/^\d+(?:\.\d+)?(?:\s*(?:inch|inches|cm|lbs?|kg|mm|"|'))?$/i.test(safePart)) {
+      return <strong key={idx} className="text-foreground font-medium">{safePart}</strong>;
     }
-    return part;
+    return safePart;
   });
 }
 
