@@ -6,100 +6,85 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Diersoort-specifieke keyword map
+// Keywords that should EXCLUDE a product from certain categories
+const EXCLUSION_KEYWORDS = {
+  // Products with these keywords should NOT be in dog/cat categories
+  'not-dog-cat': [
+    'ferret', 'chinchilla', 'guinea pig', 'hamster', 'rabbit', 'bunny', 
+    'bird', 'parrot', 'fish', 'aquarium', 'reptile', 'turtle', 'snake',
+    'chicken', 'duck', 'small animal', 'rodent', 'gerbil', 'mouse', 'rat'
+  ],
+};
+
+// Diersoort-specifieke keyword map - UPDATED with correct slugs matching database
 const CATEGORY_KEYWORD_MAP: Record<string, string[]> = {
   // DOG categories
   'dog-beds': ['dog bed', 'puppy bed', 'canine bed', 'dog mattress', 'dog cushion', 'doggy bed', 'orthopedic dog', 'dog sleeping'],
   'dog-toys': ['dog toy', 'puppy toy', 'canine toy', 'chew toy', 'fetch toy', 'rope toy dog', 'squeaky dog', 'dog ball', 'dog frisbee', 'tug toy'],
-  'dog-food-treats': ['dog food', 'dog treat', 'puppy food', 'canine food', 'dog snack', 'dog biscuit', 'dog chew'],
-  'dog-collars-leashes': ['dog collar', 'dog leash', 'dog harness', 'puppy collar', 'canine leash', 'dog lead', 'walking dog'],
+  'dog-food-treats': ['dog food', 'dog treat', 'puppy food', 'canine food', 'dog snack', 'dog biscuit', 'dog chew', 'omega dog', 'fish oil dog'],
+  'dog-collars-leashes': ['dog collar', 'dog leash', 'dog harness', 'puppy collar', 'canine leash', 'dog lead', 'walking dog', 'bark collar', 'anti bark'],
   'dog-bowls-feeders': ['dog bowl', 'dog feeder', 'puppy bowl', 'canine bowl', 'dog food bowl', 'dog water bowl', 'slow feeder dog'],
-  'dog-grooming': ['dog brush', 'dog shampoo', 'dog grooming', 'puppy grooming', 'dog nail', 'dog comb', 'deshedding dog'],
-  'dog-carriers': ['dog carrier', 'dog crate', 'puppy carrier', 'dog transport', 'dog travel bag', 'dog backpack carrier'],
+  'dog-grooming': ['dog brush', 'dog shampoo', 'dog grooming', 'puppy grooming', 'dog nail', 'dog comb', 'deshedding dog', 'pet wipes dog'],
+  'dog-carriers': ['dog carrier', 'dog crate', 'puppy carrier', 'dog transport', 'dog travel bag', 'dog backpack carrier', 'dog stroller', 'pet stroller'],
   'dog-clothing': ['dog clothes', 'dog sweater', 'dog coat', 'dog jacket', 'puppy clothes', 'dog costume', 'dog raincoat', 'dog hoodie'],
-  'dog-houses': ['dog house', 'dog kennel', 'puppy house', 'outdoor dog', 'dog shelter'],
-  'dog-training': ['dog training', 'puppy training', 'dog whistle', 'clicker dog', 'training treat', 'potty training dog'],
-  'dog-health': ['dog vitamin', 'dog supplement', 'dog medicine', 'flea dog', 'tick dog', 'dog dental'],
+  'dog-houses': ['dog house', 'dog kennel outdoor', 'puppy house', 'outdoor dog', 'dog shelter'],
+  'dog-training': ['dog training', 'puppy training', 'dog whistle', 'clicker dog', 'training treat', 'potty training dog', 'potty pad', 'pee pad', 'dog potty', 'artificial grass dog'],
   
   // CAT categories
-  'cat-beds': ['cat bed', 'kitten bed', 'feline bed', 'cat cushion', 'cat mattress', 'cat sleeping', 'cozy cat'],
-  'cat-toys': ['cat toy', 'kitten toy', 'feline toy', 'catnip', 'cat wand', 'laser cat', 'mouse toy cat', 'feather toy cat', 'cat ball', 'interactive cat'],
+  'cat-beds': ['cat bed', 'kitten bed', 'feline bed', 'cat cushion', 'cat mattress', 'cat sleeping', 'cozy cat', 'fluffy cat bed', 'faux fur cat bed'],
+  'cat-toys': ['cat toy', 'kitten toy', 'feline toy', 'catnip', 'cat wand', 'laser cat', 'mouse toy cat', 'feather toy cat', 'cat ball', 'interactive cat', 'cat tunnel'],
   'cat-food-treats': ['cat food', 'cat treat', 'kitten food', 'feline food', 'cat snack'],
   'cat-collars-accessories': ['cat collar', 'cat harness', 'kitten collar', 'cat leash', 'cat bell'],
-  'cat-bowls-feeders': ['cat bowl', 'cat feeder', 'kitten bowl', 'cat fountain', 'cat water', 'slow feeder cat'],
-  'cat-grooming': ['cat brush', 'cat comb', 'cat grooming', 'cat nail', 'cat shampoo', 'deshedding cat'],
-  'cat-carriers': ['cat carrier', 'cat crate', 'kitten carrier', 'cat transport', 'cat travel', 'cat backpack'],
-  'cat-litter-boxes': ['litter box', 'cat litter', 'litter tray', 'litter scoop', 'cat toilet', 'self cleaning litter'],
-  'cat-scratching-posts': ['scratching post', 'cat scratcher', 'scratch pad', 'sisal cat', 'cardboard scratcher'],
-  'cat-trees-and-condos': ['cat tree', 'cat tower', 'cat condo', 'climbing cat', 'cat perch', 'cat shelf', 'wall mounted cat'],
-  'cat-furniture': ['cat furniture', 'cat shelf', 'cat window', 'cat hammock window', 'cat bridge'],
-  'cat-hammocks': ['cat hammock', 'hanging cat bed', 'cat swing bed', 'suspended cat'],
+  'cat-bowls-feeders': ['cat bowl', 'cat feeder', 'kitten bowl', 'cat fountain', 'cat water', 'slow feeder cat', 'pet fountain cat'],
+  'cat-grooming': ['cat brush', 'cat comb', 'cat grooming', 'cat nail', 'cat shampoo', 'deshedding cat', 'cat steam brush', 'steamy brush cat'],
+  'cat-carriers': ['cat carrier', 'cat crate', 'kitten carrier', 'cat transport', 'cat travel', 'cat backpack', 'cat stroller'],
+  'cat-litter-boxes': ['litter box', 'cat litter', 'litter tray', 'litter scoop', 'cat toilet', 'self cleaning litter', 'automatic litter'],
+  'cat-scratching-posts': ['scratching post', 'cat scratcher', 'scratch pad', 'sisal cat', 'cardboard scratcher', 'scratch furniture'],
+  'cat-trees-and-condos': ['cat tree', 'cat tower', 'cat condo', 'climbing cat', 'cat perch tower', 'cat climbing tower', 'multi level cat', 'multi-level cat'],
+  'cat-furniture': ['cat furniture', 'cat shelf wall', 'wall mounted cat shelf', 'cat window perch', 'cat bridge'],
+  'cat-hammocks': ['cat hammock', 'hanging cat bed', 'cat swing bed', 'suspended cat', 'window hammock cat'],
   'cat-houses': ['cat house', 'cat cave', 'cat tent', 'cat igloo', 'outdoor cat house', 'heated cat'],
   
-  // BIRD categories
-  'bird-cages': ['bird cage', 'birdcage', 'parrot cage', 'parakeet cage', 'canary cage', 'finch cage', 'aviary'],
-  'bird-toys': ['bird toy', 'parrot toy', 'bird swing', 'bird ladder', 'bird bell', 'bird mirror', 'foraging toy bird'],
-  'bird-food-treats': ['bird food', 'bird seed', 'parrot food', 'bird treat', 'millet', 'bird pellet'],
-  'bird-perches': ['bird perch', 'parrot perch', 'natural perch', 'rope perch', 'bird stand'],
-  'bird-bowls-feeders': ['bird feeder', 'bird bowl', 'bird waterer', 'seed cup', 'bird dish'],
-  'bird-nests': ['bird nest', 'nesting box', 'breeding box', 'bird house nest'],
-  'bird-accessories': ['bird bath', 'cuttlebone', 'bird vitamin', 'bird harness', 'bird diaper'],
-  'bird-supplies': ['bird supply', 'cage liner', 'bird litter', 'bird bedding'],
+  // BIRD categories - NOTE: use bird-bowls-feeders not bird-feeders (matches database)
+  'bird-cages': ['bird cage', 'birdcage', 'parrot cage', 'parakeet cage', 'canary cage', 'finch cage', 'aviary', 'flight cage', 'budgie cage'],
+  'bird-toys': ['bird toy', 'parrot toy', 'bird swing', 'bird ladder', 'bird bell', 'bird mirror', 'foraging toy bird', 'bird playground', 't-bracket bird'],
+  'bird-bowls-feeders': ['bird feeder', 'bird bowl', 'bird waterer', 'seed cup', 'bird dish', 'hummingbird feeder', 'wild bird feeder', 'solar bird feeder', 'smart bird feeder', 'bird bath', 'bird feeder pole'],
+  'bird-perches': ['bird perch', 'parrot perch', 'natural perch', 'rope perch', 'bird stand', 'bird training perch'],
+  'bird-nests': ['bird nest', 'nesting box', 'breeding box', 'bird house', 'birdhouse'],
+  
+  // HAMSTER categories - includes ferret/chinchilla since they use similar caging
+  'hamster-cages': ['hamster cage', 'hamster habitat', 'hamster tank', 'hamster enclosure', 'dwarf hamster cage',
+    'ferret cage', 'ferret enclosure', 'chinchilla cage', 'chinchilla enclosure', 'small animal cage',
+    'rat cage', 'mouse cage', 'gerbil cage', 'small pet cage', 'multi-level small animal'],
+  'hamster-wheels': ['hamster wheel', 'exercise wheel', 'running wheel', 'silent wheel', 'flying saucer wheel', 'hamster ball'],
+  
+  // RABBIT categories
+  'rabbit-cages': ['rabbit cage', 'rabbit hutch', 'bunny cage', 'rabbit enclosure', 'rabbit pen', 'chicken coop small', 'duck house'],
+  
+  // GUINEA PIG categories
+  'guinea-pig-cages': ['guinea pig cage', 'guinea pig habitat', 'cavy cage', 'c&c cage', 'guinea pig enclosure', 'guinea pig hutch'],
+  
+  // REPTILE categories
+  'reptile-terrariums': ['terrarium', 'reptile tank', 'vivarium', 'reptile enclosure', 'snake tank', 'gecko tank', 'turtle tank', 'tortoise enclosure', 'turtle aquarium', 'turtle kit'],
+  'reptile-lighting': ['uvb light reptile', 'reptile light', 'basking light', 'reptile bulb', 'uvb lamp', 'heat lamp reptile'],
   
   // FISH categories
   'fish-tanks': ['fish tank', 'aquarium', 'fish bowl', 'nano tank', 'betta tank', 'reef tank'],
-  'fish-food': ['fish food', 'fish flake', 'fish pellet', 'betta food', 'tropical fish food', 'goldfish food'],
-  'fish-decorations': ['aquarium decoration', 'fish tank decor', 'aquarium plant', 'fish ornament', 'aquarium rock', 'driftwood'],
-  'fish-filters': ['aquarium filter', 'fish filter', 'tank filter', 'sponge filter', 'canister filter', 'hang on back'],
-  'fish-lighting': ['aquarium light', 'fish tank light', 'led aquarium', 'planted tank light'],
-  'fish-heaters': ['aquarium heater', 'fish tank heater', 'submersible heater', 'aquarium thermometer'],
-  'fish-accessories': ['air pump', 'bubble stone', 'fish net', 'gravel vacuum', 'water conditioner', 'test kit'],
   
-  // HAMSTER categories
-  'hamster-cages': ['hamster cage', 'hamster habitat', 'hamster tank', 'hamster enclosure', 'dwarf hamster cage'],
-  'hamster-wheels': ['hamster wheel', 'exercise wheel', 'running wheel', 'silent wheel', 'flying saucer wheel'],
-  'hamster-food': ['hamster food', 'hamster treat', 'hamster mix', 'hamster seed'],
-  'hamster-bedding': ['hamster bedding', 'paper bedding', 'aspen bedding', 'hamster substrate'],
-  'hamster-toys': ['hamster toy', 'hamster tunnel', 'hamster tube', 'hamster ball', 'chew toy hamster'],
-  'hamster-houses': ['hamster house', 'hamster hideout', 'hamster hut', 'hamster igloo'],
-  'hamster-accessories': ['hamster bottle', 'hamster bowl', 'hamster sand bath', 'hamster carrier'],
-  
-  // RABBIT categories
-  'rabbit-cages': ['rabbit cage', 'rabbit hutch', 'bunny cage', 'rabbit enclosure', 'rabbit pen'],
-  'rabbit-food': ['rabbit food', 'rabbit pellet', 'timothy hay', 'rabbit treat', 'bunny food'],
-  'rabbit-toys': ['rabbit toy', 'bunny toy', 'rabbit chew', 'rabbit tunnel', 'rabbit ball'],
-  'rabbit-houses': ['rabbit house', 'rabbit hideout', 'bunny house', 'rabbit shelter'],
-  'rabbit-bedding': ['rabbit bedding', 'rabbit litter', 'rabbit hay'],
-  'rabbit-accessories': ['rabbit harness', 'rabbit carrier', 'rabbit brush', 'rabbit nail clipper', 'rabbit water bottle'],
-  
-  // GUINEA PIG categories
-  'guinea-pig-cages': ['guinea pig cage', 'guinea pig habitat', 'cavy cage', 'c&c cage', 'guinea pig enclosure'],
-  'guinea-pig-food': ['guinea pig food', 'guinea pig pellet', 'cavy food', 'guinea pig hay', 'guinea pig treat'],
-  'guinea-pig-houses': ['guinea pig house', 'guinea pig hideout', 'pigloo', 'guinea pig hut'],
-  'guinea-pig-bedding': ['guinea pig bedding', 'fleece liner', 'guinea pig substrate'],
-  'guinea-pig-toys': ['guinea pig toy', 'guinea pig tunnel', 'cavy toy'],
-  'guinea-pig-accessories': ['guinea pig bottle', 'guinea pig bowl', 'hay rack', 'guinea pig brush'],
-  
-  // REPTILE categories
-  'reptile-terrariums': ['terrarium', 'reptile tank', 'vivarium', 'reptile enclosure', 'snake tank', 'gecko tank'],
-  'reptile-heating': ['heat lamp', 'heat mat', 'ceramic heater', 'basking lamp', 'reptile thermostat', 'under tank heater'],
-  'reptile-lighting': ['uvb light', 'reptile light', 'basking light', 'reptile bulb', 'uvb lamp'],
-  'reptile-food': ['reptile food', 'cricket', 'mealworm', 'reptile treat', 'calcium powder'],
-  'reptile-decorations': ['reptile hide', 'reptile cave', 'reptile rock', 'climbing branch', 'reptile plant', 'reptile background'],
-  'reptile-substrate': ['reptile substrate', 'reptile bedding', 'coconut fiber', 'reptile sand', 'bark substrate'],
-  'reptile-accessories': ['reptile bowl', 'reptile thermometer', 'hygrometer', 'misting system', 'reptile tongs'],
+  // GENERIC PET (for multi-species products)
+  'pet-houses': ['pet tent', 'pet playpen', 'portable pet', 'foldable pet tent', 'pet exercise pen'],
 };
 
 // Generieke keywords die naar hoofdcategorieën verwijzen
 const MAIN_CATEGORY_KEYWORDS: Record<string, string[]> = {
   'dogs': ['dog', 'puppy', 'canine', 'pup', 'doggy', 'doggie', 'pooch', 'hound', 'k9', 'k-9'],
-  'cats': ['cat', 'kitten', 'feline', 'kitty', 'kitties', 'meow'],
-  'birds': ['bird', 'parrot', 'parakeet', 'budgie', 'cockatiel', 'canary', 'finch', 'lovebird', 'cockatoo', 'macaw', 'conure'],
-  'fish-aquarium': ['fish', 'aquarium', 'aquatic', 'tank', 'betta', 'goldfish', 'tropical fish', 'reef', 'marine'],
-  'hamsters': ['hamster', 'dwarf hamster', 'syrian hamster', 'robo hamster', 'roborovski'],
+  'cats': ['cat', 'kitten', 'feline', 'kitty', 'kitties'],
+  'birds': ['bird', 'parrot', 'parakeet', 'budgie', 'cockatiel', 'canary', 'finch', 'lovebird', 'cockatoo', 'macaw', 'conure', 'aviary'],
+  'hamsters': ['hamster', 'dwarf hamster', 'syrian hamster', 'robo hamster', 'roborovski', 'ferret', 'chinchilla', 'gerbil', 'mouse', 'rat', 'small animal', 'rodent'],
   'rabbits': ['rabbit', 'bunny', 'bunnies', 'hare', 'lop'],
-  'guinea-pigs': ['guinea pig', 'cavy', 'cavies', 'piggy'],
+  'guinea-pigs': ['guinea pig', 'cavy', 'cavies'],
   'reptiles': ['reptile', 'snake', 'lizard', 'gecko', 'bearded dragon', 'turtle', 'tortoise', 'chameleon', 'iguana', 'python', 'boa'],
+  'fish-aquarium': ['fish', 'aquarium', 'aquatic', 'betta', 'goldfish', 'tropical fish', 'reef', 'marine'],
 };
 
 // Product type keywords
