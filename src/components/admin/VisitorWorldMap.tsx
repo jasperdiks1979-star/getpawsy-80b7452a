@@ -50,11 +50,13 @@ const ACTIVITY_WEIGHTS = {
 };
 
 // Time range options
-type TimeRange = "live" | "1h" | "24h" | "7d" | "30d";
+type TimeRange = "live" | "1h" | "2.5h" | "5h" | "24h" | "7d" | "30d";
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; hours: number }[] = [
   { value: "live", label: "Live", hours: 0 },
   { value: "1h", label: "Laatste uur", hours: 1 },
+  { value: "2.5h", label: "Laatste 2,5 uur", hours: 2.5 },
+  { value: "5h", label: "Laatste 5 uur", hours: 5 },
   { value: "24h", label: "Laatste 24 uur", hours: 24 },
   { value: "7d", label: "Laatste 7 dagen", hours: 24 * 7 },
   { value: "30d", label: "Laatste 30 dagen", hours: 24 * 30 },
@@ -555,6 +557,9 @@ export const VisitorWorldMap = () => {
       const count = groupActivities.length;
       const size = Math.min(12 + count * 2, 30);
 
+      // Check if any activity at this location is checkout
+      const hasCheckout = groupActivities.some(a => a.activity_type === "checkout");
+
       // Create custom marker element
       const el = document.createElement("div");
       el.className = "visitor-marker";
@@ -568,9 +573,32 @@ export const VisitorWorldMap = () => {
         box-shadow: 0 0 ${size}px ${color}80, 0 0 ${size * 2}px ${color}40;
         animation: pulse 2s ease-in-out infinite;
         display: ${showHeatmap ? "none" : "block"};
+        position: relative;
       `;
 
-      // Add pulse animation
+      // Add shopping cart icon for checkout activities
+      if (hasCheckout) {
+        const cartIcon = document.createElement("div");
+        cartIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>`;
+        cartIcon.style.cssText = `
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          width: 18px;
+          height: 18px;
+          background: #22c55e;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          animation: bounce 1s ease-in-out infinite;
+        `;
+        el.appendChild(cartIcon);
+      }
+
+      // Add pulse and bounce animations
       if (!document.getElementById("marker-styles")) {
         const style = document.createElement("style");
         style.id = "marker-styles";
@@ -578,6 +606,10 @@ export const VisitorWorldMap = () => {
           @keyframes pulse {
             0%, 100% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.2); opacity: 0.8; }
+          }
+          @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
           }
         `;
         document.head.appendChild(style);
@@ -821,24 +853,32 @@ export const VisitorWorldMap = () => {
           </Button>
         </div>
         
-        {/* Live stats floating badge */}
-        <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-2">
-          <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm shadow-lg flex items-center gap-1">
-            <Users className="w-3 h-3" />
-            {totalVisitors} bezoekers
-          </Badge>
-          <Badge 
-            className="bg-background/90 backdrop-blur-sm shadow-lg flex items-center gap-1"
-            style={{ borderColor: ACTIVITY_COLORS.checkout, color: ACTIVITY_COLORS.checkout }}
-          >
-            <CreditCard className="w-3 h-3" />
-            {counts.checkout} checkouts
-          </Badge>
-          {timeRange === "live" && (
-            <Badge className="bg-green-500/20 text-green-500 border-green-500/50 backdrop-blur-sm shadow-lg flex items-center gap-1">
-              <Radio className="w-3 h-3 animate-pulse" />
-              Live
-            </Badge>
+        {/* Live Visitor Counter - Prominent Red Display (Fullscreen Minimal) */}
+        <div className="absolute top-4 left-4 z-20 bg-black/80 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg border border-red-500/50">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Users className="w-6 h-6 text-red-500" />
+              {timeRange === "live" && (
+                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+              )}
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-bold text-red-500 tabular-nums leading-none" style={{ fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace", textShadow: "0 0 10px rgba(239, 68, 68, 0.5)" }}>
+                {totalVisitors}
+              </div>
+              <div className="text-xs text-gray-400 mt-0.5">
+                {timeRange === "live" ? "Nu online" : "Bezoekers"}
+              </div>
+            </div>
+          </div>
+          {counts.checkout > 0 && (
+            <div className="mt-2 pt-2 border-t border-gray-700 flex items-center gap-2">
+              <ShoppingCart className="w-4 h-4 text-green-500" />
+              <span className="text-green-500 font-semibold text-sm">{counts.checkout} aan het afrekenen</span>
+            </div>
           )}
         </div>
 
@@ -1214,6 +1254,35 @@ export const VisitorWorldMap = () => {
         <div className={`flex flex-col lg:flex-row ${isFullscreen ? "h-full" : ""}`}>
           {/* Map Container */}
           <div className="flex-1 min-w-0 relative">
+            {/* Live Visitor Counter - Prominent Red Display */}
+            <div className="absolute top-4 right-4 z-20 bg-black/80 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg border border-red-500/50">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Users className="w-6 h-6 text-red-500" />
+                  {timeRange === "live" && (
+                    <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-red-500 tabular-nums leading-none" style={{ fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace", textShadow: "0 0 10px rgba(239, 68, 68, 0.5)" }}>
+                    {totalVisitors}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {timeRange === "live" ? "Nu online" : "Bezoekers"}
+                  </div>
+                </div>
+              </div>
+              {counts.checkout > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-700 flex items-center gap-2">
+                  <ShoppingCart className="w-4 h-4 text-green-500" />
+                  <span className="text-green-500 font-semibold text-sm">{counts.checkout} aan het afrekenen</span>
+                </div>
+              )}
+            </div>
+
             {mapError ? (
               <div className={`${isFullscreen ? "h-full" : "h-[500px]"} flex items-center justify-center bg-muted/50`}>
                 <div className="text-center text-muted-foreground">
