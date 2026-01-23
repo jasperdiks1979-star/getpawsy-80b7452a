@@ -1,10 +1,16 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Sparkles, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { 
+  trackDidYouMeanImpression,
+  trackDidYouMeanCategoryClick,
+  trackDidYouMeanProductClick,
+  trackDidYouMeanViewAllClick
+} from '@/lib/analytics';
 
 interface Category {
   id: string;
@@ -34,6 +40,8 @@ export const DidYouMeanSection = ({
   products,
   resultsCount 
 }: DidYouMeanSectionProps) => {
+  const hasTrackedImpression = useRef(false);
+
   // Find matching categories based on search query
   const suggestedCategories = useMemo(() => {
     if (!searchQuery || !categories) return [];
@@ -80,10 +88,51 @@ export const DidYouMeanSection = ({
     return matches.slice(0, 6);
   }, [searchQuery, products, resultsCount]);
 
+  // Track impression when section becomes visible
+  useEffect(() => {
+    if (!hasTrackedImpression.current && 
+        (suggestedCategories.length > 0 || suggestedProducts.length > 0) &&
+        (resultsCount <= 10)) {
+      trackDidYouMeanImpression(
+        searchQuery,
+        resultsCount,
+        suggestedCategories.map(c => c.name),
+        suggestedProducts.length
+      );
+      hasTrackedImpression.current = true;
+    }
+  }, [searchQuery, resultsCount, suggestedCategories, suggestedProducts]);
+
   // Don't show if there are many results or no suggestions
   if (resultsCount > 10 || (suggestedCategories.length === 0 && suggestedProducts.length === 0)) {
     return null;
   }
+
+  const handleCategoryClick = (category: Category) => {
+    trackDidYouMeanCategoryClick(
+      searchQuery,
+      category.name,
+      category.slug,
+      resultsCount
+    );
+  };
+
+  const handleProductClick = (product: Product, index: number) => {
+    if (product.id && product.name) {
+      trackDidYouMeanProductClick(
+        searchQuery,
+        product.id,
+        product.name,
+        Number(product.price) || 0,
+        index,
+        resultsCount
+      );
+    }
+  };
+
+  const handleViewAllClick = () => {
+    trackDidYouMeanViewAllClick(searchQuery, resultsCount);
+  };
 
   return (
     <motion.div
@@ -113,7 +162,11 @@ export const DidYouMeanSection = ({
           <p className="text-sm font-medium mb-2 text-muted-foreground">Categorieën:</p>
           <div className="flex flex-wrap gap-2">
             {suggestedCategories.map((cat) => (
-              <Link key={cat.id} to={`/products?category=${cat.slug}`}>
+              <Link 
+                key={cat.id} 
+                to={`/products?category=${cat.slug}`}
+                onClick={() => handleCategoryClick(cat)}
+              >
                 <Badge 
                   variant="secondary" 
                   className="hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer px-3 py-1.5"
@@ -132,11 +185,12 @@ export const DidYouMeanSection = ({
         <div>
           <p className="text-sm font-medium mb-3 text-muted-foreground">Populaire producten:</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-            {suggestedProducts.map((product) => (
+            {suggestedProducts.map((product, index) => (
               <Link 
                 key={product.id} 
                 to={`/product/${product.id}`}
                 className="group"
+                onClick={() => handleProductClick(product, index)}
               >
                 <Card className="overflow-hidden hover:shadow-md transition-shadow border-primary/5 hover:border-primary/20">
                   <CardContent className="p-2">
@@ -164,7 +218,7 @@ export const DidYouMeanSection = ({
       {/* Clear search suggestion */}
       {resultsCount === 0 && (
         <div className="mt-4 pt-4 border-t border-primary/10">
-          <Link to="/products">
+          <Link to="/products" onClick={handleViewAllClick}>
             <Button variant="outline" size="sm" className="gap-2">
               <Search className="w-4 h-4" />
               Bekijk alle producten
