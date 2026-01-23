@@ -83,10 +83,39 @@ const DownloadAds = () => {
   const [sheetsExports, setSheetsExports] = useState<SheetsExport[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isDeletingExport, setIsDeletingExport] = useState<string | null>(null);
-  const [excelColors, setExcelColors] = useState<ExcelColorScheme>(defaultExcelColors);
-  const [selectedPreset, setSelectedPreset] = useState<string>('default');
   const [showColorPicker, setShowColorPicker] = useState(false);
   const stats = getCampaignStats();
+
+  // Load saved color preferences from localStorage
+  const [excelColors, setExcelColors] = useState<ExcelColorScheme>(() => {
+    try {
+      const saved = localStorage.getItem('excelColorPreferences');
+      if (saved) {
+        return JSON.parse(saved) as ExcelColorScheme;
+      }
+    } catch (e) {
+      console.error('Error loading color preferences:', e);
+    }
+    return defaultExcelColors;
+  });
+
+  const [selectedPreset, setSelectedPreset] = useState<string>(() => {
+    try {
+      return localStorage.getItem('excelColorPreset') || 'default';
+    } catch {
+      return 'default';
+    }
+  });
+
+  // Save color preferences to localStorage when they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('excelColorPreferences', JSON.stringify(excelColors));
+      localStorage.setItem('excelColorPreset', selectedPreset);
+    } catch (e) {
+      console.error('Error saving color preferences:', e);
+    }
+  }, [excelColors, selectedPreset]);
 
   // Load sheets export history
   const loadSheetsHistory = async () => {
