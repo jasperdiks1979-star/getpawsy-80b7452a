@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, FileSpreadsheet, Check } from 'lucide-react';
+import { Download, FileSpreadsheet, Check, Archive, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -10,11 +10,13 @@ import {
   generateImageAssetsCSV,
   downloadCSV,
   getCampaignStats,
-  exportAllGoogleAds
+  exportAllGoogleAds,
+  exportAllAsZip
 } from '@/utils/googleAdsExport';
 
 const DownloadAds = () => {
   const [downloaded, setDownloaded] = useState<string[]>([]);
+  const [isZipping, setIsZipping] = useState(false);
   const stats = getCampaignStats();
 
   const handleDownload = (type: string) => {
@@ -44,6 +46,16 @@ const DownloadAds = () => {
   const handleDownloadAll = () => {
     exportAllGoogleAds();
     setDownloaded(['campaigns', 'ads', 'keywords', 'sitelinks', 'images']);
+  };
+
+  const handleDownloadZip = async () => {
+    setIsZipping(true);
+    try {
+      await exportAllAsZip();
+      setDownloaded(['campaigns', 'ads', 'keywords', 'sitelinks', 'images', 'zip']);
+    } finally {
+      setIsZipping(false);
+    }
   };
 
   const files = [
@@ -82,14 +94,31 @@ const DownloadAds = () => {
           </CardContent>
         </Card>
 
-        <Button 
-          onClick={handleDownloadAll}
-          size="lg"
-          className="w-full gap-2"
-        >
-          <Download className="h-5 w-5" />
-          Download Alle Bestanden
-        </Button>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Button 
+            onClick={handleDownloadZip}
+            size="lg"
+            className="gap-2"
+            disabled={isZipping}
+          >
+            {isZipping ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Archive className="h-5 w-5" />
+            )}
+            {isZipping ? 'Creating ZIP...' : 'Download als ZIP'}
+          </Button>
+          
+          <Button 
+            onClick={handleDownloadAll}
+            size="lg"
+            variant="outline"
+            className="gap-2"
+          >
+            <Download className="h-5 w-5" />
+            Download Individueel
+          </Button>
+        </div>
 
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground text-center">Of download individueel:</p>

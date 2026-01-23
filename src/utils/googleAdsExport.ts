@@ -766,6 +766,52 @@ export function exportAllGoogleAds(): void {
   }, 2000);
 }
 
+// Export all files as a single ZIP file
+export async function exportAllAsZip(): Promise<void> {
+  const JSZip = (await import('jszip')).default;
+  const zip = new JSZip();
+  const timestamp = new Date().toISOString().split('T')[0];
+  
+  // Add all CSV files to the ZIP
+  zip.file(`getpawsy_campaigns_${timestamp}.csv`, generateCampaignStructureCSV());
+  zip.file(`getpawsy_ads_${timestamp}.csv`, generateResponsiveAdsCSV());
+  zip.file(`getpawsy_keywords_${timestamp}.csv`, generateKeywordsCSV());
+  zip.file(`getpawsy_sitelinks_${timestamp}.csv`, generateSitelinksCSV());
+  zip.file(`getpawsy_images_${timestamp}.csv`, generateImageAssetsCSV());
+  
+  // Generate and download the ZIP
+  const content = await zip.generateAsync({ type: 'blob' });
+  const filename = `getpawsy_google_ads_${timestamp}.zip`;
+  
+  // Check if Web Share API is available (iOS Safari)
+  if (navigator.share && navigator.canShare) {
+    const file = new File([content], filename, { type: 'application/zip' });
+    const shareData = { files: [file] };
+    
+    if (navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') {
+          return;
+        }
+      }
+    }
+  }
+  
+  // Fallback: regular download
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(content);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // Get campaign statistics
 export function getCampaignStats() {
   const campaigns = [...new Set(campaignData.map(ad => ad.campaign))];
