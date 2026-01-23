@@ -237,10 +237,21 @@ const ProductDetail = () => {
       const variantPrice = Number(variant.variantSellPrice) || 0;
       const variantWeight = Number(variant.variantWeight) || productWeight;
       
-      // CRITICAL: Ensure all potentially-renderable properties are strings, not objects
+      // CRITICAL: Ensure all potentially-renderable properties are strings, not objects/null
       // This prevents React error #310 "Objects are not valid as a React child"
-      const safeVariantKey = typeof variant.variantKey === 'string' ? variant.variantKey : '';
-      const safeVariantNameEn = typeof variant.variantNameEn === 'string' ? variant.variantNameEn : '';
+      // Check explicitly for null, undefined, objects, and ensure conversion to string
+      const safeString = (val: unknown): string => {
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'object') return '';
+        return String(val);
+      };
+      
+      const safeVariantKey = safeString(variant.variantKey);
+      const safeVariantNameEn = safeString(variant.variantNameEn);
+      const safeVariantSku = safeString(variant.variantSku);
+      
+      // Generate a display-friendly name, prioritizing variantKey or variantNameEn
+      const displayName = safeVariantKey || safeVariantNameEn || safeVariantSku || 'Option';
       
       // Check if the variant price seems like a cost price (much lower than product selling price)
       // If variantSellPrice is less than 40% of product price, it's likely still the cost price
@@ -251,8 +262,9 @@ const ProductDetail = () => {
         const pricing = calculateSellingPrice(variantPrice, variantWeight);
         return {
           ...variant,
-          variantKey: safeVariantKey,
-          variantNameEn: safeVariantNameEn,
+          variantKey: displayName,
+          variantNameEn: safeVariantNameEn || displayName,
+          variantSku: safeVariantSku,
           variantCostPrice: variantPrice,
           variantSellPrice: pricing.sellingPrice,
         };
@@ -261,8 +273,9 @@ const ProductDetail = () => {
       // Price seems correct, use as-is but with safe string values
       return {
         ...variant,
-        variantKey: safeVariantKey,
-        variantNameEn: safeVariantNameEn,
+        variantKey: displayName,
+        variantNameEn: safeVariantNameEn || displayName,
+        variantSku: safeVariantSku,
       };
     });
   }, [product]);
