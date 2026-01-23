@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck } from 'lucide-react';
+import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -43,6 +43,7 @@ const DownloadAds = () => {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [email, setEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isExportingSheets, setIsExportingSheets] = useState(false);
   const stats = getCampaignStats();
 
   const handleCopyToClipboard = async (type: FileType) => {
@@ -81,6 +82,45 @@ const DownloadAds = () => {
       }, 3000);
     } catch (error) {
       toast.error('Kopiëren mislukt');
+    }
+  };
+
+  const handleExportToSheets = async () => {
+    setIsExportingSheets(true);
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    try {
+      const sheets = [
+        { title: 'Campaigns', csvContent: generateCampaignStructureCSV() },
+        { title: 'Ads', csvContent: generateResponsiveAdsCSV() },
+        { title: 'Keywords', csvContent: generateKeywordsCSV() },
+        { title: 'Sitelinks', csvContent: generateSitelinksCSV() },
+        { title: 'Images', csvContent: generateImageAssetsCSV() },
+      ];
+
+      const { data, error } = await supabase.functions.invoke('export-to-sheets', {
+        body: { 
+          sheets, 
+          spreadsheetTitle: `GetPawsy Google Ads - ${timestamp}` 
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        toast.success('Google Sheet aangemaakt!', {
+          action: {
+            label: 'Openen',
+            onClick: () => window.open(data.url, '_blank'),
+          },
+        });
+        window.open(data.url, '_blank');
+      }
+    } catch (error: any) {
+      console.error('Error exporting to sheets:', error);
+      toast.error('Export naar Google Sheets mislukt');
+    } finally {
+      setIsExportingSheets(false);
     }
   };
 
@@ -216,7 +256,7 @@ const DownloadAds = () => {
           </CardContent>
         </Card>
 
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-5">
           <Button 
             onClick={handleDownloadZip}
             size="lg"
@@ -229,6 +269,21 @@ const DownloadAds = () => {
               <Archive className="h-5 w-5" />
             )}
             ZIP
+          </Button>
+          
+          <Button 
+            onClick={handleExportToSheets}
+            size="lg"
+            variant="secondary"
+            className="gap-2"
+            disabled={isExportingSheets}
+          >
+            {isExportingSheets ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Sheet className="h-5 w-5" />
+            )}
+            Sheets
           </Button>
           
           <Button 
