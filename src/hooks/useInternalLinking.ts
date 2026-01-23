@@ -28,9 +28,9 @@ export const useInternalLinking = (
   options: UseInternalLinkingOptions = {}
 ) => {
   const {
-    maxLinksPerKeyword = 1,
-    maxTotalLinks = 8,
-    minWordsBetweenLinks = 40,
+    maxLinksPerKeyword = 2,  // Allow same keyword to be linked twice
+    maxTotalLinks = 12,      // Increased from 8 for more comprehensive linking
+    minWordsBetweenLinks = 30, // Reduced from 40 to allow more natural linking
     enabled = true,
   } = options;
 
