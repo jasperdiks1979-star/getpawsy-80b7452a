@@ -11,6 +11,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
+import { LiveCheckoutWidget } from "@/components/admin/LiveCheckoutWidget";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -156,6 +157,7 @@ const App = () => {
                 </AnimatePresence>
                 <Toaster />
                 <Sonner />
+                <LiveCheckoutWidget />
                 <BrowserRouter>
                   <ScrollToTop />
                   <RouteErrorBoundary>
