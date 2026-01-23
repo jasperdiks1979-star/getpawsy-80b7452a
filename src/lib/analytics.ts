@@ -379,19 +379,66 @@ export const trackBundleAddToCart = (
   });
 };
 
-// Did You Mean / Search Fallback Tracking
+// Did You Mean / Search Fallback Tracking - Enhanced with granular parameters
+
+export interface DidYouMeanCategoryData {
+  id: string;
+  name: string;
+  slug: string;
+  parentCategory?: string;
+  imageUrl?: string;
+}
+
+export interface DidYouMeanProductData {
+  id: string;
+  name: string;
+  price: number;
+  category?: string;
+  imageUrl?: string;
+  compareAtPrice?: number;
+  inStock?: boolean;
+}
+
 export const trackDidYouMeanImpression = (
   searchQuery: string,
   resultsCount: number,
   suggestedCategories: string[],
-  suggestedProductCount: number
+  suggestedProductCount: number,
+  options?: {
+    categoryDetails?: DidYouMeanCategoryData[];
+    productDetails?: DidYouMeanProductData[];
+    searchDuration?: number;
+    fuzzyMatchUsed?: boolean;
+    synonymsExpanded?: string[];
+  }
 ): void => {
   trackEvent('did_you_mean_impression', {
     search_query: searchQuery,
+    search_query_length: searchQuery.length,
+    search_query_word_count: searchQuery.split(/\s+/).filter(w => w.length > 0).length,
     original_results_count: resultsCount,
     suggested_categories: suggestedCategories,
+    suggested_category_count: suggestedCategories.length,
     suggested_product_count: suggestedProductCount,
     has_zero_results: resultsCount === 0,
+    has_low_results: resultsCount > 0 && resultsCount <= 10,
+    suggestion_type: resultsCount === 0 ? 'zero_results_fallback' : 'low_results_enhancement',
+    // Enhanced category details
+    category_ids: options?.categoryDetails?.map(c => c.id) || [],
+    category_slugs: options?.categoryDetails?.map(c => c.slug) || [],
+    // Enhanced product details  
+    product_ids: options?.productDetails?.map(p => p.id) || [],
+    product_price_range: options?.productDetails?.length 
+      ? {
+          min: Math.min(...options.productDetails.map(p => p.price)),
+          max: Math.max(...options.productDetails.map(p => p.price)),
+          avg: options.productDetails.reduce((sum, p) => sum + p.price, 0) / options.productDetails.length,
+        }
+      : null,
+    // Search algorithm insights
+    fuzzy_match_used: options?.fuzzyMatchUsed ?? false,
+    synonyms_expanded: options?.synonymsExpanded || [],
+    search_duration_ms: options?.searchDuration,
   });
 };
 
@@ -399,14 +446,42 @@ export const trackDidYouMeanCategoryClick = (
   searchQuery: string,
   categoryName: string,
   categorySlug: string,
-  resultsCount: number
+  resultsCount: number,
+  options?: {
+    categoryId?: string;
+    categoryIndex?: number;
+    totalCategoriesShown?: number;
+    parentCategory?: string;
+    categoryImageUrl?: string;
+    timeToClick?: number;
+  }
 ): void => {
   trackEvent('did_you_mean_category_click', {
     search_query: searchQuery,
+    search_query_length: searchQuery.length,
+    category_id: options?.categoryId,
     category_name: categoryName,
     category_slug: categorySlug,
+    category_index: options?.categoryIndex ?? 0,
+    total_categories_shown: options?.totalCategoriesShown ?? 1,
+    parent_category: options?.parentCategory,
+    category_image_url: options?.categoryImageUrl,
     original_results_count: resultsCount,
     has_zero_results: resultsCount === 0,
+    click_context: resultsCount === 0 ? 'zero_results' : 'low_results',
+    time_to_click_ms: options?.timeToClick,
+  });
+
+  // Also fire standard select_item for consistency
+  trackEvent('select_item', {
+    item_list_id: 'did_you_mean_categories',
+    item_list_name: 'Did You Mean - Categories',
+    items: [{
+      item_id: options?.categoryId || categorySlug,
+      item_name: categoryName,
+      item_category: options?.parentCategory || 'suggested_category',
+      index: options?.categoryIndex ?? 0,
+    }],
   });
 };
 
@@ -416,39 +491,121 @@ export const trackDidYouMeanProductClick = (
   productName: string,
   productPrice: number,
   position: number,
-  resultsCount: number
+  resultsCount: number,
+  options?: {
+    productCategory?: string;
+    productImageUrl?: string;
+    compareAtPrice?: number;
+    isOnSale?: boolean;
+    totalProductsShown?: number;
+    timeToClick?: number;
+    matchType?: 'fuzzy' | 'synonym' | 'exact' | 'popular';
+  }
 ): void => {
+  const discount = options?.compareAtPrice && options.compareAtPrice > productPrice
+    ? Math.round((1 - productPrice / options.compareAtPrice) * 100)
+    : 0;
+
   trackEvent('did_you_mean_product_click', {
     search_query: searchQuery,
+    search_query_length: searchQuery.length,
     product_id: productId,
     product_name: productName,
     product_price: productPrice,
+    product_category: options?.productCategory,
+    product_image_url: options?.productImageUrl,
+    compare_at_price: options?.compareAtPrice,
+    discount_percentage: discount,
+    is_on_sale: options?.isOnSale ?? discount > 0,
     position,
+    total_products_shown: options?.totalProductsShown ?? 6,
     original_results_count: resultsCount,
     has_zero_results: resultsCount === 0,
-    currency: 'EUR',
+    click_context: resultsCount === 0 ? 'zero_results' : 'low_results',
+    match_type: options?.matchType || 'fuzzy',
+    time_to_click_ms: options?.timeToClick,
+    currency: 'USD',
   });
 
-  // Also fire standard select_item for ecommerce tracking
+  // Fire standard select_item for ecommerce tracking
   trackEvent('select_item', {
-    item_list_id: 'did_you_mean_suggestions',
-    item_list_name: 'Did You Mean Suggestions',
+    item_list_id: 'did_you_mean_products',
+    item_list_name: 'Did You Mean - Products',
     items: [{
       item_id: productId,
       item_name: productName,
       price: productPrice,
+      item_category: options?.productCategory,
       index: position,
-      currency: 'EUR',
+      discount: discount,
+      currency: 'USD',
     }],
   });
 };
 
 export const trackDidYouMeanViewAllClick = (
   searchQuery: string,
-  resultsCount: number
+  resultsCount: number,
+  options?: {
+    categoriesShown?: number;
+    productsShown?: number;
+    timeToClick?: number;
+  }
 ): void => {
   trackEvent('did_you_mean_view_all_click', {
     search_query: searchQuery,
+    search_query_length: searchQuery.length,
     original_results_count: resultsCount,
+    has_zero_results: resultsCount === 0,
+    categories_shown: options?.categoriesShown ?? 0,
+    products_shown: options?.productsShown ?? 0,
+    time_to_click_ms: options?.timeToClick,
+    click_context: 'browse_all_products',
+  });
+};
+
+// Track when user adds a product from Did You Mean section to cart
+export const trackDidYouMeanAddToCart = (
+  searchQuery: string,
+  productId: string,
+  productName: string,
+  productPrice: number,
+  position: number,
+  resultsCount: number,
+  quantity: number = 1,
+  options?: {
+    productCategory?: string;
+    matchType?: 'fuzzy' | 'synonym' | 'exact' | 'popular';
+  }
+): void => {
+  trackEvent('did_you_mean_add_to_cart', {
+    search_query: searchQuery,
+    product_id: productId,
+    product_name: productName,
+    product_price: productPrice,
+    product_category: options?.productCategory,
+    position,
+    quantity,
+    value: productPrice * quantity,
+    original_results_count: resultsCount,
+    has_zero_results: resultsCount === 0,
+    match_type: options?.matchType || 'fuzzy',
+    currency: 'USD',
+  });
+
+  // Standard add_to_cart event
+  trackEvent('add_to_cart', {
+    currency: 'USD',
+    value: productPrice * quantity,
+    items: [{
+      item_id: productId,
+      item_name: productName,
+      price: productPrice,
+      item_category: options?.productCategory,
+      item_list_id: 'did_you_mean_products',
+      item_list_name: 'Did You Mean - Products',
+      index: position,
+      quantity,
+    }],
   });
 };

@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Sparkles, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -18,6 +18,7 @@ interface Category {
   name: string;
   slug: string;
   image_url?: string | null;
+  parent_id?: string | null;
 }
 
 interface Product {
@@ -26,6 +27,8 @@ interface Product {
   price: number | null;
   image_url: string | null;
   category?: string | null;
+  compare_at_price?: number | null;
+  stock?: number | null;
 }
 
 interface DidYouMeanSectionProps {
@@ -42,6 +45,7 @@ export const DidYouMeanSection = ({
   resultsCount 
 }: DidYouMeanSectionProps) => {
   const hasTrackedImpression = useRef(false);
+  const sectionLoadTime = useRef<number>(Date.now());
 
   // Find matching categories using fuzzy search with synonyms
   const suggestedCategories = useMemo(() => {
@@ -114,13 +118,40 @@ export const DidYouMeanSection = ({
     if (!hasTrackedImpression.current && 
         (suggestedCategories.length > 0 || suggestedProducts.length > 0) &&
         (resultsCount <= 10)) {
+      
+      const expandedSynonyms = expandQueryWithSynonyms(searchQuery);
+      
       trackDidYouMeanImpression(
         searchQuery,
         resultsCount,
         suggestedCategories.map(c => c.name),
-        suggestedProducts.length
+        suggestedProducts.length,
+        {
+          categoryDetails: suggestedCategories.map(c => ({
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            imageUrl: c.image_url || undefined,
+          })),
+          productDetails: suggestedProducts
+            .filter((p): p is Product & { id: string; name: string; price: number } => 
+              p.id !== null && p.name !== null && p.price !== null
+            )
+            .map(p => ({
+              id: p.id,
+              name: p.name,
+              price: p.price,
+              category: p.category || undefined,
+              imageUrl: p.image_url || undefined,
+              compareAtPrice: p.compare_at_price || undefined,
+              inStock: (p.stock ?? 0) > 0,
+            })),
+          fuzzyMatchUsed: true,
+          synonymsExpanded: expandedSynonyms.filter(t => !searchQuery.toLowerCase().includes(t)),
+        }
       );
       hasTrackedImpression.current = true;
+      sectionLoadTime.current = Date.now();
     }
   }, [searchQuery, resultsCount, suggestedCategories, suggestedProducts]);
 
@@ -129,30 +160,54 @@ export const DidYouMeanSection = ({
     return null;
   }
 
-  const handleCategoryClick = (category: Category) => {
+  const getTimeToClick = () => Date.now() - sectionLoadTime.current;
+
+  const handleCategoryClick = (category: Category, index: number) => {
     trackDidYouMeanCategoryClick(
       searchQuery,
       category.name,
       category.slug,
-      resultsCount
+      resultsCount,
+      {
+        categoryId: category.id,
+        categoryIndex: index,
+        totalCategoriesShown: suggestedCategories.length,
+        categoryImageUrl: category.image_url || undefined,
+        timeToClick: getTimeToClick(),
+      }
     );
   };
 
   const handleProductClick = (product: Product, index: number) => {
     if (product.id && product.name) {
+      const matchType = resultsCount === 0 ? 'popular' : 'fuzzy';
+      
       trackDidYouMeanProductClick(
         searchQuery,
         product.id,
         product.name,
         Number(product.price) || 0,
         index,
-        resultsCount
+        resultsCount,
+        {
+          productCategory: product.category || undefined,
+          productImageUrl: product.image_url || undefined,
+          compareAtPrice: product.compare_at_price || undefined,
+          isOnSale: (product.compare_at_price ?? 0) > (product.price ?? 0),
+          totalProductsShown: suggestedProducts.length,
+          timeToClick: getTimeToClick(),
+          matchType,
+        }
       );
     }
   };
 
   const handleViewAllClick = () => {
-    trackDidYouMeanViewAllClick(searchQuery, resultsCount);
+    trackDidYouMeanViewAllClick(searchQuery, resultsCount, {
+      categoriesShown: suggestedCategories.length,
+      productsShown: suggestedProducts.length,
+      timeToClick: getTimeToClick(),
+    });
   };
 
   return (
@@ -182,11 +237,11 @@ export const DidYouMeanSection = ({
         <div className="mb-4">
           <p className="text-sm font-medium mb-2 text-muted-foreground">Categories:</p>
           <div className="flex flex-wrap gap-2">
-            {suggestedCategories.map((cat) => (
+            {suggestedCategories.map((cat, index) => (
               <Link 
                 key={cat.id} 
                 to={`/products?category=${cat.slug}`}
-                onClick={() => handleCategoryClick(cat)}
+                onClick={() => handleCategoryClick(cat, index)}
               >
                 <Badge 
                   variant="secondary" 
