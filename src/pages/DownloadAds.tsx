@@ -361,7 +361,9 @@ const DownloadAds = () => {
 
   const handleDownload = (type: FileType) => {
     const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `getpawsy_${type}_${timestamp}.csv`;
+    // Images get .txt extension since it's an instruction file, not CSV
+    const extension = type === 'images' ? 'txt' : 'csv';
+    const filename = `getpawsy_${type}_${timestamp}.${extension}`;
     downloadCSV(getCSVContent(type), filename);
     setDownloaded(prev => [...prev, type]);
   };
@@ -452,7 +454,7 @@ const DownloadAds = () => {
         { filename: `getpawsy_ads_${timestamp}.csv`, content: generateResponsiveAdsCSV() },
         { filename: `getpawsy_keywords_${timestamp}.csv`, content: generateKeywordsCSV() },
         { filename: `getpawsy_sitelinks_${timestamp}.csv`, content: generateSitelinksCSV() },
-        { filename: `getpawsy_images_${timestamp}.csv`, content: generateImageAssetsCSV() },
+        { filename: `getpawsy_images_instructions_${timestamp}.txt`, content: generateImageAssetsCSV() },
       ];
 
       const { data, error } = await supabase.functions.invoke('send-ads-csv-email', {
@@ -477,7 +479,7 @@ const DownloadAds = () => {
     { id: 'ads', name: 'Responsive Search Ads', desc: `${stats.adGroups} ad groups, ${stats.headlines} headlines` },
     { id: 'keywords', name: 'Keywords', desc: `${stats.keywords} keywords (phrase + exact match)` },
     { id: 'sitelinks', name: 'Sitelinks', desc: '4 sitelinks per campaign' },
-    { id: 'images', name: 'Image Assets', desc: '4 image URLs (logos + banners)' },
+    { id: 'images', name: 'Image Assets (Instructions)', desc: 'Manual setup guide with download links' },
   ];
 
   const getFileName = (id: FileType) => {
@@ -822,7 +824,14 @@ const DownloadAds = () => {
           </DialogHeader>
           
           <ScrollArea className="max-h-[55vh]">
-            {filteredPreviewData && (
+            {/* Special rendering for images - show as text instructions */}
+            {previewFile === 'images' ? (
+              <div className="p-4">
+                <pre className="text-xs whitespace-pre-wrap font-mono bg-muted/50 p-4 rounded-lg overflow-x-auto">
+                  {getCSVContent('images')}
+                </pre>
+              </div>
+            ) : filteredPreviewData && (
               <div className="p-4">
                 {filteredPreviewData.rows.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">

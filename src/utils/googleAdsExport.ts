@@ -651,61 +651,113 @@ export function generateSitelinksCSV(): string {
   return csvContent;
 }
 
-// Generate Image Assets CSV for Google Ads
-export function generateImageAssetsCSV(): string {
-  const headers = [
-    "Campaign",
-    "Image URL",
-    "Image Type",
-    "Asset Name"
-  ];
-  
-  const campaigns = [...new Set(campaignData.map(ad => ad.campaign))];
-  
-  // Image assets hosted on getpawsy.pet
-  const imageAssets = [
-    {
-      url: "https://getpawsy.pet/ads/google-ads-square.jpg",
-      type: "Square (1:1)",
-      name: "GetPawsy Square Logo"
-    },
-    {
-      url: "https://getpawsy.pet/ads/google-ads-landscape.jpg",
-      type: "Landscape (1.91:1)",
-      name: "GetPawsy Landscape Banner"
-    },
-    {
-      url: "https://getpawsy.pet/ads/google-ads-logo.png",
-      type: "Logo Square (1:1)",
-      name: "GetPawsy Logo Square"
-    },
-    {
-      url: "https://getpawsy.pet/ads/google-ads-logo-landscape.png",
-      type: "Logo Landscape (4:1)",
-      name: "GetPawsy Logo Landscape"
-    }
-  ];
-  
-  const rows: string[][] = [];
-  
-  campaigns.forEach(campaign => {
-    imageAssets.forEach(asset => {
-      rows.push([
-        campaign,
-        asset.url,
-        asset.type,
-        asset.name
-      ]);
-    });
-  });
-  
-  const csvContent = [
-    headers.join(","),
-    ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))
-  ].join("\n");
-  
-  return csvContent;
+// Generate Image Assets Instructions (NOT CSV - Google Ads Editor doesn't support image CSV imports)
+export function generateImageAssetsInstructions(): string {
+  const instructions = `
+================================================================================
+                    GOOGLE ADS IMAGE ASSETS - MANUAL SETUP GUIDE
+================================================================================
+
+⚠️  IMPORTANT: Google Ads Editor does NOT support CSV imports for image assets.
+    You must add images manually via the Google Ads Editor or web interface.
+
+================================================================================
+                              IMAGE ASSETS TO ADD
+================================================================================
+
+1. SQUARE IMAGE (1:1 ratio - 1200x1200px)
+   ─────────────────────────────────────────
+   Name: GetPawsy Square Marketing Image
+   URL:  https://getpawsy.pet/ads/google-ads-square.jpg
+   Use:  Main marketing image for responsive display ads
+
+2. LANDSCAPE IMAGE (1.91:1 ratio - 1200x628px)
+   ─────────────────────────────────────────
+   Name: GetPawsy Landscape Banner
+   URL:  https://getpawsy.pet/ads/google-ads-landscape.jpg
+   Use:  Wide banner for display network
+
+3. LOGO SQUARE (1:1 ratio - 1200x1200px)
+   ─────────────────────────────────────────
+   Name: GetPawsy Logo Square
+   URL:  https://getpawsy.pet/ads/google-ads-logo.png
+   Use:  Square logo for brand recognition
+
+4. LOGO LANDSCAPE (4:1 ratio - 1200x300px)
+   ─────────────────────────────────────────
+   Name: GetPawsy Logo Landscape
+   URL:  https://getpawsy.pet/ads/google-ads-logo-landscape.png
+   Use:  Wide logo for horizontal placements
+
+================================================================================
+                         HOW TO ADD IMAGES IN GOOGLE ADS EDITOR
+================================================================================
+
+STEP 1: Open Google Ads Editor
+        └── Make sure your campaigns are already imported
+
+STEP 2: Navigate to Shared Library
+        └── Left panel → "Shared Library" → "Assets" → "Images"
+
+STEP 3: Add New Images
+        └── Click "+ Add" button
+        └── Select "Images from URL" option
+
+STEP 4: Enter Image URLs
+        └── Paste each URL from above one at a time
+        └── Google Ads will automatically download and validate
+
+STEP 5: Assign to Campaigns
+        └── After adding, select the images
+        └── Right-click → "Assign to campaigns"
+        └── Select all relevant campaigns
+
+================================================================================
+                         ALTERNATIVE: GOOGLE ADS WEB INTERFACE
+================================================================================
+
+1. Go to ads.google.com
+2. Navigate to: Tools & Settings → Shared Library → Asset Library
+3. Click "+ Create asset" → "Image"
+4. Upload or enter URL for each image
+5. Images will be available for all campaigns in your account
+
+================================================================================
+                              QUICK DOWNLOAD LINKS
+================================================================================
+
+Click these links to download images directly to your computer:
+
+• Square Image:     https://getpawsy.pet/ads/google-ads-square.jpg
+• Landscape Image:  https://getpawsy.pet/ads/google-ads-landscape.jpg
+• Logo Square:      https://getpawsy.pet/ads/google-ads-logo.png
+• Logo Landscape:   https://getpawsy.pet/ads/google-ads-logo-landscape.png
+
+================================================================================
+                              RECOMMENDED IMAGE SPECS
+================================================================================
+
+For best results, Google Ads recommends:
+
+Marketing Images:
+  • Square (1:1):      Min 300x300px, Max 5120x5120px, Recommended 1200x1200px
+  • Landscape (1.91:1): Min 600x314px, Max 5120x5120px, Recommended 1200x628px
+
+Logo Images:
+  • Square (1:1):      Min 128x128px, Max 5120x5120px, Recommended 1200x1200px  
+  • Landscape (4:1):   Min 512x128px, Max 5120x5120px, Recommended 1200x300px
+
+File Types: JPG, PNG, GIF (static only)
+Max File Size: 5MB per image
+
+================================================================================
+`;
+
+  return instructions.trim();
 }
+
+// Legacy function name for backwards compatibility
+export const generateImageAssetsCSV = generateImageAssetsInstructions;
 
 // Download helper with iOS Files app support
 export async function downloadCSV(content: string, filename: string): Promise<void> {
@@ -762,7 +814,7 @@ export function exportAllGoogleAds(): void {
   }, 1500);
   
   setTimeout(() => {
-    downloadCSV(generateImageAssetsCSV(), `getpawsy_images_${timestamp}.csv`);
+    downloadCSV(generateImageAssetsInstructions(), `getpawsy_images_instructions_${timestamp}.txt`);
   }, 2000);
 }
 
@@ -772,12 +824,12 @@ export async function exportAllAsZip(): Promise<void> {
   const zip = new JSZip();
   const timestamp = new Date().toISOString().split('T')[0];
   
-  // Add all CSV files to the ZIP
+  // Add all CSV files to the ZIP (images is a .txt instruction file)
   zip.file(`getpawsy_campaigns_${timestamp}.csv`, generateCampaignStructureCSV());
   zip.file(`getpawsy_ads_${timestamp}.csv`, generateResponsiveAdsCSV());
   zip.file(`getpawsy_keywords_${timestamp}.csv`, generateKeywordsCSV());
   zip.file(`getpawsy_sitelinks_${timestamp}.csv`, generateSitelinksCSV());
-  zip.file(`getpawsy_images_${timestamp}.csv`, generateImageAssetsCSV());
+  zip.file(`getpawsy_images_instructions_${timestamp}.txt`, generateImageAssetsInstructions());
   
   // Generate and download the ZIP
   const content = await zip.generateAsync({ type: 'blob' });
