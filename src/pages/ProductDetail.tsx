@@ -122,13 +122,12 @@ const ProductDetail = () => {
 
   // Fetch product from database - supports both UUID and slug
   // Uses products_public view which is publicly accessible
-  // If accessed via UUID, redirect to slug-based URL for SEO
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: async () => {
       if (!id) return null;
 
-      // If it's a valid UUID, query by id and redirect to slug
+      // If it's a valid UUID, query by id
       if (isValidUUID(id)) {
         const { data, error } = await supabase
           .from('products_public')
@@ -137,13 +136,6 @@ const ProductDetail = () => {
           .maybeSingle();
         
         if (error) throw error;
-        
-        // If product has a slug, redirect to the slug-based URL
-        if (data?.slug) {
-          navigate(`/product/${data.slug}`, { replace: true });
-          return data;
-        }
-        
         return data;
       }
 
@@ -168,16 +160,18 @@ const ProductDetail = () => {
         .maybeSingle();
       
       if (error) throw error;
-      
-      // If found by name and has a slug, redirect to slug URL
-      if (data?.slug && data.slug !== id) {
-        navigate(`/product/${data.slug}`, { replace: true });
-      }
-      
       return data;
     },
     enabled: !!id,
   });
+
+  // Redirect to slug-based URL if accessed via UUID (for SEO)
+  // IMPORTANT: This must be in useEffect, NOT in queryFn to avoid hooks issues
+  useEffect(() => {
+    if (product?.slug && id && isValidUUID(id)) {
+      navigate(`/product/${product.slug}`, { replace: true });
+    }
+  }, [product, id, navigate]);
 
   // Fetch related products with enhanced category and keyword matching
   const { data: relatedProducts, isLoading: relatedLoading } = useRelatedProducts({
@@ -404,15 +398,8 @@ const ProductDetail = () => {
     return () => observer.disconnect();
   }, [product]);
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <ProductDetailSkeleton />
-      </Layout>
-    );
-  }
-
   // Redirect to products page with search parameter if product not found
+  // IMPORTANT: This hook MUST be before any early returns to follow React hooks rules
   useEffect(() => {
     if (!isLoading && !product && id) {
       // Extract keywords from the slug/id for search
@@ -426,6 +413,14 @@ const ProductDetail = () => {
       navigate(`/products${searchParam}`, { replace: true });
     }
   }, [isLoading, product, navigate, id]);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <ProductDetailSkeleton />
+      </Layout>
+    );
+  }
 
   if (!product) {
     return (
