@@ -259,7 +259,7 @@ export function ProductRecategorizer() {
 
         {results.length > 0 && (
           <div className="space-y-4">
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap">
               <Badge variant="default" className="text-sm">
                 <CheckCircle className="mr-1 h-3 w-3" />
                 {changedCount} te wijzigen
@@ -267,6 +267,20 @@ export function ProductRecategorizer() {
               <Badge variant="secondary" className="text-sm">
                 {unchangedCount} ongewijzigd
               </Badge>
+              <div className="flex gap-2 items-center text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  High: {results.filter(r => r.changed && r.confidence === 'high').length}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                  Medium: {results.filter(r => r.changed && r.confidence === 'medium').length}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-orange-500" />
+                  Low: {results.filter(r => r.changed && r.confidence === 'low').length}
+                </span>
+              </div>
             </div>
 
             <ScrollArea className="h-[400px] rounded-md border">
@@ -284,9 +298,21 @@ export function ProductRecategorizer() {
                         <span className="text-primary font-medium">{result.newCategory}</span>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-xs">
-                      Score: {result.score}
-                    </Badge>
+                    <div className="flex flex-col gap-1 items-end">
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${
+                          result.confidence === 'high' 
+                            ? 'border-green-500 text-green-700 bg-green-50' 
+                            : result.confidence === 'medium'
+                            ? 'border-yellow-500 text-yellow-700 bg-yellow-50'
+                            : 'border-orange-500 text-orange-700 bg-orange-50'
+                        }`}
+                      >
+                        {result.confidence === 'high' ? '✓ High' : result.confidence === 'medium' ? '◐ Medium' : '◯ Low'}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">Score: {result.score}</span>
+                    </div>
                   </div>
                 ))}
                 {results.filter(r => r.changed).length > 100 && (
