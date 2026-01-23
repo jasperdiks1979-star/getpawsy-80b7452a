@@ -1009,6 +1009,178 @@ Generated: ${new Date().toLocaleString('nl-NL')}
   URL.revokeObjectURL(url);
 }
 
+// Export COMPLETE campaign package: All CSVs + All Images in one ZIP
+// This is the ultimate one-click solution for Google Ads setup
+export async function exportCompleteCampaignPackage(
+  onProgress?: (stage: string, percent: number) => void
+): Promise<void> {
+  const JSZip = (await import('jszip')).default;
+  const zip = new JSZip();
+  const timestamp = new Date().toISOString().split('T')[0];
+  
+  onProgress?.('CSV bestanden toevoegen...', 10);
+  
+  // Create folders for organization
+  const csvFolder = zip.folder('01_csv_files');
+  const imagesFolder = zip.folder('02_image_assets');
+  
+  if (!csvFolder || !imagesFolder) {
+    throw new Error('Failed to create folders in ZIP');
+  }
+  
+  // Add all CSV files
+  csvFolder.file(`getpawsy_campaigns_${timestamp}.csv`, generateCampaignStructureCSV());
+  csvFolder.file(`getpawsy_ads_${timestamp}.csv`, generateResponsiveAdsCSV());
+  csvFolder.file(`getpawsy_keywords_${timestamp}.csv`, generateKeywordsCSV());
+  csvFolder.file(`getpawsy_sitelinks_${timestamp}.csv`, generateSitelinksCSV());
+  
+  onProgress?.('Afbeeldingen downloaden...', 30);
+  
+  // Fetch and add each image to the ZIP
+  const fetchPromises = imageAssets.map(async (asset, index) => {
+    try {
+      const response = await fetch(asset.url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${asset.name}: ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      imagesFolder.file(asset.name, arrayBuffer);
+      onProgress?.(`Afbeelding ${index + 1}/${imageAssets.length} geladen...`, 30 + ((index + 1) / imageAssets.length) * 40);
+      return { success: true, name: asset.name };
+    } catch (error) {
+      console.error(`Error fetching ${asset.name}:`, error);
+      return { success: false, name: asset.name, error };
+    }
+  });
+  
+  await Promise.all(fetchPromises);
+  
+  onProgress?.('ZIP genereren...', 80);
+  
+  // Add comprehensive README
+  const readme = `
+================================================================================
+            GETPAWSY COMPLETE GOOGLE ADS CAMPAIGN PACKAGE
+================================================================================
+
+Gegenereerd op: ${new Date().toLocaleString('nl-NL')}
+
+Deze ZIP bevat ALLES wat je nodig hebt om je Google Ads campagnes live te zetten!
+
+================================================================================
+                               INHOUD
+================================================================================
+
+📁 01_csv_files/
+   ├── getpawsy_campaigns_${timestamp}.csv  → Campagne instellingen
+   ├── getpawsy_ads_${timestamp}.csv        → Responsive Search Ads
+   ├── getpawsy_keywords_${timestamp}.csv   → Keywords (phrase + exact match)
+   └── getpawsy_sitelinks_${timestamp}.csv  → Sitelink extensies
+
+📁 02_image_assets/
+   ├── getpawsy_square_1200x1200.jpg        → Marketing image (1:1)
+   ├── getpawsy_landscape_1200x628.jpg      → Marketing banner (1.91:1)
+   ├── getpawsy_logo_square_1200x1200.png   → Logo square (1:1)
+   └── getpawsy_logo_landscape_1200x300.png → Logo wide (4:1)
+
+================================================================================
+                         STAP-VOOR-STAP IMPORT HANDLEIDING
+================================================================================
+
+STAP 1: GOOGLE ADS EDITOR DOWNLOADEN
+──────────────────────────────────────
+• Download: https://ads.google.com/home/tools/ads-editor/
+• Installeer en log in met je Google Ads account
+
+STAP 2: CSV BESTANDEN IMPORTEREN
+──────────────────────────────────────
+1. Open Google Ads Editor
+2. Ga naar: Account → Import → From file
+3. Importeer in deze volgorde:
+   a) getpawsy_campaigns_${timestamp}.csv (campagne structuur)
+   b) getpawsy_ads_${timestamp}.csv (advertenties)
+   c) getpawsy_keywords_${timestamp}.csv (zoekwoorden)
+   d) getpawsy_sitelinks_${timestamp}.csv (sitelinks)
+
+STAP 3: IMAGE ASSETS IMPORTEREN
+──────────────────────────────────────
+1. In Google Ads Editor
+2. Ga naar: Account → Import → Import image assets from files
+3. Selecteer de "02_image_assets" map
+4. Klik "Import"
+
+STAP 4: BUDGET CONFIGUREREN
+──────────────────────────────────────
+1. Selecteer elke campagne
+2. Stel je dagelijks budget in (bijv. $10-20 per campagne)
+3. Kies biedstrategie: "Maximize Conversions" (aanbevolen)
+
+STAP 5: PUBLICEREN
+──────────────────────────────────────
+1. Review alle wijzigingen
+2. Klik "Post" om naar Google Ads te uploaden
+3. Wacht tot Google je advertenties goedkeurt (meestal 24-48 uur)
+
+================================================================================
+                            TIPS & BEST PRACTICES
+================================================================================
+
+✅ Begin met een klein budget ($10-20/dag) om te testen
+✅ Monitor je campagnes dagelijks de eerste week
+✅ Gebruik Google Ads conversie tracking voor betere optimalisatie
+✅ Voeg negatieve zoekwoorden toe om irrelevante clicks te vermijden
+✅ Test verschillende advertentieteksten A/B
+
+================================================================================
+                              SUPPORT
+================================================================================
+
+Heb je vragen? Bezoek: https://getpawsy.pet/contact
+
+Happy advertising! 🎉
+================================================================================
+`;
+
+  zip.file('README.txt', readme.trim());
+  
+  onProgress?.('ZIP voltooien...', 95);
+  
+  // Generate and download the ZIP
+  const content = await zip.generateAsync({ type: 'blob' });
+  const filename = `getpawsy_complete_campaign_package_${timestamp}.zip`;
+  
+  onProgress?.('Downloaden...', 100);
+  
+  // Check if Web Share API is available (iOS Safari)
+  if (navigator.share && navigator.canShare) {
+    const file = new File([content], filename, { type: 'application/zip' });
+    const shareData = { files: [file] };
+    
+    if (navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') {
+          return;
+        }
+      }
+    }
+  }
+  
+  // Fallback: regular download
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(content);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // Get list of image assets for display purposes
 export function getImageAssetsList() {
   return imageAssets;
