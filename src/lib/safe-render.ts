@@ -62,7 +62,7 @@ export function safeRender(value: unknown): string | number {
 }
 
 /**
- * Safe price formatting
+ * Safe price formatting - returns formatted string
  */
 export function safePrice(value: unknown): string {
   if (value === null || value === undefined) {
@@ -78,13 +78,79 @@ export function safePrice(value: unknown): string {
 }
 
 /**
+ * Safe number conversion - returns 0 for invalid values
+ */
+export function safeNumber(value: unknown, defaultValue: number = 0): number {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
+}
+
+/**
  * Safely get a nested property value as string
  */
 export function safeGet<T>(obj: T, path: string, defaultValue: string = ''): string {
   try {
-    const result = path.split('.').reduce((acc: any, key) => acc?.[key], obj);
+    const result = path.split('.').reduce((acc: unknown, key) => {
+      if (acc && typeof acc === 'object' && acc !== null) {
+        return (acc as Record<string, unknown>)[key];
+      }
+      return undefined;
+    }, obj);
     return safeString(result) || defaultValue;
   } catch {
     return defaultValue;
   }
+}
+
+/**
+ * Safe currency formatting
+ */
+export function safeCurrency(
+  value: unknown, 
+  currency: string = 'EUR', 
+  locale: string = 'nl-NL'
+): string {
+  const num = safeNumber(value, 0);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    }).format(num);
+  } catch {
+    return `€${num.toFixed(2)}`;
+  }
+}
+
+/**
+ * Safe date formatting
+ */
+export function safeDate(value: unknown, fallback: string = ''): Date | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : value;
+  }
+  
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  
+  return null;
+}
+
+/**
+ * Safe array access - ensures we always get an array
+ */
+export function safeArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  return [];
 }

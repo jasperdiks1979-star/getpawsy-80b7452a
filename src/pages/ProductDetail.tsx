@@ -24,6 +24,7 @@ import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { trackViewItem } from '@/lib/analytics';
 import { calculateSellingPrice } from '@/lib/pricing';
+import { safeString, safeNumber, safeArray } from '@/lib/safe-render';
 import FormattedDescription from '@/components/products/FormattedDescription';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
@@ -559,8 +560,8 @@ const ProductDetail = () => {
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
-                      <Link to={`/products?category=${encodeURIComponent(product.category.toLowerCase().replace(/\s+/g, '-'))}`}>
-                        {product.category}
+                      <Link to={`/products?category=${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, '-'))}`}>
+                        {safeString(product.category)}
                       </Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
@@ -568,7 +569,7 @@ const ProductDetail = () => {
               )}
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage className="max-w-[200px] truncate">{product.name}</BreadcrumbPage>
+                <BreadcrumbPage className="max-w-[200px] truncate">{safeString(product.name)}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -792,11 +793,11 @@ const ProductDetail = () => {
                   animate={{ opacity: 1 }}
                   className="text-sm text-primary font-medium uppercase tracking-wider mb-2"
                 >
-                  {product.category}
+                  {safeString(product.category)}
                 </motion.p>
               )}
               <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
-                {product.name}
+                {safeString(product.name)}
               </h1>
               
               {/* Rating placeholder */}
