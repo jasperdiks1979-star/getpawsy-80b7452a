@@ -398,6 +398,14 @@ const ProductDetail = () => {
     );
   }
 
+  // Redirect to products page if product not found
+  useEffect(() => {
+    if (!isLoading && !product) {
+      toast.info('Product not found, redirecting to products page...');
+      navigate('/products', { replace: true });
+    }
+  }, [isLoading, product, navigate]);
+
   if (!product) {
     return (
       <Layout>
@@ -408,13 +416,9 @@ const ProductDetail = () => {
             className="text-center"
           >
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
-              <Package className="w-10 h-10 text-muted-foreground" />
+              <Package className="w-10 h-10 text-muted-foreground animate-pulse" />
             </div>
-            <h1 className="text-2xl font-display font-bold mb-4">Product not found</h1>
-            <p className="text-muted-foreground mb-6">This product doesn't exist or is no longer available.</p>
-            <Link to="/products">
-              <Button className="btn-organic">Browse All Products</Button>
-            </Link>
+            <p className="text-muted-foreground">Redirecting to products...</p>
           </motion.div>
         </div>
       </Layout>
