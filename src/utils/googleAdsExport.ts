@@ -946,8 +946,27 @@ export const excelColorPresets: Record<string, typeof defaultExcelColors> = {
 
 export type ExcelColorScheme = typeof defaultExcelColors;
 
+// Available sheets for export
+export type ExcelSheetKey = 'campaigns' | 'ads' | 'keywords' | 'sitelinks' | 'images';
+
+export const excelSheetOptions: { key: ExcelSheetKey; label: string }[] = [
+  { key: 'campaigns', label: 'Campaigns' },
+  { key: 'ads', label: 'Ads' },
+  { key: 'keywords', label: 'Keywords' },
+  { key: 'sitelinks', label: 'Sitelinks' },
+  { key: 'images', label: 'Images' }
+];
+
+export interface ExcelExportOptions {
+  colors: ExcelColorScheme;
+  sheets: ExcelSheetKey[];
+}
+
 // Export all files as Excel (.xlsx) with multiple sheets and styled headers
-export async function exportAllAsExcel(colors: ExcelColorScheme = defaultExcelColors): Promise<void> {
+export async function exportAllAsExcel(
+  colors: ExcelColorScheme = defaultExcelColors,
+  sheets: ExcelSheetKey[] = ['campaigns', 'ads', 'keywords', 'sitelinks', 'images']
+): Promise<void> {
   const XLSX = await import('xlsx-js-style');
   const timestamp = new Date().toISOString().split('T')[0];
   
@@ -1113,12 +1132,23 @@ export async function exportAllAsExcel(colors: ExcelColorScheme = defaultExcelCo
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
   };
   
-  // Add all sheets with custom colors
-  addSheet(generateCampaignStructureCSV(), 'Campaigns', colors.campaigns);
-  addSheet(generateResponsiveAdsCSV(), 'Ads', colors.ads);
-  addSheet(generateKeywordsCSV(), 'Keywords', colors.keywords);
-  addSheet(generateSitelinksCSV(), 'Sitelinks', colors.sitelinks);
-  addSheet(generateImageAssetsCSV(), 'Images', colors.images);
+  // Sheet generators mapping
+  const sheetGenerators: Record<ExcelSheetKey, { generator: () => string; color: string }> = {
+    campaigns: { generator: generateCampaignStructureCSV, color: colors.campaigns },
+    ads: { generator: generateResponsiveAdsCSV, color: colors.ads },
+    keywords: { generator: generateKeywordsCSV, color: colors.keywords },
+    sitelinks: { generator: generateSitelinksCSV, color: colors.sitelinks },
+    images: { generator: generateImageAssetsCSV, color: colors.images }
+  };
+
+  // Add only selected sheets
+  sheets.forEach(sheetKey => {
+    const config = sheetGenerators[sheetKey];
+    if (config) {
+      const sheetName = sheetKey.charAt(0).toUpperCase() + sheetKey.slice(1);
+      addSheet(config.generator(), sheetName, config.color);
+    }
+  });
   
   // Generate Excel file
   const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
