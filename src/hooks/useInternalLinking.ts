@@ -34,22 +34,19 @@ export const useInternalLinking = (
     enabled = true,
   } = options;
 
-  // Fetch products for linking (products_public doesn't have slug, we generate from name)
+  // Fetch products for linking - use products table which has actual slugs
   const { data: products = [] } = useQuery({
     queryKey: ['internal-linking-products'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products_public')
-        .select('id, name, category')
+        .from('products')
+        .select('id, name, slug, category')
         .eq('is_active', true)
+        .not('slug', 'is', null)
         .limit(100);
       
       if (error) return [];
-      // Generate slug from name if not available
-      return (data || []).map(p => ({
-        ...p,
-        slug: p.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || null,
-      })) as Product[];
+      return (data || []) as Product[];
     },
     enabled,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
