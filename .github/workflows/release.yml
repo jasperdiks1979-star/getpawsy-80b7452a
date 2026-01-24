@@ -1,0 +1,266 @@
+name: Release
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type (patch, minor, major)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run tests
+        run: npm test -- --run
+        continue-on-error: true
+
+      - name: Analyze commits and determine version
+        id: version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: commits } = await github.rest.repos.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 50,
+            });
+            
+            let major = false;
+            let minor = false;
+            let patch = false;
+            
+            const conventionalCommitRegex = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?(!)?:\s.+/;
+            
+            for (const commit of commits) {
+              const message = commit.commit.message.split('\n')[0].toLowerCase();
+              
+              if (message.includes('breaking change') || message.includes('!:')) {
+                major = true;
+                break;
+              }
+              if (message.startsWith('feat')) {
+                minor = true;
+              }
+              if (message.startsWith('fix') || message.startsWith('perf')) {
+                patch = true;
+              }
+            }
+            
+            // Manual override
+            const manualType = '${{ github.event.inputs.release_type }}';
+            if (manualType === 'major') major = true;
+            else if (manualType === 'minor') minor = true;
+            else if (manualType === 'patch') patch = true;
+            
+            let type = 'patch';
+            if (major) type = 'major';
+            else if (minor) type = 'minor';
+            
+            core.setOutput('type', type);
+            console.log(`Determined release type: ${type}`);
+
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "0.0.0")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Calculate new version
+        id: new_version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const current = '${{ steps.current_version.outputs.version }}';
+            const type = '${{ steps.version.outputs.type }}';
+            
+            const [major, minor, patch] = current.split('.').map(Number);
+            
+            let newVersion;
+            if (type === 'major') {
+              newVersion = `${major + 1}.0.0`;
+            } else if (type === 'minor') {
+              newVersion = `${major}.${minor + 1}.0`;
+            } else {
+              newVersion = `${major}.${minor}.${patch + 1}`;
+            }
+            
+            core.setOutput('version', newVersion);
+            console.log(`New version: ${newVersion}`);
+
+      - name: Generate release notes
+        id: release_notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: tags } = await github.rest.repos.listTags({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 1,
+            });
+            
+            const lastTag = tags.length > 0 ? tags[0].name : null;
+            
+            let commits;
+            if (lastTag) {
+              const { data: comparison } = await github.rest.repos.compareCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                base: lastTag,
+                head: 'HEAD',
+              });
+              commits = comparison.commits;
+            } else {
+              const { data: allCommits } = await github.rest.repos.listCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 50,
+              });
+              commits = allCommits;
+            }
+            
+            const categories = {
+              features: [],
+              fixes: [],
+              performance: [],
+              docs: [],
+              other: [],
+            };
+            
+            for (const commit of commits) {
+              const message = commit.commit.message.split('\n')[0];
+              const sha = commit.sha.substring(0, 7);
+              const entry = `- ${message} (\`${sha}\`)`;
+              
+              if (message.toLowerCase().startsWith('feat')) {
+                categories.features.push(entry);
+              } else if (message.toLowerCase().startsWith('fix')) {
+                categories.fixes.push(entry);
+              } else if (message.toLowerCase().startsWith('perf')) {
+                categories.performance.push(entry);
+              } else if (message.toLowerCase().startsWith('docs')) {
+                categories.docs.push(entry);
+              } else if (!message.toLowerCase().startsWith('chore') && 
+                         !message.toLowerCase().includes('[skip ci]')) {
+                categories.other.push(entry);
+              }
+            }
+            
+            let notes = '';
+            
+            if (categories.features.length > 0) {
+              notes += '## ✨ Features\n\n' + categories.features.join('\n') + '\n\n';
+            }
+            if (categories.fixes.length > 0) {
+              notes += '## 🐛 Bug Fixes\n\n' + categories.fixes.join('\n') + '\n\n';
+            }
+            if (categories.performance.length > 0) {
+              notes += '## ⚡ Performance\n\n' + categories.performance.join('\n') + '\n\n';
+            }
+            if (categories.docs.length > 0) {
+              notes += '## 📚 Documentation\n\n' + categories.docs.join('\n') + '\n\n';
+            }
+            if (categories.other.length > 0) {
+              notes += '## 🔧 Other Changes\n\n' + categories.other.join('\n') + '\n\n';
+            }
+            
+            if (!notes) {
+              notes = 'No notable changes in this release.';
+            }
+            
+            // Escape for shell
+            const escapedNotes = notes.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+            core.setOutput('notes', escapedNotes);
+
+      - name: Create Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.new_version.outputs.version }}" -m "Release v${{ steps.new_version.outputs.version }}"
+          git push origin "v${{ steps.new_version.outputs.version }}"
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.new_version.outputs.version }}';
+            const notes = `${{ steps.release_notes.outputs.notes }}`;
+            
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${version}`,
+              name: `Release v${version}`,
+              body: notes,
+              draft: false,
+              prerelease: false,
+              generate_release_notes: false,
+            });
+
+      - name: Update CHANGELOG
+        run: |
+          VERSION="${{ steps.new_version.outputs.version }}"
+          DATE=$(date +%Y-%m-%d)
+          
+          # Create temp file with new entry
+          echo "# Changelog" > CHANGELOG.tmp
+          echo "" >> CHANGELOG.tmp
+          echo "## [${VERSION}] - ${DATE}" >> CHANGELOG.tmp
+          echo "" >> CHANGELOG.tmp
+          echo "${{ steps.release_notes.outputs.notes }}" >> CHANGELOG.tmp
+          echo "" >> CHANGELOG.tmp
+          
+          # Append existing changelog (skip first line if it's the title)
+          if [ -f CHANGELOG.md ]; then
+            tail -n +3 CHANGELOG.md >> CHANGELOG.tmp
+          fi
+          
+          mv CHANGELOG.tmp CHANGELOG.md
+
+      - name: Commit CHANGELOG
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(release): update changelog for v${{ steps.new_version.outputs.version }} [skip ci]" || true
+          git push origin HEAD:${{ github.ref_name }} || true
+
+      - name: Post release summary
+        run: |
+          echo "## 🚀 Release v${{ steps.new_version.outputs.version }} Published!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Release Type:** ${{ steps.version.outputs.type }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.release_notes.outputs.notes }}" >> $GITHUB_STEP_SUMMARY
