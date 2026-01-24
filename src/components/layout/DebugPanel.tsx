@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Bug, ChevronDown, ChevronUp, Trash2, RefreshCw } from 'lucide-react';
+import { Bug, ChevronDown, ChevronUp, Trash2, RefreshCw, Wrench, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { triggerManualHealing } from '@/lib/data-healer';
 
 interface StorageInfo {
   key: string;
@@ -11,10 +12,21 @@ interface StorageInfo {
   preview: string;
 }
 
+interface HealingStatus {
+  lastRun: string | null;
+  corruptedFixed: number;
+  isRunning: boolean;
+}
+
 export const DebugPanel = () => {
   const [searchParams] = useSearchParams();
   const [isExpanded, setIsExpanded] = useState(false);
   const [storageData, setStorageData] = useState<StorageInfo[]>([]);
+  const [healingStatus, setHealingStatus] = useState<HealingStatus>({
+    lastRun: null,
+    corruptedFixed: 0,
+    isRunning: false,
+  });
   const [sessionInfo, setSessionInfo] = useState({
     userAgent: '',
     platform: '',
@@ -253,14 +265,63 @@ export const DebugPanel = () => {
                   </div>
                 </div>
 
+                {/* Self-Healing Status */}
+                <div className="bg-emerald-500/10 border border-emerald-500/30 p-2 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-sm flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                      <Wrench className="w-4 h-4" />
+                      Self-Healing Data
+                    </h4>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setHealingStatus(prev => ({ ...prev, isRunning: true }));
+                        const report = triggerManualHealing();
+                        setHealingStatus({
+                          lastRun: new Date().toLocaleTimeString(),
+                          corruptedFixed: report.fixedKeys,
+                          isRunning: false,
+                        });
+                        refreshData();
+                      }}
+                      disabled={healingStatus.isRunning}
+                      className="h-6 px-2 text-xs"
+                    >
+                      {healingStatus.isRunning ? (
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                      ) : (
+                        'Run Now'
+                      )}
+                    </Button>
+                  </div>
+                  <div className="text-xs space-y-1">
+                    {healingStatus.lastRun ? (
+                      <>
+                        <p className="flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3 text-emerald-500" />
+                          Last run: {healingStatus.lastRun}
+                        </p>
+                        <p className="text-muted-foreground">
+                          Fixed: {healingStatus.corruptedFixed} corrupted keys
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Auto-healing runs on page load and every 5 minutes
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 {/* React #310 Info */}
                 <div className="bg-amber-500/10 border border-amber-500/30 p-2 rounded text-xs">
                   <p className="font-semibold text-amber-700 dark:text-amber-400 mb-1">
                     🔍 React #310 Debug Tips
                   </p>
                   <ul className="text-muted-foreground space-y-0.5 list-disc list-inside">
+                    <li>Self-healing auto-repairs corrupted data</li>
                     <li>Check for objects in localStorage above</li>
-                    <li>Look for "object" types that should be strings</li>
                     <li>Clear suspicious items and reload</li>
                   </ul>
                 </div>
