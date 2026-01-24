@@ -1,6 +1,7 @@
 export default {
   // TypeScript and JavaScript files
   '*.{ts,tsx}': [
+    () => 'tsc --noEmit --skipLibCheck', // Run once for all staged TS files
     'eslint --fix --max-warnings 0',
     'prettier --write',
   ],
