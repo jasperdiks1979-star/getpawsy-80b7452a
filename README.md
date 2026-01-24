@@ -1,4 +1,8 @@
-# Welcome to your Lovable project
+# GetPawsy - Premium Pet Products
+
+![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/.github/badges/coverage.json)
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
 ## Project info
 

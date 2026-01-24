@@ -8,8 +8,11 @@ on:
 
 jobs:
   unit-tests:
-    name: Unit Tests
+    name: Unit Tests & Coverage
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,16 +26,125 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test -- --run
+      - name: Run tests with coverage
+        run: npm test -- --run --coverage
 
-      - name: Upload test results
-        if: failure()
+      - name: Generate coverage report
+        id: coverage
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            LINES=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+            STATEMENTS=$(cat coverage/coverage-summary.json | jq '.total.statements.pct')
+            FUNCTIONS=$(cat coverage/coverage-summary.json | jq '.total.functions.pct')
+            BRANCHES=$(cat coverage/coverage-summary.json | jq '.total.branches.pct')
+            
+            echo "lines=$LINES" >> $GITHUB_OUTPUT
+            echo "statements=$STATEMENTS" >> $GITHUB_OUTPUT
+            echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
+            echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+            
+            # Create coverage report markdown
+            echo "## 📊 Code Coverage Report" > coverage-report.md
+            echo "" >> coverage-report.md
+            echo "| Metric | Coverage |" >> coverage-report.md
+            echo "|--------|----------|" >> coverage-report.md
+            echo "| Lines | ${LINES}% |" >> coverage-report.md
+            echo "| Statements | ${STATEMENTS}% |" >> coverage-report.md
+            echo "| Functions | ${FUNCTIONS}% |" >> coverage-report.md
+            echo "| Branches | ${BRANCHES}% |" >> coverage-report.md
+            echo "" >> coverage-report.md
+            
+            # Add status based on coverage
+            AVG=$(echo "scale=2; ($LINES + $STATEMENTS + $FUNCTIONS + $BRANCHES) / 4" | bc)
+            if (( $(echo "$AVG >= 80" | bc -l) )); then
+              echo "✅ **Excellent coverage!**" >> coverage-report.md
+            elif (( $(echo "$AVG >= 60" | bc -l) )); then
+              echo "🟡 **Good coverage, but room for improvement**" >> coverage-report.md
+            else
+              echo "⚠️ **Coverage needs improvement**" >> coverage-report.md
+            fi
+          else
+            echo "No coverage data available" > coverage-report.md
+            echo "lines=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post coverage comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('coverage-report.md', 'utf8');
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('## 📊 Code Coverage Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report
+              });
+            }
+
+      - name: Update coverage badge
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        run: |
+          COVERAGE=${{ steps.coverage.outputs.lines }}
+          
+          # Determine badge color
+          if (( $(echo "$COVERAGE >= 80" | bc -l) )); then
+            COLOR="brightgreen"
+          elif (( $(echo "$COVERAGE >= 60" | bc -l) )); then
+            COLOR="yellow"
+          elif (( $(echo "$COVERAGE >= 40" | bc -l) )); then
+            COLOR="orange"
+          else
+            COLOR="red"
+          fi
+          
+          # Create badge JSON for shields.io endpoint
+          mkdir -p .github/badges
+          echo "{\"schemaVersion\":1,\"label\":\"coverage\",\"message\":\"${COVERAGE}%\",\"color\":\"${COLOR}\"}" > .github/badges/coverage.json
+
+      - name: Commit coverage badge
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update coverage badge [skip ci]"
+          file_pattern: ".github/badges/coverage.json"
+
+      - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: coverage/
-          retention-days: 7
+          name: coverage-report
+          path: |
+            coverage/
+            coverage-report.md
+          retention-days: 14
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        continue-on-error: true
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
 
   lighthouse:
     name: Lighthouse Performance
