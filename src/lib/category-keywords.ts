@@ -108,6 +108,11 @@ export const CATEGORY_KEYWORD_MAP: Record<string, string[]> = {
     'outdoor cat house', 'wooden cat house', 'insulated cat house', 'heated cat house',
     'weatherproof cat house', 'feral cat house', 'stray cat shelter', 'cat den', 'cat cave'
   ],
+  'cat-exercise-wheels': [
+    'cat wheel', 'cat treadmill', 'cat running wheel', 'cat exercise wheel', 'exercise wheel cat',
+    'running wheel cat', 'treadmill cat', 'cat roller wheel', 'cat spinning wheel', 'cat fitness wheel',
+    'large cat wheel', 'indoor cat wheel', 'silent cat wheel', 'wooden cat wheel'
+  ],
   'cat-toys': [
     'cat toy', 'kitten toy', 'catnip toy', 'feather toy cat', 'wand toy cat', 'teaser cat',
     'mouse toy cat', 'fish toy cat', 'laser pointer cat', 'interactive toy cat', 'puzzle toy cat',
@@ -292,6 +297,7 @@ export const FALLBACK_CATEGORY_MAP: Record<string, Record<string, string>> = {
     'trees-furniture': 'cat-trees-and-condos',
     'scratching': 'cat-scratching-posts',
     'litter': 'cat-litter-boxes',
+    'wheels': 'cat-exercise-wheels',
   },
   'birds': {
     'cages': 'bird-cages',
