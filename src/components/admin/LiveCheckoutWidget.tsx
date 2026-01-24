@@ -71,14 +71,14 @@ export const LiveCheckoutWidget = () => {
     localStorage.setItem("live-widget-minimized", String(isMinimized));
   }, [isMinimized]);
 
-  // Fetch initial stats
+  // Fetch initial stats - use 15 minute window to match LiveVisitorBadge
   const fetchStats = useCallback(async () => {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     
     const { data, error } = await supabase
       .from("visitor_activity")
       .select("*")
-      .gte("created_at", fiveMinutesAgo)
+      .gte("created_at", fifteenMinutesAgo)
       .order("created_at", { ascending: false });
 
     if (error || !data) return;
