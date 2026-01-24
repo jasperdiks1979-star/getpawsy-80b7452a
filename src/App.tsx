@@ -63,13 +63,26 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
 
   render() {
     if (this.state.hasError) {
+      // Safely extract error message - ensure it's a string to prevent React error #310
+      let errorMessage = 'An error occurred while loading the page.';
+      try {
+        const msg = this.state.error?.message;
+        if (msg && typeof msg === 'string') {
+          errorMessage = msg.length > 150 ? msg.substring(0, 150) + '...' : msg;
+        } else if (msg && typeof msg === 'object') {
+          errorMessage = 'A rendering error occurred.';
+        }
+      } catch {
+        errorMessage = 'An unexpected error occurred.';
+      }
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <div className="text-center max-w-md">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Oops, something went wrong</h2>
             <p className="text-muted-foreground mb-4">
-              {this.state.error?.message || 'An error occurred while loading the page.'}
+              {errorMessage}
             </p>
             <div className="flex gap-2 justify-center">
               <Button 
