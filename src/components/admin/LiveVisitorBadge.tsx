@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { AreaChart, Area, ResponsiveContainer } from "recharts";
 
 interface Stats {
   total: number;
@@ -16,10 +17,16 @@ interface Stats {
   checkout: number;
 }
 
+interface SparklineData {
+  time: string;
+  count: number;
+}
+
 export const LiveVisitorBadge = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [stats, setStats] = useState<Stats>({ total: 0, browsing: 0, cart: 0, checkout: 0 });
+  const [sparklineData, setSparklineData] = useState<SparklineData[]>([]);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -74,27 +81,76 @@ export const LiveVisitorBadge = () => {
     }
   }, []);
 
+  const fetchSparklineData = useCallback(async () => {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    
+    const { data } = await supabase
+      .from("visitor_activity")
+      .select("session_id, created_at")
+      .gte("created_at", oneHourAgo)
+      .order("created_at", { ascending: true });
+
+    if (data) {
+      // Group by 5-minute intervals (12 data points for 1 hour)
+      const intervals: { [key: string]: Set<string> } = {};
+      const now = Date.now();
+      
+      // Initialize all 12 intervals
+      for (let i = 11; i >= 0; i--) {
+        const intervalTime = new Date(now - i * 5 * 60 * 1000);
+        const key = Math.floor(intervalTime.getTime() / (5 * 60 * 1000)).toString();
+        intervals[key] = new Set();
+      }
+
+      // Fill with actual data
+      data.forEach(v => {
+        const timestamp = new Date(v.created_at).getTime();
+        const key = Math.floor(timestamp / (5 * 60 * 1000)).toString();
+        if (intervals[key]) {
+          intervals[key].add(v.session_id);
+        }
+      });
+
+      // Convert to array
+      const sparkline = Object.entries(intervals)
+        .sort(([a], [b]) => parseInt(a) - parseInt(b))
+        .map(([key, sessions]) => ({
+          time: key,
+          count: sessions.size
+        }));
+
+      setSparklineData(sparkline);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isAdmin) return;
 
     fetchStats();
+    fetchSparklineData();
 
     const channel = supabase
       .channel("visitor-badge-updates")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "visitor_activity" },
-        () => fetchStats()
+        () => {
+          fetchStats();
+          fetchSparklineData();
+        }
       )
       .subscribe();
 
-    const interval = setInterval(fetchStats, 30000);
+    const interval = setInterval(() => {
+      fetchStats();
+      fetchSparklineData();
+    }, 30000);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [isAdmin, fetchStats]);
+  }, [isAdmin, fetchStats, fetchSparklineData]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -134,10 +190,38 @@ export const LiveVisitorBadge = () => {
 
       {isOpen && (
         <div 
-          className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 min-w-[160px] z-50"
+          className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 min-w-[180px] z-50"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Live Bezoekers</div>
+          
+          {/* Sparkline Chart */}
+          {sparklineData.length > 0 && (
+            <div className="mb-3 -mx-1">
+              <div className="h-10 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="sparklineGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <Area 
+                      type="monotone" 
+                      dataKey="count" 
+                      stroke="#10b981" 
+                      strokeWidth={1.5}
+                      fill="url(#sparklineGradient)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1">
+                Laatste uur (per 5 min)
+              </div>
+            </div>
+          )}
           
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
