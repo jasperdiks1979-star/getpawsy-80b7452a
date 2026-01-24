@@ -121,6 +121,7 @@ const Unsubscribe = lazyWithRetry(() => import("./pages/Unsubscribe"));
 const NewsletterPreferences = lazyWithRetry(() => import("./pages/NewsletterPreferences"));
 const SlowFeederOffer = lazyWithRetry(() => import("./pages/SlowFeederOffer"));
 const DownloadAds = lazyWithRetry(() => import("./pages/DownloadAds"));
+const TechnicalDeclaration = lazyWithRetry(() => import("./pages/TechnicalDeclaration"));
 const queryClient = new QueryClient();
 
 // Route loading fallback component
@@ -199,6 +200,7 @@ const App = () => {
                         <Route path="/newsletter-preferences" element={<NewsletterPreferences />} />
                         <Route path="/slow-feeder-offer" element={<SlowFeederOffer />} />
                         <Route path="/download-ads" element={<DownloadAds />} />
+                        <Route path="/technical-declaration" element={<TechnicalDeclaration />} />
                         
                         {/* Legacy URL redirects for SEO */}
                         <Route path="/return-policy" element={<Navigate to="/returns" replace />} />
