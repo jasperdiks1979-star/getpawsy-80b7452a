@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, Eye, ShoppingCart, CreditCard, MapPin } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Stats {
   total: number;
@@ -102,20 +108,29 @@ export const LiveVisitorBadge = () => {
 
   return (
     <div className="fixed top-20 right-4 z-50">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-full shadow-lg text-xs font-semibold transition-colors cursor-pointer"
-      >
-        <Users className="h-3.5 w-3.5" />
-        <span>{stats.total}</span>
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-        </span>
-      </button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(!isOpen);
+              }}
+              className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-full shadow-lg text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <Users className="h-3.5 w-3.5" />
+              <span>{stats.total}</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+              </span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="text-xs">
+            <p>Actieve bezoekers (laatste 15 min)</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
       {isOpen && (
         <div 
