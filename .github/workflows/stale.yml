@@ -1,0 +1,145 @@
+name: Stale Issues & PRs
+
+on:
+  schedule:
+    # Run daily at 1:00 AM UTC
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Mark Stale Issues & PRs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stale Issues
+        uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Issue settings
+          stale-issue-message: |
+            👋 This issue has been automatically marked as stale because it has not had recent activity.
+            
+            It will be closed in 14 days if no further activity occurs. If this issue is still relevant:
+            - Add a comment with more details or updates
+            - Remove the `stale` label
+            
+            Thank you for your contributions! 🙏
+          
+          stale-issue-label: 'stale'
+          days-before-issue-stale: 60
+          days-before-issue-close: 14
+          close-issue-message: |
+            🔒 This issue has been automatically closed due to inactivity.
+            
+            If you believe this issue is still relevant, please feel free to reopen it or create a new issue with updated information.
+          
+          # PR settings
+          stale-pr-message: |
+            👋 This pull request has been automatically marked as stale because it has not had recent activity.
+            
+            It will be closed in 14 days if no further activity occurs. If this PR is still relevant:
+            - Add new commits or rebase on the latest main branch
+            - Request a review
+            - Remove the `stale` label
+            
+            Thank you for your contributions! 🙏
+          
+          stale-pr-label: 'stale'
+          days-before-pr-stale: 30
+          days-before-pr-close: 14
+          close-pr-message: |
+            🔒 This pull request has been automatically closed due to inactivity.
+            
+            If you'd like to continue working on this, please feel free to reopen it or create a new PR.
+          
+          # Exempt labels - issues/PRs with these labels won't be marked as stale
+          exempt-issue-labels: |
+            pinned
+            security
+            bug
+            priority:critical
+            priority:high
+            in-progress
+            help-wanted
+            good-first-issue
+          
+          exempt-pr-labels: |
+            pinned
+            security
+            priority:critical
+            priority:high
+            work-in-progress
+            do-not-close
+          
+          # Exempt assignees - issues/PRs with assignees won't be marked stale
+          exempt-all-assignees: true
+          
+          # Only process a limited number per run to avoid rate limits
+          operations-per-run: 100
+          
+          # Remove stale label when updated
+          remove-stale-when-updated: true
+          
+          # Don't close issues/PRs with milestones
+          exempt-all-milestones: true
+
+  cleanup-old-branches:
+    name: Cleanup Merged Branches
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete merged branches
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: branches } = await github.rest.repos.listBranches({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+            
+            const protectedBranches = ['main', 'master', 'develop', 'staging', 'production'];
+            
+            for (const branch of branches) {
+              if (protectedBranches.includes(branch.name)) continue;
+              if (branch.protected) continue;
+              
+              try {
+                // Check if branch has been merged
+                const { data: comparison } = await github.rest.repos.compareCommits({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  base: 'main',
+                  head: branch.name,
+                });
+                
+                // If branch is behind main and has no unique commits, it's merged
+                if (comparison.ahead_by === 0 && comparison.behind_by >= 0) {
+                  // Check last commit date
+                  const { data: commit } = await github.rest.repos.getCommit({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: branch.name,
+                  });
+                  
+                  const lastCommitDate = new Date(commit.commit.committer.date);
+                  const daysOld = (Date.now() - lastCommitDate.getTime()) / (1000 * 60 * 60 * 24);
+                  
+                  // Delete if merged and older than 7 days
+                  if (daysOld > 7) {
+                    console.log(`Deleting merged branch: ${branch.name} (${Math.floor(daysOld)} days old)`);
+                    await github.rest.git.deleteRef({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      ref: `heads/${branch.name}`,
+                    });
+                  }
+                }
+              } catch (error) {
+                console.log(`Could not process branch ${branch.name}: ${error.message}`);
+              }
+            }
