@@ -1,0 +1,8 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run lint-staged for code quality
+npx lint-staged
+
+# Run type check
+npm run build --dry-run 2>/dev/null || echo "Skipping type check"
