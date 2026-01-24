@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShoppingCart, Users, CreditCard, X, Minimize2, Maximize2, TrendingUp, MapPin, Percent } from "lucide-react";
+import { ShoppingCart, Users, CreditCard, X, Minimize2, Maximize2, TrendingUp, MapPin, Percent, Volume2, VolumeX, Vibrate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
 import { safeString } from "@/lib/safe-render";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
@@ -22,6 +28,8 @@ interface LiveStats {
     created_at: string;
   }>;
 }
+
+type NotificationType = "sound" | "vibrate" | "off";
 
 export const LiveCheckoutWidget = () => {
   const { user } = useAuth();
@@ -43,6 +51,10 @@ export const LiveCheckoutWidget = () => {
     recentCheckouts: [],
   });
   const [newCheckout, setNewCheckout] = useState(false);
+  const [notificationType, setNotificationType] = useState<NotificationType>(() => {
+    const saved = localStorage.getItem("live-widget-notification");
+    return (saved as NotificationType) || "sound";
+  });
 
   // Check if user is admin
   useEffect(() => {
@@ -73,6 +85,52 @@ export const LiveCheckoutWidget = () => {
   useEffect(() => {
     localStorage.setItem("live-widget-minimized", String(isMinimized));
   }, [isMinimized]);
+
+  // Save notification preference
+  useEffect(() => {
+    localStorage.setItem("live-widget-notification", notificationType);
+  }, [notificationType]);
+
+  // Play checkout notification
+  const playCheckoutNotification = useCallback(() => {
+    if (notificationType === "sound") {
+      // Create and play a "cha-ching" sound using Web Audio API
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        
+        // First tone (higher pitch)
+        const oscillator1 = audioContext.createOscillator();
+        const gainNode1 = audioContext.createGain();
+        oscillator1.connect(gainNode1);
+        gainNode1.connect(audioContext.destination);
+        oscillator1.frequency.value = 1200;
+        oscillator1.type = "sine";
+        gainNode1.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        oscillator1.start(audioContext.currentTime);
+        oscillator1.stop(audioContext.currentTime + 0.1);
+        
+        // Second tone (even higher, delayed)
+        const oscillator2 = audioContext.createOscillator();
+        const gainNode2 = audioContext.createGain();
+        oscillator2.connect(gainNode2);
+        gainNode2.connect(audioContext.destination);
+        oscillator2.frequency.value = 1600;
+        oscillator2.type = "sine";
+        gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime + 0.1);
+        gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        oscillator2.start(audioContext.currentTime + 0.1);
+        oscillator2.stop(audioContext.currentTime + 0.3);
+      } catch (e) {
+        console.log("Audio not supported");
+      }
+    } else if (notificationType === "vibrate") {
+      // Vibrate pattern: short-pause-long
+      if (navigator.vibrate) {
+        navigator.vibrate([100, 50, 200]);
+      }
+    }
+  }, [notificationType]);
 
   // Fetch initial stats - use 15 minute window to match LiveVisitorBadge
   const fetchStats = useCallback(async () => {
@@ -156,9 +214,10 @@ export const LiveCheckoutWidget = () => {
         (payload) => {
           const newActivity = payload.new as any;
           
-          // Trigger checkout animation
+          // Trigger checkout animation and notification
           if (newActivity.activity_type === "checkout") {
             setNewCheckout(true);
+            playCheckoutNotification();
             setTimeout(() => setNewCheckout(false), 2000);
           }
           
@@ -175,7 +234,7 @@ export const LiveCheckoutWidget = () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [isAdmin, fetchStats]);
+  }, [isAdmin, fetchStats, playCheckoutNotification]);
 
   // Don't render for non-admins
   if (!isAdmin || !isVisible) return null;
@@ -227,6 +286,37 @@ export const LiveCheckoutWidget = () => {
               <span className="text-sm font-medium">Live Stats</span>
             </div>
             <div className="flex items-center gap-1">
+              {/* Notification toggle */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                  >
+                    {notificationType === "sound" && <Volume2 className="h-3 w-3 text-green-500" />}
+                    {notificationType === "vibrate" && <Vibrate className="h-3 w-3 text-orange-500" />}
+                    {notificationType === "off" && <VolumeX className="h-3 w-3 text-muted-foreground" />}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-36">
+                  <DropdownMenuItem onClick={() => setNotificationType("sound")}>
+                    <Volume2 className="h-4 w-4 mr-2 text-green-500" />
+                    Geluid
+                    {notificationType === "sound" && <span className="ml-auto">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setNotificationType("vibrate")}>
+                    <Vibrate className="h-4 w-4 mr-2 text-orange-500" />
+                    Trillen
+                    {notificationType === "vibrate" && <span className="ml-auto">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setNotificationType("off")}>
+                    <VolumeX className="h-4 w-4 mr-2" />
+                    Uit
+                    {notificationType === "off" && <span className="ml-auto">✓</span>}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 variant="ghost"
                 size="icon"
