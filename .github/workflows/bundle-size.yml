@@ -20,8 +20,26 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
       - name: Install dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
         run: npm ci
+
+      - name: Cache Vite build
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.vite
+          key: ${{ runner.os }}-vite-cache-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-vite-cache-
 
       - name: Build and analyze PR bundle
         run: |
@@ -172,7 +190,7 @@ jobs:
           total_js=$(find dist/assets -name "*.js" -exec cat {} + 2>/dev/null | wc -c)
           total_kb=$((total_js / 1024))
           
-          # Fail if total JS exceeds 2MB (adjust threshold as needed)
+          # Fail if total JS exceeds 2MB limit
           if [ $total_kb -gt 2048 ]; then
             echo "❌ Bundle size exceeds 2MB limit: ${total_kb}KB"
             exit 1
