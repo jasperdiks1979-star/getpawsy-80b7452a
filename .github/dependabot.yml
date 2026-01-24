@@ -1,13 +1,16 @@
+# Dependabot Configuration
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
 version: 2
 
 updates:
-  # NPM dependencies
+  # NPM Dependencies
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "09:00"
+      time: "06:00"
       timezone: "Europe/Amsterdam"
     open-pull-requests-limit: 10
     reviewers:
@@ -17,19 +20,33 @@ updates:
       - "npm"
     commit-message:
       prefix: "chore(deps)"
+      include: "scope"
     groups:
-      # Group React-related updates together
+      # Group minor and patch updates together for auto-merge
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Separate group for major updates (require manual review)
+      major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+      # React ecosystem
       react:
         patterns:
           - "react"
           - "react-dom"
           - "react-router*"
           - "@types/react*"
-      # Group all Radix UI updates together
+      # Radix UI components
       radix-ui:
         patterns:
           - "@radix-ui/*"
-      # Group all testing dependencies
+      # Testing
       testing:
         patterns:
           - "vitest"
@@ -37,26 +54,26 @@ updates:
           - "@testing-library/*"
           - "@playwright/*"
           - "playwright"
-      # Group Tailwind and styling
+      # Styling
       styling:
         patterns:
           - "tailwind*"
           - "tailwindcss*"
           - "postcss"
           - "autoprefixer"
-      # Group TipTap editor
+      # TipTap editor
       tiptap:
         patterns:
           - "@tiptap/*"
-      # Group Supabase
+      # Supabase
       supabase:
         patterns:
           - "@supabase/*"
-      # Group TanStack
+      # TanStack
       tanstack:
         patterns:
           - "@tanstack/*"
-      # Group build tools
+      # Build tools
       build-tools:
         patterns:
           - "vite"
@@ -79,16 +96,30 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "09:00"
+      time: "06:00"
       timezone: "Europe/Amsterdam"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
       - "github-actions"
+      - "ci/cd"
     commit-message:
       prefix: "chore(ci)"
     groups:
-      # Group all GitHub Actions updates
       actions:
         patterns:
           - "*"
+
+  # Docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Amsterdam"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"
