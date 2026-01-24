@@ -3,6 +3,13 @@ name: Bundle Size Analysis
 on:
   pull_request:
     branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tailwind.config.ts'
+      - 'index.html'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

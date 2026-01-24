@@ -3,6 +3,14 @@ name: Performance Budget Check
 on:
   pull_request:
     branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'index.html'
+      - 'lighthouserc.js'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

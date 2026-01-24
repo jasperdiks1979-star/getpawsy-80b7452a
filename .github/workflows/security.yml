@@ -3,8 +3,24 @@ name: Security Scanning
 on:
   push:
     branches: [main, master]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Dockerfile'
+      - 'Dockerfile.dev'
+      - 'docker-compose.yml'
+      - '.snyk'
+      - '.trivyignore'
   pull_request:
     branches: [main, master]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Dockerfile'
+      - 'Dockerfile.dev'
+      - 'docker-compose.yml'
+      - '.snyk'
+      - '.trivyignore'
   schedule:
     # Run weekly on Sunday at 00:00 UTC
     - cron: '0 0 * * 0'

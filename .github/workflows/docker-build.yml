@@ -7,10 +7,23 @@ on:
       - master
     tags:
       - 'v*.*.*'
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Dockerfile'
+      - 'nginx.conf'
+      - 'vite.config.ts'
+      - 'index.html'
   pull_request:
     branches:
       - main
       - master
+    paths:
+      - 'Dockerfile'
+      - 'nginx.conf'
+      - 'docker-compose.yml'
   workflow_dispatch:
     inputs:
       push_to_registry:
