@@ -23,6 +23,70 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // ========== AUTHENTICATION CHECK ==========
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - No authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+    // Verify the user's JWT token
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - Invalid token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ========== ADMIN ROLE CHECK ==========
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: roleData, error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .single();
+
+    if (roleError || !roleData) {
+      console.error("Role check failed for user:", user.id);
+      return new Response(
+        JSON.stringify({ error: "Forbidden - Admin access required" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ========== RATE LIMITING ==========
+    const { data: rateLimitData } = await supabaseAdmin.rpc("check_rate_limit", {
+      p_user_id: user.id,
+      p_function_name: "send-email-campaign",
+      p_max_requests: 10,
+      p_window_minutes: 60,
+    });
+
+    if (rateLimitData && rateLimitData.length > 0 && !rateLimitData[0].allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Rate limit exceeded. Please try again later.",
+          reset_at: rateLimitData[0].reset_at 
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ========== PROCESS CAMPAIGN ==========
     const { campaignId }: CampaignRequest = await req.json();
 
     if (!campaignId) {
@@ -31,11 +95,6 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
 
     // Fetch the campaign
     const { data: campaign, error: campaignError } = await supabaseAdmin
@@ -105,6 +164,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     let successCount = 0;
     const errors: string[] = [];
+
+    // Audit log - record who sent this campaign
+    console.log(`Campaign ${campaignId} triggered by admin user: ${user.id} (${user.email})`);
 
     // Send emails in batches to avoid rate limits
     const batchSize = 10;
@@ -236,7 +298,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Failed to update campaign status:", updateError);
     }
 
-    console.log(`Campaign ${campaignId} sent: ${successCount}/${targetSubscribers.length} emails`);
+    console.log(`Campaign ${campaignId} sent by ${user.email}: ${successCount}/${targetSubscribers.length} emails`);
 
     return new Response(
       JSON.stringify({
@@ -247,10 +309,11 @@ const handler = async (req: Request): Promise<Response> => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error in send-email-campaign:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
