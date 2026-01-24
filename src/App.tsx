@@ -14,6 +14,10 @@ import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { LiveCheckoutWidget } from "@/components/admin/LiveCheckoutWidget";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { setupGlobalErrorHandler } from "@/lib/error-reporter";
+
+// Setup global error handler for automatic error reporting
+setupGlobalErrorHandler();
 
 // Critical routes - loaded immediately
 import Index from "./pages/Index";
@@ -38,6 +42,19 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('[RouteErrorBoundary] Caught error:', error);
     console.error('[RouteErrorBoundary] Error info:', errorInfo);
+    
+    // Report error to database via error reporter
+    import('@/lib/error-reporter').then(({ reportError, isReact310Error, reportReact310Error }) => {
+      if (isReact310Error(error)) {
+        reportReact310Error(error, 'RouteErrorBoundary', {
+          componentStack: errorInfo.componentStack?.substring(0, 1000),
+        });
+      } else {
+        reportError(error, 'RouteErrorBoundary', {
+          componentStack: errorInfo.componentStack?.substring(0, 1000),
+        });
+      }
+    });
   }
 
   render() {

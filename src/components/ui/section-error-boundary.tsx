@@ -1,6 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { reportError, isReact310Error, reportReact310Error } from '@/lib/error-reporter';
 
 interface SectionErrorBoundaryProps {
   children: ReactNode;
@@ -36,11 +37,23 @@ export class SectionErrorBoundary extends Component<SectionErrorBoundaryProps, S
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    const sectionName = this.props.sectionName || 'Unknown';
+    
     try {
-      const sectionName = this.props.sectionName || 'Unknown';
       const errorMsg = error?.message || 'No error message';
       const stack = errorInfo?.componentStack || '';
       console.error(`Error in section "${sectionName}":`, errorMsg, stack);
+      
+      // Report error to database
+      if (isReact310Error(error)) {
+        reportReact310Error(error, sectionName, {
+          componentStack: stack?.substring(0, 1000),
+        });
+      } else {
+        reportError(error, sectionName, {
+          componentStack: stack?.substring(0, 1000),
+        });
+      }
     } catch (e) {
       console.error('Error in componentDidCatch:', e);
     }

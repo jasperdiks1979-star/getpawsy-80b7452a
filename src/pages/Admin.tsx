@@ -37,6 +37,7 @@ const RemarketingDashboard = lazy(() => import("@/components/admin/RemarketingDa
 const LeadMagnetAnalytics = lazy(() => import("@/components/admin/LeadMagnetAnalytics").then(module => ({ default: module.LeadMagnetAnalytics })));
 const VariantDataValidator = lazy(() => import("@/components/admin/VariantDataValidator"));
 const VariantFixLogs = lazy(() => import("@/components/admin/VariantFixLogs"));
+const ErrorLogsManager = lazy(() => import("@/components/admin/ErrorLogsManager"));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -1116,6 +1117,12 @@ const Admin = () => {
                 <TabsTrigger value="variant-logs" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <History className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Fix Logs</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Frontend error logs">
+                <TabsTrigger value="error-logs" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Error Logs</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -2630,6 +2637,22 @@ const Admin = () => {
                 </Card>
               }>
                 <VariantFixLogs />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Error Logs Tab */}
+          <TabsContent value="error-logs" className="space-y-6">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Error logs laden...</span>
+                  </div>
+                </Card>
+              }>
+                <ErrorLogsManager />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>

@@ -444,6 +444,48 @@ export type Database = {
         }
         Relationships: []
       }
+      frontend_error_logs: {
+        Row: {
+          component_name: string | null
+          created_at: string
+          error_message: string
+          error_type: string
+          id: string
+          metadata: Json | null
+          page_url: string | null
+          session_id: string | null
+          stack_trace: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component_name?: string | null
+          created_at?: string
+          error_message: string
+          error_type: string
+          id?: string
+          metadata?: Json | null
+          page_url?: string | null
+          session_id?: string | null
+          stack_trace?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component_name?: string | null
+          created_at?: string
+          error_message?: string
+          error_type?: string
+          id?: string
+          metadata?: Json | null
+          page_url?: string | null
+          session_id?: string | null
+          stack_trace?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       google_sheets_exports: {
         Row: {
           created_at: string
