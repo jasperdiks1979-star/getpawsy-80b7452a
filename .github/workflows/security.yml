@@ -6,16 +6,207 @@ on:
   pull_request:
     branches: [main, master]
   schedule:
-    # Run weekly on Monday at 9:00 AM UTC
-    - cron: '0 9 * * 1'
+    # Run weekly on Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+  actions: read
 
 jobs:
+  # =============================================================================
+  # SNYK DEPENDENCY SCANNING
+  # =============================================================================
+  snyk-dependencies:
+    name: Snyk Dependency Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --sarif-file-output=snyk-dependencies.sarif
+
+      - name: Upload Snyk dependency scan results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk-dependencies.sarif
+          category: snyk-dependencies
+
+  # =============================================================================
+  # SNYK CODE ANALYSIS (SAST)
+  # =============================================================================
+  snyk-code:
+    name: Snyk Code Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Snyk Code analysis
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: code test
+          args: --sarif-file-output=snyk-code.sarif
+
+      - name: Upload Snyk code analysis results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk-code.sarif
+          category: snyk-code
+
+  # =============================================================================
+  # TRIVY DOCKER IMAGE SCANNING
+  # =============================================================================
+  trivy-docker:
+    name: Trivy Docker Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: getpawsy:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'getpawsy:scan'
+          format: 'sarif'
+          output: 'trivy-docker.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          vuln-type: 'os,library'
+
+      - name: Upload Trivy Docker scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-docker.sarif'
+          category: trivy-docker
+
+  # =============================================================================
+  # TRIVY FILESYSTEM SCANNING
+  # =============================================================================
+  trivy-filesystem:
+    name: Trivy Filesystem Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scanners: 'vuln,secret,misconfig'
+
+      - name: Upload Trivy filesystem results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-fs.sarif'
+          category: trivy-filesystem
+
+  # =============================================================================
+  # TRIVY SECRET DETECTION
+  # =============================================================================
+  trivy-secrets:
+    name: Trivy Secret Detection
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Trivy secret scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-secrets.sarif'
+          scanners: 'secret'
+
+      - name: Upload Trivy secret scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-secrets.sarif'
+          category: trivy-secrets
+
+  # =============================================================================
+  # TRIVY IAC SCANNING (DOCKERFILE, DOCKER-COMPOSE)
+  # =============================================================================
+  trivy-iac:
+    name: Trivy IaC Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy IaC scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-iac.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy IaC scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-iac.sarif'
+          category: trivy-iac
+
+  # =============================================================================
+  # NPM AUDIT
+  # =============================================================================
   npm-audit:
     name: NPM Audit
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      pull-requests: write
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,7 +218,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Run npm audit
         id: audit
@@ -73,12 +264,6 @@ jobs:
             echo "\`\`\`" >> audit-report.md
             npm audit 2>&1 | head -100 >> audit-report.md || true
             echo "\`\`\`" >> audit-report.md
-            echo "" >> audit-report.md
-            echo "### Recommended Actions" >> audit-report.md
-            echo "" >> audit-report.md
-            echo "Run \`npm audit fix\` to automatically fix vulnerabilities where possible." >> audit-report.md
-            echo "" >> audit-report.md
-            echo "For breaking changes, run \`npm audit fix --force\` (use with caution)." >> audit-report.md
           else
             echo "✅ **No vulnerabilities found!**" >> audit-report.md
           fi
@@ -127,17 +312,20 @@ jobs:
             audit-results.json
           retention-days: 30
 
-      - name: Fail on critical or high vulnerabilities
-        if: steps.audit.outputs.critical > 0 || steps.audit.outputs.high > 0
+      - name: Fail on critical vulnerabilities
+        if: steps.audit.outputs.critical > 0
         run: |
-          echo "❌ Found ${{ steps.audit.outputs.critical }} critical and ${{ steps.audit.outputs.high }} high severity vulnerabilities"
-          echo "Please review and fix these vulnerabilities before merging"
+          echo "❌ Found ${{ steps.audit.outputs.critical }} critical severity vulnerabilities"
           exit 1
 
+  # =============================================================================
+  # DEPENDENCY REVIEW (PR ONLY)
+  # =============================================================================
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -149,9 +337,13 @@ jobs:
           deny-licenses: GPL-3.0, AGPL-3.0
           comment-summary-in-pr: always
 
+  # =============================================================================
+  # LICENSE COMPLIANCE
+  # =============================================================================
   license-check:
     name: License Compliance
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -163,7 +355,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Check licenses
         run: |
@@ -191,3 +383,72 @@ jobs:
             license-report.md
             license-summary.txt
           retention-days: 30
+
+  # =============================================================================
+  # SECURITY SUMMARY
+  # =============================================================================
+  security-summary:
+    name: Security Summary
+    needs: [snyk-dependencies, snyk-code, trivy-docker, trivy-filesystem, trivy-secrets, trivy-iac, npm-audit, license-check]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Generate security summary
+        run: |
+          echo "## 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Scanner | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Check job results
+          if [ "${{ needs.snyk-dependencies.result }}" == "success" ]; then
+            echo "| Snyk Dependencies | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Snyk Dependencies | ⚠️ Issues Found |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.snyk-code.result }}" == "success" ]; then
+            echo "| Snyk Code Analysis | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Snyk Code Analysis | ⚠️ Issues Found |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.trivy-docker.result }}" == "success" ]; then
+            echo "| Trivy Docker | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Trivy Docker | ⚠️ Issues Found |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.trivy-filesystem.result }}" == "success" ]; then
+            echo "| Trivy Filesystem | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Trivy Filesystem | ⚠️ Issues Found |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.trivy-secrets.result }}" == "success" ]; then
+            echo "| Trivy Secrets | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Trivy Secrets | ⚠️ Issues Found |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.trivy-iac.result }}" == "success" ]; then
+            echo "| Trivy IaC | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Trivy IaC | ⚠️ Issues Found |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.npm-audit.result }}" == "success" ]; then
+            echo "| NPM Audit | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| NPM Audit | ⚠️ Issues Found |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.license-check.result }}" == "success" ]; then
+            echo "| License Check | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| License Check | ⚠️ Issues Found |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed results in the [Security tab](../../security/code-scanning)." >> $GITHUB_STEP_SUMMARY

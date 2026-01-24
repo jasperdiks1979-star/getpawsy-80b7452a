@@ -1,0 +1,16 @@
+# Snyk Policy File
+# https://docs.snyk.io/snyk-cli/test-for-vulnerabilities/ignore-vulnerabilities-using-snyk-cli
+
+version: v1.25.0
+
+# Ignore specific vulnerabilities
+ignore: {}
+  # Example:
+  # SNYK-JS-LODASH-123456:
+  #   - '*':
+  #       reason: 'Not exploitable in our usage'
+  #       expires: 2024-12-31T00:00:00.000Z
+  #       created: 2024-01-01T00:00:00.000Z
+
+# Patches for vulnerabilities
+patch: {}
