@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShoppingCart, Users, CreditCard, X, Minimize2, Maximize2, TrendingUp, MapPin } from "lucide-react";
+import { ShoppingCart, Users, CreditCard, X, Minimize2, Maximize2, TrendingUp, MapPin, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
@@ -290,6 +290,22 @@ export const LiveCheckoutWidget = () => {
                       <div className="text-xs text-muted-foreground">Checkout</div>
                     </div>
                   </motion.div>
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-purple-500/10 border border-purple-500/30 col-span-2">
+                    <Percent className="w-4 h-4 text-purple-500" />
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-lg font-bold text-purple-600">
+                          {stats.todayVisitors > 0 
+                            ? ((stats.checkout / stats.todayVisitors) * 100).toFixed(1) 
+                            : "0.0"}%
+                        </span>
+                        <span className="text-xs text-muted-foreground">conversie vandaag</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {stats.checkout} checkout{stats.checkout !== 1 ? 's' : ''} / {stats.todayVisitors} bezoeker{stats.todayVisitors !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Recent Checkouts */}
