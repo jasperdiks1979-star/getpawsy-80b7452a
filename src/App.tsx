@@ -15,9 +15,13 @@ import { LiveCheckoutWidget } from "@/components/admin/LiveCheckoutWidget";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { setupGlobalErrorHandler } from "@/lib/error-reporter";
+import { initDataHealer } from "@/lib/data-healer";
 
 // Setup global error handler for automatic error reporting
 setupGlobalErrorHandler();
+
+// Initialize self-healing data sanitization
+initDataHealer();
 
 // Critical routes - loaded immediately
 import Index from "./pages/Index";
