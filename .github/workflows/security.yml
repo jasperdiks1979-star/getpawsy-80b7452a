@@ -1,0 +1,193 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Run weekly on Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+
+jobs:
+  npm-audit:
+    name: NPM Audit
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        id: audit
+        continue-on-error: true
+        run: |
+          echo "## 🔒 Security Audit Report" > audit-report.md
+          echo "" >> audit-report.md
+          echo "Generated on: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> audit-report.md
+          echo "" >> audit-report.md
+          
+          # Run audit and capture output
+          npm audit --json > audit-results.json 2>&1 || true
+          
+          # Parse results
+          CRITICAL=$(cat audit-results.json | jq '.metadata.vulnerabilities.critical // 0')
+          HIGH=$(cat audit-results.json | jq '.metadata.vulnerabilities.high // 0')
+          MODERATE=$(cat audit-results.json | jq '.metadata.vulnerabilities.moderate // 0')
+          LOW=$(cat audit-results.json | jq '.metadata.vulnerabilities.low // 0')
+          INFO=$(cat audit-results.json | jq '.metadata.vulnerabilities.info // 0')
+          TOTAL=$(cat audit-results.json | jq '.metadata.vulnerabilities.total // 0')
+          
+          echo "### Summary" >> audit-report.md
+          echo "" >> audit-report.md
+          echo "| Severity | Count |" >> audit-report.md
+          echo "|----------|-------|" >> audit-report.md
+          echo "| 🔴 Critical | $CRITICAL |" >> audit-report.md
+          echo "| 🟠 High | $HIGH |" >> audit-report.md
+          echo "| 🟡 Moderate | $MODERATE |" >> audit-report.md
+          echo "| 🔵 Low | $LOW |" >> audit-report.md
+          echo "| ⚪ Info | $INFO |" >> audit-report.md
+          echo "| **Total** | **$TOTAL** |" >> audit-report.md
+          echo "" >> audit-report.md
+          
+          # Export for later steps
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          
+          # Add detailed vulnerabilities if any exist
+          if [ "$TOTAL" -gt 0 ]; then
+            echo "### Vulnerability Details" >> audit-report.md
+            echo "" >> audit-report.md
+            echo "\`\`\`" >> audit-report.md
+            npm audit 2>&1 | head -100 >> audit-report.md || true
+            echo "\`\`\`" >> audit-report.md
+            echo "" >> audit-report.md
+            echo "### Recommended Actions" >> audit-report.md
+            echo "" >> audit-report.md
+            echo "Run \`npm audit fix\` to automatically fix vulnerabilities where possible." >> audit-report.md
+            echo "" >> audit-report.md
+            echo "For breaking changes, run \`npm audit fix --force\` (use with caution)." >> audit-report.md
+          else
+            echo "✅ **No vulnerabilities found!**" >> audit-report.md
+          fi
+
+      - name: Post audit comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('audit-report.md', 'utf8');
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('## 🔒 Security Audit Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report
+              });
+            }
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit
+          path: |
+            audit-report.md
+            audit-results.json
+          retention-days: 30
+
+      - name: Fail on critical or high vulnerabilities
+        if: steps.audit.outputs.critical > 0 || steps.audit.outputs.high > 0
+        run: |
+          echo "❌ Found ${{ steps.audit.outputs.critical }} critical and ${{ steps.audit.outputs.high }} high severity vulnerabilities"
+          echo "Please review and fix these vulnerabilities before merging"
+          exit 1
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: GPL-3.0, AGPL-3.0
+          comment-summary-in-pr: always
+
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check licenses
+        run: |
+          npx license-checker --summary --production > license-summary.txt
+          echo "## 📜 License Summary" > license-report.md
+          echo "" >> license-report.md
+          echo "\`\`\`" >> license-report.md
+          cat license-summary.txt >> license-report.md
+          echo "\`\`\`" >> license-report.md
+          
+          # Check for problematic licenses
+          if npx license-checker --production --failOn "GPL;AGPL;LGPL" 2>/dev/null; then
+            echo "" >> license-report.md
+            echo "✅ No problematic licenses found" >> license-report.md
+          else
+            echo "" >> license-report.md
+            echo "⚠️ Found packages with restrictive licenses" >> license-report.md
+          fi
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: |
+            license-report.md
+            license-summary.txt
+          retention-days: 30
