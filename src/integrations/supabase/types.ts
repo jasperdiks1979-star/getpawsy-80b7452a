@@ -1196,7 +1196,6 @@ export type Database = {
           sku: string | null
           slug: string | null
           stock: number | null
-          supplier_name: string | null
           updated_at: string | null
           variants: Json | null
           weight: number | null
@@ -1217,7 +1216,6 @@ export type Database = {
           sku?: string | null
           slug?: string | null
           stock?: number | null
-          supplier_name?: string | null
           updated_at?: string | null
           variants?: Json | null
           weight?: number | null
@@ -1238,7 +1236,6 @@ export type Database = {
           sku?: string | null
           slug?: string | null
           stock?: number | null
-          supplier_name?: string | null
           updated_at?: string | null
           variants?: Json | null
           weight?: number | null
