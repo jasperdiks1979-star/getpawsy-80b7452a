@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, Bug, RefreshCw, Trash2, Clock, Globe, Smartphone, TrendingUp } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertTriangle, Bug, RefreshCw, Trash2, Clock, Globe, Smartphone, TrendingUp, Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, subDays, startOfDay, eachDayOfInterval } from 'date-fns';
+import { format, subDays, startOfDay, eachDayOfInterval, isAfter, isBefore, parseISO } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, Legend } from 'recharts';
 
@@ -38,6 +39,9 @@ interface ErrorTypeData {
   color: string;
 }
 
+type DeviceFilter = 'all' | 'iOS' | 'Android' | 'Windows' | 'Mac' | 'Other';
+type DateFilter = 'all' | 'today' | '7days' | '30days';
+
 const ERROR_TYPE_COLORS: Record<string, string> = {
   'REACT_310': 'hsl(var(--destructive))',
   'NETWORK': 'hsl(var(--primary))',
@@ -46,8 +50,20 @@ const ERROR_TYPE_COLORS: Record<string, string> = {
   'UNKNOWN': 'hsl(var(--muted-foreground))',
 };
 
+const getDeviceType = (userAgent: string | null): string => {
+  if (!userAgent) return 'Unknown';
+  if (/iPhone|iPad|iPod/i.test(userAgent)) return 'iOS';
+  if (/Android/i.test(userAgent)) return 'Android';
+  if (/Windows/i.test(userAgent)) return 'Windows';
+  if (/Mac/i.test(userAgent)) return 'Mac';
+  return 'Other';
+};
+
 export const ErrorLogsManager = () => {
   const [selectedError, setSelectedError] = useState<ErrorLog | null>(null);
+  const [errorTypeFilter, setErrorTypeFilter] = useState<string>('all');
+  const [deviceFilter, setDeviceFilter] = useState<DeviceFilter>('all');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
 
   const { data: errorLogs, isLoading, refetch } = useQuery({
     queryKey: ['frontend-error-logs'],
@@ -62,6 +78,62 @@ export const ErrorLogsManager = () => {
       return data as ErrorLog[];
     },
   });
+
+  // Get unique error types for filter
+  const errorTypes = useMemo(() => {
+    if (!errorLogs) return [];
+    const types = [...new Set(errorLogs.map(log => log.error_type))];
+    return types.sort();
+  }, [errorLogs]);
+
+  // Filter logs based on selected filters
+  const filteredLogs = useMemo(() => {
+    if (!errorLogs) return [];
+
+    return errorLogs.filter((log) => {
+      // Error type filter
+      if (errorTypeFilter !== 'all' && log.error_type !== errorTypeFilter) {
+        return false;
+      }
+
+      // Device filter
+      if (deviceFilter !== 'all') {
+        const device = getDeviceType(log.user_agent);
+        if (device !== deviceFilter) {
+          return false;
+        }
+      }
+
+      // Date filter
+      if (dateFilter !== 'all') {
+        const logDate = new Date(log.created_at);
+        const now = new Date();
+        const todayStart = startOfDay(now);
+
+        switch (dateFilter) {
+          case 'today':
+            if (isBefore(logDate, todayStart)) return false;
+            break;
+          case '7days':
+            if (isBefore(logDate, subDays(now, 7))) return false;
+            break;
+          case '30days':
+            if (isBefore(logDate, subDays(now, 30))) return false;
+            break;
+        }
+      }
+
+      return true;
+    });
+  }, [errorLogs, errorTypeFilter, deviceFilter, dateFilter]);
+
+  const hasActiveFilters = errorTypeFilter !== 'all' || deviceFilter !== 'all' || dateFilter !== 'all';
+
+  const clearFilters = () => {
+    setErrorTypeFilter('all');
+    setDeviceFilter('all');
+    setDateFilter('all');
+  };
 
   // Calculate trends data for chart
   const trendsData = useMemo((): ChartDataPoint[] => {
@@ -96,12 +168,12 @@ export const ErrorLogsManager = () => {
     });
   }, [errorLogs]);
 
-  // Calculate error types distribution
+  // Calculate error types distribution (using filtered logs)
   const errorTypeData = useMemo((): ErrorTypeData[] => {
-    if (!errorLogs) return [];
+    if (!filteredLogs) return [];
 
     const counts: Record<string, number> = {};
-    errorLogs.forEach((log) => {
+    filteredLogs.forEach((log) => {
       counts[log.error_type] = (counts[log.error_type] || 0) + 1;
     });
 
@@ -112,7 +184,7 @@ export const ErrorLogsManager = () => {
         color: ERROR_TYPE_COLORS[name] || 'hsl(var(--muted-foreground))',
       }))
       .sort((a, b) => b.count - a.count);
-  }, [errorLogs]);
+  }, [filteredLogs]);
 
   const handleClearOldLogs = async () => {
     const oneWeekAgo = new Date();
@@ -142,17 +214,9 @@ export const ErrorLogsManager = () => {
     return variants[type] || 'outline';
   };
 
-  const getDeviceType = (userAgent: string | null): string => {
-    if (!userAgent) return 'Unknown';
-    if (/iPhone|iPad|iPod/i.test(userAgent)) return 'iOS';
-    if (/Android/i.test(userAgent)) return 'Android';
-    if (/Windows/i.test(userAgent)) return 'Windows';
-    if (/Mac/i.test(userAgent)) return 'Mac';
-    return 'Other';
-  };
-
-  const react310Count = errorLogs?.filter(e => e.error_type === 'REACT_310').length || 0;
-  const totalCount = errorLogs?.length || 0;
+  const react310Count = filteredLogs?.filter(e => e.error_type === 'REACT_310').length || 0;
+  const totalCount = filteredLogs?.length || 0;
+  const allCount = errorLogs?.length || 0;
 
   if (isLoading) {
     return (
@@ -166,11 +230,94 @@ export const ErrorLogsManager = () => {
 
   return (
     <div className="space-y-6">
+      {/* Filters */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Filter className="w-5 h-5" />
+            Filters
+            {hasActiveFilters && (
+              <Badge variant="secondary" className="ml-2">
+                {[errorTypeFilter !== 'all', deviceFilter !== 'all', dateFilter !== 'all'].filter(Boolean).length} actief
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4 items-end">
+            {/* Error Type Filter */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-muted-foreground">Error Type</label>
+              <Select value={errorTypeFilter} onValueChange={setErrorTypeFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Alle types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle types</SelectItem>
+                  {errorTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Device Filter */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-muted-foreground">Device</label>
+              <Select value={deviceFilter} onValueChange={(v) => setDeviceFilter(v as DeviceFilter)}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Alle devices" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle devices</SelectItem>
+                  <SelectItem value="iOS">iOS</SelectItem>
+                  <SelectItem value="Android">Android</SelectItem>
+                  <SelectItem value="Windows">Windows</SelectItem>
+                  <SelectItem value="Mac">Mac</SelectItem>
+                  <SelectItem value="Other">Overig</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date Filter */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-muted-foreground">Periode</label>
+              <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Alle tijd" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle tijd</SelectItem>
+                  <SelectItem value="today">Vandaag</SelectItem>
+                  <SelectItem value="7days">Laatste 7 dagen</SelectItem>
+                  <SelectItem value="30days">Laatste 30 dagen</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Clear Filters Button */}
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-10">
+                <X className="w-4 h-4 mr-1" />
+                Wis filters
+              </Button>
+            )}
+
+            {/* Results count */}
+            <div className="ml-auto text-sm text-muted-foreground">
+              {totalCount} van {allCount} errors
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Totaal Errors (laatste 500)</CardDescription>
+            <CardDescription>Gefilterde Errors</CardDescription>
             <CardTitle className="text-3xl">{totalCount}</CardTitle>
           </CardHeader>
         </Card>
@@ -305,18 +452,25 @@ export const ErrorLogsManager = () => {
         {/* Error List */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Recente Errors</CardTitle>
-            <CardDescription>Laatste 500 frontend errors</CardDescription>
+            <CardTitle>Gefilterde Errors</CardTitle>
+            <CardDescription>
+              {totalCount} errors {hasActiveFilters ? '(gefilterd)' : ''}
+            </CardDescription>
           </CardHeader>
           <CardContent className="max-h-[400px] overflow-y-auto">
-            {errorLogs?.length === 0 ? (
+            {filteredLogs?.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Geen errors gevonden</p>
+                <p>{hasActiveFilters ? 'Geen errors met deze filters' : 'Geen errors gevonden'}</p>
+                {hasActiveFilters && (
+                  <Button variant="link" onClick={clearFilters} className="mt-2">
+                    Wis filters
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-2">
-                {errorLogs?.slice(0, 50).map((log) => (
+                {filteredLogs?.slice(0, 50).map((log) => (
                   <div
                     key={log.id}
                     className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 ${
