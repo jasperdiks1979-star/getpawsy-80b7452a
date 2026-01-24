@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface PawPrint {
@@ -27,7 +27,7 @@ const PawIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-export const PawConfetti = ({ trigger, originX = 50, originY = 50, onComplete }: PawConfettiProps) => {
+export const PawConfetti = memo(forwardRef<HTMLDivElement, PawConfettiProps>(({ trigger, originX = 50, originY = 50, onComplete }, ref) => {
   const [paws, setPaws] = useState<PawPrint[]>([]);
 
   const generatePaws = useCallback(() => {
@@ -118,7 +118,9 @@ export const PawConfetti = ({ trigger, originX = 50, originY = 50, onComplete }:
       )}
     </AnimatePresence>
   );
-};
+}));
+
+PawConfetti.displayName = 'PawConfetti';
 
 // Hook to manage paw confetti state
 export const usePawConfetti = () => {
