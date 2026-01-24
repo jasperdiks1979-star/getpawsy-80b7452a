@@ -1,0 +1,77 @@
+# CODEOWNERS - Define code ownership for automatic review requests
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+# Uncomment and replace with actual GitHub usernames/teams
+# *       @your-username
+
+# =============================================================================
+# FRONTEND
+# =============================================================================
+
+# React Components
+/src/components/     @your-username
+/src/pages/          @your-username
+
+# Styling & Design System
+/src/index.css       @your-username
+/tailwind.config.ts  @your-username
+
+# =============================================================================
+# BACKEND & DATABASE
+# =============================================================================
+
+# Supabase Edge Functions
+/supabase/functions/ @your-username
+
+# Database Migrations (extra careful review needed)
+/supabase/migrations/ @your-username
+
+# =============================================================================
+# INFRASTRUCTURE & CI/CD
+# =============================================================================
+
+# GitHub Workflows
+/.github/workflows/  @your-username
+/.github/            @your-username
+
+# Docker Configuration
+/Dockerfile          @your-username
+/Dockerfile.dev      @your-username
+/docker-compose.yml  @your-username
+/nginx.conf          @your-username
+
+# =============================================================================
+# SECURITY-SENSITIVE
+# =============================================================================
+
+# Authentication
+/src/contexts/AuthContext.tsx  @your-username
+/src/components/auth/          @your-username
+
+# Payment Processing
+/supabase/functions/stripe-webhook/     @your-username
+/supabase/functions/create-checkout/    @your-username
+
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+
+# Package Management
+/package.json        @your-username
+/package-lock.json   @your-username
+
+# Build Configuration
+/vite.config.ts      @your-username
+/tsconfig*.json      @your-username
+
+# Testing Configuration
+/vitest.config.ts    @your-username
+/playwright.config.ts @your-username
+
+# =============================================================================
+# DOCUMENTATION
+# =============================================================================
+
+/docs/               @your-username
+/README.md           @your-username
