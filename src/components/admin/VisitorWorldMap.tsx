@@ -51,16 +51,17 @@ const ACTIVITY_WEIGHTS = {
 };
 
 // Time range options
-type TimeRange = "live" | "1h" | "2.5h" | "5h" | "24h" | "7d" | "30d";
+type TimeRange = "live" | "15m" | "1h" | "2.5h" | "5h" | "24h" | "7d" | "30d";
 
-const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; hours: number }[] = [
-  { value: "live", label: "Live", hours: 0 },
-  { value: "1h", label: "Laatste uur", hours: 1 },
-  { value: "2.5h", label: "Laatste 2,5 uur", hours: 2.5 },
-  { value: "5h", label: "Laatste 5 uur", hours: 5 },
-  { value: "24h", label: "Laatste 24 uur", hours: 24 },
-  { value: "7d", label: "Laatste 7 dagen", hours: 24 * 7 },
-  { value: "30d", label: "Laatste 30 dagen", hours: 24 * 30 },
+const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[] = [
+  { value: "live", label: "Live (15 min)", minutes: 15 },
+  { value: "15m", label: "Laatste 15 min", minutes: 15 },
+  { value: "1h", label: "Laatste uur", minutes: 60 },
+  { value: "2.5h", label: "Laatste 2,5 uur", minutes: 150 },
+  { value: "5h", label: "Laatste 5 uur", minutes: 300 },
+  { value: "24h", label: "Laatste 24 uur", minutes: 24 * 60 },
+  { value: "7d", label: "Laatste 7 dagen", minutes: 24 * 60 * 7 },
+  { value: "30d", label: "Laatste 30 dagen", minutes: 24 * 60 * 30 },
 ];
 
 export const VisitorWorldMap = () => {
@@ -70,7 +71,7 @@ export const VisitorWorldMap = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
-  const [timeRange, setTimeRange] = useState<TimeRange>("24h");
+  const [timeRange, setTimeRange] = useState<TimeRange>("15m");
   const [liveActivities, setLiveActivities] = useState<VisitorActivity[]>([]);
   const [mapProjection, setMapProjection] = useState<"globe" | "mercator">("globe");
   const [activityFilter, setActivityFilter] = useState<"all" | "browsing" | "cart" | "checkout">("all");
@@ -257,17 +258,13 @@ export const VisitorWorldMap = () => {
   // Get the time range in milliseconds
   const getTimeRangeMs = () => {
     const option = TIME_RANGE_OPTIONS.find(o => o.value === timeRange);
-    return (option?.hours || 24) * 60 * 60 * 1000;
+    return (option?.minutes || 15) * 60 * 1000;
   };
 
-  // Fetch visitor activities with time range (only when not in live mode)
+  // Fetch visitor activities with time range
   const { data: activities, refetch, isLoading } = useQuery({
     queryKey: ["visitor-activities", timeRange],
     queryFn: async () => {
-      // In live mode, we don't fetch historical data
-      if (timeRange === "live") {
-        return [] as VisitorActivity[];
-      }
       const timeRangeMs = getTimeRangeMs();
       const { data, error } = await supabase
         .from("visitor_activity")
@@ -278,12 +275,15 @@ export const VisitorWorldMap = () => {
       if (error) throw error;
       return (data || []) as VisitorActivity[];
     },
-    refetchInterval: timeRange === "live" ? false : timeRange === "1h" ? 10000 : 30000,
-    enabled: timeRange !== "live",
+    refetchInterval: timeRange === "live" ? 5000 : timeRange === "15m" || timeRange === "1h" ? 10000 : 30000,
   });
 
-  // Use live activities when in live mode, otherwise use fetched activities
-  const displayActivities = timeRange === "live" ? liveActivities : activities;
+  // Combine fetched activities with live activities (for live mode only)
+  const displayActivities = timeRange === "live" 
+    ? [...liveActivities, ...(activities || [])].filter((activity, index, self) => 
+        index === self.findIndex(a => a.id === activity.id)
+      )
+    : activities;
 
   // Filter activities based on selected activity type
   const filteredActivities = displayActivities?.filter(a => 
@@ -305,12 +305,12 @@ export const VisitorWorldMap = () => {
           const newActivity = payload.new as VisitorActivity;
           const location = newActivity.city || newActivity.country || "Onbekende locatie";
           
-          // In live mode, add activity to live activities list
+          // In live mode, add activity to live activities list for instant display
           if (timeRange === "live") {
             setLiveActivities(prev => {
-              // Keep only activities from last 5 minutes to avoid memory issues
-              const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-              const filtered = prev.filter(a => a.created_at > fiveMinutesAgo);
+              // Keep only activities from last 15 minutes to match other components
+              const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+              const filtered = prev.filter(a => a.created_at > fifteenMinutesAgo);
               return [newActivity, ...filtered];
             });
           }
