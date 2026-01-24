@@ -1,0 +1,14 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🧪 Running unit tests before push..."
+
+# Run unit tests
+npx vitest run --reporter=basic
+
+if [ $? -ne 0 ]; then
+  echo "❌ Unit tests failed. Please fix the failing tests before pushing."
+  exit 1
+fi
+
+echo "✅ All tests passed! Pushing to remote..."
