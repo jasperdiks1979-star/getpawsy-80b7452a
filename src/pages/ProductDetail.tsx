@@ -222,28 +222,38 @@ const ProductDetail = () => {
 
   // Parse variants from JSON and ensure prices are calculated correctly
   // Also ensure all string properties are properly converted to avoid React error #310
+  // CRITICAL: Only extract the fields we need - do NOT spread the original variant object
+  // as it may contain nested objects (inventories, combineVariants, etc.) that cause React #310
   const variants: ProductVariant[] = useMemo(() => {
     if (!product?.variants || !Array.isArray(product.variants)) return [];
     
     const productPrice = Number(product.price) || 0;
     const productWeight = Number(product.weight) || 200;
     
-    return (product.variants as unknown as ProductVariant[]).map(variant => {
+    return (product.variants as unknown[]).map((rawVariant) => {
+      // Type guard - ensure we have an object
+      if (!rawVariant || typeof rawVariant !== 'object') return null;
+      
+      const variant = rawVariant as Record<string, unknown>;
+      
       const variantPrice = Number(variant.variantSellPrice) || 0;
       const variantWeight = Number(variant.variantWeight) || productWeight;
       
-      // CRITICAL: Ensure all potentially-renderable properties are strings, not objects/null
+      // CRITICAL: Helper to safely extract string - converts null/undefined/objects to empty string
       // This prevents React error #310 "Objects are not valid as a React child"
-      // Check explicitly for null, undefined, objects, and ensure conversion to string
-      const safeString = (val: unknown): string => {
+      const extractString = (val: unknown): string => {
         if (val === null || val === undefined) return '';
         if (typeof val === 'object') return '';
         return String(val);
       };
       
-      const safeVariantKey = safeString(variant.variantKey);
-      const safeVariantNameEn = safeString(variant.variantNameEn);
-      const safeVariantSku = safeString(variant.variantSku);
+      // Extract ONLY the fields we need - never spread the raw variant
+      const vid = extractString(variant.vid);
+      const pid = extractString(variant.pid);
+      const safeVariantKey = extractString(variant.variantKey);
+      const safeVariantNameEn = extractString(variant.variantNameEn);
+      const safeVariantSku = extractString(variant.variantSku);
+      const variantImage = extractString(variant.variantImage) || undefined;
       
       // Generate a display-friendly name, prioritizing variantKey or variantNameEn
       const displayName = safeVariantKey || safeVariantNameEn || safeVariantSku || 'Option';
@@ -252,27 +262,23 @@ const ProductDetail = () => {
       // If variantSellPrice is less than 40% of product price, it's likely still the cost price
       const isProbablyCostPrice = variantPrice > 0 && variantPrice < productPrice * 0.4;
       
-      if (isProbablyCostPrice) {
-        // Calculate the proper selling price using the pricing function
-        const pricing = calculateSellingPrice(variantPrice, variantWeight);
-        return {
-          ...variant,
-          variantKey: displayName,
-          variantNameEn: safeVariantNameEn || displayName,
-          variantSku: safeVariantSku,
-          variantCostPrice: variantPrice,
-          variantSellPrice: pricing.sellingPrice,
-        };
-      }
-      
-      // Price seems correct, use as-is but with safe string values
-      return {
-        ...variant,
+      // Build a clean variant object with ONLY the fields we need
+      const cleanVariant: ProductVariant = {
+        vid,
+        pid,
         variantKey: displayName,
         variantNameEn: safeVariantNameEn || displayName,
         variantSku: safeVariantSku,
+        variantImage,
+        variantWeight,
+        variantSellPrice: isProbablyCostPrice 
+          ? calculateSellingPrice(variantPrice, variantWeight).sellingPrice 
+          : variantPrice,
+        variantCostPrice: isProbablyCostPrice ? variantPrice : undefined,
       };
-    });
+      
+      return cleanVariant;
+    }).filter((v): v is ProductVariant => v !== null);
   }, [product]);
 
   // Group variants - CJ uses variantKey as the display name
