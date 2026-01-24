@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import logo from '@/assets/logo-getpawsy-full.png';
 
 const TechnicalDeclaration = () => {
   useEffect(() => {
@@ -34,16 +35,25 @@ const TechnicalDeclaration = () => {
 
       {/* Header */}
       <header className="border-b-2 border-gray-800 pb-6 mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Technical Declaration: Website Architecture
-        </h1>
-        <p className="text-lg text-gray-600">
-          Cloaking Prevention Documentation for Google Ads Account Review
-        </p>
-        <div className="mt-4 text-sm text-gray-500">
-          <p><strong>Domain:</strong> https://getpawsy.pet</p>
-          <p><strong>Account:</strong> support@getpawsy.pet</p>
-          <p><strong>Date:</strong> {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <div className="flex items-start gap-6 mb-4">
+          <img 
+            src={logo} 
+            alt="GetPawsy Logo" 
+            className="h-16 w-auto print:h-14"
+          />
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+              Technical Declaration: Website Architecture
+            </h1>
+            <p className="text-base text-gray-600">
+              Cloaking Prevention Documentation for Google Ads Account Review
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-4 text-sm text-gray-500 bg-gray-50 p-3 rounded">
+          <div><strong>Domain:</strong> https://getpawsy.pet</div>
+          <div><strong>Account:</strong> support@getpawsy.pet</div>
+          <div><strong>Date:</strong> {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
         </div>
       </header>
 
