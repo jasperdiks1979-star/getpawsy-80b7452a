@@ -1,0 +1,158 @@
+name: CI Failure Notifications
+
+on:
+  workflow_run:
+    workflows: 
+      - "Tests & Performance"
+      - "Security Scanning"
+      - "Bundle Size Analysis"
+    types:
+      - completed
+
+jobs:
+  notify-failure:
+    name: Send Failure Notification
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - name: Send Discord notification
+        if: ${{ vars.DISCORD_WEBHOOK_URL != '' }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ vars.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"❌ CI Build Failed\",
+                \"description\": \"Workflow **${{ github.event.workflow_run.name }}** failed on branch **${{ github.event.workflow_run.head_branch }}**\",
+                \"color\": 15158332,
+                \"fields\": [
+                  {
+                    \"name\": \"Repository\",
+                    \"value\": \"${{ github.repository }}\",
+                    \"inline\": true
+                  },
+                  {
+                    \"name\": \"Branch\",
+                    \"value\": \"${{ github.event.workflow_run.head_branch }}\",
+                    \"inline\": true
+                  },
+                  {
+                    \"name\": \"Commit\",
+                    \"value\": \"\`${{ github.event.workflow_run.head_sha }}\`\",
+                    \"inline\": false
+                  },
+                  {
+                    \"name\": \"Triggered by\",
+                    \"value\": \"${{ github.event.workflow_run.actor.login }}\",
+                    \"inline\": true
+                  }
+                ],
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+                \"footer\": {
+                  \"text\": \"GitHub Actions\"
+                }
+              }]
+            }" \
+            $DISCORD_WEBHOOK_URL
+
+      - name: Send Slack notification
+        if: ${{ vars.SLACK_WEBHOOK_URL != '' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ vars.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"blocks\": [
+                {
+                  \"type\": \"header\",
+                  \"text\": {
+                    \"type\": \"plain_text\",
+                    \"text\": \"❌ CI Build Failed\",
+                    \"emoji\": true
+                  }
+                },
+                {
+                  \"type\": \"section\",
+                  \"fields\": [
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*Workflow:*\n${{ github.event.workflow_run.name }}\"
+                    },
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*Branch:*\n${{ github.event.workflow_run.head_branch }}\"
+                    },
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*Repository:*\n${{ github.repository }}\"
+                    },
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*Triggered by:*\n${{ github.event.workflow_run.actor.login }}\"
+                    }
+                  ]
+                },
+                {
+                  \"type\": \"section\",
+                  \"text\": {
+                    \"type\": \"mrkdwn\",
+                    \"text\": \"*Commit:* \`${{ github.event.workflow_run.head_sha }}\`\"
+                  }
+                },
+                {
+                  \"type\": \"actions\",
+                  \"elements\": [
+                    {
+                      \"type\": \"button\",
+                      \"text\": {
+                        \"type\": \"plain_text\",
+                        \"text\": \"View Workflow Run\",
+                        \"emoji\": true
+                      },
+                      \"url\": \"${{ github.event.workflow_run.html_url }}\"
+                    }
+                  ]
+                }
+              ]
+            }" \
+            $SLACK_WEBHOOK_URL
+
+      - name: Create GitHub Issue for failure
+        if: ${{ github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'master' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'ci-failure',
+            });
+            
+            // Check if there's already an open issue for this workflow
+            const existingIssue = issues.find(issue => 
+              issue.title.includes('${{ github.event.workflow_run.name }}')
+            );
+            
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 CI Failure: ${{ github.event.workflow_run.name }}',
+                body: `## CI Build Failed
+                
+**Workflow:** ${{ github.event.workflow_run.name }}
+**Branch:** ${{ github.event.workflow_run.head_branch }}
+**Commit:** \`${{ github.event.workflow_run.head_sha }}\`
+**Triggered by:** @${{ github.event.workflow_run.actor.login }}
+
+[View Workflow Run](${{ github.event.workflow_run.html_url }})
+
+---
+*This issue was automatically created by the CI failure notification workflow.*`,
+                labels: ['ci-failure', 'bug', 'priority:high'],
+              });
+            }

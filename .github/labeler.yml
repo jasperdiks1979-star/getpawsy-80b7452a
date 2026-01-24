@@ -1,0 +1,166 @@
+# Label configuration for PR auto-labeling
+# Maps file patterns to labels
+
+# Frontend labels
+frontend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/components/**/*'
+      - 'src/pages/**/*'
+      - 'src/App.tsx'
+      - 'src/main.tsx'
+
+ui:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/components/ui/**/*'
+      - 'src/index.css'
+      - 'tailwind.config.ts'
+
+# Backend labels
+backend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'supabase/**/*'
+
+edge-functions:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'supabase/functions/**/*'
+
+database:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'supabase/migrations/**/*'
+      - 'src/integrations/supabase/**/*'
+
+# Testing labels
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/**/*.test.ts'
+      - 'src/**/*.test.tsx'
+      - 'src/**/*.spec.ts'
+      - 'src/**/*.spec.tsx'
+      - 'src/test/**/*'
+
+e2e:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'e2e/**/*'
+      - 'playwright.config.ts'
+      - 'playwright-fixture.ts'
+
+# Configuration labels
+config:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.config.js'
+      - '*.config.ts'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
+      - 'vitest.config.ts'
+
+ci/cd:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**/*'
+      - 'lighthouserc.js'
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'bun.lockb'
+
+# Documentation labels
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.md'
+      - 'docs/**/*'
+      - 'CHANGELOG.md'
+      - 'README.md'
+
+# Feature area labels
+auth:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/contexts/AuthContext.tsx'
+      - 'src/components/auth/**/*'
+      - 'src/pages/Auth.tsx'
+      - 'supabase/functions/webauthn*/**/*'
+
+cart:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/contexts/CartContext.tsx'
+      - 'src/components/cart/**/*'
+      - 'src/pages/Cart.tsx'
+      - 'src/pages/Checkout.tsx'
+
+products:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/components/products/**/*'
+      - 'src/pages/Products.tsx'
+      - 'src/pages/ProductDetail.tsx'
+      - 'src/data/products.ts'
+
+blog:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/pages/Blog.tsx'
+      - 'src/pages/BlogPost.tsx'
+      - 'src/components/blog/**/*'
+      - 'public/blog/**/*'
+
+admin:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/pages/Admin.tsx'
+      - 'src/components/admin/**/*'
+
+seo:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/components/seo/**/*'
+      - 'src/lib/seo-keywords.ts'
+      - 'public/robots.txt'
+      - 'public/og-image.png'
+
+marketing:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/components/marketing/**/*'
+      - 'supabase/functions/send-*/**/*'
+
+# Asset labels
+assets:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'public/**/*'
+      - 'src/assets/**/*'
+
+images:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.png'
+      - '**/*.jpg'
+      - '**/*.jpeg'
+      - '**/*.svg'
+      - '**/*.webp'
+      - '**/*.gif'
+
+# Hooks and utilities
+hooks:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/hooks/**/*'
+
+utils:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/lib/**/*'
+      - 'src/utils/**/*'
