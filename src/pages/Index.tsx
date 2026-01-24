@@ -367,16 +367,34 @@ const Index = () => {
       <WebsiteSchema />
       {/* Hero Section with Video Background */}
       <section ref={heroRef} className="relative overflow-hidden min-h-[90vh] flex items-center">
-        {/* Video Background */}
+        {/* Video Background - Responsive with mobile optimization */}
         <div className="absolute inset-0 z-0">
+          {/* Mobile: Show optimized poster image instead of video for performance */}
+          <picture className="md:hidden absolute inset-0">
+            <img
+              src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=70"
+              alt=""
+              className="w-full h-full object-cover"
+              loading="eager"
+            />
+          </picture>
+          
+          {/* Desktop: Full HD video */}
           <video
             autoPlay
             loop
             muted
             playsInline
             poster="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1920&q=80"
-            className="w-full h-full object-cover"
+            className="hidden md:block w-full h-full object-cover"
           >
+            {/* SD version for tablets (768px-1024px) */}
+            <source 
+              src="https://videos.pexels.com/video-files/4488282/4488282-sd_640_360_25fps.mp4" 
+              type="video/mp4"
+              media="(max-width: 1024px)"
+            />
+            {/* HD version for desktop (1024px+) */}
             <source 
               src="https://videos.pexels.com/video-files/4488282/4488282-hd_1920_1080_25fps.mp4" 
               type="video/mp4" 
