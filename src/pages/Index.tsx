@@ -18,6 +18,12 @@ import { BestsellersSection } from '@/components/home/BestsellersSection';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
 import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
+import { initPageDebug, logDataSanitization, createSectionDebugger } from '@/lib/debug-logger';
+
+// Debug loggers for each section
+const categoriesDebug = createSectionDebugger('Categories');
+const productsDebug = createSectionDebugger('FeaturedProducts');
+const recentlyViewedDebug = createSectionDebugger('RecentlyViewed');
 const features = [
   {
     icon: Truck,
@@ -116,6 +122,11 @@ const featureVariants = {
 };
 
 const Index = () => {
+  // Initialize debug mode on mount
+  useEffect(() => {
+    initPageDebug('Index/Homepage');
+  }, []);
+  
   // Track visitor browsing activity
   useVisitorTracking();
   
@@ -216,21 +227,51 @@ const Index = () => {
   // Sanitize categories to prevent React error #310
   const safeCategories = useMemo(() => {
     if (!categories) return [];
-    return categories.map(cat => ({
-      ...cat,
-      name: safeString(cat.name),
-      description: safeString(cat.description),
-      image_url: safeString(cat.image_url),
-      slug: safeString(cat.slug),
-    }));
+    
+    // Log original data for debugging
+    categoriesDebug.logDataReceived('categories', categories);
+    
+    const sanitized = categories.map(cat => {
+      // Check each field for objects
+      categoriesDebug.warnIfObject('cat.name', cat.name);
+      categoriesDebug.warnIfObject('cat.description', cat.description);
+      categoriesDebug.warnIfObject('cat.image_url', cat.image_url);
+      
+      return {
+        ...cat,
+        name: safeString(cat.name),
+        description: safeString(cat.description),
+        image_url: safeString(cat.image_url),
+        slug: safeString(cat.slug),
+      };
+    });
+    
+    logDataSanitization('categories', categories, sanitized);
+    return sanitized;
   }, [categories]);
 
   // Sanitize featured products to prevent React error #310
   const safeFeaturedProducts = useMemo(() => {
     if (!featuredProducts) return [];
-    return featuredProducts
-      .map(p => safeProduct(p))
+    
+    // Log original data for debugging
+    productsDebug.logDataReceived('featuredProducts', featuredProducts);
+    
+    const sanitized = featuredProducts
+      .map(p => {
+        // Check for object fields before sanitization
+        productsDebug.warnIfObject('product.name', p.name);
+        productsDebug.warnIfObject('product.description', p.description);
+        productsDebug.warnIfObject('product.category', p.category);
+        productsDebug.warnIfObject('product.image_url', p.image_url);
+        productsDebug.warnIfObject('product.price', p.price);
+        
+        return safeProduct(p);
+      })
       .filter((p): p is SafeProduct => p !== null);
+    
+    logDataSanitization('featuredProducts', featuredProducts, sanitized);
+    return sanitized;
   }, [featuredProducts]);
 
   // Recently viewed products
@@ -261,9 +302,23 @@ const Index = () => {
   // Sanitize recently viewed products
   const safeRecentlyViewedProducts = useMemo(() => {
     if (!recentlyViewedProducts) return [];
-    return recentlyViewedProducts
-      .map(p => safeProduct(p))
+    
+    // Log original data for debugging
+    recentlyViewedDebug.logDataReceived('recentlyViewedProducts', recentlyViewedProducts);
+    
+    const sanitized = recentlyViewedProducts
+      .map(p => {
+        // Check for object fields before sanitization
+        recentlyViewedDebug.warnIfObject('product.name', p.name);
+        recentlyViewedDebug.warnIfObject('product.description', p.description);
+        recentlyViewedDebug.warnIfObject('product.price', p.price);
+        
+        return safeProduct(p);
+      })
       .filter((p): p is SafeProduct => p !== null);
+    
+    logDataSanitization('recentlyViewedProducts', recentlyViewedProducts, sanitized);
+    return sanitized;
   }, [recentlyViewedProducts]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
