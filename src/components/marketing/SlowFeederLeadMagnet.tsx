@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { X, Gift, Sparkles, Heart, Brain, Timer, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,22 @@ import { toast } from 'sonner';
 import { trackNewsletterSignup, trackEvent } from '@/lib/analytics';
 import { useNavigate } from 'react-router-dom';
 import { getStoredUTMParams } from '@/hooks/useUTMTracking';
+
+// Backdrop component with forwardRef for AnimatePresence compatibility
+const SlowFeederBackdrop = forwardRef<HTMLDivElement, { onClick: () => void }>(
+  ({ onClick }, ref) => (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-foreground/60 backdrop-blur-sm z-50"
+      onClick={onClick}
+    />
+  )
+);
+
+SlowFeederBackdrop.displayName = 'SlowFeederBackdrop';
 
 const POPUP_STORAGE_KEY = 'getpawsy_slowfeeder_popup_seen';
 const POPUP_DELAY_MS = 15000; // Show after 15 seconds on dog-related pages
@@ -202,14 +218,7 @@ export function SlowFeederLeadMagnet({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-foreground/60 backdrop-blur-sm z-50"
-            onClick={handleClose}
-          />
+          <SlowFeederBackdrop onClick={handleClose} />
 
           {/* Popup */}
           <motion.div

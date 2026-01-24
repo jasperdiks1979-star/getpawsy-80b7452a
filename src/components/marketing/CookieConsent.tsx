@@ -1,9 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Cookie, X, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+
+// Banner component with forwardRef for AnimatePresence compatibility
+const CookieBanner = forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<typeof motion.div>>(
+  (props, ref) => <motion.div ref={ref} {...props} />
+);
+
+CookieBanner.displayName = 'CookieBanner';
 
 type ConsentPreferences = {
   necessary: boolean;
@@ -115,7 +122,7 @@ export const CookieConsent = () => {
   return (
     <AnimatePresence>
       {showBanner && (
-        <motion.div
+        <CookieBanner
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
@@ -218,7 +225,7 @@ export const CookieConsent = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </CookieBanner>
       )}
     </AnimatePresence>
   );
