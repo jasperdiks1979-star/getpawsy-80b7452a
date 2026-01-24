@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { StarRating } from '@/components/ui/star-rating';
+import { PawConfetti, usePawConfetti } from '@/components/products/PawConfetti';
 import { toast } from 'sonner';
 import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
 import { safeString, safePrice } from '@/lib/safe-render';
@@ -61,6 +62,7 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   const { prefetchProduct } = useProductPrefetch();
   const inWishlist = isInWishlist(product.id);
   const [isAnimating, setIsAnimating] = useState(false);
+  const { isActive: isPawActive, position: pawPosition, triggerConfetti, handleComplete: handlePawComplete } = usePawConfetti();
 
   // Prefetch product data on hover for faster navigation
   const handleMouseEnter = useCallback(() => {
@@ -96,6 +98,9 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
     
     // Trigger haptic feedback on mobile
     hapticSuccess();
+    
+    // Trigger paw confetti animation
+    triggerConfetti(e.currentTarget as HTMLElement);
     
     // Trigger flying animation
     triggerAddToCart(
@@ -140,10 +145,19 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   const productUrl = product.slug ? `/product/${product.slug}` : `/product/${product.id}`;
 
   return (
-    <Link ref={ref} to={productUrl} className="group block" onClick={handleCardClick} onMouseEnter={handleMouseEnter}>
-      <div 
-        className="relative bg-card rounded-2xl overflow-hidden shadow-card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-1"
-      >
+    <>
+      {/* Paw Confetti Animation */}
+      <PawConfetti 
+        trigger={isPawActive} 
+        originX={pawPosition.x} 
+        originY={pawPosition.y}
+        onComplete={handlePawComplete}
+      />
+      
+      <Link ref={ref} to={productUrl} className="group block" onClick={handleCardClick} onMouseEnter={handleMouseEnter}>
+        <div 
+          className="relative glass-card rounded-2xl overflow-hidden"
+        >
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-muted">
           <OptimizedImage
@@ -265,8 +279,9 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
             <p className="text-xs text-destructive mt-3 font-medium">Out of Stock</p>
           )}
         </div>
-      </div>
-    </Link>
+        </div>
+      </Link>
+    </>
   );
 }));
 

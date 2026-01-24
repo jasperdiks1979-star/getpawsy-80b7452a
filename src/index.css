@@ -416,6 +416,121 @@
     @apply bg-white/70 backdrop-blur-md border border-white/20;
   }
 
+  /* Enhanced glassmorphism for product cards */
+  .glass-card {
+    background: linear-gradient(
+      135deg,
+      hsl(40 40% 99% / 0.9) 0%,
+      hsl(40 40% 97% / 0.8) 100%
+    );
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(40 40% 95% / 0.5);
+    box-shadow: 
+      0 4px 16px hsl(25 25% 15% / 0.06),
+      0 8px 32px hsl(25 25% 15% / 0.04),
+      inset 0 1px 0 hsl(40 40% 100% / 0.5);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    box-shadow: 
+      0 8px 24px hsl(25 65% 45% / 0.12),
+      0 16px 48px hsl(25 25% 15% / 0.08),
+      inset 0 1px 0 hsl(40 40% 100% / 0.6);
+    transform: translateY(-6px) scale(1.02);
+    border-color: hsl(25 65% 45% / 0.2);
+  }
+
+  .dark .glass-card {
+    background: linear-gradient(
+      135deg,
+      hsl(25 20% 14% / 0.9) 0%,
+      hsl(25 20% 12% / 0.8) 100%
+    );
+    border: 1px solid hsl(25 20% 25% / 0.3);
+    box-shadow: 
+      0 4px 16px hsl(0 0% 0% / 0.2),
+      0 8px 32px hsl(0 0% 0% / 0.15),
+      inset 0 1px 0 hsl(25 20% 30% / 0.2);
+  }
+
+  .dark .glass-card:hover {
+    box-shadow: 
+      0 8px 24px hsl(25 60% 55% / 0.15),
+      0 16px 48px hsl(0 0% 0% / 0.25),
+      inset 0 1px 0 hsl(25 20% 35% / 0.3);
+  }
+
+  /* Animated trust badges */
+  .trust-badge {
+    @apply relative overflow-hidden;
+    animation: trust-glow 3s ease-in-out infinite;
+  }
+
+  .trust-badge::before {
+    content: '';
+    @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(40 40% 100% / 0.4),
+      transparent
+    );
+    animation: shimmer-slide 3s ease-in-out infinite;
+  }
+
+  @keyframes trust-glow {
+    0%, 100% { box-shadow: 0 0 0 0 hsl(25 65% 45% / 0); }
+    50% { box-shadow: 0 0 20px 2px hsl(25 65% 45% / 0.15); }
+  }
+
+  @keyframes shimmer-slide {
+    0% { transform: translateX(-100%); }
+    50%, 100% { transform: translateX(100%); }
+  }
+
+  /* Paw print confetti animation */
+  @keyframes paw-burst {
+    0% {
+      opacity: 1;
+      transform: scale(0) translateY(0);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2) translateY(-20px);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.8) translateY(-40px);
+    }
+  }
+
+  .paw-confetti {
+    animation: paw-burst 0.6s ease-out forwards;
+  }
+
+  /* Hero video overlay */
+  .hero-video-overlay {
+    background: linear-gradient(
+      135deg,
+      hsl(40 40% 97% / 0.85) 0%,
+      hsl(40 40% 97% / 0.7) 50%,
+      hsl(140 25% 94% / 0.75) 100%
+    );
+  }
+
+  /* Cart preview hover */
+  .cart-preview {
+    @apply opacity-0 invisible translate-y-2;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .cart-trigger:hover + .cart-preview,
+  .cart-preview:hover {
+    @apply opacity-100 visible translate-y-0;
+  }
+
   /* Texture overlay */
   .texture-paper {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");

@@ -20,6 +20,7 @@ import {
 import { EnhancedSearch } from '@/components/search/EnhancedSearch';
 import { AnimatedHamburger } from '@/components/ui/animated-hamburger';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { FloatingCartPreview } from '@/components/cart/FloatingCartPreview';
 import { supabase } from '@/integrations/supabase/client';
 import logoIcon from '@/assets/logo-getpawsy.png';
 
@@ -271,6 +272,7 @@ export const Navbar = () => {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isCartPreviewOpen, setIsCartPreviewOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [isBannerDismissed, setIsBannerDismissed] = useState(() => {
     return localStorage.getItem('promo-banner-dismissed') === 'true';
@@ -473,8 +475,40 @@ export const Navbar = () => {
               </Button>
             </Link>
 
-            {/* Cart */}
-            <Link to="/cart">
+            {/* Cart with Floating Preview */}
+            <div 
+              className="relative hidden sm:block"
+              onMouseEnter={() => setIsCartPreviewOpen(true)}
+              onMouseLeave={() => setIsCartPreviewOpen(false)}
+            >
+              <Link to="/cart">
+                <div ref={cartIconRef as React.RefObject<HTMLDivElement>}>
+                  <Button variant="ghost" size="icon" className="relative rounded-full">
+                    <ShoppingCart className="h-5 w-5" />
+                    {totalItems > 0 && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        key={totalItems}
+                      >
+                        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
+                          {totalItems}
+                        </Badge>
+                      </motion.div>
+                    )}
+                  </Button>
+                </div>
+              </Link>
+              
+              {/* Floating Cart Preview */}
+              <FloatingCartPreview 
+                isVisible={isCartPreviewOpen} 
+                onClose={() => setIsCartPreviewOpen(false)} 
+              />
+            </div>
+
+            {/* Mobile Cart (no preview) */}
+            <Link to="/cart" className="sm:hidden">
               <div ref={cartIconRef as React.RefObject<HTMLDivElement>}>
                 <Button variant="ghost" size="icon" className="relative rounded-full">
                   <ShoppingCart className="h-5 w-5" />

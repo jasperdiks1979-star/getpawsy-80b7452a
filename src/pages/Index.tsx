@@ -15,6 +15,7 @@ import { trackNewsletterSignup } from '@/lib/analytics';
 import { toast } from 'sonner';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { BestsellersSection } from '@/components/home/BestsellersSection';
+import { AnimatedTrustBadges } from '@/components/home/AnimatedTrustBadges';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
 import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
@@ -501,46 +502,9 @@ const Index = () => {
         </motion.div>
       </section>
 
-      {/* Features Bar */}
+      {/* Animated Trust Badges */}
       <SectionErrorBoundary sectionName="Features">
-        <section className="border-y bg-card/50 overflow-hidden">
-          <div className="container px-4 md:px-6 py-8">
-            <motion.div 
-              className="grid grid-cols-2 md:grid-cols-4 gap-8"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ staggerChildren: 0.1 }}
-            >
-              {features.map((feature, index) => (
-                <motion.div 
-                  key={feature.title} 
-                  className="flex items-center gap-4 group"
-                  initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ 
-                    duration: 0.5, 
-                    delay: index * 0.1,
-                    ease: "easeOut"
-                  }}
-                >
-                  <motion.div 
-                    className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary shadow-inner-soft"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  >
-                    <feature.icon className="w-6 h-6 text-secondary-foreground" />
-                  </motion.div>
-                  <div>
-                    <p className="font-semibold group-hover:text-primary transition-colors">{feature.title}</p>
-                    <p className="text-sm text-muted-foreground">{feature.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
+        <AnimatedTrustBadges />
       </SectionErrorBoundary>
 
       {/* Bestsellers Section */}
