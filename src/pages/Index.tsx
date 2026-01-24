@@ -8,7 +8,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
 import { supabase } from '@/integrations/supabase/client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { CarouselApi } from '@/components/ui/carousel';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { trackNewsletterSignup } from '@/lib/analytics';
@@ -17,7 +17,7 @@ import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { BestsellersSection } from '@/components/home/BestsellersSection';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
-import { safeString } from '@/lib/safe-render';
+import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
 const features = [
   {
     icon: Truck,
@@ -213,6 +213,26 @@ const Index = () => {
     },
   });
 
+  // Sanitize categories to prevent React error #310
+  const safeCategories = useMemo(() => {
+    if (!categories) return [];
+    return categories.map(cat => ({
+      ...cat,
+      name: safeString(cat.name),
+      description: safeString(cat.description),
+      image_url: safeString(cat.image_url),
+      slug: safeString(cat.slug),
+    }));
+  }, [categories]);
+
+  // Sanitize featured products to prevent React error #310
+  const safeFeaturedProducts = useMemo(() => {
+    if (!featuredProducts) return [];
+    return featuredProducts
+      .map(p => safeProduct(p))
+      .filter((p): p is SafeProduct => p !== null);
+  }, [featuredProducts]);
+
   // Recently viewed products
   const { getRecentlyViewedIds } = useRecentlyViewed();
   const recentlyViewedIds = getRecentlyViewedIds();
@@ -237,6 +257,14 @@ const Index = () => {
     },
     enabled: recentlyViewedIds.length > 0,
   });
+
+  // Sanitize recently viewed products
+  const safeRecentlyViewedProducts = useMemo(() => {
+    if (!recentlyViewedProducts) return [];
+    return recentlyViewedProducts
+      .map(p => safeProduct(p))
+      .filter((p): p is SafeProduct => p !== null);
+  }, [recentlyViewedProducts]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -502,7 +530,7 @@ const Index = () => {
                 whileInView="visible"
                 viewport={{ once: true }}
               >
-                {categories?.map((category) => (
+                {safeCategories.map((category) => (
                   <motion.div 
                     key={category.id} 
                     variants={itemVariants}
@@ -510,7 +538,7 @@ const Index = () => {
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
                     <Link
-                      to={`/products?category=${category.name}`}
+                      to={`/products?category=${encodeURIComponent(category.name)}`}
                       className="group block relative overflow-hidden rounded-2xl aspect-square shadow-soft hover:shadow-soft-lg transition-shadow duration-300"
                     >
                       {/* Image with zoom effect - v4 forces cache refresh */}
@@ -534,7 +562,7 @@ const Index = () => {
                       {/* Content with slide-up animation */}
                       <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300">
                         <h3 className="font-display font-semibold text-lg text-white mb-1 transform translate-y-0 group-hover:-translate-y-1 transition-transform duration-300">
-                          {safeString(category.name)}
+                          {category.name}
                         </h3>
                         <p className="text-white/0 text-sm group-hover:text-white/80 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75">
                           Bekijk producten →
@@ -583,7 +611,7 @@ const Index = () => {
               </div>
             )}
             
-            {!productsLoading && featuredProducts && featuredProducts.length > 0 && (
+            {!productsLoading && safeFeaturedProducts.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -600,14 +628,11 @@ const Index = () => {
                   className="w-full cursor-grab active:cursor-grabbing"
                 >
                   <CarouselContent className="-ml-4">
-                    {featuredProducts.map((product) => {
-                      if (!product || !product.id) return null;
-                      return (
-                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
-                          <ProductCard product={product as any} />
-                        </CarouselItem>
-                      );
-                    })}
+                    {safeFeaturedProducts.map((product) => (
+                      <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
+                        <ProductCard product={product as any} />
+                      </CarouselItem>
+                    ))}
                   </CarouselContent>
                   <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
                   <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
@@ -615,7 +640,7 @@ const Index = () => {
               </motion.div>
             )}
 
-            {!productsLoading && (!featuredProducts || featuredProducts.length === 0) && (
+            {!productsLoading && safeFeaturedProducts.length === 0 && (
               <div className="text-center py-16 bg-card rounded-3xl shadow-soft">
                 <p className="text-muted-foreground mb-4">
                   No products available yet. Import products via the admin page.
@@ -731,7 +756,7 @@ const Index = () => {
       </SectionErrorBoundary>
 
       {/* Recently Viewed Products */}
-      {recentlyViewedProducts && recentlyViewedProducts.length > 0 && (
+      {safeRecentlyViewedProducts.length > 0 && (
         <SectionErrorBoundary sectionName="Recent Bekeken">
           <section className="py-20 bg-muted/30">
             <div className="container px-4 md:px-6">
@@ -768,14 +793,11 @@ const Index = () => {
                   className="w-full cursor-grab active:cursor-grabbing"
                 >
                   <CarouselContent className="-ml-4">
-                    {recentlyViewedProducts.map((product) => {
-                      if (!product || !product.id) return null;
-                      return (
-                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
-                          <ProductCard product={product as any} />
-                        </CarouselItem>
-                      );
-                    })}
+                    {safeRecentlyViewedProducts.map((product) => (
+                      <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
+                        <ProductCard product={product as any} />
+                      </CarouselItem>
+                    ))}
                   </CarouselContent>
                   <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
                   <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />

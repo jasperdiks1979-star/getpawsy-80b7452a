@@ -154,3 +154,49 @@ export function safeArray<T>(value: unknown): T[] {
   }
   return [];
 }
+
+/**
+ * Safe product sanitization - ensures all fields are safe for React rendering
+ * Prevents React error #310 when database returns unexpected objects
+ */
+export interface SafeProduct {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  category: string;
+  image_url: string;
+  images: string[];
+  price: number;
+  compare_at_price: number | null;
+  stock: number | null;
+  variants: unknown;
+  created_at: string;
+  updated_at: string;
+  [key: string]: unknown;
+}
+
+export function safeProduct(product: unknown): SafeProduct | null {
+  if (!product || typeof product !== 'object') {
+    return null;
+  }
+  
+  const p = product as Record<string, unknown>;
+  
+  return {
+    ...p,
+    id: safeString(p.id),
+    name: safeString(p.name),
+    slug: safeString(p.slug),
+    description: safeString(p.description),
+    category: safeString(p.category),
+    image_url: safeString(p.image_url),
+    images: safeArray<string>(p.images),
+    price: safeNumber(p.price, 0),
+    compare_at_price: p.compare_at_price != null ? safeNumber(p.compare_at_price, 0) : null,
+    stock: p.stock != null ? safeNumber(p.stock, 0) : null,
+    variants: p.variants,
+    created_at: safeString(p.created_at),
+    updated_at: safeString(p.updated_at),
+  };
+}

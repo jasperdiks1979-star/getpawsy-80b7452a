@@ -109,11 +109,21 @@ export const BestsellersSection = () => {
               const product = bestseller.products;
               if (!product) return null;
               
-              const discount = product.compare_at_price 
-                ? Math.round((1 - product.price / product.compare_at_price) * 100)
+              // Safely calculate discount to prevent rendering objects
+              const productPrice = typeof product.price === 'number' ? product.price : 0;
+              const comparePrice = typeof product.compare_at_price === 'number' ? product.compare_at_price : 0;
+              const discount = comparePrice > 0
+                ? Math.round((1 - productPrice / comparePrice) * 100)
                 : 0;
 
               const productRating = ratingsMap?.[product.id];
+              
+              // Sanitize string values to prevent React error #310
+              const safeName = safeString(product.name);
+              const safeHeadline = safeString(bestseller.hero_headline);
+              const safeCategory = safeString(product.category);
+              const safeImageUrl = safeString(product.image_url) || '/placeholder.svg';
+              const safeSlug = safeString(bestseller.slug);
 
               return (
                 <motion.div
@@ -123,7 +133,7 @@ export const BestsellersSection = () => {
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
                   <Link
-                    to={`/bestseller/${bestseller.slug}`}
+                    to={`/bestseller/${safeSlug}`}
                     className="group block bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300"
                   >
                     {/* Image Container */}
@@ -147,8 +157,8 @@ export const BestsellersSection = () => {
 
                       {/* Product Image */}
                       <img
-                        src={product.image_url || '/placeholder.svg'}
-                        alt={product.name}
+                        src={safeImageUrl}
+                        alt={safeName}
                         loading="lazy"
                         decoding="async"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -169,15 +179,15 @@ export const BestsellersSection = () => {
                     {/* Content */}
                     <div className="p-4">
                       {/* Category */}
-                      {product.category && (
+                      {safeCategory && (
                         <p className="text-xs text-primary font-medium mb-1 truncate">
-                          {safeString(product.category)}
+                          {safeCategory}
                         </p>
                       )}
 
                       {/* Product Name */}
                       <h3 className="font-semibold text-sm mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                        {safeString(bestseller.hero_headline) || safeString(product.name)}
+                        {safeHeadline || safeName}
                       </h3>
 
                       {/* Rating */}
@@ -194,11 +204,11 @@ export const BestsellersSection = () => {
                       {/* Price */}
                       <div className="flex items-baseline gap-2">
                         <span className="text-lg font-bold text-primary">
-                          ${safePrice(product.price)}
+                          ${safePrice(productPrice)}
                         </span>
-                        {product.compare_at_price && (
+                        {comparePrice > 0 && (
                           <span className="text-sm text-muted-foreground line-through">
-                            ${safePrice(product.compare_at_price)}
+                            ${safePrice(comparePrice)}
                           </span>
                         )}
                       </div>
