@@ -1,0 +1,101 @@
+name: Performance Budget Check
+
+on:
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  core-web-vitals:
+    name: Core Web Vitals Budget
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run Lighthouse CI
+        id: lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: './lighthouserc.js'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+      - name: Generate Performance Report
+        run: |
+          echo "## ⚡ Core Web Vitals Report" > performance-report.md
+          echo "" >> performance-report.md
+          echo "### Budget Thresholds" >> performance-report.md
+          echo "" >> performance-report.md
+          echo "| Metric | Budget | Status |" >> performance-report.md
+          echo "|--------|--------|--------|" >> performance-report.md
+          echo "| LCP (Largest Contentful Paint) | < 2.5s | ✅ Good / ⚠️ Needs Improvement / ❌ Poor |" >> performance-report.md
+          echo "| FID (First Input Delay) / TBT | < 300ms | ✅ Good / ⚠️ Needs Improvement / ❌ Poor |" >> performance-report.md
+          echo "| CLS (Cumulative Layout Shift) | < 0.1 | ✅ Good / ⚠️ Needs Improvement / ❌ Poor |" >> performance-report.md
+          echo "| FCP (First Contentful Paint) | < 1.8s | ✅ Good / ⚠️ Needs Improvement / ❌ Poor |" >> performance-report.md
+          echo "| TTI (Time to Interactive) | < 3.8s | ✅ Good / ⚠️ Needs Improvement / ❌ Poor |" >> performance-report.md
+          echo "" >> performance-report.md
+          echo "### Resource Budgets" >> performance-report.md
+          echo "" >> performance-report.md
+          echo "| Resource | Budget |" >> performance-report.md
+          echo "|----------|--------|" >> performance-report.md
+          echo "| JavaScript | < 500 KB |" >> performance-report.md
+          echo "| CSS | < 100 KB |" >> performance-report.md
+          echo "| Images | < 1 MB |" >> performance-report.md
+          echo "| Total | < 3 MB |" >> performance-report.md
+          echo "" >> performance-report.md
+          echo "📊 [View Full Lighthouse Report](${{ steps.lighthouse.outputs.resultsPath }})" >> performance-report.md
+
+      - name: Post Performance Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('performance-report.md', 'utf8');
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('## ⚡ Core Web Vitals Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report
+              });
+            }
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+          retention-days: 14
