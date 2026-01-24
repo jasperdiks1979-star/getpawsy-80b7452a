@@ -319,6 +319,10 @@ const BestsellerDetail = () => {
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
     : 0;
 
+  // Get recently viewed product IDs ONCE at the top level
+  // This prevents duplicate useRecentlyViewed hook calls in child hooks
+  const recentlyViewedIds = useMemo(() => getRecentlyViewedIds(product?.id), [getRecentlyViewedIds, product?.id]);
+
   // Fetch related products with enhanced category and keyword matching
   const { data: relatedProducts = [], isLoading: relatedLoading } = useRelatedProducts({
     productId: product?.id || '',
@@ -326,14 +330,12 @@ const BestsellerDetail = () => {
     productName: product?.name || '',
     maxItems: 8,
     enabled: !!product?.id,
+    recentlyViewedIds,
   });
-
-  // Get recently viewed product IDs (excluding current product) - for adding to history
-  const recentlyViewedIds = getRecentlyViewedIds(product?.id);
 
   // Fetch recently viewed products with React Query caching
   const { data: recentlyViewedProducts, isLoading: recentlyViewedLoading } = useRecentlyViewedProducts({
-    excludeProductId: product?.id,
+    recentlyViewedIds,
   });
 
   // Build images array - using useMemo to ensure stable reference

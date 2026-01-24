@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useRecentlyViewed } from './useRecentlyViewed';
 
 interface RecentlyViewedProduct {
   id: string;
@@ -20,21 +19,22 @@ interface RecentlyViewedProduct {
 }
 
 interface UseRecentlyViewedProductsOptions {
-  excludeProductId?: string;
+  /** Recently viewed product IDs (required to ensure stable hook count) */
+  recentlyViewedIds: string[];
   maxItems?: number;
 }
 
 /**
  * Hook to fetch recently viewed products with React Query caching
  * Combines localStorage IDs with database product data
+ * 
+ * IMPORTANT: You must provide recentlyViewedIds from the parent component
+ * using useRecentlyViewed().getRecentlyViewedIds() to ensure stable hook count
  */
 export const useRecentlyViewedProducts = ({
-  excludeProductId,
+  recentlyViewedIds,
   maxItems = 8,
-}: UseRecentlyViewedProductsOptions = {}) => {
-  const { getRecentlyViewedIds } = useRecentlyViewed();
-  const recentlyViewedIds = getRecentlyViewedIds(excludeProductId);
-
+}: UseRecentlyViewedProductsOptions) => {
   return useQuery({
     queryKey: ['recently-viewed-products', recentlyViewedIds.join(','), maxItems],
     queryFn: async (): Promise<RecentlyViewedProduct[]> => {

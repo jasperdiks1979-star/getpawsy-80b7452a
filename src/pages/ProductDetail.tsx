@@ -174,13 +174,19 @@ const ProductDetail = () => {
     }
   }, [product, id, navigate]);
 
+  // Get recently viewed product IDs ONCE at the top level
+  // This prevents duplicate useRecentlyViewed hook calls in child hooks
+  const recentlyViewedIds = useMemo(() => getRecentlyViewedIds(id), [getRecentlyViewedIds, id]);
+
   // Fetch related products with enhanced category and keyword matching
+  // Pass recentlyViewedIds to avoid duplicate hook calls
   const { data: relatedProducts, isLoading: relatedLoading } = useRelatedProducts({
     productId: product?.id || '',
     category: product?.category || null,
     productName: product?.name || '',
     maxItems: 8,
     enabled: !!product?.id,
+    recentlyViewedIds,
   });
 
   // Fetch complementary products for "Complete the Look"
@@ -192,12 +198,10 @@ const ProductDetail = () => {
     enabled: !!product?.id,
   });
 
-  // Get recently viewed product IDs (excluding current product) - for adding to history
-  const recentlyViewedIds = getRecentlyViewedIds(id);
-
   // Fetch recently viewed products with React Query caching
+  // Pass recentlyViewedIds to avoid duplicate hook calls
   const { data: recentlyViewedProducts, isLoading: recentlyViewedLoading } = useRecentlyViewedProducts({
-    excludeProductId: id,
+    recentlyViewedIds,
   });
 
   // Fetch product reviews
@@ -282,20 +286,22 @@ const ProductDetail = () => {
   }, [product]);
 
   // Group variants - CJ uses variantKey as the display name
-  const variantGroups = variants.reduce((groups, variant) => {
-    const displayName = variant.variantKey || variant.variantNameEn || 'Option';
-    const groupName = 'Option';
-    
-    if (!groups[groupName]) {
-      groups[groupName] = [];
-    }
-    
-    if (!groups[groupName].find(v => v.vid === variant.vid)) {
-      groups[groupName].push(variant);
-    }
-    
-    return groups;
-  }, {} as Record<string, ProductVariant[]>);
+  // CRITICAL: Must be wrapped in useMemo to ensure stable hook count
+  const variantGroups = useMemo(() => {
+    return variants.reduce((groups, variant) => {
+      const groupName = 'Option';
+      
+      if (!groups[groupName]) {
+        groups[groupName] = [];
+      }
+      
+      if (!groups[groupName].find(v => v.vid === variant.vid)) {
+        groups[groupName].push(variant);
+      }
+      
+      return groups;
+    }, {} as Record<string, ProductVariant[]>);
+  }, [variants]);
 
   // Scroll to top when navigating to product page
   useEffect(() => {
@@ -350,19 +356,22 @@ const ProductDetail = () => {
   }, [selectedImage]);
 
   // Flatten images array (handle nested arrays from database) and filter valid URLs
-  const productImagesArray = Array.isArray(product?.images) ? product.images : [];
-  const rawImages = productImagesArray.length > 0 
-    ? productImagesArray.flat().filter((img): img is string => 
-        typeof img === 'string' && 
-        img.startsWith('http') && 
-        !img.includes('undefined')
-      )
-    : [];
-  
-  // Use image_url as fallback if no valid images
-  const images = rawImages.length > 0 
-    ? rawImages 
-    : (product?.image_url ? [product.image_url] : ['/placeholder.svg']);
+  // CRITICAL: Must be wrapped in useMemo for stable hook count across renders
+  const images = useMemo(() => {
+    const productImagesArray = Array.isArray(product?.images) ? product.images : [];
+    const rawImages = productImagesArray.length > 0 
+      ? productImagesArray.flat().filter((img): img is string => 
+          typeof img === 'string' && 
+          img.startsWith('http') && 
+          !img.includes('undefined')
+        )
+      : [];
+    
+    // Use image_url as fallback if no valid images
+    return rawImages.length > 0 
+      ? rawImages 
+      : (product?.image_url ? [product.image_url] : ['/placeholder.svg']);
+  }, [product?.images, product?.image_url]);
 
   // Auto-slideshow effect - moved before early returns to follow hooks rules
   useEffect(() => {

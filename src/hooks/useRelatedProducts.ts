@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useRecentlyViewed } from './useRecentlyViewed';
 
 interface ProductPublic {
   id: string;
@@ -23,6 +22,8 @@ interface UseRelatedProductsOptions {
   productName?: string;
   maxItems?: number;
   enabled?: boolean;
+  /** Recently viewed IDs (required to ensure stable hook count) */
+  recentlyViewedIds: string[];
 }
 
 interface BrowsingContext {
@@ -109,16 +110,20 @@ const scoreProduct = (
   return score;
 };
 
+/**
+ * Hook to fetch related products with enhanced category and keyword matching
+ * 
+ * IMPORTANT: You must provide recentlyViewedIds from the parent component
+ * using useRecentlyViewed().getRecentlyViewedIds() to ensure stable hook count
+ */
 export const useRelatedProducts = ({
   productId,
   category,
   productName = '',
   maxItems = 8,
   enabled = true,
+  recentlyViewedIds,
 }: UseRelatedProductsOptions) => {
-  const { getRecentlyViewedIds } = useRecentlyViewed();
-  const recentlyViewedIds = getRecentlyViewedIds(productId);
-
   return useQuery({
     queryKey: ['related-products-enhanced', productId, category, maxItems, recentlyViewedIds.slice(0, 5).join(',')],
     queryFn: async () => {
