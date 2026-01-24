@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShoppingCart, Users, CreditCard, X, Minimize2, Maximize2, TrendingUp, MapPin, Percent } from "lucide-react";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { safeString } from "@/lib/safe-render";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 interface LiveStats {
   totalVisitors: number;
@@ -179,6 +180,15 @@ export const LiveCheckoutWidget = () => {
   // Don't render for non-admins
   if (!isAdmin || !isVisible) return null;
 
+  // Funnel data for donut chart
+  const funnelData = [
+    { name: "Browsen", value: stats.browsing, color: "#ef4444" },
+    { name: "Wagen", value: stats.cart, color: "#f97316" },
+    { name: "Checkout", value: stats.checkout, color: "#22c55e" },
+  ];
+  
+  const totalFunnel = stats.browsing + stats.cart + stats.checkout;
+
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
@@ -250,47 +260,71 @@ export const LiveCheckoutWidget = () => {
                 transition={{ duration: 0.2 }}
               >
                 {/* Stats Grid */}
-                <div className="p-3 grid grid-cols-2 gap-2">
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
-                    <Users className="w-4 h-4 text-blue-500" />
-                    <div>
-                      <div className="text-lg font-bold">{stats.totalVisitors}</div>
-                      <div className="text-xs text-muted-foreground">Nu (15 min)</div>
+                <div className="p-3 space-y-3">
+                  {/* Top row: Live & Today visitors */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
+                      <Users className="w-4 h-4 text-blue-500" />
+                      <div>
+                        <div className="text-lg font-bold">{stats.totalVisitors}</div>
+                        <div className="text-xs text-muted-foreground">Nu (15 min)</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-blue-500/10 border border-blue-500/30">
+                      <Users className="w-4 h-4 text-blue-600" />
+                      <div>
+                        <div className="text-lg font-bold text-blue-600">{stats.todayVisitors}</div>
+                        <div className="text-xs text-muted-foreground">Vandaag</div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-blue-500/10 border border-blue-500/30">
-                    <Users className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <div className="text-lg font-bold text-blue-600">{stats.todayVisitors}</div>
-                      <div className="text-xs text-muted-foreground">Vandaag</div>
+
+                  {/* Funnel donut chart with legend */}
+                  {totalFunnel > 0 && (
+                    <div className="flex items-center gap-3 p-2 rounded-md bg-muted/20">
+                      <div className="w-16 h-16 flex-shrink-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={funnelData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={18}
+                              outerRadius={28}
+                              paddingAngle={2}
+                              dataKey="value"
+                            >
+                              {funnelData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        {funnelData.map((item) => (
+                          <div key={item.name} className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <div 
+                                className="w-2 h-2 rounded-full" 
+                                style={{ backgroundColor: item.color }}
+                              />
+                              <span className="text-muted-foreground">{item.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="font-semibold">{item.value}</span>
+                              <span className="text-muted-foreground">
+                                ({totalFunnel > 0 ? Math.round((item.value / totalFunnel) * 100) : 0}%)
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
-                    <div className="w-3 h-3 rounded-full bg-red-500" />
-                    <div>
-                      <div className="text-lg font-bold">{stats.browsing}</div>
-                      <div className="text-xs text-muted-foreground">Browsen</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
-                    <ShoppingCart className="w-4 h-4 text-orange-500" />
-                    <div>
-                      <div className="text-lg font-bold">{stats.cart}</div>
-                      <div className="text-xs text-muted-foreground">Wagen</div>
-                    </div>
-                  </div>
-                  <motion.div 
-                    className="flex items-center gap-2 p-2 rounded-md bg-green-500/10 border border-green-500/30"
-                    animate={newCheckout ? { scale: [1, 1.05, 1] } : {}}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <CreditCard className="w-4 h-4 text-green-500" />
-                    <div>
-                      <div className="text-lg font-bold text-green-600">{stats.checkout}</div>
-                      <div className="text-xs text-muted-foreground">Checkout</div>
-                    </div>
-                  </motion.div>
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-purple-500/10 border border-purple-500/30 col-span-2">
+                  )}
+
+                  {/* Conversion ratio */}
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-purple-500/10 border border-purple-500/30">
                     <Percent className="w-4 h-4 text-purple-500" />
                     <div className="flex-1">
                       <div className="flex items-baseline gap-2">
