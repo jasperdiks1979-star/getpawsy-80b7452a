@@ -1,0 +1,94 @@
+version: 2
+
+updates:
+  # NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Amsterdam"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "owner"
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Group React-related updates together
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "react-router*"
+          - "@types/react*"
+      # Group all Radix UI updates together
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+      # Group all testing dependencies
+      testing:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "@playwright/*"
+          - "playwright"
+      # Group Tailwind and styling
+      styling:
+        patterns:
+          - "tailwind*"
+          - "tailwindcss*"
+          - "postcss"
+          - "autoprefixer"
+      # Group TipTap editor
+      tiptap:
+        patterns:
+          - "@tiptap/*"
+      # Group Supabase
+      supabase:
+        patterns:
+          - "@supabase/*"
+      # Group TanStack
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      # Group build tools
+      build-tools:
+        patterns:
+          - "vite"
+          - "vite-*"
+          - "@vitejs/*"
+          - "typescript"
+          - "eslint*"
+    ignore:
+      # Ignore major version updates for critical packages (review manually)
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Amsterdam"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      # Group all GitHub Actions updates
+      actions:
+        patterns:
+          - "*"
