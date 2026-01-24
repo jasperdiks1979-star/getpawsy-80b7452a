@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import logoIcon from '@/assets/logo-getpawsy.png';
+import { DebugPanel } from './DebugPanel';
 
 const emailSchema = z.string().trim().email({ message: 'Invalid email address' }).max(255);
 
@@ -344,6 +345,9 @@ export const Footer = () => {
           </div>
         </div>
       </div>
+      
+      {/* Debug Panel - only visible with ?debug=true */}
+      <DebugPanel />
     </footer>
   );
 };
