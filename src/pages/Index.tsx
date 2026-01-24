@@ -365,15 +365,34 @@ const Index = () => {
   return (
     <Layout>
       <WebsiteSchema />
-      {/* Hero Section with Parallax */}
-      <section ref={heroRef} className="relative overflow-hidden">
-        {/* Decorative background elements */}
-        <div className="absolute inset-0 gradient-hero" />
-        <div className="absolute top-20 right-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-10 w-96 h-96 bg-secondary/30 rounded-full blur-3xl" />
+      {/* Hero Section with Video Background */}
+      <section ref={heroRef} className="relative overflow-hidden min-h-[90vh] flex items-center">
+        {/* Video Background */}
+        <div className="absolute inset-0 z-0">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            poster="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1920&q=80"
+            className="w-full h-full object-cover"
+          >
+            <source 
+              src="https://videos.pexels.com/video-files/4488282/4488282-hd_1920_1080_25fps.mp4" 
+              type="video/mp4" 
+            />
+          </video>
+          {/* Gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-background/30" />
+        </div>
+        
+        {/* Decorative blur elements */}
+        <div className="absolute top-20 right-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl z-0" />
+        <div className="absolute bottom-10 left-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl z-0" />
         
         <motion.div 
-          className="container relative px-4 md:px-6 py-20 md:py-32"
+          className="container relative z-10 px-4 md:px-6 py-20 md:py-32"
           style={{ opacity: heroOpacity }}
         >
           <div className="grid lg:grid-cols-2 gap-12 items-center">
