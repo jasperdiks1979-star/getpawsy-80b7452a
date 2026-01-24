@@ -1,0 +1,181 @@
+name: Bundle Size Analysis
+
+on:
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  analyze:
+    name: Analyze Bundle Size
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and analyze PR bundle
+        run: |
+          npm run build -- --mode production
+          echo "## PR Branch Bundle Sizes" > pr-bundle-report.md
+          echo "" >> pr-bundle-report.md
+          echo "| File | Size | Gzipped |" >> pr-bundle-report.md
+          echo "|------|------|---------|" >> pr-bundle-report.md
+          
+          # Analyze JS bundles
+          for file in dist/assets/*.js; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              size=$(ls -lh "$file" | awk '{print $5}')
+              gzip -c "$file" > "$file.gz"
+              gzsize=$(ls -lh "$file.gz" | awk '{print $5}')
+              rm "$file.gz"
+              echo "| $filename | $size | $gzsize |" >> pr-bundle-report.md
+            fi
+          done
+          
+          # Analyze CSS bundles
+          for file in dist/assets/*.css; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              size=$(ls -lh "$file" | awk '{print $5}')
+              gzip -c "$file" > "$file.gz"
+              gzsize=$(ls -lh "$file.gz" | awk '{print $5}')
+              rm "$file.gz"
+              echo "| $filename | $size | $gzsize |" >> pr-bundle-report.md
+            fi
+          done
+          
+          # Calculate totals
+          echo "" >> pr-bundle-report.md
+          echo "### Totals" >> pr-bundle-report.md
+          total_js=$(find dist/assets -name "*.js" -exec cat {} + 2>/dev/null | wc -c)
+          total_css=$(find dist/assets -name "*.css" -exec cat {} + 2>/dev/null | wc -c)
+          total_js_kb=$((total_js / 1024))
+          total_css_kb=$((total_css / 1024))
+          echo "- **Total JS:** ${total_js_kb} KB" >> pr-bundle-report.md
+          echo "- **Total CSS:** ${total_css_kb} KB" >> pr-bundle-report.md
+          echo "- **Combined:** $((total_js_kb + total_css_kb)) KB" >> pr-bundle-report.md
+
+      - name: Checkout base branch for comparison
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base-branch
+
+      - name: Build base branch bundle
+        run: |
+          cd base-branch
+          npm ci
+          npm run build -- --mode production
+          
+          # Calculate base totals
+          base_js=$(find dist/assets -name "*.js" -exec cat {} + 2>/dev/null | wc -c)
+          base_css=$(find dist/assets -name "*.css" -exec cat {} + 2>/dev/null | wc -c)
+          base_js_kb=$((base_js / 1024))
+          base_css_kb=$((base_css / 1024))
+          
+          echo "" >> ../pr-bundle-report.md
+          echo "### Comparison with Base Branch" >> ../pr-bundle-report.md
+          echo "| Metric | Base | PR | Diff |" >> ../pr-bundle-report.md
+          echo "|--------|------|-----|------|" >> ../pr-bundle-report.md
+          
+          # Get PR totals
+          cd ..
+          pr_js=$(find dist/assets -name "*.js" -exec cat {} + 2>/dev/null | wc -c)
+          pr_css=$(find dist/assets -name "*.css" -exec cat {} + 2>/dev/null | wc -c)
+          pr_js_kb=$((pr_js / 1024))
+          pr_css_kb=$((pr_css / 1024))
+          
+          js_diff=$((pr_js_kb - base_js_kb))
+          css_diff=$((pr_css_kb - base_css_kb))
+          total_diff=$((js_diff + css_diff))
+          
+          # Format diff with + or - sign
+          if [ $js_diff -ge 0 ]; then js_diff_str="+${js_diff}"; else js_diff_str="${js_diff}"; fi
+          if [ $css_diff -ge 0 ]; then css_diff_str="+${css_diff}"; else css_diff_str="${css_diff}"; fi
+          if [ $total_diff -ge 0 ]; then total_diff_str="+${total_diff}"; else total_diff_str="${total_diff}"; fi
+          
+          echo "| JavaScript | ${base_js_kb} KB | ${pr_js_kb} KB | ${js_diff_str} KB |" >> pr-bundle-report.md
+          echo "| CSS | ${base_css_kb} KB | ${pr_css_kb} KB | ${css_diff_str} KB |" >> pr-bundle-report.md
+          echo "| **Total** | **$((base_js_kb + base_css_kb)) KB** | **$((pr_js_kb + pr_css_kb)) KB** | **${total_diff_str} KB** |" >> pr-bundle-report.md
+          
+          # Add status emoji
+          echo "" >> pr-bundle-report.md
+          if [ $total_diff -gt 50 ]; then
+            echo "⚠️ **Warning:** Bundle size increased by more than 50KB" >> pr-bundle-report.md
+          elif [ $total_diff -gt 0 ]; then
+            echo "📈 Bundle size increased slightly" >> pr-bundle-report.md
+          elif [ $total_diff -lt 0 ]; then
+            echo "✅ Bundle size decreased!" >> pr-bundle-report.md
+          else
+            echo "➡️ No change in bundle size" >> pr-bundle-report.md
+          fi
+
+      - name: Post bundle size comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('pr-bundle-report.md', 'utf8');
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('## PR Branch Bundle Sizes')
+            );
+            
+            const body = `📦 **Bundle Size Report**\n\n${report}`;
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis
+          path: |
+            pr-bundle-report.md
+            dist/assets/*.js
+            dist/assets/*.css
+          retention-days: 7
+
+      - name: Fail if bundle too large
+        run: |
+          total_js=$(find dist/assets -name "*.js" -exec cat {} + 2>/dev/null | wc -c)
+          total_kb=$((total_js / 1024))
+          
+          # Fail if total JS exceeds 2MB (adjust threshold as needed)
+          if [ $total_kb -gt 2048 ]; then
+            echo "❌ Bundle size exceeds 2MB limit: ${total_kb}KB"
+            exit 1
+          fi
+          
+          echo "✅ Bundle size within limits: ${total_kb}KB"
