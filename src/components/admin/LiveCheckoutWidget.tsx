@@ -10,6 +10,7 @@ import { safeString } from "@/lib/safe-render";
 
 interface LiveStats {
   totalVisitors: number;
+  todayVisitors: number;
   browsing: number;
   cart: number;
   checkout: number;
@@ -34,6 +35,7 @@ export const LiveCheckoutWidget = () => {
   });
   const [stats, setStats] = useState<LiveStats>({
     totalVisitors: 0,
+    todayVisitors: 0,
     browsing: 0,
     cart: 0,
     checkout: 0,
@@ -75,11 +77,23 @@ export const LiveCheckoutWidget = () => {
   const fetchStats = useCallback(async () => {
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     
+    // Get start of today (midnight)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStart = today.toISOString();
+    
+    // Fetch last 15 minutes data
     const { data, error } = await supabase
       .from("visitor_activity")
       .select("*")
       .gte("created_at", fifteenMinutesAgo)
       .order("created_at", { ascending: false });
+
+    // Fetch today's unique visitors
+    const { data: todayData } = await supabase
+      .from("visitor_activity")
+      .select("session_id")
+      .gte("created_at", todayStart);
 
     if (error || !data) return;
 
@@ -109,8 +123,12 @@ export const LiveCheckoutWidget = () => {
         created_at: a.created_at,
       }));
 
+    // Count unique sessions today
+    const todaySessions = new Set(todayData?.map(v => v.session_id) || []);
+
     setStats({
       totalVisitors: sessionMap.size,
+      todayVisitors: todaySessions.size,
       ...counts,
       recentCheckouts,
     });
@@ -237,7 +255,14 @@ export const LiveCheckoutWidget = () => {
                     <Users className="w-4 h-4 text-blue-500" />
                     <div>
                       <div className="text-lg font-bold">{stats.totalVisitors}</div>
-                      <div className="text-xs text-muted-foreground">Bezoekers</div>
+                      <div className="text-xs text-muted-foreground">Nu (15 min)</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-blue-500/10 border border-blue-500/30">
+                    <Users className="w-4 h-4 text-blue-600" />
+                    <div>
+                      <div className="text-lg font-bold text-blue-600">{stats.todayVisitors}</div>
+                      <div className="text-xs text-muted-foreground">Vandaag</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
