@@ -147,6 +147,39 @@ export const FrequentlyBoughtTogether = ({
     setSelectedIds(initialSelected);
   }, [currentProduct.id, bundleProducts]);
 
+  // Confetti celebration for max discount - MUST be before any early returns
+  const triggerConfetti = useCallback(() => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        return;
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        colors: ['#22c55e', '#16a34a', '#4ade80', '#86efac', '#fbbf24', '#f59e0b'],
+      });
+      
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        colors: ['#22c55e', '#16a34a', '#4ade80', '#86efac', '#fbbf24', '#f59e0b'],
+      });
+    }, 250);
+  }, []);
+
   // Track impression when visible
   useEffect(() => {
     if (bundleProducts.length === 0 || impressionTracked.current) return;
@@ -179,69 +212,36 @@ export const FrequentlyBoughtTogether = ({
     return () => observer.disconnect();
   }, [bundleProducts, sourceProductId, sourceProductName, currentProduct]);
 
-  // Show skeleton when loading
-  if (isLoading) {
-    return <FrequentlyBoughtTogetherSkeleton />;
-  }
-
-  if (bundleProducts.length === 0) return null;
-
-  const allProducts = [currentProduct, ...bundleProducts];
-  const selectedProducts = allProducts.filter(p => selectedIds.has(p.id));
+  // Memoize computed values before early returns
+  const allProducts = useMemo(() => [currentProduct, ...bundleProducts], [currentProduct, bundleProducts]);
+  const selectedProducts = useMemo(() => allProducts.filter(p => selectedIds.has(p.id)), [allProducts, selectedIds]);
 
   // Calculate dynamic discount based on selection count
-  const { percentage: bundleDiscount, code: discountCode } = getDiscountForCount(selectedProducts.length);
+  const { percentage: bundleDiscount, code: discountCode } = useMemo(
+    () => getDiscountForCount(selectedProducts.length),
+    [selectedProducts.length]
+  );
   
   // Calculate prices
-  const originalTotal = selectedProducts.reduce((sum, p) => sum + p.price, 0);
-  const discountAmount = selectedProducts.length >= 2 
-    ? (originalTotal * bundleDiscount) / 100 
-    : 0;
-  const bundleTotal = originalTotal - discountAmount;
+  const { originalTotal, discountAmount, bundleTotal } = useMemo(() => {
+    const original = selectedProducts.reduce((sum, p) => sum + p.price, 0);
+    const discount = selectedProducts.length >= 2 
+      ? (original * bundleDiscount) / 100 
+      : 0;
+    return {
+      originalTotal: original,
+      discountAmount: discount,
+      bundleTotal: original - discount,
+    };
+  }, [selectedProducts, bundleDiscount]);
 
-  // Confetti celebration for max discount
-  const triggerConfetti = useCallback(() => {
-    const duration = 3000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
-
-    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-
-    const interval = setInterval(() => {
-      const timeLeft = animationEnd - Date.now();
-      if (timeLeft <= 0) {
-        clearInterval(interval);
-        return;
-      }
-
-      const particleCount = 50 * (timeLeft / duration);
-
-      // Burst from left
-      confetti({
-        ...defaults,
-        particleCount,
-        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
-        colors: ['#22c55e', '#16a34a', '#4ade80', '#86efac', '#fbbf24', '#f59e0b'],
-      });
-      
-      // Burst from right
-      confetti({
-        ...defaults,
-        particleCount,
-        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
-        colors: ['#22c55e', '#16a34a', '#4ade80', '#86efac', '#fbbf24', '#f59e0b'],
-      });
-    }, 250);
-  }, []);
-
-  // Watch for max discount unlock
+  // Watch for max discount unlock - MUST be before early returns
   useEffect(() => {
     if (selectedProducts.length >= 5 && !maxDiscountCelebrated.current) {
       maxDiscountCelebrated.current = true;
       setHasUnlockedMax(true);
       triggerConfetti();
       
-      // Reset celebration flag after animation
       setTimeout(() => {
         setHasUnlockedMax(false);
       }, 4000);
@@ -249,6 +249,13 @@ export const FrequentlyBoughtTogether = ({
       maxDiscountCelebrated.current = false;
     }
   }, [selectedProducts.length, triggerConfetti]);
+
+  // Show skeleton when loading - AFTER all hooks
+  if (isLoading) {
+    return <FrequentlyBoughtTogetherSkeleton />;
+  }
+
+  if (bundleProducts.length === 0) return null;
 
   const toggleProduct = (productId: string) => {
     // Don't allow deselecting the current product
