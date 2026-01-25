@@ -40,6 +40,7 @@ const VariantFixLogs = lazy(() => import("@/components/admin/VariantFixLogs"));
 const ErrorLogsManager = lazy(() => import("@/components/admin/ErrorLogsManager"));
 const DuplicateProductsDetector = lazy(() => import("@/components/admin/DuplicateProductsDetector"));
 const DisputeManager = lazy(() => import("@/components/admin/DisputeManager"));
+const CJWebhookManager = lazy(() => import("@/components/admin/CJWebhookManager"));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -1137,6 +1138,12 @@ const Admin = () => {
                 <TabsTrigger value="disputes" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Claims</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="CJ Webhook instellingen en logs">
+                <TabsTrigger value="cj-webhooks" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Webhooks</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -2699,6 +2706,22 @@ const Admin = () => {
                 </Card>
               }>
                 <DisputeManager />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* CJ Webhooks Tab */}
+          <TabsContent value="cj-webhooks">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Webhook instellingen laden...</span>
+                  </div>
+                </Card>
+              }>
+                <CJWebhookManager />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
