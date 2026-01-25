@@ -26,28 +26,29 @@ export default defineConfig(({ mode }) => ({
     // Rollup options for code splitting
     rollupOptions: {
       output: {
-        // Manual chunk splitting for optimal caching
-        manualChunks: {
-          // React core - rarely changes
-          'react-vendor': ['react', 'react-dom'],
-          // React Router
-          'router': ['react-router-dom'],
-          // UI framework
-          'radix-ui': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-accordion',
-          ],
-          // Animation library
-          'animations': ['framer-motion'],
-          // Data fetching
-          'query': ['@tanstack/react-query'],
-          // Charts (only loaded when needed)
-          'charts': ['recharts'],
+        // Use function-based chunking to avoid default export issues
+        manualChunks(id) {
+          // Vendor chunks for better caching
+          if (id.includes('node_modules')) {
+            if (id.includes('react-dom') || id.includes('react/')) {
+              return 'react-vendor';
+            }
+            if (id.includes('react-router')) {
+              return 'router';
+            }
+            if (id.includes('@radix-ui')) {
+              return 'radix-ui';
+            }
+            if (id.includes('framer-motion')) {
+              return 'animations';
+            }
+            if (id.includes('@tanstack/react-query')) {
+              return 'query';
+            }
+            if (id.includes('recharts')) {
+              return 'charts';
+            }
+          }
         },
         // Optimize chunk file names for caching
         chunkFileNames: 'assets/[name]-[hash].js',
