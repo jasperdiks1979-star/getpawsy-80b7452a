@@ -180,13 +180,57 @@ export function observeTTFB(handler: MetricHandler): void {
   }
 }
 
+// Report metric to backend for monitoring
+async function reportMetricToBackend(metric: Metric): Promise<void> {
+  // Only report in production
+  if (typeof window === 'undefined') return;
+  
+  // Get session ID from localStorage or generate one
+  let sessionId = sessionStorage.getItem('perf-session-id');
+  if (!sessionId) {
+    sessionId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    sessionStorage.setItem('perf-session-id', sessionId);
+  }
+
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) return;
+
+    await fetch(`${supabaseUrl}/functions/v1/report-web-vitals`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: metric.name,
+        value: metric.value,
+        rating: metric.rating,
+        pageUrl: window.location.pathname,
+        sessionId,
+        userAgent: navigator.userAgent,
+      }),
+      // Use keepalive to ensure request completes even on page unload
+      keepalive: true,
+    });
+  } catch (e) {
+    // Silently fail - don't impact user experience
+    console.debug('Failed to report web vital:', e);
+  }
+}
+
 // Initialize all Web Vitals observers
 export function initWebVitals(handler: MetricHandler = console.debug): void {
-  observeLCP(handler);
-  observeFID(handler);
-  observeCLS(handler);
-  observeFCP(handler);
-  observeTTFB(handler);
+  const wrappedHandler: MetricHandler = (metric) => {
+    handler(metric);
+    // Report to backend for monitoring
+    reportMetricToBackend(metric);
+  };
+
+  observeLCP(wrappedHandler);
+  observeFID(wrappedHandler);
+  observeCLS(wrappedHandler);
+  observeFCP(wrappedHandler);
+  observeTTFB(wrappedHandler);
 }
 
 // Format metric value for display
