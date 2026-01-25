@@ -156,6 +156,7 @@ const NewsletterPreferences = lazyWithRetry(() => import("./pages/NewsletterPref
 const SlowFeederOffer = lazyWithRetry(() => import("./pages/SlowFeederOffer"));
 const DownloadAds = lazyWithRetry(() => import("./pages/DownloadAds"));
 const TechnicalDeclaration = lazyWithRetry(() => import("./pages/TechnicalDeclaration"));
+const MyClaims = lazyWithRetry(() => import("./pages/MyClaims"));
 // Optimized React Query client with aggressive caching
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -225,6 +226,7 @@ const App = () => {
                         <Route path="/wishlist" element={<Wishlist />} />
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/orders" element={<Orders />} />
+                        <Route path="/my-claims" element={<MyClaims />} />
                         <Route path="/install" element={<Install />} />
                         <Route path="/about" element={<About />} />
                         <Route path="/privacy" element={<PrivacyPolicy />} />

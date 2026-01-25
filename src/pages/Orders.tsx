@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { Package, ChevronRight, ShoppingBag, Truck, ExternalLink } from "lucide-react";
+import { Package, ChevronRight, ShoppingBag, Truck, ExternalLink, AlertCircle } from "lucide-react";
+import OrderClaimButton from "@/components/orders/OrderClaimButton";
 import { format } from "date-fns";
 
 // Order card skeleton component
@@ -206,10 +207,18 @@ const Orders = () => {
                 View your previous orders and their status
               </p>
             </div>
-            <Badge variant="secondary" className="text-lg px-4 py-2">
-              <Package className="w-4 h-4 mr-2" />
-              {orders?.length || 0} orders
-            </Badge>
+            <div className="flex items-center gap-3">
+              <Button asChild variant="outline" size="sm">
+                <Link to="/my-claims">
+                  <AlertCircle className="w-4 h-4 mr-2" />
+                  My Claims
+                </Link>
+              </Button>
+              <Badge variant="secondary" className="text-lg px-4 py-2">
+                <Package className="w-4 h-4 mr-2" />
+                {orders?.length || 0} orders
+              </Badge>
+            </div>
           </div>
 
           {isLoading ? (
@@ -321,6 +330,14 @@ const Orders = () => {
                           </p>
                         </div>
                       )}
+
+                      {/* Report Issue / Claim Button */}
+                      <div className="mt-4 pt-4 border-t flex justify-end">
+                        <OrderClaimButton 
+                          orderId={order.id} 
+                          orderEmail={user?.email || ""} 
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
