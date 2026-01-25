@@ -165,7 +165,7 @@ const MyClaims = () => {
                               </p>
                               {claim.resolution_amount && (
                                 <p className="text-sm text-green-700 dark:text-green-300">
-                                  Amount: €{claim.resolution_amount.toFixed(2)}
+                                  Refund amount processed
                                 </p>
                               )}
                               {claim.resolution_notes && (
