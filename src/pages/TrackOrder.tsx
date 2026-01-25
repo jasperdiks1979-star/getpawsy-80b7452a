@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
-import { Package, Search, Truck, CheckCircle, Clock, MapPin, ExternalLink, AlertCircle } from 'lucide-react';
+import { Package, Search, Truck, CheckCircle, Clock, MapPin, ExternalLink, AlertCircle, FileWarning } from 'lucide-react';
+import OrderClaimButton from '@/components/orders/OrderClaimButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -362,6 +363,27 @@ const TrackOrder = () => {
                     <span className="font-semibold text-foreground">
                       ${orderResult.total_amount.toFixed(2)}
                     </span>
+                  </div>
+                </div>
+
+                {/* Report Issue Button */}
+                <div className="mt-6 pt-4 border-t">
+                  <div className="bg-muted/30 rounded-xl p-4">
+                    <div className="flex items-start gap-4">
+                      <FileWarning className="w-6 h-6 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-foreground mb-1">Having an issue?</h3>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          If your order arrived damaged, is missing, or has other problems, you can submit a claim.
+                        </p>
+                        <OrderClaimButton 
+                          orderId={orderResult.id} 
+                          orderEmail={orderResult.customer_email || email}
+                          variant="default"
+                          size="default"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
