@@ -1,8 +1,8 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +11,7 @@ import { AlertCircle, CheckCircle, Clock, MessageSquare, XCircle, FileText, Chev
 import { format } from "date-fns";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import ClaimDetailDialog from "@/components/claims/ClaimDetailDialog";
 
 interface Dispute {
   id: string;
@@ -59,12 +60,29 @@ ClaimCardSkeleton.displayName = 'ClaimCardSkeleton';
 const MyClaims = () => {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [selectedClaim, setSelectedClaim] = useState<Dispute | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
     }
   }, [authLoading, user, navigate]);
+
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("id", user!.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const { data: claims, isLoading } = useQuery({
     queryKey: ["my-claims", user?.id],
@@ -200,11 +218,16 @@ const MyClaims = () => {
                         <span className="text-xs text-muted-foreground">
                           Claim ID: {claim.id.slice(0, 8).toUpperCase()}
                         </span>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to="/contact">
-                            Need Help?
-                            <ChevronRight className="w-4 h-4 ml-1" />
-                          </Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedClaim(claim);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          View & Message
                         </Button>
                       </div>
                     </CardContent>
@@ -229,6 +252,13 @@ const MyClaims = () => {
               </CardContent>
             </Card>
           )}
+
+          <ClaimDetailDialog
+            claim={selectedClaim}
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            customerEmail={userProfile?.email || user?.email || ""}
+          />
         </div>
       </div>
     </Layout>
