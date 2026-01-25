@@ -6,14 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Mapping of our packaging types to CJ product IDs
-// These would need to be set up when you create custom products at CJ
-const PACKAGING_CJ_MAPPING: Record<string, string> = {
-  sticker: "", // Fill in with actual CJ product ID when available
-  thank_you_card: "",
-  poly_mailer_small: "",
-  poly_mailer_medium: "",
-};
+// CJ product IDs are now stored in the packaging_inventory table
 
 // Get CJ access token (cached)
 async function getCJAccessToken(): Promise<string> {
@@ -106,7 +99,7 @@ serve(async (req) => {
       }
     }
 
-    // Get our packaging inventory
+    // Get our packaging inventory with cj_product_id
     const { data: inventory, error: invError } = await supabase
       .from("packaging_inventory")
       .select("*");
@@ -127,9 +120,9 @@ serve(async (req) => {
       error?: string;
     }> = [];
 
-    // For each packaging item, check if we have a CJ product ID configured
+    // For each packaging item, check if we have a CJ product ID configured in database
     for (const item of inventory || []) {
-      const cjProductId = PACKAGING_CJ_MAPPING[item.item_type];
+      const cjProductId = item.cj_product_id;
       
       if (!cjProductId) {
         syncResults.push({
@@ -138,7 +131,7 @@ serve(async (req) => {
           cjStock: null,
           localStock: item.quantity,
           synced: false,
-          error: "No CJ product ID configured for this packaging type",
+          error: "No CJ product ID configured - set via admin panel",
         });
         continue;
       }
@@ -212,7 +205,7 @@ serve(async (req) => {
         message: `Synced ${syncedCount} of ${syncResults.length} packaging items`,
         results: syncResults,
         note: syncedCount === 0 
-          ? "No CJ product IDs are configured yet. Set up custom products at CJ first, then update the PACKAGING_CJ_MAPPING in the edge function."
+          ? "No CJ product IDs are configured yet. Set them via the 'CJ Product IDs' button in the packaging manager."
           : undefined
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

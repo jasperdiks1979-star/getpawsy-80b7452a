@@ -804,6 +804,7 @@ export type Database = {
       }
       packaging_inventory: {
         Row: {
+          cj_product_id: string | null
           created_at: string
           id: string
           item_name: string
@@ -816,6 +817,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cj_product_id?: string | null
           created_at?: string
           id?: string
           item_name: string
@@ -828,6 +830,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cj_product_id?: string | null
           created_at?: string
           id?: string
           item_name?: string

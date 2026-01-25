@@ -32,7 +32,6 @@ import { Label } from "@/components/ui/label";
 import {
   Package,
   Plus,
-  Minus,
   History,
   AlertTriangle,
   RefreshCw,
@@ -40,6 +39,9 @@ import {
   Mail,
   Loader2,
   CloudDownload,
+  Link,
+  Save,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -71,6 +73,43 @@ export const InventoryTracker = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSendingTestAlert, setIsSendingTestAlert] = useState(false);
   const [isSyncingCJ, setIsSyncingCJ] = useState(false);
+  const [cjConfigOpen, setCjConfigOpen] = useState(false);
+  const [cjProductIds, setCjProductIds] = useState<Record<string, string>>({});
+  const [isSavingCjIds, setIsSavingCjIds] = useState(false);
+
+  // Initialize CJ product IDs from inventory data
+  const initializeCjIds = () => {
+    if (inventory) {
+      const ids: Record<string, string> = {};
+      inventory.forEach((item) => {
+        ids[item.id] = (item as PackagingInventoryItem & { cj_product_id?: string }).cj_product_id || "";
+      });
+      setCjProductIds(ids);
+    }
+  };
+
+  const handleSaveCjProductIds = async () => {
+    setIsSavingCjIds(true);
+    try {
+      const updates = Object.entries(cjProductIds).map(([id, cjId]) =>
+        supabase
+          .from("packaging_inventory")
+          .update({ cj_product_id: cjId || null })
+          .eq("id", id)
+      );
+      
+      await Promise.all(updates);
+      
+      toast.success("CJ Product IDs opgeslagen");
+      refetch();
+      setCjConfigOpen(false);
+    } catch (error) {
+      console.error("Error saving CJ IDs:", error);
+      toast.error("Kon CJ IDs niet opslaan");
+    } finally {
+      setIsSavingCjIds(false);
+    }
+  };
 
   const handleSyncWithCJ = async () => {
     setIsSyncingCJ(true);
@@ -201,6 +240,64 @@ export const InventoryTracker = () => {
               </CardDescription>
             </div>
             <div className="flex gap-2 flex-wrap">
+              <Dialog open={cjConfigOpen} onOpenChange={(open) => {
+                setCjConfigOpen(open);
+                if (open) initializeCjIds();
+              }}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="w-4 h-4 mr-2" />
+                    CJ Product IDs
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Link className="w-5 h-5" />
+                      CJ Product IDs Configureren
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <p className="text-sm text-muted-foreground">
+                      Vul de CJ Dropshipping product IDs in voor elk verpakkingsmateriaal om automatische voorraadsynchronisatie te activeren.
+                    </p>
+                    {inventory?.map((item) => (
+                      <div key={item.id} className="space-y-1">
+                        <Label className="text-sm">
+                          {itemTypeLabels[item.item_type] || item.item_name}
+                        </Label>
+                        <Input
+                          placeholder="bijv. 1OE8100030384"
+                          value={cjProductIds[item.id] || ""}
+                          onChange={(e) => setCjProductIds({
+                            ...cjProductIds,
+                            [item.id]: e.target.value.trim(),
+                          })}
+                        />
+                      </div>
+                    ))}
+                    <div className="p-3 bg-muted rounded-lg text-xs text-muted-foreground space-y-1">
+                      <p className="font-medium">Waar vind ik CJ Product IDs?</p>
+                      <p>1. Maak custom producten aan in je CJ Dropshipping account</p>
+                      <p>2. Kopieer de Product ID uit de product details</p>
+                      <p>3. Plak hier om voorraad sync te activeren</p>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Annuleren</Button>
+                    </DialogClose>
+                    <Button onClick={handleSaveCjProductIds} disabled={isSavingCjIds}>
+                      {isSavingCjIds ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4 mr-2" />
+                      )}
+                      Opslaan
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <Button 
                 variant="outline" 
                 size="sm" 
