@@ -2686,6 +2686,22 @@ const Admin = () => {
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
+
+          {/* Disputes Tab */}
+          <TabsContent value="disputes">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Claims laden...</span>
+                  </div>
+                </Card>
+              }>
+                <DisputeManager />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
         </Tabs>
 
         {/* Product Edit Dialog */}
@@ -2848,22 +2864,6 @@ const Admin = () => {
           </div>
         )}
 
-          {/* Disputes Tab */}
-          <TabsContent value="disputes">
-            <AuthErrorBoundary>
-              <Suspense fallback={
-                <Card className="p-8">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-muted-foreground">Claims laden...</span>
-                  </div>
-                </Card>
-              }>
-                <DisputeManager />
-              </Suspense>
-            </AuthErrorBoundary>
-          </TabsContent>
-        </Tabs>
       </div>
     </Layout>
   );
