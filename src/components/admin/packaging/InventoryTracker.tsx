@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +70,11 @@ const itemTypeLabels: Record<string, string> = {
   poly_mailer_medium: "Poly Mailer Medium",
 };
 
-export const InventoryTracker = () => {
+interface InventoryTrackerProps {
+  openCjConfigOnMount?: boolean;
+}
+
+export const InventoryTracker = ({ openCjConfigOnMount = false }: InventoryTrackerProps) => {
   const { data: inventory, isLoading, refetch } = usePackagingInventory();
   const { data: logs } = usePackagingInventoryLogs(20);
   const updateInventory = useUpdateInventory();
@@ -81,9 +85,31 @@ export const InventoryTracker = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSendingTestAlert, setIsSendingTestAlert] = useState(false);
   const [isSyncingCJ, setIsSyncingCJ] = useState(false);
-  const [cjConfigOpen, setCjConfigOpen] = useState(false);
+  const [cjConfigOpen, setCjConfigOpen] = useState(openCjConfigOnMount);
   const [cjProductIds, setCjProductIds] = useState<Record<string, string>>({});
   const [isSavingCjIds, setIsSavingCjIds] = useState(false);
+
+  // Open CJ config dialog when prop changes (for external triggering)
+  useEffect(() => {
+    if (openCjConfigOnMount && inventory) {
+      initializeCjIds();
+    }
+  }, [openCjConfigOnMount, inventory]);
+
+  // Listen for custom event to open CJ config dialog (from dashboard widget)
+  useEffect(() => {
+    const handleOpenCjConfig = () => {
+      setCjConfigOpen(true);
+      if (inventory) {
+        initializeCjIds();
+      }
+    };
+    
+    window.addEventListener('open-cj-config-dialog', handleOpenCjConfig);
+    return () => {
+      window.removeEventListener('open-cj-config-dialog', handleOpenCjConfig);
+    };
+  }, [inventory]);
 
   // Initialize CJ product IDs from inventory data
   const initializeCjIds = () => {
