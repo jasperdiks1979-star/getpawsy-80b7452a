@@ -274,16 +274,16 @@ function generateResolutionEmail(
   
   switch (resolutionType) {
     case 'full_refund':
-      resolutionMessage = `We have issued a <strong>full refund of €${resolutionAmount?.toFixed(2) || 'the order amount'}</strong> to your original payment method. Please allow 5-10 business days for the refund to appear in your account.`;
+      resolutionMessage = `We have issued a <strong>full refund</strong> to your original payment method. Please allow 5-10 business days for the refund to appear in your account.`;
       break;
     case 'partial_refund':
-      resolutionMessage = `We have issued a <strong>partial refund of €${resolutionAmount?.toFixed(2)}</strong> to your original payment method. Please allow 5-10 business days for the refund to appear in your account.`;
+      resolutionMessage = `We have issued a <strong>partial refund</strong> to your original payment method. Please allow 5-10 business days for the refund to appear in your account.`;
       break;
     case 'replacement':
       resolutionMessage = `We are sending you a <strong>replacement item</strong> at no additional cost. You will receive a shipping confirmation email with tracking information once your replacement ships.`;
       break;
     case 'store_credit':
-      resolutionMessage = `We have added <strong>€${resolutionAmount?.toFixed(2)} in store credit</strong> to your account. You can use this credit on your next purchase.`;
+      resolutionMessage = `We have added <strong>store credit</strong> to your account. You can use this credit on your next purchase.`;
       break;
     case 'denied':
       resolutionMessage = `After careful review, we were unable to approve your claim at this time.`;
