@@ -148,7 +148,11 @@ const MetricCard = ({ title, value, change, icon, subtitle, loading }: MetricCar
   );
 };
 
-export const SalesDashboard = () => {
+interface SalesDashboardProps {
+  onNavigateToTab?: (tab: string) => void;
+}
+
+export const SalesDashboard = ({ onNavigateToTab }: SalesDashboardProps) => {
   // Date range filter state
   const [startDate, setStartDate] = useState<Date | undefined>(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
@@ -836,7 +840,7 @@ export const SalesDashboard = () => {
           </CardContent>
         </Card>
         <StaleClaimsWidget />
-        <PackagingInventoryWidget />
+        <PackagingInventoryWidget onNavigate={() => onNavigateToTab?.("packaging")} />
       </div>
 
       {/* Charts Row */}
