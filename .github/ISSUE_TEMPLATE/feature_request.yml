@@ -1,0 +1,133 @@
+name: ✨ Feature Request
+description: Stel een nieuwe feature of verbetering voor
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bedankt voor je feature request! Help ons begrijpen wat je nodig hebt door onderstaande velden in te vullen.
+
+  - type: checkboxes
+    id: existing-feature
+    attributes:
+      label: Bestaande requests
+      description: Controleer of deze feature al is aangevraagd
+      options:
+        - label: Ik heb gezocht en geen bestaande request gevonden voor deze feature
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Probleem of behoefte
+      description: Beschrijf het probleem of de behoefte die deze feature oplost
+      placeholder: |
+        Als gebruiker wil ik [actie] zodat ik [doel/voordeel]...
+        
+        Of: Ik ben gefrustreerd wanneer [situatie beschrijven]...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Voorgestelde oplossing
+      description: Beschrijf hoe je denkt dat dit opgelost zou moeten worden
+      placeholder: Beschrijf je ideale oplossing...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatieven overwogen
+      description: Heb je andere oplossingen of features overwogen?
+      placeholder: Beschrijf alternatieven die je hebt overwogen...
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Gebied
+      description: Welk deel van de applicatie betreft dit?
+      multiple: true
+      options:
+        - Homepage
+        - Producten / Catalogus
+        - Productdetail pagina
+        - Winkelwagen
+        - Checkout
+        - Authenticatie / Login
+        - Gebruikersprofiel
+        - Admin Dashboard
+        - Zoekfunctie
+        - Blog
+        - Performance
+        - Toegankelijkheid
+        - SEO
+        - Nieuw gebied
+    validations:
+      required: true
+
+  - type: dropdown
+    id: user-type
+    attributes:
+      label: Gebruikerstype
+      description: Voor wie is deze feature bedoeld?
+      multiple: true
+      options:
+        - Klanten / Bezoekers
+        - Geregistreerde gebruikers
+        - Beheerders / Admin
+        - Developers
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioriteit (jouw inschatting)
+      description: Hoe belangrijk is deze feature voor jou?
+      options:
+        - 🔴 Must-have - Essentieel voor gebruik
+        - 🟠 Should-have - Belangrijk maar niet blokkerend
+        - 🟡 Nice-to-have - Fijn om te hebben
+        - 🟢 Future - Goed voor de toekomst
+    validations:
+      required: true
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups / Voorbeelden
+      description: Voeg mockups, wireframes, of voorbeelden van andere sites toe
+      placeholder: Sleep afbeeldingen hierheen of voeg links toe...
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptatiecriteria
+      description: Wanneer is deze feature "af"?
+      placeholder: |
+        - [ ] Gebruiker kan X doen
+        - [ ] Systeem toont Y wanneer Z
+        - [ ] Feature werkt op mobiel en desktop
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Bijdragen
+      description: Wil je bijdragen aan deze feature?
+      options:
+        - label: Ik ben bereid om aan deze feature te werken
+        - label: Ik kan helpen met testen
+        - label: Ik kan helpen met documentatie
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Aanvullende context
+      description: Andere relevante informatie
+      placeholder: Voeg hier eventuele extra context toe...

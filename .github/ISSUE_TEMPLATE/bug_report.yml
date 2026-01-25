@@ -1,0 +1,147 @@
+name: 🐛 Bug Report
+description: Meld een bug om ons te helpen verbeteren
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bedankt voor het melden van deze bug! Vul onderstaande velden zo volledig mogelijk in om ons te helpen het probleem snel op te lossen.
+
+  - type: checkboxes
+    id: existing-issue
+    attributes:
+      label: Bestaande issues
+      description: Controleer of dit probleem al is gemeld
+      options:
+        - label: Ik heb gezocht en geen bestaande issue gevonden voor dit probleem
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Beschrijving
+      description: Een duidelijke beschrijving van de bug
+      placeholder: Beschrijf wat er mis gaat...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Stappen om te reproduceren
+      description: Stappen om het probleem te reproduceren
+      placeholder: |
+        1. Ga naar '...'
+        2. Klik op '...'
+        3. Scroll naar '...'
+        4. Zie de fout
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Verwacht gedrag
+      description: Wat had er moeten gebeuren?
+      placeholder: Beschrijf wat je verwachtte...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Werkelijk gedrag
+      description: Wat gebeurde er daadwerkelijk?
+      placeholder: Beschrijf wat er daadwerkelijk gebeurde...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Ernst
+      description: Hoe ernstig is dit probleem?
+      options:
+        - 🔴 Critical - App is onbruikbaar
+        - 🟠 High - Belangrijke functie werkt niet
+        - 🟡 Medium - Functie werkt gedeeltelijk
+        - 🟢 Low - Cosmetisch of minor issue
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Getroffen gebied
+      description: Welk deel van de applicatie is getroffen?
+      multiple: true
+      options:
+        - Homepage
+        - Producten / Catalogus
+        - Productdetail pagina
+        - Winkelwagen
+        - Checkout
+        - Authenticatie / Login
+        - Gebruikersprofiel
+        - Admin Dashboard
+        - Zoekfunctie
+        - Blog
+        - Overig
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / Video
+      description: Voeg screenshots of video toe (drag & drop)
+      placeholder: Sleep afbeeldingen of video's hierheen...
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      description: In welke browser(s) treedt het probleem op?
+      multiple: true
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Opera
+        - Andere
+
+  - type: dropdown
+    id: device
+    attributes:
+      label: Apparaat
+      description: Op welk type apparaat?
+      multiple: true
+      options:
+        - Desktop (Windows)
+        - Desktop (macOS)
+        - Desktop (Linux)
+        - Tablet (iPad)
+        - Tablet (Android)
+        - Mobiel (iPhone)
+        - Mobiel (Android)
+
+  - type: textarea
+    id: console-errors
+    attributes:
+      label: Console errors
+      description: Kopieer eventuele foutmeldingen uit de browser console (F12)
+      render: shell
+      placeholder: |
+        Uncaught TypeError: Cannot read property 'x' of undefined
+            at Component.tsx:42
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Aanvullende context
+      description: Andere relevante informatie over het probleem
+      placeholder: Voeg hier eventuele extra context toe...
