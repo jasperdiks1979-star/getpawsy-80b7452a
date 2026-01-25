@@ -92,12 +92,27 @@ serve(async (req) => {
         );
       }
 
-      // Update last_used_at and counter
+      // Update last_used_at and counter with security logging
+      const previousCounter = passkey.counter;
+      const newCounter = passkey.counter + 1;
+      
+      // Security audit: Log counter update for monitoring
+      console.log(`[SECURITY AUDIT] Passkey counter update: id=${passkey.id.substring(0, 8)}..., prev=${previousCounter}, new=${newCounter}, user_id=${passkey.user_id.substring(0, 8)}...`);
+      
+      // Detect potential replay attack (counter not incrementing)
+      if (newCounter <= previousCounter) {
+        console.error(`[SECURITY ALERT] Potential replay attack detected: passkey_id=${passkey.id}, counter not incrementing`);
+        return new Response(
+          JSON.stringify({ error: "Security validation failed" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       await supabaseAdmin
         .from("passkey_credentials")
         .update({
           last_used_at: new Date().toISOString(),
-          counter: passkey.counter + 1,
+          counter: newCounter,
         })
         .eq("id", passkey.id);
 

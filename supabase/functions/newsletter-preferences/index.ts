@@ -17,6 +17,36 @@ interface PreferencesRequest {
   };
 }
 
+// Simple in-memory rate limiting (per IP, 10 requests per hour)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 };
+  }
+  
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return { allowed: false, remaining: 0 };
+  }
+  
+  entry.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX - entry.count };
+}
+
+// Mask email for privacy (e.g., "john@example.com" -> "j***@example.com")
+function maskEmail(email: string): string {
+  const [localPart, domain] = email.split('@');
+  if (!localPart || !domain) return '***@***.***';
+  const masked = localPart.charAt(0) + '***';
+  return `${masked}@${domain}`;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("Newsletter preferences function called");
 
@@ -24,12 +54,37 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Get client IP for rate limiting
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                   req.headers.get('x-real-ip') || 
+                   'unknown';
+
+  // Check rate limit
+  const { allowed, remaining } = checkRateLimit(clientIP);
+  if (!allowed) {
+    console.warn(`Rate limit exceeded for IP: ${clientIP}`);
+    return new Response(
+      JSON.stringify({ error: "Too many requests. Please try again later." }),
+      { 
+        status: 429, 
+        headers: { 
+          "Content-Type": "application/json", 
+          "Retry-After": "3600",
+          ...corsHeaders 
+        } 
+      }
+    );
+  }
+
   try {
     const { token, action, preferences }: PreferencesRequest = await req.json();
 
-    if (!token) {
+    // Validate token format (must be valid UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!token || !uuidRegex.test(token)) {
+      console.warn(`Invalid token format attempt from IP: ${clientIP}`);
       return new Response(
-        JSON.stringify({ error: "Token is required" }),
+        JSON.stringify({ error: "Invalid token format" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -48,19 +103,23 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (fetchError || !subscriber) {
-      console.error("Subscriber not found:", fetchError);
+      // Log failed lookup attempt for security monitoring
+      console.warn(`Token lookup failed from IP: ${clientIP}, token: ${token.substring(0, 8)}...`);
       return new Response(
         JSON.stringify({ error: "Invalid or expired token" }),
         { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+    
+    // Log successful token access for audit trail
+    console.log(`Token access: IP=${clientIP}, email=${maskEmail(subscriber.email)}, action=${action}`);
 
-    // Handle GET action - return current preferences
+    // Handle GET action - return current preferences with masked email for security
     if (action === 'get') {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          email: subscriber.email,
+          email: maskEmail(subscriber.email), // Mask email to prevent harvesting
           preferences: subscriber.preferences,
           is_active: subscriber.is_active
         }),
