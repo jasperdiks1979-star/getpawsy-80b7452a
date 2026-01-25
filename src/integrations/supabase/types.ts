@@ -388,6 +388,48 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_job_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          details: Json | null
+          error_message: string | null
+          id: string
+          items_failed: number | null
+          items_processed: number | null
+          job_name: string
+          started_at: string
+          status: string
+          success: boolean | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          items_failed?: number | null
+          items_processed?: number | null
+          job_name: string
+          started_at?: string
+          status?: string
+          success?: boolean | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          items_failed?: number | null
+          items_processed?: number | null
+          job_name?: string
+          started_at?: string
+          status?: string
+          success?: boolean | null
+        }
+        Relationships: []
+      }
       dispute_messages: {
         Row: {
           attachments: Json | null

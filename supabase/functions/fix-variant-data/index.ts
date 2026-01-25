@@ -31,6 +31,26 @@ Deno.serve(async (req) => {
   // Determine trigger source
   const authHeader = req.headers.get('authorization');
   const triggeredBy = authHeader?.includes('service_role') ? 'cron' : 'manual';
+  const isCronJob = triggeredBy === 'cron';
+
+  // Log cron start
+  let cronLogId = '';
+  if (isCronJob) {
+    try {
+      const { data } = await supabase
+        .from('cron_job_logs')
+        .insert({
+          job_name: 'nightly-variant-data-fix',
+          status: 'running',
+          started_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+      cronLogId = data?.id || '';
+    } catch (err) {
+      console.error('Failed to log cron start:', err);
+    }
+  }
 
   try {
     console.log('Starting automatic variant data fix...');
@@ -56,6 +76,18 @@ Deno.serve(async (req) => {
         triggered_by: triggeredBy,
         success: true
       });
+
+      // Log cron completion
+      if (isCronJob && cronLogId) {
+        await supabase.from('cron_job_logs').update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          success: true,
+          items_processed: 0,
+          items_failed: 0,
+          details: { message: 'No products with variants found' },
+        }).eq('id', cronLogId);
+      }
 
       return new Response(
         JSON.stringify({ success: true, message: 'No products with variants found', fixed: 0 }),
@@ -129,6 +161,18 @@ Deno.serve(async (req) => {
       success: true
     });
 
+    // Log cron completion
+    if (isCronJob && cronLogId) {
+      await supabase.from('cron_job_logs').update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        success: true,
+        items_processed: fixedCount,
+        items_failed: 0,
+        details: { totalProducts: products.length, fixedProducts, totalVariantsFixed },
+      }).eq('id', cronLogId);
+    }
+
     console.log('Fix completed:', summary);
 
     return new Response(
@@ -149,6 +193,18 @@ Deno.serve(async (req) => {
       success: false,
       error_message: errorMessage
     });
+
+    // Log cron failure
+    if (isCronJob && cronLogId) {
+      await supabase.from('cron_job_logs').update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        success: false,
+        items_processed: 0,
+        items_failed: 1,
+        error_message: errorMessage,
+      }).eq('id', cronLogId);
+    }
 
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),

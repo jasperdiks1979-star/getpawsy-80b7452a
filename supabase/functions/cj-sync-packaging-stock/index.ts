@@ -159,17 +159,45 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check authorization
+  // Determine if this is a cron job
+  let isCronJob = false;
+  try {
+    const body = await req.clone().json();
+    isCronJob = body?.source === 'cron';
+  } catch {
+    // Not a JSON body, continue
+  }
+
+  // Log cron start
+  let cronLogId = '';
+  if (isCronJob) {
+    try {
+      const { data } = await supabase
+        .from('cron_job_logs')
+        .insert({
+          job_name: 'daily-cj-packaging-sync',
+          status: 'running',
+          started_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+      cronLogId = data?.id || '';
+    } catch (err) {
+      console.error('Failed to log cron start:', err);
+    }
+  }
+
+  try {
+    // Check authorization (skip for cron jobs)
     const authHeader = req.headers.get("Authorization");
     const isServiceRole = authHeader?.includes(Deno.env.get("SUPABASE_ANON_KEY") || "");
     
-    if (!isServiceRole && authHeader) {
+    if (!isCronJob && !isServiceRole && authHeader) {
       const token = authHeader.replace("Bearer ", "");
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
       
@@ -300,7 +328,20 @@ serve(async (req) => {
     }
 
     const syncedCount = syncResults.filter(r => r.synced).length;
+    const failedCount = syncResults.filter(r => !r.synced).length;
     console.log(`Packaging sync: ${syncedCount}/${syncResults.length} synced, ${discrepancies.length} discrepancies`);
+
+    // Log cron completion
+    if (isCronJob && cronLogId) {
+      await supabase.from('cron_job_logs').update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        success: failedCount === 0,
+        items_processed: syncedCount,
+        items_failed: failedCount,
+        details: { discrepancies: discrepancies.length, emailSent, totalItems: syncResults.length },
+      }).eq('id', cronLogId);
+    }
 
     return new Response(
       JSON.stringify({ 
@@ -316,11 +357,25 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Packaging stock sync error:", error);
+
+    // Log cron failure
+    if (isCronJob && cronLogId) {
+      await supabase.from('cron_job_logs').update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        success: false,
+        items_processed: 0,
+        items_failed: 1,
+        error_message: errorMessage,
+      }).eq('id', cronLogId);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : "Unknown error" 
+        error: errorMessage 
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
