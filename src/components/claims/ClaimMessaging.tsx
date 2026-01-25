@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Send, User, Headphones } from "lucide-react";
+import { Send, User, Headphones, ImagePlus, X, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -16,7 +16,7 @@ interface ClaimMessage {
   message: string;
   is_internal: boolean;
   created_at: string;
-  attachments: unknown[];
+  attachments: string[];
 }
 
 interface ClaimMessagingProps {
@@ -26,6 +26,9 @@ interface ClaimMessagingProps {
 
 const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
   const [newMessage, setNewMessage] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: messages, isLoading } = useQuery({
@@ -43,10 +46,41 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
     },
   });
 
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    const uploadedUrls: string[] = [];
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (!userId) throw new Error("User not authenticated");
+
+    for (const file of files) {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${userId}/${disputeId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("dispute-attachments")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("dispute-attachments")
+        .getPublicUrl(fileName);
+
+      uploadedUrls.push(urlData.publicUrl);
+    }
+
+    return uploadedUrls;
+  };
+
   const sendMessageMutation = useMutation({
-    mutationFn: async (message: string) => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      
+    mutationFn: async ({
+      message,
+      imageUrls,
+    }: {
+      message: string;
+      imageUrls: string[];
+    }) => {
       const response = await supabase.functions.invoke("manage-dispute", {
         body: {
           action: "add_message",
@@ -54,6 +88,7 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
           message,
           senderType: "customer",
           customerEmail,
+          attachments: imageUrls,
         },
       });
 
@@ -62,6 +97,7 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
     },
     onSuccess: () => {
       setNewMessage("");
+      setAttachments([]);
       queryClient.invalidateQueries({ queryKey: ["claim-messages", disputeId] });
       toast.success("Message sent successfully");
     },
@@ -71,10 +107,57 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
     },
   });
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
-    sendMessageMutation.mutate(newMessage.trim());
+    if (!newMessage.trim() && attachments.length === 0) return;
+
+    try {
+      setUploadingImages(true);
+      let imageUrls: string[] = [];
+
+      if (attachments.length > 0) {
+        imageUrls = await uploadImages(attachments);
+      }
+
+      await sendMessageMutation.mutateAsync({
+        message: newMessage.trim(),
+        imageUrls,
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload images. Please try again.");
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter((file) => {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`${file.name} is not an image`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 5MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    if (attachments.length + validFiles.length > 5) {
+      toast.error("Maximum 5 images allowed per message");
+      return;
+    }
+
+    setAttachments((prev) => [...prev, ...validFiles]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   if (isLoading) {
@@ -100,6 +183,10 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
         {messages && messages.length > 0 ? (
           messages.map((msg) => {
             const isCustomer = msg.sender_type === "customer";
+            const msgAttachments = Array.isArray(msg.attachments)
+              ? msg.attachments
+              : [];
+
             return (
               <div
                 key={msg.id}
@@ -142,7 +229,26 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
                         : "bg-muted"
                     }`}
                   >
-                    {msg.message}
+                    {msg.message && <p className="mb-2">{msg.message}</p>}
+                    {msgAttachments.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {msgAttachments.map((url, idx) => (
+                          <a
+                            key={idx}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block"
+                          >
+                            <img
+                              src={url}
+                              alt={`Attachment ${idx + 1}`}
+                              className="max-w-[150px] max-h-[100px] rounded-md object-cover border border-border/50"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -161,23 +267,94 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
 
       {/* Message Input */}
       <form onSubmit={handleSendMessage} className="border-t pt-4">
+        {/* Attachment Preview */}
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {attachments.map((file, index) => (
+              <div key={index} className="relative group">
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={`Preview ${index + 1}`}
+                  className="w-16 h-16 object-cover rounded-md border"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeAttachment(index)}
+                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex gap-2">
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type your message..."
             className="min-h-[80px] resize-none"
-            disabled={sendMessageMutation.isPending}
+            disabled={sendMessageMutation.isPending || uploadingImages}
           />
         </div>
-        <div className="flex justify-end mt-2">
+
+        <div className="flex justify-between items-center mt-2">
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={
+                attachments.length >= 5 ||
+                sendMessageMutation.isPending ||
+                uploadingImages
+              }
+            >
+              <ImagePlus className="w-4 h-4 mr-2" />
+              Add Image
+            </Button>
+            {attachments.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {attachments.length}/5 images
+              </span>
+            )}
+          </div>
+
           <Button
             type="submit"
-            disabled={!newMessage.trim() || sendMessageMutation.isPending}
+            disabled={
+              (!newMessage.trim() && attachments.length === 0) ||
+              sendMessageMutation.isPending ||
+              uploadingImages
+            }
             size="sm"
           >
-            <Send className="w-4 h-4 mr-2" />
-            {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
+            {uploadingImages ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Uploading...
+              </>
+            ) : sendMessageMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                Send
+              </>
+            )}
           </Button>
         </div>
       </form>

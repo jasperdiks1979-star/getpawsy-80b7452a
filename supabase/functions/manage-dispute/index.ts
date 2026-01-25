@@ -21,6 +21,7 @@ interface DisputeRequest {
   resolutionAmount?: number;
   resolutionNotes?: string;
   senderType?: 'customer' | 'admin';
+  attachments?: string[];
 }
 
 const DISPUTE_TYPE_LABELS: Record<string, string> = {
@@ -511,11 +512,11 @@ serve(async (req) => {
       }
 
       case 'add_message': {
-        const { disputeId, message, isInternal, senderType, customerEmail } = body;
+        const { disputeId, message, isInternal, senderType, customerEmail, attachments } = body;
 
-        if (!disputeId || !message) {
+        if (!disputeId || (!message && (!attachments || attachments.length === 0))) {
           return new Response(
-            JSON.stringify({ error: 'Missing disputeId or message' }),
+            JSON.stringify({ error: 'Missing disputeId or message/attachments' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
@@ -551,8 +552,9 @@ serve(async (req) => {
           .insert({
             dispute_id: disputeId,
             sender_type: actualSenderType,
-            message: message,
+            message: message || '',
             is_internal: actualSenderType === 'customer' ? false : (isInternal || false),
+            attachments: attachments || [],
           });
 
         if (msgError) throw msgError;
