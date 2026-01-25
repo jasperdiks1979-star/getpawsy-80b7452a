@@ -6,9 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// CJ product IDs are now stored in the packaging_inventory table
-
-// Get CJ access token (cached)
 async function getCJAccessToken(): Promise<string> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -59,6 +56,104 @@ async function getCJAccessToken(): Promise<string> {
   return accessToken;
 }
 
+interface SyncResult {
+  itemType: string;
+  itemName: string;
+  cjProductId: string;
+  cjStock: number | null;
+  localStock: number;
+  synced: boolean;
+  discrepancy?: number;
+  error?: string;
+}
+
+async function sendDiscrepancyEmail(
+  discrepancies: SyncResult[],
+  resendApiKey: string
+): Promise<boolean> {
+  if (discrepancies.length === 0) return false;
+
+  const itemRows = discrepancies
+    .map((d) => `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${d.itemName}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${d.localStock}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${d.cjStock ?? "N/A"}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: ${(d.discrepancy || 0) < 0 ? "#dc2626" : "#16a34a"};">
+          ${(d.discrepancy || 0) > 0 ? "+" : ""}${d.discrepancy}
+        </td>
+      </tr>
+    `)
+    .join("");
+
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Packaging Stock Discrepancy Alert</title>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #1f2937; margin: 0;">🚨 Packaging Stock Discrepancy</h1>
+        <p style="color: #6b7280; margin-top: 8px;">Differences detected between local and CJ warehouse stock</p>
+      </div>
+      
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <thead>
+          <tr style="background-color: #f3f4f6;">
+            <th style="padding: 12px; text-align: left; font-weight: 600;">Item</th>
+            <th style="padding: 12px; text-align: center; font-weight: 600;">Local</th>
+            <th style="padding: 12px; text-align: center; font-weight: 600;">CJ Stock</th>
+            <th style="padding: 12px; text-align: center; font-weight: 600;">Difference</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemRows}
+        </tbody>
+      </table>
+      
+      <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin-top: 20px;">
+        <p style="margin: 0; color: #92400e;">
+          <strong>Action Required:</strong> Review these discrepancies and update inventory if needed.
+        </p>
+      </div>
+      
+      <p style="color: #9ca3af; font-size: 12px; margin-top: 30px; text-align: center;">
+        This is an automated alert from GetPawsy Packaging Sync
+      </p>
+    </body>
+    </html>
+  `;
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify({
+        from: "GetPawsy Alerts <alerts@getpawsy.pet>",
+        to: ["info@getpawsy.pet"],
+        subject: `⚠️ Packaging Stock Discrepancy: ${discrepancies.length} item(s) differ`,
+        html: emailHtml,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("Failed to send discrepancy email:", await res.text());
+      return false;
+    }
+
+    console.log("Discrepancy email sent successfully");
+    return true;
+  } catch (error) {
+    console.error("Error sending discrepancy email:", error);
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -67,9 +162,10 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check if this is a cron job call (service role) or admin call
+    // Check authorization
     const authHeader = req.headers.get("Authorization");
     const isServiceRole = authHeader?.includes(Deno.env.get("SUPABASE_ANON_KEY") || "");
     
@@ -99,7 +195,7 @@ serve(async (req) => {
       }
     }
 
-    // Get our packaging inventory with cj_product_id
+    // Get packaging inventory with cj_product_id
     const { data: inventory, error: invError } = await supabase
       .from("packaging_inventory")
       .select("*");
@@ -111,53 +207,59 @@ serve(async (req) => {
     // Get CJ access token
     const accessToken = await getCJAccessToken();
 
-    const syncResults: Array<{
-      itemType: string;
-      cjProductId: string;
-      cjStock: number | null;
-      localStock: number;
-      synced: boolean;
-      error?: string;
-    }> = [];
+    const syncResults: SyncResult[] = [];
+    const discrepancies: SyncResult[] = [];
 
-    // For each packaging item, check if we have a CJ product ID configured in database
     for (const item of inventory || []) {
       const cjProductId = item.cj_product_id;
       
       if (!cjProductId) {
         syncResults.push({
           itemType: item.item_type,
+          itemName: item.item_name,
           cjProductId: "Not configured",
           cjStock: null,
           localStock: item.quantity,
           synced: false,
-          error: "No CJ product ID configured - set via admin panel",
+          error: "No CJ product ID configured",
         });
         continue;
       }
 
       try {
-        // Query CJ for stock info
         const stockResponse = await fetch(
           `https://developers.cjdropshipping.com/api2.0/v1/product/stock?pid=${cjProductId}`,
           {
             method: "GET",
-            headers: {
-              "CJ-Access-Token": accessToken,
-            },
+            headers: { "CJ-Access-Token": accessToken },
           }
         );
 
         const stockData = await stockResponse.json();
 
         if (stockData.result && stockData.data) {
-          // Sum up stock from all warehouses
           const totalStock = Array.isArray(stockData.data)
             ? stockData.data.reduce((sum: number, w: { storageNum?: number }) => 
                 sum + (w.storageNum || 0), 0)
             : stockData.data.storageNum || 0;
 
-          // Update our local inventory with CJ warehouse stock
+          const discrepancy = totalStock - item.quantity;
+          const result: SyncResult = {
+            itemType: item.item_type,
+            itemName: item.item_name,
+            cjProductId,
+            cjStock: totalStock,
+            localStock: item.quantity,
+            synced: true,
+            discrepancy,
+          };
+
+          // Track significant discrepancies (more than 10% difference or absolute > 10)
+          if (Math.abs(discrepancy) > 10 || Math.abs(discrepancy) > item.quantity * 0.1) {
+            discrepancies.push(result);
+          }
+
+          // Update local inventory with CJ stock
           await supabase
             .from("packaging_inventory")
             .update({ 
@@ -166,16 +268,11 @@ serve(async (req) => {
             })
             .eq("id", item.id);
 
-          syncResults.push({
-            itemType: item.item_type,
-            cjProductId,
-            cjStock: totalStock,
-            localStock: item.quantity,
-            synced: true,
-          });
+          syncResults.push(result);
         } else {
           syncResults.push({
             itemType: item.item_type,
+            itemName: item.item_name,
             cjProductId,
             cjStock: null,
             localStock: item.quantity,
@@ -186,6 +283,7 @@ serve(async (req) => {
       } catch (error) {
         syncResults.push({
           itemType: item.item_type,
+          itemName: item.item_name,
           cjProductId,
           cjStock: null,
           localStock: item.quantity,
@@ -195,17 +293,24 @@ serve(async (req) => {
       }
     }
 
-    const syncedCount = syncResults.filter(r => r.synced).length;
+    // Send discrepancy notification email if any
+    let emailSent = false;
+    if (discrepancies.length > 0 && resendApiKey) {
+      emailSent = await sendDiscrepancyEmail(discrepancies, resendApiKey);
+    }
 
-    console.log(`Packaging stock sync complete: ${syncedCount}/${syncResults.length} items synced`);
+    const syncedCount = syncResults.filter(r => r.synced).length;
+    console.log(`Packaging sync: ${syncedCount}/${syncResults.length} synced, ${discrepancies.length} discrepancies`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: `Synced ${syncedCount} of ${syncResults.length} packaging items`,
         results: syncResults,
+        discrepancies: discrepancies.length,
+        emailSent,
         note: syncedCount === 0 
-          ? "No CJ product IDs are configured yet. Set them via the 'CJ Product IDs' button in the packaging manager."
+          ? "No CJ product IDs configured. Set them via the 'CJ Product IDs' button."
           : undefined
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

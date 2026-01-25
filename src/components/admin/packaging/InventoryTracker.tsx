@@ -42,7 +42,15 @@ import {
   Link,
   Save,
   Settings,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import {
   usePackagingInventory,
@@ -121,8 +129,11 @@ export const InventoryTracker = () => {
       if (data?.success) {
         const syncedCount = data.results?.filter((r: { synced: boolean }) => r.synced).length || 0;
         if (syncedCount > 0) {
+          const discrepancyMsg = data.discrepancies > 0 
+            ? ` (${data.discrepancies} afwijkingen${data.emailSent ? " - email verzonden" : ""})`
+            : "";
           toast.success(`Voorraad gesynchroniseerd met CJ`, {
-            description: `${syncedCount} items bijgewerkt`,
+            description: `${syncedCount} items bijgewerkt${discrepancyMsg}`,
           });
           refetch();
         } else {
@@ -141,6 +152,11 @@ export const InventoryTracker = () => {
     } finally {
       setIsSyncingCJ(false);
     }
+  };
+
+  // Helper to check if item has CJ product ID configured
+  const hasCjProductId = (item: PackagingInventoryItem): boolean => {
+    return !!(item as PackagingInventoryItem & { cj_product_id?: string }).cj_product_id;
   };
 
   const handleSendTestAlert = async () => {
@@ -347,9 +363,27 @@ export const InventoryTracker = () => {
                 >
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">
-                        {itemTypeLabels[item.item_type] || item.item_name}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">
+                          {itemTypeLabels[item.item_type] || item.item_name}
+                        </span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              {hasCjProductId(item) ? (
+                                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <XCircle className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {hasCjProductId(item) 
+                                ? "CJ sync actief" 
+                                : "Geen CJ product ID - sync niet actief"}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <Badge
                         variant={
                           status.status === "critical"
