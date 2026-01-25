@@ -224,8 +224,68 @@ async function getProductInventory(accessToken: string, productId: string) {
   );
 }
 
+// Log cron job start
+// deno-lint-ignore no-explicit-any
+async function logCronStart(supabase: any, jobName: string): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from('cron_job_logs')
+      .insert({
+        job_name: jobName,
+        status: 'running',
+        started_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Failed to log cron start:', error);
+      return '';
+    }
+    return data?.id || '';
+  } catch (err) {
+    console.error('Failed to log cron start:', err);
+    return '';
+  }
+}
+
+// Log cron job completion
+// deno-lint-ignore no-explicit-any
+async function logCronComplete(
+  supabase: any,
+  logId: string,
+  success: boolean,
+  itemsProcessed: number,
+  itemsFailed: number,
+  errorMessage?: string,
+  details?: Record<string, unknown>
+): Promise<void> {
+  if (!logId) return;
+  
+  try {
+    const { error } = await supabase
+      .from('cron_job_logs')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        success,
+        items_processed: itemsProcessed,
+        items_failed: itemsFailed,
+        error_message: errorMessage,
+        details: details || {},
+      })
+      .eq('id', logId);
+
+    if (error) {
+      console.error('Failed to log cron completion:', error);
+    }
+  } catch (err) {
+    console.error('Failed to log cron completion:', err);
+  }
+}
+
 // Main sync function
-async function syncAllProductStock(): Promise<SyncResult> {
+async function syncAllProductStock(isCronJob = false): Promise<SyncResult> {
   console.log('=== Starting scheduled stock sync ===');
   console.log('Time:', new Date().toISOString());
 
@@ -234,111 +294,141 @@ async function syncAllProductStock(): Promise<SyncResult> {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   const errorMessages: string[] = [];
+  let cronLogId = '';
 
-  // Get access token with retry
-  const accessToken = await getAccessToken();
-
-  // Get all products that have CJ product IDs
-  const { data: products, error: fetchError } = await supabase
-    .from('products')
-    .select('id, cj_product_id, sku, name')
-    .not('cj_product_id', 'is', null);
-
-  if (fetchError) {
-    console.error('Error fetching products:', fetchError);
-    throw new Error(`Failed to fetch products: ${fetchError.message}`);
+  // Log start if cron job
+  if (isCronJob) {
+    cronLogId = await logCronStart(supabase, 'nightly-stock-sync');
   }
 
-  if (!products || products.length === 0) {
-    console.log('No products with CJ product IDs found');
+  try {
+    // Get access token with retry
+    const accessToken = await getAccessToken();
+
+    // Get all products that have CJ product IDs
+    const { data: products, error: fetchError } = await supabase
+      .from('products')
+      .select('id, cj_product_id, sku, name')
+      .not('cj_product_id', 'is', null);
+
+    if (fetchError) {
+      console.error('Error fetching products:', fetchError);
+      throw new Error(`Failed to fetch products: ${fetchError.message}`);
+    }
+
+    if (!products || products.length === 0) {
+      console.log('No products with CJ product IDs found');
+      
+      if (isCronJob) {
+        await logCronComplete(supabase, cronLogId, true, 0, 0, undefined, { message: 'No products to sync' });
+      }
+      
+      return { 
+        success: true,
+        synced: 0, 
+        errors: 0, 
+        errorMessages: [],
+        message: 'No products to sync',
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    console.log(`Found ${products.length} products to sync`);
+
+    let synced = 0;
+    let errors = 0;
+
+    for (let i = 0; i < products.length; i++) {
+      const product = products[i];
+      
+      try {
+        const inventoryResponse = await getProductInventory(accessToken, product.cj_product_id);
+        
+        if (!inventoryResponse.result) {
+          console.error(`Failed to get inventory for ${product.name}:`, inventoryResponse.message);
+          errorMessages.push(`${product.name}: ${inventoryResponse.message || 'Unknown error'}`);
+          errors++;
+          continue;
+        }
+
+        // Calculate total stock (prefer US warehouse)
+        let totalStock = 0;
+        const inventoryData = inventoryResponse.data;
+        
+        if (Array.isArray(inventoryData)) {
+          for (const inv of inventoryData) {
+            if (inv.countryCode === 'US') {
+              totalStock += inv.totalInventoryNum || 0;
+            } else if (inv.countryCode === 'CN' && totalStock === 0) {
+              totalStock = inv.totalInventoryNum || 0;
+            }
+          }
+        }
+
+        // Update product stock with retry
+        await withRetry(
+          async () => {
+            const { error: updateError } = await supabase
+              .from('products')
+              .update({ 
+                stock: totalStock,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', product.id);
+
+            if (updateError) {
+              throw updateError;
+            }
+          },
+          {
+            maxRetries: 2,
+            baseDelayMs: 500,
+            shouldRetry: (err) => err.message.includes('network') || err.message.includes('timeout'),
+          }
+        );
+
+        console.log(`✓ [${i + 1}/${products.length}] ${product.name}: stock = ${totalStock}`);
+        synced++;
+
+        // Small delay to avoid rate limiting
+        await sleep(200);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+        console.error(`Error syncing ${product.name}:`, errorMsg);
+        errorMessages.push(`${product.name}: ${errorMsg}`);
+        errors++;
+      }
+    }
+
+    console.log('=== Stock sync completed ===');
+    console.log(`Synced: ${synced}, Errors: ${errors}`);
+
+    // Log completion if cron job
+    if (isCronJob) {
+      await logCronComplete(supabase, cronLogId, errors === 0, synced, errors, 
+        errors > 0 ? errorMessages.slice(0, 5).join('; ') : undefined,
+        { totalProducts: products.length, errorMessages: errorMessages.slice(0, 10) }
+      );
+    }
+
     return { 
-      success: true,
-      synced: 0, 
-      errors: 0, 
-      errorMessages: [],
-      message: 'No products to sync',
+      success: errors === 0,
+      synced, 
+      errors,
+      errorMessages,
+      message: `Stock sync completed. ${synced} products updated, ${errors} errors.`,
       timestamp: new Date().toISOString(),
     };
-  }
-
-  console.log(`Found ${products.length} products to sync`);
-
-  let synced = 0;
-  let errors = 0;
-
-  for (let i = 0; i < products.length; i++) {
-    const product = products[i];
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     
-    try {
-      const inventoryResponse = await getProductInventory(accessToken, product.cj_product_id);
-      
-      if (!inventoryResponse.result) {
-        console.error(`Failed to get inventory for ${product.name}:`, inventoryResponse.message);
-        errorMessages.push(`${product.name}: ${inventoryResponse.message || 'Unknown error'}`);
-        errors++;
-        continue;
-      }
-
-      // Calculate total stock (prefer US warehouse)
-      let totalStock = 0;
-      const inventoryData = inventoryResponse.data;
-      
-      if (Array.isArray(inventoryData)) {
-        for (const inv of inventoryData) {
-          if (inv.countryCode === 'US') {
-            totalStock += inv.totalInventoryNum || 0;
-          } else if (inv.countryCode === 'CN' && totalStock === 0) {
-            totalStock = inv.totalInventoryNum || 0;
-          }
-        }
-      }
-
-      // Update product stock with retry
-      await withRetry(
-        async () => {
-          const { error: updateError } = await supabase
-            .from('products')
-            .update({ 
-              stock: totalStock,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', product.id);
-
-          if (updateError) {
-            throw updateError;
-          }
-        },
-        {
-          maxRetries: 2,
-          baseDelayMs: 500,
-          shouldRetry: (err) => err.message.includes('network') || err.message.includes('timeout'),
-        }
-      );
-
-      console.log(`✓ [${i + 1}/${products.length}] ${product.name}: stock = ${totalStock}`);
-      synced++;
-
-      // Small delay to avoid rate limiting
-      await sleep(200);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
-      console.error(`Error syncing ${product.name}:`, errorMsg);
-      errorMessages.push(`${product.name}: ${errorMsg}`);
-      errors++;
+    // Log failure if cron job
+    if (isCronJob && cronLogId) {
+      await logCronComplete(supabase, cronLogId, false, 0, 1, errorMsg);
     }
+    
+    throw error;
   }
-
-  console.log('=== Stock sync completed ===');
-  console.log(`Synced: ${synced}, Errors: ${errors}`);
-
-  return { 
-    success: errors === 0,
-    synced, 
-    errors,
-    errorMessages,
-    message: `Stock sync completed. ${synced} products updated, ${errors} errors.`,
-    timestamp: new Date().toISOString(),
-  };
 }
 
 serve(async (req) => {
@@ -355,7 +445,7 @@ serve(async (req) => {
     // If the Authorization header contains the service role key, it's a cron job
     if (authHeader === `Bearer ${serviceRoleKey}`) {
       console.log('=== Cron job triggered stock sync (bypassing rate limit) ===');
-      const result = await syncAllProductStock();
+      const result = await syncAllProductStock(true); // Pass true for cron job
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
