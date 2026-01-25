@@ -39,6 +39,7 @@ const VariantDataValidator = lazy(() => import("@/components/admin/VariantDataVa
 const VariantFixLogs = lazy(() => import("@/components/admin/VariantFixLogs"));
 const ErrorLogsManager = lazy(() => import("@/components/admin/ErrorLogsManager"));
 const DuplicateProductsDetector = lazy(() => import("@/components/admin/DuplicateProductsDetector"));
+const DisputeManager = lazy(() => import("@/components/admin/DisputeManager"));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -1130,6 +1131,12 @@ const Admin = () => {
                 <TabsTrigger value="duplicates" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Copy className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Duplicaten</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Klachten en terugbetalingen beheren">
+                <TabsTrigger value="disputes" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Claims</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -2840,6 +2847,23 @@ const Admin = () => {
             </Button>
           </div>
         )}
+
+          {/* Disputes Tab */}
+          <TabsContent value="disputes">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Claims laden...</span>
+                  </div>
+                </Card>
+              }>
+                <DisputeManager />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
