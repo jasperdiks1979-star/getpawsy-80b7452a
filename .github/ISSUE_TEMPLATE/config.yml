@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/YOUR_USERNAME/YOUR_REPO/discussions
+    about: Stel vragen of start een discussie
+  - name: 🔒 Security Issue
+    url: https://github.com/YOUR_USERNAME/YOUR_REPO/security/advisories/new
+    about: Meld beveiligingsproblemen privé via Security Advisories
+  - name: 📖 Documentatie
+    url: https://github.com/YOUR_USERNAME/YOUR_REPO#readme
+    about: Lees de documentatie voordat je een issue opent

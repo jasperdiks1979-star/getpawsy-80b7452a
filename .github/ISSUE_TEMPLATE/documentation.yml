@@ -1,0 +1,59 @@
+name: 📚 Documentation
+description: Stel documentatie verbeteringen voor
+title: "[Docs]: "
+labels: ["documentation"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help ons de documentatie te verbeteren! Geef aan wat er mist of verbeterd kan worden.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type verbetering
+      description: Wat voor soort documentatie update?
+      options:
+        - Ontbrekende documentatie
+        - Verouderde informatie
+        - Onduidelijke uitleg
+        - Typfouten / grammatica
+        - Nieuwe sectie toevoegen
+        - Code voorbeelden toevoegen
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Locatie
+      description: Welk bestand of sectie betreft het?
+      placeholder: |
+        Bijv: README.md, CONTRIBUTING.md, of specifieke code comments
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Huidige situatie
+      description: Wat staat er nu (indien van toepassing)?
+      placeholder: Kopieer de huidige tekst of beschrijf wat er mist...
+
+  - type: textarea
+    id: suggested
+    attributes:
+      label: Voorgestelde verbetering
+      description: Wat zou er moeten staan?
+      placeholder: Beschrijf of schrijf de verbeterde tekst...
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Bijdragen
+      options:
+        - label: Ik kan een PR maken met deze verbetering
