@@ -157,6 +157,7 @@ const SlowFeederOffer = lazyWithRetry(() => import("./pages/SlowFeederOffer"));
 const DownloadAds = lazyWithRetry(() => import("./pages/DownloadAds"));
 const TechnicalDeclaration = lazyWithRetry(() => import("./pages/TechnicalDeclaration"));
 const MyClaims = lazyWithRetry(() => import("./pages/MyClaims"));
+const Security = lazyWithRetry(() => import("./pages/Security"));
 // Optimized React Query client with aggressive caching
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -253,6 +254,7 @@ const App = () => {
                         <Route path="/slow-feeder-offer" element={<SlowFeederOffer />} />
                         <Route path="/download-ads" element={<DownloadAds />} />
                         <Route path="/technical-declaration" element={<TechnicalDeclaration />} />
+                        <Route path="/security" element={<Security />} />
                         
                         {/* Legacy URL redirects for SEO */}
                         <Route path="/return-policy" element={<Navigate to="/returns" replace />} />

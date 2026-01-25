@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shield, ShieldCheck, ShieldAlert, ChevronRight } from "lucide-react";
+import { ShieldCheck, ShieldAlert, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 
 interface SecurityIssuesWidgetProps {
   onNavigate?: () => void;
@@ -30,6 +31,8 @@ const getSecurityIssues = () => {
 };
 
 export const SecurityIssuesWidget = ({ onNavigate }: SecurityIssuesWidgetProps) => {
+  const navigate = useNavigate();
+  
   const { data: stats, isLoading } = useQuery({
     queryKey: ["security-issues-widget-stats"],
     queryFn: async () => {
@@ -67,10 +70,18 @@ export const SecurityIssuesWidget = ({ onNavigate }: SecurityIssuesWidgetProps) 
   const isSecure = stats?.isSecure ?? true;
   const hasOpenIssues = (stats?.openCount ?? 0) > 0;
 
+  const handleClick = () => {
+    if (onNavigate) {
+      onNavigate();
+    } else {
+      navigate("/security");
+    }
+  };
+
   return (
     <Card 
-      className={`${onNavigate ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""}`}
-      onClick={onNavigate}
+      className="cursor-pointer hover:bg-muted/50 transition-colors"
+      onClick={handleClick}
     >
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
