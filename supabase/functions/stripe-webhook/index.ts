@@ -258,16 +258,45 @@ async function trackRemarketingConversion(
 // deno-lint-ignore no-explicit-any
 async function deductPackagingInventory(
   supabaseAdmin: any,
-  orderId: string
+  orderId: string,
+  orderItems: any[] = []
 ): Promise<void> {
   try {
     console.log("[STRIPE-WEBHOOK] Deducting packaging inventory for order:", orderId);
 
-    // Each order uses: 1 logo sticker + 1 thank you card
-    const deductions = [
+    // Determine poly mailer size based on product weight
+    // Products over 500g use medium mailer, otherwise small
+    const WEIGHT_THRESHOLD_GRAMS = 500;
+    let usePolyMailer = false;
+    let polyMailerType = "poly_mailer_small";
+    
+    if (orderItems && orderItems.length > 0) {
+      // Check if any item has weight info suggesting it needs a poly mailer
+      const maxWeight = Math.max(
+        ...orderItems.map((item: any) => {
+          // Weight could be in grams or kg, normalize to grams
+          const weight = item.weight || 0;
+          return weight > 100 ? weight : weight * 1000; // Assume kg if < 100
+        })
+      );
+      
+      if (maxWeight > 0) {
+        usePolyMailer = true;
+        polyMailerType = maxWeight > WEIGHT_THRESHOLD_GRAMS ? "poly_mailer_medium" : "poly_mailer_small";
+        console.log(`[STRIPE-WEBHOOK] Max product weight: ${maxWeight}g, using ${polyMailerType}`);
+      }
+    }
+
+    // Each order uses: 1 logo sticker + 1 thank you card + optionally 1 poly mailer
+    const deductions: { itemType: string; amount: number }[] = [
       { itemType: "logo_sticker", amount: 1 },
       { itemType: "thank_you_card", amount: 1 },
     ];
+    
+    // Add poly mailer if products have weight data
+    if (usePolyMailer) {
+      deductions.push({ itemType: polyMailerType, amount: 1 });
+    }
 
     for (const { itemType, amount } of deductions) {
       // Get current inventory
@@ -482,8 +511,8 @@ serve(async (req) => {
         // Create CJ Dropshipping order automatically after successful payment
         await createCJDropshippingOrder(orderId);
 
-        // Deduct packaging inventory (1 sticker + 1 thank you card per order)
-        await deductPackagingInventory(supabaseAdmin, orderId);
+        // Deduct packaging inventory (1 sticker + 1 thank you card + poly mailer based on weight)
+        await deductPackagingInventory(supabaseAdmin, orderId, items);
 
         // Track remarketing conversions
         if (customerEmail) {
