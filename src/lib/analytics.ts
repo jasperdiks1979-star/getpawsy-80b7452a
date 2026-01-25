@@ -615,7 +615,7 @@ export const trackDidYouMeanAddToCart = (
 // ============================================
 
 // Google Ads Conversion IDs
-const GOOGLE_ADS_CONVERSION_ID = 'AW-17894436603';
+const GOOGLE_ADS_CONVERSION_ID = 'AW-381705659';
 
 interface GoogleAdsConversionParams {
   transactionId: string;
