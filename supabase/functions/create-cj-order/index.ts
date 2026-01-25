@@ -355,6 +355,7 @@ async function createCJOrder(
   console.log("[CREATE-CJ-ORDER] Creating CJ order:", orderData.orderNumber);
   console.log("[CREATE-CJ-ORDER] Products:", JSON.stringify(orderData.products));
   console.log("[CREATE-CJ-ORDER] Shipping method:", orderData.logisticName);
+  console.log("[CREATE-CJ-ORDER] From warehouse:", orderData.fromCountryCode);
 
   const response = await fetch(`${CJ_API_BASE}/shopping/order/createOrder`, {
     method: "POST",
@@ -366,17 +367,36 @@ async function createCJOrder(
   });
 
   const data = await response.json();
-  console.log("[CREATE-CJ-ORDER] CJ Create order response:", JSON.stringify(data));
+  console.log("[CREATE-CJ-ORDER] CJ Create order full response:", JSON.stringify(data, null, 2));
 
-  if (data.result && data.data) {
-    // CJ API returns orderId directly as data (string) or as data.orderId
-    const orderId = typeof data.data === 'string' ? data.data : data.data.orderId;
+  // CJ API can return success in different formats:
+  // 1. { result: true, data: "orderId123" }
+  // 2. { result: true, data: { orderId: "orderId123" } }
+  // 3. { code: 200, result: true, data: "orderId123", message: "Success" }
+  
+  if (data.result === true) {
+    let orderId: string | undefined;
+    
+    if (typeof data.data === 'string' && data.data.length > 0) {
+      orderId = data.data;
+    } else if (data.data && typeof data.data === 'object') {
+      orderId = data.data.orderId || data.data.orderNum || data.data.order_id;
+    }
+    
     if (orderId) {
+      console.log("[CREATE-CJ-ORDER] Successfully extracted order ID:", orderId);
       return { success: true, orderId };
     }
+    
+    // If result is true but we couldn't extract orderId, log for debugging
+    console.error("[CREATE-CJ-ORDER] result=true but couldn't extract orderId from:", JSON.stringify(data.data));
   }
 
-  return { success: false, error: data.message || "Unknown error" };
+  // Check for error conditions
+  const errorMessage = data.message || data.msg || data.error || "Unknown CJ API error";
+  console.error("[CREATE-CJ-ORDER] Order creation failed:", errorMessage);
+  
+  return { success: false, error: errorMessage };
 }
 
 // Map country codes to full names
