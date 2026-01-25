@@ -254,6 +254,75 @@ async function trackRemarketingConversion(
   }
 }
 
+// Helper function to deduct packaging inventory
+// deno-lint-ignore no-explicit-any
+async function deductPackagingInventory(
+  supabaseAdmin: any,
+  orderId: string
+): Promise<void> {
+  try {
+    console.log("[STRIPE-WEBHOOK] Deducting packaging inventory for order:", orderId);
+
+    // Each order uses: 1 logo sticker + 1 thank you card
+    const deductions = [
+      { itemType: "logo_sticker", amount: 1 },
+      { itemType: "thank_you_card", amount: 1 },
+    ];
+
+    for (const { itemType, amount } of deductions) {
+      // Get current inventory
+      const { data: item, error: fetchError } = await supabaseAdmin
+        .from("packaging_inventory")
+        .select("id, quantity, item_name, reorder_threshold")
+        .eq("item_type", itemType)
+        .single();
+
+      if (fetchError || !item) {
+        console.error(`[STRIPE-WEBHOOK] Could not find inventory for ${itemType}:`, fetchError);
+        continue;
+      }
+
+      const newQuantity = Math.max(0, item.quantity - amount);
+
+      // Update inventory
+      const { error: updateError } = await supabaseAdmin
+        .from("packaging_inventory")
+        .update({ quantity: newQuantity })
+        .eq("id", item.id);
+
+      if (updateError) {
+        console.error(`[STRIPE-WEBHOOK] Failed to update inventory for ${itemType}:`, updateError);
+        continue;
+      }
+
+      // Log the deduction
+      const { error: logError } = await supabaseAdmin
+        .from("packaging_inventory_logs")
+        .insert({
+          inventory_id: item.id,
+          item_type: itemType,
+          change_amount: -amount,
+          change_type: "order_deduction",
+          order_id: orderId,
+          notes: `Automatische aftrek voor bestelling`,
+        });
+
+      if (logError) {
+        console.error(`[STRIPE-WEBHOOK] Failed to log inventory change for ${itemType}:`, logError);
+      }
+
+      console.log(`[STRIPE-WEBHOOK] Inventory deducted: ${itemType} ${item.quantity} -> ${newQuantity}`);
+
+      // Check if below reorder threshold and log warning
+      if (newQuantity <= item.reorder_threshold) {
+        console.warn(`[STRIPE-WEBHOOK] ⚠️ Low stock alert: ${item.item_name} has ${newQuantity} units (threshold: ${item.reorder_threshold})`);
+      }
+    }
+  } catch (error) {
+    console.error("[STRIPE-WEBHOOK] Error deducting packaging inventory:", error);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -412,6 +481,9 @@ serve(async (req) => {
 
         // Create CJ Dropshipping order automatically after successful payment
         await createCJDropshippingOrder(orderId);
+
+        // Deduct packaging inventory (1 sticker + 1 thank you card per order)
+        await deductPackagingInventory(supabaseAdmin, orderId);
 
         // Track remarketing conversions
         if (customerEmail) {
