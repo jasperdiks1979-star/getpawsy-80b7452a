@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, forwardRef } from 'react';
+import { useState, useRef, useEffect, forwardRef, memo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps {
@@ -11,7 +11,7 @@ interface OptimizedImageProps {
   onLoad?: () => void;
 }
 
-export const OptimizedImage = forwardRef<HTMLDivElement, OptimizedImageProps>(({
+export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProps>(({
   src,
   alt,
   className,
@@ -37,7 +37,7 @@ export const OptimizedImage = forwardRef<HTMLDivElement, OptimizedImageProps>(({
         }
       },
       {
-        rootMargin: '200px', // Preload images 200px before viewport
+        rootMargin: '300px', // Preload images 300px before viewport
         threshold: 0,
       }
     );
@@ -68,7 +68,7 @@ export const OptimizedImage = forwardRef<HTMLDivElement, OptimizedImageProps>(({
 
   // Combine refs
   const setRefs = (node: HTMLDivElement | null) => {
-    internalRef.current = node;
+    (internalRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
     if (typeof forwardedRef === 'function') {
       forwardedRef(node);
     } else if (forwardedRef) {
@@ -87,7 +87,7 @@ export const OptimizedImage = forwardRef<HTMLDivElement, OptimizedImageProps>(({
     >
       {/* Simple skeleton placeholder */}
       {!isLoaded && (
-        <div className="absolute inset-0 bg-muted animate-pulse" />
+        <div className="absolute inset-0 bg-muted skeleton-pulse" />
       )}
 
       {/* Actual image - hardware accelerated */}
@@ -101,18 +101,15 @@ export const OptimizedImage = forwardRef<HTMLDivElement, OptimizedImageProps>(({
           onLoad={handleLoad}
           onError={handleError}
           className={cn(
-            'w-full h-full object-cover will-change-transform',
+            'w-full h-full object-cover',
             isLoaded ? 'opacity-100' : 'opacity-0',
+            'transition-opacity duration-200',
             className
           )}
-          style={{ 
-            transform: 'translateZ(0)',
-            transition: 'opacity 0.2s ease-out',
-          }}
         />
       )}
     </div>
   );
-});
+}));
 
 OptimizedImage.displayName = 'OptimizedImage';

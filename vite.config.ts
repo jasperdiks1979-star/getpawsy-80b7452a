@@ -13,6 +13,63 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
+  // Build optimizations for faster loading
+  build: {
+    // Enable minification with esbuild (faster than terser)
+    minify: 'esbuild',
+    // Target modern browsers for smaller bundles
+    target: 'es2020',
+    // Chunk size warning threshold
+    chunkSizeWarningLimit: 500,
+    // Optimize CSS
+    cssMinify: true,
+    // Rollup options for code splitting
+    rollupOptions: {
+      output: {
+        // Manual chunk splitting for optimal caching
+        manualChunks: {
+          // React core - rarely changes
+          'react-vendor': ['react', 'react-dom'],
+          // React Router
+          'router': ['react-router-dom'],
+          // UI framework
+          'radix-ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-accordion',
+          ],
+          // Animation library
+          'animations': ['framer-motion'],
+          // Data fetching
+          'query': ['@tanstack/react-query'],
+          // Charts (only loaded when needed)
+          'charts': ['recharts'],
+        },
+        // Optimize chunk file names for caching
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
+    },
+    // Enable source maps only in development
+    sourcemap: mode === 'development',
+  },
+  // Optimize dependency pre-bundling
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@tanstack/react-query',
+      'framer-motion',
+    ],
+    // Exclude heavy dependencies that aren't always needed
+    exclude: ['recharts', 'mapbox-gl'],
+  },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
@@ -50,8 +107,11 @@ export default defineConfig(({ mode }) => ({
         categories: ["shopping", "lifestyle"],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg}"],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB limit for large bundles
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg,woff2}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // Skip waiting for faster updates
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -60,7 +120,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "google-fonts-cache",
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -74,7 +134,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "gstatic-fonts-cache",
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -87,8 +147,23 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: "images-cache",
               expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+            },
+          },
+          // Cache API responses with stale-while-revalidate
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "api-cache",
+              expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                maxAgeSeconds: 60 * 5, // 5 minutes
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
               },
             },
           },

@@ -20,6 +20,7 @@ import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
 import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { initPageDebug, logDataSanitization, createSectionDebugger } from '@/lib/debug-logger';
+import { useCriticalImagePreload, prefetchImages } from '@/hooks/useCriticalImagePreload';
 
 // Debug loggers for each section
 const categoriesDebug = createSectionDebugger('Categories');
@@ -123,6 +124,12 @@ const featureVariants = {
 };
 
 const Index = () => {
+  // Preload critical hero images for faster LCP
+  useCriticalImagePreload([
+    '/categories/dogs.jpg',
+    '/categories/cats.jpg',
+  ]);
+  
   // Initialize debug mode on mount
   useEffect(() => {
     initPageDebug('Index/Homepage');
