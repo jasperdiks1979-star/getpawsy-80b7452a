@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,6 +46,49 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
       return data as ClaimMessage[];
     },
   });
+
+  // Subscribe to realtime updates for new messages
+  useEffect(() => {
+    let channel: RealtimeChannel | null = null;
+
+    const setupRealtime = () => {
+      channel = supabase
+        .channel(`dispute-messages-${disputeId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "dispute_messages",
+            filter: `dispute_id=eq.${disputeId}`,
+          },
+          (payload) => {
+            const newMessage = payload.new as ClaimMessage;
+            // Only add non-internal messages to the cache
+            if (!newMessage.is_internal) {
+              queryClient.setQueryData(
+                ["claim-messages", disputeId],
+                (oldData: ClaimMessage[] | undefined) => {
+                  if (!oldData) return [newMessage];
+                  // Avoid duplicates
+                  if (oldData.some((m) => m.id === newMessage.id)) return oldData;
+                  return [...oldData, newMessage];
+                }
+              );
+            }
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtime();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [disputeId, queryClient]);
 
   const uploadImages = async (files: File[]): Promise<string[]> => {
     const uploadedUrls: string[] = [];
