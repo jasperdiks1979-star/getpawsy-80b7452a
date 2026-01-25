@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,6 +99,71 @@ export default function DisputeManager() {
   const [resolutionAmount, setResolutionAmount] = useState("");
   const [resolutionNotes, setResolutionNotes] = useState("");
   const [cjDisputeId, setCjDisputeId] = useState("");
+  
+  // Typing indicator refs
+  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Broadcast typing event to customer
+  const broadcastTyping = useCallback((disputeId: string) => {
+    if (!typingChannelRef.current) {
+      typingChannelRef.current = supabase.channel(`dispute-typing-${disputeId}`);
+      typingChannelRef.current.subscribe();
+    }
+
+    typingChannelRef.current.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { sender_type: "support" },
+    });
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Auto stop typing after 2 seconds of no input
+    typingTimeoutRef.current = setTimeout(() => {
+      typingChannelRef.current?.send({
+        type: "broadcast",
+        event: "stop_typing",
+        payload: { sender_type: "support" },
+      });
+    }, 2000);
+  }, []);
+
+  // Stop typing broadcast
+  const stopTyping = useCallback(() => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    typingChannelRef.current?.send({
+      type: "broadcast",
+      event: "stop_typing",
+      payload: { sender_type: "support" },
+    });
+  }, []);
+
+  // Cleanup typing channel when dispute changes or dialog closes
+  useEffect(() => {
+    return () => {
+      if (typingChannelRef.current) {
+        supabase.removeChannel(typingChannelRef.current);
+        typingChannelRef.current = null;
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [selectedDispute?.id, isDetailOpen]);
+
+  // Handle message input with typing indicator
+  const handleMessageChange = (value: string) => {
+    setNewMessage(value);
+    if (selectedDispute && value.trim() && !isInternalNote) {
+      broadcastTyping(selectedDispute.id);
+    }
+  };
 
   // Fetch disputes
   const { data: disputes = [], isLoading } = useQuery({
@@ -276,6 +341,7 @@ export default function DisputeManager() {
 
   const handleSendMessage = () => {
     if (!selectedDispute || !newMessage.trim()) return;
+    stopTyping(); // Stop typing indicator when sending
     addMessageMutation.mutate({
       disputeId: selectedDispute.id,
       message: newMessage,
@@ -612,7 +678,7 @@ export default function DisputeManager() {
                     <Textarea
                       placeholder={isInternalNote ? "Add internal note..." : "Send message to customer..."}
                       value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
+                      onChange={(e) => handleMessageChange(e.target.value)}
                       className="flex-1"
                     />
                     <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
