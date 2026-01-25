@@ -41,6 +41,7 @@ const ErrorLogsManager = lazy(() => import("@/components/admin/ErrorLogsManager"
 const DuplicateProductsDetector = lazy(() => import("@/components/admin/DuplicateProductsDetector"));
 const DisputeManager = lazy(() => import("@/components/admin/DisputeManager"));
 const CJWebhookManager = lazy(() => import("@/components/admin/CJWebhookManager"));
+const PackagingManager = lazy(() => import("@/components/admin/PackagingManager"));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -1144,6 +1145,12 @@ const Admin = () => {
                 <TabsTrigger value="cj-webhooks" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <RefreshCw className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Webhooks</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Branded packaging beheren">
+                <TabsTrigger value="packaging" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <Package className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Packaging</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -2722,6 +2729,22 @@ const Admin = () => {
                 </Card>
               }>
                 <CJWebhookManager />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Packaging Tab */}
+          <TabsContent value="packaging">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Packaging manager laden...</span>
+                  </div>
+                </Card>
+              }>
+                <PackagingManager />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
