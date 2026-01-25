@@ -11,14 +11,14 @@ import {
   ExternalLink, 
   CheckCircle2, 
   Calculator,
-  Sticker,
   FileText,
   Box,
   Euro,
   TrendingUp,
   Info,
   Copy,
-  Check
+  Check,
+  Printer
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -27,6 +27,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import jsPDF from "jspdf";
 
 // Import packaging assets
 import stickerImage from "@/assets/packaging/getpawsy-sticker-5cm.png";
@@ -174,6 +175,96 @@ export const PackagingManager = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleExportPrintReadyPDF = async () => {
+    try {
+      toast.loading("PDF wordt gegenereerd...", { id: "pdf-export" });
+      
+      // Thank you card dimensions: 8.5 x 5.5 cm
+      // Add 3mm bleed on each side = 9.1 x 6.1 cm total
+      const cardWidthMM = 85; // 8.5 cm in mm
+      const cardHeightMM = 55; // 5.5 cm in mm
+      const bleedMM = 3; // 3mm bleed on each side
+      
+      const totalWidthMM = cardWidthMM + (bleedMM * 2); // 91mm
+      const totalHeightMM = cardHeightMM + (bleedMM * 2); // 61mm
+      
+      // Create PDF with custom size (including bleed)
+      const pdf = new jsPDF({
+        orientation: totalWidthMM > totalHeightMM ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: [totalWidthMM, totalHeightMM]
+      });
+      
+      // Load the thank you card image
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = thankYouCardImage;
+      });
+      
+      // Add the image to fill the entire page (including bleed area)
+      pdf.addImage(img, 'PNG', 0, 0, totalWidthMM, totalHeightMM);
+      
+      // Add crop marks (trim marks) at the corners
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.25);
+      
+      // Top-left crop marks
+      pdf.line(0, bleedMM, bleedMM - 1, bleedMM); // horizontal
+      pdf.line(bleedMM, 0, bleedMM, bleedMM - 1); // vertical
+      
+      // Top-right crop marks
+      pdf.line(totalWidthMM - bleedMM + 1, bleedMM, totalWidthMM, bleedMM); // horizontal
+      pdf.line(totalWidthMM - bleedMM, 0, totalWidthMM - bleedMM, bleedMM - 1); // vertical
+      
+      // Bottom-left crop marks
+      pdf.line(0, totalHeightMM - bleedMM, bleedMM - 1, totalHeightMM - bleedMM); // horizontal
+      pdf.line(bleedMM, totalHeightMM - bleedMM + 1, bleedMM, totalHeightMM); // vertical
+      
+      // Bottom-right crop marks
+      pdf.line(totalWidthMM - bleedMM + 1, totalHeightMM - bleedMM, totalWidthMM, totalHeightMM - bleedMM); // horizontal
+      pdf.line(totalWidthMM - bleedMM, totalHeightMM - bleedMM + 1, totalWidthMM - bleedMM, totalHeightMM); // vertical
+      
+      // Add a second page with specifications
+      pdf.addPage([totalWidthMM, totalHeightMM]);
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      
+      const specs = [
+        'PRINT SPECIFICATIONS',
+        '─────────────────────',
+        `Final Size: ${cardWidthMM/10} x ${cardHeightMM/10} cm`,
+        `Total Size (with bleed): ${totalWidthMM/10} x ${totalHeightMM/10} cm`,
+        `Bleed: ${bleedMM}mm on all sides`,
+        '',
+        'RECOMMENDED:',
+        '• Paper: 300gsm coated card',
+        '• Finish: Matte or Gloss',
+        '• Color: CMYK',
+        '• Resolution: 300 DPI',
+        '',
+        'getpawsy.nl'
+      ];
+      
+      let yPos = 10;
+      specs.forEach(line => {
+        pdf.text(line, 5, yPos);
+        yPos += 4;
+      });
+      
+      // Save the PDF
+      pdf.save('getpawsy-thankyou-card-print-ready.pdf');
+      
+      toast.success("Print-ready PDF geëxporteerd met 3mm bleed!", { id: "pdf-export" });
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error("Kon PDF niet genereren", { id: "pdf-export" });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -301,6 +392,16 @@ export const PackagingManager = () => {
                       <Download className="w-4 h-4 mr-2" />
                       Download Design
                     </Button>
+                    {item.id === "thank-you-card" && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleExportPrintReadyPDF}
+                        title="Export print-ready PDF met 3mm bleed"
+                      >
+                        <Printer className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="secondary"
                       size="sm"
