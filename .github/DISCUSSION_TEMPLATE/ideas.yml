@@ -1,0 +1,162 @@
+title: "[Idee]: "
+labels: ["idea", "discussion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 💡 Ideeën & Suggesties
+        
+        Heb je een idee om het project te verbeteren? We horen graag je suggesties!
+        
+        Dit is de plek voor:
+        - Nieuwe feature ideeën
+        - Verbeteringsvoorstellen
+        - Brainstormen over mogelijkheden
+        - Discussies over de roadmap
+
+  - type: checkboxes
+    id: idea-check
+    attributes:
+      label: Voorbereidende checks
+      description: Bevestig het volgende
+      options:
+        - label: Dit idee bestaat nog niet als discussion of feature request
+          required: true
+        - label: Ik heb nagedacht over de impact en haalbaarheid
+          required: true
+
+  - type: input
+    id: title
+    attributes:
+      label: Idee titel
+      description: Een korte, pakkende titel voor je idee
+      placeholder: "Automatische dark mode detectie"
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Samenvatting
+      description: Beschrijf je idee in 1-2 zinnen
+      placeholder: "Het zou handig zijn als..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Probleem of behoefte
+      description: Welk probleem lost dit op of welke behoefte vervult het?
+      placeholder: |
+        Momenteel is het lastig om...
+        Gebruikers moeten nu handmatig...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Voorgestelde oplossing
+      description: Hoe zou je dit willen zien werken?
+      placeholder: |
+        Mijn idee is om...
+        
+        Dit zou werken door:
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Gebied
+      description: Welk deel van het project betreft dit?
+      options:
+        - Frontend / UI
+        - Backend / API
+        - Database
+        - Performance
+        - Developer Experience
+        - Documentatie
+        - Integraties
+        - Security
+        - Mobile / Responsive
+        - Anders
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Verwachte impact
+      description: Hoeveel gebruikers zou dit helpen?
+      options:
+        - 🌍 Iedereen - Fundamentele verbetering
+        - 👥 Meeste gebruikers - Brede toepassing
+        - 👤 Specifieke use case - Niche maar waardevol
+        - 🔧 Developers - Developer experience
+    validations:
+      required: true
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Geschatte complexiteit
+      description: Hoe complex denk je dat dit is om te implementeren?
+      options:
+        - 🟢 Klein - Paar uur werk
+        - 🟡 Medium - Paar dagen werk
+        - 🟠 Groot - Week+ werk
+        - 🔴 Zeer groot - Meerdere weken/maanden
+        - ❓ Onbekend - Geen idee
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatieven overwogen
+      description: Heb je andere oplossingen overwogen?
+      placeholder: |
+        Alternatief 1: ...
+        Nadeel: ...
+        
+        Alternatief 2: ...
+        Nadeel: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups / Voorbeelden
+      description: Visuele voorbeelden, schetsen, of links naar vergelijkbare implementaties
+      placeholder: |
+        [Upload afbeeldingen of voeg links toe]
+        
+        Vergelijkbaar met hoe X dit doet: https://...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Bijdrage
+      description: Wil je helpen met de implementatie?
+      options:
+        - label: Ik wil graag helpen met de implementatie
+        - label: Ik kan helpen met ontwerp/UX
+        - label: Ik kan helpen met documentatie
+        - label: Ik kan helpen met testen
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Aanvullende informatie
+      description: Overige context, links, of opmerkingen
+      placeholder: "..."
+    validations:
+      required: false
