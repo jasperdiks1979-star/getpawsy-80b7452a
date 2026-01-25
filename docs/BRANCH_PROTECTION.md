@@ -27,11 +27,19 @@ Ga naar **Settings → Branches → Add branch protection rule**
 | **Require status checks to pass** | ✅ Enabled | CI moet slagen |
 | **Require branches to be up to date** | ✅ Enabled | Voorkom merge conflicts |
 
-**Required status checks:**
-- `test` (Vitest unit tests)
-- `e2e-tests` (Playwright E2E tests)
-- `lighthouse` (Performance budget)
-- `security` (Security scanning)
+**Required status checks (exact job names):**
+- `Unit Tests (Node 18)` - Unit tests op Node 18
+- `Unit Tests (Node 20)` - Unit tests op Node 20
+- `Unit Tests (Node 22)` - Unit tests op Node 22
+- `Coverage Report (Node 20)` - Coverage rapportage
+- `Analyze Bundle Size` - Bundle size check (max 2MB)
+- `Core Web Vitals Budget` - Performance budget
+- `Visual Regression Tests` - Visuele regressie tests
+- `Accessibility Tests` - A11y tests met axe-core
+- `E2E Checkout Tests` - Checkout flow tests
+- `Snyk Dependency Scan` - Dependency security
+- `NPM Audit` - NPM security audit
+- `Dependency Review` - License & security review
 
 #### Additional Settings
 
@@ -72,7 +80,7 @@ gh auth login
 # Create branch protection rule voor main
 gh api repos/{owner}/{repo}/branches/main/protection \
   --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["test","e2e-tests","lighthouse"]}' \
+  --field required_status_checks='{"strict":true,"contexts":["Unit Tests (Node 18)","Unit Tests (Node 20)","Unit Tests (Node 22)","Coverage Report (Node 20)","Analyze Bundle Size","Core Web Vitals Budget","Accessibility Tests","E2E Checkout Tests","NPM Audit"]}' \
   --field enforce_admins=true \
   --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
   --field restrictions=null \
@@ -89,7 +97,17 @@ resource "github_branch_protection" "main" {
 
   required_status_checks {
     strict   = true
-    contexts = ["test", "e2e-tests", "lighthouse", "security"]
+    contexts = [
+      "Unit Tests (Node 18)",
+      "Unit Tests (Node 20)", 
+      "Unit Tests (Node 22)",
+      "Coverage Report (Node 20)",
+      "Analyze Bundle Size",
+      "Core Web Vitals Budget",
+      "Accessibility Tests",
+      "E2E Checkout Tests",
+      "NPM Audit"
+    ]
   }
 
   required_pull_request_reviews {
