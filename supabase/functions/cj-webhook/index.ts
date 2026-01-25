@@ -101,17 +101,85 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Handle GET requests (browser access, health checks)
+  if (req.method === "GET") {
+    return new Response(
+      JSON.stringify({ 
+        status: "ok", 
+        service: "CJ Dropshipping Webhook Handler",
+        message: "Webhook endpoint is active. Send POST requests from CJ Dropshipping.",
+        timestamp: new Date().toISOString(),
+      }), 
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      }
+    );
+  }
+
+  // Only accept POST requests
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ success: false, error: "Method not allowed. Use POST." }), 
+      { 
+        status: 405, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      }
+    );
+  }
+
   const startTime = Date.now();
 
   try {
+    // Check if request has a body
+    const contentLength = req.headers.get("content-length");
+    const contentType = req.headers.get("content-type");
+    
+    if (!contentLength || contentLength === "0") {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Empty request body. Expected JSON payload from CJ Dropshipping." 
+        }), 
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+
+    // Parse JSON body safely
+    let payload: CJWebhookPayload;
+    try {
+      const bodyText = await req.text();
+      if (!bodyText || bodyText.trim() === "") {
+        return new Response(
+          JSON.stringify({ success: false, error: "Empty JSON body" }), 
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      payload = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error("[CJ-WEBHOOK] JSON parse error:", parseError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid JSON format" }), 
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate required fields
+    if (!payload.messageId || !payload.type) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Missing required fields: messageId and type" }), 
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // deno-lint-ignore no-explicit-any
     const supabaseAdmin: SupabaseClient<any> = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
-
-    // Parse webhook payload
-    const payload: CJWebhookPayload = await req.json();
     
     console.log(`[CJ-WEBHOOK] Received ${payload.type} webhook:`, JSON.stringify(payload));
 
