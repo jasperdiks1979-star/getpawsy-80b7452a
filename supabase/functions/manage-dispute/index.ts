@@ -1,0 +1,554 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface DisputeRequest {
+  action: 'create' | 'update_status' | 'add_message' | 'resolve' | 'send_notification';
+  disputeId?: string;
+  orderId?: string;
+  customerEmail?: string;
+  disputeType?: string;
+  description?: string;
+  evidence?: string[];
+  status?: string;
+  message?: string;
+  isInternal?: boolean;
+  resolutionType?: string;
+  resolutionAmount?: number;
+  resolutionNotes?: string;
+}
+
+const DISPUTE_TYPE_LABELS: Record<string, string> = {
+  damaged: 'Damaged Product',
+  not_received: 'Order Not Received',
+  wrong_item: 'Wrong Item Received',
+  quality_issue: 'Quality Issue',
+  other: 'Other Issue',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Received',
+  under_review: 'Under Review',
+  awaiting_evidence: 'Awaiting Additional Information',
+  processing_with_supplier: 'Being Processed',
+  resolved_refund: 'Resolved - Refund Issued',
+  resolved_replacement: 'Resolved - Replacement Sent',
+  resolved_partial_refund: 'Resolved - Partial Refund',
+  denied: 'Claim Denied',
+};
+
+// Send email notification to customer
+async function sendDisputeEmail(
+  email: string,
+  subject: string,
+  htmlContent: string
+): Promise<boolean> {
+  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  if (!resendApiKey) {
+    console.error('RESEND_API_KEY not configured');
+    return false;
+  }
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'GetPawsy Support <support@getpawsy.pet>',
+        to: [email],
+        subject: subject,
+        html: htmlContent,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Failed to send email:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Email send error:', error);
+    return false;
+  }
+}
+
+// Generate dispute confirmation email
+function generateDisputeConfirmationEmail(disputeId: string, disputeType: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
+      <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #6B4E3D; margin: 0; font-size: 28px;">🐾 GetPawsy</h1>
+          </div>
+          
+          <h2 style="color: #333; margin-bottom: 20px;">We've Received Your Claim</h2>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+            Thank you for reaching out to us. We understand how important it is to resolve issues quickly, 
+            and we're here to help!
+          </p>
+          
+          <div style="background: #FFF8F0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <p style="margin: 0 0 10px 0; color: #6B4E3D;"><strong>Claim Reference:</strong> ${disputeId.slice(0, 8).toUpperCase()}</p>
+            <p style="margin: 0; color: #6B4E3D;"><strong>Issue Type:</strong> ${DISPUTE_TYPE_LABELS[disputeType] || disputeType}</p>
+          </div>
+          
+          <h3 style="color: #333; margin-bottom: 15px;">What Happens Next?</h3>
+          
+          <ol style="color: #666; line-height: 1.8; padding-left: 20px;">
+            <li>Our team will review your claim within 24-48 hours</li>
+            <li>We may reach out if we need additional information</li>
+            <li>You'll receive updates via email as we process your claim</li>
+            <li>Most claims are resolved within 3-5 business days</li>
+          </ol>
+          
+          <p style="color: #666; line-height: 1.6; margin-top: 20px;">
+            If you have any questions, simply reply to this email or contact us at 
+            <a href="mailto:support@getpawsy.pet" style="color: #6B4E3D;">support@getpawsy.pet</a>
+          </p>
+          
+          <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px; text-align: center;">
+            <p style="color: #999; font-size: 14px; margin: 0;">
+              GetPawsy - Premium Pet Products<br>
+              Making pets happy, one product at a time 🐕🐈
+            </p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// Generate status update email
+function generateStatusUpdateEmail(disputeId: string, newStatus: string, message?: string): string {
+  const statusLabel = STATUS_LABELS[newStatus] || newStatus;
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
+      <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #6B4E3D; margin: 0; font-size: 28px;">🐾 GetPawsy</h1>
+          </div>
+          
+          <h2 style="color: #333; margin-bottom: 20px;">Claim Update</h2>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+            We have an update on your claim (Reference: ${disputeId.slice(0, 8).toUpperCase()})
+          </p>
+          
+          <div style="background: #E8F5E9; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #2E7D32; font-weight: bold; font-size: 18px;">
+              Status: ${statusLabel}
+            </p>
+          </div>
+          
+          ${message ? `
+            <div style="background: #F5F5F5; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+              <p style="margin: 0; color: #333;">${message}</p>
+            </div>
+          ` : ''}
+          
+          <p style="color: #666; line-height: 1.6;">
+            If you have any questions about this update, please reply to this email or contact our support team.
+          </p>
+          
+          <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px; text-align: center;">
+            <p style="color: #999; font-size: 14px; margin: 0;">
+              GetPawsy - Premium Pet Products<br>
+              Making pets happy, one product at a time 🐕🐈
+            </p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// Generate resolution email
+function generateResolutionEmail(
+  disputeId: string,
+  resolutionType: string,
+  resolutionAmount?: number,
+  resolutionNotes?: string
+): string {
+  let resolutionMessage = '';
+  
+  switch (resolutionType) {
+    case 'full_refund':
+      resolutionMessage = `We have issued a <strong>full refund of $${resolutionAmount?.toFixed(2) || 'the order amount'}</strong> to your original payment method. Please allow 5-10 business days for the refund to appear in your account.`;
+      break;
+    case 'partial_refund':
+      resolutionMessage = `We have issued a <strong>partial refund of $${resolutionAmount?.toFixed(2)}</strong> to your original payment method. Please allow 5-10 business days for the refund to appear in your account.`;
+      break;
+    case 'replacement':
+      resolutionMessage = `We are sending you a <strong>replacement item</strong> at no additional cost. You will receive a shipping confirmation email with tracking information once your replacement ships.`;
+      break;
+    case 'store_credit':
+      resolutionMessage = `We have added <strong>$${resolutionAmount?.toFixed(2)} in store credit</strong> to your account. You can use this credit on your next purchase.`;
+      break;
+    case 'denied':
+      resolutionMessage = `After careful review, we were unable to approve your claim at this time.`;
+      break;
+  }
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
+      <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #6B4E3D; margin: 0; font-size: 28px;">🐾 GetPawsy</h1>
+          </div>
+          
+          <h2 style="color: #333; margin-bottom: 20px;">Your Claim Has Been Resolved</h2>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+            Good news! Your claim (Reference: ${disputeId.slice(0, 8).toUpperCase()}) has been resolved.
+          </p>
+          
+          <div style="background: ${resolutionType === 'denied' ? '#FFF3E0' : '#E8F5E9'}; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <p style="margin: 0; color: ${resolutionType === 'denied' ? '#E65100' : '#2E7D32'}; line-height: 1.6;">
+              ${resolutionMessage}
+            </p>
+          </div>
+          
+          ${resolutionNotes ? `
+            <div style="background: #F5F5F5; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+              <p style="margin: 0 0 10px 0; color: #333; font-weight: bold;">Additional Notes:</p>
+              <p style="margin: 0; color: #666;">${resolutionNotes}</p>
+            </div>
+          ` : ''}
+          
+          <p style="color: #666; line-height: 1.6;">
+            Thank you for your patience during this process. We value your trust in GetPawsy and hope to continue 
+            serving you and your furry friends!
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://getpawsy.lovable.app" 
+               style="display: inline-block; background: #6B4E3D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+              Continue Shopping
+            </a>
+          </div>
+          
+          <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px; text-align: center;">
+            <p style="color: #999; font-size: 14px; margin: 0;">
+              GetPawsy - Premium Pet Products<br>
+              Making pets happy, one product at a time 🐕🐈
+            </p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const body: DisputeRequest = await req.json();
+    const { action } = body;
+
+    // For create action, no auth required (customers can submit disputes)
+    // For other actions, require admin authentication
+    if (action !== 'create') {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+      const authSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } }
+      });
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: claimsData, error: claimsError } = await authSupabase.auth.getClaims(token);
+      
+      if (claimsError || !claimsData?.claims) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const userId = claimsData.claims.sub;
+      
+      // Check admin role
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (!roleData) {
+        return new Response(
+          JSON.stringify({ error: 'Admin access required' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    let result;
+
+    switch (action) {
+      case 'create': {
+        const { orderId, customerEmail, disputeType, description, evidence } = body;
+
+        if (!orderId || !customerEmail || !disputeType || !description) {
+          return new Response(
+            JSON.stringify({ error: 'Missing required fields' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Create the dispute
+        const { data: dispute, error: createError } = await supabase
+          .from('disputes')
+          .insert({
+            order_id: orderId,
+            customer_email: customerEmail,
+            dispute_type: disputeType,
+            description: description,
+            customer_evidence: evidence || [],
+            status: 'pending',
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Create dispute error:', createError);
+          throw createError;
+        }
+
+        // Add system message
+        await supabase
+          .from('dispute_messages')
+          .insert({
+            dispute_id: dispute.id,
+            sender_type: 'system',
+            message: `Claim submitted for order. Issue type: ${DISPUTE_TYPE_LABELS[disputeType] || disputeType}`,
+          });
+
+        // Send confirmation email
+        await sendDisputeEmail(
+          customerEmail,
+          'We\'ve Received Your Claim - GetPawsy',
+          generateDisputeConfirmationEmail(dispute.id, disputeType)
+        );
+
+        result = { success: true, disputeId: dispute.id };
+        break;
+      }
+
+      case 'update_status': {
+        const { disputeId, status, message } = body;
+
+        if (!disputeId || !status) {
+          return new Response(
+            JSON.stringify({ error: 'Missing disputeId or status' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Update dispute status
+        const { data: dispute, error: updateError } = await supabase
+          .from('disputes')
+          .update({ status })
+          .eq('id', disputeId)
+          .select('customer_email')
+          .single();
+
+        if (updateError) throw updateError;
+
+        // Add status update message
+        await supabase
+          .from('dispute_messages')
+          .insert({
+            dispute_id: disputeId,
+            sender_type: 'system',
+            message: `Status updated to: ${STATUS_LABELS[status] || status}`,
+          });
+
+        // If there's a custom message, add it
+        if (message) {
+          await supabase
+            .from('dispute_messages')
+            .insert({
+              dispute_id: disputeId,
+              sender_type: 'admin',
+              message: message,
+            });
+        }
+
+        // Send email notification
+        await sendDisputeEmail(
+          dispute.customer_email,
+          'Update on Your Claim - GetPawsy',
+          generateStatusUpdateEmail(disputeId, status, message)
+        );
+
+        result = { success: true };
+        break;
+      }
+
+      case 'add_message': {
+        const { disputeId, message, isInternal } = body;
+
+        if (!disputeId || !message) {
+          return new Response(
+            JSON.stringify({ error: 'Missing disputeId or message' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { error: msgError } = await supabase
+          .from('dispute_messages')
+          .insert({
+            dispute_id: disputeId,
+            sender_type: 'admin',
+            message: message,
+            is_internal: isInternal || false,
+          });
+
+        if (msgError) throw msgError;
+
+        // If not internal, send email to customer
+        if (!isInternal) {
+          const { data: dispute } = await supabase
+            .from('disputes')
+            .select('customer_email, status')
+            .eq('id', disputeId)
+            .single();
+
+          if (dispute) {
+            await sendDisputeEmail(
+              dispute.customer_email,
+              'Message from GetPawsy Support',
+              generateStatusUpdateEmail(disputeId, dispute.status, message)
+            );
+          }
+        }
+
+        result = { success: true };
+        break;
+      }
+
+      case 'resolve': {
+        const { disputeId, resolutionType, resolutionAmount, resolutionNotes } = body;
+
+        if (!disputeId || !resolutionType) {
+          return new Response(
+            JSON.stringify({ error: 'Missing disputeId or resolutionType' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Map resolution type to status
+        const statusMap: Record<string, string> = {
+          full_refund: 'resolved_refund',
+          partial_refund: 'resolved_partial_refund',
+          replacement: 'resolved_replacement',
+          store_credit: 'resolved_refund',
+          denied: 'denied',
+        };
+
+        const { data: dispute, error: resolveError } = await supabase
+          .from('disputes')
+          .update({
+            status: statusMap[resolutionType] || 'resolved_refund',
+            resolution_type: resolutionType,
+            resolution_amount: resolutionAmount,
+            resolution_notes: resolutionNotes,
+            resolved_at: new Date().toISOString(),
+          })
+          .eq('id', disputeId)
+          .select('customer_email')
+          .single();
+
+        if (resolveError) throw resolveError;
+
+        // Add resolution message
+        await supabase
+          .from('dispute_messages')
+          .insert({
+            dispute_id: disputeId,
+            sender_type: 'system',
+            message: `Claim resolved: ${resolutionType.replace('_', ' ')}${resolutionAmount ? ` - $${resolutionAmount}` : ''}`,
+          });
+
+        // Send resolution email
+        await sendDisputeEmail(
+          dispute.customer_email,
+          'Your Claim Has Been Resolved - GetPawsy',
+          generateResolutionEmail(disputeId, resolutionType, resolutionAmount, resolutionNotes)
+        );
+
+        result = { success: true };
+        break;
+      }
+
+      default:
+        return new Response(
+          JSON.stringify({ error: 'Invalid action' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+    }
+
+    return new Response(
+      JSON.stringify(result),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Dispute management error:', errorMessage);
+    
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

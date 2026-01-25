@@ -352,6 +352,112 @@ export type Database = {
         }
         Relationships: []
       }
+      dispute_messages: {
+        Row: {
+          attachments: Json | null
+          created_at: string
+          dispute_id: string
+          id: string
+          is_internal: boolean | null
+          message: string
+          sender_id: string | null
+          sender_type: string
+        }
+        Insert: {
+          attachments?: Json | null
+          created_at?: string
+          dispute_id: string
+          id?: string
+          is_internal?: boolean | null
+          message: string
+          sender_id?: string | null
+          sender_type: string
+        }
+        Update: {
+          attachments?: Json | null
+          created_at?: string
+          dispute_id?: string
+          id?: string
+          is_internal?: boolean | null
+          message?: string
+          sender_id?: string | null
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_messages_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      disputes: {
+        Row: {
+          admin_notes: string | null
+          cj_dispute_id: string | null
+          created_at: string
+          customer_email: string
+          customer_evidence: Json | null
+          description: string
+          dispute_type: string
+          id: string
+          order_id: string | null
+          resolution_amount: number | null
+          resolution_notes: string | null
+          resolution_type: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          cj_dispute_id?: string | null
+          created_at?: string
+          customer_email: string
+          customer_evidence?: Json | null
+          description: string
+          dispute_type: string
+          id?: string
+          order_id?: string | null
+          resolution_amount?: number | null
+          resolution_notes?: string | null
+          resolution_type?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          cj_dispute_id?: string | null
+          created_at?: string
+          customer_email?: string
+          customer_evidence?: Json | null
+          description?: string
+          dispute_type?: string
+          id?: string
+          order_id?: string | null
+          resolution_amount?: number | null
+          resolution_notes?: string | null
+          resolution_type?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_campaign_events: {
         Row: {
           campaign_id: string
