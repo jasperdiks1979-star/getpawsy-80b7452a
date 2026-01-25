@@ -74,6 +74,7 @@ import { DidYouMeanAnalytics } from "./DidYouMeanAnalytics";
 import WebVitalsWidget from "./WebVitalsWidget";
 import PerformanceAlertsWidget from "./PerformanceAlertsWidget";
 import PerformanceTrendsChart from "./PerformanceTrendsChart";
+import PagePerformanceComparison from "./PagePerformanceComparison";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 // Types for GA4 API responses
@@ -1324,6 +1325,11 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
           {/* Performance Trends Chart */}
           {isWidgetVisible('performance-trends') && (
             <PerformanceTrendsChart />
+          )}
+
+          {/* Page Performance Comparison */}
+          {isWidgetVisible('performance-trends') && (
+            <PagePerformanceComparison />
           )}
 
           {/* Traffic Chart */}
