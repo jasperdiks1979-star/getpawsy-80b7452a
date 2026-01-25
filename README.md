@@ -1,8 +1,17 @@
 # GetPawsy - Premium Pet Products
 
+<!-- CI/CD Status Badges -->
+[![Tests](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/test.yml)
+[![Security](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/security.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/security.yml)
+[![Bundle Size](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/bundle-size.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/bundle-size.yml)
+[![Performance](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/performance-budget.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/performance-budget.yml)
+[![Docker](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/docker-build.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/docker-build.yml)
+
+<!-- Quality Badges -->
 ![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/.github/badges/coverage.json)
-![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)
+![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)
 
 ## Project info
 
