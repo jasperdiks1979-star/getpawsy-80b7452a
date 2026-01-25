@@ -113,3 +113,6 @@ verify_jwt = false
 
 [functions.manage-dispute]
 verify_jwt = false
+
+[functions.cj-webhook]
+verify_jwt = false

@@ -316,6 +316,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cj_webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message_id: string
+          message_type: string
+          payload: Json | null
+          processed: boolean | null
+          processed_at: string | null
+          webhook_type: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id: string
+          message_type: string
+          payload?: Json | null
+          processed?: boolean | null
+          processed_at?: string | null
+          webhook_type: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string
+          message_type?: string
+          payload?: Json | null
+          processed?: boolean | null
+          processed_at?: string | null
+          webhook_type?: string
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           created_at: string
