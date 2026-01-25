@@ -157,12 +157,27 @@ export function CJWebhookManager() {
                   CJ Dropshipping dashboard
                 </a>
               </li>
-              <li>Ga naar <strong>Authorization → API → API Key</strong> tab</li>
-              <li>Klik op de <strong>...</strong> knop naast je store en selecteer <strong>Webhook Settings</strong></li>
+              <li>Ga naar <strong>Authorization → API</strong> in het linkermenu</li>
+              <li>Selecteer de <strong>Webhook</strong> tab (naast API Key tab)</li>
+              <li>Klik op <strong>Add Webhook</strong> of <strong>+ Toevoegen</strong></li>
               <li>Plak bovenstaande Webhook URL in het URL veld</li>
               <li>Selecteer de event types: <code className="bg-background px-1 rounded">ORDER</code>, <code className="bg-background px-1 rounded">ORDERSPLIT</code>, <code className="bg-background px-1 rounded">STOCK</code></li>
               <li>Klik op <strong>Save</strong> om de webhook te activeren</li>
             </ol>
+            <div className="mt-3 p-3 bg-background rounded border">
+              <p className="text-xs text-muted-foreground">
+                <strong>💡 Let op:</strong> Als je geen Webhook tab ziet, neem dan contact op met{" "}
+                <a 
+                  href="https://app.cjdropshipping.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary underline"
+                >
+                  CJ support
+                </a>{" "}
+                om webhook toegang voor je account te activeren.
+              </p>
+            </div>
           </div>
 
           {/* Package Alert Settings */}
