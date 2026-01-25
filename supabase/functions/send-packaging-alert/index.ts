@@ -20,13 +20,12 @@ serve(async (req: Request): Promise<Response> => {
     // Verify admin authorization
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.replace("Bearer ", "");
       const authClient = createClient(supabaseUrl, supabaseAnonKey, {
         global: { headers: { Authorization: authHeader } },
       });
       
-      const { data: claims, error: claimsError } = await authClient.auth.getClaims(token);
-      if (claimsError || !claims?.claims?.sub) {
+      const { data: { user }, error: userError } = await authClient.auth.getUser();
+      if (userError || !user) {
         return new Response(
           JSON.stringify({ error: "Unauthorized" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -38,7 +37,7 @@ serve(async (req: Request): Promise<Response> => {
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", claims.claims.sub)
+        .eq("user_id", user.id)
         .eq("role", "admin")
         .single();
 
