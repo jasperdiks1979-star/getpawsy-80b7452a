@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle, CheckCircle2, Wrench, RefreshCw, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Wrench, RefreshCw, Eye, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
+import { formatDistanceToNow } from 'date-fns';
+import { nl } from 'date-fns/locale';
 
 interface ProductVariant {
   vid: string;
@@ -33,6 +35,23 @@ interface ProductWithIssues {
 const VariantDataValidator = () => {
   const queryClient = useQueryClient();
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+
+  // Fetch latest cron job run for variant fix
+  const { data: lastCronRun } = useQuery({
+    queryKey: ['last-variant-fix-cron'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('cron_job_logs')
+        .select('*')
+        .eq('job_name', 'nightly-variant-data-fix')
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   // Fetch products with variant issues
   const { data: productsWithIssues, isLoading, refetch } = useQuery({
@@ -165,9 +184,22 @@ const VariantDataValidator = () => {
               <Wrench className="w-5 h-5" />
               Variant Data Validator
             </CardTitle>
-            <CardDescription>
-              Identify and fix products with missing variant names to prevent React errors
-            </CardDescription>
+          <CardDescription className="flex items-center gap-4">
+            <span>Identify and fix products with missing variant names to prevent React errors</span>
+            {lastCronRun && (
+              <span className="flex items-center gap-1.5 text-xs bg-muted px-2 py-1 rounded-md">
+                <Clock className="w-3 h-3" />
+                Laatste auto-fix: {formatDistanceToNow(new Date(lastCronRun.started_at), { addSuffix: true, locale: nl })}
+                {lastCronRun.success !== null && (
+                  lastCronRun.success ? (
+                    <CheckCircle2 className="w-3 h-3 text-green-600 ml-1" />
+                  ) : (
+                    <AlertTriangle className="w-3 h-3 text-destructive ml-1" />
+                  )
+                )}
+              </span>
+            )}
+          </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Button
