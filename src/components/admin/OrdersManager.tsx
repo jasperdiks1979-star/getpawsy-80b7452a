@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Package, Search, Eye, RefreshCw, ExternalLink, Download, Truck } from "lucide-react";
+import { Package, Search, Eye, RefreshCw, ExternalLink, Download, Truck, Warehouse } from "lucide-react";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
 import { format } from "date-fns";
@@ -178,16 +178,30 @@ function VirtualizedOrdersTable({
     );
   }
 
+  // Helper to get warehouse display info
+  const getWarehouseInfo = (order: Order) => {
+    const shippingInfo = order.cj_shipping_info;
+    if (!shippingInfo?.warehouse) return null;
+    
+    return {
+      code: shippingInfo.warehouse,
+      name: shippingInfo.warehouseName || shippingInfo.warehouse,
+      logistic: shippingInfo.logisticName,
+      days: shippingInfo.estimatedDays,
+    };
+  };
+
   return (
     <div className="rounded-md border">
       {/* Header */}
       <div className="flex border-b bg-muted/50">
-        <div className="w-28 px-4 py-3 text-sm font-medium text-muted-foreground">Order ID</div>
-        <div className="w-36 px-4 py-3 text-sm font-medium text-muted-foreground">Datum</div>
+        <div className="w-24 px-4 py-3 text-sm font-medium text-muted-foreground">Order ID</div>
+        <div className="w-32 px-4 py-3 text-sm font-medium text-muted-foreground">Datum</div>
         <div className="flex-1 px-4 py-3 text-sm font-medium text-muted-foreground">Klant</div>
-        <div className="w-40 px-4 py-3 text-sm font-medium text-muted-foreground">Status</div>
-        <div className="w-28 px-4 py-3 text-sm font-medium text-muted-foreground text-right">Bedrag</div>
-        <div className="w-24 px-4 py-3 text-sm font-medium text-muted-foreground text-right">Acties</div>
+        <div className="w-36 px-4 py-3 text-sm font-medium text-muted-foreground">Status</div>
+        <div className="w-32 px-4 py-3 text-sm font-medium text-muted-foreground">CJ Warehouse</div>
+        <div className="w-24 px-4 py-3 text-sm font-medium text-muted-foreground text-right">Bedrag</div>
+        <div className="w-20 px-4 py-3 text-sm font-medium text-muted-foreground text-right">Acties</div>
       </div>
 
       {/* Virtualized Body */}
@@ -205,6 +219,7 @@ function VirtualizedOrdersTable({
         >
           {virtualItems.map((virtualRow) => {
             const order = orders[virtualRow.index];
+            const warehouseInfo = getWarehouseInfo(order);
 
             return (
               <div
@@ -219,21 +234,21 @@ function VirtualizedOrdersTable({
                 }}
                 className="flex border-b hover:bg-muted/50 transition-colors"
               >
-                <div className="w-28 px-4 py-4 text-xs font-mono flex items-center">
+                <div className="w-24 px-4 py-4 text-xs font-mono flex items-center">
                   {order.id.slice(0, 8)}...
                 </div>
-                <div className="w-36 px-4 py-4 text-sm flex items-center">
+                <div className="w-32 px-4 py-4 text-sm flex items-center">
                   {order.created_at ? format(new Date(order.created_at), "d MMM HH:mm", { locale: nl }) : '-'}
                 </div>
                 <div className="flex-1 px-4 py-4 text-sm truncate flex items-center">
                   {safeString(order.customer_email) || "Onbekend"}
                 </div>
-                <div className="w-40 px-4 py-2 flex items-center">
+                <div className="w-36 px-4 py-2 flex items-center">
                   <Select
                     value={order.status}
                     onValueChange={(status) => onUpdateStatus(order.id, status)}
                   >
-                    <SelectTrigger className="w-36 h-8">
+                    <SelectTrigger className="w-32 h-8">
                       <Badge 
                         variant="outline" 
                         className={STATUS_COLORS[order.status] || STATUS_COLORS.pending}
@@ -241,7 +256,7 @@ function VirtualizedOrdersTable({
                         {STATUS_LABELS[order.status] || order.status}
                       </Badge>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border shadow-lg z-50">
                       <SelectItem value="pending">In afwachting</SelectItem>
                       <SelectItem value="paid">Betaald</SelectItem>
                       <SelectItem value="processing">In behandeling</SelectItem>
@@ -252,10 +267,29 @@ function VirtualizedOrdersTable({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="w-28 px-4 py-4 text-sm font-medium text-right flex items-center justify-end">
+                <div className="w-32 px-4 py-4 flex items-center">
+                  {warehouseInfo ? (
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Warehouse className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-xs font-medium">{warehouseInfo.code}</span>
+                      </div>
+                      {warehouseInfo.logistic && (
+                        <span className="text-[10px] text-muted-foreground truncate max-w-[100px]" title={warehouseInfo.logistic}>
+                          {warehouseInfo.logistic}
+                        </span>
+                      )}
+                    </div>
+                  ) : order.cj_order_id ? (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground/50">N/A</span>
+                  )}
+                </div>
+                <div className="w-24 px-4 py-4 text-sm font-medium text-right flex items-center justify-end">
                   {formatCurrency(safeNumber(order.total_amount), safeString(order.currency) || 'eur')}
                 </div>
-                <div className="w-24 px-4 py-4 flex items-center justify-end">
+                <div className="w-20 px-4 py-4 flex items-center justify-end">
                   <Button
                     variant="ghost"
                     size="sm"
