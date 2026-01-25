@@ -156,7 +156,23 @@ const NewsletterPreferences = lazyWithRetry(() => import("./pages/NewsletterPref
 const SlowFeederOffer = lazyWithRetry(() => import("./pages/SlowFeederOffer"));
 const DownloadAds = lazyWithRetry(() => import("./pages/DownloadAds"));
 const TechnicalDeclaration = lazyWithRetry(() => import("./pages/TechnicalDeclaration"));
-const queryClient = new QueryClient();
+// Optimized React Query client with aggressive caching
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Keep data fresh for 5 minutes
+      staleTime: 5 * 60 * 1000,
+      // Cache data for 30 minutes
+      gcTime: 30 * 60 * 1000,
+      // Don't refetch on window focus for most queries
+      refetchOnWindowFocus: false,
+      // Retry failed requests once
+      retry: 1,
+      // Don't refetch on mount if data is fresh
+      refetchOnMount: false,
+    },
+  },
+});
 
 // Route loading fallback component
 const RouteLoader = () => (
@@ -172,10 +188,10 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate initial load time for assets
+    // Reduced loading time for faster perceived performance
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1500);
+    }, 800);
 
     return () => clearTimeout(timer);
   }, []);
