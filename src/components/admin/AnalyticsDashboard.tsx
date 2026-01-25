@@ -71,6 +71,7 @@ import { DashboardWidgetBuilder } from "./DashboardWidgetBuilder";
 import { CoPurchasedProductsWidget } from "./CoPurchasedProductsWidget";
 import { BundleSuggestionsWidget } from "./BundleSuggestionsWidget";
 import { DidYouMeanAnalytics } from "./DidYouMeanAnalytics";
+import WebVitalsWidget from "./WebVitalsWidget";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 // Types for GA4 API responses
@@ -1307,6 +1308,13 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               </div>
             )}
           </div>
+
+          {/* Web Vitals Performance Monitor */}
+          {isWidgetVisible('web-vitals') && (
+            <div className={getWidgetSizeClass('web-vitals')}>
+              <WebVitalsWidget />
+            </div>
+          )}
 
           {/* Traffic Chart */}
           {isWidgetVisible('traffic-chart') && (
