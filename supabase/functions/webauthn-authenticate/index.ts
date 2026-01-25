@@ -78,6 +78,14 @@ serve(async (req) => {
         );
       }
 
+      // Validate credential has required authenticator data
+      if (!credential.response?.authenticatorData) {
+        return new Response(
+          JSON.stringify({ error: "Invalid authenticator response" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       // Find the passkey credential
       const { data: passkey, error: passkeyError } = await supabaseAdmin
         .from("passkey_credentials")
@@ -92,29 +100,70 @@ serve(async (req) => {
         );
       }
 
-      // Update last_used_at and counter with security logging
+      // Parse the counter from the authenticator data
+      // The counter is a 32-bit big-endian unsigned integer at bytes 33-36 of authenticatorData
+      let authenticatorCounter: number;
+      try {
+        // Decode base64url to bytes
+        const authDataBase64 = credential.response.authenticatorData;
+        const authDataStr = atob(authDataBase64.replace(/-/g, "+").replace(/_/g, "/"));
+        const authDataBytes = new Uint8Array(authDataStr.length);
+        for (let i = 0; i < authDataStr.length; i++) {
+          authDataBytes[i] = authDataStr.charCodeAt(i);
+        }
+        
+        // Counter is at bytes 33-36 (after rpIdHash[32] and flags[1])
+        if (authDataBytes.length < 37) {
+          throw new Error("Authenticator data too short");
+        }
+        
+        // Read 32-bit big-endian counter
+        authenticatorCounter = (authDataBytes[33] << 24) | 
+                               (authDataBytes[34] << 16) | 
+                               (authDataBytes[35] << 8) | 
+                               authDataBytes[36];
+      } catch (parseError) {
+        console.error("[SECURITY ALERT] Failed to parse authenticator counter:", parseError);
+        return new Response(
+          JSON.stringify({ error: "Invalid authenticator data" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const previousCounter = passkey.counter;
-      const newCounter = passkey.counter + 1;
       
-      // Security audit: Log counter update for monitoring
-      console.log(`[SECURITY AUDIT] Passkey counter update: id=${passkey.id.substring(0, 8)}..., prev=${previousCounter}, new=${newCounter}, user_id=${passkey.user_id.substring(0, 8)}...`);
+      // Security audit: Log counter validation for monitoring
+      console.log(`[SECURITY AUDIT] Passkey counter validation: id=${passkey.id.substring(0, 8)}..., stored=${previousCounter}, authenticator=${authenticatorCounter}, user_id=${passkey.user_id.substring(0, 8)}...`);
       
-      // Detect potential replay attack (counter not incrementing)
-      if (newCounter <= previousCounter) {
-        console.error(`[SECURITY ALERT] Potential replay attack detected: passkey_id=${passkey.id}, counter not incrementing`);
+      // Detect potential replay attack - authenticator counter must be strictly greater than stored counter
+      // Note: Counter value 0 from authenticator is valid for some authenticators that don't increment
+      if (authenticatorCounter !== 0 && authenticatorCounter <= previousCounter) {
+        console.error(`[SECURITY ALERT] Potential replay attack detected: passkey_id=${passkey.id}, stored_counter=${previousCounter}, authenticator_counter=${authenticatorCounter}`);
         return new Response(
           JSON.stringify({ error: "Security validation failed" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
-      await supabaseAdmin
+      // Use atomic update with optimistic locking to prevent race conditions
+      const { data: updateResult, error: updateError } = await supabaseAdmin
         .from("passkey_credentials")
         .update({
           last_used_at: new Date().toISOString(),
-          counter: newCounter,
+          counter: authenticatorCounter > 0 ? authenticatorCounter : previousCounter + 1,
         })
-        .eq("id", passkey.id);
+        .eq("id", passkey.id)
+        .eq("counter", previousCounter) // Optimistic locking - only update if counter hasn't changed
+        .select()
+        .single();
+
+      if (updateError || !updateResult) {
+        console.error(`[SECURITY ALERT] Concurrent authentication attempt detected: passkey_id=${passkey.id}`);
+        return new Response(
+          JSON.stringify({ error: "Authentication conflict - please try again" }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       // Get the user
       const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(passkey.user_id);
