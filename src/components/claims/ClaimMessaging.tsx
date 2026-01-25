@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Send, User, Headphones, ImagePlus, X, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import TypingIndicator from "./TypingIndicator";
 
 interface ClaimMessage {
   id: string;
@@ -29,7 +30,9 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [supportIsTyping, setSupportIsTyping] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
   const { data: messages, isLoading } = useQuery({
@@ -47,12 +50,15 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
     },
   });
 
-  // Subscribe to realtime updates for new messages
+  // Subscribe to realtime updates for new messages and typing indicators
   useEffect(() => {
-    let channel: RealtimeChannel | null = null;
+    let messagesChannel: RealtimeChannel | null = null;
+    let typingChannel: RealtimeChannel | null = null;
+    let typingTimeout: NodeJS.Timeout | null = null;
 
     const setupRealtime = () => {
-      channel = supabase
+      // Messages channel for postgres changes
+      messagesChannel = supabase
         .channel(`dispute-messages-${disputeId}`)
         .on(
           "postgres_changes",
@@ -66,6 +72,10 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
             const newMessage = payload.new as ClaimMessage;
             // Only add non-internal messages to the cache
             if (!newMessage.is_internal) {
+              // Clear typing indicator when message arrives from support
+              if (newMessage.sender_type === "support") {
+                setSupportIsTyping(false);
+              }
               queryClient.setQueryData(
                 ["claim-messages", disputeId],
                 (oldData: ClaimMessage[] | undefined) => {
@@ -79,16 +89,48 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
           }
         )
         .subscribe();
+
+      // Typing channel for broadcast events
+      typingChannel = supabase
+        .channel(`dispute-typing-${disputeId}`)
+        .on("broadcast", { event: "typing" }, (payload) => {
+          if (payload.payload?.sender_type === "support") {
+            setSupportIsTyping(true);
+            // Clear typing after 3 seconds of no updates
+            if (typingTimeout) clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+              setSupportIsTyping(false);
+            }, 3000);
+          }
+        })
+        .on("broadcast", { event: "stop_typing" }, (payload) => {
+          if (payload.payload?.sender_type === "support") {
+            setSupportIsTyping(false);
+            if (typingTimeout) clearTimeout(typingTimeout);
+          }
+        })
+        .subscribe();
     };
 
     setupRealtime();
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
+      if (messagesChannel) {
+        supabase.removeChannel(messagesChannel);
+      }
+      if (typingChannel) {
+        supabase.removeChannel(typingChannel);
+      }
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
       }
     };
   }, [disputeId, queryClient]);
+
+  // Scroll to bottom when new messages arrive or typing indicator shows
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, supportIsTyping]);
 
   const uploadImages = async (files: File[]): Promise<string[]> => {
     const uploadedUrls: string[] = [];
@@ -307,6 +349,12 @@ const ClaimMessaging = ({ disputeId, customerEmail }: ClaimMessagingProps) => {
             </p>
           </div>
         )}
+
+        {/* Typing Indicator */}
+        {supportIsTyping && <TypingIndicator />}
+
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Message Input */}
