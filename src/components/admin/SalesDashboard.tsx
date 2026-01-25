@@ -50,6 +50,7 @@ import { PackagingInventoryWidget } from "./PackagingInventoryWidget";
 import { CJWebhooksWidget } from "./CJWebhooksWidget";
 import { RecentOrdersWidget } from "./RecentOrdersWidget";
 import { DisputesWidget } from "./DisputesWidget";
+import { ContactMessagesWidget } from "./ContactMessagesWidget";
 
 interface OrderItem {
   name: string;
@@ -845,6 +846,7 @@ export const SalesDashboard = ({ onNavigateToTab }: SalesDashboardProps) => {
         <StaleClaimsWidget onViewDisputes={() => onNavigateToTab?.("claims")} />
         <RecentOrdersWidget onNavigate={() => onNavigateToTab?.("orders")} />
         <DisputesWidget onNavigate={() => onNavigateToTab?.("claims")} />
+        <ContactMessagesWidget onNavigate={() => onNavigateToTab?.("contact")} />
         <PackagingInventoryWidget onNavigate={() => onNavigateToTab?.("packaging")} />
         <CJWebhooksWidget onNavigate={() => onNavigateToTab?.("cj-webhooks")} />
       </div>
