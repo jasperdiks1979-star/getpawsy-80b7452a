@@ -439,6 +439,7 @@ export type Database = {
           description: string
           dispute_type: string
           id: string
+          last_followup_sent_at: string | null
           order_id: string | null
           resolution_amount: number | null
           resolution_notes: string | null
@@ -457,6 +458,7 @@ export type Database = {
           description: string
           dispute_type: string
           id?: string
+          last_followup_sent_at?: string | null
           order_id?: string | null
           resolution_amount?: number | null
           resolution_notes?: string | null
@@ -475,6 +477,7 @@ export type Database = {
           description?: string
           dispute_type?: string
           id?: string
+          last_followup_sent_at?: string | null
           order_id?: string | null
           resolution_amount?: number | null
           resolution_notes?: string | null

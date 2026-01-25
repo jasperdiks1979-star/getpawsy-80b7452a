@@ -116,3 +116,6 @@ verify_jwt = false
 
 [functions.cj-webhook]
 verify_jwt = false
+
+[functions.send-claim-followup]
+verify_jwt = false
