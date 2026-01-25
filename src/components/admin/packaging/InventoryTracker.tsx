@@ -39,6 +39,7 @@ import {
   TrendingDown,
   Mail,
   Loader2,
+  CloudDownload,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -69,6 +70,39 @@ export const InventoryTracker = () => {
   const [adjustmentAmount, setAdjustmentAmount] = useState<number>(100);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSendingTestAlert, setIsSendingTestAlert] = useState(false);
+  const [isSyncingCJ, setIsSyncingCJ] = useState(false);
+
+  const handleSyncWithCJ = async () => {
+    setIsSyncingCJ(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cj-sync-packaging-stock");
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        const syncedCount = data.results?.filter((r: { synced: boolean }) => r.synced).length || 0;
+        if (syncedCount > 0) {
+          toast.success(`Voorraad gesynchroniseerd met CJ`, {
+            description: `${syncedCount} items bijgewerkt`,
+          });
+          refetch();
+        } else {
+          toast.info("Geen CJ producten geconfigureerd", {
+            description: data.note || "Configureer eerst CJ product IDs voor je verpakkingsmaterialen",
+          });
+        }
+      } else {
+        throw new Error(data?.error || "Sync failed");
+      }
+    } catch (error) {
+      console.error("Error syncing with CJ:", error);
+      toast.error("CJ sync mislukt", {
+        description: error instanceof Error ? error.message : "Onbekende fout",
+      });
+    } finally {
+      setIsSyncingCJ(false);
+    }
+  };
 
   const handleSendTestAlert = async () => {
     setIsSendingTestAlert(true);
@@ -166,7 +200,20 @@ export const InventoryTracker = () => {
                 Beheer je packaging voorraad en bijhouden op basis van bestellingen
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSyncWithCJ}
+                disabled={isSyncingCJ}
+              >
+                {isSyncingCJ ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <CloudDownload className="w-4 h-4 mr-2" />
+                )}
+                Sync CJ Voorraad
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
