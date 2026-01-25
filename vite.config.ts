@@ -69,9 +69,8 @@ export default defineConfig(({ mode }) => ({
       '@tanstack/react-query',
       'framer-motion',
       'recharts',
+      'mapbox-gl',
     ],
-    // Exclude heavy dependencies that aren't always needed
-    exclude: ['mapbox-gl'],
   },
   plugins: [
     react(),

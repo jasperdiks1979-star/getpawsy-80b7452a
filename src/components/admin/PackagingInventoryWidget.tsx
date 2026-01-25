@@ -1,15 +1,16 @@
 import { usePackagingInventory, getInventoryStatus } from "@/hooks/usePackagingInventory";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, AlertTriangle, ChevronRight, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { Package, AlertTriangle, ChevronRight, RefreshCw, CheckCircle2, XCircle, Settings } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PackagingInventoryWidgetProps {
   onNavigate?: () => void;
+  onOpenCjConfig?: () => void;
 }
 
-export const PackagingInventoryWidget = ({ onNavigate }: PackagingInventoryWidgetProps) => {
+export const PackagingInventoryWidget = ({ onNavigate, onOpenCjConfig }: PackagingInventoryWidgetProps) => {
   const { data: inventory, isLoading } = usePackagingInventory();
 
   if (isLoading) {
@@ -131,7 +132,15 @@ export const PackagingInventoryWidget = ({ onNavigate }: PackagingInventoryWidge
 
           {/* CJ Sync Health Indicator */}
           <div className="mt-3 pt-3 border-t border-border">
-            <div className="flex items-center justify-between">
+            <div 
+              className={`flex items-center justify-between ${onOpenCjConfig ? "cursor-pointer hover:bg-muted/50 -mx-1 px-1 py-0.5 rounded transition-colors" : ""}`}
+              onClick={(e) => {
+                if (onOpenCjConfig) {
+                  e.stopPropagation();
+                  onOpenCjConfig();
+                }
+              }}
+            >
               <div className="flex items-center gap-1.5">
                 <RefreshCw className="h-3 w-3 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">CJ Sync</span>
@@ -154,6 +163,9 @@ export const PackagingInventoryWidget = ({ onNavigate }: PackagingInventoryWidge
                     ) : (
                       <XCircle className="h-3.5 w-3.5 text-muted-foreground" />
                     )}
+                    {onOpenCjConfig && (
+                      <Settings className="h-3 w-3 text-muted-foreground ml-1" />
+                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="left">
@@ -161,6 +173,7 @@ export const PackagingInventoryWidget = ({ onNavigate }: PackagingInventoryWidge
                     {allSynced 
                       ? "Alle items zijn gekoppeld aan CJ" 
                       : `${itemsWithSync}/${totalItems} items gekoppeld aan CJ`}
+                    {onOpenCjConfig && " • Klik om te configureren"}
                   </p>
                 </TooltipContent>
               </Tooltip>
