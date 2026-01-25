@@ -1,0 +1,98 @@
+title: "[Showcase]: "
+labels: ["showcase"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🎉 Show & Tell
+        
+        Heb je iets cools gebouwd met dit project? Deel het met de community!
+        
+        Dit is de plek voor:
+        - Projecten die je hebt gebouwd
+        - Interessante implementaties
+        - Custom integraties
+        - Tips en tricks die je hebt ontdekt
+
+  - type: input
+    id: project-name
+    attributes:
+      label: Project / Implementatie naam
+      description: Geef je project of implementatie een naam
+      placeholder: "Mijn awesome pet shop"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Beschrijving
+      description: Vertel ons over wat je hebt gebouwd
+      placeholder: |
+        Ik heb ... gebouwd met dit project.
+        
+        Het belangrijkste doel was om...
+    validations:
+      required: true
+
+  - type: textarea
+    id: highlights
+    attributes:
+      label: Highlights
+      description: Wat zijn de coolste features of aspecten?
+      placeholder: |
+        - Feature 1: ...
+        - Feature 2: ...
+        - Interessante technische oplossing: ...
+    validations:
+      required: true
+
+  - type: input
+    id: demo-link
+    attributes:
+      label: Demo / Live link
+      description: Link naar een live demo (indien beschikbaar)
+      placeholder: "https://..."
+    validations:
+      required: false
+
+  - type: input
+    id: repo-link
+    attributes:
+      label: Repository link
+      description: Link naar de source code (indien open source)
+      placeholder: "https://github.com/..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / Video
+      description: Laat zien wat je hebt gebouwd!
+      placeholder: "[Sleep afbeeldingen hierheen of plak ze]"
+    validations:
+      required: false
+
+  - type: textarea
+    id: learnings
+    attributes:
+      label: Geleerde lessen
+      description: Wat heb je geleerd tijdens het bouwen?
+      placeholder: |
+        - Tip 1: ...
+        - Valkuil om te vermijden: ...
+        - Handige resource: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: tech-stack
+    attributes:
+      label: Gebruikte technologieën
+      description: Welke extra tools/libraries heb je gebruikt?
+      placeholder: |
+        - Library X voor...
+        - Service Y voor...
+    validations:
+      required: false

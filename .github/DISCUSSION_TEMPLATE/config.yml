@@ -1,0 +1,16 @@
+# Configuration for GitHub Discussions templates
+# These templates provide structured forms for different discussion categories
+
+# Note: Discussion templates require the Discussions feature to be enabled
+# in your repository settings (Settings > Features > Discussions)
+
+# Available categories (map to discussion_category in each template):
+# - Q&A: For questions that need answers
+# - Ideas: For feature ideas and suggestions  
+# - Show and Tell: For showcasing projects built with this repo
+# - Help: For getting help with implementation issues
+
+# Template behavior:
+# - Users select a category when creating a discussion
+# - The corresponding template form is shown
+# - Labels are automatically applied based on template config

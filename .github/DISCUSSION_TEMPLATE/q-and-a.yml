@@ -1,0 +1,91 @@
+title: "[Q&A]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 💬 Vraag & Antwoord
+        
+        Heb je een vraag over het project? Stel hem hier! De community en maintainers helpen je graag.
+        
+        **Voordat je een vraag stelt:**
+        - Zoek eerst in bestaande discussions en issues
+        - Check de README en documentatie
+        - Bekijk de FAQ pagina
+
+  - type: checkboxes
+    id: search-check
+    attributes:
+      label: Voorbereidende checks
+      description: Bevestig dat je het volgende hebt gedaan
+      options:
+        - label: Ik heb gezocht in bestaande discussions
+          required: true
+        - label: Ik heb de documentatie geraadpleegd
+          required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Categorie
+      description: Waar gaat je vraag over?
+      options:
+        - Setup / Installatie
+        - Configuratie
+        - Functionaliteit
+        - Integraties
+        - Performance
+        - Security
+        - Deployment
+        - Anders
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Je vraag
+      description: Stel je vraag zo duidelijk en specifiek mogelijk
+      placeholder: |
+        Beschrijf je vraag hier...
+        
+        Wees specifiek over:
+        - Wat je probeert te bereiken
+        - Wat je al hebt geprobeerd
+        - Waar je vastloopt
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Geef relevante context die kan helpen bij het beantwoorden
+      placeholder: |
+        - Welke versie gebruik je?
+        - Welke omgeving (development/production)?
+        - Relevante configuratie of code snippets
+    validations:
+      required: false
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: Wat heb je al geprobeerd?
+      description: Beschrijf wat je al hebt geprobeerd om dit op te lossen
+      placeholder: |
+        - Oplossing 1: ...
+        - Oplossing 2: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: resources
+    attributes:
+      label: Geraadpleegde bronnen
+      description: Links naar documentatie, Stack Overflow, etc. die je hebt bekeken
+      placeholder: |
+        - https://...
+        - https://...
+    validations:
+      required: false

@@ -1,0 +1,107 @@
+title: "[Help]: "
+labels: ["help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🆘 Help Gevraagd
+        
+        Loop je ergens vast en heb je hulp nodig? De community staat klaar!
+        
+        **Let op:** Voor bugs gebruik je de [Bug Report](../issues/new?template=bug_report.yml) template.
+        Deze discussion is voor wanneer je hulp nodig hebt maar het geen bug is.
+
+  - type: checkboxes
+    id: help-check
+    attributes:
+      label: Voorbereidende checks
+      description: Bevestig het volgende
+      options:
+        - label: Dit is geen bug (anders gebruik ik de bug report template)
+          required: true
+        - label: Ik heb de documentatie geraadpleegd
+          required: true
+        - label: Ik heb gezocht in bestaande discussions
+          required: true
+
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgentie
+      description: Hoe dringend is je hulpvraag?
+      options:
+        - 🟢 Laag - Geen haast, leren/exploreren
+        - 🟡 Medium - Zou graag verder willen
+        - 🟠 Hoog - Blokkeert mijn werk
+        - 🔴 Kritiek - Productie issue (overweeg bug report)
+    validations:
+      required: true
+
+  - type: textarea
+    id: situation
+    attributes:
+      label: Situatie
+      description: Beschrijf je huidige situatie
+      placeholder: |
+        Ik probeer om...
+        
+        Mijn setup is:
+        - OS: ...
+        - Node versie: ...
+        - Browser: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Doel
+      description: Wat probeer je te bereiken?
+      placeholder: "Ik wil graag..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: Wat heb je geprobeerd?
+      description: Beschrijf je pogingen tot nu toe
+      placeholder: |
+        1. Eerst heb ik geprobeerd...
+           Resultaat: ...
+        
+        2. Daarna heb ik geprobeerd...
+           Resultaat: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: errors
+    attributes:
+      label: Error messages / Logs
+      description: Relevante foutmeldingen of logs
+      render: shell
+      placeholder: |
+        Plak hier eventuele error messages of logs...
+    validations:
+      required: false
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Relevante code
+      description: Code snippets die relevant zijn voor je vraag
+      render: typescript
+      placeholder: |
+        // Plak hier relevante code...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Aanvullende context
+      description: Screenshots, links, of andere relevante informatie
+      placeholder: "[Sleep afbeeldingen hierheen of voeg links toe]"
+    validations:
+      required: false
