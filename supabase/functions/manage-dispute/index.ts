@@ -32,13 +32,60 @@ const DISPUTE_TYPE_LABELS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Received',
+  in_progress: 'In Progress',
   under_review: 'Under Review',
   awaiting_evidence: 'Awaiting Additional Information',
   processing_with_supplier: 'Being Processed',
+  resolved: 'Resolved',
   resolved_refund: 'Resolved - Refund Issued',
   resolved_replacement: 'Resolved - Replacement Sent',
   resolved_partial_refund: 'Resolved - Partial Refund',
   denied: 'Claim Denied',
+};
+
+const STATUS_EMAIL_CONFIG: Record<string, { subject: string; color: string; icon: string; message: string }> = {
+  pending: {
+    subject: 'We\'ve Received Your Claim',
+    color: '#FFA000',
+    icon: '📬',
+    message: 'Your claim has been received and is waiting to be reviewed by our team.',
+  },
+  in_progress: {
+    subject: 'Your Claim Is Being Reviewed',
+    color: '#1976D2',
+    icon: '🔍',
+    message: 'Great news! Our team is actively reviewing your claim. We\'ll get back to you as soon as possible.',
+  },
+  under_review: {
+    subject: 'Your Claim Is Under Review',
+    color: '#7B1FA2',
+    icon: '📋',
+    message: 'Our team is carefully reviewing all the details of your claim.',
+  },
+  awaiting_evidence: {
+    subject: 'Additional Information Needed',
+    color: '#F57C00',
+    icon: '📎',
+    message: 'We need some additional information to process your claim. Please reply to this email with the requested details.',
+  },
+  processing_with_supplier: {
+    subject: 'Your Claim Is Being Processed',
+    color: '#00796B',
+    icon: '⚙️',
+    message: 'We\'re working with our supplier to resolve your issue. This may take a few extra days.',
+  },
+  resolved: {
+    subject: 'Your Claim Has Been Resolved',
+    color: '#388E3C',
+    icon: '✅',
+    message: 'Great news! Your claim has been successfully resolved.',
+  },
+  denied: {
+    subject: 'Update on Your Claim',
+    color: '#D32F2F',
+    icon: '❌',
+    message: 'After careful review, we were unable to approve your claim.',
+  },
 };
 
 // Send email notification to customer
@@ -136,9 +183,10 @@ function generateDisputeConfirmationEmail(disputeId: string, disputeType: string
   `;
 }
 
-// Generate status update email
+// Generate status update email with specific styling per status
 function generateStatusUpdateEmail(disputeId: string, newStatus: string, message?: string): string {
   const statusLabel = STATUS_LABELS[newStatus] || newStatus;
+  const config = STATUS_EMAIL_CONFIG[newStatus] || STATUS_EMAIL_CONFIG.in_progress;
   
   return `
     <!DOCTYPE html>
@@ -154,32 +202,58 @@ function generateStatusUpdateEmail(disputeId: string, newStatus: string, message
             <h1 style="color: #6B4E3D; margin: 0; font-size: 28px;">🐾 GetPawsy</h1>
           </div>
           
-          <h2 style="color: #333; margin-bottom: 20px;">Claim Update</h2>
+          <h2 style="color: #333; margin-bottom: 20px;">${config.icon} ${config.subject}</h2>
           
           <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-            We have an update on your claim (Reference: ${disputeId.slice(0, 8).toUpperCase()})
+            Hi there! We have an update on your claim.
           </p>
           
-          <div style="background: #E8F5E9; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-            <p style="margin: 0; color: #2E7D32; font-weight: bold; font-size: 18px;">
-              Status: ${statusLabel}
+          <div style="background: #F8F9FA; border-left: 4px solid ${config.color}; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">Claim Reference</p>
+            <p style="margin: 0 0 15px 0; color: #333; font-weight: bold; font-size: 18px; font-family: monospace;">
+              #${disputeId.slice(0, 8).toUpperCase()}
+            </p>
+            <p style="margin: 0 0 5px 0; color: #666; font-size: 14px;">Current Status</p>
+            <p style="margin: 0; color: ${config.color}; font-weight: bold; font-size: 18px;">
+              ${statusLabel}
+            </p>
+          </div>
+          
+          <div style="background: #FFF8F0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #6B4E3D; line-height: 1.6;">
+              ${config.message}
             </p>
           </div>
           
           ${message ? `
-            <div style="background: #F5F5F5; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-              <p style="margin: 0; color: #333;">${message}</p>
+            <div style="background: #E3F2FD; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+              <p style="margin: 0 0 10px 0; color: #1565C0; font-weight: bold; font-size: 14px;">
+                💬 Message from our team:
+              </p>
+              <p style="margin: 0; color: #333; line-height: 1.6;">${message}</p>
             </div>
           ` : ''}
           
           <p style="color: #666; line-height: 1.6;">
-            If you have any questions about this update, please reply to this email or contact our support team.
+            If you have any questions, simply reply to this email or visit our 
+            <a href="https://getpawsy.lovable.app/my-claims" style="color: #6B4E3D; font-weight: bold;">claims page</a> 
+            to view your claim details.
           </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://getpawsy.lovable.app/my-claims" 
+               style="display: inline-block; background: #6B4E3D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+              View My Claims
+            </a>
+          </div>
           
           <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px; text-align: center;">
             <p style="color: #999; font-size: 14px; margin: 0;">
               GetPawsy - Premium Pet Products<br>
               Making pets happy, one product at a time 🐕🐈
+            </p>
+            <p style="color: #bbb; font-size: 12px; margin-top: 10px;">
+              GetPawsy B.V. • The Netherlands
             </p>
           </div>
         </div>
@@ -200,16 +274,16 @@ function generateResolutionEmail(
   
   switch (resolutionType) {
     case 'full_refund':
-      resolutionMessage = `We have issued a <strong>full refund of $${resolutionAmount?.toFixed(2) || 'the order amount'}</strong> to your original payment method. Please allow 5-10 business days for the refund to appear in your account.`;
+      resolutionMessage = `We have issued a <strong>full refund of €${resolutionAmount?.toFixed(2) || 'the order amount'}</strong> to your original payment method. Please allow 5-10 business days for the refund to appear in your account.`;
       break;
     case 'partial_refund':
-      resolutionMessage = `We have issued a <strong>partial refund of $${resolutionAmount?.toFixed(2)}</strong> to your original payment method. Please allow 5-10 business days for the refund to appear in your account.`;
+      resolutionMessage = `We have issued a <strong>partial refund of €${resolutionAmount?.toFixed(2)}</strong> to your original payment method. Please allow 5-10 business days for the refund to appear in your account.`;
       break;
     case 'replacement':
       resolutionMessage = `We are sending you a <strong>replacement item</strong> at no additional cost. You will receive a shipping confirmation email with tracking information once your replacement ships.`;
       break;
     case 'store_credit':
-      resolutionMessage = `We have added <strong>$${resolutionAmount?.toFixed(2)} in store credit</strong> to your account. You can use this credit on your next purchase.`;
+      resolutionMessage = `We have added <strong>€${resolutionAmount?.toFixed(2)} in store credit</strong> to your account. You can use this credit on your next purchase.`;
       break;
     case 'denied':
       resolutionMessage = `After careful review, we were unable to approve your claim at this time.`;
@@ -423,10 +497,11 @@ serve(async (req) => {
             });
         }
 
-        // Send email notification
+        // Send email notification with dynamic subject based on status
+        const emailConfig = STATUS_EMAIL_CONFIG[status] || STATUS_EMAIL_CONFIG.in_progress;
         await sendDisputeEmail(
           dispute.customer_email,
-          'Update on Your Claim - GetPawsy',
+          `${emailConfig.subject} - GetPawsy`,
           generateStatusUpdateEmail(disputeId, status, message)
         );
 
