@@ -29,6 +29,45 @@ interface CJOrderRequest {
   fromCountryCode?: string;
 }
 
+interface WarehouseOption {
+  warehouseCode: string;
+  warehouseName: string;
+  logisticName: string;
+  logisticPrice: number;
+  logisticAging: string;
+  estimatedDays: number;
+  score: number;
+}
+
+// CJ Dropshipping warehouse codes with regional priorities
+const CJ_WAREHOUSES = [
+  { code: 'US', name: 'United States', region: 'americas', priority: 1 },
+  { code: 'CN', name: 'China', region: 'asia', priority: 2 },
+  { code: 'DE', name: 'Germany', region: 'europe', priority: 1 },
+  { code: 'UK', name: 'United Kingdom', region: 'europe', priority: 2 },
+  { code: 'AU', name: 'Australia', region: 'oceania', priority: 1 },
+  { code: 'TH', name: 'Thailand', region: 'asia', priority: 3 },
+];
+
+// Country to region mapping
+const COUNTRY_REGIONS: Record<string, string> = {
+  // Americas
+  US: 'americas', CA: 'americas', MX: 'americas', BR: 'americas',
+  // Europe
+  NL: 'europe', BE: 'europe', DE: 'europe', FR: 'europe', GB: 'europe',
+  ES: 'europe', IT: 'europe', PT: 'europe', AT: 'europe', CH: 'europe',
+  PL: 'europe', CZ: 'europe', SE: 'europe', NO: 'europe', DK: 'europe',
+  FI: 'europe', IE: 'europe', GR: 'europe', HU: 'europe', RO: 'europe',
+  // Asia
+  CN: 'asia', JP: 'asia', KR: 'asia', TW: 'asia', HK: 'asia',
+  SG: 'asia', TH: 'asia', VN: 'asia', MY: 'asia', PH: 'asia',
+  ID: 'asia', IN: 'asia',
+  // Oceania
+  AU: 'oceania', NZ: 'oceania',
+  // Middle East
+  AE: 'middle_east', SA: 'middle_east', IL: 'middle_east', TR: 'middle_east',
+};
+
 interface OrderItem {
   id: string;
   name: string;
@@ -150,7 +189,147 @@ async function getProductVariant(
   return null;
 }
 
-// Calculate freight and get available shipping methods
+// Parse shipping aging string to estimated days
+function parseShippingDays(agingStr: string): number {
+  if (!agingStr) return 30;
+  const match = agingStr.match(/(\d+)\s*[-~]\s*(\d+)/);
+  if (match) {
+    return Math.round((parseInt(match[1]) + parseInt(match[2])) / 2);
+  }
+  const singleMatch = agingStr.match(/(\d+)/);
+  if (singleMatch) {
+    return parseInt(singleMatch[1]);
+  }
+  return 30;
+}
+
+// Get optimal warehouses for a destination country
+function getOptimalWarehouses(destinationCountry: string) {
+  const region = COUNTRY_REGIONS[destinationCountry] || 'americas';
+  
+  return [...CJ_WAREHOUSES].sort((a, b) => {
+    const aInRegion = a.region === region;
+    const bInRegion = b.region === region;
+    
+    if (aInRegion && !bInRegion) return -1;
+    if (!aInRegion && bInRegion) return 1;
+    
+    return a.priority - b.priority;
+  });
+}
+
+// Calculate freight for a single warehouse
+async function calculateFreightForWarehouse(
+  accessToken: string,
+  products: CJOrderProduct[],
+  startCountryCode: string,
+  endCountryCode: string,
+  zip?: string
+): Promise<{ logisticName: string; logisticPrice: number; logisticAging: string }[] | null> {
+  console.log(`[WAREHOUSE] Calculating freight from ${startCountryCode} to ${endCountryCode}`);
+
+  try {
+    const response = await fetch(`${CJ_API_BASE}/logistic/freightCalculate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "CJ-Access-Token": accessToken,
+      },
+      body: JSON.stringify({
+        startCountryCode,
+        endCountryCode,
+        zip: zip || "",
+        products: products.map(p => ({ vid: p.vid, quantity: p.quantity })),
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.result && data.data && data.data.length > 0) {
+      return data.data;
+    }
+  } catch (error) {
+    console.error(`[WAREHOUSE] Error calculating freight from ${startCountryCode}:`, error);
+  }
+
+  return null;
+}
+
+// Multi-warehouse optimization: Find best warehouse based on customer location
+async function findOptimalWarehouse(
+  accessToken: string,
+  products: CJOrderProduct[],
+  destinationCountry: string,
+  zip?: string
+): Promise<WarehouseOption | null> {
+  console.log(`[WAREHOUSE-OPT] Finding optimal warehouse for destination: ${destinationCountry}`);
+  
+  const optimalWarehouses = getOptimalWarehouses(destinationCountry);
+  console.log(`[WAREHOUSE-OPT] Checking warehouses in order:`, optimalWarehouses.map(w => w.code));
+  
+  const warehouseOptions: WarehouseOption[] = [];
+  
+  // Check top 3 warehouses by regional priority
+  const warehousesToCheck = optimalWarehouses.slice(0, 3);
+  
+  for (const warehouse of warehousesToCheck) {
+    const freightOptions = await calculateFreightForWarehouse(
+      accessToken,
+      products,
+      warehouse.code,
+      destinationCountry,
+      zip
+    );
+    
+    if (freightOptions && freightOptions.length > 0) {
+      // Get the best option from this warehouse (cheapest)
+      const sortedOptions = freightOptions.sort((a: any, b: any) => a.logisticPrice - b.logisticPrice);
+      const bestOption = sortedOptions[0];
+      
+      const estimatedDays = parseShippingDays(bestOption.logisticAging);
+      
+      warehouseOptions.push({
+        warehouseCode: warehouse.code,
+        warehouseName: warehouse.name,
+        logisticName: bestOption.logisticName,
+        logisticPrice: bestOption.logisticPrice,
+        logisticAging: bestOption.logisticAging,
+        estimatedDays,
+        score: 0, // Will be calculated after we have all options
+      });
+      
+      console.log(`[WAREHOUSE-OPT] ${warehouse.code}: $${bestOption.logisticPrice}, ${bestOption.logisticAging}`);
+    }
+  }
+  
+  if (warehouseOptions.length === 0) {
+    console.error("[WAREHOUSE-OPT] No warehouse options available");
+    return null;
+  }
+  
+  // Calculate scores (lower is better)
+  // Factors: price weight 0.4, speed weight 0.6
+  const maxPrice = Math.max(...warehouseOptions.map(w => w.logisticPrice));
+  const maxDays = Math.max(...warehouseOptions.map(w => w.estimatedDays));
+  
+  for (const option of warehouseOptions) {
+    const priceScore = maxPrice > 0 ? (option.logisticPrice / maxPrice) * 0.4 : 0;
+    const speedScore = maxDays > 0 ? (option.estimatedDays / maxDays) * 0.6 : 0;
+    option.score = priceScore + speedScore;
+  }
+  
+  // Sort by score and select best
+  warehouseOptions.sort((a, b) => a.score - b.score);
+  const bestWarehouse = warehouseOptions[0];
+  
+  console.log(`[WAREHOUSE-OPT] Selected: ${bestWarehouse.warehouseCode} (${bestWarehouse.warehouseName})`);
+  console.log(`[WAREHOUSE-OPT] Shipping: ${bestWarehouse.logisticName} - $${bestWarehouse.logisticPrice} - ${bestWarehouse.logisticAging}`);
+  console.log(`[WAREHOUSE-OPT] All options:`, warehouseOptions.map(w => `${w.warehouseCode}: $${w.logisticPrice}/${w.estimatedDays}d (score: ${w.score.toFixed(2)})`));
+  
+  return bestWarehouse;
+}
+
+// Legacy function for backwards compatibility
 async function calculateFreight(
   accessToken: string,
   products: CJOrderProduct[],
@@ -158,38 +337,13 @@ async function calculateFreight(
   endCountryCode: string,
   zip?: string
 ): Promise<{ logisticName: string; logisticPrice: number; logisticAging: string } | null> {
-  console.log("[CREATE-CJ-ORDER] Calculating freight for:", products);
-
-  const response = await fetch(`${CJ_API_BASE}/logistic/freightCalculate`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "CJ-Access-Token": accessToken,
-    },
-    body: JSON.stringify({
-      startCountryCode,
-      endCountryCode,
-      zip: zip || "",
-      products: products.map(p => ({ vid: p.vid, quantity: p.quantity })),
-    }),
-  });
-
-  const data = await response.json();
-  console.log("[CREATE-CJ-ORDER] Freight response:", JSON.stringify(data));
-
-  if (data.result && data.data && data.data.length > 0) {
-    // Sort by price and pick the cheapest option
-    const sortedOptions = data.data.sort((a: any, b: any) => a.logisticPrice - b.logisticPrice);
-    const bestOption = sortedOptions[0];
-    console.log("[CREATE-CJ-ORDER] Selected shipping:", bestOption.logisticName, "- $", bestOption.logisticPrice);
-    return {
-      logisticName: bestOption.logisticName,
-      logisticPrice: bestOption.logisticPrice,
-      logisticAging: bestOption.logisticAging,
-    };
+  const options = await calculateFreightForWarehouse(accessToken, products, startCountryCode, endCountryCode, zip);
+  
+  if (options && options.length > 0) {
+    const sortedOptions = options.sort((a: any, b: any) => a.logisticPrice - b.logisticPrice);
+    return sortedOptions[0];
   }
-
-  console.error("[CREATE-CJ-ORDER] No shipping options available");
+  
   return null;
 }
 
@@ -325,22 +479,86 @@ serve(async (req) => {
       throw new Error("No valid CJ products found in order");
     }
 
-    // Calculate freight to get available shipping methods
-    const shippingInfo = await calculateFreight(
+    // Use multi-warehouse optimization to find the best warehouse
+    console.log("[CREATE-CJ-ORDER] Starting multi-warehouse optimization...");
+    const optimalWarehouse = await findOptimalWarehouse(
       accessToken,
       cjProducts,
-      "US", // Ship from US warehouse
       countryCode,
       address.postal_code
     );
 
-    if (!shippingInfo) {
-      throw new Error("No shipping methods available for this order");
+    if (!optimalWarehouse) {
+      // Fallback to legacy single-warehouse approach
+      console.log("[CREATE-CJ-ORDER] Multi-warehouse optimization failed, falling back to US warehouse");
+      const shippingInfo = await calculateFreight(
+        accessToken,
+        cjProducts,
+        "US",
+        countryCode,
+        address.postal_code
+      );
+      
+      if (!shippingInfo) {
+        throw new Error("No shipping methods available for this order");
+      }
+      
+      // Use legacy approach
+      const cjOrderData: CJOrderRequest = {
+        orderNumber: orderId.slice(0, 20),
+        shippingZip: address.postal_code || "",
+        shippingCountryCode: countryCode,
+        shippingCountry: COUNTRY_NAMES[countryCode] || countryCode,
+        shippingProvince: address.state || "",
+        shippingCity: address.city || "",
+        shippingAddress: [address.line1, address.line2].filter(Boolean).join(", "),
+        shippingCustomerName: shippingDetails.name || "Customer",
+        shippingPhone: shippingDetails.phone || "",
+        products: cjProducts,
+        fromCountryCode: "US",
+        logisticName: shippingInfo.logisticName,
+        remark: `GetPawsy Order ${orderId.slice(0, 8)}`,
+      };
+
+      const result = await createCJOrder(accessToken, cjOrderData);
+      
+      if (!result.success) {
+        await supabaseAdmin
+          .from("orders")
+          .update({
+            cj_order_status: `error: ${result.error}`,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", orderId);
+
+        throw new Error(`CJ order creation failed: ${result.error}`);
+      }
+
+      await supabaseAdmin
+        .from("orders")
+        .update({
+          cj_order_id: result.orderId,
+          cj_order_status: "created",
+          cj_order_created_at: new Date().toISOString(),
+          cj_shipping_info: {
+            warehouse: "US",
+            logisticName: shippingInfo.logisticName,
+            logisticPrice: shippingInfo.logisticPrice,
+            estimatedDays: null,
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orderId);
+
+      return new Response(
+        JSON.stringify({ success: true, cjOrderId: result.orderId, warehouse: "US" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
     }
 
-    // Create CJ order
+    // Create CJ order with optimized warehouse
     const cjOrderData: CJOrderRequest = {
-      orderNumber: orderId.slice(0, 20), // CJ has 20 char limit
+      orderNumber: orderId.slice(0, 20),
       shippingZip: address.postal_code || "",
       shippingCountryCode: countryCode,
       shippingCountry: COUNTRY_NAMES[countryCode] || countryCode,
@@ -350,10 +568,13 @@ serve(async (req) => {
       shippingCustomerName: shippingDetails.name || "Customer",
       shippingPhone: shippingDetails.phone || "",
       products: cjProducts,
-      fromCountryCode: "US", // Always ship from US warehouse
-      logisticName: shippingInfo.logisticName,
-      remark: `GetPawsy Order ${orderId.slice(0, 8)}`,
+      fromCountryCode: optimalWarehouse.warehouseCode,
+      logisticName: optimalWarehouse.logisticName,
+      remark: `GetPawsy Order ${orderId.slice(0, 8)} [WH:${optimalWarehouse.warehouseCode}]`,
     };
+
+    console.log(`[CREATE-CJ-ORDER] Using warehouse: ${optimalWarehouse.warehouseCode} (${optimalWarehouse.warehouseName})`);
+    console.log(`[CREATE-CJ-ORDER] Shipping: ${optimalWarehouse.logisticName} - $${optimalWarehouse.logisticPrice} - ${optimalWarehouse.logisticAging}`);
 
     const result = await createCJOrder(accessToken, cjOrderData);
 
@@ -370,21 +591,40 @@ serve(async (req) => {
       throw new Error(`CJ order creation failed: ${result.error}`);
     }
 
-    // Update order with CJ order ID
+    // Update order with CJ order ID and warehouse info
     await supabaseAdmin
       .from("orders")
       .update({
         cj_order_id: result.orderId,
         cj_order_status: "created",
         cj_order_created_at: new Date().toISOString(),
+        cj_shipping_info: {
+          warehouse: optimalWarehouse.warehouseCode,
+          warehouseName: optimalWarehouse.warehouseName,
+          logisticName: optimalWarehouse.logisticName,
+          logisticPrice: optimalWarehouse.logisticPrice,
+          estimatedDays: optimalWarehouse.estimatedDays,
+          optimizationScore: optimalWarehouse.score,
+        },
         updated_at: new Date().toISOString(),
       })
       .eq("id", orderId);
 
     console.log("[CREATE-CJ-ORDER] CJ order created successfully:", result.orderId);
+    console.log("[CREATE-CJ-ORDER] Warehouse used:", optimalWarehouse.warehouseCode);
 
     return new Response(
-      JSON.stringify({ success: true, cjOrderId: result.orderId }),
+      JSON.stringify({ 
+        success: true, 
+        cjOrderId: result.orderId,
+        warehouse: {
+          code: optimalWarehouse.warehouseCode,
+          name: optimalWarehouse.warehouseName,
+          logisticName: optimalWarehouse.logisticName,
+          logisticPrice: optimalWarehouse.logisticPrice,
+          estimatedDays: optimalWarehouse.estimatedDays,
+        }
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
