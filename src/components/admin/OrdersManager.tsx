@@ -47,6 +47,11 @@ interface CJShippingInfo {
   trackingNumber?: string;
   logisticName?: string;
   status?: string;
+  warehouse?: string;
+  warehouseName?: string;
+  logisticPrice?: number;
+  estimatedDays?: number;
+  optimizationScore?: number;
   details?: Array<{
     date: string;
     status: string;
@@ -853,6 +858,33 @@ export function OrdersManager() {
                     {/* CJ Shipping Details */}
                     {selectedOrder.cj_shipping_info && (
                       <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                        {/* Warehouse Info */}
+                        {selectedOrder.cj_shipping_info.warehouse && (
+                          <div className="flex items-center gap-2 pb-2 border-b">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                              {selectedOrder.cj_shipping_info.warehouse}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">
+                                Warehouse: {safeString(selectedOrder.cj_shipping_info.warehouseName) || selectedOrder.cj_shipping_info.warehouse}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                {selectedOrder.cj_shipping_info.estimatedDays && (
+                                  <span>~{selectedOrder.cj_shipping_info.estimatedDays} dagen</span>
+                                )}
+                                {selectedOrder.cj_shipping_info.logisticPrice && (
+                                  <span>• ${selectedOrder.cj_shipping_info.logisticPrice.toFixed(2)}</span>
+                                )}
+                                {selectedOrder.cj_shipping_info.optimizationScore !== undefined && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Score: {(selectedOrder.cj_shipping_info.optimizationScore * 100).toFixed(0)}%
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Truck className="w-4 h-4 text-primary" />
