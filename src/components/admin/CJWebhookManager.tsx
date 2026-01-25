@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,9 @@ import {
   Boxes, 
   AlertCircle,
   ExternalLink,
-  Clock
+  Clock,
+  Zap,
+  Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -36,6 +38,7 @@ interface WebhookLog {
 
 export function CJWebhookManager() {
   const [copied, setCopied] = useState(false);
+  const queryClient = useQueryClient();
   
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cj-webhook`;
 
@@ -50,6 +53,22 @@ export function CJWebhookManager() {
 
       if (error) throw error;
       return (data || []) as WebhookLog[];
+    },
+  });
+
+  const registerWebhookMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('cj-register-webhook');
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Webhook registration failed');
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Webhooks succesvol geregistreerd bij CJ Dropshipping!");
+      queryClient.invalidateQueries({ queryKey: ["cj-webhook-logs"] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Webhook registratie mislukt: ${error.message}`);
     },
   });
 
@@ -135,49 +154,73 @@ export function CJWebhookManager() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Kopieer deze URL en configureer deze in je CJ Dropshipping account
+              Deze URL wordt automatisch geregistreerd bij CJ Dropshipping
             </p>
           </div>
 
-          {/* Setup Steps - Webhook Configuration */}
+          {/* Auto Register Button */}
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 space-y-3">
+            <h4 className="font-medium flex items-center gap-2 text-green-700 dark:text-green-400">
+              <Zap className="w-4 h-4" />
+              Automatische Webhook Registratie
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              Klik op de knop hieronder om webhooks automatisch te registreren via de CJ API. 
+              Dit configureert ORDER, STOCK, PRODUCT en LOGISTICS events.
+            </p>
+            <Button 
+              onClick={() => registerWebhookMutation.mutate()}
+              disabled={registerWebhookMutation.isPending}
+              className="w-full"
+            >
+              {registerWebhookMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Bezig met registreren...
+                </>
+              ) : (
+                <>
+                  <Webhook className="w-4 h-4 mr-2" />
+                  Webhooks Automatisch Registreren
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Manual Setup Steps - Alternative */}
           <div className="bg-muted/50 rounded-lg p-4 space-y-3">
             <h4 className="font-medium flex items-center gap-2">
               <ExternalLink className="w-4 h-4" />
-              Stap 1: Webhook Configuratie
+              Alternatief: Handmatige Configuratie via API
             </h4>
-            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-              <li>
-                Log in op je{" "}
-                <a 
-                  href="https://app.cjdropshipping.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary underline"
-                >
-                  CJ Dropshipping dashboard
-                </a>
-              </li>
-              <li>Ga naar <strong>Authorization → API</strong> in het linkermenu</li>
-              <li>Selecteer de <strong>Webhook</strong> tab (naast API Key tab)</li>
-              <li>Klik op <strong>Add Webhook</strong> of <strong>+ Toevoegen</strong></li>
-              <li>Plak bovenstaande Webhook URL in het URL veld</li>
-              <li>Selecteer de event types: <code className="bg-background px-1 rounded">ORDER</code>, <code className="bg-background px-1 rounded">ORDERSPLIT</code>, <code className="bg-background px-1 rounded">STOCK</code></li>
-              <li>Klik op <strong>Save</strong> om de webhook te activeren</li>
-            </ol>
-            <div className="mt-3 p-3 bg-background rounded border">
-              <p className="text-xs text-muted-foreground">
-                <strong>💡 Let op:</strong> Als je geen Webhook tab ziet, neem dan contact op met{" "}
-                <a 
-                  href="https://app.cjdropshipping.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary underline"
-                >
-                  CJ support
-                </a>{" "}
-                om webhook toegang voor je account te activeren.
-              </p>
+            <p className="text-sm text-muted-foreground">
+              Als de automatische registratie niet werkt, kun je webhooks handmatig configureren via de CJ API:
+            </p>
+            <div className="bg-background rounded border p-3">
+              <code className="text-xs block overflow-x-auto whitespace-pre">
+{`POST https://developers.cjdropshipping.com/api2.0/v1/webhook/set
+Header: CJ-Access-Token: [jouw-token]
+
+{
+  "order": { "type": "ENABLE", "callbackUrls": ["${webhookUrl}"] },
+  "stock": { "type": "ENABLE", "callbackUrls": ["${webhookUrl}"] },
+  "product": { "type": "ENABLE", "callbackUrls": ["${webhookUrl}"] },
+  "logistics": { "type": "ENABLE", "callbackUrls": ["${webhookUrl}"] }
+}`}
+              </code>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Zie{" "}
+              <a 
+                href="https://developers.cjdropshipping.com/en/api/start/webhook.html" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary underline"
+              >
+                CJ Webhook documentatie
+              </a>{" "}
+              voor meer informatie.
+            </p>
           </div>
 
           {/* Package Alert Settings */}
