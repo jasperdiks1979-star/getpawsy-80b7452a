@@ -122,3 +122,6 @@ verify_jwt = false
 
 [functions.send-packaging-alert]
 verify_jwt = false
+
+[functions.cj-sync-packaging-stock]
+verify_jwt = false
