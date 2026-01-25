@@ -690,6 +690,72 @@ export type Database = {
         }
         Relationships: []
       }
+      performance_alerts: {
+        Row: {
+          created_at: string
+          current_value: number
+          id: string
+          metric_name: string
+          notified_at: string
+          sample_count: number
+          threshold_type: string
+          threshold_value: number
+        }
+        Insert: {
+          created_at?: string
+          current_value: number
+          id?: string
+          metric_name: string
+          notified_at?: string
+          sample_count?: number
+          threshold_type: string
+          threshold_value: number
+        }
+        Update: {
+          created_at?: string
+          current_value?: number
+          id?: string
+          metric_name?: string
+          notified_at?: string
+          sample_count?: number
+          threshold_type?: string
+          threshold_value?: number
+        }
+        Relationships: []
+      }
+      performance_metrics: {
+        Row: {
+          created_at: string
+          id: string
+          metric_name: string
+          metric_value: number
+          page_url: string | null
+          rating: string
+          session_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric_name: string
+          metric_value: number
+          page_url?: string | null
+          rating: string
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric_name?: string
+          metric_value?: number
+          page_url?: string | null
+          rating?: string
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       product_bundles: {
         Row: {
           created_at: string
