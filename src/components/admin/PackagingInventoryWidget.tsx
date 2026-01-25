@@ -1,10 +1,14 @@
 import { usePackagingInventory, getInventoryStatus } from "@/hooks/usePackagingInventory";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, AlertTriangle } from "lucide-react";
+import { Package, AlertTriangle, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const PackagingInventoryWidget = () => {
+interface PackagingInventoryWidgetProps {
+  onNavigate?: () => void;
+}
+
+export const PackagingInventoryWidget = ({ onNavigate }: PackagingInventoryWidgetProps) => {
   const { data: inventory, isLoading } = usePackagingInventory();
 
   if (isLoading) {
@@ -43,7 +47,10 @@ export const PackagingInventoryWidget = () => {
   const hasIssues = statusCounts.critical > 0 || statusCounts.low > 0;
 
   return (
-    <Card className={hasIssues ? "border-destructive/50" : ""}>
+    <Card 
+      className={`${hasIssues ? "border-destructive/50" : ""} ${onNavigate ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""}`}
+      onClick={onNavigate}
+    >
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -69,21 +76,26 @@ export const PackagingInventoryWidget = () => {
               )}
             </div>
           </div>
-          <div className="flex gap-1">
-            {statusCounts.ok > 0 && (
-              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
-                {statusCounts.ok}
-              </Badge>
-            )}
-            {statusCounts.low > 0 && (
-              <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
-                {statusCounts.low}
-              </Badge>
-            )}
-            {statusCounts.critical > 0 && (
-              <Badge variant="destructive">
-                {statusCounts.critical}
-              </Badge>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1">
+              {statusCounts.ok > 0 && (
+                <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
+                  {statusCounts.ok}
+                </Badge>
+              )}
+              {statusCounts.low > 0 && (
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
+                  {statusCounts.low}
+                </Badge>
+              )}
+              {statusCounts.critical > 0 && (
+                <Badge variant="destructive">
+                  {statusCounts.critical}
+                </Badge>
+              )}
+            </div>
+            {onNavigate && (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
         </div>

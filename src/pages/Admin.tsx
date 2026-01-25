@@ -126,6 +126,7 @@ const Admin = () => {
   const [compareProducts, setCompareProducts] = useState<CJProduct[]>([]);
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const [refreshMode, setRefreshMode] = useState<"all" | "new-only">("all");
+  const [activeTab, setActiveTab] = useState("sales");
   const queryClient = useQueryClient();
 
   // Save preview preference to localStorage
@@ -988,7 +989,7 @@ const Admin = () => {
           </Badge>
         </div>
 
-        <Tabs defaultValue="sales" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TooltipProvider delayDuration={300}>
             <TabsList className="grid grid-cols-5 sm:grid-cols-7 lg:inline-flex gap-1 p-1 h-auto w-full lg:w-auto">
               <TouchTooltip content="Mijn winkelproducten beheren">
@@ -1170,7 +1171,7 @@ const Admin = () => {
                   </div>
                 </Card>
               }>
-                <SalesDashboard />
+                <SalesDashboard onNavigateToTab={setActiveTab} />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
