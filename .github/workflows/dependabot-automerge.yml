@@ -1,6 +1,6 @@
 name: Dependabot Auto-merge
 
-on: pull_request
+on: pull_request_target
 
 permissions:
   contents: write
@@ -18,10 +18,35 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
+      - name: Check if auto-merge is allowed
+        id: check
+        run: |
+          # Security-related packages that should never be auto-merged
+          SECURITY_PACKAGES="@supabase/supabase-js dompurify"
+          
+          # Check if this is a security package
+          for pkg in $SECURITY_PACKAGES; do
+            if [[ "${{ steps.metadata.outputs.dependency-names }}" == *"$pkg"* ]]; then
+              echo "security_package=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          done
+          echo "security_package=false" >> $GITHUB_OUTPUT
+
+      - name: Wait for CI checks to pass
+        if: |
+          (steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
+           steps.metadata.outputs.update-type == 'version-update:semver-patch') &&
+          steps.check.outputs.security_package == 'false'
+        run: |
+          echo "Waiting for CI checks to complete..."
+          sleep 30
+
       - name: Auto-approve minor and patch updates
         if: |
-          steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
-          steps.metadata.outputs.update-type == 'version-update:semver-patch'
+          (steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
+           steps.metadata.outputs.update-type == 'version-update:semver-patch') &&
+          steps.check.outputs.security_package == 'false'
         run: gh pr review --approve "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
@@ -29,9 +54,27 @@ jobs:
 
       - name: Enable auto-merge for minor and patch updates
         if: |
-          steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
-          steps.metadata.outputs.update-type == 'version-update:semver-patch'
+          (steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
+           steps.metadata.outputs.update-type == 'version-update:semver-patch') &&
+          steps.check.outputs.security_package == 'false'
         run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on security package updates
+        if: steps.check.outputs.security_package == 'true'
+        run: |
+          gh pr comment "$PR_URL" --body "🔒 **Security-sensitive package update detected!**
+          
+          This PR updates \`${{ steps.metadata.outputs.dependency-names }}\` which is a security-sensitive package.
+          
+          **Manual review required:**
+          - Check the changelog for security fixes
+          - Verify no breaking changes in authentication/security APIs
+          - Test authentication flows locally
+          
+          **This PR will NOT be auto-merged.**"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -49,6 +92,19 @@ jobs:
           - Run full test suite locally
           
           **This PR will NOT be auto-merged.**"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add labels based on update type
+        run: |
+          if [[ "${{ steps.metadata.outputs.update-type }}" == "version-update:semver-major" ]]; then
+            gh pr edit "$PR_URL" --add-label "major-update,needs-review"
+          elif [[ "${{ steps.metadata.outputs.update-type }}" == "version-update:semver-minor" ]]; then
+            gh pr edit "$PR_URL" --add-label "minor-update,auto-merge"
+          else
+            gh pr edit "$PR_URL" --add-label "patch-update,auto-merge"
+          fi
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
