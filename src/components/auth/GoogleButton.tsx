@@ -1,17 +1,27 @@
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { trackLogin, trackSignUp } from '@/lib/analytics';
 
 interface GoogleButtonProps {
   label?: string;
   className?: string;
+  mode?: 'login' | 'signup';
 }
 
 export const GoogleButton = ({ 
   label = 'Doorgaan met Google',
-  className = ''
+  className = '',
+  mode = 'login'
 }: GoogleButtonProps) => {
   const handleGoogleSignIn = async () => {
+    // Track the Google auth attempt
+    if (mode === 'signup') {
+      trackSignUp('google');
+    } else {
+      trackLogin('google');
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

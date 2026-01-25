@@ -128,7 +128,7 @@ const Auth = () => {
               </TabsList>
 
               <TabsContent value="login" className="mt-6 space-y-4">
-                <GoogleButton label="Doorgaan met Google" />
+                <GoogleButton label="Doorgaan met Google" mode="login" />
 
                 <PasskeyButton 
                   email={loginEmail} 
@@ -179,7 +179,7 @@ const Auth = () => {
               </TabsContent>
 
               <TabsContent value="signup" className="mt-6 space-y-4">
-                <GoogleButton label="Registreer met Google" />
+                <GoogleButton label="Registreer met Google" mode="signup" />
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
