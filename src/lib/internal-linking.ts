@@ -111,42 +111,96 @@ const productPhrases: Record<string, string> = {
   'self-cleaning litter': 'litter-boxes',
   'smart litter box': 'litter-boxes',
   'enclosed litter box': 'litter-boxes',
+  'litter robot': 'litter-boxes',
+  'odor control litter': 'litter-boxes',
   
-  // Pet tech
+  // Pet tech & GPS
   'gps tracker': 'pet-accessories',
+  'gps pet tracker': 'pet-accessories',
   'pet camera': 'pet-accessories',
   'smart pet': 'pet-accessories',
   'pet monitor': 'pet-accessories',
+  'treat dispenser camera': 'pet-accessories',
+  'wifi pet camera': 'pet-accessories',
+  'two-way audio': 'pet-accessories',
+  'location tracker': 'pet-accessories',
+  'activity monitor': 'pet-accessories',
   
   // Feeding
   'automatic feeder': 'feeding',
+  'automatic pet feeder': 'feeding',
   'smart feeder': 'feeding',
   'slow feeder bowl': 'feeding',
   'elevated feeder': 'feeding',
   'puzzle feeder': 'feeding',
+  'portion control': 'feeding',
+  'timed feeder': 'feeding',
+  'gravity feeder': 'feeding',
   
-  // Health & comfort
+  // Water fountains
+  'water fountain': 'drinking',
+  'cat water fountain': 'drinking',
+  'pet water fountain': 'drinking',
+  'filtered water fountain': 'drinking',
+  'stainless steel fountain': 'drinking',
+  'ceramic fountain': 'drinking',
+  
+  // Health & comfort - Dog beds
   'orthopedic dog bed': 'dog-beds',
+  'orthopedic bed': 'dog-beds',
   'memory foam dog': 'dog-beds',
+  'memory foam bed': 'dog-beds',
   'cooling mat': 'pet-beds',
   'heated pet bed': 'pet-beds',
+  'bolster bed': 'dog-beds',
+  'calming bed': 'dog-beds',
+  'waterproof bed': 'dog-beds',
+  'joint support': 'dog-beds',
   
-  // Travel
+  // Interactive toys & puzzles
+  'puzzle toy': 'pet-toys',
+  'interactive puzzle': 'pet-toys',
+  'treat puzzle': 'pet-toys',
+  'brain game': 'pet-toys',
+  'mental stimulation': 'pet-toys',
+  'enrichment toy': 'pet-toys',
+  'snuffle mat': 'pet-toys',
+  'kong toy': 'pet-toys',
+  
+  // Travel & carriers
   'airline approved': 'pet-carriers',
   'travel carrier': 'pet-carriers',
   'pet backpack': 'pet-carriers',
+  'portable carrier': 'pet-carriers',
+  'soft-sided carrier': 'pet-carriers',
+  'expandable carrier': 'pet-carriers',
+  'rolling carrier': 'pet-carriers',
+  'car seat carrier': 'pet-carriers',
+  
+  // Anxiety & calming
+  'anxiety vest': 'training',
+  'calming vest': 'training',
+  'thundershirt': 'training',
+  'compression wrap': 'training',
+  'calming aid': 'training',
+  'stress relief': 'training',
+  'separation anxiety': 'training',
   
   // Training
   'training collar': 'training',
   'bark collar': 'training',
   'invisible fence': 'training',
   'pet door': 'pet-accessories',
+  'clicker training': 'training',
+  'training treat': 'snacks',
   
   // Grooming
   'nail grinder': 'pet-grooming',
   'pet dryer': 'pet-grooming',
   'grooming table': 'pet-grooming',
   'dematting comb': 'pet-grooming',
+  'deshedding brush': 'pet-grooming',
+  'slicker brush': 'pet-grooming',
 };
 
 // Common stop words to exclude from keyword extraction
