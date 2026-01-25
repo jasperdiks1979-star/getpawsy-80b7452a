@@ -48,6 +48,7 @@ import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import StaleClaimsWidget from "./StaleClaimsWidget";
 import { PackagingInventoryWidget } from "./PackagingInventoryWidget";
 import { CJWebhooksWidget } from "./CJWebhooksWidget";
+import { RecentOrdersWidget } from "./RecentOrdersWidget";
 
 interface OrderItem {
   name: string;
@@ -841,6 +842,7 @@ export const SalesDashboard = ({ onNavigateToTab }: SalesDashboardProps) => {
           </CardContent>
         </Card>
         <StaleClaimsWidget />
+        <RecentOrdersWidget onNavigate={() => onNavigateToTab?.("orders")} />
         <PackagingInventoryWidget onNavigate={() => onNavigateToTab?.("packaging")} />
         <CJWebhooksWidget onNavigate={() => onNavigateToTab?.("cj-webhooks")} />
       </div>
