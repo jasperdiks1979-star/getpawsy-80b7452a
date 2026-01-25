@@ -175,18 +175,64 @@ export const PackagingManager = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleExportPrintReadyPDF = async () => {
+  // PDF export configurations for each item type
+  const pdfConfigs: Record<string, { 
+    widthMM: number; 
+    heightMM: number; 
+    bleedMM: number; 
+    isRound?: boolean;
+    paperSpec: string;
+    finishSpec: string;
+    additionalSpecs?: string[];
+  }> = {
+    "sticker-5cm": {
+      widthMM: 50, // 5cm diameter
+      heightMM: 50,
+      bleedMM: 2, // 2mm bleed for stickers
+      isRound: true,
+      paperSpec: "Vinyl/waterproof sticker material",
+      finishSpec: "Gloss or Matte laminate",
+      additionalSpecs: ["Die-cut: Round/Circle", "Adhesive: Permanent"]
+    },
+    "thank-you-card": {
+      widthMM: 85, // 8.5 cm
+      heightMM: 55, // 5.5 cm
+      bleedMM: 3,
+      paperSpec: "300gsm coated card",
+      finishSpec: "Matte or Gloss"
+    },
+    "poly-mailer-small": {
+      widthMM: 200, // 20 cm
+      heightMM: 300, // 30 cm
+      bleedMM: 5, // 5mm bleed for larger items
+      paperSpec: "Poly mailer material (LDPE)",
+      finishSpec: "Printed exterior",
+      additionalSpecs: ["Self-seal adhesive strip", "Tear-proof material"]
+    },
+    "poly-mailer-medium": {
+      widthMM: 300, // 30 cm
+      heightMM: 400, // 40 cm
+      bleedMM: 5,
+      paperSpec: "Poly mailer material (LDPE)",
+      finishSpec: "Printed exterior",
+      additionalSpecs: ["Self-seal adhesive strip", "Tear-proof material"]
+    }
+  };
+
+  const handleExportPrintReadyPDF = async (item: PackagingItem) => {
+    const config = pdfConfigs[item.id];
+    if (!config) {
+      toast.error("Geen PDF configuratie beschikbaar voor dit item");
+      return;
+    }
+
     try {
       toast.loading("PDF wordt gegenereerd...", { id: "pdf-export" });
       
-      // Thank you card dimensions: 8.5 x 5.5 cm
-      // Add 3mm bleed on each side = 9.1 x 6.1 cm total
-      const cardWidthMM = 85; // 8.5 cm in mm
-      const cardHeightMM = 55; // 5.5 cm in mm
-      const bleedMM = 3; // 3mm bleed on each side
+      const { widthMM, heightMM, bleedMM, isRound, paperSpec, finishSpec, additionalSpecs } = config;
       
-      const totalWidthMM = cardWidthMM + (bleedMM * 2); // 91mm
-      const totalHeightMM = cardHeightMM + (bleedMM * 2); // 61mm
+      const totalWidthMM = widthMM + (bleedMM * 2);
+      const totalHeightMM = heightMM + (bleedMM * 2);
       
       // Create PDF with custom size (including bleed)
       const pdf = new jsPDF({
@@ -195,70 +241,113 @@ export const PackagingManager = () => {
         format: [totalWidthMM, totalHeightMM]
       });
       
-      // Load the thank you card image
+      // Load the image
       const img = new Image();
       img.crossOrigin = 'anonymous';
       
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
         img.onerror = () => reject(new Error('Failed to load image'));
-        img.src = thankYouCardImage;
+        img.src = item.image;
       });
       
       // Add the image to fill the entire page (including bleed area)
       pdf.addImage(img, 'PNG', 0, 0, totalWidthMM, totalHeightMM);
       
-      // Add crop marks (trim marks) at the corners
+      // Add crop marks (trim marks)
       pdf.setDrawColor(0, 0, 0);
       pdf.setLineWidth(0.25);
       
-      // Top-left crop marks
-      pdf.line(0, bleedMM, bleedMM - 1, bleedMM); // horizontal
-      pdf.line(bleedMM, 0, bleedMM, bleedMM - 1); // vertical
-      
-      // Top-right crop marks
-      pdf.line(totalWidthMM - bleedMM + 1, bleedMM, totalWidthMM, bleedMM); // horizontal
-      pdf.line(totalWidthMM - bleedMM, 0, totalWidthMM - bleedMM, bleedMM - 1); // vertical
-      
-      // Bottom-left crop marks
-      pdf.line(0, totalHeightMM - bleedMM, bleedMM - 1, totalHeightMM - bleedMM); // horizontal
-      pdf.line(bleedMM, totalHeightMM - bleedMM + 1, bleedMM, totalHeightMM); // vertical
-      
-      // Bottom-right crop marks
-      pdf.line(totalWidthMM - bleedMM + 1, totalHeightMM - bleedMM, totalWidthMM, totalHeightMM - bleedMM); // horizontal
-      pdf.line(totalWidthMM - bleedMM, totalHeightMM - bleedMM + 1, totalWidthMM - bleedMM, totalHeightMM); // vertical
+      if (isRound) {
+        // For round stickers, add circular trim guide
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.1);
+        // Draw a circle guide at the trim edge
+        const centerX = totalWidthMM / 2;
+        const centerY = totalHeightMM / 2;
+        const radius = widthMM / 2;
+        
+        // Draw trim circle (dashed effect with multiple small arcs)
+        for (let angle = 0; angle < 360; angle += 15) {
+          const startRad = (angle * Math.PI) / 180;
+          const endRad = ((angle + 10) * Math.PI) / 180;
+          const x1 = centerX + radius * Math.cos(startRad);
+          const y1 = centerY + radius * Math.sin(startRad);
+          const x2 = centerX + radius * Math.cos(endRad);
+          const y2 = centerY + radius * Math.sin(endRad);
+          pdf.line(x1, y1, x2, y2);
+        }
+        
+        // Add corner registration marks
+        pdf.setDrawColor(0, 0, 0);
+        const markLen = 3;
+        // Top-left
+        pdf.line(0, markLen, markLen, markLen);
+        pdf.line(markLen, 0, markLen, markLen);
+        // Top-right
+        pdf.line(totalWidthMM - markLen, markLen, totalWidthMM, markLen);
+        pdf.line(totalWidthMM - markLen, 0, totalWidthMM - markLen, markLen);
+        // Bottom-left
+        pdf.line(0, totalHeightMM - markLen, markLen, totalHeightMM - markLen);
+        pdf.line(markLen, totalHeightMM - markLen, markLen, totalHeightMM);
+        // Bottom-right
+        pdf.line(totalWidthMM - markLen, totalHeightMM - markLen, totalWidthMM, totalHeightMM - markLen);
+        pdf.line(totalWidthMM - markLen, totalHeightMM - markLen, totalWidthMM - markLen, totalHeightMM);
+      } else {
+        // Standard rectangular crop marks
+        // Top-left crop marks
+        pdf.line(0, bleedMM, bleedMM - 1, bleedMM);
+        pdf.line(bleedMM, 0, bleedMM, bleedMM - 1);
+        
+        // Top-right crop marks
+        pdf.line(totalWidthMM - bleedMM + 1, bleedMM, totalWidthMM, bleedMM);
+        pdf.line(totalWidthMM - bleedMM, 0, totalWidthMM - bleedMM, bleedMM - 1);
+        
+        // Bottom-left crop marks
+        pdf.line(0, totalHeightMM - bleedMM, bleedMM - 1, totalHeightMM - bleedMM);
+        pdf.line(bleedMM, totalHeightMM - bleedMM + 1, bleedMM, totalHeightMM);
+        
+        // Bottom-right crop marks
+        pdf.line(totalWidthMM - bleedMM + 1, totalHeightMM - bleedMM, totalWidthMM, totalHeightMM - bleedMM);
+        pdf.line(totalWidthMM - bleedMM, totalHeightMM - bleedMM + 1, totalWidthMM - bleedMM, totalHeightMM);
+      }
       
       // Add a second page with specifications
-      pdf.addPage([totalWidthMM, totalHeightMM]);
-      pdf.setFontSize(8);
-      pdf.setTextColor(100, 100, 100);
+      pdf.addPage([totalWidthMM > 100 ? 210 : totalWidthMM, totalHeightMM > 100 ? 297 : totalHeightMM]);
+      pdf.setFontSize(10);
+      pdf.setTextColor(50, 50, 50);
       
       const specs = [
         'PRINT SPECIFICATIONS',
-        '─────────────────────',
-        `Final Size: ${cardWidthMM/10} x ${cardHeightMM/10} cm`,
+        '═══════════════════════════════',
+        '',
+        `Product: ${item.name}`,
+        `Final Size: ${widthMM/10} x ${heightMM/10} cm${isRound ? ' (diameter)' : ''}`,
         `Total Size (with bleed): ${totalWidthMM/10} x ${totalHeightMM/10} cm`,
         `Bleed: ${bleedMM}mm on all sides`,
         '',
-        'RECOMMENDED:',
-        '• Paper: 300gsm coated card',
-        '• Finish: Matte or Gloss',
-        '• Color: CMYK',
-        '• Resolution: 300 DPI',
+        'MATERIAL SPECIFICATIONS:',
+        `• Material: ${paperSpec}`,
+        `• Finish: ${finishSpec}`,
+        '• Color Mode: CMYK',
+        '• Resolution: 300 DPI minimum',
+        ...(additionalSpecs ? ['', 'ADDITIONAL REQUIREMENTS:', ...additionalSpecs.map(s => `• ${s}`)] : []),
         '',
-        'getpawsy.nl'
+        '───────────────────────────────',
+        'getpawsy.nl',
+        `Generated: ${new Date().toLocaleDateString('nl-NL')}`
       ];
       
-      let yPos = 10;
+      let yPos = 15;
       specs.forEach(line => {
-        pdf.text(line, 5, yPos);
-        yPos += 4;
+        pdf.text(line, 10, yPos);
+        yPos += 5;
       });
       
       // Save the PDF
-      pdf.save('getpawsy-thankyou-card-print-ready.pdf');
+      pdf.save(`getpawsy-${item.id}-print-ready.pdf`);
       
-      toast.success("Print-ready PDF geëxporteerd met 3mm bleed!", { id: "pdf-export" });
+      toast.success(`Print-ready PDF geëxporteerd voor ${item.name}!`, { id: "pdf-export" });
     } catch (error) {
       console.error('PDF export error:', error);
       toast.error("Kon PDF niet genereren", { id: "pdf-export" });
@@ -392,16 +481,14 @@ export const PackagingManager = () => {
                       <Download className="w-4 h-4 mr-2" />
                       Download Design
                     </Button>
-                    {item.id === "thank-you-card" && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={handleExportPrintReadyPDF}
-                        title="Export print-ready PDF met 3mm bleed"
-                      >
-                        <Printer className="w-4 h-4" />
-                      </Button>
-                    )}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => handleExportPrintReadyPDF(item)}
+                      title={`Export print-ready PDF voor ${item.name}`}
+                    >
+                      <Printer className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="secondary"
                       size="sm"
