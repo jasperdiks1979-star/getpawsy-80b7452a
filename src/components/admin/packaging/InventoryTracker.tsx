@@ -37,6 +37,8 @@ import {
   AlertTriangle,
   RefreshCw,
   TrendingDown,
+  Mail,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -48,6 +50,7 @@ import {
 } from "@/hooks/usePackagingInventory";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 const itemTypeLabels: Record<string, string> = {
   logo_sticker: "Logo Sticker (5cm)",
@@ -65,6 +68,33 @@ export const InventoryTracker = () => {
   const [adjustmentType, setAdjustmentType] = useState<"restock" | "manual_adjustment">("restock");
   const [adjustmentAmount, setAdjustmentAmount] = useState<number>(100);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isSendingTestAlert, setIsSendingTestAlert] = useState(false);
+
+  const handleSendTestAlert = async () => {
+    setIsSendingTestAlert(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-packaging-alert");
+      
+      if (error) throw error;
+      
+      if (data?.sent) {
+        toast.success(`Test alert verzonden voor ${data.itemsAlerted} item(s)`, {
+          description: data.items?.join(", "),
+        });
+      } else {
+        toast.info(data?.message || "Geen items om te melden", {
+          description: "Alle voorraad is boven het herbestelniveau of er is al een alert verstuurd vandaag.",
+        });
+      }
+    } catch (error) {
+      console.error("Error sending test alert:", error);
+      toast.error("Kon test alert niet verzenden", {
+        description: error instanceof Error ? error.message : "Onbekende fout",
+      });
+    } finally {
+      setIsSendingTestAlert(false);
+    }
+  };
 
   const handleAdjustInventory = async () => {
     if (!selectedItem) return;
@@ -136,10 +166,25 @@ export const InventoryTracker = () => {
                 Beheer je packaging voorraad en bijhouden op basis van bestellingen
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Vernieuwen
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSendTestAlert}
+                disabled={isSendingTestAlert}
+              >
+                {isSendingTestAlert ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Mail className="w-4 h-4 mr-2" />
+                )}
+                Test Alert
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Vernieuwen
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
