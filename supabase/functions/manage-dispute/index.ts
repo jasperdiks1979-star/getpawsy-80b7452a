@@ -20,6 +20,7 @@ interface DisputeRequest {
   resolutionType?: string;
   resolutionAmount?: number;
   resolutionNotes?: string;
+  senderType?: 'customer' | 'admin';
 }
 
 const DISPUTE_TYPE_LABELS: Record<string, string> = {
@@ -510,7 +511,7 @@ serve(async (req) => {
       }
 
       case 'add_message': {
-        const { disputeId, message, isInternal } = body;
+        const { disputeId, message, isInternal, senderType, customerEmail } = body;
 
         if (!disputeId || !message) {
           return new Response(
@@ -519,19 +520,45 @@ serve(async (req) => {
           );
         }
 
+        // Determine sender type - customers can only send as 'customer'
+        const actualSenderType = senderType === 'customer' ? 'customer' : 'admin';
+
+        // For customer messages, verify they own this dispute
+        if (actualSenderType === 'customer') {
+          if (!customerEmail) {
+            return new Response(
+              JSON.stringify({ error: 'Customer email required for customer messages' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+
+          const { data: dispute } = await supabase
+            .from('disputes')
+            .select('customer_email')
+            .eq('id', disputeId)
+            .single();
+
+          if (!dispute || dispute.customer_email.toLowerCase() !== customerEmail.toLowerCase()) {
+            return new Response(
+              JSON.stringify({ error: 'Unauthorized to send message on this dispute' }),
+              { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+
         const { error: msgError } = await supabase
           .from('dispute_messages')
           .insert({
             dispute_id: disputeId,
-            sender_type: 'admin',
+            sender_type: actualSenderType,
             message: message,
-            is_internal: isInternal || false,
+            is_internal: actualSenderType === 'customer' ? false : (isInternal || false),
           });
 
         if (msgError) throw msgError;
 
-        // If not internal, send email to customer
-        if (!isInternal) {
+        // If admin message and not internal, send email to customer
+        if (actualSenderType === 'admin' && !isInternal) {
           const { data: dispute } = await supabase
             .from('disputes')
             .select('customer_email, status')
