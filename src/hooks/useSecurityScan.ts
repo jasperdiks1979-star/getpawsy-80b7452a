@@ -93,11 +93,13 @@ const getSecurityScanData = (): SecurityScanResult => ({
     },
     {
       id: "SUPA_auth_leaked_password_protection",
-      name: "Leaked Password Protection Disabled",
-      description: "Leaked password protection is currently disabled. Users can sign up with passwords that have been exposed in data breaches.",
-      level: "warn",
+      name: "Leaked Password Protection Enabled",
+      description: "Password HIBP Check is ingeschakeld. Gebruikers kunnen geen gecompromitteerde wachtwoorden gebruiken.",
+      level: "info",
       link: "https://docs.lovable.dev/features/security#leaked-password-protection-disabled",
-      details: "Ga naar Supabase Dashboard → Authentication → Providers → Email en schakel 'Leaked Password Protection' in."
+      details: "Password HIBP Check is ingeschakeld via Cloud → Users → Auth settings → Email.",
+      ignore: true,
+      ignore_reason: "Password HIBP Check is handmatig ingeschakeld op 25-01-2026. Minimum password length verhoogd naar 8."
     },
     {
       id: "PUBLIC_USER_DATA_profiles",
