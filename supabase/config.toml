@@ -119,3 +119,6 @@ verify_jwt = false
 
 [functions.send-claim-followup]
 verify_jwt = false
+
+[functions.send-packaging-alert]
+verify_jwt = false
