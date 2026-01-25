@@ -139,11 +139,11 @@ export function CJWebhookManager() {
             </p>
           </div>
 
-          {/* Setup Steps */}
+          {/* Setup Steps - Webhook Configuration */}
           <div className="bg-muted/50 rounded-lg p-4 space-y-3">
             <h4 className="font-medium flex items-center gap-2">
               <ExternalLink className="w-4 h-4" />
-              Configuratie stappen
+              Stap 1: Webhook Configuratie
             </h4>
             <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
               <li>
@@ -157,11 +157,59 @@ export function CJWebhookManager() {
                   CJ Dropshipping dashboard
                 </a>
               </li>
-              <li>Ga naar <strong>Settings → API Settings → Webhook</strong></li>
+              <li>Ga naar <strong>Authorization → API → API Key</strong> tab</li>
+              <li>Klik op de <strong>...</strong> knop naast je store en selecteer <strong>Webhook Settings</strong></li>
               <li>Plak bovenstaande Webhook URL in het URL veld</li>
-              <li>Selecteer de event types: <code>ORDER</code>, <code>STOCK</code></li>
+              <li>Selecteer de event types: <code className="bg-background px-1 rounded">ORDER</code>, <code className="bg-background px-1 rounded">ORDERSPLIT</code>, <code className="bg-background px-1 rounded">STOCK</code></li>
               <li>Klik op <strong>Save</strong> om de webhook te activeren</li>
             </ol>
+          </div>
+
+          {/* Package Alert Settings */}
+          <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 space-y-3">
+            <h4 className="font-medium flex items-center gap-2 text-orange-700 dark:text-orange-400">
+              <Package className="w-4 h-4" />
+              Stap 2: Package Alert Settings (Optioneel)
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              Voor automatische e-mail notificaties wanneer pakketten bij het CJ warehouse klaarliggen:
+            </p>
+            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+              <li>Ga naar <strong>Authorization → API → API Key</strong></li>
+              <li>Klik op <strong>...</strong> naast je store → <strong>Package Alert Settings</strong></li>
+              <li>Vul je <strong>Email</strong> en <strong>App-specific password</strong> in</li>
+              <li>Kies <strong>IMAP</strong> als incoming server type</li>
+              <li>Vul je <strong>IMAP server</strong> gegevens in (bijv. <code className="bg-background px-1 rounded">imap.gmail.com</code>)</li>
+              <li>Vink <strong>SSL</strong> aan en gebruik port <strong>993</strong></li>
+              <li>Klik op <strong>Confirm</strong> om op te slaan</li>
+            </ol>
+            <div className="mt-3 p-3 bg-background rounded border">
+              <p className="text-xs text-muted-foreground">
+                <strong>💡 Tip:</strong> Voor Gmail, maak een{" "}
+                <a 
+                  href="https://myaccount.google.com/apppasswords" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary underline"
+                >
+                  App-specific password
+                </a>{" "}
+                aan en enable IMAP in je Gmail instellingen.
+              </p>
+            </div>
+          </div>
+
+          {/* Important Notes */}
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 space-y-2">
+            <h4 className="font-medium text-blue-700 dark:text-blue-400 text-sm">
+              📋 Belangrijke informatie
+            </h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• Webhooks worden real-time verwerkt voor order status updates</li>
+              <li>• Stock webhooks synchroniseren automatisch variant voorraad</li>
+              <li>• Bij fouten wordt automatisch een fallback cron job gebruikt (elke 6 uur)</li>
+              <li>• Alle webhook events worden gelogd voor troubleshooting</li>
+            </ul>
           </div>
 
           {/* Stats */}
