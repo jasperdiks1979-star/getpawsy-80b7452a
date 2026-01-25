@@ -46,6 +46,7 @@ import { nl } from "date-fns/locale";
 import { Json } from "@/integrations/supabase/types";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import StaleClaimsWidget from "./StaleClaimsWidget";
+import { PackagingInventoryWidget } from "./PackagingInventoryWidget";
 
 interface OrderItem {
   name: string;
@@ -800,7 +801,7 @@ export const SalesDashboard = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -835,6 +836,7 @@ export const SalesDashboard = () => {
           </CardContent>
         </Card>
         <StaleClaimsWidget />
+        <PackagingInventoryWidget />
       </div>
 
       {/* Charts Row */}
