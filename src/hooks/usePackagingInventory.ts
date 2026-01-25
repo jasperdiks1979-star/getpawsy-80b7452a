@@ -11,6 +11,7 @@ export interface PackagingInventoryItem {
   unit_cost: number | null;
   last_restocked_at: string | null;
   notes: string | null;
+  cj_product_id: string | null;
   created_at: string;
   updated_at: string;
 }
