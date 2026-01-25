@@ -19,8 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { toast } from "sonner";
-import { Package, Search, Eye, RefreshCw, ExternalLink, Download, Truck, Warehouse } from "lucide-react";
+import { Package, Search, Eye, RefreshCw, ExternalLink, Download, Truck, Warehouse, Clock, DollarSign } from "lucide-react";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh-container";
 import { format } from "date-fns";
@@ -188,6 +193,8 @@ function VirtualizedOrdersTable({
       name: shippingInfo.warehouseName || shippingInfo.warehouse,
       logistic: shippingInfo.logisticName,
       days: shippingInfo.estimatedDays,
+      price: shippingInfo.logisticPrice,
+      score: shippingInfo.optimizationScore,
     };
   };
 
@@ -269,17 +276,69 @@ function VirtualizedOrdersTable({
                 </div>
                 <div className="w-32 px-4 py-4 flex items-center">
                   {warehouseInfo ? (
-                    <div className="flex flex-col gap-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <Warehouse className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-xs font-medium">{warehouseInfo.code}</span>
-                      </div>
-                      {warehouseInfo.logistic && (
-                        <span className="text-[10px] text-muted-foreground truncate max-w-[100px]" title={warehouseInfo.logistic}>
-                          {warehouseInfo.logistic}
-                        </span>
-                      )}
-                    </div>
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <div className="flex flex-col gap-0.5 cursor-help">
+                          <div className="flex items-center gap-1.5">
+                            <Warehouse className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-xs font-medium">{warehouseInfo.code}</span>
+                          </div>
+                          {warehouseInfo.logistic && (
+                            <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
+                              {warehouseInfo.logistic}
+                            </span>
+                          )}
+                        </div>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-64" side="top" align="start">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Warehouse className="w-4 h-4 text-primary" />
+                            <div>
+                              <p className="font-semibold text-sm">{warehouseInfo.name}</p>
+                              <p className="text-xs text-muted-foreground">Magazijn code: {warehouseInfo.code}</p>
+                            </div>
+                          </div>
+                          
+                          {warehouseInfo.logistic && (
+                            <div className="flex items-center gap-2">
+                              <Truck className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm">{warehouseInfo.logistic}</span>
+                            </div>
+                          )}
+                          
+                          <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                            {warehouseInfo.days !== undefined && (
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-blue-500" />
+                                <span className="text-xs">
+                                  <span className="font-medium">{warehouseInfo.days}</span> dagen
+                                </span>
+                              </div>
+                            )}
+                            {warehouseInfo.price !== undefined && (
+                              <div className="flex items-center gap-1.5">
+                                <DollarSign className="w-3.5 h-3.5 text-green-500" />
+                                <span className="text-xs">
+                                  <span className="font-medium">€{warehouseInfo.price.toFixed(2)}</span>
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {warehouseInfo.score !== undefined && (
+                            <div className="pt-2 border-t">
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-muted-foreground">Optimalisatie score</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {warehouseInfo.score.toFixed(1)}%
+                                </Badge>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
                   ) : order.cj_order_id ? (
                     <span className="text-xs text-muted-foreground">-</span>
                   ) : (
