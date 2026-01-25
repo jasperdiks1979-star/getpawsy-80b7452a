@@ -802,6 +802,93 @@ export type Database = {
         }
         Relationships: []
       }
+      packaging_inventory: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          item_type: string
+          last_restocked_at: string | null
+          notes: string | null
+          quantity: number
+          reorder_threshold: number
+          unit_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          item_type: string
+          last_restocked_at?: string | null
+          notes?: string | null
+          quantity?: number
+          reorder_threshold?: number
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          item_type?: string
+          last_restocked_at?: string | null
+          notes?: string | null
+          quantity?: number
+          reorder_threshold?: number
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      packaging_inventory_logs: {
+        Row: {
+          change_amount: number
+          change_type: string
+          created_at: string
+          id: string
+          inventory_id: string | null
+          item_type: string
+          notes: string | null
+          order_id: string | null
+        }
+        Insert: {
+          change_amount: number
+          change_type: string
+          created_at?: string
+          id?: string
+          inventory_id?: string | null
+          item_type: string
+          notes?: string | null
+          order_id?: string | null
+        }
+        Update: {
+          change_amount?: number
+          change_type?: string
+          created_at?: string
+          id?: string
+          inventory_id?: string | null
+          item_type?: string
+          notes?: string | null
+          order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "packaging_inventory_logs_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "packaging_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "packaging_inventory_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       passkey_credentials: {
         Row: {
           counter: number

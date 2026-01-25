@@ -19,8 +19,10 @@ import {
   Copy,
   Check,
   Printer,
-  FolderArchive
+  FolderArchive,
+  BarChart3
 } from "lucide-react";
+import { InventoryTracker } from "./packaging/InventoryTracker";
 import { toast } from "sonner";
 import {
   Accordion,
@@ -526,11 +528,15 @@ Gegenereerd op: ${new Date().toLocaleDateString('nl-NL')} ${new Date().toLocaleT
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="inventory" className="space-y-4">
+      <Tabs defaultValue="designs" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="inventory" className="flex items-center gap-2">
+          <TabsTrigger value="designs" className="flex items-center gap-2">
             <Package className="w-4 h-4" />
-            Designs & Voorraad
+            Designs
+          </TabsTrigger>
+          <TabsTrigger value="inventory" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Voorraad
           </TabsTrigger>
           <TabsTrigger value="calculator" className="flex items-center gap-2">
             <Calculator className="w-4 h-4" />
@@ -542,8 +548,8 @@ Gegenereerd op: ${new Date().toLocaleDateString('nl-NL')} ${new Date().toLocaleT
           </TabsTrigger>
         </TabsList>
 
-        {/* Inventory Tab */}
-        <TabsContent value="inventory" className="space-y-4">
+        {/* Designs Tab */}
+        <TabsContent value="designs" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {packagingItems.map((item) => (
               <Card key={item.id} className="overflow-hidden">
@@ -604,6 +610,11 @@ Gegenereerd op: ${new Date().toLocaleDateString('nl-NL')} ${new Date().toLocaleT
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        {/* Inventory Tab */}
+        <TabsContent value="inventory" className="space-y-4">
+          <InventoryTracker />
         </TabsContent>
 
         {/* Calculator Tab */}
