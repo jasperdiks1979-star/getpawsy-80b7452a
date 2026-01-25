@@ -156,6 +156,7 @@ const NewsletterPreferences = lazyWithRetry(() => import("./pages/NewsletterPref
 const SlowFeederOffer = lazyWithRetry(() => import("./pages/SlowFeederOffer"));
 const DownloadAds = lazyWithRetry(() => import("./pages/DownloadAds"));
 const TechnicalDeclaration = lazyWithRetry(() => import("./pages/TechnicalDeclaration"));
+const AppealResponse = lazyWithRetry(() => import("./pages/AppealResponse"));
 const MyClaims = lazyWithRetry(() => import("./pages/MyClaims"));
 const Security = lazyWithRetry(() => import("./pages/Security"));
 // Optimized React Query client with aggressive caching
@@ -254,6 +255,7 @@ const App = () => {
                         <Route path="/slow-feeder-offer" element={<SlowFeederOffer />} />
                         <Route path="/download-ads" element={<DownloadAds />} />
                         <Route path="/technical-declaration" element={<TechnicalDeclaration />} />
+                        <Route path="/appeal-response" element={<AppealResponse />} />
                         <Route path="/security" element={<Security />} />
                         
                         {/* Legacy URL redirects for SEO */}
