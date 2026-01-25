@@ -20,6 +20,107 @@ interface CJAuthResponse {
   };
 }
 
+interface SyncProgress {
+  current: number;
+  total: number;
+  currentProduct: string;
+  status: 'syncing' | 'completed' | 'error';
+  synced: number;
+  errors: number;
+}
+
+interface SyncResult {
+  success: boolean;
+  synced: number;
+  errors: number;
+  errorMessages: string[];
+  message: string;
+  timestamp: string;
+  progress?: SyncProgress;
+}
+
+/**
+ * Sleep for a specified number of milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Calculate delay for exponential backoff
+ */
+function calculateBackoffDelay(attempt: number, baseDelayMs = 1000, maxDelayMs = 30000): number {
+  const exponentialDelay = baseDelayMs * Math.pow(2, attempt);
+  const jitter = Math.random() * 0.3 * exponentialDelay;
+  return Math.min(exponentialDelay + jitter, maxDelayMs);
+}
+
+/**
+ * Execute a function with retry logic and exponential backoff
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  options: {
+    maxRetries?: number;
+    baseDelayMs?: number;
+    maxDelayMs?: number;
+    shouldRetry?: (error: Error) => boolean;
+    onRetry?: (attempt: number, error: Error, delayMs: number) => void;
+  } = {}
+): Promise<T> {
+  const {
+    maxRetries = 3,
+    baseDelayMs = 1000,
+    maxDelayMs = 30000,
+    shouldRetry = () => true,
+    onRetry,
+  } = options;
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (attempt < maxRetries && shouldRetry(lastError)) {
+        const delayMs = calculateBackoffDelay(attempt, baseDelayMs, maxDelayMs);
+        
+        if (onRetry) {
+          onRetry(attempt + 1, lastError, delayMs);
+        }
+        
+        console.log(`Retry ${attempt + 1}/${maxRetries} after ${Math.round(delayMs)}ms: ${lastError.message}`);
+        await sleep(delayMs);
+      } else {
+        throw lastError;
+      }
+    }
+  }
+
+  throw lastError || new Error('Unknown error');
+}
+
+/**
+ * Check if an error is retryable (network errors, rate limits, server errors)
+ */
+function isRetryableError(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('network') ||
+    message.includes('timeout') ||
+    message.includes('rate limit') ||
+    message.includes('429') ||
+    message.includes('500') ||
+    message.includes('502') ||
+    message.includes('503') ||
+    message.includes('504') ||
+    message.includes('econnreset') ||
+    message.includes('fetch failed')
+  );
+}
+
 // Get access token from CJ API with database-backed caching
 async function getAccessToken(): Promise<string> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -50,16 +151,27 @@ async function getAccessToken(): Promise<string> {
 
   console.log('Requesting new CJ access token...');
   
-  const response = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await withRetry(
+    async () => {
+      const res = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: apiKey,
+        }),
+      });
+      
+      if (!res.ok) {
+        throw new Error(`CJ Auth request failed: ${res.status}`);
+      }
+      
+      return res;
     },
-    body: JSON.stringify({
-      email: email,
-      password: apiKey,
-    }),
-  });
+    { maxRetries: 3, shouldRetry: isRetryableError }
+  );
 
   const data: CJAuthResponse = await response.json();
   
@@ -83,21 +195,37 @@ async function getAccessToken(): Promise<string> {
   return data.data.accessToken;
 }
 
-// Get inventory for a product by product ID
+// Get inventory for a product by product ID with retry logic
 async function getProductInventory(accessToken: string, productId: string) {
-  const response = await fetch(`${CJ_API_BASE}/product/stock/getInventoryByPid?pid=${productId}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'CJ-Access-Token': accessToken,
-    },
-  });
+  return await withRetry(
+    async () => {
+      const response = await fetch(`${CJ_API_BASE}/product/stock/getInventoryByPid?pid=${productId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'CJ-Access-Token': accessToken,
+        },
+      });
 
-  return await response.json();
+      if (!response.ok) {
+        throw new Error(`Inventory request failed: ${response.status}`);
+      }
+
+      return await response.json();
+    },
+    {
+      maxRetries: 3,
+      baseDelayMs: 500,
+      shouldRetry: isRetryableError,
+      onRetry: (attempt, error, delayMs) => {
+        console.log(`Retrying inventory fetch for ${productId} (attempt ${attempt}): ${error.message}`);
+      },
+    }
+  );
 }
 
 // Main sync function
-async function syncAllProductStock() {
+async function syncAllProductStock(): Promise<SyncResult> {
   console.log('=== Starting scheduled stock sync ===');
   console.log('Time:', new Date().toISOString());
 
@@ -105,7 +233,9 @@ async function syncAllProductStock() {
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // Get access token
+  const errorMessages: string[] = [];
+
+  // Get access token with retry
   const accessToken = await getAccessToken();
 
   // Get all products that have CJ product IDs
@@ -121,7 +251,14 @@ async function syncAllProductStock() {
 
   if (!products || products.length === 0) {
     console.log('No products with CJ product IDs found');
-    return { synced: 0, errors: 0, message: 'No products to sync' };
+    return { 
+      success: true,
+      synced: 0, 
+      errors: 0, 
+      errorMessages: [],
+      message: 'No products to sync',
+      timestamp: new Date().toISOString(),
+    };
   }
 
   console.log(`Found ${products.length} products to sync`);
@@ -129,12 +266,15 @@ async function syncAllProductStock() {
   let synced = 0;
   let errors = 0;
 
-  for (const product of products) {
+  for (let i = 0; i < products.length; i++) {
+    const product = products[i];
+    
     try {
       const inventoryResponse = await getProductInventory(accessToken, product.cj_product_id);
       
       if (!inventoryResponse.result) {
         console.error(`Failed to get inventory for ${product.name}:`, inventoryResponse.message);
+        errorMessages.push(`${product.name}: ${inventoryResponse.message || 'Unknown error'}`);
         errors++;
         continue;
       }
@@ -153,27 +293,37 @@ async function syncAllProductStock() {
         }
       }
 
-      // Update product stock
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({ 
-          stock: totalStock,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', product.id);
+      // Update product stock with retry
+      await withRetry(
+        async () => {
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({ 
+              stock: totalStock,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', product.id);
 
-      if (updateError) {
-        console.error(`Failed to update stock for ${product.name}:`, updateError);
-        errors++;
-      } else {
-        console.log(`✓ ${product.name}: stock = ${totalStock}`);
-        synced++;
-      }
+          if (updateError) {
+            throw updateError;
+          }
+        },
+        {
+          maxRetries: 2,
+          baseDelayMs: 500,
+          shouldRetry: (err) => err.message.includes('network') || err.message.includes('timeout'),
+        }
+      );
+
+      console.log(`✓ [${i + 1}/${products.length}] ${product.name}: stock = ${totalStock}`);
+      synced++;
 
       // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await sleep(200);
     } catch (err) {
-      console.error(`Error syncing ${product.name}:`, err);
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      console.error(`Error syncing ${product.name}:`, errorMsg);
+      errorMessages.push(`${product.name}: ${errorMsg}`);
       errors++;
     }
   }
@@ -182,10 +332,12 @@ async function syncAllProductStock() {
   console.log(`Synced: ${synced}, Errors: ${errors}`);
 
   return { 
+    success: errors === 0,
     synced, 
-    errors, 
+    errors,
+    errorMessages,
     message: `Stock sync completed. ${synced} products updated, ${errors} errors.`,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 }
 
@@ -301,6 +453,9 @@ serve(async (req) => {
       JSON.stringify({ 
         error: errorMessage,
         success: false,
+        synced: 0,
+        errors: 1,
+        errorMessages: [errorMessage],
         timestamp: new Date().toISOString()
       }),
       {

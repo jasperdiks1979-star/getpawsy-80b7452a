@@ -6,6 +6,96 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface FixResult {
+  success: boolean;
+  message: string;
+  productsFixed: number;
+  totalVariantsFixed: number;
+  updatedProducts: Array<{ id: string; name: string; variantCount: number }>;
+  errors: string[];
+  timestamp: string;
+}
+
+/**
+ * Sleep for a specified number of milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Calculate delay for exponential backoff
+ */
+function calculateBackoffDelay(attempt: number, baseDelayMs = 1000, maxDelayMs = 30000): number {
+  const exponentialDelay = baseDelayMs * Math.pow(2, attempt);
+  const jitter = Math.random() * 0.3 * exponentialDelay;
+  return Math.min(exponentialDelay + jitter, maxDelayMs);
+}
+
+/**
+ * Execute a function with retry logic and exponential backoff
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  options: {
+    maxRetries?: number;
+    baseDelayMs?: number;
+    maxDelayMs?: number;
+    shouldRetry?: (error: Error) => boolean;
+    onRetry?: (attempt: number, error: Error, delayMs: number) => void;
+  } = {}
+): Promise<T> {
+  const {
+    maxRetries = 3,
+    baseDelayMs = 1000,
+    maxDelayMs = 30000,
+    shouldRetry = () => true,
+    onRetry,
+  } = options;
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (attempt < maxRetries && shouldRetry(lastError)) {
+        const delayMs = calculateBackoffDelay(attempt, baseDelayMs, maxDelayMs);
+        
+        if (onRetry) {
+          onRetry(attempt + 1, lastError, delayMs);
+        }
+        
+        console.log(`Retry ${attempt + 1}/${maxRetries} after ${Math.round(delayMs)}ms: ${lastError.message}`);
+        await sleep(delayMs);
+      } else {
+        throw lastError;
+      }
+    }
+  }
+
+  throw lastError || new Error('Unknown error');
+}
+
+/**
+ * Check if an error is retryable
+ */
+function isRetryableError(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('network') ||
+    message.includes('timeout') ||
+    message.includes('rate limit') ||
+    message.includes('429') ||
+    message.includes('500') ||
+    message.includes('502') ||
+    message.includes('503') ||
+    message.includes('504')
+  );
+}
+
 /**
  * Calculate dynamic markup multiplier based on cost price
  */
@@ -88,6 +178,8 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const errors: string[] = [];
+
   try {
     // Auth check
     const authHeader = req.headers.get("Authorization");
@@ -127,23 +219,30 @@ serve(async (req) => {
       });
     }
 
-    // Fetch all products with variants
-    const { data: products, error: fetchError } = await supabase
-      .from("products")
-      .select("id, name, price, weight, cost_price, variants")
-      .not("variants", "is", null);
-
-    if (fetchError) {
-      throw new Error(`Failed to fetch products: ${fetchError.message}`);
-    }
+    // Fetch all products with variants with retry
+    const products = await withRetry(
+      async () => {
+        const result = await supabase
+          .from("products")
+          .select("id, name, price, weight, cost_price, variants")
+          .not("variants", "is", null);
+        
+        if (result.error) throw new Error(result.error.message);
+        return result.data;
+      },
+      { maxRetries: 3, shouldRetry: isRetryableError }
+    );
 
     console.log(`Found ${products?.length || 0} products with variants`);
 
     let updatedCount = 0;
+    let totalVariantsFixed = 0;
     let skippedCount = 0;
     const updates: { id: string; name: string; variantCount: number }[] = [];
 
-    for (const product of products || []) {
+    for (let i = 0; i < (products?.length || 0); i++) {
+      const product = products![i];
+      
       if (!product.variants || !Array.isArray(product.variants) || product.variants.length === 0) {
         skippedCount++;
         continue;
@@ -152,6 +251,7 @@ serve(async (req) => {
       const productWeight = Number(product.weight) || 200;
       const productPrice = Number(product.price) || 0;
       let hasChanges = false;
+      let variantsFixedInProduct = 0;
 
       const updatedVariants = (product.variants as unknown as ProductVariant[]).map((variant) => {
         const currentPrice = Number(variant.variantSellPrice) || 0;
@@ -164,8 +264,9 @@ serve(async (req) => {
         if (isProbablyCostPrice) {
           const newSellingPrice = calculateSellingPrice(currentPrice, variantWeight);
           hasChanges = true;
+          variantsFixedInProduct++;
           
-          console.log(`Product "${product.name}" variant: $${currentPrice} -> $${newSellingPrice}`);
+          console.log(`[${i + 1}/${products!.length}] Product "${product.name}" variant: $${currentPrice} -> $${newSellingPrice}`);
           
           return {
             ...variant,
@@ -179,42 +280,88 @@ serve(async (req) => {
       });
 
       if (hasChanges) {
-        const { error: updateError } = await supabase
-          .from("products")
-          .update({ variants: updatedVariants })
-          .eq("id", product.id);
+        try {
+          await withRetry(
+            async () => {
+              const { error: updateError } = await supabase
+                .from("products")
+                .update({ variants: updatedVariants })
+                .eq("id", product.id);
 
-        if (updateError) {
-          console.error(`Failed to update product ${product.id}: ${updateError.message}`);
-        } else {
+              if (updateError) throw updateError;
+            },
+            {
+              maxRetries: 3,
+              baseDelayMs: 500,
+              shouldRetry: isRetryableError,
+              onRetry: (attempt, error) => {
+                console.log(`Retrying update for ${product.name} (attempt ${attempt}): ${error.message}`);
+              },
+            }
+          );
+
           updatedCount++;
+          totalVariantsFixed += variantsFixedInProduct;
           updates.push({
             id: product.id,
             name: product.name,
             variantCount: updatedVariants.length,
           });
+          
+          console.log(`✓ [${i + 1}/${products!.length}] Updated ${product.name} (${variantsFixedInProduct} variants fixed)`);
+        } catch (updateErr) {
+          const errorMsg = updateErr instanceof Error ? updateErr.message : 'Unknown error';
+          console.error(`Failed to update product ${product.id}: ${errorMsg}`);
+          errors.push(`${product.name}: ${errorMsg}`);
         }
       } else {
         skippedCount++;
       }
+
+      // Small delay between products to avoid overwhelming the database
+      if (i < (products?.length || 0) - 1) {
+        await sleep(100);
+      }
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Updated ${updatedCount} products, skipped ${skippedCount}`,
-        updatedProducts: updates,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    const result: FixResult = {
+      success: errors.length === 0,
+      message: `Updated ${updatedCount} products, skipped ${skippedCount}. ${totalVariantsFixed} variants fixed.`,
+      productsFixed: updatedCount,
+      totalVariantsFixed,
+      updatedProducts: updates,
+      errors,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Log the fix operation
+    await supabase.from("variant_fix_logs").insert({
+      success: result.success,
+      products_fixed: updatedCount,
+      total_variants_fixed: totalVariantsFixed,
+      fixed_products: updates,
+      error_message: errors.length > 0 ? errors.join('; ') : null,
+      triggered_by: user.id,
+    });
+
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Error:", errorMessage);
+    
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        success: false,
+        error: errorMessage,
+        productsFixed: 0,
+        totalVariantsFixed: 0,
+        updatedProducts: [],
+        errors: [errorMessage],
+        timestamp: new Date().toISOString(),
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

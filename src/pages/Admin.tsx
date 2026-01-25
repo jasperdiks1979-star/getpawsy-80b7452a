@@ -49,6 +49,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TouchTooltip, TooltipProvider } from "@/components/ui/tooltip";
 import { AuthErrorBoundary } from "@/components/auth/AuthErrorBoundary";
 import { SectionErrorBoundary } from "@/components/ui/section-error-boundary";
+import { SyncProgressIndicator, type SyncProgress } from "@/components/admin/SyncProgressIndicator";
+import { useRetryWithBackoff } from "@/hooks/useRetryWithBackoff";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -127,7 +129,12 @@ const Admin = () => {
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const [refreshMode, setRefreshMode] = useState<"all" | "new-only">("all");
   const [activeTab, setActiveTab] = useState("sales");
+  const [syncStockProgress, setSyncStockProgress] = useState<SyncProgress | null>(null);
+  const [fixPricesProgress, setFixPricesProgress] = useState<SyncProgress | null>(null);
   const queryClient = useQueryClient();
+  
+  // Retry hook for sync operations
+  const { executeWithRetry } = useRetryWithBackoff({ maxRetries: 3, baseDelayMs: 2000 });
 
   // Save preview preference to localStorage
   useEffect(() => {
@@ -519,40 +526,186 @@ const Admin = () => {
     },
   });
 
-  // Stock sync mutation
+  // Stock sync mutation with retry logic
   const syncStockMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await invokeFunction<{ synced?: number }>("cj-dropshipping", {
-        body: {
-          action: "sync-stock",
-        },
+      // Set initial progress
+      setSyncStockProgress({
+        current: 0,
+        total: existingProducts?.filter(p => p.cj_product_id).length || 0,
+        status: 'syncing',
+        currentItem: 'Verbinden met CJ Dropshipping...',
+        synced: 0,
+        errors: 0,
       });
 
-      if (error) throw error;
-      return data;
+      // Execute with retry logic
+      const result = await executeWithRetry(
+        async () => {
+          const { data, error } = await invokeFunction<{
+            success: boolean;
+            synced: number;
+            errors: number;
+            errorMessages?: string[];
+            message: string;
+          }>("sync-stock");
+
+          if (error) throw error;
+          return data;
+        },
+        {
+          onRetry: (attempt, error, delayMs) => {
+            setSyncStockProgress(prev => prev ? {
+              ...prev,
+              status: 'retrying',
+              retryAttempt: attempt,
+              maxRetries: 3,
+              currentItem: `Retry ${attempt}/3: ${error.message.slice(0, 50)}...`,
+            } : null);
+            toast.warning(`Sync retry ${attempt}/3 na ${Math.round(delayMs / 1000)}s...`);
+          },
+          shouldRetry: (error) => {
+            const msg = error.message.toLowerCase();
+            return msg.includes('network') || msg.includes('timeout') || 
+                   msg.includes('500') || msg.includes('503');
+          },
+        }
+      );
+
+      return result;
+    },
+    onMutate: () => {
+      setSyncStockProgress({
+        current: 0,
+        total: existingProducts?.filter(p => p.cj_product_id).length || 0,
+        status: 'syncing',
+        currentItem: 'Starting...',
+        synced: 0,
+        errors: 0,
+      });
     },
     onSuccess: (data) => {
-      toast.success(`Stock synced! ${data?.synced || 0} products updated.`);
+      setSyncStockProgress({
+        current: data?.synced || 0,
+        total: data?.synced || 0,
+        status: 'completed',
+        synced: data?.synced || 0,
+        errors: data?.errors || 0,
+      });
+      
+      const hasErrors = (data?.errors || 0) > 0;
+      if (hasErrors) {
+        toast.warning(`Stock sync voltooid met ${data?.errors} fouten. ${data?.synced || 0} producten bijgewerkt.`);
+      } else {
+        toast.success(`Stock sync voltooid! ${data?.synced || 0} producten bijgewerkt.`);
+      }
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      
+      // Clear progress after 5 seconds
+      setTimeout(() => setSyncStockProgress(null), 5000);
     },
     onError: (error) => {
-      toast.error(`Stock sync failed: ${error.message}`);
+      setSyncStockProgress(prev => prev ? {
+        ...prev,
+        status: 'error',
+        currentItem: error.message,
+      } : null);
+      toast.error(`Stock sync mislukt: ${error.message}`);
+      
+      // Clear progress after 10 seconds on error
+      setTimeout(() => setSyncStockProgress(null), 10000);
     },
   });
 
-  // Fix variant prices mutation
+  // Fix variant prices mutation with retry logic
   const fixVariantPricesMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await invokeFunction<{ updatedProducts?: unknown[] }>("fix-variant-prices");
-      if (error) throw error;
-      return data;
+      // Set initial progress
+      setFixPricesProgress({
+        current: 0,
+        total: existingProducts?.filter(p => p.variants && Array.isArray(p.variants) && p.variants.length > 0).length || 0,
+        status: 'syncing',
+        currentItem: 'Variant prijzen analyseren...',
+        synced: 0,
+        errors: 0,
+      });
+
+      // Execute with retry logic
+      const result = await executeWithRetry(
+        async () => {
+          const { data, error } = await invokeFunction<{
+            success: boolean;
+            productsFixed: number;
+            totalVariantsFixed: number;
+            updatedProducts?: Array<{ id: string; name: string; variantCount: number }>;
+            errors?: string[];
+            message: string;
+          }>("fix-variant-prices");
+
+          if (error) throw error;
+          return data;
+        },
+        {
+          onRetry: (attempt, error, delayMs) => {
+            setFixPricesProgress(prev => prev ? {
+              ...prev,
+              status: 'retrying',
+              retryAttempt: attempt,
+              maxRetries: 3,
+              currentItem: `Retry ${attempt}/3: ${error.message.slice(0, 50)}...`,
+            } : null);
+            toast.warning(`Fix prices retry ${attempt}/3 na ${Math.round(delayMs / 1000)}s...`);
+          },
+          shouldRetry: (error) => {
+            const msg = error.message.toLowerCase();
+            return msg.includes('network') || msg.includes('timeout') || 
+                   msg.includes('500') || msg.includes('503');
+          },
+        }
+      );
+
+      return result;
+    },
+    onMutate: () => {
+      setFixPricesProgress({
+        current: 0,
+        total: existingProducts?.filter(p => p.variants && Array.isArray(p.variants) && p.variants.length > 0).length || 0,
+        status: 'syncing',
+        currentItem: 'Starting...',
+        synced: 0,
+        errors: 0,
+      });
     },
     onSuccess: (data) => {
-      toast.success(`Variant prijzen geüpdatet! ${data?.updatedProducts?.length || 0} producten aangepast.`);
+      setFixPricesProgress({
+        current: data?.productsFixed || 0,
+        total: data?.productsFixed || 0,
+        status: 'completed',
+        synced: data?.productsFixed || 0,
+        errors: data?.errors?.length || 0,
+      });
+      
+      const hasErrors = (data?.errors?.length || 0) > 0;
+      if (hasErrors) {
+        toast.warning(`Variant prijzen bijgewerkt met ${data?.errors?.length} fouten. ${data?.productsFixed || 0} producten, ${data?.totalVariantsFixed || 0} variants.`);
+      } else {
+        toast.success(`Variant prijzen bijgewerkt! ${data?.productsFixed || 0} producten, ${data?.totalVariantsFixed || 0} variants.`);
+      }
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      
+      // Clear progress after 5 seconds
+      setTimeout(() => setFixPricesProgress(null), 5000);
     },
     onError: (error) => {
+      setFixPricesProgress(prev => prev ? {
+        ...prev,
+        status: 'error',
+        currentItem: error.message,
+      } : null);
       toast.error(`Fix variant prices mislukt: ${error.message}`);
+      
+      // Clear progress after 10 seconds on error
+      setTimeout(() => setFixPricesProgress(null), 10000);
     },
   });
 
@@ -1981,6 +2134,23 @@ const Admin = () => {
                 </div>
               </div>
               
+              {/* Progress Indicators for Sync Operations */}
+              {(syncStockProgress || fixPricesProgress) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                  {syncStockProgress && (
+                    <SyncProgressIndicator 
+                      progress={syncStockProgress} 
+                      title="Stock Synchronisatie" 
+                    />
+                  )}
+                  {fixPricesProgress && (
+                    <SyncProgressIndicator 
+                      progress={fixPricesProgress} 
+                      title="Variant Prijzen Fix" 
+                    />
+                  )}
+                </div>
+              )}
               {/* Search and Filters for My Products */}
               <div className="flex flex-col sm:flex-row gap-3 mb-4">
                 <div className="relative flex-1">
