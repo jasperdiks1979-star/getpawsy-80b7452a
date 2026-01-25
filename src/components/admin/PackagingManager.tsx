@@ -18,7 +18,8 @@ import {
   Info,
   Copy,
   Check,
-  Printer
+  Printer,
+  FolderArchive
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,6 +29,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import jsPDF from "jspdf";
+import JSZip from "jszip";
 
 // Import packaging assets
 import stickerImage from "@/assets/packaging/getpawsy-sticker-5cm.png";
@@ -219,15 +221,13 @@ export const PackagingManager = () => {
     }
   };
 
-  const handleExportPrintReadyPDF = async (item: PackagingItem) => {
+  // Helper function to generate PDF for an item (returns jsPDF instance)
+  const generatePDFForItem = async (item: PackagingItem): Promise<jsPDF> => {
     const config = pdfConfigs[item.id];
     if (!config) {
-      toast.error("Geen PDF configuratie beschikbaar voor dit item");
-      return;
+      throw new Error("Geen PDF configuratie beschikbaar voor dit item");
     }
 
-    try {
-      toast.loading("PDF wordt gegenereerd...", { id: "pdf-export" });
       
       const { widthMM, heightMM, bleedMM, isRound, paperSpec, finishSpec, additionalSpecs } = config;
       
@@ -344,27 +344,126 @@ export const PackagingManager = () => {
         yPos += 5;
       });
       
-      // Save the PDF
+      // Return PDF as blob for bulk export, or save directly
+      return pdf;
+  };
+
+  const handleExportSinglePDF = async (item: PackagingItem) => {
+    try {
+      toast.loading("PDF wordt gegenereerd...", { id: "pdf-export" });
+      const pdf = await generatePDFForItem(item);
       pdf.save(`getpawsy-${item.id}-print-ready.pdf`);
-      
       toast.success(`Print-ready PDF geëxporteerd voor ${item.name}!`, { id: "pdf-export" });
     } catch (error) {
-      console.error('PDF export error:', error);
       toast.error("Kon PDF niet genereren", { id: "pdf-export" });
+    }
+  };
+
+  const handleBulkExportPDFs = async () => {
+    try {
+      toast.loading("Bulk PDF export wordt voorbereid...", { id: "bulk-export" });
+      
+      const zip = new JSZip();
+      const pdfFolder = zip.folder("getpawsy-packaging-print-ready");
+      
+      if (!pdfFolder) {
+        throw new Error("Could not create ZIP folder");
+      }
+      
+      // Generate PDF for each item
+      for (const item of packagingItems) {
+        try {
+          const pdf = await generatePDFForItem(item);
+          const pdfBlob = pdf.output('blob');
+          pdfFolder.file(`${item.id}-print-ready.pdf`, pdfBlob);
+        } catch (error) {
+          console.error(`Failed to generate PDF for ${item.id}:`, error);
+        }
+      }
+      
+      // Also add original PNG files
+      const pngFolder = zip.folder("getpawsy-packaging-originals");
+      if (pngFolder) {
+        for (const item of packagingItems) {
+          try {
+            const response = await fetch(item.image);
+            const blob = await response.blob();
+            pngFolder.file(`${item.id}-original.png`, blob);
+          } catch (error) {
+            console.error(`Failed to add PNG for ${item.id}:`, error);
+          }
+        }
+      }
+      
+      // Add README with instructions
+      const readme = `GETPAWSY BRANDED PACKAGING - PRINT FILES
+========================================
+
+Dit pakket bevat alle print-ready bestanden voor GetPawsy branded packaging.
+
+MAPPENSTRUCTUUR:
+- /getpawsy-packaging-print-ready/ - PDF bestanden met bleed margins en snijmerken
+- /getpawsy-packaging-originals/ - Originele PNG bestanden (300 DPI)
+
+BESTANDEN:
+1. sticker-5cm-print-ready.pdf - Logo sticker (5cm diameter, 2mm bleed)
+2. thank-you-card-print-ready.pdf - Bedankkaartje (8.5x5.5cm, 3mm bleed)
+3. poly-mailer-small-print-ready.pdf - Kleine verzendenvelop (20x30cm, 5mm bleed)
+4. poly-mailer-medium-print-ready.pdf - Medium verzendenvelop (30x40cm, 5mm bleed)
+
+PRINT SPECIFICATIES:
+- Alle bestanden zijn CMYK-ready
+- Minimale resolutie: 300 DPI
+- Bleed margins zijn inbegrepen
+- Snijmerken (crop marks) zijn toegevoegd
+
+CONTACT:
+Website: getpawsy.nl
+Email: info@getpawsy.nl
+
+Gegenereerd op: ${new Date().toLocaleDateString('nl-NL')} ${new Date().toLocaleTimeString('nl-NL')}
+`;
+      
+      zip.file("LEESMIJ.txt", readme);
+      
+      // Generate and download ZIP
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `getpawsy-packaging-print-files-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success("Alle print-ready PDFs en originelen geëxporteerd!", { id: "bulk-export" });
+    } catch (error) {
+      console.error('Bulk export error:', error);
+      toast.error("Kon bulk export niet voltooien", { id: "bulk-export" });
     }
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-2">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Package className="w-6 h-6 text-primary" />
-          Branded Packaging
-        </h2>
-        <p className="text-muted-foreground">
-          Beheer je branded verpakkingsmaterialen en bestel bij CJ Dropshipping
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Package className="w-6 h-6 text-primary" />
+            Branded Packaging
+          </h2>
+          <p className="text-muted-foreground">
+            Beheer je branded verpakkingsmaterialen en bestel bij CJ Dropshipping
+          </p>
+        </div>
+        <Button 
+          onClick={handleBulkExportPDFs}
+          className="shrink-0"
+        >
+          <FolderArchive className="w-4 h-4 mr-2" />
+          Download Alle PDFs (ZIP)
+        </Button>
       </div>
 
       {/* Quick Stats */}
@@ -484,7 +583,7 @@ export const PackagingManager = () => {
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={() => handleExportPrintReadyPDF(item)}
+                      onClick={() => handleExportSinglePDF(item)}
                       title={`Export print-ready PDF voor ${item.name}`}
                     >
                       <Printer className="w-4 h-4" />
