@@ -45,8 +45,9 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('@tanstack/react-query')) {
               return 'query';
             }
-            if (id.includes('recharts')) {
-              return 'charts';
+            // Keep recharts in the main bundle to avoid star export issues
+            if (id.includes('recharts') || id.includes('d3-')) {
+              return undefined; // Don't chunk - include in main bundle
             }
           }
         },
