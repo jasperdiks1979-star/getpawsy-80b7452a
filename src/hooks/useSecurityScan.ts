@@ -66,15 +66,19 @@ const getSecurityScanData = (): SecurityScanResult => ({
       name: "Extension in Public",
       description: "Detects extensions installed in the public schema. While not critical, extensions in public schema can potentially be accessed or modified by less privileged roles.",
       level: "warn",
-      link: "https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public"
+      link: "https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public",
+      ignore: true,
+      ignore_reason: "Standaard database extensies (uuid-ossp, pg_net) vereist voor functionaliteit. Geen risico in huidige setup."
     },
     {
       id: "SUPA_rls_policy_always_true_1",
       name: "RLS Policy Always True - Disputes Insert",
       description: "The disputes table has an open INSERT policy (WITH CHECK true). This allows anyone to create disputes without authentication.",
       level: "warn",
-      details: "Dit is by design voor klantenservice - klanten moeten disputes kunnen aanmaken zonder in te loggen. Overweeg rate limiting toe te voegen.",
-      link: "https://supabase.com/docs/guides/database/database-linter?lint=0024_permissive_rls_policy"
+      details: "By design voor klantenservice - klanten moeten disputes kunnen aanmaken zonder in te loggen. SELECT is admin-only.",
+      link: "https://supabase.com/docs/guides/database/database-linter?lint=0024_permissive_rls_policy",
+      ignore: true,
+      ignore_reason: "Bewust open INSERT voor klantenservice. Validatie op velden, SELECT alleen voor admins."
     },
     {
       id: "SUPA_rls_policy_always_true_2",
@@ -82,14 +86,18 @@ const getSecurityScanData = (): SecurityScanResult => ({
       description: "Performance metrics kunnen door iedereen worden toegevoegd zonder authenticatie. Dit is nodig voor Core Web Vitals tracking.",
       level: "warn",
       details: "By design voor anonieme bezoekers tracking. Validatie is toegevoegd voor metric_name en metric_value.",
-      link: "https://supabase.com/docs/guides/database/database-linter?lint=0024_permissive_rls_policy"
+      link: "https://supabase.com/docs/guides/database/database-linter?lint=0024_permissive_rls_policy",
+      ignore: true,
+      ignore_reason: "Noodzakelijk voor Core Web Vitals tracking. Input validatie aanwezig, SELECT admin-only."
     },
     {
       id: "SUPA_rls_policy_always_true_3",
       name: "RLS Policy Always True - Email Campaign Events",
       description: "Email campaign events tracking allows public insertion for tracking pixels and links.",
       level: "warn",
-      details: "By design voor email tracking pixels die zonder authenticatie moeten werken."
+      details: "By design voor email tracking pixels die zonder authenticatie moeten werken.",
+      ignore: true,
+      ignore_reason: "Email tracking pixels vereisen public access. Alleen event data, geen gevoelige informatie."
     },
     {
       id: "SUPA_auth_leaked_password_protection",
