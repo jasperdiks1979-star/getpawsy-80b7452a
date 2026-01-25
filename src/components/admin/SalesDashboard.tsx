@@ -855,7 +855,17 @@ export const SalesDashboard = ({ onNavigateToTab }: SalesDashboardProps) => {
         <PerformanceMetricsWidget onNavigate={() => onNavigateToTab?.("performance")} />
         <BlogPostsWidget onNavigate={() => onNavigateToTab?.("blog")} />
         <SecurityIssuesWidget />
-        <PackagingInventoryWidget onNavigate={() => onNavigateToTab?.("packaging")} />
+        <PackagingInventoryWidget 
+          onNavigate={() => onNavigateToTab?.("packaging")} 
+          onOpenCjConfig={() => {
+            // Navigate to packaging tab and trigger CJ config dialog
+            onNavigateToTab?.("packaging");
+            // Dispatch custom event to open CJ config dialog
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('open-cj-config-dialog'));
+            }, 100);
+          }}
+        />
         <CJWebhooksWidget onNavigate={() => onNavigateToTab?.("cj-webhooks")} />
       </div>
 
