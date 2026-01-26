@@ -38,27 +38,27 @@ const toSlug = (str: string): string => {
 // Extended with more synonyms and product-specific terms for better SEO linking
 const categoryKeywords: Record<string, string[]> = {
   // Dog categories
-  'dogs': ['dog', 'dogs', 'puppy', 'puppies', 'canine', 'canines', 'pup', 'pups', 'doggy', 'pooch', 'pet dog', 'furry friend'],
-  'dog-beds': ['dog bed', 'dog beds', 'pet bed', 'orthopedic bed', 'memory foam bed', 'elevated bed', 'cooling bed', 'heated bed', 'dog cushion', 'dog mattress'],
-  'dog-collars-leashes': ['dog collar', 'dog leash', 'collar', 'leash', 'harness', 'dog harness', 'training leash', 'retractable leash', 'walking leash', 'slip lead', 'martingale'],
-  'dog-houses': ['dog house', 'dog kennel', 'outdoor kennel', 'dog crate', 'dog cage', 'pet carrier', 'travel crate'],
-  'dog-carriers': ['dog carrier', 'pet carrier', 'travel carrier', 'airline carrier', 'soft carrier', 'backpack carrier', 'dog stroller', 'pet stroller'],
-  'dog-stairs': ['dog stairs', 'pet stairs', 'dog steps', 'pet ramp', 'dog ramp'],
+  'dogs': ['dog', 'dogs', 'puppy', 'puppies', 'canine', 'canines', 'pup', 'pups', 'doggy', 'pooch', 'pet dog', 'furry friend', 'dog owner', 'dog parent'],
+  'dog-beds': ['dog bed', 'dog beds', 'pet bed', 'orthopedic bed', 'memory foam bed', 'elevated bed', 'cooling bed', 'heated bed', 'dog cushion', 'dog mattress', 'dog sleeping', 'comfortable bed', 'supportive bed', 'joint support bed'],
+  'dog-collars-leashes': ['dog collar', 'dog leash', 'collar', 'leash', 'harness', 'dog harness', 'training leash', 'retractable leash', 'walking leash', 'slip lead', 'martingale', 'walking gear', 'dog walking', 'reflective collar', 'adjustable harness'],
+  'dog-houses': ['dog house', 'dog kennel', 'outdoor kennel', 'dog crate', 'dog cage', 'pet carrier', 'travel crate', 'crate training'],
+  'dog-carriers': ['dog carrier', 'pet carrier', 'travel carrier', 'airline carrier', 'soft carrier', 'backpack carrier', 'dog stroller', 'pet stroller', 'dog travel', 'portable carrier'],
+  'dog-stairs': ['dog stairs', 'pet stairs', 'dog steps', 'pet ramp', 'dog ramp', 'mobility aid'],
   
   // Cat categories
-  'cats': ['cat', 'cats', 'kitten', 'kittens', 'feline', 'felines', 'kitty', 'kitties', 'indoor cat', 'pet cat'],
-  'cat-beds': ['cat bed', 'cat beds', 'cat cushion', 'cat hammock', 'window perch', 'cat cave', 'heated cat bed'],
-  'cat-trees': ['cat tree', 'cat trees', 'scratching post', 'scratch post', 'cat tower', 'cat condo', 'climbing tower', 'cat furniture', 'cat playground'],
-  'cat-furniture': ['cat furniture', 'cat shelf', 'cat shelves', 'wall mounted', 'cat perch', 'cat bridge'],
-  'litter-boxes': ['litter box', 'litter boxes', 'automatic litter box', 'self-cleaning litter box', 'cat litter', 'litter tray', 'enclosed litter box', 'covered litter box', 'smart litter box'],
-  'scratching-posts': ['scratching post', 'scratch pad', 'cardboard scratcher', 'sisal post', 'cat scratcher'],
-  'chase-toys': ['chase toy', 'cat toy', 'cat toys', 'feather toy', 'laser pointer', 'interactive toy', 'wand toy', 'mouse toy'],
+  'cats': ['cat', 'cats', 'kitten', 'kittens', 'feline', 'felines', 'kitty', 'kitties', 'indoor cat', 'pet cat', 'cat owner', 'cat parent', 'cat care'],
+  'cat-beds': ['cat bed', 'cat beds', 'cat cushion', 'cat hammock', 'window perch', 'cat cave', 'heated cat bed', 'cozy cat bed', 'cat sleeping'],
+  'cat-trees': ['cat tree', 'cat trees', 'scratching post', 'scratch post', 'cat tower', 'cat condo', 'climbing tower', 'cat furniture', 'cat playground', 'vertical space', 'climbing structure'],
+  'cat-furniture': ['cat furniture', 'cat shelf', 'cat shelves', 'wall mounted', 'cat perch', 'cat bridge', 'cat climbing'],
+  'litter-boxes': ['litter box', 'litter boxes', 'automatic litter box', 'self-cleaning litter box', 'cat litter', 'litter tray', 'enclosed litter box', 'covered litter box', 'smart litter box', 'odor control', 'clumping litter', 'crystal litter', 'natural litter'],
+  'scratching-posts': ['scratching post', 'scratch pad', 'cardboard scratcher', 'sisal post', 'cat scratcher', 'scratching behavior', 'claw maintenance'],
+  'chase-toys': ['chase toy', 'cat toy', 'cat toys', 'feather toy', 'laser pointer', 'interactive toy', 'wand toy', 'mouse toy', 'cat playtime', 'hunting instinct'],
   
   // Bird categories
-  'birds': ['bird', 'birds', 'parrot', 'parrots', 'parakeet', 'cockatiel', 'budgie', 'canary', 'finch', 'pet bird'],
-  'bird-cages': ['bird cage', 'bird cages', 'aviary', 'flight cage', 'parrot cage', 'travel cage'],
-  'bird-feeders': ['bird feeder', 'bird feeders', 'seed feeder', 'water dispenser', 'feeding bowl', 'bird bath'],
-  'bird-toys': ['bird toy', 'bird toys', 'bird swing', 'bird perch', 'foraging toy', 'chew toy', 'climbing toy'],
+  'birds': ['bird', 'birds', 'parrot', 'parrots', 'parakeet', 'parakeets', 'cockatiel', 'cockatiels', 'budgie', 'budgies', 'canary', 'canaries', 'finch', 'finches', 'pet bird', 'avian', 'bird owner', 'bird care', 'singing bird'],
+  'bird-cages': ['bird cage', 'bird cages', 'aviary', 'flight cage', 'parrot cage', 'travel cage', 'cage setup', 'cage size', 'bar spacing', 'cage placement'],
+  'bird-feeders': ['bird feeder', 'bird feeders', 'seed feeder', 'water dispenser', 'feeding bowl', 'bird bath', 'seed mix', 'pellet diet', 'bird nutrition', 'fresh vegetables'],
+  'bird-toys': ['bird toy', 'bird toys', 'bird swing', 'bird perch', 'foraging toy', 'chew toy', 'climbing toy', 'mental stimulation', 'bird enrichment', 'mirror toy', 'bell toy', 'ladder toy'],
   
   // Fish & Aquarium
   'fish': ['fish', 'tropical fish', 'goldfish', 'betta', 'guppy', 'aquatic pet'],
@@ -76,17 +76,18 @@ const categoryKeywords: Record<string, string[]> = {
   'guinea-pig-toys': ['guinea pig toy', 'guinea pig toys', 'hideout', 'tunnel', 'hay feeder'],
   
   // Reptiles
-  'reptiles': ['reptile', 'reptiles', 'lizard', 'gecko', 'bearded dragon', 'snake', 'turtle', 'tortoise'],
-  'reptile-terrariums': ['terrarium', 'reptile tank', 'vivarium', 'reptile enclosure', 'reptile habitat'],
-  'reptile-lighting': ['heat lamp', 'uvb light', 'basking light', 'reptile lighting', 'heat mat'],
+  'reptiles': ['reptile', 'reptiles', 'lizard', 'lizards', 'gecko', 'geckos', 'bearded dragon', 'bearded dragons', 'snake', 'snakes', 'turtle', 'turtles', 'tortoise', 'tortoises', 'ball python', 'corn snake', 'leopard gecko', 'crested gecko', 'reptile care'],
+  'reptile-terrariums': ['terrarium', 'terrariums', 'reptile tank', 'vivarium', 'reptile enclosure', 'reptile habitat', 'glass enclosure', 'screen enclosure', 'bioactive terrarium', 'desert terrarium', 'tropical terrarium'],
+  'reptile-lighting': ['heat lamp', 'uvb light', 'uvb lighting', 'basking light', 'basking spot', 'reptile lighting', 'heat mat', 'ceramic heat emitter', 'temperature gradient', 'thermostat', 'heat source'],
+  'reptile-substrate': ['substrate', 'reptile bedding', 'coconut fiber', 'cypress mulch', 'reptile carpet', 'newspaper substrate', 'aspen shavings', 'bioactive substrate'],
   
   // General pet supplies
-  'pet-food': ['pet food', 'dog food', 'cat food', 'treats', 'snacks', 'kibble', 'wet food', 'dry food', 'raw diet', 'premium food', 'grain-free'],
-  'feeding': ['food bowl', 'water bowl', 'feeding bowl', 'slow feeder', 'automatic feeder', 'smart feeder', 'elevated bowl', 'stainless steel bowl'],
-  'drinking': ['water fountain', 'pet fountain', 'water dispenser', 'drinking fountain', 'filtered water'],
-  'pet-toys': ['pet toy', 'pet toys', 'interactive toy', 'puzzle toy', 'enrichment toy', 'chew toy', 'squeaky toy', 'plush toy', 'rope toy', 'ball toy'],
-  'pet-accessories': ['pet accessory', 'accessories', 'pet supplies', 'pet products', 'pet gear'],
-  'pet-grooming': ['grooming', 'pet grooming', 'brush', 'comb', 'nail clipper', 'nail trimmer', 'shampoo', 'conditioner', 'deshedding', 'grooming kit', 'fur care', 'coat care'],
+  'pet-food': ['pet food', 'dog food', 'cat food', 'treats', 'snacks', 'kibble', 'wet food', 'dry food', 'raw diet', 'premium food', 'grain-free', 'high protein', 'balanced nutrition', 'species-appropriate'],
+  'feeding': ['food bowl', 'water bowl', 'feeding bowl', 'slow feeder', 'automatic feeder', 'smart feeder', 'elevated bowl', 'stainless steel bowl', 'portion control', 'feeding schedule'],
+  'drinking': ['water fountain', 'pet fountain', 'water dispenser', 'drinking fountain', 'filtered water', 'fresh water', 'hydration'],
+  'pet-toys': ['pet toy', 'pet toys', 'interactive toy', 'puzzle toy', 'enrichment toy', 'chew toy', 'squeaky toy', 'plush toy', 'rope toy', 'ball toy', 'mental stimulation', 'physical exercise'],
+  'pet-accessories': ['pet accessory', 'accessories', 'pet supplies', 'pet products', 'pet gear', 'pet essentials'],
+  'pet-grooming': ['grooming', 'pet grooming', 'brush', 'brushing', 'comb', 'nail clipper', 'nail trimmer', 'nail grinder', 'shampoo', 'conditioner', 'deshedding', 'grooming kit', 'fur care', 'coat care', 'mat removal', 'ear cleaning', 'dental care'],
   'pet-beds': ['pet bed', 'pet beds', 'sleeping pad', 'pet cushion', 'cozy bed', 'washable bed', 'waterproof bed'],
   'pet-houses': ['pet house', 'pet shelter', 'outdoor house', 'indoor house'],
   'pet-strollers': ['pet stroller', 'dog stroller', 'cat stroller', 'pet jogger', 'pet buggy', 'pet pram'],
