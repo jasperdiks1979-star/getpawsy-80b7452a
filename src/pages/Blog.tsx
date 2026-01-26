@@ -53,61 +53,81 @@ const Blog = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [generatingImageFor, setGeneratingImageFor] = useState<string | null>(null);
   const [isBatchGenerating, setIsBatchGenerating] = useState(false);
-  const [batchProgress, setBatchProgress] = useState<{ generated: number; remaining: number } | null>(null);
+  const [batchProgress, setBatchProgress] = useState<{ generated: number; remaining: number; totalGenerated: number } | null>(null);
+  const [batchPaused, setBatchPaused] = useState(false);
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
 
-  // Batch generate images mutation
-  const batchGenerateMutation = useMutation({
-    mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
+  // Auto-continue batch generation
+  const runBatchGeneration = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-generate-blog-images`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ limit: 5 }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to generate images');
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-generate-blog-images`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ limit: 5 }),
       }
+    );
 
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setBatchProgress({ generated: data.generated, remaining: data.remaining });
-      queryClient.invalidateQueries({ queryKey: ['blog-posts'] });
-      
-      if (data.remaining > 0) {
-        toast.success(`${data.generated} images generated`, {
-          description: `${data.remaining} blogs remaining. Click again to continue.`,
-        });
-      } else {
-        toast.success('All images generated!', {
-          description: 'All blog posts now have featured images.',
-        });
-        setIsBatchGenerating(false);
-      }
-    },
-    onError: (error: Error) => {
-      toast.error('Batch generation failed', {
-        description: error.message,
-      });
-      setIsBatchGenerating(false);
-    },
-  });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to generate images');
+    }
 
-  const handleBatchGenerate = () => {
+    return response.json();
+  };
+
+  const handleBatchGenerate = async () => {
     setIsBatchGenerating(true);
-    batchGenerateMutation.mutate();
+    setBatchPaused(false);
+    let totalGenerated = 0;
+    let remaining = 1; // Start with non-zero to enter loop
+
+    try {
+      while (remaining > 0 && !batchPaused) {
+        const data = await runBatchGeneration();
+        totalGenerated += data.generated;
+        remaining = data.remaining;
+        
+        setBatchProgress({ 
+          generated: data.generated, 
+          remaining: data.remaining,
+          totalGenerated 
+        });
+        queryClient.invalidateQueries({ queryKey: ['blog-posts'] });
+
+        if (remaining > 0) {
+          toast.success(`Batch complete: ${data.generated} images`, {
+            description: `Total: ${totalGenerated} generated, ${remaining} remaining. Waiting 10s...`,
+          });
+          // Wait 10 seconds between batches to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 10000));
+        }
+      }
+
+      if (remaining === 0) {
+        toast.success('All images generated!', {
+          description: `Successfully generated ${totalGenerated} featured images for all blog posts.`,
+        });
+      }
+    } catch (error) {
+      toast.error('Batch generation failed', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
+    } finally {
+      setIsBatchGenerating(false);
+    }
+  };
+
+  const handleStopBatch = () => {
+    setBatchPaused(true);
+    toast.info('Stopping after current batch...');
   };
 
   const { data: posts, isLoading } = useQuery({
@@ -307,27 +327,35 @@ const Blog = () => {
 
         {/* Admin: Batch Generate Images Button */}
         {isAdmin && (
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center gap-2 mb-6">
             <Button
               onClick={handleBatchGenerate}
-              disabled={batchGenerateMutation.isPending}
+              disabled={isBatchGenerating}
               variant="outline"
               className="gap-2"
             >
-              {batchGenerateMutation.isPending ? (
+              {isBatchGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating images...
-                  {batchProgress && ` (${batchProgress.remaining} remaining)`}
+                  Generating... {batchProgress && `(${batchProgress.totalGenerated} done, ${batchProgress.remaining} left)`}
                 </>
               ) : (
                 <>
                   <ImagePlus className="w-4 h-4" />
-                  Generate Missing Blog Images
+                  Generate All Missing Blog Images
                   {batchProgress && batchProgress.remaining > 0 && ` (${batchProgress.remaining} left)`}
                 </>
               )}
             </Button>
+            {isBatchGenerating && (
+              <Button
+                onClick={handleStopBatch}
+                variant="destructive"
+                size="sm"
+              >
+                Stop
+              </Button>
+            )}
           </div>
         )}
 
