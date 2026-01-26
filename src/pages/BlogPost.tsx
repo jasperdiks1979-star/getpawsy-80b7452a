@@ -186,12 +186,12 @@ const BlogPostPage = () => {
     }
   };
 
-  // Apply internal linking to content
+  // Apply internal linking to content for better SEO
   // IMPORTANT: This hook MUST be called unconditionally before any early returns
   const { processedContent: linkedContent } = useInternalLinking(post?.content || '', {
-    maxLinksPerKeyword: 1,
-    maxTotalLinks: 8,
-    minWordsBetweenLinks: 40,
+    maxLinksPerKeyword: 2,  // Allow same keyword to be linked twice for longer articles
+    maxTotalLinks: 12,      // More links for comprehensive SEO coverage
+    minWordsBetweenLinks: 30, // Reduced for more natural linking in longer content
     enabled: !!post?.content,
   });
 
