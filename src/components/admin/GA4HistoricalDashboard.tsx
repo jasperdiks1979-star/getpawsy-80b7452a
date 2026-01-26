@@ -51,6 +51,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
+import WeekOverWeekComparison from "./WeekOverWeekComparison";
 
 interface GA4Snapshot {
   id: string;
@@ -489,6 +490,9 @@ const GA4HistoricalDashboard = memo(() => {
           </motion.div>
         </div>
       )}
+
+      {/* Week-over-Week Comparison */}
+      <WeekOverWeekComparison />
 
       {/* Charts */}
       <Tabs defaultValue="traffic" className="space-y-4">
