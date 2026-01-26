@@ -75,6 +75,7 @@ import WebVitalsWidget from "./WebVitalsWidget";
 import PerformanceAlertsWidget from "./PerformanceAlertsWidget";
 import PerformanceTrendsChart from "./PerformanceTrendsChart";
 import PagePerformanceComparison from "./PagePerformanceComparison";
+import GA4HistoricalDashboard from "./GA4HistoricalDashboard";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 // Types for GA4 API responses
@@ -1256,6 +1257,10 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
             <Sparkles className="w-4 h-4" />
             Did You Mean
           </TabsTrigger>
+          <TabsTrigger value="historical" className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4" />
+            Historisch
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -2379,6 +2384,11 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
             startDate={dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined}
             endDate={dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined}
           />
+        </TabsContent>
+
+        {/* Historical Tab */}
+        <TabsContent value="historical" className="space-y-6">
+          <GA4HistoricalDashboard />
         </TabsContent>
       </Tabs>
     </div>
