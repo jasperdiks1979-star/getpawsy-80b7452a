@@ -7,7 +7,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, ArrowRight, BookOpen, Sparkles, Loader2, Home } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, BookOpen, Sparkles, Loader2, Home, ImagePlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,8 +52,63 @@ const categoryColors: Record<string, string> = {
 const Blog = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [generatingImageFor, setGeneratingImageFor] = useState<string | null>(null);
+  const [isBatchGenerating, setIsBatchGenerating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ generated: number; remaining: number } | null>(null);
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
+
+  // Batch generate images mutation
+  const batchGenerateMutation = useMutation({
+    mutationFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-generate-blog-images`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ limit: 5 }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate images');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setBatchProgress({ generated: data.generated, remaining: data.remaining });
+      queryClient.invalidateQueries({ queryKey: ['blog-posts'] });
+      
+      if (data.remaining > 0) {
+        toast.success(`${data.generated} images generated`, {
+          description: `${data.remaining} blogs remaining. Click again to continue.`,
+        });
+      } else {
+        toast.success('All images generated!', {
+          description: 'All blog posts now have featured images.',
+        });
+        setIsBatchGenerating(false);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error('Batch generation failed', {
+        description: error.message,
+      });
+      setIsBatchGenerating(false);
+    },
+  });
+
+  const handleBatchGenerate = () => {
+    setIsBatchGenerating(true);
+    batchGenerateMutation.mutate();
+  };
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ['blog-posts', selectedCategory],
@@ -249,6 +304,32 @@ const Blog = () => {
             Expert articles on care, nutrition, and training for your pets.
           </p>
         </div>
+
+        {/* Admin: Batch Generate Images Button */}
+        {isAdmin && (
+          <div className="flex justify-center mb-6">
+            <Button
+              onClick={handleBatchGenerate}
+              disabled={batchGenerateMutation.isPending}
+              variant="outline"
+              className="gap-2"
+            >
+              {batchGenerateMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Generating images...
+                  {batchProgress && ` (${batchProgress.remaining} remaining)`}
+                </>
+              ) : (
+                <>
+                  <ImagePlus className="w-4 h-4" />
+                  Generate Missing Blog Images
+                  {batchProgress && batchProgress.remaining > 0 && ` (${batchProgress.remaining} left)`}
+                </>
+              )}
+            </Button>
+          </div>
+        )}
 
         {/* Category Filter */}
         <div className="flex flex-wrap justify-center gap-2 mb-8">
