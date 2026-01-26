@@ -700,6 +700,63 @@ export type Database = {
         }
         Relationships: []
       }
+      ga4_daily_snapshots: {
+        Row: {
+          active_users: number | null
+          avg_session_duration: number | null
+          bounce_rate: number | null
+          countries: Json | null
+          created_at: string
+          devices: Json | null
+          id: string
+          new_users: number | null
+          page_views: number | null
+          purchases: number | null
+          report_date: string
+          revenue: number | null
+          sessions: number | null
+          synced_at: string | null
+          top_pages: Json | null
+          traffic_sources: Json | null
+        }
+        Insert: {
+          active_users?: number | null
+          avg_session_duration?: number | null
+          bounce_rate?: number | null
+          countries?: Json | null
+          created_at?: string
+          devices?: Json | null
+          id?: string
+          new_users?: number | null
+          page_views?: number | null
+          purchases?: number | null
+          report_date: string
+          revenue?: number | null
+          sessions?: number | null
+          synced_at?: string | null
+          top_pages?: Json | null
+          traffic_sources?: Json | null
+        }
+        Update: {
+          active_users?: number | null
+          avg_session_duration?: number | null
+          bounce_rate?: number | null
+          countries?: Json | null
+          created_at?: string
+          devices?: Json | null
+          id?: string
+          new_users?: number | null
+          page_views?: number | null
+          purchases?: number | null
+          report_date?: string
+          revenue?: number | null
+          sessions?: number | null
+          synced_at?: string | null
+          top_pages?: Json | null
+          traffic_sources?: Json | null
+        }
+        Relationships: []
+      }
       google_sheets_exports: {
         Row: {
           created_at: string
