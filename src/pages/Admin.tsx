@@ -42,6 +42,7 @@ const DuplicateProductsDetector = lazy(() => import("@/components/admin/Duplicat
 const DisputeManager = lazy(() => import("@/components/admin/DisputeManager"));
 const CJWebhookManager = lazy(() => import("@/components/admin/CJWebhookManager"));
 const PackagingManager = lazy(() => import("@/components/admin/PackagingManager"));
+const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRankingTracker").then(module => ({ default: module.KeywordRankingTracker })));
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -1305,6 +1306,12 @@ const Admin = () => {
                 <TabsTrigger value="packaging" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Package className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Packaging</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Keyword rankings tracker (USA)">
+                <TabsTrigger value="keywords" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <Search className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Keywords</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -2916,6 +2923,22 @@ const Admin = () => {
                 </Card>
               }>
                 <PackagingManager />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Keyword Rankings Tab */}
+          <TabsContent value="keywords">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Keyword tracker laden...</span>
+                  </div>
+                </Card>
+              }>
+                <KeywordRankingTracker />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>

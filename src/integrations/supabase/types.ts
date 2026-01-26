@@ -352,6 +352,33 @@ export type Database = {
         }
         Relationships: []
       }
+      competitor_rankings: {
+        Row: {
+          competitor_domain: string
+          created_at: string
+          id: string
+          keyword: string
+          position: number | null
+          tracked_date: string
+        }
+        Insert: {
+          competitor_domain: string
+          created_at?: string
+          id?: string
+          keyword: string
+          position?: number | null
+          tracked_date?: string
+        }
+        Update: {
+          competitor_domain?: string
+          created_at?: string
+          id?: string
+          keyword?: string
+          position?: number | null
+          tracked_date?: string
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           created_at: string
@@ -700,6 +727,72 @@ export type Database = {
           spreadsheet_url?: string
           title?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      keyword_rankings: {
+        Row: {
+          clicks: number | null
+          country: string | null
+          created_at: string
+          ctr: number | null
+          device: string | null
+          id: string
+          impressions: number | null
+          keyword: string
+          position: number | null
+          tracked_date: string
+        }
+        Insert: {
+          clicks?: number | null
+          country?: string | null
+          created_at?: string
+          ctr?: number | null
+          device?: string | null
+          id?: string
+          impressions?: number | null
+          keyword: string
+          position?: number | null
+          tracked_date?: string
+        }
+        Update: {
+          clicks?: number | null
+          country?: string | null
+          created_at?: string
+          ctr?: number | null
+          device?: string | null
+          id?: string
+          impressions?: number | null
+          keyword?: string
+          position?: number | null
+          tracked_date?: string
+        }
+        Relationships: []
+      }
+      keyword_watchlist: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          keyword: string
+          updated_at: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          keyword: string
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          keyword?: string
+          updated_at?: string
         }
         Relationships: []
       }
