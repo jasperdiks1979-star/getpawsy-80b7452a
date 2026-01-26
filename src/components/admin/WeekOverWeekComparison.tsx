@@ -1,10 +1,17 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   ArrowUpRight, 
   ArrowDownRight, 
@@ -16,10 +23,17 @@ import {
   ShoppingCart,
   DollarSign,
   BarChart2,
-  Percent
+  Percent,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Loader2
 } from "lucide-react";
 import { format, subDays, startOfWeek, endOfWeek, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
+import { toast } from "sonner";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 
 interface GA4Snapshot {
@@ -48,6 +62,8 @@ interface MetricRow {
 }
 
 const WeekOverWeekComparison = memo(() => {
+  const [isExporting, setIsExporting] = useState(false);
+
   // Get data for last 14 days to cover both weeks
   const { data: snapshots, isLoading, error } = useQuery({
     queryKey: ["ga4-week-comparison"],
@@ -233,6 +249,155 @@ const WeekOverWeekComparison = memo(() => {
     ];
   }, [weekData]);
 
+  // Export to Excel
+  const exportToExcel = async () => {
+    if (!metrics || !weekData) return;
+    
+    setIsExporting(true);
+    try {
+      const data = metrics.map(m => ({
+        "Metric": m.label,
+        [`Deze Week (${weekData.thisWeekRange})`]: m.format(m.thisWeek),
+        [`Vorige Week (${weekData.lastWeekRange})`]: m.format(m.lastWeek),
+        "Verschil": `${m.change > 0 ? "+" : ""}${m.format(m.change)}`,
+        "Trend (%)": `${m.changePercent > 0 ? "+" : ""}${m.changePercent.toFixed(1)}%`,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      
+      // Set column widths
+      ws["!cols"] = [
+        { wch: 20 },
+        { wch: 25 },
+        { wch: 25 },
+        { wch: 15 },
+        { wch: 12 },
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Week-over-Week");
+      
+      const filename = `week-over-week-${format(new Date(), "yyyy-MM-dd")}.xlsx`;
+      XLSX.writeFile(wb, filename);
+      
+      toast.success("Excel bestand gedownload", {
+        description: filename
+      });
+    } catch (err) {
+      console.error("Excel export error:", err);
+      toast.error("Fout bij exporteren naar Excel");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Export to PDF
+  const exportToPDF = async () => {
+    if (!metrics || !weekData) return;
+    
+    setIsExporting(true);
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Title
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Week-over-Week Vergelijking", pageWidth / 2, 20, { align: "center" });
+      
+      // Subtitle with date ranges
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `Deze week: ${weekData.thisWeekRange} vs Vorige week: ${weekData.lastWeekRange}`,
+        pageWidth / 2,
+        28,
+        { align: "center" }
+      );
+      
+      // Generated date
+      doc.setFontSize(9);
+      doc.setTextColor(128, 128, 128);
+      doc.text(
+        `Gegenereerd op: ${format(new Date(), "d MMMM yyyy 'om' HH:mm", { locale: nl })}`,
+        pageWidth / 2,
+        35,
+        { align: "center" }
+      );
+      
+      // Table headers
+      const startY = 45;
+      const colWidths = [50, 35, 35, 30, 30];
+      const colX = [14, 64, 99, 134, 164];
+      const rowHeight = 8;
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.setFillColor(245, 245, 245);
+      doc.rect(14, startY - 5, pageWidth - 28, rowHeight, "F");
+      
+      const headers = ["Metric", "Deze Week", "Vorige Week", "Verschil", "Trend"];
+      headers.forEach((header, i) => {
+        doc.text(header, colX[i], startY);
+      });
+      
+      // Table rows
+      doc.setFont("helvetica", "normal");
+      let currentY = startY + rowHeight + 2;
+      
+      metrics.forEach((metric, index) => {
+        // Alternate row background
+        if (index % 2 === 0) {
+          doc.setFillColor(250, 250, 250);
+          doc.rect(14, currentY - 5, pageWidth - 28, rowHeight, "F");
+        }
+        
+        doc.setTextColor(0, 0, 0);
+        doc.text(metric.label, colX[0], currentY);
+        doc.text(metric.format(metric.thisWeek), colX[1], currentY);
+        doc.text(metric.format(metric.lastWeek), colX[2], currentY);
+        
+        // Colored difference
+        const isPositive = metric.changePercent > 0;
+        const isGood = metric.higherIsBetter ? isPositive : !isPositive;
+        
+        if (Math.abs(metric.changePercent) >= 0.5) {
+          doc.setTextColor(isGood ? 34 : 220, isGood ? 139 : 38, isGood ? 34 : 38);
+        } else {
+          doc.setTextColor(128, 128, 128);
+        }
+        
+        doc.text(`${metric.change > 0 ? "+" : ""}${metric.format(metric.change)}`, colX[3], currentY);
+        doc.text(`${isPositive ? "+" : ""}${metric.changePercent.toFixed(1)}%`, colX[4], currentY);
+        
+        currentY += rowHeight;
+      });
+      
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      doc.text(
+        `GetPawsy Analytics Report - ${weekData.thisWeekDays} dagen data deze week, ${weekData.lastWeekDays} dagen data vorige week`,
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: "center" }
+      );
+      
+      const filename = `week-over-week-${format(new Date(), "yyyy-MM-dd")}.pdf`;
+      doc.save(filename);
+      
+      toast.success("PDF bestand gedownload", {
+        description: filename
+      });
+    } catch (err) {
+      console.error("PDF export error:", err);
+      toast.error("Fout bij exporteren naar PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const ChangeBadge = ({ value, higherIsBetter }: { value: number; higherIsBetter: boolean }) => {
     const isPositive = value > 0;
     const isGood = higherIsBetter ? isPositive : !isPositive;
@@ -300,14 +465,38 @@ const WeekOverWeekComparison = memo(() => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          Week-over-Week Vergelijking
-        </CardTitle>
-        <CardDescription>
-          Vergelijk de prestaties van deze week ({weekData.thisWeekRange}) met vorige week ({weekData.lastWeekRange})
-        </CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0">
+        <div className="space-y-1">
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            Week-over-Week Vergelijking
+          </CardTitle>
+          <CardDescription>
+            Vergelijk de prestaties van deze week ({weekData.thisWeekRange}) met vorige week ({weekData.lastWeekRange})
+          </CardDescription>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={isExporting}>
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              Exporteren
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={exportToExcel}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Exporteer als Excel
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={exportToPDF}>
+              <FileText className="w-4 h-4 mr-2" />
+              Exporteer als PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
