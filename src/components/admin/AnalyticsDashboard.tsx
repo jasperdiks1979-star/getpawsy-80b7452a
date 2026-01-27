@@ -81,6 +81,7 @@ import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { useLiveVisitors } from "@/hooks/useLiveVisitors";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { RealtimeVisitorMap } from "./RealtimeVisitorMap";
+import { VisitorTrendChart } from "./VisitorTrendChart";
 
 // Types for GA4 API responses
 interface GA4Row {
@@ -1570,6 +1571,9 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
               </CardContent>
             </Card>
           </div>
+
+          {/* Visitor Trend Chart */}
+          <VisitorTrendChart />
 
           {/* Live Visitor Map and Funnel side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
