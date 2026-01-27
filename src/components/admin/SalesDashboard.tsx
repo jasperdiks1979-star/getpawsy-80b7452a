@@ -57,6 +57,7 @@ import { BlogPostsWidget } from "./BlogPostsWidget";
 import { SecurityIssuesWidget } from "./SecurityIssuesWidget";
 import { CronJobsWidget } from "./CronJobsWidget";
 import { CrawlerVisitsWidget } from "./CrawlerVisitsWidget";
+import { CompetitorProductsWidget } from "./widgets/CompetitorProductsWidget";
 
 interface OrderItem {
   name: string;
@@ -1277,6 +1278,11 @@ export const SalesDashboard = ({ onNavigateToTab }: SalesDashboardProps) => {
           products={stats.negativeMarginProducts} 
           formatCurrency={formatCurrency} 
         />
+      </div>
+
+      {/* Competitor Analysis Section */}
+      <div className="grid grid-cols-1 gap-6">
+        <CompetitorProductsWidget />
       </div>
     </div>
   );
