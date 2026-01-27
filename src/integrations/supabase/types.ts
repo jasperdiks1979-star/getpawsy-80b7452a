@@ -1811,6 +1811,7 @@ export type Database = {
         }[]
       }
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
+      cleanup_preview_visitor_activity: { Args: never; Returns: number }
       generate_product_slug: { Args: { product_name: string }; Returns: string }
       has_role: {
         Args: {

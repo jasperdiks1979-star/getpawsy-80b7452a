@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Bug, ChevronDown, ChevronUp, Trash2, RefreshCw, Wrench, CheckCircle } from 'lucide-react';
+import { Bug, ChevronDown, ChevronUp, Trash2, RefreshCw, Wrench, CheckCircle, Database } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { triggerManualHealing } from '@/lib/data-healer';
@@ -18,6 +19,12 @@ interface HealingStatus {
   isRunning: boolean;
 }
 
+interface CleanupStatus {
+  lastRun: string | null;
+  deletedCount: number;
+  isRunning: boolean;
+}
+
 export const DebugPanel = () => {
   const [searchParams] = useSearchParams();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -25,6 +32,11 @@ export const DebugPanel = () => {
   const [healingStatus, setHealingStatus] = useState<HealingStatus>({
     lastRun: null,
     corruptedFixed: 0,
+    isRunning: false,
+  });
+  const [cleanupStatus, setCleanupStatus] = useState<CleanupStatus>({
+    lastRun: null,
+    deletedCount: 0,
     isRunning: false,
   });
   const [sessionInfo, setSessionInfo] = useState({
@@ -309,6 +321,67 @@ export const DebugPanel = () => {
                     ) : (
                       <p className="text-muted-foreground">
                         Auto-healing runs on page load and every 5 minutes
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Visitor Data Cleanup */}
+                <div className="bg-blue-500/10 border border-blue-500/30 p-2 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-sm flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                      <Database className="w-4 h-4" />
+                      Visitor Data Cleanup
+                    </h4>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={async () => {
+                        setCleanupStatus(prev => ({ ...prev, isRunning: true }));
+                        try {
+                          // Delete old preview data (before domain filtering was implemented)
+                          const { data, error } = await supabase
+                            .from('visitor_activity')
+                            .delete()
+                            .lt('created_at', '2025-01-27T00:00:00+00:00')
+                            .select('id');
+                          
+                          if (error) throw error;
+                          
+                          setCleanupStatus({
+                            lastRun: new Date().toLocaleTimeString(),
+                            deletedCount: data?.length || 0,
+                            isRunning: false,
+                          });
+                        } catch (err) {
+                          console.error('Cleanup failed:', err);
+                          setCleanupStatus(prev => ({ ...prev, isRunning: false }));
+                        }
+                      }}
+                      disabled={cleanupStatus.isRunning}
+                      className="h-6 px-2 text-xs"
+                    >
+                      {cleanupStatus.isRunning ? (
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                      ) : (
+                        'Cleanup'
+                      )}
+                    </Button>
+                  </div>
+                  <div className="text-xs space-y-1">
+                    {cleanupStatus.lastRun ? (
+                      <>
+                        <p className="flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3 text-blue-500" />
+                          Laatste cleanup: {cleanupStatus.lastRun}
+                        </p>
+                        <p className="text-muted-foreground">
+                          Verwijderd: {cleanupStatus.deletedCount} preview records
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Verwijdert oude preview/test data van vóór domein-filtering
                       </p>
                     )}
                   </div>
