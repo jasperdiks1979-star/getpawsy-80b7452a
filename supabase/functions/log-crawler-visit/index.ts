@@ -6,6 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Appeal pages that should trigger email notifications
+const APPEAL_PAGES = [
+  '/google-review',
+  '/technical-declaration',
+  '/appeal-response',
+];
+
 // Googlebot and other Google crawler User-Agent patterns
 const GOOGLE_BOT_PATTERNS = [
   /Googlebot/i,
@@ -53,6 +60,126 @@ function detectBotType(userAgent: string): { isGooglebot: boolean; botType: stri
   }
   
   return { isGooglebot: false, botType: null };
+}
+
+function isAppealPage(pageUrl: string): boolean {
+  try {
+    const url = new URL(pageUrl);
+    return APPEAL_PAGES.some(page => url.pathname === page || url.pathname.startsWith(page));
+  } catch {
+    // If not a valid URL, check if it matches as a path
+    return APPEAL_PAGES.some(page => pageUrl === page || pageUrl.startsWith(page));
+  }
+}
+
+async function sendGooglebotNotification(
+  pageUrl: string, 
+  botType: string, 
+  ipAddress: string
+): Promise<void> {
+  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  if (!resendApiKey) {
+    console.log('RESEND_API_KEY not configured, skipping notification');
+    return;
+  }
+
+  const timestamp = new Date().toLocaleString('nl-NL', { 
+    timeZone: 'Europe/Amsterdam',
+    dateStyle: 'full',
+    timeStyle: 'long'
+  });
+
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #10b981, #059669); padding: 32px; text-align: center;">
+          <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+          <h1 style="color: white; margin: 0; font-size: 24px;">Google heeft je pagina bekeken!</h1>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 32px;">
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <p style="margin: 0; color: #166534; font-weight: 600;">
+              ✅ Dit is een positief signaal voor je Google Ads appeal!
+            </p>
+          </div>
+          
+          <h2 style="color: #1f2937; font-size: 18px; margin-bottom: 16px;">Bezoek Details</h2>
+          
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; width: 120px;">Bot Type</td>
+              <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #1f2937; font-weight: 600;">${botType}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Pagina</td>
+              <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #1f2937;">
+                <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 14px;">${pageUrl}</code>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Tijdstip</td>
+              <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #1f2937;">${timestamp}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; color: #6b7280;">IP Adres</td>
+              <td style="padding: 12px 0; color: #1f2937;">${ipAddress}</td>
+            </tr>
+          </table>
+          
+          <div style="margin-top: 24px; padding: 16px; background: #eff6ff; border-radius: 8px;">
+            <p style="margin: 0; color: #1e40af; font-size: 14px;">
+              <strong>💡 Tip:</strong> Dit bezoek is automatisch opgeslagen in je Crawler Analytics dashboard voor verdere analyse.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">
+            Bekijk alle crawler bezoeken in je 
+            <a href="https://getpawsy.pet/admin/crawler-analytics" style="color: #10b981; text-decoration: none;">Analytics Dashboard</a>
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Alerts <alerts@getpawsy.pet>',
+        to: ['info@getpawsy.pet'],
+        subject: `🤖 ${botType} heeft je appeal pagina bezocht!`,
+        html: emailHtml,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Resend API error:', response.status, errorText);
+      return;
+    }
+
+    console.log(`Notification email sent for Googlebot visit to ${pageUrl}`);
+  } catch (error) {
+    console.error('Failed to send notification email:', error);
+  }
 }
 
 serve(async (req) => {
@@ -104,6 +231,12 @@ serve(async (req) => {
     }
 
     console.log(`Logged visit: ${pageUrl} | Bot: ${botType || 'None'} | Googlebot: ${isGooglebot}`);
+
+    // Send email notification if Googlebot visits an appeal page
+    if (isGooglebot && isAppealPage(pageUrl)) {
+      console.log(`Googlebot visited appeal page: ${pageUrl} - sending notification`);
+      await sendGooglebotNotification(pageUrl, botType || 'Googlebot', ipAddress);
+    }
 
     return new Response(
       JSON.stringify({ 
