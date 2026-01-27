@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import logo from '@/assets/logo-getpawsy-full.png';
-import { 
+import safeBrowsingScreenshot from '@/assets/safe-browsing-report.png';
+import {
   Shield, 
   Building2, 
   Code, 
@@ -361,6 +362,23 @@ const GoogleReview = () => {
             <div className="flex items-center gap-3 mb-4 pb-2 border-b-2 border-gray-800">
               <Lock className="h-6 w-6 text-gray-700" />
               <h2 className="text-xl font-bold text-gray-900 print:text-lg">3. Security Audit Results</h2>
+            </div>
+
+            {/* Safe Browsing Screenshot */}
+            <div className="mb-6 border border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-green-600 text-white px-4 py-2 text-sm font-medium flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Google Safe Browsing Transparency Report - getpawsy.pet
+              </div>
+              <img 
+                src={safeBrowsingScreenshot} 
+                alt="Google Safe Browsing Report showing no unsafe content found for getpawsy.pet" 
+                className="w-full"
+              />
+              <div className="bg-green-50 px-4 py-2 flex items-center gap-2 text-sm text-green-700">
+                <CheckCircle2 className="w-4 h-4" />
+                <span><strong>Status:</strong> No unsafe content found — Verified {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 mb-6">
