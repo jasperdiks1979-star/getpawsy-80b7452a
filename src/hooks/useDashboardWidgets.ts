@@ -22,22 +22,23 @@ export interface LayoutPreset {
 }
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
-  { id: 'active-users', type: 'metric', title: 'Actieve Gebruikers', size: 'small', visible: true, order: 0 },
-  { id: 'pageviews', type: 'metric', title: 'Paginaweergaven', size: 'small', visible: true, order: 1 },
-  { id: 'session-duration', type: 'metric', title: 'Gem. Sessieduur', size: 'small', visible: true, order: 2 },
-  { id: 'bounce-rate', type: 'metric', title: 'Bounce Rate', size: 'small', visible: true, order: 3 },
-  { id: 'traffic-chart', type: 'chart', title: 'Verkeer Overzicht', description: 'Gebruikers en paginaweergaven', size: 'full', visible: true, order: 4 },
-  { id: 'top-pages', type: 'table', title: 'Top Pagina\'s', description: 'Meest bezochte pagina\'s', size: 'full', visible: true, order: 5 },
-  { id: 'devices', type: 'chart', title: 'Apparaten', description: 'Verdeling per apparaattype', size: 'medium', visible: true, order: 6 },
-  { id: 'countries', type: 'list', title: 'Landen', description: 'Top landen op basis van gebruikers', size: 'medium', visible: true, order: 7 },
-  { id: 'new-returning', type: 'chart', title: 'Nieuwe vs Terugkerend', description: 'Gebruikerstype verdeling', size: 'full', visible: true, order: 8 },
-  { id: 'traffic-sources', type: 'chart', title: 'Verkeersbronnen', description: 'Waar bezoekers vandaan komen', size: 'full', visible: true, order: 9 },
-  { id: 'browsers', type: 'chart', title: 'Browsers', description: 'Meest gebruikte browsers', size: 'medium', visible: true, order: 10 },
-  { id: 'cities', type: 'list', title: 'Steden', description: 'Top steden van bezoekers', size: 'medium', visible: true, order: 11 },
-  { id: 'realtime-counter', type: 'metric', title: 'Live Gebruikers', description: 'Nu actief op de site', size: 'small', visible: true, order: 12 },
-  { id: 'ecommerce-revenue', type: 'metric', title: 'Omzet', description: 'Totale omzet', size: 'small', visible: true, order: 13 },
-  { id: 'ecommerce-transactions', type: 'metric', title: 'Transacties', description: 'Aantal bestellingen', size: 'small', visible: true, order: 14 },
-  { id: 'conversion-funnel', type: 'chart', title: 'Conversie Funnel', description: 'Van sessie naar aankoop', size: 'full', visible: true, order: 15 },
+  { id: 'realtime-kpi', type: 'chart', title: 'Real-Time KPI\'s', description: 'Snelle insights met sparklines', size: 'full', visible: true, order: 0 },
+  { id: 'active-users', type: 'metric', title: 'Actieve Gebruikers', size: 'small', visible: true, order: 1 },
+  { id: 'pageviews', type: 'metric', title: 'Paginaweergaven', size: 'small', visible: true, order: 2 },
+  { id: 'session-duration', type: 'metric', title: 'Gem. Sessieduur', size: 'small', visible: true, order: 3 },
+  { id: 'bounce-rate', type: 'metric', title: 'Bounce Rate', size: 'small', visible: true, order: 4 },
+  { id: 'traffic-chart', type: 'chart', title: 'Verkeer Overzicht', description: 'Gebruikers en paginaweergaven', size: 'full', visible: true, order: 5 },
+  { id: 'top-pages', type: 'table', title: 'Top Pagina\'s', description: 'Meest bezochte pagina\'s', size: 'full', visible: true, order: 6 },
+  { id: 'devices', type: 'chart', title: 'Apparaten', description: 'Verdeling per apparaattype', size: 'medium', visible: true, order: 7 },
+  { id: 'countries', type: 'list', title: 'Landen', description: 'Top landen op basis van gebruikers', size: 'medium', visible: true, order: 8 },
+  { id: 'new-returning', type: 'chart', title: 'Nieuwe vs Terugkerend', description: 'Gebruikerstype verdeling', size: 'full', visible: true, order: 9 },
+  { id: 'traffic-sources', type: 'chart', title: 'Verkeersbronnen', description: 'Waar bezoekers vandaan komen', size: 'full', visible: true, order: 10 },
+  { id: 'browsers', type: 'chart', title: 'Browsers', description: 'Meest gebruikte browsers', size: 'medium', visible: true, order: 11 },
+  { id: 'cities', type: 'list', title: 'Steden', description: 'Top steden van bezoekers', size: 'medium', visible: true, order: 12 },
+  { id: 'realtime-counter', type: 'metric', title: 'Live Gebruikers', description: 'Nu actief op de site', size: 'small', visible: true, order: 13 },
+  { id: 'ecommerce-revenue', type: 'metric', title: 'Omzet', description: 'Totale omzet', size: 'small', visible: true, order: 14 },
+  { id: 'ecommerce-transactions', type: 'metric', title: 'Transacties', description: 'Aantal bestellingen', size: 'small', visible: true, order: 15 },
+  { id: 'conversion-funnel', type: 'chart', title: 'Conversie Funnel', description: 'Van sessie naar aankoop', size: 'full', visible: true, order: 16 },
 ];
 
 export const BUILT_IN_PRESETS: LayoutPreset[] = [
@@ -47,10 +48,11 @@ export const BUILT_IN_PRESETS: LayoutPreset[] = [
     description: 'Alleen essentiële metrics, minimale ruimte',
     icon: 'compact',
     config: {
-      'active-users': { visible: true, size: 'small' },
-      'pageviews': { visible: true, size: 'small' },
-      'session-duration': { visible: true, size: 'small' },
-      'bounce-rate': { visible: true, size: 'small' },
+      'realtime-kpi': { visible: true, size: 'full' },
+      'active-users': { visible: false, size: 'small' },
+      'pageviews': { visible: false, size: 'small' },
+      'session-duration': { visible: false, size: 'small' },
+      'bounce-rate': { visible: false, size: 'small' },
       'traffic-chart': { visible: false, size: 'full' },
       'top-pages': { visible: false, size: 'full' },
       'devices': { visible: false, size: 'medium' },
@@ -71,6 +73,7 @@ export const BUILT_IN_PRESETS: LayoutPreset[] = [
     description: 'Alle widgets zichtbaar, maximale inzichten',
     icon: 'detailed',
     config: {
+      'realtime-kpi': { visible: true, size: 'full' },
       'active-users': { visible: true, size: 'small' },
       'pageviews': { visible: true, size: 'small' },
       'session-duration': { visible: true, size: 'small' },
@@ -95,6 +98,7 @@ export const BUILT_IN_PRESETS: LayoutPreset[] = [
     description: 'Focus op verkeer en gebruikersgedrag',
     icon: 'analytics',
     config: {
+      'realtime-kpi': { visible: true, size: 'full' },
       'active-users': { visible: true, size: 'medium' },
       'pageviews': { visible: true, size: 'medium' },
       'session-duration': { visible: true, size: 'small' },
@@ -119,6 +123,7 @@ export const BUILT_IN_PRESETS: LayoutPreset[] = [
     description: 'Focus op verkoop en conversie',
     icon: 'ecommerce',
     config: {
+      'realtime-kpi': { visible: true, size: 'full' },
       'active-users': { visible: true, size: 'small' },
       'pageviews': { visible: false, size: 'small' },
       'session-duration': { visible: false, size: 'small' },
@@ -143,6 +148,7 @@ export const BUILT_IN_PRESETS: LayoutPreset[] = [
     description: 'Gebalanceerde weergave van alle belangrijke data',
     icon: 'overview',
     config: {
+      'realtime-kpi': { visible: true, size: 'full' },
       'active-users': { visible: true, size: 'small' },
       'pageviews': { visible: true, size: 'small' },
       'session-duration': { visible: true, size: 'small' },

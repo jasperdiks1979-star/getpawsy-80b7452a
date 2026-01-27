@@ -76,6 +76,7 @@ import PerformanceAlertsWidget from "./PerformanceAlertsWidget";
 import PerformanceTrendsChart from "./PerformanceTrendsChart";
 import PagePerformanceComparison from "./PagePerformanceComparison";
 import GA4HistoricalDashboard from "./GA4HistoricalDashboard";
+import RealTimeKPIWidget from "./RealTimeKPIWidget";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 // Types for GA4 API responses
@@ -1265,6 +1266,11 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
+          {/* Real-Time KPI Widget */}
+          {isWidgetVisible('realtime-kpi') && (
+            <RealTimeKPIWidget />
+          )}
+
           {/* Key Metrics - Flex layout with dynamic sizes */}
           <div className="flex flex-wrap gap-4">
             {isWidgetVisible('active-users') && (
