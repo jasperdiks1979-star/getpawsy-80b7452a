@@ -53,6 +53,7 @@ import { cn } from "@/lib/utils";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import WeekOverWeekComparison from "./WeekOverWeekComparison";
 import MonthOverMonthComparison from "./MonthOverMonthComparison";
+import QuarterOverQuarterComparison from "./QuarterOverQuarterComparison";
 
 interface GA4Snapshot {
   id: string;
@@ -497,6 +498,9 @@ const GA4HistoricalDashboard = memo(() => {
 
       {/* Month-over-Month Comparison */}
       <MonthOverMonthComparison />
+
+      {/* Quarter-over-Quarter Comparison */}
+      <QuarterOverQuarterComparison />
 
       {/* Charts */}
       <Tabs defaultValue="traffic" className="space-y-4">
