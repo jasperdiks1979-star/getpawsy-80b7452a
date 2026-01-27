@@ -176,19 +176,45 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  // Create cron job log entry
+  const { data: cronLog } = await supabase
+    .from('cron_job_logs')
+    .insert({
+      job_name: 'nightly-competitor-scrape',
+      status: 'running',
+      started_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
+
+  const cronLogId = cronLog?.id;
+
   try {
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
     if (!firecrawlApiKey) {
       console.error('FIRECRAWL_API_KEY not configured');
+      
+      if (cronLogId) {
+        await supabase
+          .from('cron_job_logs')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            success: false,
+            error_message: 'Firecrawl not configured',
+          })
+          .eq('id', cronLogId);
+      }
+      
       return new Response(
         JSON.stringify({ success: false, error: 'Firecrawl not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse request body
     const body = await req.json().catch(() => ({}));
@@ -277,6 +303,24 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Calculate totals for cron log
+    const totalProducts = results.reduce((sum, r) => sum + r.products, 0);
+    const failedCompetitors = results.filter(r => !r.success).length;
+
+    if (cronLogId) {
+      await supabase
+        .from('cron_job_logs')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          success: failedCompetitors === 0,
+          items_processed: totalProducts,
+          items_failed: failedCompetitors,
+          details: { results },
+        })
+        .eq('id', cronLogId);
+    }
+
     return new Response(
       JSON.stringify({ success: true, results }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -284,6 +328,19 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in scrape-competitor-products:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    if (cronLogId) {
+      await supabase
+        .from('cron_job_logs')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          success: false,
+          error_message: errorMessage,
+        })
+        .eq('id', cronLogId);
+    }
+
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
