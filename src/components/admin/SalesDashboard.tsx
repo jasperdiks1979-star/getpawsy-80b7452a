@@ -56,6 +56,7 @@ import { PerformanceMetricsWidget } from "./PerformanceMetricsWidget";
 import { BlogPostsWidget } from "./BlogPostsWidget";
 import { SecurityIssuesWidget } from "./SecurityIssuesWidget";
 import { CronJobsWidget } from "./CronJobsWidget";
+import { CrawlerVisitsWidget } from "./CrawlerVisitsWidget";
 
 interface OrderItem {
   name: string;
@@ -869,6 +870,7 @@ export const SalesDashboard = ({ onNavigateToTab }: SalesDashboardProps) => {
         />
         <CJWebhooksWidget onNavigate={() => onNavigateToTab?.("cj-webhooks")} />
         <CronJobsWidget />
+        <CrawlerVisitsWidget />
       </div>
 
       {/* Charts Row */}
