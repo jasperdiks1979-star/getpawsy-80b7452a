@@ -6,15 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, Legend
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { Bot, Globe, TrendingUp, Calendar, ArrowLeft, RefreshCw, Activity } from 'lucide-react';
+import { Bot, Globe, TrendingUp, Calendar, ArrowLeft, RefreshCw, Activity, CalendarDays } from 'lucide-react';
 import { format, subDays, startOfDay, eachDayOfInterval } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { DateRange } from 'react-day-picker';
 
 interface CrawlerVisit {
   id: string;
@@ -44,14 +47,25 @@ const chartConfig = {
 };
 
 const CrawlerAnalytics = () => {
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+
   const { data: visits, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['crawler-analytics'],
+    queryKey: ['crawler-analytics', dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
+      const fromDate = dateRange?.from || subDays(new Date(), 30);
+      const toDate = dateRange?.to || new Date();
+      
+      const endOfDay = new Date(toDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      
       const { data, error } = await supabase
         .from('crawler_visits')
         .select('*')
-        .gte('created_at', thirtyDaysAgo)
+        .gte('created_at', startOfDay(fromDate).toISOString())
+        .lte('created_at', endOfDay.toISOString())
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -59,13 +73,12 @@ const CrawlerAnalytics = () => {
     },
   });
 
-  // Process data for charts
   const analytics = useMemo(() => {
     if (!visits?.length) return null;
 
-    const now = new Date();
-    const thirtyDaysAgo = subDays(now, 30);
-    const days = eachDayOfInterval({ start: thirtyDaysAgo, end: now });
+    const fromDate = dateRange?.from || subDays(new Date(), 30);
+    const toDate = dateRange?.to || new Date();
+    const days = eachDayOfInterval({ start: fromDate, end: toDate });
 
     // Daily visits
     const dailyData = days.map(day => {
@@ -120,7 +133,7 @@ const CrawlerAnalytics = () => {
       uniquePages: Object.keys(pageVisits).length,
       lastGooglebotVisit,
     };
-  }, [visits]);
+  }, [visits, dateRange]);
 
   if (isLoading) {
     return (
@@ -155,18 +168,52 @@ const CrawlerAnalytics = () => {
                 Crawler Analytics
               </h1>
               <p className="text-muted-foreground">
-                Inzicht in bezoeken van zoekmachine crawlers (laatste 30 dagen)
+                Inzicht in bezoeken van zoekmachine crawlers
               </p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => refetch()}
-            disabled={isRefetching}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
-            Vernieuwen
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => refetch()}
+              disabled={isRefetching}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+              Vernieuwen
+            </Button>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="min-w-[260px] justify-start text-left font-normal">
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "d MMM", { locale: nl })} - {format(dateRange.to, "d MMM yyyy", { locale: nl })}
+                      </>
+                    ) : (
+                      format(dateRange.from, "d MMMM yyyy", { locale: nl })
+                    )
+                  ) : (
+                    <span>Selecteer periode</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarComponent
+                  initialFocus
+                  mode="range"
+                  defaultMonth={dateRange?.from}
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={2}
+                  locale={nl}
+                  className="pointer-events-auto"
+                  disabled={(date) => date > new Date()}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         {/* Summary Cards */}
@@ -179,7 +226,11 @@ const CrawlerAnalytics = () => {
             <CardContent>
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Activity className="h-4 w-4" />
-                Laatste 30 dagen
+                {dateRange?.from && dateRange?.to ? (
+                  `${format(dateRange.from, "d MMM", { locale: nl })} - ${format(dateRange.to, "d MMM", { locale: nl })}`
+                ) : (
+                  'Geselecteerde periode'
+                )}
               </div>
             </CardContent>
           </Card>
@@ -258,7 +309,12 @@ const CrawlerAnalytics = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Bezoekfrequentie over Tijd</CardTitle>
-                <CardDescription>Dagelijkse crawler bezoeken van de afgelopen 30 dagen</CardDescription>
+                <CardDescription>
+                  Dagelijkse crawler bezoeken 
+                  {dateRange?.from && dateRange?.to && (
+                    <> van {format(dateRange.from, "d MMMM", { locale: nl })} t/m {format(dateRange.to, "d MMMM yyyy", { locale: nl })}</>
+                  )}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {analytics?.dailyData && analytics.dailyData.length > 0 ? (
@@ -309,7 +365,7 @@ const CrawlerAnalytics = () => {
                   </ChartContainer>
                 ) : (
                   <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-                    Geen data beschikbaar
+                    Geen data beschikbaar voor deze periode
                   </div>
                 )}
               </CardContent>
@@ -349,7 +405,7 @@ const CrawlerAnalytics = () => {
                   </ChartContainer>
                 ) : (
                   <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-                    Geen data beschikbaar
+                    Geen data beschikbaar voor deze periode
                   </div>
                 )}
               </CardContent>
@@ -391,7 +447,7 @@ const CrawlerAnalytics = () => {
                     </ChartContainer>
                   ) : (
                     <div className="h-[350px] flex items-center justify-center text-muted-foreground">
-                      Geen data beschikbaar
+                      Geen data beschikbaar voor deze periode
                     </div>
                   )}
                 </CardContent>
@@ -426,7 +482,7 @@ const CrawlerAnalytics = () => {
                     ))}
                     {(!analytics?.botData || analytics.botData.length === 0) && (
                       <div className="text-center py-8 text-muted-foreground">
-                        Geen bot data beschikbaar
+                        Geen bot data beschikbaar voor deze periode
                       </div>
                     )}
                   </div>
