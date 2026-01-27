@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, TrendingDown, Minus, Sparkles, RefreshCw, Store, ExternalLink } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Sparkles, RefreshCw, Store, ExternalLink, Link2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { ProductPriceComparison } from './ProductPriceComparison';
 
 interface CompetitorProduct {
   id: string;
@@ -124,6 +125,7 @@ export const CompetitorProductsWidget = () => {
   }, {} as Record<string, number>) || {};
 
   return (
+    <>
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
@@ -248,5 +250,9 @@ export const CompetitorProductsWidget = () => {
         )}
       </CardContent>
     </Card>
+
+    {/* Price Comparison Widget */}
+    <ProductPriceComparison />
+  </>
   );
 };
