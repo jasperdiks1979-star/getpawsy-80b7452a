@@ -1,13 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Loader2, ExternalLink, Eye, ShoppingCart, Target } from "lucide-react";
+import { MapPin, Loader2, ExternalLink, Eye, ShoppingCart, Target, Settings2, Flame, Move, Maximize2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useVisitorLocations } from "@/hooks/useVisitorLocations";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
 
 const ACTIVITY_COLORS = {
   browsing: "#3b82f6", // blue
@@ -15,14 +19,41 @@ const ACTIVITY_COLORS = {
   checkout: "#22c55e", // green
 };
 
+interface MapConfig {
+  heatmapMode: boolean;
+  markerSize: number;
+  autoFocus: boolean;
+}
+
 export const RealtimeVisitorMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [config, setConfig] = useState<MapConfig>({
+    heatmapMode: false,
+    markerSize: 14,
+    autoFocus: true,
+  });
   
   const { locations, locationStats, isLoading } = useVisitorLocations(15000);
+
+  // Auto-focus on active regions
+  const focusOnActiveRegions = useCallback(() => {
+    if (!map.current || locations.length === 0) return;
+
+    const bounds = new mapboxgl.LngLatBounds();
+    locations.forEach((loc) => {
+      bounds.extend([loc.longitude, loc.latitude]);
+    });
+
+    map.current.fitBounds(bounds, {
+      padding: 50,
+      maxZoom: 8,
+      duration: 1000,
+    });
+  }, [locations]);
 
   // Initialize map
   useEffect(() => {
@@ -65,6 +96,67 @@ export const RealtimeVisitorMap = () => {
     };
   }, []);
 
+  // Update heatmap layer
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    const sourceId = "visitor-heatmap-source";
+    const layerId = "visitor-heatmap-layer";
+
+    // Remove existing heatmap layer and source
+    if (map.current.getLayer(layerId)) {
+      map.current.removeLayer(layerId);
+    }
+    if (map.current.getSource(sourceId)) {
+      map.current.removeSource(sourceId);
+    }
+
+    if (config.heatmapMode && locations.length > 0) {
+      // Create GeoJSON data
+      const geojsonData: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: locations.map((loc) => ({
+          type: "Feature",
+          properties: {
+            intensity: loc.activity_type === "checkout" ? 3 : loc.activity_type === "cart" ? 2 : 1,
+          },
+          geometry: {
+            type: "Point",
+            coordinates: [loc.longitude, loc.latitude],
+          },
+        })),
+      };
+
+      map.current.addSource(sourceId, {
+        type: "geojson",
+        data: geojsonData,
+      });
+
+      map.current.addLayer({
+        id: layerId,
+        type: "heatmap",
+        source: sourceId,
+        paint: {
+          "heatmap-weight": ["get", "intensity"],
+          "heatmap-intensity": 1,
+          "heatmap-radius": 30,
+          "heatmap-opacity": 0.7,
+          "heatmap-color": [
+            "interpolate",
+            ["linear"],
+            ["heatmap-density"],
+            0, "rgba(0,0,0,0)",
+            0.2, "#3b82f6",
+            0.4, "#8b5cf6",
+            0.6, "#f97316",
+            0.8, "#ef4444",
+            1, "#22c55e",
+          ],
+        },
+      });
+    }
+  }, [locations, mapLoaded, config.heatmapMode]);
+
   // Update markers when locations change
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
@@ -73,16 +165,20 @@ export const RealtimeVisitorMap = () => {
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
+    // Don't show markers in heatmap mode
+    if (config.heatmapMode) return;
+
     // Add new markers
     locations.forEach((location) => {
       const color = ACTIVITY_COLORS[location.activity_type];
+      const size = config.markerSize;
       
       // Create marker element
       const el = document.createElement("div");
       el.className = "visitor-marker";
       el.style.cssText = `
-        width: 14px;
-        height: 14px;
+        width: ${size}px;
+        height: ${size}px;
         background-color: ${color};
         border: 2px solid white;
         border-radius: 50%;
@@ -111,7 +207,14 @@ export const RealtimeVisitorMap = () => {
 
       markersRef.current.push(marker);
     });
-  }, [locations, mapLoaded]);
+  }, [locations, mapLoaded, config.heatmapMode, config.markerSize]);
+
+  // Auto-focus effect
+  useEffect(() => {
+    if (config.autoFocus && mapLoaded && locations.length > 0) {
+      focusOnActiveRegions();
+    }
+  }, [config.autoFocus, mapLoaded, locations, focusOnActiveRegions]);
 
   // Add pulse animation style
   useEffect(() => {
@@ -158,12 +261,82 @@ export const RealtimeVisitorMap = () => {
             </CardTitle>
             <CardDescription>Geografische locaties van actieve bezoekers (laatste 15 min)</CardDescription>
           </div>
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/live-map" className="flex items-center gap-1">
-              Volledig scherm
-              <ExternalLink className="w-3 h-3" />
-            </Link>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <Settings2 className="w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" align="end">
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Kaart Instellingen</h4>
+                  
+                  {/* Heatmap Mode */}
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="heatmap-mode" className="flex items-center gap-2 text-sm">
+                      <Flame className="w-4 h-4 text-orange-500" />
+                      Heatmap modus
+                    </Label>
+                    <Switch
+                      id="heatmap-mode"
+                      checked={config.heatmapMode}
+                      onCheckedChange={(checked) => setConfig((prev) => ({ ...prev, heatmapMode: checked }))}
+                    />
+                  </div>
+                  
+                  {/* Marker Size */}
+                  {!config.heatmapMode && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2 text-sm">
+                        <Move className="w-4 h-4 text-blue-500" />
+                        Marker grootte: {config.markerSize}px
+                      </Label>
+                      <Slider
+                        value={[config.markerSize]}
+                        onValueChange={([value]) => setConfig((prev) => ({ ...prev, markerSize: value }))}
+                        min={8}
+                        max={24}
+                        step={2}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Auto Focus */}
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="auto-focus" className="flex items-center gap-2 text-sm">
+                      <Maximize2 className="w-4 h-4 text-green-500" />
+                      Auto-focus
+                    </Label>
+                    <Switch
+                      id="auto-focus"
+                      checked={config.autoFocus}
+                      onCheckedChange={(checked) => setConfig((prev) => ({ ...prev, autoFocus: checked }))}
+                    />
+                  </div>
+                  
+                  {/* Manual Focus Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={focusOnActiveRegions}
+                    disabled={locations.length === 0}
+                  >
+                    <Maximize2 className="w-3 h-3 mr-1" />
+                    Focus op actieve regio's
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/live-map" className="flex items-center gap-1">
+                Volledig scherm
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
