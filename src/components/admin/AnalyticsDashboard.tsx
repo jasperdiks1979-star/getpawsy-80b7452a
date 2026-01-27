@@ -82,6 +82,8 @@ import { useLiveVisitors } from "@/hooks/useLiveVisitors";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { RealtimeVisitorMap } from "./RealtimeVisitorMap";
 import { VisitorTrendChart } from "./VisitorTrendChart";
+import { useVisitorAlerts } from "@/hooks/useVisitorAlerts";
+import VisitorAlertSettings from "./VisitorAlertSettings";
 
 // Types for GA4 API responses
 interface GA4Row {
@@ -318,6 +320,14 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
   
   // Use live visitors from visitor_activity table (same source as LiveVisitorBadge)
   const { stats: liveVisitorStats, isLoading: liveVisitorsLoading } = useLiveVisitors();
+  
+  // Visitor alerts system
+  const {
+    thresholds: alertThresholds,
+    alertState,
+    updateThresholds,
+    resetAlertState,
+  } = useVisitorAlerts(liveVisitorStats.total, liveVisitorStats.checkout);
   
   // Widget customization
   const {
@@ -1575,10 +1585,26 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
           {/* Visitor Trend Chart */}
           <VisitorTrendChart />
 
-          {/* Live Visitor Map and Funnel side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Alert Settings and Map side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Alert Settings */}
+            <VisitorAlertSettings
+              thresholds={alertThresholds}
+              alertState={alertState}
+              currentVisitors={liveVisitorStats.total}
+              currentCheckouts={liveVisitorStats.checkout}
+              onUpdateThresholds={updateThresholds}
+              onResetAlerts={resetAlertState}
+            />
+
             {/* Geographic Map */}
-            <RealtimeVisitorMap />
+            <div className="lg:col-span-2">
+              <RealtimeVisitorMap />
+            </div>
+          </div>
+
+          {/* Funnel */}
+          <div className="grid grid-cols-1 gap-6">
 
             {/* Activity Funnel */}
             <Card>
