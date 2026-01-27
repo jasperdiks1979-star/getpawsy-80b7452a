@@ -1379,6 +1379,61 @@ export type Database = {
           },
         ]
       }
+      product_matches: {
+        Row: {
+          competitor_product_id: string
+          created_at: string
+          id: string
+          is_verified: boolean
+          match_score: number
+          match_type: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          competitor_product_id: string
+          created_at?: string
+          id?: string
+          is_verified?: boolean
+          match_score?: number
+          match_type?: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          competitor_product_id?: string
+          created_at?: string
+          id?: string
+          is_verified?: boolean
+          match_score?: number
+          match_type?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_matches_competitor_product_id_fkey"
+            columns: ["competitor_product_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_matches_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_matches_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_reviews: {
         Row: {
           content: string | null
