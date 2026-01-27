@@ -25,16 +25,14 @@ User-agent: *
 Allow: /
 Crawl-delay: 2
 
-# Primary Sitemap Index - Using canonical domain for better SEO
-# Google recommends using your primary domain URL for sitemaps
-Sitemap: https://getpawsy.pet/sitemap.xml
-
-# Individual sitemaps for faster discovery (optional but recommended)
-Sitemap: https://getpawsy.pet/sitemap-static.xml
-Sitemap: https://getpawsy.pet/sitemap-products.xml
-Sitemap: https://getpawsy.pet/sitemap-categories.xml
-Sitemap: https://getpawsy.pet/sitemap-bestsellers.xml
-Sitemap: https://getpawsy.pet/sitemap-blog.xml
+# Sitemap Index - Direct edge function URLs for reliable crawler access
+# These serve raw XML directly without JavaScript rendering
+Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=index
+Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=static
+Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=products
+Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=categories
+Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=bestsellers
+Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=blog
 
 # Disallow admin and private pages
 Disallow: /admin
