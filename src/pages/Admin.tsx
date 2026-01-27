@@ -43,6 +43,7 @@ const DisputeManager = lazy(() => import("@/components/admin/DisputeManager"));
 const CJWebhookManager = lazy(() => import("@/components/admin/CJWebhookManager"));
 const PackagingManager = lazy(() => import("@/components/admin/PackagingManager"));
 const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRankingTracker").then(module => ({ default: module.KeywordRankingTracker })));
+import { MiniKPIWidget } from "@/components/admin/MiniKPIWidget";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
@@ -1130,17 +1131,20 @@ const Admin = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
             <p className="text-muted-foreground mt-1">
               CJ Dropshipping Product Import
             </p>
           </div>
-          <Badge variant="secondary" className="text-lg px-4 py-2">
-            <Package className="w-4 h-4 mr-2" />
-            {existingProducts?.length || 0} products
-          </Badge>
+          <div className="flex flex-wrap items-center gap-3">
+            <MiniKPIWidget />
+            <Badge variant="secondary" className="text-lg px-4 py-2">
+              <Package className="w-4 h-4 mr-2" />
+              {existingProducts?.length || 0} products
+            </Badge>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
