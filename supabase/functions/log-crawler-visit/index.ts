@@ -72,10 +72,30 @@ function isAppealPage(pageUrl: string): boolean {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getNotificationEmail(supabase: any): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'googlebot_notification_email')
+      .single();
+
+    if (error || !data) {
+      console.log('Using default notification email');
+      return 'info@getpawsy.pet';
+    }
+    return data.value || 'info@getpawsy.pet';
+  } catch {
+    return 'info@getpawsy.pet';
+  }
+}
+
 async function sendGooglebotNotification(
   pageUrl: string, 
   botType: string, 
-  ipAddress: string
+  ipAddress: string,
+  notificationEmail: string
 ): Promise<void> {
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
   if (!resendApiKey) {
@@ -164,7 +184,7 @@ async function sendGooglebotNotification(
       },
       body: JSON.stringify({
         from: 'Alerts <alerts@getpawsy.pet>',
-        to: ['info@getpawsy.pet'],
+        to: [notificationEmail],
         subject: `🤖 ${botType} heeft je appeal pagina bezocht!`,
         html: emailHtml,
       }),
@@ -235,7 +255,8 @@ serve(async (req) => {
     // Send email notification if Googlebot visits an appeal page
     if (isGooglebot && isAppealPage(pageUrl)) {
       console.log(`Googlebot visited appeal page: ${pageUrl} - sending notification`);
-      await sendGooglebotNotification(pageUrl, botType || 'Googlebot', ipAddress);
+      const notificationEmail = await getNotificationEmail(supabase);
+      await sendGooglebotNotification(pageUrl, botType || 'Googlebot', ipAddress, notificationEmail);
     }
 
     return new Response(

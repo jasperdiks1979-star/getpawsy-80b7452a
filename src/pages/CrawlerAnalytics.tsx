@@ -12,11 +12,12 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { Bot, Globe, TrendingUp, Calendar, ArrowLeft, RefreshCw, Activity, CalendarDays } from 'lucide-react';
+import { Bot, Globe, TrendingUp, Calendar, ArrowLeft, RefreshCw, Activity, CalendarDays, Settings } from 'lucide-react';
 import { format, subDays, startOfDay, eachDayOfInterval } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
+import { GooglebotNotificationSettings } from '@/components/admin/GooglebotNotificationSettings';
 import { DateRange } from 'react-day-picker';
 
 interface CrawlerVisit {
@@ -303,6 +304,10 @@ const CrawlerAnalytics = () => {
             <TabsTrigger value="timeline">Tijdlijn</TabsTrigger>
             <TabsTrigger value="pages">Pagina's</TabsTrigger>
             <TabsTrigger value="bots">Bot Types</TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="h-4 w-4 mr-1" />
+              Instellingen
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="timeline">
@@ -489,6 +494,10 @@ const CrawlerAnalytics = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <GooglebotNotificationSettings />
           </TabsContent>
         </Tabs>
       </div>
