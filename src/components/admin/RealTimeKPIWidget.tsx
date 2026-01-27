@@ -25,7 +25,8 @@ import { format, subDays, startOfDay, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface KPIData {
   label: string;
@@ -119,6 +120,8 @@ const KPICard = ({ kpi, index }: { kpi: KPIData; index: number }) => {
 
 export const RealTimeKPIWidget = () => {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
 
   const { data: kpiData, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["realtime-kpi-widget"],
@@ -314,7 +317,7 @@ export const RealTimeKPIWidget = () => {
       return kpis;
     },
     staleTime: 60000,
-    refetchInterval: 120000, // Auto-refresh every 2 minutes
+    // Removed polling - now using realtime subscriptions
   });
 
   // Update last updated time
@@ -323,6 +326,53 @@ export const RealTimeKPIWidget = () => {
       setLastUpdated(new Date());
     }
   }, [isFetching]);
+
+  // Realtime subscription for instant updates
+  useEffect(() => {
+    setConnectionStatus('connecting');
+    let retryTimeoutId: NodeJS.Timeout | null = null;
+
+    const newChannel = supabase
+      .channel('kpi-realtime-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ga4_daily_snapshots',
+        },
+        (payload) => {
+          console.log('Realtime KPI update received:', payload);
+          // Refetch data when any change occurs
+          refetch();
+        }
+      )
+      .subscribe((status, err) => {
+        console.log('KPI Channel status:', status, err);
+
+        if (status === 'SUBSCRIBED') {
+          setConnectionStatus('connected');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setConnectionStatus('disconnected');
+          // Auto-retry after delay
+          retryTimeoutId = setTimeout(() => newChannel.subscribe(), 3000);
+        } else if (status === 'CLOSED') {
+          setConnectionStatus('disconnected');
+        }
+      });
+
+    setChannel(newChannel);
+
+    // Cleanup on unmount
+    return () => {
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+      }
+      if (newChannel) {
+        supabase.removeChannel(newChannel);
+      }
+    };
+  }, [refetch]);
 
   if (isLoading) {
     return (
@@ -358,6 +408,25 @@ export const RealTimeKPIWidget = () => {
             <Badge variant="outline" className="text-xs">
               14 dagen trend
             </Badge>
+            {connectionStatus === 'connected' && (
+              <Badge variant="default" className="text-xs bg-green-500 hover:bg-green-600">
+                <span className="relative flex h-2 w-2 mr-1">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+                Live
+              </Badge>
+            )}
+            {connectionStatus === 'connecting' && (
+              <Badge variant="secondary" className="text-xs">
+                Verbinden...
+              </Badge>
+            )}
+            {connectionStatus === 'disconnected' && (
+              <Badge variant="destructive" className="text-xs">
+                Opnieuw verbinden...
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
