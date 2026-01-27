@@ -173,7 +173,7 @@ const CrawlerAnalytics = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button 
               variant="outline" 
               onClick={() => refetch()}
@@ -182,10 +182,38 @@ const CrawlerAnalytics = () => {
               <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
               Vernieuwen
             </Button>
+
+            <div className="flex items-center gap-1 border rounded-md p-1">
+              {[
+                { days: 7, label: '7d' },
+                { days: 14, label: '14d' },
+                { days: 30, label: '30d' },
+                { days: 90, label: '90d' },
+              ].map(({ days, label }) => {
+                const isActive = dateRange?.from && dateRange?.to &&
+                  Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24)) === days - 1 &&
+                  startOfDay(dateRange.to).getTime() === startOfDay(new Date()).getTime();
+                
+                return (
+                  <Button
+                    key={days}
+                    variant={isActive ? "default" : "ghost"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setDateRange({
+                      from: subDays(new Date(), days - 1),
+                      to: new Date(),
+                    })}
+                  >
+                    {label}
+                  </Button>
+                );
+              })}
+            </div>
             
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="min-w-[260px] justify-start text-left font-normal">
+                <Button variant="outline" className="min-w-[220px] justify-start text-left font-normal">
                   <CalendarDays className="mr-2 h-4 w-4" />
                   {dateRange?.from ? (
                     dateRange.to ? (
