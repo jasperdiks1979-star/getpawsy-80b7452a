@@ -80,6 +80,7 @@ import RealTimeKPIWidget from "./RealTimeKPIWidget";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { useLiveVisitors } from "@/hooks/useLiveVisitors";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { RealtimeVisitorMap } from "./RealtimeVisitorMap";
 
 // Types for GA4 API responses
 interface GA4Row {
@@ -1570,61 +1571,67 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
             </Card>
           </div>
 
-          {/* Activity Funnel */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Conversie Funnel</CardTitle>
-              <CardDescription>Bezoekersstroom van browsen naar checkout</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {liveVisitorStats.total === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Geen actieve bezoekers op dit moment</p>
-              ) : (
-                <div className="flex items-center justify-center gap-4 py-6">
-                  {/* Browsing */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-24 h-24 rounded-full bg-blue-500/20 flex items-center justify-center mb-2">
-                      <Eye className="w-8 h-8 text-blue-500" />
+          {/* Live Visitor Map and Funnel side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Geographic Map */}
+            <RealtimeVisitorMap />
+
+            {/* Activity Funnel */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Conversie Funnel</CardTitle>
+                <CardDescription>Bezoekersstroom van browsen naar checkout</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {liveVisitorStats.total === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Geen actieve bezoekers op dit moment</p>
+                ) : (
+                  <div className="flex items-center justify-center gap-4 py-6">
+                    {/* Browsing */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-24 h-24 rounded-full bg-blue-500/20 flex items-center justify-center mb-2">
+                        <Eye className="w-8 h-8 text-blue-500" />
+                      </div>
+                      <span className="text-2xl font-bold">{liveVisitorStats.browsing}</span>
+                      <span className="text-sm text-muted-foreground">Browsen</span>
                     </div>
-                    <span className="text-2xl font-bold">{liveVisitorStats.browsing}</span>
-                    <span className="text-sm text-muted-foreground">Browsen</span>
-                  </div>
-                  
-                  <ArrowUpRight className="w-6 h-6 text-muted-foreground rotate-45" />
-                  
-                  {/* Cart */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-20 h-20 rounded-full bg-orange-500/20 flex items-center justify-center mb-2">
-                      <ShoppingCart className="w-7 h-7 text-orange-500" />
+                    
+                    <ArrowUpRight className="w-6 h-6 text-muted-foreground rotate-45" />
+                    
+                    {/* Cart */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-20 h-20 rounded-full bg-orange-500/20 flex items-center justify-center mb-2">
+                        <ShoppingCart className="w-7 h-7 text-orange-500" />
+                      </div>
+                      <span className="text-2xl font-bold">{liveVisitorStats.cart}</span>
+                      <span className="text-sm text-muted-foreground">Winkelwagen</span>
+                      {liveVisitorStats.browsing > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          ({((liveVisitorStats.cart / liveVisitorStats.browsing) * 100).toFixed(0)}% van browse)
+                        </span>
+                      )}
                     </div>
-                    <span className="text-2xl font-bold">{liveVisitorStats.cart}</span>
-                    <span className="text-sm text-muted-foreground">Winkelwagen</span>
-                    {liveVisitorStats.browsing > 0 && (
-                      <span className="text-xs text-muted-foreground">
-                        ({((liveVisitorStats.cart / liveVisitorStats.browsing) * 100).toFixed(0)}% van browse)
-                      </span>
-                    )}
-                  </div>
-                  
-                  <ArrowUpRight className="w-6 h-6 text-muted-foreground rotate-45" />
-                  
-                  {/* Checkout */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-2">
-                      <Target className="w-6 h-6 text-green-500" />
+                    
+                    <ArrowUpRight className="w-6 h-6 text-muted-foreground rotate-45" />
+                    
+                    {/* Checkout */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-2">
+                        <Target className="w-6 h-6 text-green-500" />
+                      </div>
+                      <span className="text-2xl font-bold">{liveVisitorStats.checkout}</span>
+                      <span className="text-sm text-muted-foreground">Checkout</span>
+                      {liveVisitorStats.cart > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          ({((liveVisitorStats.checkout / liveVisitorStats.cart) * 100).toFixed(0)}% van cart)
+                        </span>
+                      )}
                     </div>
-                    <span className="text-2xl font-bold">{liveVisitorStats.checkout}</span>
-                    <span className="text-sm text-muted-foreground">Checkout</span>
-                    {liveVisitorStats.cart > 0 && (
-                      <span className="text-xs text-muted-foreground">
-                        ({((liveVisitorStats.checkout / liveVisitorStats.cart) * 100).toFixed(0)}% van cart)
-                      </span>
-                    )}
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Audience Tab */}
