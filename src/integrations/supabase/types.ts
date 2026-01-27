@@ -352,6 +352,60 @@ export type Database = {
         }
         Relationships: []
       }
+      competitor_products: {
+        Row: {
+          category: string | null
+          competitor: string
+          created_at: string
+          current_rank: number
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          previous_rank: number | null
+          price: number | null
+          product_image: string | null
+          product_name: string
+          product_url: string | null
+          rank_change: number | null
+          trend: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          competitor: string
+          created_at?: string
+          current_rank: number
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          previous_rank?: number | null
+          price?: number | null
+          product_image?: string | null
+          product_name: string
+          product_url?: string | null
+          rank_change?: number | null
+          trend?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          competitor?: string
+          created_at?: string
+          current_rank?: number
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          previous_rank?: number | null
+          price?: number | null
+          product_image?: string | null
+          product_name?: string
+          product_url?: string | null
+          rank_change?: number | null
+          trend?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       competitor_rankings: {
         Row: {
           competitor_domain: string
@@ -376,6 +430,33 @@ export type Database = {
           keyword?: string
           position?: number | null
           tracked_date?: string
+        }
+        Relationships: []
+      }
+      competitor_scrape_logs: {
+        Row: {
+          competitor: string
+          error_message: string | null
+          id: string
+          products_found: number | null
+          scraped_at: string
+          success: boolean
+        }
+        Insert: {
+          competitor: string
+          error_message?: string | null
+          id?: string
+          products_found?: number | null
+          scraped_at?: string
+          success?: boolean
+        }
+        Update: {
+          competitor?: string
+          error_message?: string | null
+          id?: string
+          products_found?: number | null
+          scraped_at?: string
+          success?: boolean
         }
         Relationships: []
       }

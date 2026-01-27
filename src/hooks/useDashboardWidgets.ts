@@ -39,6 +39,7 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
   { id: 'ecommerce-revenue', type: 'metric', title: 'Omzet', description: 'Totale omzet', size: 'small', visible: true, order: 14 },
   { id: 'ecommerce-transactions', type: 'metric', title: 'Transacties', description: 'Aantal bestellingen', size: 'small', visible: true, order: 15 },
   { id: 'conversion-funnel', type: 'chart', title: 'Conversie Funnel', description: 'Van sessie naar aankoop', size: 'full', visible: true, order: 16 },
+  { id: 'competitor-products', type: 'table', title: 'Top Products (USA)', description: 'Bestsellers van concurrenten', size: 'full', visible: true, order: 17 },
 ];
 
 export const BUILT_IN_PRESETS: LayoutPreset[] = [
