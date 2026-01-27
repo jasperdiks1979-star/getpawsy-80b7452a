@@ -146,28 +146,16 @@ serve(async (req) => {
       );
     }
 
-    // 2. For guest orders (no user_id), we require the access token for extra security
-    // If the order was placed by a guest and has an access token, require it
+    // 2. For guest orders (no user_id), we ALWAYS require the access token
+    // This prevents order enumeration attacks where an attacker with just an email
+    // could discover order IDs and view order information
     if (!order.user_id && order.order_access_token) {
       if (!accessToken || accessToken !== order.order_access_token) {
         console.log("[LOOKUP-GUEST-ORDER] Access token missing or invalid for guest order:", orderId);
-        // For guest orders without valid token, return limited info
-        // This allows lookup by email but doesn't expose full details
+        // Return generic error - don't confirm order exists without valid token
         return new Response(
-          JSON.stringify({
-            order: {
-              id: order.id,
-              status: order.status,
-              created_at: order.created_at,
-              // Don't expose tracking details without valid token
-              tracking_number: null,
-              tracking_carrier: null,
-              total_amount: order.total_amount,
-            },
-            requiresToken: true,
-            message: "For full order details, please use the tracking link sent to your email."
-          }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Order not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     }
