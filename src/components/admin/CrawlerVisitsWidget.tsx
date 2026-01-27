@@ -11,9 +11,11 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { useHaptic } from '@/hooks/useHaptic';
+import { Smartphone } from 'lucide-react';
 
 type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
-type NotificationMode = 'sound' | 'notification' | 'off';
+type NotificationMode = 'sound' | 'vibrate' | 'notification' | 'off';
 
 interface CrawlerVisit {
   id: string;
@@ -60,15 +62,19 @@ const LiveIndicator = ({ status }: { status: ConnectionStatus }) => (
 // Notification toggle component
 const NotificationToggle = ({ 
   mode, 
-  onToggle 
+  onToggle,
+  vibrateSupported
 }: { 
   mode: NotificationMode; 
   onToggle: () => void;
+  vibrateSupported: boolean;
 }) => {
   const getIcon = () => {
     switch (mode) {
       case 'sound':
         return <Volume2 className="h-4 w-4 text-emerald-500" />;
+      case 'vibrate':
+        return <Smartphone className="h-4 w-4 text-orange-500" />;
       case 'notification':
         return <Bell className="h-4 w-4 text-blue-500" />;
       case 'off':
@@ -80,6 +86,8 @@ const NotificationToggle = ({
     switch (mode) {
       case 'sound':
         return 'Geluid aan';
+      case 'vibrate':
+        return vibrateSupported ? 'Vibratie aan' : 'Vibratie (niet ondersteund)';
       case 'notification':
         return 'Browser notificatie';
       case 'off':
@@ -109,6 +117,7 @@ export const CrawlerVisitsWidget = () => {
   });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastVisitIdRef = useRef<string | null>(null);
+  const haptic = useHaptic();
   
   const { data: visits, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['crawler-visits'],
@@ -132,9 +141,15 @@ export const CrawlerVisitsWidget = () => {
 
   // Toggle notification mode
   const toggleNotificationMode = useCallback(async () => {
-    const modes: NotificationMode[] = ['sound', 'notification', 'off'];
+    const modes: NotificationMode[] = ['sound', 'vibrate', 'notification', 'off'];
     const currentIndex = modes.indexOf(notificationMode);
     let nextMode = modes[(currentIndex + 1) % modes.length];
+
+    // If switching to vibrate mode, check support
+    if (nextMode === 'vibrate' && !haptic.isSupported) {
+      toast.info('Vibratie niet ondersteund op dit apparaat');
+      // Still allow selecting it, but it won't do anything
+    }
 
     // If switching to browser notification, request permission
     if (nextMode === 'notification') {
@@ -156,13 +171,14 @@ export const CrawlerVisitsWidget = () => {
     setNotificationMode(nextMode);
     localStorage.setItem(STORAGE_KEY, nextMode);
 
-    const modeLabels = {
+    const modeLabels: Record<NotificationMode, string> = {
       sound: 'Geluid notificatie',
+      vibrate: 'Vibratie notificatie',
       notification: 'Browser notificatie',
       off: 'Notificaties uit'
     };
     toast.success(modeLabels[nextMode]);
-  }, [notificationMode]);
+  }, [notificationMode, haptic.isSupported]);
 
   // Play sound notification
   const playSound = useCallback(() => {
@@ -192,6 +208,8 @@ export const CrawlerVisitsWidget = () => {
   const handleNewGooglebotVisit = useCallback((visit: CrawlerVisit) => {
     if (notificationMode === 'sound') {
       playSound();
+    } else if (notificationMode === 'vibrate') {
+      haptic.success(); // Use success pattern for Googlebot visits
     } else if (notificationMode === 'notification') {
       showBrowserNotification(visit);
     }
@@ -200,7 +218,7 @@ export const CrawlerVisitsWidget = () => {
     toast.success(`🤖 ${visit.bot_type || 'Googlebot'} bezoekt ${visit.page_url}`, {
       duration: 5000,
     });
-  }, [notificationMode, playSound, showBrowserNotification]);
+  }, [notificationMode, playSound, haptic, showBrowserNotification]);
 
   // Handle realtime update with notification
   const handleRealtimeUpdate = useCallback((payload: { new: CrawlerVisit }) => {
@@ -265,7 +283,7 @@ export const CrawlerVisitsWidget = () => {
             <LiveIndicator status={connectionStatus} />
           </div>
           <div className="flex items-center gap-2">
-            <NotificationToggle mode={notificationMode} onToggle={toggleNotificationMode} />
+            <NotificationToggle mode={notificationMode} onToggle={toggleNotificationMode} vibrateSupported={haptic.isSupported} />
             <Link to="/admin/crawler-analytics">
               <Button variant="outline" size="sm">
                 <BarChart3 className="h-4 w-4 mr-1" />
