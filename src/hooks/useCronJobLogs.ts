@@ -38,6 +38,10 @@ const KNOWN_JOBS: Record<string, { displayName: string; schedule: string }> = {
     displayName: 'CJ Verpakking Sync',
     schedule: '04:00 UTC (06:00 CET)',
   },
+  'nightly-competitor-scrape': {
+    displayName: 'Competitor Scrape',
+    schedule: '04:00 UTC (06:00 CET)',
+  },
 };
 
 export const useCronJobLogs = (limit = 50) => {
