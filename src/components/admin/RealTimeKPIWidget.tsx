@@ -12,21 +12,51 @@ import {
   ShoppingCart,
   Activity,
   Percent,
-  RefreshCw
+  RefreshCw,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { 
-  LineChart, 
-  Line, 
   ResponsiveContainer,
   AreaChart,
   Area
 } from "recharts";
-import { format, subDays, startOfDay, parseISO } from "date-fns";
+import { format, subDays } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { useState, useEffect, useCallback } from "react";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { cn } from "@/lib/utils";
+
+// Types
+interface KPIData {
+  label: string;
+  value: string | number;
+  trend: number;
+  sparklineData: { value: number }[];
+  icon: React.ReactNode;
+  color: string;
+  format?: 'currency' | 'number' | 'percent' | 'duration';
+}
+
+interface SnapshotData {
+  report_date: string;
+  active_users: number;
+  page_views: number;
+  sessions: number;
+  revenue: number;
+  purchases: number;
+  bounce_rate: number;
+  avg_session_duration: number;
+  new_users: number;
+}
+
+type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
+
+// Constants
+const STALE_TIME = 60000;
+const RETRY_DELAY = 3000;
+const DAYS_RANGE = 14;
 
 interface KPIData {
   label: string;
@@ -82,30 +112,40 @@ const SparklineChart = ({ data, color, isPositive }: { data: { value: number }[]
 
 const KPICard = ({ kpi, index }: { kpi: KPIData; index: number }) => {
   const isPositive = kpi.trend >= 0;
-  const trendColor = isPositive ? 'text-green-600' : 'text-red-600';
-  const TrendIcon = isPositive ? TrendingUp : TrendingDown;
   
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.3 }}
+      transition={{ delay: index * 0.05, duration: 0.2 }}
       className="flex flex-col"
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-md bg-muted" style={{ color: kpi.color }}>
+          <div 
+            className="p-1.5 rounded-md bg-muted" 
+            style={{ color: kpi.color }}
+          >
             {kpi.icon}
           </div>
-          <span className="text-xs text-muted-foreground font-medium">{kpi.label}</span>
+          <span className="text-xs text-muted-foreground font-medium">
+            {kpi.label}
+          </span>
         </div>
-        <div className={`flex items-center gap-0.5 text-xs font-medium ${trendColor}`}>
-          <TrendIcon className="h-3 w-3" />
-          <span>{Math.abs(kpi.trend).toFixed(1)}%</span>
+        <div className={cn(
+          "flex items-center gap-0.5 text-xs font-medium",
+          isPositive ? 'text-green-600' : 'text-red-600'
+        )}>
+          {isPositive ? (
+            <TrendingUp className="h-3 w-3" />
+          ) : (
+            <TrendingDown className="h-3 w-3" />
+          )}
+          <span className="tabular-nums">{Math.abs(kpi.trend).toFixed(1)}%</span>
         </div>
       </div>
       
-      <div className="text-xl font-bold mb-2">{kpi.value}</div>
+      <div className="text-xl font-bold mb-2 tabular-nums">{kpi.value}</div>
       
       <div className="h-10 -mx-1">
         <SparklineChart 
@@ -118,17 +158,68 @@ const KPICard = ({ kpi, index }: { kpi: KPIData; index: number }) => {
   );
 };
 
+const ConnectionBadge = ({ status }: { status: ConnectionStatus }) => {
+  if (status === 'connected') {
+    return (
+      <Badge variant="default" className="text-xs bg-green-500 hover:bg-green-600">
+        <Wifi className="h-3 w-3 mr-1" />
+        <span className="relative flex h-2 w-2 mr-1">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+        </span>
+        Live
+      </Badge>
+    );
+  }
+  
+  if (status === 'connecting') {
+    return (
+      <Badge variant="secondary" className="text-xs">
+        <Activity className="h-3 w-3 mr-1 animate-pulse" />
+        Verbinden...
+      </Badge>
+    );
+  }
+  
+  return (
+    <Badge variant="destructive" className="text-xs">
+      <WifiOff className="h-3 w-3 mr-1" />
+      Opnieuw verbinden...
+    </Badge>
+  );
+};
+
+const LoadingSkeleton = () => (
+  <Card>
+    <CardHeader className="pb-2">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-8 w-8" />
+      </div>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-6 w-16" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
+
 export const RealTimeKPIWidget = () => {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
-  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
 
   const { data: kpiData, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["realtime-kpi-widget"],
-    queryFn: async () => {
-      // Fetch last 14 days of data for sparklines
+    queryFn: async (): Promise<KPIData[]> => {
       const endDate = new Date();
-      const startDate = subDays(endDate, 13);
+      const startDate = subDays(endDate, DAYS_RANGE - 1);
       
       const { data: snapshots, error } = await supabase
         .from("ga4_daily_snapshots")
@@ -139,54 +230,25 @@ export const RealTimeKPIWidget = () => {
 
       if (error) throw error;
 
-      // Fill in missing days with zeros for consistent sparklines
-      const dateMap = new Map();
-      snapshots?.forEach(s => {
-        dateMap.set(s.report_date, s);
-      });
+      // Build date map for quick lookup
+      const dateMap = new Map(snapshots?.map(s => [s.report_date, s]));
 
-      interface SnapshotData {
-        report_date: string;
-        active_users: number;
-        page_views: number;
-        sessions: number;
-        revenue: number;
-        purchases: number;
-        bounce_rate: number;
-        avg_session_duration: number;
-        new_users: number;
-      }
-
-      const filledData: SnapshotData[] = [];
-      for (let i = 0; i < 14; i++) {
-        const date = format(subDays(endDate, 13 - i), 'yyyy-MM-dd');
+      // Fill missing days with zeros
+      const filledData: SnapshotData[] = Array.from({ length: DAYS_RANGE }, (_, i) => {
+        const date = format(subDays(endDate, DAYS_RANGE - 1 - i), 'yyyy-MM-dd');
         const existing = dateMap.get(date);
-        if (existing) {
-          filledData.push({
-            report_date: existing.report_date,
-            active_users: Number(existing.active_users) || 0,
-            page_views: Number(existing.page_views) || 0,
-            sessions: Number(existing.sessions) || 0,
-            revenue: Number(existing.revenue) || 0,
-            purchases: Number(existing.purchases) || 0,
-            bounce_rate: Number(existing.bounce_rate) || 0,
-            avg_session_duration: Number(existing.avg_session_duration) || 0,
-            new_users: Number(existing.new_users) || 0,
-          });
-        } else {
-          filledData.push({
-            report_date: date,
-            active_users: 0,
-            page_views: 0,
-            sessions: 0,
-            revenue: 0,
-            purchases: 0,
-            bounce_rate: 0,
-            avg_session_duration: 0,
-            new_users: 0,
-          });
-        }
-      }
+        return {
+          report_date: date,
+          active_users: Number(existing?.active_users) || 0,
+          page_views: Number(existing?.page_views) || 0,
+          sessions: Number(existing?.sessions) || 0,
+          revenue: Number(existing?.revenue) || 0,
+          purchases: Number(existing?.purchases) || 0,
+          bounce_rate: Number(existing?.bounce_rate) || 0,
+          avg_session_duration: Number(existing?.avg_session_duration) || 0,
+          new_users: Number(existing?.new_users) || 0,
+        };
+      });
 
       // Calculate metrics and trends
       const latestWeek = filledData.slice(-7);
@@ -332,7 +394,7 @@ export const RealTimeKPIWidget = () => {
     setConnectionStatus('connecting');
     let retryTimeoutId: NodeJS.Timeout | null = null;
 
-    const newChannel = supabase
+    const channel = supabase
       .channel('kpi-realtime-updates')
       .on(
         'postgres_changes',
@@ -341,61 +403,27 @@ export const RealTimeKPIWidget = () => {
           schema: 'public',
           table: 'ga4_daily_snapshots',
         },
-        (payload) => {
-          console.log('Realtime KPI update received:', payload);
-          // Refetch data when any change occurs
-          refetch();
-        }
+        () => refetch()
       )
-      .subscribe((status, err) => {
-        console.log('KPI Channel status:', status, err);
-
+      .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setConnectionStatus('connected');
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           setConnectionStatus('disconnected');
-          // Auto-retry after delay
-          retryTimeoutId = setTimeout(() => newChannel.subscribe(), 3000);
+          retryTimeoutId = setTimeout(() => channel.subscribe(), RETRY_DELAY);
         } else if (status === 'CLOSED') {
           setConnectionStatus('disconnected');
         }
       });
 
-    setChannel(newChannel);
-
-    // Cleanup on unmount
     return () => {
-      if (retryTimeoutId) {
-        clearTimeout(retryTimeoutId);
-      }
-      if (newChannel) {
-        supabase.removeChannel(newChannel);
-      }
+      if (retryTimeoutId) clearTimeout(retryTimeoutId);
+      supabase.removeChannel(channel);
     };
   }, [refetch]);
 
   if (isLoading) {
-    return (
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-8 w-8" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <LoadingSkeleton />;
   }
 
   return (
@@ -406,30 +434,12 @@ export const RealTimeKPIWidget = () => {
             <Activity className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Real-Time KPI's</CardTitle>
             <Badge variant="outline" className="text-xs">
-              14 dagen trend
+              {DAYS_RANGE} dagen trend
             </Badge>
-            {connectionStatus === 'connected' && (
-              <Badge variant="default" className="text-xs bg-green-500 hover:bg-green-600">
-                <span className="relative flex h-2 w-2 mr-1">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                </span>
-                Live
-              </Badge>
-            )}
-            {connectionStatus === 'connecting' && (
-              <Badge variant="secondary" className="text-xs">
-                Verbinden...
-              </Badge>
-            )}
-            {connectionStatus === 'disconnected' && (
-              <Badge variant="destructive" className="text-xs">
-                Opnieuw verbinden...
-              </Badge>
-            )}
+            <ConnectionBadge status={connectionStatus} />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground tabular-nums">
               {format(lastUpdated, 'HH:mm', { locale: nl })}
             </span>
             <Button
@@ -439,7 +449,7 @@ export const RealTimeKPIWidget = () => {
               onClick={() => refetch()}
               disabled={isFetching}
             >
-              <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+              <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
             </Button>
           </div>
         </div>
