@@ -3,6 +3,10 @@ import { Helmet } from 'react-helmet-async';
 import logo from '@/assets/logo-getpawsy-full.png';
 import safeBrowsingScreenshot from '@/assets/safe-browsing-report.png';
 import gscSitemapScreenshot from '@/assets/gsc-sitemap-status.png';
+import gscCoverageScreenshot from '@/assets/gsc-coverage-overview.png';
+import gscIndexedPagesScreenshot from '@/assets/gsc-indexed-pages.png';
+import gscSecurityScreenshot from '@/assets/gsc-security-issues.png';
+import gscStructuredDataScreenshot from '@/assets/gsc-structured-data.png';
 import {
   Shield, 
   Building2, 
@@ -551,19 +555,20 @@ export const sanitizeHtml = (html: string): string => {
                 </p>
                 
                 <div className="grid md:grid-cols-2 gap-4">
-                  {/* Screenshot Placeholder 1 */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
-                    <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-3 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <Eye className="h-8 w-8 text-gray-400" />
-                      </div>
-                      <h4 className="font-semibold text-gray-700 mb-1">Coverage Overview</h4>
-                      <p className="text-xs text-gray-500 mb-3">
-                        Screenshot showing indexed pages count and valid/error breakdown
-                      </p>
-                      <div className="text-xs text-gray-400 bg-white border border-gray-200 rounded px-3 py-2">
-                        📸 Insert GSC Coverage screenshot here
-                      </div>
+                  {/* Coverage Overview - Real Screenshot */}
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-green-600 text-white px-3 py-2 text-sm font-medium flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      GSC Page Indexing
+                    </div>
+                    <img 
+                      src={gscCoverageScreenshot} 
+                      alt="Google Search Console showing 731 indexed pages" 
+                      className="w-full"
+                    />
+                    <div className="bg-green-50 px-3 py-2 flex items-center gap-2 text-xs text-green-700">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span><strong>731 pagina's geïndexeerd</strong></span>
                     </div>
                   </div>
 
@@ -584,44 +589,56 @@ export const sanitizeHtml = (html: string): string => {
                     </div>
                   </div>
 
-                  {/* Screenshot Placeholder 3 */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
-                    <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-3 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <FileCheck className="h-8 w-8 text-gray-400" />
-                      </div>
-                      <h4 className="font-semibold text-gray-700 mb-1">URL Inspection</h4>
-                      <p className="text-xs text-gray-500 mb-3">
-                        Screenshot showing successful URL inspection result
-                      </p>
-                      <div className="text-xs text-gray-400 bg-white border border-gray-200 rounded px-3 py-2">
-                        📸 Insert GSC URL Inspection screenshot here
-                      </div>
+                  {/* Indexed Pages - Real Screenshot */}
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-green-600 text-white px-3 py-2 text-sm font-medium flex items-center gap-2">
+                      <FileCheck className="h-4 w-4" />
+                      GSC Indexed Pages
+                    </div>
+                    <img 
+                      src={gscIndexedPagesScreenshot} 
+                      alt="Google Search Console showing indexed URLs including homepage, products, and about page" 
+                      className="w-full"
+                    />
+                    <div className="bg-green-50 px-3 py-2 flex items-center gap-2 text-xs text-green-700">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span><strong>URLs succesvol geïndexeerd</strong></span>
                     </div>
                   </div>
 
-                  {/* Screenshot Placeholder 4 */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
-                    <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-3 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <Shield className="h-8 w-8 text-gray-400" />
-                      </div>
-                      <h4 className="font-semibold text-gray-700 mb-1">Security Issues</h4>
-                      <p className="text-xs text-gray-500 mb-3">
-                        Screenshot showing "No issues detected" security status
-                      </p>
-                      <div className="text-xs text-gray-400 bg-white border border-gray-200 rounded px-3 py-2">
-                        📸 Insert GSC Security screenshot here
-                      </div>
+                  {/* Security Issues - Real Screenshot */}
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-green-600 text-white px-3 py-2 text-sm font-medium flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      GSC Security Issues
+                    </div>
+                    <img 
+                      src={gscSecurityScreenshot} 
+                      alt="Google Search Console showing no security problems detected" 
+                      className="w-full"
+                    />
+                    <div className="bg-green-50 px-3 py-2 flex items-center gap-2 text-xs text-green-700">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span><strong>Geen problemen gedetecteerd</strong></span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-xs text-blue-700">
-                    <strong>Note:</strong> To add screenshots, export this page as PDF, then use a PDF editor to insert 
-                    the actual Google Search Console screenshots in the placeholder areas above.
-                  </p>
+                {/* Structured Data Screenshot - Full Width */}
+                <div className="mt-4 border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-green-600 text-white px-3 py-2 text-sm font-medium flex items-center gap-2">
+                    <Database className="h-4 w-4" />
+                    GSC Structured Data & Rich Results
+                  </div>
+                  <img 
+                    src={gscStructuredDataScreenshot} 
+                    alt="Google Search Console showing valid structured data: 21 product fragments, 21 seller mentions, 40 breadcrumbs, 5 review fragments" 
+                    className="w-full"
+                  />
+                  <div className="bg-green-50 px-3 py-2 flex items-center gap-2 text-xs text-green-700">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span><strong>21 Productfragmenten • 40 Breadcrumbs • 5 Reviewfragmenten</strong> — Alle valid</span>
+                  </div>
                 </div>
               </div>
             </div>
