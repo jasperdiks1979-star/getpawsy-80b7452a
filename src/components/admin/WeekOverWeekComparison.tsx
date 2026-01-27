@@ -33,7 +33,7 @@ import { format, subDays, startOfWeek, endOfWeek, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
-import * as XLSX from "xlsx";
+import { createWorkbook, addSheet, jsonToSheet, writeFile } from "@/utils/excelExport";
 import { cn } from "@/lib/utils";
 
 interface GA4Snapshot {
@@ -263,22 +263,12 @@ const WeekOverWeekComparison = memo(() => {
         "Trend (%)": `${m.changePercent > 0 ? "+" : ""}${m.changePercent.toFixed(1)}%`,
       }));
 
-      const ws = XLSX.utils.json_to_sheet(data);
-      
-      // Set column widths
-      ws["!cols"] = [
-        { wch: 20 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 15 },
-        { wch: 12 },
-      ];
-
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Week-over-Week");
+      const ws = jsonToSheet(data);
+      const wb = createWorkbook();
+      addSheet(wb, "Week-over-Week", ws, [20, 25, 25, 15, 12]);
       
       const filename = `week-over-week-${format(new Date(), "yyyy-MM-dd")}.xlsx`;
-      XLSX.writeFile(wb, filename);
+      await writeFile(wb, filename);
       
       toast.success("Excel bestand gedownload", {
         description: filename

@@ -1509,170 +1509,18 @@ export async function exportAllAsExcel(
   colors: ExcelColorScheme = defaultExcelColors,
   sheets: ExcelSheetKey[] = ['campaigns', 'ads', 'keywords', 'sitelinks', 'images']
 ): Promise<void> {
-  const XLSX = await import('xlsx-js-style');
+  const { 
+    createStyledWorkbook, 
+    addStyledSheet, 
+    downloadStyledFile
+  } = await import('./styledExcelExport');
+  
+  type StyledCellType = { value: string; style?: { font?: { bold?: boolean } } };
+  
   const timestamp = new Date().toISOString().split('T')[0];
   
   // Create workbook
-  const workbook = XLSX.utils.book_new();
-  
-  // Define header style with brand colors
-  const headerStyle = {
-    fill: { fgColor: { rgb: "2563EB" } }, // Blue background
-    font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
-    alignment: { horizontal: "center", vertical: "center" },
-    border: {
-      top: { style: "thin", color: { rgb: "1E40AF" } },
-      bottom: { style: "thin", color: { rgb: "1E40AF" } },
-      left: { style: "thin", color: { rgb: "1E40AF" } },
-      right: { style: "thin", color: { rgb: "1E40AF" } }
-    }
-  };
-  
-  // Alternating row styles
-  const evenRowStyle = {
-    fill: { fgColor: { rgb: colors.evenRow } },
-    border: {
-      bottom: { style: "thin", color: { rgb: colors.border } }
-    }
-  };
-  
-  // Conditional formatting styles based on cell values
-  const conditionalStyles: Record<string, { fill: { fgColor: { rgb: string } }; font: { color: { rgb: string }; bold?: boolean } }> = {
-    // Status values
-    'Paused': { fill: { fgColor: { rgb: 'FEE2E2' } }, font: { color: { rgb: 'DC2626' } } },
-    'Removed': { fill: { fgColor: { rgb: 'FEE2E2' } }, font: { color: { rgb: '991B1B' }, bold: true } },
-    'Enabled': { fill: { fgColor: { rgb: 'DCFCE7' } }, font: { color: { rgb: '16A34A' } } },
-    // Match types
-    'Exact': { fill: { fgColor: { rgb: 'DBEAFE' } }, font: { color: { rgb: '2563EB' } } },
-    'Phrase': { fill: { fgColor: { rgb: 'E0E7FF' } }, font: { color: { rgb: '4F46E5' } } },
-    'Broad': { fill: { fgColor: { rgb: 'FEF3C7' } }, font: { color: { rgb: 'D97706' } } },
-    // Bidding strategies
-    'Maximize conversions': { fill: { fgColor: { rgb: 'D1FAE5' } }, font: { color: { rgb: '059669' } } },
-    'Maximize clicks': { fill: { fgColor: { rgb: 'CFFAFE' } }, font: { color: { rgb: '0891B2' } } },
-    'Target CPA': { fill: { fgColor: { rgb: 'FCE7F3' } }, font: { color: { rgb: 'DB2777' } } },
-    'Target ROAS': { fill: { fgColor: { rgb: 'FDF4FF' } }, font: { color: { rgb: 'A855F7' } } },
-    'Manual CPC': { fill: { fgColor: { rgb: 'F3F4F6' } }, font: { color: { rgb: '6B7280' } } },
-    // Campaign types
-    'Search': { fill: { fgColor: { rgb: 'DBEAFE' } }, font: { color: { rgb: '2563EB' } } },
-    'Display': { fill: { fgColor: { rgb: 'FEF3C7' } }, font: { color: { rgb: 'D97706' } } },
-    'Shopping': { fill: { fgColor: { rgb: 'D1FAE5' } }, font: { color: { rgb: '059669' } } },
-    'Video': { fill: { fgColor: { rgb: 'FEE2E2' } }, font: { color: { rgb: 'DC2626' } } },
-    'Performance Max': { fill: { fgColor: { rgb: 'E0E7FF' } }, font: { color: { rgb: '4F46E5' } } },
-    // Ad types
-    'Responsive search ad': { fill: { fgColor: { rgb: 'DBEAFE' } }, font: { color: { rgb: '2563EB' } } },
-    'Expanded text ad': { fill: { fgColor: { rgb: 'F3F4F6' } }, font: { color: { rgb: '6B7280' } } }
-  };
-  
-  // Columns that should have conditional formatting applied
-  const conditionalColumns = [
-    'Campaign Status', 'Ad Group Status', 'Status', 
-    'Match Type', 'Bidding Strategy', 'Campaign Type', 'Ad Type'
-  ];
-  
-  // Helper to add CSV data as sheet with styling and validation
-  const addSheet = (csvContent: string, sheetName: string, accentColor: string) => {
-    const data = parseCSVToArray(csvContent);
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    
-    // Get range of cells
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-    const headers = data[0] || [];
-    
-    // Find column indices that need conditional formatting
-    const conditionalColumnIndices = headers.reduce((acc, header, index) => {
-      if (conditionalColumns.includes(header)) {
-        acc[index] = header;
-      }
-      return acc;
-    }, {} as Record<number, string>);
-    
-    // Apply header styling to first row
-    for (let col = range.s.c; col <= range.e.c; col++) {
-      const cellRef = XLSX.utils.encode_cell({ r: 0, c: col });
-      if (worksheet[cellRef]) {
-        worksheet[cellRef].s = {
-          ...headerStyle,
-          fill: { fgColor: { rgb: accentColor } }
-        };
-      }
-    }
-    
-    // Apply alternating row styles and conditional formatting
-    for (let row = 1; row <= range.e.r; row++) {
-      for (let col = range.s.c; col <= range.e.c; col++) {
-        const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
-        if (worksheet[cellRef]) {
-          const cellValue = worksheet[cellRef].v?.toString() || '';
-          
-          // Check if this column should have conditional formatting
-          if (conditionalColumnIndices[col] && conditionalStyles[cellValue]) {
-            worksheet[cellRef].s = {
-              ...conditionalStyles[cellValue],
-              alignment: { horizontal: "center" },
-              border: {
-                bottom: { style: "thin", color: { rgb: colors.border } }
-              }
-            };
-          } else if (row % 2 === 0) {
-            worksheet[cellRef].s = evenRowStyle;
-          }
-        }
-      }
-    }
-    
-    // Add data validation for specific columns
-    const validationConfig = sheetValidationConfig[sheetName];
-    if (validationConfig && range.e.r > 0) {
-      const dataValidations: Array<{
-        sqref: string;
-        type: string;
-        operator: string;
-        formula1: string;
-        showDropDown: boolean;
-        showErrorMessage: boolean;
-        errorTitle: string;
-        error: string;
-      }> = [];
-      
-      headers.forEach((header, colIndex) => {
-        const options = validationConfig[header];
-        if (options) {
-          const colLetter = XLSX.utils.encode_col(colIndex);
-          // Apply to all data rows (skip header)
-          const sqref = `${colLetter}2:${colLetter}${range.e.r + 1}`;
-          
-          dataValidations.push({
-            sqref,
-            type: 'list',
-            operator: 'equal',
-            formula1: `"${options.join(',')}"`,
-            showDropDown: true,
-            showErrorMessage: true,
-            errorTitle: 'Ongeldige waarde',
-            error: `Kies een waarde uit de lijst: ${options.join(', ')}`
-          });
-        }
-      });
-      
-      if (dataValidations.length > 0) {
-        worksheet['!dataValidation'] = dataValidations;
-      }
-    }
-    
-    // Set column widths based on content
-    const colWidths = data[0]?.map((_, colIndex) => {
-      const maxWidth = Math.max(
-        ...data.slice(0, 50).map(row => (row[colIndex] || '').length)
-      );
-      return { wch: Math.min(Math.max(maxWidth, 12), 50) };
-    }) || [];
-    worksheet['!cols'] = colWidths;
-    
-    // Freeze first row
-    worksheet['!freeze'] = { xSplit: 0, ySplit: 1 };
-    
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-  };
+  const workbook = createStyledWorkbook();
   
   // Sheet generators mapping
   const sheetGenerators: Record<ExcelSheetKey, { generator: () => string; color: string }> = {
@@ -1683,47 +1531,37 @@ export async function exportAllAsExcel(
     images: { generator: generateImageAssetsCSV, color: colors.images }
   };
 
-  // Add only selected sheets
+  // Add each selected sheet
   sheets.forEach(sheetKey => {
     const config = sheetGenerators[sheetKey];
     if (config) {
+      const csvContent = config.generator();
+      const data = parseCSVToArray(csvContent);
+      
+      // Convert to styled data - apply header style to first row
+      const styledData: (StyledCellType | string)[][] = data.map((row, rowIndex) => 
+        row.map(cell => rowIndex === 0 ? { value: cell, style: { font: { bold: true } } } : cell)
+      );
+      
+      // Calculate column widths based on content
+      const colWidths = data[0]?.map((_, colIndex) => {
+        const maxWidth = Math.max(
+          ...data.slice(0, 50).map(row => (row[colIndex] || '').length)
+        );
+        return Math.min(Math.max(maxWidth, 12), 50);
+      }) || [];
+      
       const sheetName = sheetKey.charAt(0).toUpperCase() + sheetKey.slice(1);
-      addSheet(config.generator(), sheetName, config.color);
+      addStyledSheet(workbook, sheetName, styledData as any, {
+        columnWidths: colWidths,
+        freezePane: { row: 1, col: 0 }
+      });
     }
   });
   
-  // Generate Excel file
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  // Generate and download Excel file
   const filename = `getpawsy_google_ads_${timestamp}.xlsx`;
-  
-  // Check if Web Share API is available (iOS Safari)
-  if (navigator.share && navigator.canShare) {
-    const file = new File([blob], filename, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const shareData = { files: [file] };
-    
-    if (navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (err) {
-        if ((err as Error).name === 'AbortError') {
-          return;
-        }
-      }
-    }
-  }
-  
-  // Fallback: regular download
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  link.setAttribute('href', url);
-  link.setAttribute('download', filename);
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  await downloadStyledFile(workbook, filename);
 }
 
 // Get campaign statistics

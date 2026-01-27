@@ -33,7 +33,7 @@ import { format, subYears, startOfYear, endOfYear, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
-import * as XLSX from "xlsx";
+import { createWorkbook, addSheet, jsonToSheet, writeFile } from "@/utils/excelExport";
 import { cn } from "@/lib/utils";
 
 interface GA4Snapshot {
@@ -260,20 +260,12 @@ const YearOverYearComparison = memo(() => {
         "Trend (%)": `${m.changePercent > 0 ? "+" : ""}${m.changePercent.toFixed(1)}%`,
       }));
 
-      const ws = XLSX.utils.json_to_sheet(data);
-      ws["!cols"] = [
-        { wch: 20 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 12 },
-      ];
-
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Jaar-over-Jaar");
+      const ws = jsonToSheet(data);
+      const wb = createWorkbook();
+      addSheet(wb, "Jaar-over-Jaar", ws, [20, 15, 15, 15, 12]);
       
       const filename = `jaar-over-jaar-${format(new Date(), "yyyy-MM-dd")}.xlsx`;
-      XLSX.writeFile(wb, filename);
+      await writeFile(wb, filename);
       
       toast.success("Excel bestand gedownload", { description: filename });
     } catch (err) {
