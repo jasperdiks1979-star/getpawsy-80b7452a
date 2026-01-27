@@ -3,11 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Bot, Clock, Globe, RefreshCw, BarChart3 } from 'lucide-react';
+import { Bot, Clock, Globe, RefreshCw, BarChart3, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
 interface CrawlerVisit {
   id: string;
@@ -20,7 +24,35 @@ interface CrawlerVisit {
   created_at: string;
 }
 
+// Live indicator component
+const LiveIndicator = ({ status }: { status: ConnectionStatus }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <div className="flex items-center cursor-default">
+        {status === 'connected' ? (
+          <>
+            <Wifi className="h-3.5 w-3.5 text-green-500" />
+            <span className="relative flex h-2 w-2 ml-0.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+            </span>
+          </>
+        ) : status === 'connecting' ? (
+          <Wifi className="h-3.5 w-3.5 text-muted-foreground animate-pulse" />
+        ) : (
+          <WifiOff className="h-3.5 w-3.5 text-destructive" />
+        )}
+      </div>
+    </TooltipTrigger>
+    <TooltipContent side="bottom" className="text-xs">
+      {status === 'connected' ? 'Live updates actief' : status === 'connecting' ? 'Verbinden...' : 'Verbinding verbroken'}
+    </TooltipContent>
+  </Tooltip>
+);
+
 export const CrawlerVisitsWidget = () => {
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
+  
   const { data: visits, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['crawler-visits'],
     queryFn: async () => {
@@ -35,33 +67,69 @@ export const CrawlerVisitsWidget = () => {
     },
   });
 
+  const handleRealtimeUpdate = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  // Realtime subscription
+  useEffect(() => {
+    setConnectionStatus('connecting');
+
+    const channel = supabase
+      .channel('crawler-visits-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'crawler_visits',
+        },
+        handleRealtimeUpdate
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setConnectionStatus('connected');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setConnectionStatus('disconnected');
+        } else if (status === 'CLOSED') {
+          setConnectionStatus('disconnected');
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [handleRealtimeUpdate]);
+
   const googlebotVisits = visits?.filter(v => v.is_googlebot) || [];
   const otherBotVisits = visits?.filter(v => !v.is_googlebot && v.bot_type) || [];
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <div className="flex items-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
-          <CardTitle className="text-lg">Crawler Bezoeken</CardTitle>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link to="/admin/crawler-analytics">
-            <Button variant="outline" size="sm">
-              <BarChart3 className="h-4 w-4 mr-1" />
-              Analytics
+    <TooltipProvider>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
+            <CardTitle className="text-lg">Crawler Bezoeken</CardTitle>
+            <LiveIndicator status={connectionStatus} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Link to="/admin/crawler-analytics">
+              <Button variant="outline" size="sm">
+                <BarChart3 className="h-4 w-4 mr-1" />
+                Analytics
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isRefetching}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
             </Button>
-          </Link>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isRefetching}
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-      </CardHeader>
+          </div>
+        </CardHeader>
       <CardContent>
         {/* Stats Overview */}
         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -148,5 +216,6 @@ export const CrawlerVisitsWidget = () => {
         )}
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 };
