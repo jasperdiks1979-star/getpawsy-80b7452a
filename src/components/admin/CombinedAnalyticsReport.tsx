@@ -38,7 +38,7 @@ import {
 import { nl } from "date-fns/locale";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
-import * as XLSX from "xlsx";
+import { createWorkbook, addSheet, jsonToSheet, writeFile } from "@/utils/excelExport";
 
 interface GA4Snapshot {
   id: string;
@@ -239,7 +239,7 @@ const CombinedAnalyticsReport = memo(() => {
     
     setIsExporting(true);
     try {
-      const wb = XLSX.utils.book_new();
+      const wb = createWorkbook();
 
       // Summary sheet
       const summaryData: Record<string, string | number>[] = [];
@@ -257,8 +257,8 @@ const CombinedAnalyticsReport = memo(() => {
         summaryData.push(row);
       });
 
-      const summarySheet = XLSX.utils.json_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(wb, summarySheet, "Overzicht");
+      const summarySheet = jsonToSheet(summaryData);
+      addSheet(wb, "Overzicht", summarySheet);
 
       // Individual period sheets
       allComparisons.forEach(comp => {
@@ -274,13 +274,12 @@ const CombinedAnalyticsReport = memo(() => {
           };
         });
 
-        const ws = XLSX.utils.json_to_sheet(periodData);
-        ws["!cols"] = [{ wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 12 }];
-        XLSX.utils.book_append_sheet(wb, ws, comp.period.substring(0, 31));
+        const ws = jsonToSheet(periodData);
+        addSheet(wb, comp.period.substring(0, 31), ws);
       });
 
       const filename = `analytics-overzicht-${format(new Date(), "yyyy-MM-dd")}.xlsx`;
-      XLSX.writeFile(wb, filename);
+      await writeFile(wb, filename);
       
       toast.success("Excel bestand gedownload", { description: filename });
     } catch (err) {
