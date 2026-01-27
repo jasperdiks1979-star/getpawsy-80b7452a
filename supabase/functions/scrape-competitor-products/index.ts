@@ -34,6 +34,126 @@ interface ScrapedProduct {
   image?: string;
 }
 
+interface TrendingProduct {
+  name: string;
+  competitor: string;
+  rank: number;
+  rankChange: number;
+  trend: 'up' | 'new';
+  price?: number;
+}
+
+async function sendTrendingAlert(trendingProducts: TrendingProduct[]): Promise<void> {
+  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  if (!resendApiKey || trendingProducts.length === 0) {
+    return;
+  }
+
+  const productRows = trendingProducts
+    .map(p => `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${p.name.slice(0, 60)}${p.name.length > 60 ? '...' : ''}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-transform: capitalize;">${p.competitor}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">#${p.rank}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">
+          ${p.trend === 'new' 
+            ? '<span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">NEW</span>' 
+            : `<span style="color: #10b981; font-weight: 600;">↑ ${p.rankChange}</span>`}
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${p.price ? `$${p.price.toFixed(2)}` : '-'}</td>
+      </tr>
+    `)
+    .join('');
+
+  const newCount = trendingProducts.filter(p => p.trend === 'new').length;
+  const risingCount = trendingProducts.filter(p => p.trend === 'up').length;
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Pawsy Alerts <alerts@getpawsy.pet>',
+        to: ['info@getpawsy.pet'],
+        subject: `🔥 ${trendingProducts.length} Trending Products Detected at Competitors`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; padding: 20px;">
+            <div style="max-width: 700px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 24px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 24px;">🔥 Trending Products Alert</h1>
+              </div>
+              
+              <div style="padding: 24px;">
+                <p style="color: #374151; font-size: 16px; margin-bottom: 20px;">
+                  We detected <strong>${trendingProducts.length} trending products</strong> at competitor stores:
+                </p>
+                
+                <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                  ${newCount > 0 ? `
+                    <div style="background: #ecfdf5; padding: 12px 20px; border-radius: 8px; flex: 1;">
+                      <div style="font-size: 24px; font-weight: bold; color: #10b981;">${newCount}</div>
+                      <div style="font-size: 14px; color: #059669;">New Products</div>
+                    </div>
+                  ` : ''}
+                  ${risingCount > 0 ? `
+                    <div style="background: #fef3c7; padding: 12px 20px; border-radius: 8px; flex: 1;">
+                      <div style="font-size: 24px; font-weight: bold; color: #d97706;">${risingCount}</div>
+                      <div style="font-size: 14px; color: #b45309;">Rising in Rank</div>
+                    </div>
+                  ` : ''}
+                </div>
+                
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                  <thead>
+                    <tr style="background: #f3f4f6;">
+                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151;">Product</th>
+                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151;">Competitor</th>
+                      <th style="padding: 12px; text-align: center; font-weight: 600; color: #374151;">Rank</th>
+                      <th style="padding: 12px; text-align: center; font-weight: 600; color: #374151;">Trend</th>
+                      <th style="padding: 12px; text-align: right; font-weight: 600; color: #374151;">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${productRows}
+                  </tbody>
+                </table>
+                
+                <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+                  <a href="https://getpawsy.lovable.app/admin" style="display: inline-block; background: #f97316; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                    View Full Analysis →
+                  </a>
+                </div>
+              </div>
+              
+              <div style="background: #f9fafb; padding: 16px; text-align: center; font-size: 12px; color: #6b7280;">
+                Automated alert from Pawsy Competitor Intelligence • ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      }),
+    });
+
+    if (response.ok) {
+      console.log(`Sent trending alert for ${trendingProducts.length} products`);
+    } else {
+      console.error('Failed to send trending alert:', await response.text());
+    }
+  } catch (error) {
+    console.error('Failed to send trending alert:', error);
+  }
+}
+
 async function scrapeCompetitor(
   competitor: CompetitorConfig,
   firecrawlApiKey: string
@@ -192,6 +312,7 @@ Deno.serve(async (req) => {
     .single();
 
   const cronLogId = cronLog?.id;
+  const trendingProducts: TrendingProduct[] = [];
 
   try {
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
@@ -248,7 +369,7 @@ Deno.serve(async (req) => {
             // Update existing product
             const previousRank = existing.current_rank;
             const rankChange = previousRank - product.rank;
-            let trend = 'stable';
+            let trend: 'up' | 'down' | 'stable' = 'stable';
             if (rankChange > 0) trend = 'up';
             else if (rankChange < 0) trend = 'down';
 
@@ -264,6 +385,18 @@ Deno.serve(async (req) => {
                 updated_at: new Date().toISOString(),
               })
               .eq('id', existing.id);
+
+            // Track significant rank improvements (moved up 3+ positions)
+            if (trend === 'up' && rankChange >= 3) {
+              trendingProducts.push({
+                name: product.name,
+                competitor: competitor.name,
+                rank: product.rank,
+                rankChange,
+                trend: 'up',
+                price: product.price,
+              });
+            }
           } else {
             // Insert new product
             await supabase
@@ -277,6 +410,18 @@ Deno.serve(async (req) => {
                 price: product.price,
                 trend: 'new',
               });
+
+            // Track new products in top 10
+            if (product.rank <= 10) {
+              trendingProducts.push({
+                name: product.name,
+                competitor: competitor.name,
+                rank: product.rank,
+                rankChange: 0,
+                trend: 'new',
+                price: product.price,
+              });
+            }
           }
         }
 
@@ -303,6 +448,11 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Send trending alert if there are trending products
+    if (trendingProducts.length > 0) {
+      await sendTrendingAlert(trendingProducts);
+    }
+
     // Calculate totals for cron log
     const totalProducts = results.reduce((sum, r) => sum + r.products, 0);
     const failedCompetitors = results.filter(r => !r.success).length;
@@ -316,13 +466,13 @@ Deno.serve(async (req) => {
           success: failedCompetitors === 0,
           items_processed: totalProducts,
           items_failed: failedCompetitors,
-          details: { results },
+          details: { results, trendingAlertSent: trendingProducts.length > 0 },
         })
         .eq('id', cronLogId);
     }
 
     return new Response(
-      JSON.stringify({ success: true, results }),
+      JSON.stringify({ success: true, results, trendingProducts: trendingProducts.length }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
