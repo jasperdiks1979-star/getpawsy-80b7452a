@@ -1467,6 +1467,9 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                   <Activity className="w-4 h-4 text-green-500 animate-pulse" />
                   <span className="text-sm text-muted-foreground">Live bijgewerkt (elke 30s)</span>
                 </div>
+                <p className="text-xs text-muted-foreground/70 mt-2 text-center max-w-[200px]">
+                  Bron: Google Analytics 4 — kan enkele minuten vertraagd zijn
+                </p>
               </CardContent>
             </Card>
 
