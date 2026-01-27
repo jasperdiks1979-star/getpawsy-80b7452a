@@ -159,6 +159,7 @@ const TechnicalDeclaration = lazyWithRetry(() => import("./pages/TechnicalDeclar
 const AppealResponse = lazyWithRetry(() => import("./pages/AppealResponse"));
 const MyClaims = lazyWithRetry(() => import("./pages/MyClaims"));
 const Security = lazyWithRetry(() => import("./pages/Security"));
+const GoogleReview = lazyWithRetry(() => import("./pages/GoogleReview"));
 // Optimized React Query client with aggressive caching
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -257,6 +258,7 @@ const App = () => {
                         <Route path="/technical-declaration" element={<TechnicalDeclaration />} />
                         <Route path="/appeal-response" element={<AppealResponse />} />
                         <Route path="/security" element={<Security />} />
+                        <Route path="/google-review" element={<GoogleReview />} />
                         
                         {/* Legacy URL redirects for SEO */}
                         <Route path="/return-policy" element={<Navigate to="/returns" replace />} />
