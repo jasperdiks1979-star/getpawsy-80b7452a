@@ -131,8 +131,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [items, syncAbandonedCart]);
 
+  // Production domains where tracking should be active
+  const PRODUCTION_DOMAINS = ['getpawsy.pet', 'www.getpawsy.pet', 'getpawsy.lovable.app'];
+  
   // Track cart activity for visitor map
   const trackCartActivity = useCallback(async () => {
+    // Only track on production domains
+    if (!PRODUCTION_DOMAINS.includes(window.location.hostname)) {
+      return;
+    }
+
     try {
       let sessionId = sessionStorage.getItem("visitor_session_id");
       if (!sessionId) {

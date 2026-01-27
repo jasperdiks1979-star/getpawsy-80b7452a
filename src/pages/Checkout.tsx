@@ -222,8 +222,16 @@ const Checkout = () => {
     }
   };
 
+  // Production domains where tracking should be active
+  const PRODUCTION_DOMAINS = ['getpawsy.pet', 'www.getpawsy.pet', 'getpawsy.lovable.app'];
+
   // Track checkout activity for visitor map
   const trackCheckoutActivity = async () => {
+    // Only track on production domains
+    if (!PRODUCTION_DOMAINS.includes(window.location.hostname)) {
+      return;
+    }
+
     try {
       let sessionId = sessionStorage.getItem("visitor_session_id");
       if (!sessionId) {

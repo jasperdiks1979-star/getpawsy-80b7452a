@@ -182,9 +182,9 @@ export const LiveVisitorBadge = () => {
               </span>
             </button>
           </TooltipTrigger>
-          <TooltipContent side="left" className="text-xs max-w-[200px]">
+          <TooltipContent side="left" className="text-xs max-w-[220px]">
             <p className="font-medium">Actieve bezoekers (laatste 15 min)</p>
-            <p className="text-muted-foreground mt-1">Bron: Eigen tracking via visitor_activity tabel — direct real-time</p>
+            <p className="text-muted-foreground mt-1">Bron: Eigen tracking — alleen productie-domein (getpawsy.pet)</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
