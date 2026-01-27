@@ -21,8 +21,12 @@ import {
   Database,
   Eye
 } from 'lucide-react';
+import { useCrawlerTracking } from '@/hooks/useCrawlerTracking';
 
 const GoogleReview = () => {
+  // Track crawler visits to this page
+  useCrawlerTracking('/google-review');
+
   useEffect(() => {
     document.title = 'Google Ads Review Documentation - GetPawsy.pet';
   }, []);

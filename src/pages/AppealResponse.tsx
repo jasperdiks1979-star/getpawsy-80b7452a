@@ -3,8 +3,12 @@ import { Helmet } from 'react-helmet-async';
 import logo from '@/assets/logo-getpawsy-full.png';
 import safeBrowsingScreenshot from '@/assets/safe-browsing-report.png';
 import { CheckCircle2, ExternalLink, FileText, Shield, Globe, Code, Mail } from 'lucide-react';
+import { useCrawlerTracking } from '@/hooks/useCrawlerTracking';
 
 const AppealResponse = () => {
+  // Track crawler visits to this page
+  useCrawlerTracking('/appeal-response');
+
   useEffect(() => {
     document.title = 'Google Ads Appeal Response - GetPawsy.pet';
   }, []);

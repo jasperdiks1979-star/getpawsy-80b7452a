@@ -415,6 +415,39 @@ export type Database = {
         }
         Relationships: []
       }
+      crawler_visits: {
+        Row: {
+          bot_type: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          is_googlebot: boolean
+          page_url: string
+          referrer: string | null
+          user_agent: string
+        }
+        Insert: {
+          bot_type?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_googlebot?: boolean
+          page_url: string
+          referrer?: string | null
+          user_agent: string
+        }
+        Update: {
+          bot_type?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_googlebot?: boolean
+          page_url?: string
+          referrer?: string | null
+          user_agent?: string
+        }
+        Relationships: []
+      }
       cron_job_logs: {
         Row: {
           completed_at: string | null

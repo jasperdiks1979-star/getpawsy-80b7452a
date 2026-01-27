@@ -1,7 +1,11 @@
 import { useEffect } from 'react';
 import logo from '@/assets/logo-getpawsy-full.png';
+import { useCrawlerTracking } from '@/hooks/useCrawlerTracking';
 
 const TechnicalDeclaration = () => {
+  // Track crawler visits to this page
+  useCrawlerTracking('/technical-declaration');
+
   useEffect(() => {
     // Set document title for PDF
     document.title = 'Technical Declaration - GetPawsy.pet - Google Ads Review';
