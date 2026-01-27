@@ -51,7 +51,7 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
+  Tooltip as RechartsTooltip, 
   ResponsiveContainer,
   BarChart,
   Bar,
@@ -78,6 +78,8 @@ import PagePerformanceComparison from "./PagePerformanceComparison";
 import GA4HistoricalDashboard from "./GA4HistoricalDashboard";
 import RealTimeKPIWidget from "./RealTimeKPIWidget";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
+import { useLiveVisitors } from "@/hooks/useLiveVisitors";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Types for GA4 API responses
 interface GA4Row {
@@ -311,6 +313,9 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
   
   // Use authenticated fetch hook for automatic token refresh
   const { invokeFunction } = useAuthenticatedFetch();
+  
+  // Use live visitors from visitor_activity table (same source as LiveVisitorBadge)
+  const { stats: liveVisitorStats, isLoading: liveVisitorsLoading } = useLiveVisitors();
   
   // Widget customization
   const {
@@ -1275,13 +1280,25 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
           <div className="flex flex-wrap gap-4">
             {isWidgetVisible('active-users') && (
               <div className={getWidgetSizeClass('active-users')}>
-                <MetricCard
-                  title="Actieve Gebruikers"
-                  value={overviewMetrics.activeUsers.toLocaleString()}
-                  icon={<Users className="w-5 h-5" />}
-                  subtitle="Nu actief"
-                  loading={isLoading}
-                />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <MetricCard
+                          title="Gebruikers Nu Actief"
+                          value={liveVisitorStats.total.toLocaleString()}
+                          icon={<Users className="w-5 h-5" />}
+                          subtitle={`${liveVisitorStats.browsing} browsen • ${liveVisitorStats.cart} winkelwagen • ${liveVisitorStats.checkout} checkout`}
+                          loading={liveVisitorsLoading}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs max-w-[250px]">
+                      <p className="font-medium">Live bezoekers (laatste 15 min)</p>
+                      <p className="text-muted-foreground mt-1">Bron: Eigen tracking — alleen productie-domein (getpawsy.pet)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             )}
             {isWidgetVisible('pageviews') && (
@@ -1373,7 +1390,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis dataKey="date" className="text-xs" />
                         <YAxis className="text-xs" />
-                        <Tooltip 
+                        <RechartsTooltip 
                           contentStyle={{ 
                             backgroundColor: "hsl(var(--card))",
                             border: "1px solid hsl(var(--border))",
@@ -1756,7 +1773,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                             <XAxis type="number" className="text-xs" />
                             <YAxis dataKey="name" type="category" className="text-xs" width={80} />
-                            <Tooltip 
+                            <RechartsTooltip 
                               contentStyle={{ 
                                 backgroundColor: "hsl(var(--card))",
                                 border: "1px solid hsl(var(--border))",
@@ -1959,7 +1976,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="date" className="text-xs" />
                       <YAxis className="text-xs" tickFormatter={(value) => `$${value}`} />
-                      <Tooltip 
+                      <RechartsTooltip 
                         contentStyle={{ 
                           backgroundColor: "hsl(var(--card))",
                           border: "1px solid hsl(var(--border))",
@@ -2139,7 +2156,7 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="date" className="text-xs" />
                       <YAxis className="text-xs" />
-                      <Tooltip 
+                      <RechartsTooltip 
                         contentStyle={{ 
                           backgroundColor: "hsl(var(--card))",
                           border: "1px solid hsl(var(--border))",
