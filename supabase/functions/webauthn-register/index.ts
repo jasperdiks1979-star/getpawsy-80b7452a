@@ -6,6 +6,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// In-memory challenge store with expiry (5 minutes)
+const challengeStore = new Map<string, { challenge: string; userId: string; expiresAt: number }>();
+const CHALLENGE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+
+// Clean up expired challenges periodically
+function cleanupExpiredChallenges() {
+  const now = Date.now();
+  for (const [key, value] of challengeStore.entries()) {
+    if (now > value.expiresAt) {
+      challengeStore.delete(key);
+    }
+  }
+}
+
 // Base64URL encoding/decoding utilities
 function base64URLEncode(buffer: ArrayBuffer | Uint8Array): string {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
@@ -59,15 +73,30 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action, credential, challenge, deviceName } = body;
+    const { action, credential, challenge: providedChallenge, deviceName } = body;
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Periodically cleanup expired challenges
+    if (Math.random() < 0.1) {
+      cleanupExpiredChallenges();
+    }
 
     if (action === "get-challenge") {
       // Generate a random challenge
       const challengeBuffer = new Uint8Array(32);
       crypto.getRandomValues(challengeBuffer);
       const challengeBase64 = base64URLEncode(challengeBuffer);
+
+      // Store the challenge with user ID and expiry
+      // Use challenge as key to prevent multiple valid challenges per user
+      challengeStore.set(challengeBase64, {
+        challenge: challengeBase64,
+        userId: user.id,
+        expiresAt: Date.now() + CHALLENGE_EXPIRY_MS,
+      });
+
+      console.log("[WEBAUTHN-REGISTER] Challenge generated for user:", user.id);
 
       return new Response(
         JSON.stringify({
@@ -82,13 +111,54 @@ serve(async (req) => {
     }
 
     if (action === "register") {
-      // Validate credential
+      // Validate credential structure
       if (!credential || !credential.id || !credential.response) {
         return new Response(
           JSON.stringify({ error: "Invalid credential data" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      // Validate that a challenge was provided
+      if (!providedChallenge || typeof providedChallenge !== "string") {
+        console.error("[WEBAUTHN-REGISTER] No challenge provided for registration");
+        return new Response(
+          JSON.stringify({ error: "Challenge is required for registration" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Validate the challenge exists and belongs to this user
+      const storedChallenge = challengeStore.get(providedChallenge);
+      if (!storedChallenge) {
+        console.error("[WEBAUTHN-REGISTER] Invalid or expired challenge");
+        return new Response(
+          JSON.stringify({ error: "Invalid or expired challenge. Please try again." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Verify the challenge hasn't expired
+      if (Date.now() > storedChallenge.expiresAt) {
+        challengeStore.delete(providedChallenge);
+        console.error("[WEBAUTHN-REGISTER] Challenge expired");
+        return new Response(
+          JSON.stringify({ error: "Challenge has expired. Please try again." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Verify the challenge belongs to the authenticated user
+      if (storedChallenge.userId !== user.id) {
+        console.error("[WEBAUTHN-REGISTER] Challenge user mismatch");
+        return new Response(
+          JSON.stringify({ error: "Invalid challenge for this user" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Delete the challenge immediately to prevent replay attacks
+      challengeStore.delete(providedChallenge);
 
       // Store the credential
       const { error: insertError } = await supabaseAdmin
@@ -114,6 +184,8 @@ serve(async (req) => {
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      console.log("[WEBAUTHN-REGISTER] Passkey registered successfully for user:", user.id);
 
       return new Response(
         JSON.stringify({ success: true, message: "Passkey registered successfully" }),

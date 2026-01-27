@@ -135,13 +135,14 @@ export const usePasskey = () => {
         },
       };
 
-      // Register with server
+      // Register with server - include challenge for validation
       const { data: registerData, error: registerError } = await supabase.functions.invoke(
         'webauthn-register',
         {
           body: {
             action: 'register',
             credential: credentialData,
+            challenge: challenge, // Include the challenge for server-side validation
             deviceName: deviceName || getDeviceName(),
           },
         }
