@@ -25,19 +25,34 @@ interface MapConfig {
   autoFocus: boolean;
 }
 
+const STORAGE_KEY = "visitor-map-config";
+
+const getStoredConfig = (): MapConfig => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return { ...{ heatmapMode: false, markerSize: 14, autoFocus: true }, ...JSON.parse(stored) };
+    }
+  } catch (e) {
+    console.warn("Failed to parse stored map config:", e);
+  }
+  return { heatmapMode: false, markerSize: 14, autoFocus: true };
+};
+
 export const RealtimeVisitorMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
-  const [config, setConfig] = useState<MapConfig>({
-    heatmapMode: false,
-    markerSize: 14,
-    autoFocus: true,
-  });
+  const [config, setConfig] = useState<MapConfig>(getStoredConfig);
   
   const { locations, locationStats, isLoading } = useVisitorLocations(15000);
+
+  // Persist config to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  }, [config]);
 
   // Auto-focus on active regions
   const focusOnActiveRegions = useCallback(() => {
