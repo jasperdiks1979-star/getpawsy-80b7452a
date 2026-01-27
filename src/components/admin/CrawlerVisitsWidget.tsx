@@ -3,15 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Bot, Clock, Globe, RefreshCw, BarChart3, Wifi, WifiOff } from 'lucide-react';
+import { Bot, Clock, Globe, RefreshCw, BarChart3, Wifi, WifiOff, Volume2, VolumeX, Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
+type NotificationMode = 'sound' | 'notification' | 'off';
 
 interface CrawlerVisit {
   id: string;
@@ -23,6 +25,11 @@ interface CrawlerVisit {
   referrer: string | null;
   created_at: string;
 }
+
+const STORAGE_KEY = 'crawler-notification-mode';
+
+// Notification sound (short alert beep - base64 encoded)
+const ALERT_SOUND = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYZNzBQcAAAAAAD/+1DEAAAGAAGn9AAAIwwAM/8AAAEnqBWe5jnOc5znP/znP/znOdACAIAgCEMYxiIIg/8QBD5znf+c5wQBD//+EAQdn//5znOc5wQBA4AAAA+sQADThADOcAGIYBiGQZhCOY7OP/zhAEHZ//wgCDs4QB/8IAgcAAB/5znOc7OEATOP/zhAEP//EAQOAAAf/nOc5znZwgCHAAAP/nOc5znBAEHZ//wgCB2cIA/+EAQdnCAJ8IAn//+XJIAAAAATEY3Aw';
 
 // Live indicator component
 const LiveIndicator = ({ status }: { status: ConnectionStatus }) => (
@@ -50,8 +57,58 @@ const LiveIndicator = ({ status }: { status: ConnectionStatus }) => (
   </Tooltip>
 );
 
+// Notification toggle component
+const NotificationToggle = ({ 
+  mode, 
+  onToggle 
+}: { 
+  mode: NotificationMode; 
+  onToggle: () => void;
+}) => {
+  const getIcon = () => {
+    switch (mode) {
+      case 'sound':
+        return <Volume2 className="h-4 w-4 text-emerald-500" />;
+      case 'notification':
+        return <Bell className="h-4 w-4 text-blue-500" />;
+      case 'off':
+        return <VolumeX className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
+  const getLabel = () => {
+    switch (mode) {
+      case 'sound':
+        return 'Geluid aan';
+      case 'notification':
+        return 'Browser notificatie';
+      case 'off':
+        return 'Notificaties uit';
+    }
+  };
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="sm" onClick={onToggle}>
+          {getIcon()}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="text-xs">
+        {getLabel()} — klik om te wisselen
+      </TooltipContent>
+    </Tooltip>
+  );
+};
+
 export const CrawlerVisitsWidget = () => {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
+  const [notificationMode, setNotificationMode] = useState<NotificationMode>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return (stored as NotificationMode) || 'sound';
+  });
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastVisitIdRef = useRef<string | null>(null);
   
   const { data: visits, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['crawler-visits'],
@@ -67,9 +124,96 @@ export const CrawlerVisitsWidget = () => {
     },
   });
 
-  const handleRealtimeUpdate = useCallback(() => {
+  // Initialize audio
+  useEffect(() => {
+    audioRef.current = new Audio(ALERT_SOUND);
+    audioRef.current.volume = 0.5;
+  }, []);
+
+  // Toggle notification mode
+  const toggleNotificationMode = useCallback(async () => {
+    const modes: NotificationMode[] = ['sound', 'notification', 'off'];
+    const currentIndex = modes.indexOf(notificationMode);
+    let nextMode = modes[(currentIndex + 1) % modes.length];
+
+    // If switching to browser notification, request permission
+    if (nextMode === 'notification') {
+      if (!('Notification' in window)) {
+        toast.error('Browser notificaties worden niet ondersteund');
+        nextMode = 'off';
+      } else if (Notification.permission === 'denied') {
+        toast.error('Browser notificaties zijn geblokkeerd');
+        nextMode = 'off';
+      } else if (Notification.permission !== 'granted') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          toast.info('Notificatie permissie niet verleend');
+          nextMode = 'off';
+        }
+      }
+    }
+
+    setNotificationMode(nextMode);
+    localStorage.setItem(STORAGE_KEY, nextMode);
+
+    const modeLabels = {
+      sound: 'Geluid notificatie',
+      notification: 'Browser notificatie',
+      off: 'Notificaties uit'
+    };
+    toast.success(modeLabels[nextMode]);
+  }, [notificationMode]);
+
+  // Play sound notification
+  const playSound = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {
+        // Audio play failed (user hasn't interacted with page yet)
+      });
+    }
+  }, []);
+
+  // Show browser notification
+  const showBrowserNotification = useCallback((visit: CrawlerVisit) => {
+    if (Notification.permission === 'granted') {
+      const notification = new Notification('🤖 Googlebot Bezoek!', {
+        body: `${visit.bot_type || 'Googlebot'} heeft ${visit.page_url} bezocht`,
+        icon: '/favicon.ico',
+        tag: 'googlebot-visit',
+        requireInteraction: false,
+      });
+
+      setTimeout(() => notification.close(), 5000);
+    }
+  }, []);
+
+  // Handle new Googlebot visit
+  const handleNewGooglebotVisit = useCallback((visit: CrawlerVisit) => {
+    if (notificationMode === 'sound') {
+      playSound();
+    } else if (notificationMode === 'notification') {
+      showBrowserNotification(visit);
+    }
+
+    // Always show toast for Googlebot visits
+    toast.success(`🤖 ${visit.bot_type || 'Googlebot'} bezoekt ${visit.page_url}`, {
+      duration: 5000,
+    });
+  }, [notificationMode, playSound, showBrowserNotification]);
+
+  // Handle realtime update with notification
+  const handleRealtimeUpdate = useCallback((payload: { new: CrawlerVisit }) => {
+    const newVisit = payload.new;
+    
+    // Only notify for new Googlebot visits
+    if (newVisit.is_googlebot && newVisit.id !== lastVisitIdRef.current) {
+      lastVisitIdRef.current = newVisit.id;
+      handleNewGooglebotVisit(newVisit);
+    }
+    
     refetch();
-  }, [refetch]);
+  }, [refetch, handleNewGooglebotVisit]);
 
   // Realtime subscription
   useEffect(() => {
@@ -84,7 +228,7 @@ export const CrawlerVisitsWidget = () => {
           schema: 'public',
           table: 'crawler_visits',
         },
-        handleRealtimeUpdate
+        handleRealtimeUpdate as any
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
@@ -101,6 +245,13 @@ export const CrawlerVisitsWidget = () => {
     };
   }, [handleRealtimeUpdate]);
 
+  // Set initial last visit ID to prevent notification on first load
+  useEffect(() => {
+    if (visits && visits.length > 0 && !lastVisitIdRef.current) {
+      lastVisitIdRef.current = visits[0].id;
+    }
+  }, [visits]);
+
   const googlebotVisits = visits?.filter(v => v.is_googlebot) || [];
   const otherBotVisits = visits?.filter(v => !v.is_googlebot && v.bot_type) || [];
 
@@ -114,6 +265,7 @@ export const CrawlerVisitsWidget = () => {
             <LiveIndicator status={connectionStatus} />
           </div>
           <div className="flex items-center gap-2">
+            <NotificationToggle mode={notificationMode} onToggle={toggleNotificationMode} />
             <Link to="/admin/crawler-analytics">
               <Button variant="outline" size="sm">
                 <BarChart3 className="h-4 w-4 mr-1" />
