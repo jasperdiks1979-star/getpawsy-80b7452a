@@ -1710,6 +1710,48 @@ export type Database = {
           },
         ]
       }
+      scraped_content: {
+        Row: {
+          content_html: string | null
+          content_markdown: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          scraped_by: string | null
+          tags: string[] | null
+          title: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          content_html?: string | null
+          content_markdown?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          scraped_by?: string | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          content_html?: string | null
+          content_markdown?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          scraped_by?: string | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           created_at: string

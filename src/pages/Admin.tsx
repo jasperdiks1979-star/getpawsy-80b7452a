@@ -44,6 +44,7 @@ const CJWebhookManager = lazy(() => import("@/components/admin/CJWebhookManager"
 const PackagingManager = lazy(() => import("@/components/admin/PackagingManager"));
 const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRankingTracker").then(module => ({ default: module.KeywordRankingTracker })));
 const ProductResearchTool = lazy(() => import("@/components/admin/product-research/ProductResearchTool").then(module => ({ default: module.ProductResearchTool })));
+const ContentScraperTool = lazy(() => import("@/components/admin/content-scraper/ContentScraperTool").then(module => ({ default: module.ContentScraperTool })));
 import { MiniKPIWidget } from "@/components/admin/MiniKPIWidget";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1323,6 +1324,12 @@ const Admin = () => {
                 <TabsTrigger value="product-research" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Globe className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Research</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Content scrapen voor research">
+                <TabsTrigger value="content-scraper" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Scraper</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -2966,6 +2973,22 @@ const Admin = () => {
                 </Card>
               }>
                 <ProductResearchTool />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Content Scraper Tab */}
+          <TabsContent value="content-scraper">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Content scraper laden...</span>
+                  </div>
+                </Card>
+              }>
+                <ContentScraperTool />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
