@@ -43,6 +43,7 @@ const DisputeManager = lazy(() => import("@/components/admin/DisputeManager"));
 const CJWebhookManager = lazy(() => import("@/components/admin/CJWebhookManager"));
 const PackagingManager = lazy(() => import("@/components/admin/PackagingManager"));
 const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRankingTracker").then(module => ({ default: module.KeywordRankingTracker })));
+const ProductResearchTool = lazy(() => import("@/components/admin/product-research/ProductResearchTool").then(module => ({ default: module.ProductResearchTool })));
 import { MiniKPIWidget } from "@/components/admin/MiniKPIWidget";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1316,6 +1317,12 @@ const Admin = () => {
                 <TabsTrigger value="keywords" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Search className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Keywords</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Product research van externe URLs">
+                <TabsTrigger value="product-research" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <Globe className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Research</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -2943,6 +2950,22 @@ const Admin = () => {
                 </Card>
               }>
                 <KeywordRankingTracker />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Product Research Tab */}
+          <TabsContent value="product-research">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Product research laden...</span>
+                  </div>
+                </Card>
+              }>
+                <ProductResearchTool />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
