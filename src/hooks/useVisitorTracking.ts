@@ -10,6 +10,19 @@ interface GeoLocation {
   city?: string;
 }
 
+// Production domains where tracking should be active
+const PRODUCTION_DOMAINS = [
+  'getpawsy.pet',
+  'www.getpawsy.pet',
+  'getpawsy.lovable.app',
+];
+
+// Check if we're on a production domain
+const isProductionDomain = (): boolean => {
+  const hostname = window.location.hostname;
+  return PRODUCTION_DOMAINS.includes(hostname);
+};
+
 // Generate a unique session ID
 const getSessionId = (): string => {
   let sessionId = sessionStorage.getItem("visitor_session_id");
@@ -54,6 +67,12 @@ export const useVisitorTracking = () => {
 
   // Track visitor activity
   const trackActivity = useCallback(async (activityType: ActivityType) => {
+    // Only track on production domains
+    if (!isProductionDomain()) {
+      console.log('[Visitor Tracking] Skipped - not a production domain');
+      return;
+    }
+
     // Don't track duplicate consecutive activities
     if (lastActivityRef.current === activityType) return;
     lastActivityRef.current = activityType;
