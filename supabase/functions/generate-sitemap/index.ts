@@ -6,8 +6,8 @@ const corsHeaders = {
 };
 
 const BASE_URL = "https://getpawsy.pet";
-// Use primary domain for sitemap URLs to avoid cloaking detection
-const SITEMAP_BASE_URL = "https://getpawsy.pet";
+// Use edge function URL for sitemap index references (Google can't follow SPA redirects)
+const SITEMAP_BASE_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap";
 
 interface Product {
   id: string;
@@ -146,31 +146,31 @@ function generateSitemapIndex(today: string): string {
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Static Pages Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}/sitemap-static.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=static</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   
   <!-- Products Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}/sitemap-products.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=products</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   
   <!-- Categories Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}/sitemap-categories.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=categories</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   
   <!-- Bestsellers Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}/sitemap-bestsellers.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=bestsellers</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   
   <!-- Blog Posts Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}/sitemap-blog.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=blog</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
 </sitemapindex>`;
