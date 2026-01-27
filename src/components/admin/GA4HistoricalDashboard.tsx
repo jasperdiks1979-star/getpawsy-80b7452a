@@ -55,6 +55,7 @@ import WeekOverWeekComparison from "./WeekOverWeekComparison";
 import MonthOverMonthComparison from "./MonthOverMonthComparison";
 import QuarterOverQuarterComparison from "./QuarterOverQuarterComparison";
 import YearOverYearComparison from "./YearOverYearComparison";
+import CombinedAnalyticsReport from "./CombinedAnalyticsReport";
 
 interface GA4Snapshot {
   id: string;
@@ -505,6 +506,9 @@ const GA4HistoricalDashboard = memo(() => {
 
       {/* Year-over-Year Comparison */}
       <YearOverYearComparison />
+
+      {/* Combined Analytics Report */}
+      <CombinedAnalyticsReport />
 
       {/* Charts */}
       <Tabs defaultValue="traffic" className="space-y-4">
