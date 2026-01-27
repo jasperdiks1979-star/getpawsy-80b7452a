@@ -6,7 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useContentScraper } from '@/hooks/useContentScraper';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useContentScraper, BatchResult } from '@/hooks/useContentScraper';
 import { 
   Search, 
   Loader2, 
@@ -18,25 +20,40 @@ import {
   Trash2,
   ExternalLink,
   Calendar,
-  Tag
+  Tag,
+  Camera,
+  Sparkles,
+  List,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
 export function ContentScraperTool() {
   const [url, setUrl] = useState('');
+  const [batchUrls, setBatchUrls] = useState('');
   const [tags, setTags] = useState('');
   const [notes, setNotes] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('scrape');
+  const [scrapeMode, setScrapeMode] = useState<'single' | 'batch'>('single');
+  
+  // Scrape options
+  const [enableScreenshot, setEnableScreenshot] = useState(false);
+  const [enableSummary, setEnableSummary] = useState(true);
+  const [enableAutoTags, setEnableAutoTags] = useState(true);
   
   const { 
     isLoading, 
     isSaving, 
     result, 
+    batchResults,
     savedContent,
     scrapeUrl, 
+    scrapeUrls,
     saveContent, 
+    saveBatchResult,
     fetchSavedContent,
     deleteContent,
     clearResult 
@@ -50,7 +67,21 @@ export function ContentScraperTool() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await scrapeUrl(url);
+    const options = {
+      screenshot: enableScreenshot,
+      summary: enableSummary,
+      autoTags: enableAutoTags,
+    };
+
+    if (scrapeMode === 'batch') {
+      const urls = batchUrls
+        .split('\n')
+        .map(u => u.trim())
+        .filter(Boolean);
+      await scrapeUrls(urls, options);
+    } else {
+      await scrapeUrl(url, options);
+    }
   };
 
   const handleSave = async () => {
@@ -61,6 +92,14 @@ export function ContentScraperTool() {
       setNotes('');
       clearResult();
       setUrl('');
+    }
+  };
+
+  const handleSaveBatchItem = async (item: BatchResult) => {
+    const success = await saveBatchResult(item, [], '');
+    if (success) {
+      // Remove from batch results by clearing and re-fetching saved
+      fetchSavedContent();
     }
   };
 
@@ -85,7 +124,7 @@ export function ContentScraperTool() {
         </TabsList>
 
         <TabsContent value="scrape" className="space-y-6">
-          {/* Search Form */}
+          {/* Scrape Options */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -96,34 +135,108 @@ export function ContentScraperTool() {
                 Voer een URL in om de content te scrapen voor research of content creatie.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="flex gap-3">
-                <Input
-                  type="text"
-                  placeholder="https://example.com/artikel..."
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="flex-1"
-                  disabled={isLoading}
-                />
-                <Button type="submit" disabled={isLoading || !url.trim()}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Scrapen...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="mr-2 h-4 w-4" />
-                      Scrape
-                    </>
-                  )}
+            <CardContent className="space-y-4">
+              {/* Mode Toggle */}
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant={scrapeMode === 'single' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setScrapeMode('single')}
+                >
+                  <Globe className="h-4 w-4 mr-2" />
+                  Enkele URL
                 </Button>
-                {result && (
-                  <Button type="button" variant="outline" onClick={clearResult}>
-                    Wissen
-                  </Button>
+                <Button 
+                  type="button" 
+                  variant={scrapeMode === 'batch' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setScrapeMode('batch')}
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  Batch (max 10)
+                </Button>
+              </div>
+
+              {/* Options */}
+              <div className="flex flex-wrap gap-6 p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="screenshot"
+                    checked={enableScreenshot}
+                    onCheckedChange={setEnableScreenshot}
+                  />
+                  <Label htmlFor="screenshot" className="flex items-center gap-1 cursor-pointer">
+                    <Camera className="h-4 w-4" />
+                    Screenshot
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="summary"
+                    checked={enableSummary}
+                    onCheckedChange={setEnableSummary}
+                  />
+                  <Label htmlFor="summary" className="flex items-center gap-1 cursor-pointer">
+                    <Sparkles className="h-4 w-4" />
+                    AI Samenvatting
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="autotags"
+                    checked={enableAutoTags}
+                    onCheckedChange={setEnableAutoTags}
+                  />
+                  <Label htmlFor="autotags" className="flex items-center gap-1 cursor-pointer">
+                    <Tag className="h-4 w-4" />
+                    Auto Tags
+                  </Label>
+                </div>
+              </div>
+
+              {/* URL Input */}
+              <form onSubmit={handleSubmit} className="space-y-3">
+                {scrapeMode === 'single' ? (
+                  <Input
+                    type="text"
+                    placeholder="https://example.com/artikel..."
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    disabled={isLoading}
+                  />
+                ) : (
+                  <Textarea
+                    placeholder="Voer URLs in, één per regel..."
+                    value={batchUrls}
+                    onChange={(e) => setBatchUrls(e.target.value)}
+                    disabled={isLoading}
+                    rows={5}
+                  />
                 )}
+                <div className="flex gap-3">
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || (scrapeMode === 'single' ? !url.trim() : !batchUrls.trim())}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Scrapen...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="mr-2 h-4 w-4" />
+                        {scrapeMode === 'batch' ? 'Batch Scrape' : 'Scrape'}
+                      </>
+                    )}
+                  </Button>
+                  {(result || batchResults.length > 0) && (
+                    <Button type="button" variant="outline" onClick={clearResult}>
+                      Wissen
+                    </Button>
+                  )}
+                </div>
               </form>
             </CardContent>
           </Card>
@@ -137,7 +250,72 @@ export function ContentScraperTool() {
             </Card>
           )}
 
-          {/* Results */}
+          {/* Batch Results */}
+          {batchResults.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <List className="h-5 w-5" />
+                  Batch Resultaten ({batchResults.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-3">
+                    {batchResults.map((item, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`p-4 rounded-lg border ${item.result.success ? 'bg-muted/30' : 'bg-destructive/10 border-destructive/30'}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              {item.result.success ? (
+                                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                              ) : (
+                                <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+                              )}
+                              <span className="font-medium truncate">
+                                {item.result.title || item.url}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate mt-1">{item.url}</p>
+                            {item.result.autoTags && item.result.autoTags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {item.result.autoTags.map((tag, tidx) => (
+                                  <Badge key={tidx} variant="secondary" className="text-xs">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                            {item.result.summary && (
+                              <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                                {item.result.summary}
+                              </p>
+                            )}
+                          </div>
+                          {item.result.success && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleSaveBatchItem(item)}
+                              disabled={isSaving}
+                            >
+                              <Save className="h-3 w-3 mr-1" />
+                              Opslaan
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Single Result */}
           {result?.success && (
             <div className="space-y-6">
               {/* Title & Metadata */}
@@ -180,9 +358,67 @@ export function ContentScraperTool() {
                         {result.markdown.length.toLocaleString()} karakters
                       </Badge>
                     )}
+                    {result.screenshot && (
+                      <Badge variant="outline">
+                        <Camera className="h-3 w-3 mr-1" />
+                        Screenshot
+                      </Badge>
+                    )}
                   </div>
+
+                  {/* Auto-generated Tags */}
+                  {result.autoTags && result.autoTags.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium mb-2 flex items-center gap-1">
+                        <Sparkles className="h-4 w-4" />
+                        AI-gegenereerde tags:
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {result.autoTags.map((tag, idx) => (
+                          <Badge key={idx} variant="secondary">
+                            <Tag className="h-3 w-3 mr-1" />
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+
+              {/* AI Summary */}
+              {result.summary && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Sparkles className="h-4 w-4" />
+                      AI Samenvatting
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{result.summary}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Screenshot Preview */}
+              {result.screenshot && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Camera className="h-4 w-4" />
+                      Screenshot
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <img 
+                      src={result.screenshot} 
+                      alt="Page screenshot" 
+                      className="rounded-lg border max-h-[400px] object-contain w-full"
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Content Preview */}
               <Card>
@@ -236,13 +472,18 @@ export function ContentScraperTool() {
                 <CardContent className="space-y-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">
-                      Tags (komma-gescheiden)
+                      Extra tags (komma-gescheiden)
                     </label>
                     <Input
                       placeholder="research, blog, inspiratie..."
                       value={tags}
                       onChange={(e) => setTags(e.target.value)}
                     />
+                    {result.autoTags && result.autoTags.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        AI tags worden automatisch toegevoegd: {result.autoTags.join(', ')}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">
@@ -254,6 +495,11 @@ export function ContentScraperTool() {
                       onChange={(e) => setNotes(e.target.value)}
                       rows={3}
                     />
+                    {result.summary && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        AI samenvatting wordt automatisch toegevoegd aan notities.
+                      </p>
+                    )}
                   </div>
                   <Button onClick={handleSave} disabled={isSaving} className="w-full">
                     {isSaving ? (
