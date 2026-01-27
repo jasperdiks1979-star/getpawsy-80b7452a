@@ -1468,79 +1468,159 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
         {/* Realtime Tab */}
         <TabsContent value="realtime" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Live Counter */}
+            {/* Live Counter - now using visitor_activity table */}
             <Card className="lg:col-span-1">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <motion.div
-                  key={realtimeUsers}
-                  initial={{ scale: 1.2, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="text-center"
-                >
-                  <div className="text-6xl font-bold text-primary mb-2">{realtimeUsers}</div>
-                  <p className="text-muted-foreground">Gebruikers nu actief</p>
-                </motion.div>
-                <div className="flex items-center gap-2 mt-4">
-                  <Activity className="w-4 h-4 text-green-500 animate-pulse" />
-                  <span className="text-sm text-muted-foreground">Live bijgewerkt (elke 30s)</span>
-                </div>
-                <p className="text-xs text-muted-foreground/70 mt-2 text-center max-w-[200px]">
-                  Bron: Google Analytics 4 — kan enkele minuten vertraagd zijn
-                </p>
+                {liveVisitorsLoading ? (
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <>
+                    <motion.div
+                      key={liveVisitorStats.total}
+                      initial={{ scale: 1.2, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="text-center"
+                    >
+                      <div className="text-6xl font-bold text-primary mb-2">{liveVisitorStats.total}</div>
+                      <p className="text-muted-foreground">Bezoekers nu actief</p>
+                    </motion.div>
+                    
+                    {/* Activity breakdown */}
+                    <div className="flex flex-wrap justify-center gap-3 mt-4">
+                      <Badge variant="outline" className="gap-1">
+                        <Eye className="w-3 h-3" />
+                        {liveVisitorStats.browsing} browsen
+                      </Badge>
+                      <Badge variant="outline" className="gap-1">
+                        <ShoppingCart className="w-3 h-3" />
+                        {liveVisitorStats.cart} winkelwagen
+                      </Badge>
+                      <Badge variant="outline" className="gap-1">
+                        <Target className="w-3 h-3" />
+                        {liveVisitorStats.checkout} checkout
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mt-4">
+                      <Activity className="w-4 h-4 text-green-500 animate-pulse" />
+                      <span className="text-sm text-muted-foreground">Live bijgewerkt (realtime)</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground/70 mt-2 text-center max-w-[220px]">
+                      Bron: Eigen tracking (alleen productie-domein) — laatste 15 minuten
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
-            {/* Realtime Chart */}
+            {/* Activity Distribution Chart */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-yellow-500" />
-                  Gebruikers per Minuut
+                  Activiteitsverdeling
                 </CardTitle>
+                <CardDescription>Wat bezoekers nu doen</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={realtimeHistory.length > 0 ? realtimeHistory : [{ time: 'Nu', users: realtimeUsers }]}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="time" className="text-xs" />
-                      <YAxis className="text-xs" />
-                      <Tooltip />
-                      <Line
-                        type="monotone"
-                        dataKey="users"
-                        stroke="hsl(25, 65%, 45%)"
-                        strokeWidth={2}
-                        dot={{ fill: "hsl(25, 65%, 45%)" }}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  {liveVisitorStats.total === 0 ? (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      Geen actieve bezoekers op dit moment
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart 
+                        data={[
+                          { activity: 'Browsen', count: liveVisitorStats.browsing, fill: 'hsl(200, 65%, 50%)' },
+                          { activity: 'Winkelwagen', count: liveVisitorStats.cart, fill: 'hsl(25, 65%, 50%)' },
+                          { activity: 'Checkout', count: liveVisitorStats.checkout, fill: 'hsl(140, 65%, 40%)' },
+                        ]}
+                        layout="vertical"
+                        margin={{ left: 80 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={false} />
+                        <XAxis type="number" className="text-xs" allowDecimals={false} />
+                        <YAxis type="category" dataKey="activity" className="text-xs" width={75} />
+                        <RechartsTooltip 
+                          formatter={(value: number) => [`${value} bezoekers`, 'Aantal']}
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar 
+                          dataKey="count" 
+                          radius={[0, 4, 4, 0]}
+                        >
+                          {[
+                            { activity: 'Browsen', count: liveVisitorStats.browsing, fill: 'hsl(200, 65%, 50%)' },
+                            { activity: 'Winkelwagen', count: liveVisitorStats.cart, fill: 'hsl(25, 65%, 50%)' },
+                            { activity: 'Checkout', count: liveVisitorStats.checkout, fill: 'hsl(140, 65%, 40%)' },
+                          ].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Active Pages */}
+          {/* Activity Funnel */}
           <Card>
             <CardHeader>
-              <CardTitle>Actieve Pagina's</CardTitle>
-              <CardDescription>Waar gebruikers nu zijn</CardDescription>
+              <CardTitle>Conversie Funnel</CardTitle>
+              <CardDescription>Bezoekersstroom van browsen naar checkout</CardDescription>
             </CardHeader>
             <CardContent>
-              {activePages.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Geen actieve pagina's</p>
+              {liveVisitorStats.total === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Geen actieve bezoekers op dit moment</p>
               ) : (
-                <div className="space-y-3">
-                  {activePages.map((page) => (
-                    <div key={page.page} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <MousePointerClick className="w-4 h-4 text-primary" />
-                        <span className="font-medium truncate max-w-[300px]">{page.page}</span>
-                      </div>
-                      <Badge variant="secondary">{page.activeUsers} actief</Badge>
+                <div className="flex items-center justify-center gap-4 py-6">
+                  {/* Browsing */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-24 h-24 rounded-full bg-blue-500/20 flex items-center justify-center mb-2">
+                      <Eye className="w-8 h-8 text-blue-500" />
                     </div>
-                  ))}
+                    <span className="text-2xl font-bold">{liveVisitorStats.browsing}</span>
+                    <span className="text-sm text-muted-foreground">Browsen</span>
+                  </div>
+                  
+                  <ArrowUpRight className="w-6 h-6 text-muted-foreground rotate-45" />
+                  
+                  {/* Cart */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-20 h-20 rounded-full bg-orange-500/20 flex items-center justify-center mb-2">
+                      <ShoppingCart className="w-7 h-7 text-orange-500" />
+                    </div>
+                    <span className="text-2xl font-bold">{liveVisitorStats.cart}</span>
+                    <span className="text-sm text-muted-foreground">Winkelwagen</span>
+                    {liveVisitorStats.browsing > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        ({((liveVisitorStats.cart / liveVisitorStats.browsing) * 100).toFixed(0)}% van browse)
+                      </span>
+                    )}
+                  </div>
+                  
+                  <ArrowUpRight className="w-6 h-6 text-muted-foreground rotate-45" />
+                  
+                  {/* Checkout */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-2">
+                      <Target className="w-6 h-6 text-green-500" />
+                    </div>
+                    <span className="text-2xl font-bold">{liveVisitorStats.checkout}</span>
+                    <span className="text-sm text-muted-foreground">Checkout</span>
+                    {liveVisitorStats.cart > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        ({((liveVisitorStats.checkout / liveVisitorStats.cart) * 100).toFixed(0)}% van cart)
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>
