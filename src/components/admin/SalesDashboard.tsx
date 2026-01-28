@@ -60,6 +60,10 @@ import { CrawlerVisitsWidget } from "./CrawlerVisitsWidget";
 import { CompetitorProductsWidget } from "./widgets/CompetitorProductsWidget";
 import { CompetitorScrapeLogsWidget } from "./widgets/CompetitorScrapeLogsWidget";
 import { SourcingOpportunitiesWidget } from "./SourcingOpportunitiesWidget";
+import { CompetitorInsightsWidget } from "./competitor/CompetitorInsightsWidget";
+import { CompetitorAlertsWidget } from "./competitor/CompetitorAlertsWidget";
+import { CompetitorPricingChart } from "./competitor/CompetitorPricingChart";
+import { CompetitorTrendsChart } from "./competitor/CompetitorTrendsChart";
 
 interface OrderItem {
   name: string;
@@ -1282,14 +1286,33 @@ export const SalesDashboard = ({ onNavigateToTab }: SalesDashboardProps) => {
         />
       </div>
 
-      {/* Competitor Analysis Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <CompetitorProductsWidget />
+      {/* Competitor Intelligence Section */}
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          🎯 Competitor Intelligence
+        </h2>
+        
+        {/* AI Insights and Alerts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CompetitorInsightsWidget />
+          <CompetitorAlertsWidget />
         </div>
-        <div className="space-y-6">
-          <CompetitorScrapeLogsWidget />
-          <SourcingOpportunitiesWidget />
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CompetitorPricingChart />
+          <CompetitorTrendsChart />
+        </div>
+
+        {/* Competitor Products and Scraper Status */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <CompetitorProductsWidget />
+          </div>
+          <div className="space-y-6">
+            <CompetitorScrapeLogsWidget />
+            <SourcingOpportunitiesWidget />
+          </div>
         </div>
       </div>
     </div>
