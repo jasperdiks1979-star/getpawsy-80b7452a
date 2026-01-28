@@ -352,6 +352,110 @@ export type Database = {
         }
         Relationships: []
       }
+      competitor_alerts: {
+        Row: {
+          alert_type: string
+          competitor: string
+          created_at: string
+          data: Json | null
+          description: string
+          id: string
+          is_dismissed: boolean
+          is_read: boolean
+          product_id: string | null
+          product_name: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          competitor: string
+          created_at?: string
+          data?: Json | null
+          description: string
+          id?: string
+          is_dismissed?: boolean
+          is_read?: boolean
+          product_id?: string | null
+          product_name?: string | null
+          severity?: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          competitor?: string
+          created_at?: string
+          data?: Json | null
+          description?: string
+          id?: string
+          is_dismissed?: boolean
+          is_read?: boolean
+          product_id?: string | null
+          product_name?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitor_analysis_reports: {
+        Row: {
+          competitors_analyzed: string[]
+          created_at: string
+          generated_by: string | null
+          id: string
+          insights: Json
+          pricing_analysis: Json | null
+          product_trends: Json | null
+          products_analyzed: number
+          recommendations: Json
+          report_date: string
+          report_type: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          competitors_analyzed?: string[]
+          created_at?: string
+          generated_by?: string | null
+          id?: string
+          insights?: Json
+          pricing_analysis?: Json | null
+          product_trends?: Json | null
+          products_analyzed?: number
+          recommendations?: Json
+          report_date?: string
+          report_type?: string
+          summary: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          competitors_analyzed?: string[]
+          created_at?: string
+          generated_by?: string | null
+          id?: string
+          insights?: Json
+          pricing_analysis?: Json | null
+          product_trends?: Json | null
+          products_analyzed?: number
+          recommendations?: Json
+          report_date?: string
+          report_type?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       competitor_products: {
         Row: {
           category: string | null
