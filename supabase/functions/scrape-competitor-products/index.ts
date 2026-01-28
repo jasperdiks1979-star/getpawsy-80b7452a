@@ -43,6 +43,180 @@ interface TrendingProduct {
   price?: number;
 }
 
+interface SourcingOpportunity {
+  competitorProductId: string;
+  productName: string;
+  competitor: string;
+  rank: number;
+  price?: number;
+}
+
+// Simple text matching for product names
+function normalizeProductName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function calculateMatchScore(name1: string, name2: string): number {
+  const normalized1 = normalizeProductName(name1);
+  const normalized2 = normalizeProductName(name2);
+  
+  // Extract keywords (words longer than 2 chars)
+  const words1 = new Set(normalized1.split(' ').filter(w => w.length > 2));
+  const words2 = new Set(normalized2.split(' ').filter(w => w.length > 2));
+  
+  if (words1.size === 0 || words2.size === 0) return 0;
+  
+  // Count matching words
+  let matches = 0;
+  for (const word of words1) {
+    if (words2.has(word)) matches++;
+  }
+  
+  // Calculate Jaccard similarity
+  const union = new Set([...words1, ...words2]);
+  return Math.round((matches / union.size) * 100);
+}
+
+async function updateBestsellersFromCompetitors(
+  supabase: any,
+  competitorProducts: { id: string; product_name: string; competitor: string; current_rank: number; price?: number }[]
+): Promise<{ matched: number; sourcing: number }> {
+  console.log('Updating bestsellers from competitor data...');
+  
+  // Get all our products
+  const { data: ourProducts, error: productsError } = await supabase
+    .from('products')
+    .select('id, name, slug, is_active')
+    .eq('is_active', true);
+  
+  if (productsError || !ourProducts) {
+    console.error('Failed to fetch our products:', productsError);
+    return { matched: 0, sourcing: 0 };
+  }
+  
+  // Get existing bestsellers
+  const { data: existingBestsellers } = await supabase
+    .from('bestsellers')
+    .select('id, product_id, rank, is_manual')
+    .eq('is_active', true);
+  
+  const manualBestsellerProductIds = new Set(
+    ((existingBestsellers || []) as any[]).filter((b: any) => b.is_manual).map((b: any) => b.product_id)
+  );
+  
+  // Find best match for each competitor product using "highest rank wins"
+  const productBestRank: Map<string, { rank: number; competitorProductId: string }> = new Map();
+  const sourcingOpportunities: SourcingOpportunity[] = [];
+  
+  for (const compProduct of competitorProducts) {
+    // Only consider top 10 products
+    if (compProduct.current_rank > 10) continue;
+    
+    // Try to match to our products
+    let bestMatch: { productId: string; score: number } | null = null;
+    
+    for (const ourProduct of (ourProducts as any[])) {
+      const score = calculateMatchScore(compProduct.product_name, ourProduct.name);
+      
+      // Require at least 40% match
+      if (score >= 40 && (!bestMatch || score > bestMatch.score)) {
+        bestMatch = { productId: ourProduct.id, score };
+      }
+    }
+    
+    if (bestMatch) {
+      // Check if this product should get a better rank
+      const existing = productBestRank.get(bestMatch.productId);
+      if (!existing || compProduct.current_rank < existing.rank) {
+        productBestRank.set(bestMatch.productId, {
+          rank: compProduct.current_rank,
+          competitorProductId: compProduct.id
+        });
+      }
+      
+      // Also create/update product match
+      await supabase
+        .from('product_matches')
+        .upsert({
+          product_id: bestMatch.productId,
+          competitor_product_id: compProduct.id,
+          match_score: bestMatch.score,
+          match_type: 'auto',
+          is_verified: false,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'product_id,competitor_product_id'
+        });
+    } else {
+      // No match found - this is a sourcing opportunity
+      sourcingOpportunities.push({
+        competitorProductId: compProduct.id,
+        productName: compProduct.product_name,
+        competitor: compProduct.competitor,
+        rank: compProduct.current_rank,
+        price: compProduct.price ?? undefined
+      });
+    }
+  }
+  
+  // Update bestsellers (only for non-manual entries)
+  let matchedCount = 0;
+  
+  for (const [productId, { rank }] of productBestRank) {
+    // Skip if this is a manually managed bestseller
+    if (manualBestsellerProductIds.has(productId)) {
+      console.log(`Skipping manual bestseller: ${productId}`);
+      continue;
+    }
+    
+    const product = (ourProducts as any[]).find((p: any) => p.id === productId);
+    if (!product) continue;
+    
+    // Upsert bestseller entry
+    const { error: upsertError } = await supabase
+      .from('bestsellers')
+      .upsert({
+        product_id: productId,
+        slug: product.slug || productId,
+        rank: rank,
+        is_manual: false,
+        is_active: true,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'product_id'
+      });
+    
+    if (!upsertError) {
+      matchedCount++;
+      console.log(`Updated bestseller: ${product.name} (rank ${rank})`);
+    }
+  }
+  
+  // Log sourcing opportunities
+  for (const opportunity of sourcingOpportunities) {
+    await supabase
+      .from('sourcing_opportunities')
+      .upsert({
+        competitor_product_id: opportunity.competitorProductId,
+        product_name: opportunity.productName,
+        competitor: opportunity.competitor,
+        current_rank: opportunity.rank,
+        price: opportunity.price,
+        last_seen_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'competitor_product_id'
+      });
+  }
+  
+  console.log(`Updated ${matchedCount} bestsellers, found ${sourcingOpportunities.length} sourcing opportunities`);
+  return { matched: matchedCount, sourcing: sourcingOpportunities.length };
+}
+
 async function sendTrendingAlert(trendingProducts: TrendingProduct[]): Promise<void> {
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
   if (!resendApiKey || trendingProducts.length === 0) {
@@ -453,6 +627,18 @@ Deno.serve(async (req) => {
       await sendTrendingAlert(trendingProducts);
     }
 
+    // Auto-update bestsellers from competitor data
+    const { data: allCompetitorProducts } = await supabase
+      .from('competitor_products')
+      .select('id, product_name, competitor, current_rank, price')
+      .lte('current_rank', 10)
+      .order('current_rank', { ascending: true });
+    
+    let bestsellersResult = { matched: 0, sourcing: 0 };
+    if (allCompetitorProducts && allCompetitorProducts.length > 0) {
+      bestsellersResult = await updateBestsellersFromCompetitors(supabase, allCompetitorProducts);
+    }
+
     // Calculate totals for cron log
     const totalProducts = results.reduce((sum, r) => sum + r.products, 0);
     const failedCompetitors = results.filter(r => !r.success).length;
@@ -466,13 +652,24 @@ Deno.serve(async (req) => {
           success: failedCompetitors === 0,
           items_processed: totalProducts,
           items_failed: failedCompetitors,
-          details: { results, trendingAlertSent: trendingProducts.length > 0 },
+          details: { 
+            results, 
+            trendingAlertSent: trendingProducts.length > 0,
+            bestsellersMatched: bestsellersResult.matched,
+            sourcingOpportunities: bestsellersResult.sourcing
+          },
         })
         .eq('id', cronLogId);
     }
 
     return new Response(
-      JSON.stringify({ success: true, results, trendingProducts: trendingProducts.length }),
+      JSON.stringify({ 
+        success: true, 
+        results, 
+        trendingProducts: trendingProducts.length,
+        bestsellersMatched: bestsellersResult.matched,
+        sourcingOpportunities: bestsellersResult.sourcing
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

@@ -1779,6 +1779,62 @@ export type Database = {
         }
         Relationships: []
       }
+      sourcing_opportunities: {
+        Row: {
+          cj_product_id: string | null
+          competitor: string
+          competitor_product_id: string | null
+          created_at: string
+          current_rank: number
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          notes: string | null
+          price: number | null
+          product_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cj_product_id?: string | null
+          competitor: string
+          competitor_product_id?: string | null
+          created_at?: string
+          current_rank: number
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          notes?: string | null
+          price?: number | null
+          product_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cj_product_id?: string | null
+          competitor?: string
+          competitor_product_id?: string | null
+          created_at?: string
+          current_rank?: number
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          notes?: string | null
+          price?: number | null
+          product_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sourcing_opportunities_competitor_product_id_fkey"
+            columns: ["competitor_product_id"]
+            isOneToOne: true
+            referencedRelation: "competitor_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_notifications: {
         Row: {
           created_at: string
