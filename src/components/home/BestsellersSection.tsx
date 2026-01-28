@@ -46,7 +46,7 @@ interface BestsellersCarouselProps {
 const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselProps) => {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -56,7 +56,13 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
       setCurrent(api.selectedScrollSnap());
     };
 
+    setScrollSnaps(api.scrollSnapList());
     api.on('select', onSelect);
+    api.on('reInit', () => {
+      setScrollSnaps(api.scrollSnapList());
+      onSelect();
+    });
+    
     return () => {
       api.off('select', onSelect);
     };
@@ -65,45 +71,83 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
   const scrollPrev = useCallback(() => api?.scrollPrev(), [api]);
   const scrollNext = useCallback(() => api?.scrollNext(), [api]);
 
+  // Calculate the visual state for each card based on distance from center
+  const getCardStyle = (index: number) => {
+    const totalItems = bestsellers.length;
+    
+    // Calculate distance from current slide (accounting for loop)
+    let distance = index - current;
+    if (distance > totalItems / 2) distance -= totalItems;
+    if (distance < -totalItems / 2) distance += totalItems;
+    
+    const absDistance = Math.abs(distance);
+    
+    // Scale: center = 1, adjacent = 0.85, further = 0.7
+    const scale = absDistance === 0 ? 1 : absDistance === 1 ? 0.88 : 0.75;
+    
+    // Z-index: center is highest
+    const zIndex = 10 - absDistance;
+    
+    // Opacity: center = 1, fades slightly for distant cards
+    const opacity = absDistance === 0 ? 1 : absDistance === 1 ? 0.9 : 0.7;
+    
+    // 3D rotation for coverflow effect
+    const rotateY = distance * -8;
+    
+    // Vertical offset - center card rises up
+    const translateY = absDistance === 0 ? -12 : absDistance === 1 ? 0 : 8;
+    
+    return {
+      scale,
+      zIndex,
+      opacity,
+      rotateY,
+      translateY,
+      isActive: absDistance === 0,
+      isAdjacent: absDistance === 1,
+    };
+  };
+
   return (
-    <div className="relative">
+    <div className="relative py-8">
       {/* Carousel Controls - Desktop */}
-      <div className="hidden md:flex absolute -left-4 -right-4 top-1/2 -translate-y-1/2 justify-between pointer-events-none z-10">
+      <div className="hidden md:flex absolute -left-6 -right-6 top-1/2 -translate-y-1/2 justify-between pointer-events-none z-20">
         <Button
           variant="outline"
           size="icon"
           onClick={scrollPrev}
-          className="pointer-events-auto rounded-full shadow-lg bg-background/90 backdrop-blur-sm hover:bg-background border-border/50"
+          className="pointer-events-auto rounded-full shadow-xl bg-background/95 backdrop-blur-md hover:bg-background border-border/50 h-12 w-12 hover:scale-110 transition-transform"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-6 h-6" />
         </Button>
         <Button
           variant="outline"
           size="icon"
           onClick={scrollNext}
-          className="pointer-events-auto rounded-full shadow-lg bg-background/90 backdrop-blur-sm hover:bg-background border-border/50"
+          className="pointer-events-auto rounded-full shadow-xl bg-background/95 backdrop-blur-md hover:bg-background border-border/50 h-12 w-12 hover:scale-110 transition-transform"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-6 h-6" />
         </Button>
       </div>
 
       <Carousel
         setApi={setApi}
         opts={{
-          align: 'start',
+          align: 'center',
           loop: true,
+          skipSnaps: false,
         }}
         plugins={[
           Autoplay({
-            delay: 4000,
+            delay: 5000,
             stopOnInteraction: true,
             stopOnMouseEnter: true,
           }),
         ]}
         className="w-full"
       >
-        <CarouselContent className="-ml-4">
-          <AnimatePresence>
+        <CarouselContent className="-ml-2 md:-ml-4" style={{ perspective: '1200px' }}>
+          <AnimatePresence mode="sync">
             {bestsellers.map((bestseller, index) => {
               const product = bestseller.products;
               if (!product) return null;
@@ -122,102 +166,172 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
               const safeImageUrl = safeString(product.image_url) || '/placeholder.svg';
               const safeSlug = safeString(bestseller.slug);
 
+              const cardStyle = getCardStyle(index);
+
               return (
                 <CarouselItem 
                   key={bestseller.id} 
-                  className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/5"
+                  className="pl-2 md:pl-4 basis-[85%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+                  style={{ zIndex: cardStyle.zIndex }}
                 >
                   <motion.div
-                    custom={index}
-                    initial="hidden"
-                    whileInView="visible"
+                    initial={{ opacity: 0, y: 40, scale: 0.8 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
                     viewport={{ once: true, margin: "-50px" }}
-                    variants={cardVariants}
-                    whileHover={{ y: -8, scale: 1.02 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    transition={{ 
+                      delay: index * 0.1,
+                      duration: 0.6,
+                      ease: [0.25, 0.46, 0.45, 0.94],
+                    }}
                   >
-                    <Link
-                      to={`/bestseller/${safeSlug}`}
-                      className="group block bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300"
+                    <motion.div
+                      animate={{
+                        scale: cardStyle.scale,
+                        opacity: cardStyle.opacity,
+                        rotateY: cardStyle.rotateY,
+                        y: cardStyle.translateY,
+                      }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 30,
+                        mass: 0.8,
+                      }}
+                      whileHover={cardStyle.isActive ? { 
+                        scale: 1.05,
+                        y: -20,
+                        transition: { type: "spring", stiffness: 400, damping: 25 }
+                      } : undefined}
+                      style={{ 
+                        transformStyle: 'preserve-3d',
+                        transformOrigin: 'center center',
+                      }}
+                      className="relative"
                     >
-                      {/* Image Container */}
-                      <div className="relative aspect-square overflow-hidden">
-                        {/* Rank Badge */}
-                        <div className="absolute top-3 left-3 z-10">
-                          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 px-3 py-1 text-xs font-bold shadow-lg">
-                            <Award className="w-3 h-3 mr-1" />
-                            #{bestseller.rank}
-                          </Badge>
-                        </div>
-
-                        {/* Discount Badge */}
-                        {discount > 0 && (
-                          <div className="absolute top-3 right-3 z-10">
-                            <Badge variant="destructive" className="px-2 py-1 text-xs font-bold">
-                              -{discount}%
+                      {/* Glow effect for active card */}
+                      {cardStyle.isActive && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-amber-500/20 to-orange-500/20 rounded-3xl blur-2xl -z-10"
+                        />
+                      )}
+                      
+                      <Link
+                        to={`/bestseller/${safeSlug}`}
+                        className={`group block bg-card rounded-2xl overflow-hidden transition-all duration-500 ${
+                          cardStyle.isActive 
+                            ? 'shadow-2xl shadow-primary/20 ring-2 ring-primary/20' 
+                            : cardStyle.isAdjacent 
+                              ? 'shadow-lg shadow-foreground/10' 
+                              : 'shadow-md'
+                        }`}
+                      >
+                        {/* Image Container */}
+                        <div className="relative aspect-square overflow-hidden">
+                          {/* Rank Badge */}
+                          <div className="absolute top-3 left-3 z-10">
+                            <Badge className={`px-3 py-1.5 text-xs font-bold shadow-lg transition-all duration-300 ${
+                              cardStyle.isActive 
+                                ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 scale-110' 
+                                : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0'
+                            }`}>
+                              <Award className="w-3.5 h-3.5 mr-1" />
+                              #{bestseller.rank}
                             </Badge>
                           </div>
-                        )}
 
-                        {/* Product Image */}
-                        <img
-                          src={safeImageUrl}
-                          alt={safeName}
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
+                          {/* Discount Badge */}
+                          {discount > 0 && (
+                            <div className="absolute top-3 right-3 z-10">
+                              <Badge variant="destructive" className={`px-2 py-1 text-xs font-bold transition-all duration-300 ${
+                                cardStyle.isActive ? 'scale-110' : ''
+                              }`}>
+                                -{discount}%
+                              </Badge>
+                            </div>
+                          )}
 
-                        {/* Overlay on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        
-                        {/* View Button on hover */}
-                        <div className="absolute inset-0 flex items-end justify-center pb-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
-                          <span className="bg-white text-foreground px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2">
-                            View Product
-                            <ArrowRight className="w-4 h-4" />
-                          </span>
-                        </div>
-                      </div>
+                          {/* Product Image */}
+                          <img
+                            src={safeImageUrl}
+                            alt={safeName}
+                            loading="lazy"
+                            decoding="async"
+                            className={`w-full h-full object-cover transition-all duration-700 ${
+                              cardStyle.isActive 
+                                ? 'group-hover:scale-110' 
+                                : 'filter brightness-95'
+                            }`}
+                          />
 
-                      {/* Content */}
-                      <div className="p-4">
-                        {/* Category */}
-                        {safeCategory && (
-                          <p className="text-xs text-primary font-medium mb-1 truncate">
-                            {safeCategory}
-                          </p>
-                        )}
-
-                        {/* Product Name */}
-                        <h3 className="font-semibold text-sm mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                          {safeHeadline || safeName}
-                        </h3>
-
-                        {/* Rating */}
-                        {productRating && productRating.reviewCount > 0 ? (
-                          <div className="mb-2">
-                            <StarRating 
-                              rating={productRating.averageRating} 
-                              reviewCount={productRating.reviewCount}
-                              size="sm"
-                            />
-                          </div>
-                        ) : null}
-
-                        {/* Price */}
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-lg font-bold text-primary">
-                            ${safePrice(productPrice)}
-                          </span>
-                          {comparePrice > 0 && (
-                            <span className="text-sm text-muted-foreground line-through">
-                              ${safePrice(comparePrice)}
-                            </span>
+                          {/* Overlay on hover - only for active card */}
+                          {cardStyle.isActive && (
+                            <>
+                              <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                              
+                              {/* View Button on hover */}
+                              <div className="absolute inset-0 flex items-end justify-center pb-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
+                                <motion.span 
+                                  className="bg-white text-foreground px-5 py-2.5 rounded-full text-sm font-semibold shadow-xl flex items-center gap-2"
+                                  whileHover={{ scale: 1.05 }}
+                                >
+                                  View Product
+                                  <ArrowRight className="w-4 h-4" />
+                                </motion.span>
+                              </div>
+                            </>
                           )}
                         </div>
-                      </div>
-                    </Link>
+
+                        {/* Content */}
+                        <div className={`p-4 transition-all duration-300 ${
+                          cardStyle.isActive ? 'bg-card' : 'bg-muted/30'
+                        }`}>
+                          {/* Category */}
+                          {safeCategory && (
+                            <p className={`text-xs font-medium mb-1 truncate transition-colors duration-300 ${
+                              cardStyle.isActive ? 'text-primary' : 'text-muted-foreground'
+                            }`}>
+                              {safeCategory}
+                            </p>
+                          )}
+
+                          {/* Product Name */}
+                          <h3 className={`font-semibold text-sm mb-2 line-clamp-2 transition-colors duration-300 ${
+                            cardStyle.isActive ? 'group-hover:text-primary' : ''
+                          }`}>
+                            {safeHeadline || safeName}
+                          </h3>
+
+                          {/* Rating */}
+                          {productRating && productRating.reviewCount > 0 ? (
+                            <div className="mb-2">
+                              <StarRating 
+                                rating={productRating.averageRating} 
+                                reviewCount={productRating.reviewCount}
+                                size="sm"
+                              />
+                            </div>
+                          ) : null}
+
+                          {/* Price */}
+                          <div className="flex items-baseline gap-2">
+                            <span className={`text-lg font-bold transition-colors duration-300 ${
+                              cardStyle.isActive ? 'text-primary' : 'text-foreground'
+                            }`}>
+                              ${safePrice(productPrice)}
+                            </span>
+                            {comparePrice > 0 && (
+                              <span className="text-sm text-muted-foreground line-through">
+                                ${safePrice(comparePrice)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
                   </motion.div>
                 </CarouselItem>
               );
@@ -226,20 +340,28 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
         </CarouselContent>
       </Carousel>
 
-      {/* Dots Indicator */}
-      <div className="flex justify-center gap-2 mt-6">
-        {bestsellers.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => api?.scrollTo(index)}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              current === index 
-                ? 'w-8 bg-primary' 
-                : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
+      {/* Enhanced Dots Indicator */}
+      <div className="flex justify-center items-center gap-2 mt-8">
+        {bestsellers.map((_, index) => {
+          const isActive = current === index;
+          return (
+            <motion.button
+              key={index}
+              onClick={() => api?.scrollTo(index)}
+              className={`rounded-full transition-all duration-300 ${
+                isActive 
+                  ? 'bg-gradient-to-r from-primary to-amber-500' 
+                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+              }`}
+              animate={{
+                width: isActive ? 32 : 10,
+                height: 10,
+              }}
+              whileHover={{ scale: 1.2 }}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          );
+        })}
       </div>
     </div>
   );
