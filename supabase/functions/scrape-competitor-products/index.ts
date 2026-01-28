@@ -591,8 +591,38 @@ function cleanProductName(name: string): string {
   return cleaned.slice(0, 200);
 }
 
+// Navigation and UI text patterns that should never be product names
+const UI_BLOCKLIST = [
+  // Geolocation and permissions
+  'use my current location', 'allow location', 'enable location',
+  'share location', 'location services', 'find stores near',
+  // Captcha and verification
+  'recaptcha', 'captcha', 'verify you', 'verification required',
+  'not a robot', 'security check', 'human verification',
+  // Generic UI elements
+  'click here', 'learn more', 'read more', 'see more', 'view all',
+  'sign in', 'sign up', 'log in', 'register', 'subscribe',
+  'loading', 'please wait', 'error occurred', 'try again',
+  'accept cookies', 'cookie policy', 'privacy policy', 'terms of service',
+  'add to cart', 'buy now', 'checkout', 'continue shopping',
+  'sort by', 'filter by', 'results for', 'showing results',
+  'no results', 'out of stock', 'back in stock',
+  // Navigation
+  'go back', 'go to', 'return to', 'back to top', 'scroll to',
+  'previous page', 'next page', 'page of',
+];
+
 function isValidProductEntry(name: string): boolean {
   if (!name || name.length < 10) return false;
+  
+  const lowerName = name.toLowerCase();
+  
+  // Check against UI blocklist
+  for (const blocked of UI_BLOCKLIST) {
+    if (lowerName.includes(blocked)) {
+      return false;
+    }
+  }
   
   // Reject entries that are mostly URLs or corrupted
   if (name.startsWith('- ')) return false;
