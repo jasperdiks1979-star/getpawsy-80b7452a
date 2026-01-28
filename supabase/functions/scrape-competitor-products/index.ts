@@ -25,6 +25,16 @@ const COMPETITORS: CompetitorConfig[] = [
     name: 'petco',
     url: 'https://www.petco.com/shop/en/petcostore/category/best-sellers',
   },
+  {
+    name: 'petsmart',
+    // PetSmart bestsellers - tends to be lighter/easier to scrape
+    url: 'https://www.petsmart.com/featured-shops/best-sellers/',
+  },
+  {
+    name: 'walmart',
+    // Walmart Pet section - simpler page structure
+    url: 'https://www.walmart.com/browse/pets/best-selling-pet-supplies/5440_1087436_1646921',
+  },
 ];
 
 interface ScrapedProduct {
@@ -383,8 +393,9 @@ async function scrapeCompetitor(
 ): Promise<ScrapedProduct[]> {
   console.log(`Scraping ${competitor.name}...`);
   
-  // Use longer timeout for heavy sites like Chewy and Petco
-  const waitTime = competitor.name === 'amazon' ? 3000 : 10000;
+  // Configure wait times per retailer - lighter sites need less time
+  const lightSites = ['amazon', 'petsmart', 'walmart'];
+  const waitTime = lightSites.includes(competitor.name) ? 3000 : 10000;
   
   const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
     method: 'POST',
