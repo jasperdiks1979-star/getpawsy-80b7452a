@@ -58,6 +58,7 @@ import { SecurityIssuesWidget } from "./SecurityIssuesWidget";
 import { CronJobsWidget } from "./CronJobsWidget";
 import { CrawlerVisitsWidget } from "./CrawlerVisitsWidget";
 import { CompetitorProductsWidget } from "./widgets/CompetitorProductsWidget";
+import { CompetitorScrapeLogsWidget } from "./widgets/CompetitorScrapeLogsWidget";
 import { SourcingOpportunitiesWidget } from "./SourcingOpportunitiesWidget";
 
 interface OrderItem {
@@ -1286,7 +1287,8 @@ export const SalesDashboard = ({ onNavigateToTab }: SalesDashboardProps) => {
         <div className="lg:col-span-2">
           <CompetitorProductsWidget />
         </div>
-        <div>
+        <div className="space-y-6">
+          <CompetitorScrapeLogsWidget />
           <SourcingOpportunitiesWidget />
         </div>
       </div>
