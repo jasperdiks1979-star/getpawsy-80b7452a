@@ -113,8 +113,8 @@ async function updateBestsellersFromCompetitors(
   const sourcingOpportunities: SourcingOpportunity[] = [];
   
   for (const compProduct of competitorProducts) {
-    // Only consider top 10 products
-    if (compProduct.current_rank > 10) continue;
+    // Only consider top 25 products
+    if (compProduct.current_rank > 25) continue;
     
     // Try to match to our products
     let bestMatch: { productId: string; score: number } | null = null;
@@ -429,13 +429,13 @@ function parseProductsFromMarkdown(
     }
   }
   
-  // Limit to top 20 products and ensure unique names
+  // Limit to top 25 products and ensure unique names
   const seen = new Set<string>();
   const uniqueProducts: ScrapedProduct[] = [];
   
   for (const product of products) {
     const key = product.name.toLowerCase();
-    if (!seen.has(key) && uniqueProducts.length < 20) {
+    if (!seen.has(key) && uniqueProducts.length < 25) {
       seen.add(key);
       uniqueProducts.push({
         ...product,
