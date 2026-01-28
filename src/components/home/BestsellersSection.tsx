@@ -82,22 +82,32 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
     
     const absDistance = Math.abs(distance);
     
-    // Scale: center = 1.08 (bigger!), adjacent = 0.82, further = 0.68
+    // On mobile: only show the active card prominently, hide others more
+    if (isMobile) {
+      const scale = absDistance === 0 ? 1 : absDistance === 1 ? 0.7 : 0.5;
+      const zIndex = 10 - absDistance;
+      const opacity = absDistance === 0 ? 1 : absDistance === 1 ? 0.4 : 0.2;
+      // No 3D rotation on mobile to prevent overlap
+      const rotateY = 0;
+      const translateY = 0;
+      
+      return {
+        scale,
+        zIndex,
+        opacity,
+        rotateY,
+        translateY,
+        isActive: absDistance === 0,
+        isAdjacent: absDistance === 1,
+      };
+    }
+    
+    // Desktop: full 3D coverflow effect
     const scale = absDistance === 0 ? 1.08 : absDistance === 1 ? 0.82 : 0.68;
-    
-    // Z-index: center is highest
     const zIndex = 10 - absDistance;
-    
-    // Opacity: center = 1, fades more for distant cards
     const opacity = absDistance === 0 ? 1 : absDistance === 1 ? 0.85 : 0.6;
-    
-    // 3D rotation for coverflow effect - more pronounced
     const rotateY = distance * -12;
-    
-    // Vertical offset - don't use negative values on mobile to prevent clipping
-    const translateY = isMobile 
-      ? (absDistance === 0 ? 0 : absDistance === 1 ? 12 : 20)
-      : (absDistance === 0 ? -8 : absDistance === 1 ? 8 : 16);
+    const translateY = absDistance === 0 ? -8 : absDistance === 1 ? 8 : 16;
     
     return {
       scale,
@@ -148,7 +158,7 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
         ]}
         className="w-full"
       >
-        <CarouselContent className="-ml-2 md:-ml-4" style={{ perspective: '1200px' }}>
+        <CarouselContent className="-ml-4 md:-ml-4" style={{ perspective: '1200px' }}>
           <AnimatePresence mode="sync">
             {bestsellers.map((bestseller, index) => {
               const product = bestseller.products;
@@ -173,7 +183,7 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
               return (
                 <CarouselItem 
                   key={bestseller.id} 
-                  className="pl-2 md:pl-4 basis-[85%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+                  className="pl-4 md:pl-4 basis-[92%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
                   style={{ zIndex: cardStyle.zIndex }}
                 >
                   <motion.div
