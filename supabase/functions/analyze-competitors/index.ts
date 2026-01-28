@@ -194,9 +194,27 @@ function generateSlug(name: string): string {
     .substring(0, 100);
 }
 
+// Parse price that might be a range (e.g., "22.89-24.54") and return the lower value
+function parsePrice(priceValue: any): number {
+  if (typeof priceValue === 'number') return priceValue;
+  if (typeof priceValue === 'string') {
+    // Handle price ranges like "22.89-24.54"
+    if (priceValue.includes('-')) {
+      const parts = priceValue.split('-');
+      const firstPart = parseFloat(parts[0]);
+      if (!isNaN(firstPart)) return firstPart;
+    }
+    const parsed = parseFloat(priceValue);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return 5; // Default fallback price
+}
+
 // Calculate price with markup
 function calculatePrice(costPrice: number): { price: number; compareAtPrice: number } {
-  let price = costPrice * IMPORT_MARKUP;
+  // Ensure costPrice is a valid number
+  const validCost = parsePrice(costPrice);
+  let price = validCost * IMPORT_MARKUP;
   price = Math.max(MIN_PRICE, Math.min(MAX_PRICE, price));
   price = Math.round(price * 100) / 100; // Round to 2 decimals
   
@@ -204,6 +222,33 @@ function calculatePrice(costPrice: number): { price: number; compareAtPrice: num
   const compareAtPrice = Math.round(price * 1.25 * 100) / 100;
   
   return { price, compareAtPrice };
+}
+
+// Check if a product name is likely pet-related
+function isPetProduct(productName: string): boolean {
+  const petKeywords = [
+    'dog', 'cat', 'pet', 'puppy', 'kitten', 'pup', 'kitty',
+    'canine', 'feline', 'collar', 'leash', 'harness', 'kennel',
+    'litter', 'treats', 'kibble', 'chew', 'squeaky', 'crate',
+    'grooming', 'shampoo', 'brush', 'nail', 'fur', 'coat',
+    'food bowl', 'water bowl', 'feeder', 'dispenser', 'fountain',
+    'bed', 'cushion', 'blanket', 'carrier', 'crate', 'cage',
+    'toy', 'ball', 'frisbee', 'rope', 'plush', 'squeaker',
+    'training', 'pee pad', 'potty', 'diaper', 'waste bag', 'poop',
+    'flea', 'tick', 'dewormer', 'medication', 'supplement', 'vitamin',
+    'aquarium', 'fish', 'bird', 'hamster', 'rabbit', 'guinea pig',
+    'reptile', 'turtle', 'snake', 'lizard', 'terrarium',
+    'scratching', 'scratcher', 'climbing', 'perch', 'catnip',
+    'dental', 'toothbrush', 'toothpaste', 'breath', 'tartar',
+    'anxiety', 'calming', 'thunder', 'bark', 'muzzle',
+    'outdoor', 'indoor', 'travel', 'stroller', 'backpack',
+    'sweater', 'jacket', 'coat', 'boots', 'raincoat', 'costume',
+    'tag', 'id', 'microchip', 'gps', 'tracker',
+    'animal', 'paw', 'bone', 'mouse', 'feather'
+  ];
+  
+  const nameLower = productName.toLowerCase();
+  return petKeywords.some(keyword => nameLower.includes(keyword));
 }
 
 // Auto-import products from CJ based on competitor bestsellers
@@ -265,7 +310,15 @@ async function autoImportFromCJ(
       }
 
       const details = detailsResult.data;
-      const costPrice = details.sellPrice || cjProduct.sellPrice || 5;
+      const cjProductName = details.productNameEn || cjProduct.productNameEn || '';
+      
+      // Skip non-pet products (CJ search can return unrelated results)
+      if (!isPetProduct(cjProductName) && !isPetProduct(compProduct.name)) {
+        console.log(`Skipping non-pet product: "${cjProductName.substring(0, 50)}..."`);
+        continue;
+      }
+
+      const costPrice = parsePrice(details.sellPrice || cjProduct.sellPrice || 5);
       const { price, compareAtPrice } = calculatePrice(costPrice);
       
       // Collect images
@@ -278,15 +331,18 @@ async function autoImportFromCJ(
       }
       
       // Build variants array
-      const variants = details.variants?.map((v: any) => ({
-        vid: v.vid,
-        name: v.variantNameEn,
-        sku: v.variantSku,
-        price: calculatePrice(v.variantSellPrice || costPrice).price,
-        costPrice: v.variantSellPrice || costPrice,
-        stock: v.inventories?.find((i: any) => i.countryCode === 'US')?.totalInventory || 0,
-        image: v.variantImage,
-      })) || [];
+      const variants = details.variants?.map((v: any) => {
+        const variantCost = parsePrice(v.variantSellPrice || costPrice);
+        return {
+          vid: v.vid,
+          name: v.variantNameEn,
+          sku: v.variantSku,
+          price: calculatePrice(variantCost).price,
+          costPrice: variantCost,
+          stock: v.inventories?.find((i: any) => i.countryCode === 'US')?.totalInventory || 0,
+          image: v.variantImage,
+        };
+      }) || [];
 
       // Calculate total stock
       let totalStock = 0;
@@ -397,11 +453,49 @@ serve(async (req) => {
     // ============ AUTO-UPDATE BESTSELLERS ============
     console.log("Starting bestseller auto-sync...");
     
+    // Filter function to exclude invalid product names (navigation, URLs, etc.)
+    const isValidProductName = (name: string): boolean => {
+      if (!name || name.length < 5) return false;
+      if (name.startsWith('- ')) return false; // Navigation categories
+      if (name.startsWith('!')) return false; // Corrupted entries
+      if (name.startsWith('(http')) return false; // URL-only entries
+      if (name.includes('zgbs/') || name.includes('/ref=')) return false; // Amazon nav URLs
+      if (name.match(/^\(https?:\/\//)) return false; // Starts with URL
+      if (name.includes('Best-Sellers-Pet-Supplies')) return false; // Category navigation
+      if (name.includes('/dp/') && !name.match(/^[A-Za-z]/)) return false; // Product URLs without name
+      if (name.split(' ').length < 2) return false; // Single word names
+      // Remove entries that are mostly URL
+      const urlMatch = name.match(/https?:\/\/[^\s]+/);
+      if (urlMatch && urlMatch[0].length > name.length * 0.5) return false;
+      return true;
+    };
+
+    // Clean product name by removing trailing URLs and special chars
+    const cleanProductName = (name: string): string => {
+      return name
+        .replace(/\(https?:\/\/[^)]+\)/g, '') // Remove URLs in parentheses
+        .replace(/https?:\/\/\S+/g, '') // Remove any remaining URLs
+        .replace(/^[!-]\s*/, '') // Remove leading ! or -
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    // Filter and clean valid competitor products
+    const validProducts = (products || [])
+      .filter(p => isValidProductName(p.product_name))
+      .map(p => ({
+        ...p,
+        product_name: cleanProductName(p.product_name)
+      }))
+      .filter(p => p.product_name.length > 5);
+
+    console.log(`Filtered ${(products || []).length} -> ${validProducts.length} valid competitor products`);
+
     // Calculate scores for all unique competitor products
-    const uniqueProductNames = [...new Set((products || []).map(p => p.product_name))];
+    const uniqueProductNames = [...new Set(validProducts.map(p => p.product_name))];
     const scoredProducts = uniqueProductNames.map(name => {
-      const scores = calculateBestsellerScore(name, products || []);
-      const representativeProduct = (products || []).find(p => p.product_name === name)!;
+      const scores = calculateBestsellerScore(name, validProducts);
+      const representativeProduct = validProducts.find(p => p.product_name === name)!;
       return {
         name,
         ...scores,
