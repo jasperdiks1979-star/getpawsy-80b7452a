@@ -121,7 +121,7 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
   };
 
   return (
-    <div className="relative pt-2 pb-4 md:pt-4 md:pb-6">
+    <div className="relative pt-8 pb-4 md:pt-10 md:pb-6">
       {/* Carousel Controls - Desktop */}
       <div className="hidden md:flex absolute -left-6 -right-6 top-1/2 -translate-y-1/2 justify-between pointer-events-none z-20">
         <Button
@@ -210,8 +210,7 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                         mass: 0.8,
                       }}
                       whileHover={cardStyle.isActive ? { 
-                        scale: 1.05,
-                        y: -20,
+                        scale: 1.12,
                         transition: { type: "spring", stiffness: 400, damping: 25 }
                       } : undefined}
                       style={{ 
