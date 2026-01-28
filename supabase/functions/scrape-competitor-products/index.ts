@@ -252,7 +252,7 @@ async function sendTrendingAlert(trendingProducts: TrendingProduct[]): Promise<v
       },
       body: JSON.stringify({
         from: 'Pawsy Alerts <alerts@getpawsy.pet>',
-        to: ['info@getpawsy.pet'],
+        to: ['support@getpawsy.pet'],
         subject: `🔥 ${trendingProducts.length} Trending Products Detected at Competitors`,
         html: `
           <!DOCTYPE html>
@@ -329,50 +329,93 @@ async function sendTrendingAlert(trendingProducts: TrendingProduct[]): Promise<v
   }
 }
 
+// Retry configuration
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 2000,
+  maxDelayMs: 30000,
+  backoffMultiplier: 2,
+};
+
+function calculateRetryDelay(attempt: number): number {
+  const exponentialDelay = RETRY_CONFIG.baseDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt);
+  const jitter = Math.random() * 0.3 * exponentialDelay; // Add up to 30% jitter
+  return Math.min(exponentialDelay + jitter, RETRY_CONFIG.maxDelayMs);
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function scrapeCompetitorWithRetry(
+  competitor: CompetitorConfig,
+  firecrawlApiKey: string
+): Promise<ScrapedProduct[]> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delayMs = calculateRetryDelay(attempt - 1);
+        console.log(`Retry ${attempt}/${RETRY_CONFIG.maxRetries} for ${competitor.name} after ${Math.round(delayMs)}ms`);
+        await sleep(delayMs);
+      }
+      
+      return await scrapeCompetitor(competitor, firecrawlApiKey);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`Attempt ${attempt + 1} failed for ${competitor.name}:`, lastError.message);
+      
+      // Don't retry on certain errors
+      if (lastError.message.includes('401') || lastError.message.includes('403')) {
+        console.log(`Not retrying ${competitor.name} - authentication/authorization error`);
+        throw lastError;
+      }
+    }
+  }
+  
+  throw lastError || new Error(`Failed to scrape ${competitor.name} after ${RETRY_CONFIG.maxRetries} retries`);
+}
+
 async function scrapeCompetitor(
   competitor: CompetitorConfig,
   firecrawlApiKey: string
 ): Promise<ScrapedProduct[]> {
   console.log(`Scraping ${competitor.name}...`);
   
-  try {
-    // Use longer timeout for heavy sites like Chewy and Petco
-    const waitTime = competitor.name === 'amazon' ? 3000 : 10000;
-    
-    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${firecrawlApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: competitor.url,
-        formats: ['markdown', 'links'],
-        onlyMainContent: true,
-        waitFor: waitTime,
-        timeout: 60000, // 60 second overall timeout
-      }),
-    });
+  // Use longer timeout for heavy sites like Chewy and Petco
+  const waitTime = competitor.name === 'amazon' ? 3000 : 10000;
+  
+  const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${firecrawlApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      url: competitor.url,
+      formats: ['markdown', 'links'],
+      onlyMainContent: true,
+      waitFor: waitTime,
+      timeout: 60000, // 60 second overall timeout
+    }),
+  });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Firecrawl error for ${competitor.name}:`, errorText);
-      throw new Error(`Failed to scrape ${competitor.name}: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const markdown = data.data?.markdown || data.markdown || '';
-    const links = data.data?.links || data.links || [];
-    
-    // Parse the markdown to extract product information
-    const products = parseProductsFromMarkdown(markdown, links, competitor.name);
-    
-    console.log(`Found ${products.length} products from ${competitor.name}`);
-    return products;
-  } catch (error) {
-    console.error(`Error scraping ${competitor.name}:`, error);
-    throw error;
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Firecrawl error for ${competitor.name}:`, errorText);
+    throw new Error(`Failed to scrape ${competitor.name}: ${response.status}`);
   }
+
+  const data = await response.json();
+  const markdown = data.data?.markdown || data.markdown || '';
+  const links = data.data?.links || data.links || [];
+  
+  // Parse the markdown to extract product information
+  const products = parseProductsFromMarkdown(markdown, links, competitor.name);
+  
+  console.log(`Found ${products.length} products from ${competitor.name}`);
+  return products;
 }
 
 // Blocklist of Amazon services and navigation items that should never be products
@@ -579,7 +622,7 @@ Deno.serve(async (req) => {
 
     for (const competitor of competitorsToScrape) {
       try {
-        const products = await scrapeCompetitor(competitor, firecrawlApiKey);
+        const products = await scrapeCompetitorWithRetry(competitor, firecrawlApiKey);
         
         // Get existing products for this competitor
         const { data: existingProducts } = await supabase
