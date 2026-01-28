@@ -102,12 +102,12 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
       };
     }
     
-    // Desktop: full 3D coverflow effect
+    // Desktop: full 3D coverflow effect - no negative translateY to prevent clipping
     const scale = absDistance === 0 ? 1.08 : absDistance === 1 ? 0.82 : 0.68;
     const zIndex = 10 - absDistance;
     const opacity = absDistance === 0 ? 1 : absDistance === 1 ? 0.85 : 0.6;
     const rotateY = distance * -12;
-    const translateY = absDistance === 0 ? -8 : absDistance === 1 ? 8 : 16;
+    const translateY = absDistance === 0 ? 0 : absDistance === 1 ? 8 : 16;
     
     return {
       scale,
@@ -151,8 +151,8 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
         }}
         plugins={[
           Autoplay({
-            delay: 5000,
-            stopOnInteraction: true,
+            delay: 4000,
+            stopOnInteraction: false,
             stopOnMouseEnter: true,
           }),
         ]}
