@@ -121,14 +121,14 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
   };
 
   return (
-    <div className="relative py-6 md:py-10 overflow-visible">
+    <div className="relative py-4 md:py-6 overflow-visible">
       {/* Carousel Controls - Desktop */}
       <div className="hidden md:flex absolute -left-6 -right-6 top-1/2 -translate-y-1/2 justify-between pointer-events-none z-20">
         <Button
           variant="outline"
           size="icon"
           onClick={scrollPrev}
-          className="pointer-events-auto rounded-full shadow-xl bg-background/95 backdrop-blur-md hover:bg-background border-border/50 h-12 w-12 hover:scale-110 transition-transform"
+          className="pointer-events-auto rounded-full shadow-2xl bg-white/90 backdrop-blur-md hover:bg-white border-0 h-14 w-14 hover:scale-110 transition-all duration-300 ring-1 ring-black/5"
         >
           <ChevronLeft className="w-6 h-6" />
         </Button>
@@ -136,7 +136,7 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
           variant="outline"
           size="icon"
           onClick={scrollNext}
-          className="pointer-events-auto rounded-full shadow-xl bg-background/95 backdrop-blur-md hover:bg-background border-border/50 h-12 w-12 hover:scale-110 transition-transform"
+          className="pointer-events-auto rounded-full shadow-2xl bg-white/90 backdrop-blur-md hover:bg-white border-0 h-14 w-14 hover:scale-110 transition-all duration-300 ring-1 ring-black/5"
         >
           <ChevronRight className="w-6 h-6" />
         </Button>
@@ -220,45 +220,58 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                       }}
                       className="relative"
                     >
-                      {/* Glow effect for active card */}
+                      {/* Glow effect for active card - enhanced */}
                       {cardStyle.isActive && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-amber-500/20 to-orange-500/20 rounded-3xl blur-2xl -z-10"
-                        />
+                        <>
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 0.6 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute -inset-6 bg-gradient-to-br from-amber-400/30 via-orange-500/25 to-rose-400/20 rounded-[2rem] blur-3xl -z-10"
+                          />
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 0.4 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute -inset-3 bg-gradient-to-tr from-primary/20 to-amber-300/20 rounded-3xl blur-xl -z-10"
+                          />
+                        </>
                       )}
                       
                       <Link
                         to={`/bestseller/${safeSlug}`}
-                        className={`group block bg-card rounded-2xl overflow-hidden transition-all duration-500 ${
+                        className={`group block overflow-hidden transition-all duration-500 ${
                           cardStyle.isActive 
-                            ? 'shadow-2xl shadow-primary/20 ring-2 ring-primary/20' 
+                            ? 'rounded-2xl bg-white ring-2 ring-amber-200/60 shadow-[0_20px_60px_-15px_rgba(251,146,60,0.35)]' 
                             : cardStyle.isAdjacent 
-                              ? 'shadow-lg shadow-foreground/10' 
-                              : 'shadow-md'
+                              ? 'rounded-xl bg-card/80 shadow-lg ring-1 ring-black/5' 
+                              : 'rounded-xl bg-card/60 shadow-md'
                         }`}
                       >
-                        {/* Image Container */}
+                        {/* Image Container with glass overlay */}
                         <div className="relative aspect-square overflow-hidden">
-                          {/* Rank Badge */}
+                          {/* Subtle inner shine effect */}
+                          {cardStyle.isActive && (
+                            <div className="absolute inset-0 z-[1] pointer-events-none bg-gradient-to-br from-white/20 via-transparent to-transparent" />
+                          )}
+                          
+                          {/* Rank Badge - enhanced with glow */}
                           <div className="absolute top-3 left-3 z-10">
-                            <Badge className={`px-3 py-1.5 text-xs font-bold shadow-lg transition-all duration-300 ${
+                            <Badge className={`px-3 py-1.5 text-xs font-bold transition-all duration-300 ${
                               cardStyle.isActive 
-                                ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 scale-110' 
-                                : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0'
+                                ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white border-0 scale-110 shadow-lg shadow-orange-500/40' 
+                                : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-md'
                             }`}>
                               <Award className="w-3.5 h-3.5 mr-1" />
                               #{bestseller.rank}
                             </Badge>
                           </div>
 
-                          {/* Discount Badge */}
+                          {/* Discount Badge - enhanced */}
                           {discount > 0 && (
                             <div className="absolute top-3 right-3 z-10">
-                              <Badge variant="destructive" className={`px-2 py-1 text-xs font-bold transition-all duration-300 ${
-                                cardStyle.isActive ? 'scale-110' : ''
+                              <Badge className={`px-2.5 py-1 text-xs font-bold transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white border-0 ${
+                                cardStyle.isActive ? 'scale-110 shadow-lg shadow-red-500/30' : 'shadow-md'
                               }`}>
                                 -{discount}%
                               </Badge>
@@ -273,20 +286,20 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                             decoding="async"
                             className={`w-full h-full object-cover transition-all duration-700 ${
                               cardStyle.isActive 
-                                ? 'group-hover:scale-110' 
-                                : 'filter brightness-95'
+                                ? 'group-hover:scale-110 saturate-105' 
+                                : 'filter brightness-90 saturate-90'
                             }`}
                           />
 
                           {/* Overlay on hover - only for active card */}
                           {cardStyle.isActive && (
                             <>
-                              <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                               
-                              {/* View Button on hover */}
+                              {/* View Button on hover - glassmorphism style */}
                               <div className="absolute inset-0 flex items-end justify-center pb-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
                                 <motion.span 
-                                  className="bg-white text-foreground px-5 py-2.5 rounded-full text-sm font-semibold shadow-xl flex items-center gap-2"
+                                  className="bg-white/95 backdrop-blur-sm text-foreground px-6 py-2.5 rounded-full text-sm font-semibold shadow-xl flex items-center gap-2 ring-1 ring-black/5"
                                   whileHover={{ scale: 1.05 }}
                                 >
                                   View Product
@@ -423,24 +436,21 @@ export const BestsellersSection = () => {
   return (
     <section className="py-20 bg-gradient-to-b from-primary/5 via-accent/5 to-background">
       <div className="container px-4 md:px-6">
-        {/* Header */}
+        {/* Header - Compact */}
         <motion.div 
-          className="text-center mb-12"
+          className="text-center mb-6"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-400 px-4 py-2 rounded-full text-sm font-medium mb-4">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-400 px-4 py-1.5 rounded-full text-sm font-medium mb-3">
             <Award className="w-4 h-4" />
             Our Top Products
           </div>
-          <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-display font-bold">
             Bestsellers
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            The most loved products by pet owners. Discover why thousands of customers choose these products.
-          </p>
         </motion.div>
 
         {/* Loading State */}
