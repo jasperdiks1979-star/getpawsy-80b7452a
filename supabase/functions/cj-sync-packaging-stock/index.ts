@@ -135,7 +135,7 @@ async function sendDiscrepancyEmail(
       },
       body: JSON.stringify({
         from: "GetPawsy Alerts <alerts@getpawsy.pet>",
-        to: ["info@getpawsy.pet"],
+        to: ["support@getpawsy.pet"],
         subject: `⚠️ Packaging Stock Discrepancy: ${discrepancies.length} item(s) differ`,
         html: emailHtml,
       }),

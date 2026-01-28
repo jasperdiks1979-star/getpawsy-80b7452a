@@ -52,8 +52,8 @@ export function WebsiteSchema({
       },
       {
         '@type': 'ContactPoint',
-        contactType: 'sales',
-        email: 'info@getpawsy.pet',
+        contactType: 'customer support',
+        email: 'support@getpawsy.pet',
         availableLanguage: ['English'],
       },
     ],

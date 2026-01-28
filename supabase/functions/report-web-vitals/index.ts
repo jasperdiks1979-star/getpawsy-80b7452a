@@ -187,7 +187,7 @@ async function sendPerformanceAlert(
     },
     body: JSON.stringify({
       from: 'Performance Alerts <alerts@getpawsy.pet>',
-      to: ['info@getpawsy.pet'],
+      to: ['support@getpawsy.pet'],
       subject: `${emoji} ${severity}: ${metricName} overschrijdt ${thresholdType} drempel`,
       html: emailHtml,
     }),

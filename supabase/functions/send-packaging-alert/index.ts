@@ -184,7 +184,7 @@ serve(async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         from: "GetPawsy Alerts <alerts@getpawsy.pet>",
-        to: ["info@getpawsy.pet"],
+        to: ["support@getpawsy.pet"],
         subject: `⚠️ Packaging Voorraad Alert: ${newLowStockItems.length} item(s) bijbestellen`,
         html: emailHtml,
       }),

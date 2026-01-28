@@ -83,11 +83,11 @@ async function getNotificationEmail(supabase: any): Promise<string> {
 
     if (error || !data) {
       console.log('Using default notification email');
-      return 'info@getpawsy.pet';
+      return 'support@getpawsy.pet';
     }
-    return data.value || 'info@getpawsy.pet';
+    return data.value || 'support@getpawsy.pet';
   } catch {
-    return 'info@getpawsy.pet';
+    return 'support@getpawsy.pet';
   }
 }
 

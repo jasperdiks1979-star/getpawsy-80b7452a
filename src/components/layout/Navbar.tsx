@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, User, LogOut, Shield, Heart, X, ChevronDown, ChevronRight, Gift, Truck, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Search, User, LogOut, Shield, Heart, X, ChevronDown, ChevronRight, Gift, Truck, ArrowRight, Award } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -27,7 +27,7 @@ import logoIcon from '@/assets/logo-getpawsy.png';
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Shop' },
-  { href: '/bestsellers', label: 'Bestsellers' },
+  { href: '/bestsellers', label: 'Bestsellers', icon: Award, highlight: true },
   { href: '/blog', label: 'Blog' },
 ];
 
@@ -422,19 +422,27 @@ export const Navbar = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className={`relative px-4 py-2 text-sm font-medium transition-colors rounded-full ${
-                  isActive(link.href) 
-                    ? 'text-primary bg-primary/10' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const Icon = 'icon' in link ? link.icon : null;
+              const isHighlight = 'highlight' in link && link.highlight;
+              
+              return (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className={`relative px-4 py-2 text-sm font-medium transition-colors rounded-full flex items-center gap-1.5 ${
+                    isHighlight && !isActive(link.href)
+                      ? 'text-amber-600 dark:text-amber-400 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/20'
+                      : isActive(link.href) 
+                        ? 'text-primary bg-primary/10' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  {Icon && <Icon className="w-4 h-4" />}
+                  {link.label}
+                </Link>
+              );
+            })}
             
             {/* Categories Mega Menu Trigger */}
             <button

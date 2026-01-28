@@ -71,7 +71,7 @@ async function sendAdminOrderNotification(
 ): Promise<void> {
   try {
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const adminEmail = "info@getpawsy.pet";
+    const adminEmail = "support@getpawsy.pet";
     
     if (!resendApiKey) {
       console.error("[STRIPE-WEBHOOK] Missing RESEND_API_KEY for admin notification");
