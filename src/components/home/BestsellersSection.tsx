@@ -82,20 +82,22 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
     
     const absDistance = Math.abs(distance);
     
-    // Scale: center = 1, adjacent = 0.85, further = 0.7
-    const scale = absDistance === 0 ? 1 : absDistance === 1 ? 0.88 : 0.75;
+    // Scale: center = 1.08 (bigger!), adjacent = 0.82, further = 0.68
+    const scale = absDistance === 0 ? 1.08 : absDistance === 1 ? 0.82 : 0.68;
     
     // Z-index: center is highest
     const zIndex = 10 - absDistance;
     
-    // Opacity: center = 1, fades slightly for distant cards
-    const opacity = absDistance === 0 ? 1 : absDistance === 1 ? 0.9 : 0.7;
+    // Opacity: center = 1, fades more for distant cards
+    const opacity = absDistance === 0 ? 1 : absDistance === 1 ? 0.85 : 0.6;
     
-    // 3D rotation for coverflow effect
-    const rotateY = distance * -8;
+    // 3D rotation for coverflow effect - more pronounced
+    const rotateY = distance * -12;
     
-    // Vertical offset - center card rises up
-    const translateY = absDistance === 0 ? -12 : absDistance === 1 ? 0 : 8;
+    // Vertical offset - don't use negative values on mobile to prevent clipping
+    const translateY = isMobile 
+      ? (absDistance === 0 ? 0 : absDistance === 1 ? 12 : 20)
+      : (absDistance === 0 ? -8 : absDistance === 1 ? 8 : 16);
     
     return {
       scale,
@@ -109,7 +111,7 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
   };
 
   return (
-    <div className="relative py-8">
+    <div className="relative py-6 md:py-10 overflow-visible">
       {/* Carousel Controls - Desktop */}
       <div className="hidden md:flex absolute -left-6 -right-6 top-1/2 -translate-y-1/2 justify-between pointer-events-none z-20">
         <Button
