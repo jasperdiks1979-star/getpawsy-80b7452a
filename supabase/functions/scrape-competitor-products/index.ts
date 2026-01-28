@@ -14,7 +14,8 @@ interface CompetitorConfig {
 const COMPETITORS: CompetitorConfig[] = [
   {
     name: 'amazon',
-    url: 'https://www.amazon.com/Best-Sellers-Pet-Supplies/zgbs/pet-supplies',
+    // Use the ref parameter to get product listings, not page chrome
+    url: 'https://www.amazon.com/gp/bestsellers/pet-supplies/ref=zg_bs_nav_pet-supplies_0',
   },
   {
     name: 'chewy',
@@ -370,6 +371,33 @@ async function scrapeCompetitor(
   }
 }
 
+// Blocklist of Amazon services and navigation items that should never be products
+const AMAZON_BLOCKLIST = new Set([
+  'amazon web services', 'amazon music', 'amazon business', 'amazon fresh',
+  'amazonglobal', 'home services', 'kindle direct publishing', 'amazon photos',
+  'prime video direct', 'amazon resale', 'whole foods market', 'neighbors app',
+  'amazon subscription boxes', 'amazon renewed', 'sell on amazon', 'box office mojo',
+  'become an affiliate', 'advertise', 'self-publish', 'imdb', 'audible', 'goodreads',
+  'zappos', 'abebooks', 'ring', 'blink', 'woot', 'eero', 'amazon basics',
+  'pet supplies(current)', '- pet supplies', 'nestlé purina petcare', 'customer review:',
+  '- dogs', '- cats', '- fish', '- birds', '- small animals', '- horses',
+  '- reptiles', '- amphibians', 'fish & aquatic pets'
+]);
+
+function isBlocklisted(name: string): boolean {
+  const normalized = name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+  for (const blocked of AMAZON_BLOCKLIST) {
+    if (normalized.includes(blocked) || blocked.includes(normalized)) {
+      return true;
+    }
+  }
+  // Also block if it starts with a category indicator
+  if (normalized.startsWith('-') || normalized.includes('(current)')) {
+    return true;
+  }
+  return false;
+}
+
 function parseProductsFromMarkdown(
   markdown: string,
   links: string[],
@@ -380,6 +408,14 @@ function parseProductsFromMarkdown(
   
   let currentRank = 0;
   
+  // Extract product URLs from links to help identify real products
+  const productUrls = links.filter(link => 
+    link.includes('/dp/') || // Amazon product pattern
+    link.includes('/product/') ||
+    link.includes('/p/') ||
+    link.includes('chewy.com/dp/')
+  );
+  
   for (const line of lines) {
     // Skip navigation and header lines
     if (line.startsWith('#') && line.length < 50) continue;
@@ -389,9 +425,9 @@ function parseProductsFromMarkdown(
     // Pattern 1: Numbered lists like "1. Product Name"
     const numberedMatch = line.match(/^(\d+)\.\s+(.+)/);
     if (numberedMatch) {
-      currentRank = parseInt(numberedMatch[1]);
       const productName = numberedMatch[2].trim();
-      if (productName.length > 10 && productName.length < 200) {
+      if (productName.length > 10 && productName.length < 200 && !isBlocklisted(productName) && isLikelyProductName(productName)) {
+        currentRank++;
         products.push({
           name: cleanProductName(productName),
           rank: currentRank,
@@ -402,7 +438,7 @@ function parseProductsFromMarkdown(
     
     // Pattern 2: Bold product names with prices
     const boldMatch = line.match(/\*\*(.+?)\*\*/);
-    if (boldMatch && boldMatch[1].length > 10) {
+    if (boldMatch && boldMatch[1].length > 10 && !isBlocklisted(boldMatch[1]) && isLikelyProductName(boldMatch[1])) {
       currentRank++;
       const priceMatch = line.match(/\$(\d+(?:\.\d{2})?)/);
       products.push({
@@ -414,11 +450,11 @@ function parseProductsFromMarkdown(
     }
     
     // Pattern 3: Lines that look like product names (capitalized, reasonable length)
-    if (line.length > 20 && line.length < 150 && !line.startsWith('[') && !line.includes('http')) {
+    if (line.length > 20 && line.length < 200 && !line.startsWith('[') && !line.includes('http')) {
       const priceMatch = line.match(/\$(\d+(?:\.\d{2})?)/);
       const cleanedName = line.replace(/\$\d+(?:\.\d{2})?/g, '').trim();
       
-      if (cleanedName.length > 15 && isLikelyProductName(cleanedName)) {
+      if (cleanedName.length > 15 && !isBlocklisted(cleanedName) && isLikelyProductName(cleanedName)) {
         currentRank++;
         products.push({
           name: cleanProductName(cleanedName),
@@ -426,6 +462,19 @@ function parseProductsFromMarkdown(
           price: priceMatch ? parseFloat(priceMatch[1]) : undefined,
         });
       }
+    }
+    
+    // Pattern 4: Look for Amazon-style product links in the markdown
+    const linkMatch = line.match(/\[(.+?)\]\((https:\/\/www\.amazon\.com\/[^\)]+\/dp\/[^\)]+)\)/);
+    if (linkMatch && linkMatch[1].length > 10 && !isBlocklisted(linkMatch[1])) {
+      currentRank++;
+      const priceMatch = line.match(/\$(\d+(?:\.\d{2})?)/);
+      products.push({
+        name: cleanProductName(linkMatch[1]),
+        rank: currentRank,
+        price: priceMatch ? parseFloat(priceMatch[1]) : undefined,
+        url: linkMatch[2],
+      });
     }
   }
   
@@ -435,7 +484,7 @@ function parseProductsFromMarkdown(
   
   for (const product of products) {
     const key = product.name.toLowerCase();
-    if (!seen.has(key) && uniqueProducts.length < 25) {
+    if (!seen.has(key) && uniqueProducts.length < 25 && !isBlocklisted(product.name)) {
       seen.add(key);
       uniqueProducts.push({
         ...product,
@@ -459,10 +508,13 @@ function cleanProductName(name: string): string {
 function isLikelyProductName(text: string): boolean {
   // Check if text looks like a product name
   const hasUppercase = /[A-Z]/.test(text);
-  const hasPetKeywords = /dog|cat|pet|food|treat|toy|bed|collar|leash|bowl|crate|carrier/i.test(text);
-  const notNavigation = !/shop|cart|sign|login|account|help|contact|about/i.test(text);
+  const hasPetKeywords = /dog|cat|pet|food|treat|toy|bed|collar|leash|bowl|crate|carrier|puppy|kitten|fish|bird|rabbit|hamster|guinea|aquarium|litter|grooming|shampoo|brush|chew|dental|vitamin|supplement|harness|training|pee|pad|feeder|waterer/i.test(text);
   
-  return hasUppercase && hasPetKeywords && notNavigation;
+  // Exclude Amazon navigation/services and other non-product text
+  const isNavigation = /shop|cart|sign|login|account|help|contact|about|amazon web services|kindle|prime video|amazon business|amazon fresh|whole foods|amazon photos|imdb|audible|goodreads|zappos|abebooks|ring|blink|woot|eero|neighbors app|amazon resale|amazon subscription|box office|home services|amazonglobal|sell on amazon|become an affiliate|advertise|self-publish/i.test(text);
+  
+  // Must have pet keywords and not be navigation
+  return hasUppercase && hasPetKeywords && !isNavigation;
 }
 
 Deno.serve(async (req) => {
