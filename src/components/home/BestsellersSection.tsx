@@ -17,6 +17,7 @@ import {
   type CarouselApi,
 } from '@/components/ui/carousel';
 import { useIsMobile } from '@/hooks/use-mobile';
+import Autoplay from 'embla-carousel-autoplay';
 
 // Carousel item animation variants - staggered entrance
 const cardVariants = {
@@ -92,6 +93,13 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
           align: 'start',
           loop: true,
         }}
+        plugins={[
+          Autoplay({
+            delay: 4000,
+            stopOnInteraction: true,
+            stopOnMouseEnter: true,
+          }),
+        ]}
         className="w-full"
       >
         <CarouselContent className="-ml-4">
@@ -257,7 +265,7 @@ export const BestsellersSection = () => {
         `)
         .eq('is_active', true)
         .order('rank', { ascending: true })
-        .limit(5);
+        .limit(10);
 
       if (error) throw error;
       return data?.filter(b => b.products) || [];
