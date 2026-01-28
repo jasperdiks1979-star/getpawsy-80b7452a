@@ -541,11 +541,16 @@ function parseProductsFromMarkdown(
   const uniqueProducts: ScrapedProduct[] = [];
   
   for (const product of products) {
-    const key = product.name.toLowerCase();
-    if (!seen.has(key) && uniqueProducts.length < 25 && !isBlocklisted(product.name)) {
+    // Clean and validate the product name
+    const cleanedName = cleanProductName(product.name);
+    if (!cleanedName || !isValidProductEntry(cleanedName)) continue;
+    
+    const key = cleanedName.toLowerCase();
+    if (!seen.has(key) && uniqueProducts.length < 25 && !isBlocklisted(cleanedName)) {
       seen.add(key);
       uniqueProducts.push({
         ...product,
+        name: cleanedName,
         rank: uniqueProducts.length + 1,
       });
     }
@@ -555,15 +560,56 @@ function parseProductsFromMarkdown(
 }
 
 function cleanProductName(name: string): string {
-  return name
+  let cleaned = name
+    // Remove markdown formatting
     .replace(/\*\*/g, '')
     .replace(/\[|\]/g, '')
+    // Remove URLs in parentheses like (https://...)
+    .replace(/\(https?:\/\/[^)]+\)/g, '')
+    // Remove standalone URLs
+    .replace(/https?:\/\/\S+/g, '')
+    // Remove image references like _AC_UL600_SR...
+    .replace(/_AC_[A-Z0-9_]+\.(?:jpg|png|gif|webp)/gi, '')
+    // Remove leading special characters like "!" or "-"
+    .replace(/^[!-]\s*/, '')
+    // Remove Amazon ASIN patterns
+    .replace(/\/dp\/[A-Z0-9]+/gi, '')
+    // Clean up whitespace
     .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 200);
+    .trim();
+  
+  // If the result is too short or starts with '(' it's corrupted
+  if (cleaned.length < 10 || cleaned.startsWith('(') || cleaned.startsWith('http')) {
+    return '';
+  }
+  
+  return cleaned.slice(0, 200);
+}
+
+function isValidProductEntry(name: string): boolean {
+  if (!name || name.length < 10) return false;
+  
+  // Reject entries that are mostly URLs or corrupted
+  if (name.startsWith('- ')) return false;
+  if (name.startsWith('!')) return false;
+  if (name.startsWith('(http')) return false;
+  if (name.includes('zgbs/') || name.includes('/ref=')) return false;
+  if (name.match(/^\(https?:\/\//)) return false;
+  if (name.includes('Best-Sellers-Pet-Supplies')) return false;
+  if (name.includes('/dp/') && !name.match(/^[A-Za-z]/)) return false;
+  if (name.split(' ').length < 3) return false; // Need at least 3 words
+  
+  // Check if more than 30% of the name is a URL - it's corrupted
+  const urlMatch = name.match(/https?:\/\/[^\s]+/);
+  if (urlMatch && urlMatch[0].length > name.length * 0.3) return false;
+  
+  return true;
 }
 
 function isLikelyProductName(text: string): boolean {
+  // First check if entry is valid (not corrupted)
+  if (!isValidProductEntry(text)) return false;
+  
   // Check if text looks like a product name
   const hasUppercase = /[A-Z]/.test(text);
   const hasPetKeywords = /dog|cat|pet|food|treat|toy|bed|collar|leash|bowl|crate|carrier|puppy|kitten|fish|bird|rabbit|hamster|guinea|aquarium|litter|grooming|shampoo|brush|chew|dental|vitamin|supplement|harness|training|pee|pad|feeder|waterer/i.test(text);

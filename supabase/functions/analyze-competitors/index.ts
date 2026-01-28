@@ -224,31 +224,81 @@ function calculatePrice(costPrice: number): { price: number; compareAtPrice: num
   return { price, compareAtPrice };
 }
 
-// Check if a product name is likely pet-related
+// Check if a product name is likely pet-related (stricter matching)
 function isPetProduct(productName: string): boolean {
-  const petKeywords = [
-    'dog', 'cat', 'pet', 'puppy', 'kitten', 'pup', 'kitty',
-    'canine', 'feline', 'collar', 'leash', 'harness', 'kennel',
-    'litter', 'treats', 'kibble', 'chew', 'squeaky', 'crate',
-    'grooming', 'shampoo', 'brush', 'nail', 'fur', 'coat',
-    'food bowl', 'water bowl', 'feeder', 'dispenser', 'fountain',
-    'bed', 'cushion', 'blanket', 'carrier', 'crate', 'cage',
-    'toy', 'ball', 'frisbee', 'rope', 'plush', 'squeaker',
-    'training', 'pee pad', 'potty', 'diaper', 'waste bag', 'poop',
-    'flea', 'tick', 'dewormer', 'medication', 'supplement', 'vitamin',
-    'aquarium', 'fish', 'bird', 'hamster', 'rabbit', 'guinea pig',
-    'reptile', 'turtle', 'snake', 'lizard', 'terrarium',
-    'scratching', 'scratcher', 'climbing', 'perch', 'catnip',
-    'dental', 'toothbrush', 'toothpaste', 'breath', 'tartar',
-    'anxiety', 'calming', 'thunder', 'bark', 'muzzle',
-    'outdoor', 'indoor', 'travel', 'stroller', 'backpack',
-    'sweater', 'jacket', 'coat', 'boots', 'raincoat', 'costume',
-    'tag', 'id', 'microchip', 'gps', 'tracker',
-    'animal', 'paw', 'bone', 'mouse', 'feather'
+  const nameLower = productName.toLowerCase();
+  
+  // Strong indicators - these always indicate pet products
+  const strongPetKeywords = [
+    'dog ', ' dog', 'dogs', 'puppy', 'puppies',
+    'cat ', ' cat', 'cats', 'kitten', 'kittens', 'kitty',
+    'pet ', ' pet', 'pets',
+    'canine', 'feline',
+    'litter box', 'cat litter', 'dog food', 'cat food', 'pet food',
+    'dog treat', 'cat treat', 'pet treat',
+    'dog toy', 'cat toy', 'pet toy',
+    'dog bed', 'cat bed', 'pet bed',
+    'dog collar', 'cat collar', 'pet collar',
+    'dog harness', 'cat harness', 'pet harness',
+    'dog leash', 'cat leash', 'pet leash',
+    'dog carrier', 'cat carrier', 'pet carrier',
+    'dog crate', 'cat crate', 'pet crate',
+    'dog bowl', 'cat bowl', 'pet bowl',
+    'dog grooming', 'cat grooming', 'pet grooming',
+    'dog brush', 'cat brush', 'pet brush',
+    'pee pad', 'puppy pad', 'potty pad',
+    'poop bag', 'waste bag', 'dog bag',
+    'flea', 'tick', 'dewormer',
+    'scratching post', 'cat tree', 'cat tower', 'cat scratcher',
+    'chew toy', 'squeaky toy', 'rope toy',
+    'catnip', 'cat grass',
+    'aquarium', 'fish tank', 'fish food',
+    'bird cage', 'bird feeder', 'bird toy',
+    'hamster cage', 'hamster wheel', 'hamster food',
+    'rabbit cage', 'rabbit food', 'rabbit hay',
+    'guinea pig', 'reptile', 'terrarium',
+    'pet shampoo', 'dog shampoo', 'cat shampoo',
+    'pet fountain', 'water fountain for',
+    'pet dental', 'dog dental', 'cat dental',
   ];
   
-  const nameLower = productName.toLowerCase();
-  return petKeywords.some(keyword => nameLower.includes(keyword));
+  // Check for strong pet indicators
+  if (strongPetKeywords.some(keyword => nameLower.includes(keyword))) {
+    return true;
+  }
+  
+  // Reject common non-pet product patterns
+  const nonPetPatterns = [
+    'women', 'mens', "men's", 'women\'s', 'ladies', 'girls', 'boys',
+    'bracelet', 'necklace', 'pendant', 'earring', 'ring ',
+    'faucet', 'cabinet', 'kitchen', 'bathroom', 'shower',
+    'shoe', 'boot', 'sandal', 'mule', 'heel',
+    'dress', 'shirt', 'pants', 'jacket', 'sweater',
+    'beehive', 'bee hive', 'beekeeping',
+    'phone case', 'laptop', 'computer', 'tablet',
+    'car ', 'vehicle', 'motorcycle',
+    'human', 'baby', 'toddler', 'infant',
+  ];
+  
+  if (nonPetPatterns.some(pattern => nameLower.includes(pattern))) {
+    return false;
+  }
+  
+  // Weak indicators - need at least 2 to count
+  const weakPetKeywords = [
+    'collar', 'leash', 'harness', 'kennel', 'crate', 'cage',
+    'treats', 'kibble', 'chew', 'squeaky',
+    'grooming', 'brush', 'nail', 'fur',
+    'feeder', 'dispenser', 'fountain',
+    'bed', 'cushion', 'blanket', 'carrier',
+    'toy', 'ball', 'plush',
+    'training', 'potty',
+    'scratching', 'perch',
+    'paw', 'bone',
+  ];
+  
+  const weakMatches = weakPetKeywords.filter(keyword => nameLower.includes(keyword)).length;
+  return weakMatches >= 2;
 }
 
 // Auto-import products from CJ based on competitor bestsellers
