@@ -138,16 +138,27 @@ async function getCJAccessToken(supabase: any): Promise<string> {
   return data.data.accessToken;
 }
 
-// Search CJ for a product by keyword
+// Search CJ for a product by keyword - pet-focused search
 async function searchCJProduct(accessToken: string, keyword: string): Promise<any> {
   // Clean the keyword for better search results
-  const cleanKeyword = keyword
+  let cleanKeyword = keyword
     .replace(/[^\w\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .split(' ')
     .slice(0, 5) // Take first 5 words max
     .join(' ');
+
+  // Ensure the search includes a pet-related term for better results
+  const petTerms = ['dog', 'cat', 'pet', 'puppy', 'kitten', 'canine', 'feline'];
+  const hasPetTerm = petTerms.some(term => cleanKeyword.toLowerCase().includes(term));
+  
+  if (!hasPetTerm) {
+    // Add "pet" prefix to force pet-related results
+    cleanKeyword = `pet ${cleanKeyword}`;
+  }
+  
+  console.log(`CJ search query: "${cleanKeyword}"`);
 
   const params = new URLSearchParams({
     pageNum: '1',
@@ -362,9 +373,9 @@ async function autoImportFromCJ(
       const details = detailsResult.data;
       const cjProductName = details.productNameEn || cjProduct.productNameEn || '';
       
-      // Skip non-pet products (CJ search can return unrelated results)
-      if (!isPetProduct(cjProductName) && !isPetProduct(compProduct.name)) {
-        console.log(`Skipping non-pet product: "${cjProductName.substring(0, 50)}..."`);
+      // STRICT: CJ product name MUST be pet-related (CJ search often returns unrelated results)
+      if (!isPetProduct(cjProductName)) {
+        console.log(`Skipping non-pet CJ product: "${cjProductName.substring(0, 60)}..."`);
         continue;
       }
 
