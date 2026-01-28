@@ -6,6 +6,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const CJ_API_BASE = 'https://developers.cjdropshipping.com/api2.0/v1';
+
+// Standard markup for auto-imported products
+const IMPORT_MARKUP = 2.5; // 2.5x cost price
+const MIN_PRICE = 9.99;
+const MAX_PRICE = 149.99;
+
 interface CompetitorProduct {
   id: string;
   competitor: string;
@@ -78,6 +85,276 @@ function calculateBestsellerScore(
   const score = (competitorCount * 20) + Math.max(0, (26 - avgRank) * 2) + (trendBoost * 3);
   
   return { score, competitorCount, avgRank, trendBoost };
+}
+
+// ============ CJ DROPSHIPPING INTEGRATION ============
+
+// Get CJ access token (reuse cached token if valid)
+async function getCJAccessToken(supabase: any): Promise<string> {
+  const { data: cachedData } = await supabase
+    .from('cj_token_cache')
+    .select('access_token, token_expiry')
+    .eq('id', 'singleton')
+    .single();
+
+  if (cachedData) {
+    const tokenExpiry = new Date(cachedData.token_expiry).getTime();
+    if (Date.now() < tokenExpiry) {
+      return cachedData.access_token;
+    }
+  }
+
+  // Request new token
+  const apiKey = Deno.env.get('CJ_API_KEY');
+  const email = Deno.env.get('CJ_EMAIL');
+
+  if (!apiKey || !email) {
+    throw new Error('CJ_API_KEY or CJ_EMAIL not configured');
+  }
+
+  const response = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password: apiKey }),
+  });
+
+  const data = await response.json();
+  
+  if (!data.result) {
+    throw new Error(`CJ Authentication failed: ${data.message || 'Unknown error'}`);
+  }
+
+  // Cache the token
+  const expiryDate = new Date(data.data.accessTokenExpiryDate);
+  const safeExpiry = new Date(expiryDate.getTime() - (5 * 60 * 1000));
+  
+  await supabase.from('cj_token_cache').upsert({
+    id: 'singleton',
+    access_token: data.data.accessToken,
+    token_expiry: safeExpiry.toISOString(),
+    updated_at: new Date().toISOString()
+  });
+
+  return data.data.accessToken;
+}
+
+// Search CJ for a product by keyword
+async function searchCJProduct(accessToken: string, keyword: string): Promise<any> {
+  // Clean the keyword for better search results
+  const cleanKeyword = keyword
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .slice(0, 5) // Take first 5 words max
+    .join(' ');
+
+  const params = new URLSearchParams({
+    pageNum: '1',
+    pageSize: '10',
+    productNameEn: cleanKeyword,
+  });
+
+  const response = await fetch(`${CJ_API_BASE}/product/list?${params}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'CJ-Access-Token': accessToken,
+    },
+  });
+
+  return await response.json();
+}
+
+// Get full product details from CJ
+async function getCJProductDetails(accessToken: string, pid: string): Promise<any> {
+  const params = new URLSearchParams({
+    pid,
+    features: 'enable_inventory,enable_video',
+    countryCode: 'US',
+  });
+
+  const response = await fetch(`${CJ_API_BASE}/product/query?${params}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'CJ-Access-Token': accessToken,
+    },
+  });
+
+  return await response.json();
+}
+
+// Generate slug from product name
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 100);
+}
+
+// Calculate price with markup
+function calculatePrice(costPrice: number): { price: number; compareAtPrice: number } {
+  let price = costPrice * IMPORT_MARKUP;
+  price = Math.max(MIN_PRICE, Math.min(MAX_PRICE, price));
+  price = Math.round(price * 100) / 100; // Round to 2 decimals
+  
+  // Compare at price is 20-30% higher for perceived value
+  const compareAtPrice = Math.round(price * 1.25 * 100) / 100;
+  
+  return { price, compareAtPrice };
+}
+
+// Auto-import products from CJ based on competitor bestsellers
+async function autoImportFromCJ(
+  supabase: any,
+  competitorProducts: Array<{ name: string; score: number; rank: number }>,
+  existingProductNames: Set<string>
+): Promise<{ imported: number; errors: number; products: string[] }> {
+  console.log("Starting CJ auto-import for", competitorProducts.length, "products...");
+  
+  let accessToken: string;
+  try {
+    accessToken = await getCJAccessToken(supabase);
+  } catch (error) {
+    console.error("Failed to get CJ access token:", error);
+    return { imported: 0, errors: 1, products: [] };
+  }
+
+  const imported: string[] = [];
+  let errors = 0;
+
+  for (const compProduct of competitorProducts) {
+    try {
+      // Skip if we already have a similar product
+      const normalizedName = compProduct.name.toLowerCase();
+      const alreadyExists = [...existingProductNames].some(existing => 
+        calculateSimilarity(existing, normalizedName) > 0.4
+      );
+      
+      if (alreadyExists) {
+        console.log(`Skipping "${compProduct.name}" - similar product already exists`);
+        continue;
+      }
+
+      // Rate limit: 1 request per second
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
+      // Search for the product on CJ
+      const searchResult = await searchCJProduct(accessToken, compProduct.name);
+      
+      if (!searchResult.result || !searchResult.data?.list?.length) {
+        console.log(`No CJ match found for "${compProduct.name}"`);
+        continue;
+      }
+
+      // Take the first (best) match
+      const cjProduct = searchResult.data.list[0];
+      
+      // Rate limit before next call
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
+      // Get full product details
+      const detailsResult = await getCJProductDetails(accessToken, cjProduct.pid);
+      
+      if (!detailsResult.result || !detailsResult.data) {
+        console.log(`Failed to get details for CJ product ${cjProduct.pid}`);
+        errors++;
+        continue;
+      }
+
+      const details = detailsResult.data;
+      const costPrice = details.sellPrice || cjProduct.sellPrice || 5;
+      const { price, compareAtPrice } = calculatePrice(costPrice);
+      
+      // Collect images
+      const images: string[] = [];
+      if (details.productImage && details.productImage.startsWith('http')) {
+        images.push(details.productImage);
+      }
+      if (Array.isArray(details.productImageSet)) {
+        images.push(...details.productImageSet.filter((img: string) => img?.startsWith('http')));
+      }
+      
+      // Build variants array
+      const variants = details.variants?.map((v: any) => ({
+        vid: v.vid,
+        name: v.variantNameEn,
+        sku: v.variantSku,
+        price: calculatePrice(v.variantSellPrice || costPrice).price,
+        costPrice: v.variantSellPrice || costPrice,
+        stock: v.inventories?.find((i: any) => i.countryCode === 'US')?.totalInventory || 0,
+        image: v.variantImage,
+      })) || [];
+
+      // Calculate total stock
+      let totalStock = 0;
+      if (details.variants) {
+        for (const v of details.variants) {
+          const usInv = v.inventories?.find((i: any) => i.countryCode === 'US');
+          totalStock += usInv?.totalInventory || 0;
+        }
+      }
+
+      // Generate unique slug
+      let slug = generateSlug(details.productNameEn || compProduct.name);
+      const { data: existingSlug } = await supabase
+        .from('products')
+        .select('slug')
+        .eq('slug', slug)
+        .maybeSingle();
+      
+      if (existingSlug) {
+        slug = `${slug}-${Date.now().toString(36)}`;
+      }
+
+      // Insert the product
+      const { data: newProduct, error: insertError } = await supabase
+        .from('products')
+        .insert({
+          name: details.productNameEn || compProduct.name,
+          slug,
+          description: details.description || `Trending pet product - ${compProduct.name}`,
+          price,
+          compare_at_price: compareAtPrice,
+          cost_price: costPrice,
+          cj_product_id: cjProduct.pid,
+          image_url: images[0] || null,
+          images: images.slice(0, 10),
+          variants: variants.length > 0 ? variants : null,
+          stock: totalStock,
+          is_active: true,
+          category: 'pet-supplies',
+          supplier_name: 'CJ Dropshipping',
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error(`Failed to insert product "${compProduct.name}":`, insertError);
+        errors++;
+        continue;
+      }
+
+      console.log(`✓ Imported: ${newProduct.name} (€${price}) from CJ`);
+      imported.push(newProduct.name);
+      existingProductNames.add(newProduct.name.toLowerCase());
+
+      // Limit to 10 imports per run to avoid timeouts
+      if (imported.length >= 10) {
+        console.log("Reached import limit of 10 products per run");
+        break;
+      }
+
+    } catch (error) {
+      console.error(`Error importing "${compProduct.name}":`, error);
+      errors++;
+    }
+  }
+
+  console.log(`CJ auto-import completed: ${imported.length} imported, ${errors} errors`);
+  return { imported: imported.length, errors, products: imported };
 }
 
 serve(async (req) => {
@@ -210,6 +487,35 @@ serve(async (req) => {
       }
 
       console.log(`Updated ${matchedBestsellers.length} bestsellers in database`);
+    }
+
+    // ============ CJ AUTO-IMPORT ============
+    // Import top competitor products from CJ Dropshipping
+    let cjImportResult = { imported: 0, errors: 0, products: [] as string[] };
+    
+    try {
+      // Get existing product names for duplicate checking
+      const existingNames = new Set((ownProducts || []).map((p: OwnProduct) => p.name.toLowerCase()));
+      
+      // Prepare competitor products for CJ search (prioritize unmatched ones)
+      const productsToSearch = top25Competitors
+        .filter(p => !matchedBestsellers.find(m => 
+          calculateSimilarity(m.competitorName, p.name) > 0.4
+        ))
+        .map(p => ({
+          name: p.name,
+          score: p.score,
+          rank: top25Competitors.indexOf(p) + 1
+        }));
+
+      console.log(`Searching CJ for ${productsToSearch.length} unmatched competitor products...`);
+      
+      if (productsToSearch.length > 0) {
+        cjImportResult = await autoImportFromCJ(supabase, productsToSearch, existingNames);
+      }
+    } catch (cjError) {
+      console.error("CJ auto-import error:", cjError);
+      cjImportResult.errors = 1;
     }
 
     // ============ AI ANALYSIS ============
@@ -468,7 +774,8 @@ Focus op:
           competitorsAnalyzed: Object.keys(byCompetitor).length,
           productsAnalyzed: products?.length || 0,
           alertsGenerated: analysis.alerts?.length || 0,
-          bestsellersUpdated: matchedBestsellers.length
+          bestsellersUpdated: matchedBestsellers.length,
+          cjProductsImported: cjImportResult.imported
         },
         bestsellersSync: {
           matched: matchedBestsellers.length,
@@ -477,6 +784,11 @@ Focus op:
             rank: m.rank,
             score: m.score
           }))
+        },
+        cjAutoImport: {
+          imported: cjImportResult.imported,
+          errors: cjImportResult.errors,
+          products: cjImportResult.products
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
