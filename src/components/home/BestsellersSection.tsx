@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { Award, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Award, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StarRating } from '@/components/ui/star-rating';
@@ -10,23 +10,231 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProductRatings } from '@/hooks/useProductRatings';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
 import { safeString, safePrice } from '@/lib/safe-render';
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from '@/components/ui/carousel';
+import { useIsMobile } from '@/hooks/use-mobile';
+
+// Carousel item animation variants - staggered entrance
+const cardVariants = {
+  hidden: { 
+    opacity: 0, 
+    y: 30,
+    scale: 0.9,
   },
+  visible: (index: number) => ({ 
+    opacity: 1, 
+    y: 0,
+    scale: 1,
+    transition: {
+      delay: index * 0.15,
+      duration: 0.5,
+      ease: [0.25, 0.46, 0.45, 0.94] as const,
+    },
+  }),
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5 },
-  },
+interface BestsellersCarouselProps {
+  bestsellers: any[];
+  ratingsMap: Record<string, { averageRating: number; reviewCount: number }> | undefined;
+}
+
+const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselProps) => {
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (!api) return;
+
+    const onSelect = () => {
+      setCurrent(api.selectedScrollSnap());
+    };
+
+    api.on('select', onSelect);
+    return () => {
+      api.off('select', onSelect);
+    };
+  }, [api]);
+
+  const scrollPrev = useCallback(() => api?.scrollPrev(), [api]);
+  const scrollNext = useCallback(() => api?.scrollNext(), [api]);
+
+  return (
+    <div className="relative">
+      {/* Carousel Controls - Desktop */}
+      <div className="hidden md:flex absolute -left-4 -right-4 top-1/2 -translate-y-1/2 justify-between pointer-events-none z-10">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={scrollPrev}
+          className="pointer-events-auto rounded-full shadow-lg bg-background/90 backdrop-blur-sm hover:bg-background border-border/50"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={scrollNext}
+          className="pointer-events-auto rounded-full shadow-lg bg-background/90 backdrop-blur-sm hover:bg-background border-border/50"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </Button>
+      </div>
+
+      <Carousel
+        setApi={setApi}
+        opts={{
+          align: 'start',
+          loop: true,
+        }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-4">
+          <AnimatePresence>
+            {bestsellers.map((bestseller, index) => {
+              const product = bestseller.products;
+              if (!product) return null;
+              
+              const productPrice = typeof product.price === 'number' ? product.price : 0;
+              const comparePrice = typeof product.compare_at_price === 'number' ? product.compare_at_price : 0;
+              const discount = comparePrice > 0
+                ? Math.round((1 - productPrice / comparePrice) * 100)
+                : 0;
+
+              const productRating = ratingsMap?.[product.id];
+              
+              const safeName = safeString(product.name);
+              const safeHeadline = safeString(bestseller.hero_headline);
+              const safeCategory = safeString(product.category);
+              const safeImageUrl = safeString(product.image_url) || '/placeholder.svg';
+              const safeSlug = safeString(bestseller.slug);
+
+              return (
+                <CarouselItem 
+                  key={bestseller.id} 
+                  className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/5"
+                >
+                  <motion.div
+                    custom={index}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-50px" }}
+                    variants={cardVariants}
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <Link
+                      to={`/bestseller/${safeSlug}`}
+                      className="group block bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300"
+                    >
+                      {/* Image Container */}
+                      <div className="relative aspect-square overflow-hidden">
+                        {/* Rank Badge */}
+                        <div className="absolute top-3 left-3 z-10">
+                          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 px-3 py-1 text-xs font-bold shadow-lg">
+                            <Award className="w-3 h-3 mr-1" />
+                            #{bestseller.rank}
+                          </Badge>
+                        </div>
+
+                        {/* Discount Badge */}
+                        {discount > 0 && (
+                          <div className="absolute top-3 right-3 z-10">
+                            <Badge variant="destructive" className="px-2 py-1 text-xs font-bold">
+                              -{discount}%
+                            </Badge>
+                          </div>
+                        )}
+
+                        {/* Product Image */}
+                        <img
+                          src={safeImageUrl}
+                          alt={safeName}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+
+                        {/* Overlay on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        
+                        {/* View Button on hover */}
+                        <div className="absolute inset-0 flex items-end justify-center pb-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
+                          <span className="bg-white text-foreground px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2">
+                            View Product
+                            <ArrowRight className="w-4 h-4" />
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-4">
+                        {/* Category */}
+                        {safeCategory && (
+                          <p className="text-xs text-primary font-medium mb-1 truncate">
+                            {safeCategory}
+                          </p>
+                        )}
+
+                        {/* Product Name */}
+                        <h3 className="font-semibold text-sm mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                          {safeHeadline || safeName}
+                        </h3>
+
+                        {/* Rating */}
+                        {productRating && productRating.reviewCount > 0 ? (
+                          <div className="mb-2">
+                            <StarRating 
+                              rating={productRating.averageRating} 
+                              reviewCount={productRating.reviewCount}
+                              size="sm"
+                            />
+                          </div>
+                        ) : null}
+
+                        {/* Price */}
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-lg font-bold text-primary">
+                            ${safePrice(productPrice)}
+                          </span>
+                          {comparePrice > 0 && (
+                            <span className="text-sm text-muted-foreground line-through">
+                              ${safePrice(comparePrice)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                </CarouselItem>
+              );
+            })}
+          </AnimatePresence>
+        </CarouselContent>
+      </Carousel>
+
+      {/* Dots Indicator */}
+      <div className="flex justify-center gap-2 mt-6">
+        {bestsellers.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => api?.scrollTo(index)}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              current === index 
+                ? 'w-8 bg-primary' 
+                : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+            }`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export const BestsellersSection = () => {
@@ -96,128 +304,9 @@ export const BestsellersSection = () => {
         {/* Loading State */}
         {isLoading && <BestsellersGridSkeleton count={5} />}
 
-        {/* Bestsellers Grid */}
+        {/* Bestsellers Carousel */}
         {!isLoading && bestsellers && bestsellers.length > 0 && (
-          <motion.div 
-            className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {bestsellers.map((bestseller) => {
-              const product = bestseller.products;
-              if (!product) return null;
-              
-              // Safely calculate discount to prevent rendering objects
-              const productPrice = typeof product.price === 'number' ? product.price : 0;
-              const comparePrice = typeof product.compare_at_price === 'number' ? product.compare_at_price : 0;
-              const discount = comparePrice > 0
-                ? Math.round((1 - productPrice / comparePrice) * 100)
-                : 0;
-
-              const productRating = ratingsMap?.[product.id];
-              
-              // Sanitize string values to prevent React error #310
-              const safeName = safeString(product.name);
-              const safeHeadline = safeString(bestseller.hero_headline);
-              const safeCategory = safeString(product.category);
-              const safeImageUrl = safeString(product.image_url) || '/placeholder.svg';
-              const safeSlug = safeString(bestseller.slug);
-
-              return (
-                <motion.div
-                  key={bestseller.id}
-                  variants={itemVariants}
-                  whileHover={{ y: -8 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <Link
-                    to={`/bestseller/${safeSlug}`}
-                    className="group block bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300"
-                  >
-                    {/* Image Container */}
-                    <div className="relative aspect-square overflow-hidden">
-                      {/* Rank Badge */}
-                      <div className="absolute top-3 left-3 z-10">
-                        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 px-3 py-1 text-xs font-bold shadow-lg">
-                          <Award className="w-3 h-3 mr-1" />
-                          #{bestseller.rank}
-                        </Badge>
-                      </div>
-
-                      {/* Discount Badge */}
-                      {discount > 0 && (
-                        <div className="absolute top-3 right-3 z-10">
-                          <Badge variant="destructive" className="px-2 py-1 text-xs font-bold">
-                            -{discount}%
-                          </Badge>
-                        </div>
-                      )}
-
-                      {/* Product Image */}
-                      <img
-                        src={safeImageUrl}
-                        alt={safeName}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-
-                      {/* Overlay on hover */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      
-                      {/* View Button on hover */}
-                      <div className="absolute inset-0 flex items-end justify-center pb-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
-                        <span className="bg-white text-foreground px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2">
-                          View Product
-                          <ArrowRight className="w-4 h-4" />
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-4">
-                      {/* Category */}
-                      {safeCategory && (
-                        <p className="text-xs text-primary font-medium mb-1 truncate">
-                          {safeCategory}
-                        </p>
-                      )}
-
-                      {/* Product Name */}
-                      <h3 className="font-semibold text-sm mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                        {safeHeadline || safeName}
-                      </h3>
-
-                      {/* Rating */}
-                      {productRating && productRating.reviewCount > 0 ? (
-                        <div className="mb-2">
-                          <StarRating 
-                            rating={productRating.averageRating} 
-                            reviewCount={productRating.reviewCount}
-                            size="sm"
-                          />
-                        </div>
-                      ) : null}
-
-                      {/* Price */}
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-bold text-primary">
-                          ${safePrice(productPrice)}
-                        </span>
-                        {comparePrice > 0 && (
-                          <span className="text-sm text-muted-foreground line-through">
-                            ${safePrice(comparePrice)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </motion.div>
+          <BestsellersCarousel bestsellers={bestsellers} ratingsMap={ratingsMap} />
         )}
 
         {/* CTA */}
