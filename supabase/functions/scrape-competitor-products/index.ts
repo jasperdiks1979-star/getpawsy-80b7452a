@@ -336,6 +336,9 @@ async function scrapeCompetitor(
   console.log(`Scraping ${competitor.name}...`);
   
   try {
+    // Use longer timeout for heavy sites like Chewy and Petco
+    const waitTime = competitor.name === 'amazon' ? 3000 : 10000;
+    
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: {
@@ -346,7 +349,8 @@ async function scrapeCompetitor(
         url: competitor.url,
         formats: ['markdown', 'links'],
         onlyMainContent: true,
-        waitFor: 3000,
+        waitFor: waitTime,
+        timeout: 60000, // 60 second overall timeout
       }),
     });
 
