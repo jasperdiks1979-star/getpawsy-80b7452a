@@ -121,7 +121,7 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
   };
 
   return (
-    <div className="relative py-4 md:py-6 overflow-visible">
+    <div className="relative pt-2 pb-4 md:pt-4 md:pb-6">
       {/* Carousel Controls - Desktop */}
       <div className="hidden md:flex absolute -left-6 -right-6 top-1/2 -translate-y-1/2 justify-between pointer-events-none z-20">
         <Button
@@ -434,21 +434,21 @@ export const BestsellersSection = () => {
   }
 
   return (
-    <section className="py-20 bg-gradient-to-b from-primary/5 via-accent/5 to-background">
-      <div className="container px-4 md:px-6">
-        {/* Header - Compact */}
+    <section className="pt-12 pb-16 bg-gradient-to-b from-primary/5 via-accent/5 to-background overflow-visible">
+      <div className="container px-4 md:px-6 overflow-visible">
+        {/* Header - Minimal */}
         <motion.div 
-          className="text-center mb-6"
+          className="text-center mb-2"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-400 px-4 py-1.5 rounded-full text-sm font-medium mb-3">
-            <Award className="w-4 h-4" />
-            Our Top Products
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-medium mb-1">
+            <Award className="w-3 h-3" />
+            Top Products
           </div>
-          <h2 className="text-3xl md:text-4xl font-display font-bold">
+          <h2 className="text-2xl md:text-3xl font-display font-bold">
             Bestsellers
           </h2>
         </motion.div>
