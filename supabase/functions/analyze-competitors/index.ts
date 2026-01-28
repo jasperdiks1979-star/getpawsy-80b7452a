@@ -20,6 +20,66 @@ interface CompetitorProduct {
   last_seen_at: string;
 }
 
+interface OwnProduct {
+  id: string;
+  name: string;
+  slug: string | null;
+  category: string | null;
+  price: number;
+}
+
+// Calculate similarity between two strings (Jaccard similarity on words)
+function calculateSimilarity(str1: string, str2: string): number {
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2);
+  const words1 = new Set(normalize(str1));
+  const words2 = new Set(normalize(str2));
+  
+  if (words1.size === 0 || words2.size === 0) return 0;
+  
+  const intersection = new Set([...words1].filter(w => words2.has(w)));
+  const union = new Set([...words1, ...words2]);
+  
+  return intersection.size / union.size;
+}
+
+// Calculate bestseller score: popularity (appears at multiple competitors) + trending momentum
+function calculateBestsellerScore(
+  productName: string, 
+  allProducts: CompetitorProduct[]
+): { score: number; competitorCount: number; avgRank: number; trendBoost: number } {
+  const matchingProducts = allProducts.filter(p => 
+    calculateSimilarity(p.product_name, productName) > 0.4
+  );
+  
+  // Count unique competitors
+  const competitors = new Set(matchingProducts.map(p => p.competitor));
+  const competitorCount = competitors.size;
+  
+  // Calculate average rank (lower is better)
+  const avgRank = matchingProducts.length > 0 
+    ? matchingProducts.reduce((sum, p) => sum + p.current_rank, 0) / matchingProducts.length 
+    : 100;
+  
+  // Calculate trend boost (rising products get bonus)
+  const trendBoost = matchingProducts.reduce((boost, p) => {
+    if (p.trend === 'rising' || (p.rank_change && p.rank_change > 0)) {
+      return boost + (p.rank_change || 3);
+    }
+    if (p.trend === 'new') {
+      return boost + 5; // New entries get extra boost
+    }
+    return boost;
+  }, 0);
+  
+  // Combined score: higher is better
+  // - Popularity: competitorCount * 20 (max ~100 for 5 competitors)
+  // - Rank: (26 - avgRank) * 2 (max 50 for rank 1)
+  // - Trending: trendBoost * 3 (variable bonus)
+  const score = (competitorCount * 20) + Math.max(0, (26 - avgRank) * 2) + (trendBoost * 3);
+  
+  return { score, competitorCount, avgRank, trendBoost };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -49,6 +109,110 @@ serve(async (req) => {
 
     if (productsError) throw productsError;
 
+    // Fetch our own products for matching
+    const { data: ownProducts, error: ownProductsError } = await supabase
+      .from("products")
+      .select("id, name, slug, category, price")
+      .eq("is_active", true);
+
+    if (ownProductsError) throw ownProductsError;
+
+    // ============ AUTO-UPDATE BESTSELLERS ============
+    console.log("Starting bestseller auto-sync...");
+    
+    // Calculate scores for all unique competitor products
+    const uniqueProductNames = [...new Set((products || []).map(p => p.product_name))];
+    const scoredProducts = uniqueProductNames.map(name => {
+      const scores = calculateBestsellerScore(name, products || []);
+      const representativeProduct = (products || []).find(p => p.product_name === name)!;
+      return {
+        name,
+        ...scores,
+        representativeProduct
+      };
+    });
+
+    // Sort by score and take top 25
+    const top25Competitors = scoredProducts
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 25);
+
+    console.log(`Top 25 competitor products identified:`, top25Competitors.slice(0, 5).map(p => ({
+      name: p.name.substring(0, 50),
+      score: p.score,
+      competitors: p.competitorCount
+    })));
+
+    // Match to our own products
+    const matchedBestsellers: Array<{
+      ownProduct: OwnProduct;
+      competitorName: string;
+      score: number;
+      rank: number;
+    }> = [];
+
+    for (let i = 0; i < top25Competitors.length; i++) {
+      const compProduct = top25Competitors[i];
+      let bestMatch: OwnProduct | null = null;
+      let bestSimilarity = 0;
+
+      for (const ownProduct of (ownProducts || [])) {
+        const similarity = calculateSimilarity(compProduct.name, ownProduct.name);
+        if (similarity > bestSimilarity && similarity > 0.3) {
+          bestSimilarity = similarity;
+          bestMatch = ownProduct;
+        }
+      }
+
+      if (bestMatch && !matchedBestsellers.find(m => m.ownProduct.id === bestMatch!.id)) {
+        matchedBestsellers.push({
+          ownProduct: bestMatch,
+          competitorName: compProduct.name,
+          score: compProduct.score,
+          rank: matchedBestsellers.length + 1
+        });
+      }
+    }
+
+    console.log(`Matched ${matchedBestsellers.length} products to own catalog`);
+
+    // Update bestsellers table if we have matches
+    if (matchedBestsellers.length > 0) {
+      // First, deactivate auto-generated bestsellers (keep manual ones)
+      await supabase
+        .from("bestsellers")
+        .update({ is_active: false })
+        .eq("is_manual", false);
+
+      // Upsert matched products as bestsellers
+      for (const match of matchedBestsellers) {
+        const slug = match.ownProduct.slug || match.ownProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        
+        const { error: upsertError } = await supabase
+          .from("bestsellers")
+          .upsert({
+            product_id: match.ownProduct.id,
+            rank: match.rank,
+            slug: slug,
+            is_active: true,
+            is_manual: false,
+            hero_headline: `Trending: ${match.ownProduct.name}`,
+            hero_subheadline: `Popular across ${Math.min(5, Math.ceil(match.score / 20))} major retailers`,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'product_id',
+            ignoreDuplicates: false
+          });
+
+        if (upsertError) {
+          console.error(`Error upserting bestseller for ${match.ownProduct.name}:`, upsertError);
+        }
+      }
+
+      console.log(`Updated ${matchedBestsellers.length} bestsellers in database`);
+    }
+
+    // ============ AI ANALYSIS ============
     // Group products by competitor
     const byCompetitor: Record<string, CompetitorProduct[]> = {};
     (products || []).forEach((p: CompetitorProduct) => {
@@ -122,6 +286,14 @@ ${JSON.stringify(newTopEntries.map((p: CompetitorProduct) => ({
   rank: p.current_rank
 })), null, 2)}
 
+## Auto-Matched Bestsellers (${matchedBestsellers.length} products matched to our catalog):
+${JSON.stringify(matchedBestsellers.slice(0, 10).map(m => ({
+  ourProduct: m.ownProduct.name.substring(0, 50),
+  matchedTo: m.competitorName.substring(0, 50),
+  score: m.score,
+  rank: m.rank
+})), null, 2)}
+
 Geef je analyse in het volgende JSON format:
 {
   "title": "Wekelijkse Competitor Analyse - [Datum]",
@@ -184,7 +356,7 @@ Focus op:
           { role: "user", content: analysisPrompt }
         ],
         temperature: 0.3,
-        max_tokens: 3000, // Ensure complete response
+        max_tokens: 3000,
       }),
     });
 
@@ -204,16 +376,12 @@ Focus op:
     // Parse the JSON response with robust error handling
     let analysis;
     try {
-      // Remove markdown code blocks if present
       let cleanedContent = aiContent.replace(/```json\n?|\n?```/g, "").trim();
       
-      // If the response was truncated, try to fix incomplete JSON
       if (finishReason === "length" || !cleanedContent.endsWith("}")) {
         console.warn("AI response may be truncated, attempting to fix JSON...");
-        // Try to find the last complete object/array
         const lastBrace = cleanedContent.lastIndexOf("}");
         if (lastBrace > 0) {
-          // Count braces to find complete structure
           let braceCount = 0;
           let lastValidIndex = 0;
           for (let i = 0; i < cleanedContent.length; i++) {
@@ -232,7 +400,6 @@ Focus op:
       analysis = JSON.parse(cleanedContent);
     } catch (parseError) {
       console.error("Failed to parse AI response:", aiContent.substring(0, 500) + "...");
-      // Return a fallback analysis structure
       analysis = {
         title: `Competitor Analyse - ${new Date().toLocaleDateString("nl-NL")}`,
         summary: "AI-analyse kon niet volledig worden geparsed. Controleer de data handmatig.",
@@ -300,7 +467,16 @@ Focus op:
         stats: {
           competitorsAnalyzed: Object.keys(byCompetitor).length,
           productsAnalyzed: products?.length || 0,
-          alertsGenerated: analysis.alerts?.length || 0
+          alertsGenerated: analysis.alerts?.length || 0,
+          bestsellersUpdated: matchedBestsellers.length
+        },
+        bestsellersSync: {
+          matched: matchedBestsellers.length,
+          top5: matchedBestsellers.slice(0, 5).map(m => ({
+            product: m.ownProduct.name,
+            rank: m.rank,
+            score: m.score
+          }))
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
