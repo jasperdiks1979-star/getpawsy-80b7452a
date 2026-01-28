@@ -215,7 +215,7 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                       } : undefined}
                       style={{ 
                         transformStyle: 'preserve-3d',
-                        transformOrigin: 'center center',
+                        transformOrigin: 'center top',
                       }}
                       className="relative"
                     >
