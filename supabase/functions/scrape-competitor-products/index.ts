@@ -625,9 +625,41 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const targetCompetitor = body.competitor; // Optional: scrape specific competitor
     
-    const competitorsToScrape = targetCompetitor 
-      ? COMPETITORS.filter(c => c.name === targetCompetitor)
-      : COMPETITORS;
+    // Check which retailers are enabled in site_settings
+    const { data: retailerSettings } = await supabase
+      .from('site_settings')
+      .select('key, value')
+      .like('key', 'scraper_retailer_%');
+    
+    const enabledRetailers = new Set<string>();
+    if (retailerSettings && retailerSettings.length > 0) {
+      for (const setting of retailerSettings) {
+        const retailerName = setting.key.replace('scraper_retailer_', '');
+        if (setting.value === 'true') {
+          enabledRetailers.add(retailerName);
+        }
+      }
+    } else {
+      // If no settings exist, enable all by default
+      COMPETITORS.forEach(c => enabledRetailers.add(c.name));
+    }
+    
+    console.log('Enabled retailers:', Array.from(enabledRetailers));
+    
+    // Filter competitors based on settings and target
+    let competitorsToScrape = COMPETITORS.filter(c => enabledRetailers.has(c.name));
+    
+    if (targetCompetitor) {
+      competitorsToScrape = competitorsToScrape.filter(c => c.name === targetCompetitor);
+    }
+    
+    if (competitorsToScrape.length === 0) {
+      console.log('No retailers enabled for scraping');
+      return new Response(
+        JSON.stringify({ success: true, message: 'No retailers enabled', results: [] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const results: { competitor: string; success: boolean; products: number; error?: string }[] = [];
 
