@@ -170,7 +170,7 @@ Focus op:
 4. Tactische aanbevelingen om onze eigen verkoop te verbeteren
 `;
 
-    // Call Lovable AI
+    // Call Lovable AI with max_tokens to prevent truncation
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -180,10 +180,11 @@ Focus op:
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "Je bent een data analyst voor e-commerce. Geef altijd valid JSON terug zonder markdown codeblocks." },
+          { role: "system", content: "Je bent een data analyst voor e-commerce. Geef ALTIJD complete, valid JSON terug zonder markdown codeblocks. Houd je response beknopt maar compleet." },
           { role: "user", content: analysisPrompt }
         ],
         temperature: 0.3,
+        max_tokens: 3000, // Ensure complete response
       }),
     });
 
@@ -195,16 +196,58 @@ Focus op:
 
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content || "";
+    const finishReason = aiData.choices?.[0]?.finish_reason;
 
-    // Parse the JSON response
+    console.log("AI finish reason:", finishReason);
+    console.log("AI content length:", aiContent.length);
+
+    // Parse the JSON response with robust error handling
     let analysis;
     try {
       // Remove markdown code blocks if present
-      const cleanedContent = aiContent.replace(/```json\n?|\n?```/g, "").trim();
+      let cleanedContent = aiContent.replace(/```json\n?|\n?```/g, "").trim();
+      
+      // If the response was truncated, try to fix incomplete JSON
+      if (finishReason === "length" || !cleanedContent.endsWith("}")) {
+        console.warn("AI response may be truncated, attempting to fix JSON...");
+        // Try to find the last complete object/array
+        const lastBrace = cleanedContent.lastIndexOf("}");
+        if (lastBrace > 0) {
+          // Count braces to find complete structure
+          let braceCount = 0;
+          let lastValidIndex = 0;
+          for (let i = 0; i < cleanedContent.length; i++) {
+            if (cleanedContent[i] === "{") braceCount++;
+            if (cleanedContent[i] === "}") {
+              braceCount--;
+              if (braceCount === 0) lastValidIndex = i + 1;
+            }
+          }
+          if (lastValidIndex > 0) {
+            cleanedContent = cleanedContent.substring(0, lastValidIndex);
+          }
+        }
+      }
+      
       analysis = JSON.parse(cleanedContent);
     } catch (parseError) {
-      console.error("Failed to parse AI response:", aiContent);
-      throw new Error("Failed to parse AI analysis response");
+      console.error("Failed to parse AI response:", aiContent.substring(0, 500) + "...");
+      // Return a fallback analysis structure
+      analysis = {
+        title: `Competitor Analyse - ${new Date().toLocaleDateString("nl-NL")}`,
+        summary: "AI-analyse kon niet volledig worden geparsed. Controleer de data handmatig.",
+        insights: [{
+          category: "trends",
+          title: "Analyse Error",
+          description: "De AI-response kon niet worden geparsed. Dit kan komen door een tijdelijke API-fout.",
+          priority: "medium"
+        }],
+        pricing_analysis: null,
+        product_trends: { rising_categories: [], declining_categories: [], opportunities: [] },
+        recommendations: [],
+        alerts: []
+      };
+      console.warn("Using fallback analysis structure");
     }
 
     // Store the report in the database
