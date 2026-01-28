@@ -395,7 +395,12 @@ async function scrapeCompetitor(
   
   // Configure wait times per retailer - lighter sites need less time
   const lightSites = ['amazon', 'petsmart', 'walmart'];
-  const waitTime = lightSites.includes(competitor.name) ? 3000 : 10000;
+  const heavySites = ['chewy', 'petco'];
+  
+  // Lighter sites load faster, heavier sites need more time
+  const waitTime = lightSites.includes(competitor.name) ? 3000 : 15000;
+  // Increase timeout for sites with heavy JavaScript
+  const timeout = heavySites.includes(competitor.name) ? 120000 : 60000;
   
   const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
     method: 'POST',
@@ -408,7 +413,7 @@ async function scrapeCompetitor(
       formats: ['markdown', 'links'],
       onlyMainContent: true,
       waitFor: waitTime,
-      timeout: 60000, // 60 second overall timeout
+      timeout: timeout, // Dynamic timeout based on site complexity
     }),
   });
 
