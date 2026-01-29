@@ -115,6 +115,7 @@ export const SupplierImportManager = forwardRef<HTMLDivElement, Record<string, n
     requiresLogin?: boolean;
     partialData?: { name?: string; sku?: string; images?: string[] };
   } | null>(null);
+  const [originalProductUrl, setOriginalProductUrl] = useState<string | null>(null);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -286,6 +287,7 @@ export const SupplierImportManager = forwardRef<HTMLDivElement, Record<string, n
     if (result.success) {
       setUrlImportResult(result);
       setUrlInput("");
+      setOriginalProductUrl(null);
     } else {
       // Include requiresLogin and partialData for special handling
       setUrlImportResult({ 
@@ -294,6 +296,10 @@ export const SupplierImportManager = forwardRef<HTMLDivElement, Record<string, n
         requiresLogin: result.requiresLogin,
         partialData: result.partialData,
       });
+      // Save the URL for the "Open in PetDropshipper" button
+      if (result.requiresLogin) {
+        setOriginalProductUrl(urlInput);
+      }
     }
   }, [urlInput, urlAddToShop, urlMultiplier, importFromUrl, toast]);
 
@@ -669,13 +675,28 @@ export const SupplierImportManager = forwardRef<HTMLDivElement, Record<string, n
         <TabsContent value="manual" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Edit className="h-5 w-5" />
-                Handmatige Invoer
-              </CardTitle>
-              <CardDescription>
-                Voeg een product handmatig toe zonder CSV. Ideaal voor losse producten van de PetDropshipper website.
-              </CardDescription>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Edit className="h-5 w-5" />
+                    Handmatige Invoer
+                  </CardTitle>
+                  <CardDescription>
+                    Voeg een product handmatig toe zonder CSV. Ideaal voor losse producten van de PetDropshipper website.
+                  </CardDescription>
+                </div>
+                {originalProductUrl && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(originalProductUrl, '_blank')}
+                    className="shrink-0"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Open in PetDropshipper
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
