@@ -426,6 +426,60 @@ export function useSupplierImport() {
     }
   };
 
+  const importFromUrl = async (
+    url: string,
+    addToShopNow: boolean = false,
+    priceMultiplier: number = 2.5
+  ): Promise<{ 
+    success: boolean; 
+    supplierProduct?: any; 
+    shopProduct?: any; 
+    extractedData?: any;
+    error?: string 
+  }> => {
+    setIsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-from-url`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            url,
+            addToShop: addToShopNow,
+            priceMultiplier,
+          }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+
+      toast({
+        title: "Product geïmporteerd",
+        description: result.message,
+      });
+
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Import mislukt";
+      toast({
+        title: "Import fout",
+        description: message,
+        variant: "destructive",
+      });
+      return { success: false, error: message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     importCSV,
     listProducts,
@@ -435,6 +489,7 @@ export function useSupplierImport() {
     checkDiscontinued,
     addToShop,
     addManualProduct,
+    importFromUrl,
     isImporting,
     isLoading,
   };
