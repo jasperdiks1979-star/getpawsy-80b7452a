@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useSupplierImport } from "@/hooks/useSupplierImport";
-import { Upload, Search, RefreshCw, Package, Truck, ArrowRightLeft, CheckCircle2, AlertTriangle, Ban } from "lucide-react";
+import { Upload, Search, RefreshCw, Package, Truck, ArrowRightLeft, CheckCircle2, AlertTriangle, Ban, Plus, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface SupplierProduct {
@@ -47,8 +48,15 @@ interface ProductMatch {
   }>;
 }
 
+interface AddToShopResult {
+  name: string;
+  success: boolean;
+  error?: string;
+  productId?: string;
+}
+
 export function SupplierImportManager() {
-  const { importCSV, listProducts, findMatches, switchSupplier, importDiscontinuedList, checkDiscontinued, isImporting, isLoading } = useSupplierImport();
+  const { importCSV, listProducts, findMatches, switchSupplier, importDiscontinuedList, checkDiscontinued, addToShop, isImporting, isLoading } = useSupplierImport();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("import");
@@ -57,6 +65,9 @@ export function SupplierImportManager() {
   const [products, setProducts] = useState<SupplierProduct[]>([]);
   const [totalProducts, setTotalProducts] = useState(0);
   const [matches, setMatches] = useState<ProductMatch[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [priceMultiplier, setPriceMultiplier] = useState<string>("2.5");
+  const [addResults, setAddResults] = useState<AddToShopResult[] | null>(null);
   const [importResult, setImportResult] = useState<{
     total: number;
     imported: number;
@@ -115,9 +126,51 @@ export function SupplierImportManager() {
     const success = await switchSupplier(productId, supplierProductId);
     if (success) {
       // Remove from matches list
-    setMatches(prev => prev.filter(m => m.product.id !== productId));
+      setMatches(prev => prev.filter(m => m.product.id !== productId));
     }
   }, [switchSupplier]);
+
+  const handleSelectProduct = useCallback((productId: string, checked: boolean) => {
+    setSelectedProducts(prev => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(productId);
+      } else {
+        next.delete(productId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedProducts(new Set(products.map(p => p.id)));
+    } else {
+      setSelectedProducts(new Set());
+    }
+  }, [products]);
+
+  const handleAddToShop = useCallback(async () => {
+    if (selectedProducts.size === 0) {
+      toast({
+        title: "Geen producten geselecteerd",
+        description: "Selecteer minimaal één product om toe te voegen",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const multiplier = parseFloat(priceMultiplier) || 2.5;
+    const result = await addToShop(Array.from(selectedProducts), multiplier);
+    
+    if (result.success && result.results) {
+      setAddResults(result.results);
+      // Clear selection after successful add
+      setSelectedProducts(new Set());
+      // Refresh list
+      handleSearch();
+    }
+  }, [selectedProducts, priceMultiplier, addToShop, toast, handleSearch]);
 
   const handleDiscontinuedUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -428,8 +481,8 @@ export function SupplierImportManager() {
           {/* Search & Filter */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <div className="flex-1">
+              <div className="flex gap-4 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
                   <Input
                     placeholder="Zoek op productnaam..."
                     value={searchQuery}
@@ -455,6 +508,92 @@ export function SupplierImportManager() {
             </CardContent>
           </Card>
 
+          {/* Add to Shop Controls */}
+          {products.length > 0 && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="select-all"
+                        checked={selectedProducts.size === products.length && products.length > 0}
+                        onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                      />
+                      <Label htmlFor="select-all" className="text-sm cursor-pointer">
+                        Selecteer alles ({products.length})
+                      </Label>
+                    </div>
+                    {selectedProducts.size > 0 && (
+                      <Badge variant="secondary" className="gap-1">
+                        <ShoppingCart className="h-3 w-3" />
+                        {selectedProducts.size} geselecteerd
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="multiplier" className="text-sm whitespace-nowrap">
+                        Prijs multiplier:
+                      </Label>
+                      <Input
+                        id="multiplier"
+                        type="number"
+                        min="1"
+                        max="10"
+                        step="0.1"
+                        value={priceMultiplier}
+                        onChange={(e) => setPriceMultiplier(e.target.value)}
+                        className="w-20"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleAddToShop} 
+                      disabled={isLoading || selectedProducts.size === 0}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Toevoegen aan Shop
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Add Results */}
+          {addResults && addResults.length > 0 && (
+            <Card className="border-green-200 bg-green-50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  Resultaten
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {addResults.map((result, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span className="truncate flex-1">{result.name}</span>
+                      {result.success ? (
+                        <Badge variant="default" className="ml-2">Toegevoegd</Badge>
+                      ) : (
+                        <Badge variant="destructive" className="ml-2">{result.error}</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3"
+                  onClick={() => setAddResults(null)}
+                >
+                  Sluiten
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Products Table */}
           <Card>
             <CardContent className="pt-6">
@@ -468,65 +607,75 @@ export function SupplierImportManager() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10"></TableHead>
                       <TableHead>Product</TableHead>
                       <TableHead>Leverancier</TableHead>
                       <TableHead>SKU</TableHead>
                       <TableHead className="text-right">Kostprijs</TableHead>
-                      <TableHead className="text-right">MSRP</TableHead>
+                      <TableHead className="text-right">Verkoopprijs</TableHead>
                       <TableHead>Verzending</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {products.map((product) => (
-                      <TableRow key={product.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            {product.image_url && (
-                              <img
-                                src={product.image_url}
-                                alt={product.product_name}
-                                className="h-10 w-10 rounded object-cover"
-                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                              />
-                            )}
-                            <div>
-                              <p className="font-medium line-clamp-1">{product.product_name}</p>
-                              {product.brand && (
-                                <p className="text-xs text-muted-foreground">{product.brand}</p>
+                    {products.map((product) => {
+                      const retailPrice = product.cost_price * (parseFloat(priceMultiplier) || 2.5);
+                      return (
+                        <TableRow key={product.id} className={selectedProducts.has(product.id) ? "bg-primary/5" : ""}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedProducts.has(product.id)}
+                              onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              {product.image_url && (
+                                <img
+                                  src={product.image_url}
+                                  alt={product.product_name}
+                                  className="h-10 w-10 rounded object-cover"
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                />
                               )}
+                              <div>
+                                <p className="font-medium line-clamp-1">{product.product_name}</p>
+                                {product.brand && (
+                                  <p className="text-xs text-muted-foreground">{product.brand}</p>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {product.supplier}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {product.sku}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          ${product.cost_price.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {product.msrp ? `$${product.msrp.toFixed(2)}` : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <Truck className="h-3 w-3" />
-                            {product.shipping_time}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={product.stock_status === 'in_stock' ? 'default' : 'secondary'}
-                          >
-                            {product.stock_status === 'in_stock' ? 'Op voorraad' : 'Uitverkocht'}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">
+                              {product.supplier}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {product.sku}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            ${product.cost_price.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right text-green-600 font-medium">
+                            €{retailPrice.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1 text-sm">
+                              <Truck className="h-3 w-3" />
+                              {product.shipping_time}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={product.stock_status === 'in_stock' ? 'default' : 'secondary'}
+                            >
+                              {product.stock_status === 'in_stock' ? 'Op voorraad' : 'Uitverkocht'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
