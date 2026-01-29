@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSupplierImport } from "@/hooks/useSupplierImport";
-import { Upload, Search, RefreshCw, Package, Truck, ArrowRightLeft, CheckCircle2, AlertTriangle, Ban, Plus, ShoppingCart, Edit } from "lucide-react";
+import { Upload, Search, RefreshCw, Package, Truck, ArrowRightLeft, CheckCircle2, AlertTriangle, Ban, Plus, ShoppingCart, Edit, Link, Loader2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface SupplierProduct {
   id: string;
@@ -57,7 +58,7 @@ interface AddToShopResult {
 }
 
 export function SupplierImportManager() {
-  const { importCSV, listProducts, findMatches, switchSupplier, importDiscontinuedList, checkDiscontinued, addToShop, addManualProduct, isImporting, isLoading } = useSupplierImport();
+  const { importCSV, listProducts, findMatches, switchSupplier, importDiscontinuedList, checkDiscontinued, addToShop, addManualProduct, importFromUrl, isImporting, isLoading } = useSupplierImport();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("import");
@@ -101,6 +102,17 @@ export function SupplierImportManager() {
   });
   const [addToShopOnSave, setAddToShopOnSave] = useState(true);
   const [manualMultiplier, setManualMultiplier] = useState("2.5");
+
+  // URL import state
+  const [urlInput, setUrlInput] = useState("");
+  const [urlAddToShop, setUrlAddToShop] = useState(true);
+  const [urlMultiplier, setUrlMultiplier] = useState("2.5");
+  const [urlImportResult, setUrlImportResult] = useState<{
+    success: boolean;
+    extractedData?: any;
+    shopProduct?: any;
+    error?: string;
+  } | null>(null);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -252,22 +264,51 @@ export function SupplierImportManager() {
     }
   }, [manualForm, addToShopOnSave, manualMultiplier, addManualProduct, toast]);
 
+  const handleUrlImport = useCallback(async () => {
+    if (!urlInput.trim()) {
+      toast({
+        title: "URL vereist",
+        description: "Voer een PetDropshipper product URL in",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUrlImportResult(null);
+    const result = await importFromUrl(
+      urlInput,
+      urlAddToShop,
+      parseFloat(urlMultiplier) || 2.5
+    );
+
+    if (result.success) {
+      setUrlImportResult(result);
+      setUrlInput("");
+    } else {
+      setUrlImportResult({ success: false, error: result.error });
+    }
+  }, [urlInput, urlAddToShop, urlMultiplier, importFromUrl, toast]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Leverancier Import</h2>
           <p className="text-muted-foreground">
-            Importeer producten van TopDawg en PetDropshipper via CSV of voeg handmatig toe
+            Importeer producten van TopDawg en PetDropshipper via CSV, URL of handmatig
           </p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="import" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
-            Import CSV
+            CSV
+          </TabsTrigger>
+          <TabsTrigger value="url" className="flex items-center gap-2">
+            <Link className="h-4 w-4" />
+            URL
           </TabsTrigger>
           <TabsTrigger value="manual" className="flex items-center gap-2">
             <Edit className="h-4 w-4" />
@@ -279,11 +320,11 @@ export function SupplierImportManager() {
           </TabsTrigger>
           <TabsTrigger value="products" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
-            Producten ({totalProducts})
+            ({totalProducts})
           </TabsTrigger>
           <TabsTrigger value="matches" className="flex items-center gap-2">
             <ArrowRightLeft className="h-4 w-4" />
-            Matches ({matches.length})
+            ({matches.length})
           </TabsTrigger>
         </TabsList>
 
@@ -411,6 +452,173 @@ export function SupplierImportManager() {
                   <p className="font-medium">Match met slow-shipping producten</p>
                   <p className="text-muted-foreground">
                     Ga naar "Matches" tab om producten te koppelen en leverancier te wisselen
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* URL Import Tab */}
+        <TabsContent value="url" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link className="h-5 w-5" />
+                Import via URL
+              </CardTitle>
+              <CardDescription>
+                Plak een product URL van PetDropshipper en het systeem haalt automatisch alle productgegevens op.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="url-input">Product URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="url-input"
+                      type="url"
+                      placeholder="https://petdropshipper.com/products/..."
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => window.open('https://petdropshipper.com', '_blank')}
+                      title="Open PetDropshipper"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Ondersteund: petdropshipper.com product pagina's
+                  </p>
+                </div>
+
+                {/* Add to shop options */}
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="url-add-to-shop"
+                          checked={urlAddToShop}
+                          onCheckedChange={(checked) => setUrlAddToShop(checked as boolean)}
+                        />
+                        <Label htmlFor="url-add-to-shop" className="cursor-pointer">
+                          Direct toevoegen aan webshop
+                        </Label>
+                      </div>
+                      {urlAddToShop && (
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="url-multiplier" className="text-sm whitespace-nowrap">
+                            Prijs multiplier:
+                          </Label>
+                          <Input
+                            id="url-multiplier"
+                            type="number"
+                            min="1"
+                            max="10"
+                            step="0.1"
+                            value={urlMultiplier}
+                            onChange={(e) => setUrlMultiplier(e.target.value)}
+                            className="w-20"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Button 
+                  onClick={handleUrlImport} 
+                  disabled={isLoading || !urlInput.trim()}
+                  className="w-full"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Product ophalen...
+                    </>
+                  ) : (
+                    <>
+                      <Link className="h-4 w-4 mr-2" />
+                      Product Importeren
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* URL Import Result */}
+              {urlImportResult && (
+                <>
+                  {urlImportResult.success ? (
+                    <Alert className="border-green-200 bg-green-50">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <AlertTitle className="text-green-800">Import geslaagd!</AlertTitle>
+                      <AlertDescription className="text-green-700">
+                        <div className="mt-2 space-y-1">
+                          <p><strong>Product:</strong> {urlImportResult.extractedData?.name}</p>
+                          <p><strong>Kostprijs:</strong> ${urlImportResult.extractedData?.price?.toFixed(2)}</p>
+                          {urlImportResult.extractedData?.sku && (
+                            <p><strong>SKU:</strong> {urlImportResult.extractedData?.sku}</p>
+                          )}
+                          {urlImportResult.extractedData?.brand && (
+                            <p><strong>Merk:</strong> {urlImportResult.extractedData?.brand}</p>
+                          )}
+                          {urlImportResult.shopProduct && (
+                            <p className="mt-2 text-green-600 font-medium">
+                              ✓ Toegevoegd aan webshop voor €{urlImportResult.shopProduct.price?.toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Import mislukt</AlertTitle>
+                      <AlertDescription>{urlImportResult.error}</AlertDescription>
+                    </Alert>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* How it works */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">🔗 Hoe werkt URL import?</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">1</div>
+                <div>
+                  <p className="font-medium">Kopieer de product URL</p>
+                  <p className="text-muted-foreground">
+                    Ga naar petdropshipper.com, vind je product en kopieer de URL uit je browser
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">2</div>
+                <div>
+                  <p className="font-medium">Plak en importeer</p>
+                  <p className="text-muted-foreground">
+                    Het systeem haalt automatisch naam, prijs, SKU, afbeeldingen en meer op
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">3</div>
+                <div>
+                  <p className="font-medium">Direct in je shop</p>
+                  <p className="text-muted-foreground">
+                    Met "Direct toevoegen" wordt het product meteen live in je webshop gezet
                   </p>
                 </div>
               </div>
