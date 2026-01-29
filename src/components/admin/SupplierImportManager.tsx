@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, forwardRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +57,7 @@ interface AddToShopResult {
   productId?: string;
 }
 
-export function SupplierImportManager() {
+export const SupplierImportManager = forwardRef<HTMLDivElement>(function SupplierImportManager(_props, ref) {
   const { importCSV, listProducts, findMatches, switchSupplier, importDiscontinuedList, checkDiscontinued, addToShop, addManualProduct, importFromUrl, isImporting, isLoading } = useSupplierImport();
   const { toast } = useToast();
 
@@ -298,7 +298,7 @@ export function SupplierImportManager() {
   }, [urlInput, urlAddToShop, urlMultiplier, importFromUrl, toast]);
 
   return (
-    <div className="space-y-6">
+    <div ref={ref} className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Leverancier Import</h2>
@@ -1260,4 +1260,6 @@ export function SupplierImportManager() {
       </Tabs>
     </div>
   );
-}
+});
+
+SupplierImportManager.displayName = "SupplierImportManager";
