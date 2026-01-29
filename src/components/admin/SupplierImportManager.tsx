@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSupplierImport } from "@/hooks/useSupplierImport";
-import { Upload, Search, RefreshCw, Package, Truck, ArrowRightLeft, CheckCircle2, AlertTriangle, Ban, Plus, ShoppingCart } from "lucide-react";
+import { Upload, Search, RefreshCw, Package, Truck, ArrowRightLeft, CheckCircle2, AlertTriangle, Ban, Plus, ShoppingCart, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 interface SupplierProduct {
   id: string;
@@ -56,7 +57,7 @@ interface AddToShopResult {
 }
 
 export function SupplierImportManager() {
-  const { importCSV, listProducts, findMatches, switchSupplier, importDiscontinuedList, checkDiscontinued, addToShop, isImporting, isLoading } = useSupplierImport();
+  const { importCSV, listProducts, findMatches, switchSupplier, importDiscontinuedList, checkDiscontinued, addToShop, addManualProduct, isImporting, isLoading } = useSupplierImport();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("import");
@@ -84,6 +85,22 @@ export function SupplierImportManager() {
       discontinuedMatch: string;
     }>;
   } | null>(null);
+
+  // Manual entry form state
+  const [manualForm, setManualForm] = useState({
+    product_name: "",
+    cost_price: "",
+    sku: "",
+    description: "",
+    category: "",
+    brand: "",
+    image_url: "",
+    weight: "",
+    shipping_time: "2-5 business days",
+    supplier: "petdropshipper",
+  });
+  const [addToShopOnSave, setAddToShopOnSave] = useState(true);
+  const [manualMultiplier, setManualMultiplier] = useState("2.5");
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -202,22 +219,59 @@ export function SupplierImportManager() {
     }
   }, [checkDiscontinued, toast]);
 
+  const handleManualSubmit = useCallback(async () => {
+    if (!manualForm.product_name.trim() || !manualForm.cost_price.trim()) {
+      toast({
+        title: "Verplichte velden",
+        description: "Productnaam en kostprijs zijn verplicht",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await addManualProduct(
+      manualForm,
+      addToShopOnSave,
+      parseFloat(manualMultiplier) || 2.5
+    );
+
+    if (result.success) {
+      // Reset form
+      setManualForm({
+        product_name: "",
+        cost_price: "",
+        sku: "",
+        description: "",
+        category: "",
+        brand: "",
+        image_url: "",
+        weight: "",
+        shipping_time: "2-5 business days",
+        supplier: "petdropshipper",
+      });
+    }
+  }, [manualForm, addToShopOnSave, manualMultiplier, addManualProduct, toast]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Leverancier Import</h2>
           <p className="text-muted-foreground">
-            Importeer producten van TopDawg en PetDropshipper via CSV
+            Importeer producten van TopDawg en PetDropshipper via CSV of voeg handmatig toe
           </p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="import" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             Import CSV
+          </TabsTrigger>
+          <TabsTrigger value="manual" className="flex items-center gap-2">
+            <Edit className="h-4 w-4" />
+            Handmatig
           </TabsTrigger>
           <TabsTrigger value="discontinued" className="flex items-center gap-2">
             <Ban className="h-4 w-4" />
@@ -360,6 +414,198 @@ export function SupplierImportManager() {
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="manual" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Edit className="h-5 w-5" />
+                Handmatige Invoer
+              </CardTitle>
+              <CardDescription>
+                Voeg een product handmatig toe zonder CSV. Ideaal voor losse producten van de PetDropshipper website.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* Required fields */}
+                <div className="space-y-2">
+                  <Label htmlFor="manual-name">Productnaam *</Label>
+                  <Input
+                    id="manual-name"
+                    placeholder="Bijv. KONG Classic Dog Toy Large"
+                    value={manualForm.product_name}
+                    onChange={(e) => setManualForm(prev => ({ ...prev, product_name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manual-cost">Kostprijs (USD) *</Label>
+                  <Input
+                    id="manual-cost"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="12.99"
+                    value={manualForm.cost_price}
+                    onChange={(e) => setManualForm(prev => ({ ...prev, cost_price: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manual-sku">SKU / Artikelnummer</Label>
+                  <Input
+                    id="manual-sku"
+                    placeholder="Bijv. KONG-CL-L"
+                    value={manualForm.sku}
+                    onChange={(e) => setManualForm(prev => ({ ...prev, sku: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manual-supplier">Leverancier</Label>
+                  <Select 
+                    value={manualForm.supplier} 
+                    onValueChange={(value) => setManualForm(prev => ({ ...prev, supplier: value }))}
+                  >
+                    <SelectTrigger id="manual-supplier">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="petdropshipper">PetDropshipper</SelectItem>
+                      <SelectItem value="topdawg">TopDawg</SelectItem>
+                      <SelectItem value="manual">Handmatig / Overig</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manual-category">Categorie</Label>
+                  <Input
+                    id="manual-category"
+                    placeholder="Bijv. Dog Toys"
+                    value={manualForm.category}
+                    onChange={(e) => setManualForm(prev => ({ ...prev, category: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manual-brand">Merk</Label>
+                  <Input
+                    id="manual-brand"
+                    placeholder="Bijv. KONG"
+                    value={manualForm.brand}
+                    onChange={(e) => setManualForm(prev => ({ ...prev, brand: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manual-weight">Gewicht (lbs)</Label>
+                  <Input
+                    id="manual-weight"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.5"
+                    value={manualForm.weight}
+                    onChange={(e) => setManualForm(prev => ({ ...prev, weight: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manual-shipping">Verzendtijd</Label>
+                  <Select 
+                    value={manualForm.shipping_time} 
+                    onValueChange={(value) => setManualForm(prev => ({ ...prev, shipping_time: value }))}
+                  >
+                    <SelectTrigger id="manual-shipping">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2-5 business days">2-5 business days (US)</SelectItem>
+                      <SelectItem value="5-10 business days">5-10 business days</SelectItem>
+                      <SelectItem value="10-20 business days">10-20 business days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="manual-image">Afbeelding URL</Label>
+                  <Input
+                    id="manual-image"
+                    type="url"
+                    placeholder="https://..."
+                    value={manualForm.image_url}
+                    onChange={(e) => setManualForm(prev => ({ ...prev, image_url: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="manual-desc">Beschrijving</Label>
+                  <Textarea
+                    id="manual-desc"
+                    placeholder="Productbeschrijving..."
+                    rows={3}
+                    value={manualForm.description}
+                    onChange={(e) => setManualForm(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Add to shop options */}
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id="add-to-shop-now"
+                        checked={addToShopOnSave}
+                        onCheckedChange={(checked) => setAddToShopOnSave(checked as boolean)}
+                      />
+                      <Label htmlFor="add-to-shop-now" className="cursor-pointer">
+                        Direct toevoegen aan webshop
+                      </Label>
+                    </div>
+                    {addToShopOnSave && (
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="manual-multiplier" className="text-sm whitespace-nowrap">
+                          Prijs multiplier:
+                        </Label>
+                        <Input
+                          id="manual-multiplier"
+                          type="number"
+                          min="1"
+                          max="10"
+                          step="0.1"
+                          value={manualMultiplier}
+                          onChange={(e) => setManualMultiplier(e.target.value)}
+                          className="w-20"
+                        />
+                        {manualForm.cost_price && (
+                          <span className="text-sm text-green-600 font-medium">
+                            = €{(parseFloat(manualForm.cost_price) * (parseFloat(manualMultiplier) || 2.5)).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Button 
+                onClick={handleManualSubmit} 
+                disabled={isLoading || !manualForm.product_name || !manualForm.cost_price}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {addToShopOnSave ? "Toevoegen aan Leveranciers & Shop" : "Toevoegen aan Leveranciers Database"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Quick tips */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">💡 Tips voor handmatige invoer</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground space-y-2">
+              <p>• Kopieer de <strong>SKU</strong> en <strong>prijs</strong> direct van de product pagina op petdropshipper.com</p>
+              <p>• Rechtermuisklik op productafbeeldingen → "Afbeeldingsadres kopiëren" voor de Image URL</p>
+              <p>• De kostprijs is in USD - de verkoopprijs wordt automatisch omgerekend met de multiplier</p>
             </CardContent>
           </Card>
         </TabsContent>

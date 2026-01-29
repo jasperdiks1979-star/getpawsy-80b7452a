@@ -750,6 +750,97 @@ serve(async (req) => {
       );
     }
 
+    if (action === "add-manual") {
+      // Manually add a single product to supplier_products and optionally to the shop
+      const { product, addToShopNow, priceMultiplier = 2.5 } = await req.json();
+
+      if (!product || !product.product_name || !product.cost_price) {
+        throw new Error("product_name and cost_price are required");
+      }
+
+      // Generate a unique supplier_product_id if not provided
+      const supplierProductId = product.sku || `manual-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+      // Insert into supplier_products
+      const { data: supplierProduct, error: insertError } = await supabaseAdmin
+        .from("supplier_products")
+        .insert({
+          supplier: product.supplier || 'manual',
+          supplier_product_id: supplierProductId,
+          product_name: product.product_name,
+          description: product.description || '',
+          category: product.category || 'General',
+          brand: product.brand || '',
+          cost_price: parseFloat(product.cost_price),
+          msrp: product.msrp ? parseFloat(product.msrp) : null,
+          weight: product.weight ? parseFloat(product.weight) : null,
+          image_url: product.image_url || '',
+          sku: product.sku || supplierProductId,
+          stock_status: 'in_stock',
+          shipping_time: product.shipping_time || '2-5 business days',
+          is_discontinued: false,
+          raw_data: product,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      let shopProduct = null;
+
+      // Optionally add to shop immediately
+      if (addToShopNow) {
+        const retailPrice = Math.ceil(parseFloat(product.cost_price) * priceMultiplier * 100) / 100;
+
+        const { data: newProduct, error: shopError } = await supabaseAdmin
+          .from("products")
+          .insert({
+            name: product.product_name,
+            description: product.description || '',
+            category: product.category || 'General',
+            price: retailPrice,
+            cost_price: parseFloat(product.cost_price),
+            image_url: product.image_url || '',
+            images: product.image_url ? [product.image_url] : [],
+            sku: product.sku || supplierProductId,
+            weight: product.weight ? parseFloat(product.weight) : null,
+            supplier_name: product.supplier || 'manual',
+            shipping_time: product.shipping_time || '2-5 business days',
+            stock: 100,
+            is_active: true,
+          })
+          .select("id")
+          .single();
+
+        if (shopError) {
+          console.error("Failed to add to shop:", shopError);
+        } else {
+          shopProduct = newProduct;
+          
+          // Create mapping
+          await supabaseAdmin
+            .from("product_supplier_mappings")
+            .insert({
+              product_id: newProduct.id,
+              supplier_product_id: supplierProduct.id,
+              is_active: true,
+            });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          supplierProduct,
+          shopProduct,
+          message: shopProduct 
+            ? "Product toegevoegd aan leveranciers en shop" 
+            : "Product toegevoegd aan leveranciers database",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: "Invalid action" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }

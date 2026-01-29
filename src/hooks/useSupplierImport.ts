@@ -366,6 +366,66 @@ export function useSupplierImport() {
     }
   };
 
+  const addManualProduct = async (
+    product: {
+      product_name: string;
+      cost_price: string;
+      sku?: string;
+      description?: string;
+      category?: string;
+      brand?: string;
+      image_url?: string;
+      weight?: string;
+      shipping_time?: string;
+      supplier?: string;
+    },
+    addToShopNow: boolean = false,
+    priceMultiplier: number = 2.5
+  ): Promise<{ success: boolean; supplierProduct?: any; shopProduct?: any; error?: string }> => {
+    setIsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-supplier-csv`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action: "add-manual",
+            product,
+            addToShopNow,
+            priceMultiplier,
+          }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+
+      toast({
+        title: "Product toegevoegd",
+        description: result.message,
+      });
+
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Toevoegen mislukt";
+      toast({
+        title: "Fout",
+        description: message,
+        variant: "destructive",
+      });
+      return { success: false, error: message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     importCSV,
     listProducts,
@@ -374,6 +434,7 @@ export function useSupplierImport() {
     importDiscontinuedList,
     checkDiscontinued,
     addToShop,
+    addManualProduct,
     isImporting,
     isLoading,
   };
