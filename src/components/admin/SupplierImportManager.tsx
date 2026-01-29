@@ -287,7 +287,13 @@ export function SupplierImportManager() {
       setUrlImportResult(result);
       setUrlInput("");
     } else {
-      setUrlImportResult({ success: false, error: result.error });
+      // Include requiresLogin and partialData for special handling
+      setUrlImportResult({ 
+        success: false, 
+        error: result.error,
+        requiresLogin: result.requiresLogin,
+        partialData: result.partialData,
+      });
     }
   }, [urlInput, urlAddToShop, urlMultiplier, importFromUrl, toast]);
 
