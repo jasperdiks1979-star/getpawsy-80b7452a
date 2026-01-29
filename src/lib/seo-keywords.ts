@@ -39,6 +39,7 @@ export const SEO_KEYWORDS = {
       'indestructible dog bed',
       'calming dog bed',
       'dog bed with bolster',
+      'kitten beds',
     ],
     food: [
       'dog food storage',
@@ -67,6 +68,8 @@ export const SEO_KEYWORDS = {
     ],
     toys: [
       'dog toys',
+      'dog toy',
+      'dogtoy',
       'interactive dog toys',
       'chew toys for dogs',
       'durable dog toys',
@@ -77,6 +80,7 @@ export const SEO_KEYWORDS = {
       'treat dispensing dog toys',
       'tough dog toys',
       'plush dog toys',
+      'home made dog chews',
     ],
     grooming: [
       'dog grooming supplies',
@@ -87,6 +91,9 @@ export const SEO_KEYWORDS = {
       'deshedding tool for dogs',
       'dog ear cleaner',
       'dog toothbrush',
+      'pet grooming kit',
+      'dog ear body language',
+      'dog ear care',
     ],
     training: [
       'dog training supplies',
@@ -96,10 +103,34 @@ export const SEO_KEYWORDS = {
       'dog crate',
       'dog gate',
       'potty training supplies',
+      // Puppy training commands (high GSC impressions)
+      'puppy training commands',
+      'training puppy commands',
+      'training commands for puppies',
+      'commands to teach puppy',
+      'commands to teach your puppy',
+      'basic commands for puppies',
+      'basic puppy commands',
+      'puppy basic commands',
+      'basic puppy training commands',
+      'basic commands to teach puppy',
+      'first commands to teach a puppy',
+      'puppy commands',
+      'obedience training commands',
+      'commands dogs should know',
+      'what are the 10 basic dog commands',
+    ],
+    outdoor: [
+      'outdoor dog games',
+      'dog car hammock',
+      'dog car seat cover waterproof',
+      'car seat hammock for dogs',
+      'dog car hammock with mesh window',
+      'best dog seat cover hammock',
     ],
   },
 
-  // Cat-specific keywords (enhanced based on GSC data)
+  // Cat-specific keywords (enhanced based on GSC data - Jan 2026)
   cat: {
     general: [
       'cat supplies',
@@ -112,6 +143,7 @@ export const SEO_KEYWORDS = {
       'cat owner must haves',
       'indoor cat supplies',
       'outdoor cat products',
+      'indoor and outdoor cat',
     ],
     furniture: [
       // Primary high-volume terms (from GSC impressions)
@@ -119,17 +151,38 @@ export const SEO_KEYWORDS = {
       'cat tower',
       'cat condo',
       'tree for cats',
+      'trees for cats',
       'cat tree tower',
       'cat tower tree',
+      'cat condos',
+      'cat towers',
+      'cat trees',
+      'cats trees',
+      // Compound variations (high GSC impressions)
+      'cat trees condos',
+      'cat trees condos delivery',
+      'cat trees condos delivery near me',
+      'cat condos and towers',
+      'cat trees and towers',
+      'cat tree and tower',
+      'cat tree tower condo',
+      'cat condo tree',
+      'cat condo cat tree',
+      'cat tree tree',
+      'tree cat tree',
+      'tree cat tower',
       // Size variations
       'tall cat tree',
       'large cat tree',
       'small cat tree',
+      'medium cat tree',
+      'medium cat trees',
       'cat tree for large cats',
       'cat tree for small spaces',
       'floor to ceiling cat tree',
       'extra large cat tower',
       'multi level cat tree',
+      '3 tier cat tree',
       // Feature variations
       'cat tree with hammock',
       'cat tree with scratching post',
@@ -137,26 +190,59 @@ export const SEO_KEYWORDS = {
       'cat tree with sisal',
       'modern cat tree',
       'cat climbing tower',
+      'cat climbing tree',
+      'cat climbing trees',
       'cat activity tree',
+      'real carpet cat trees',
+      'cat tree bed',
+      // Style variations (from GSC)
+      'beige cat tree',
+      'pink cat tower',
+      'flower cat tower',
+      'cat flower tower',
+      'gothic cat tower',
+      // Kitten specific
+      'kitten tree',
+      'kitty condo',
+      'kitty tower',
       // Scratching posts
       'cat scratching post',
       'tall scratching post',
       'sisal scratching post',
       'cat scratch tower',
+      'cat scratch tree',
       'scratching post for cats',
+      // Local/purchase intent (from GSC)
+      'cat tower nearby',
+      'cat tower near me',
+      'cat towers nearby',
+      'cat tree nearby',
+      'cat tree near me',
+      'cat trees nearby',
+      'cat trees near me',
+      'where to buy cat tree',
+      'where to buy cat trees',
+      'cat tree store',
+      'cat towers for sale',
+      'cat condos for sale',
+      'cat trees for sale',
+      'cat trees for sale near me',
       // Other furniture
       'cat hammock',
       'wall mounted cat shelves',
       'cat perch',
+      'cat perch tree',
       'cat house',
       'cat hideaway',
       'cat play tower',
+      'cat pole tower',
       'cat jungle gym',
       'cat furniture',
       'cat climbing wall',
       'cat shelves for wall',
       'window cat perch',
       'cat window seat',
+      'cat play tent',
     ],
     litter: [
       'cat litter box',
@@ -169,9 +255,14 @@ export const SEO_KEYWORDS = {
       'top entry litter box',
       'corner litter box',
       'hooded litter box',
+      'with lid covered cat litter',
+      'with lid odor control cat litter scoop',
     ],
     toys: [
       'cat toys',
+      'cat toy',
+      'toys for cats',
+      'toys for cat',
       'interactive cat toys',
       'laser cat toy',
       'catnip toys',
@@ -196,6 +287,7 @@ export const SEO_KEYWORDS = {
       'whisker friendly cat bowl',
       'ceramic cat bowl',
       'stainless steel cat bowl',
+      'cat food bin',
     ],
     grooming: [
       'cat brush',
@@ -207,19 +299,94 @@ export const SEO_KEYWORDS = {
       'cat comb',
       'cat grooming kit',
       'cat hair remover',
+      'cat grooming habits',
+    ],
+    behavior: [
+      // Cat body language (from GSC)
+      'cat body language',
+      'body language in cats',
+      'cats body language',
+      'cats body language meaning',
+      'understanding cat body language',
+      'decoding cat meows',
+      'understanding cats meow',
+      // Cat entertainment (from GSC)
+      'indoor cat entertainment',
+      'indoor cat activities',
+      'cat entertainment ideas',
+      'entertaining indoor cats',
+      'how to entertain an indoor cat',
+      // Cat sleeping
+      'cat sleep patterns',
+      'cat sleep habits',
+      'sleeping habits of cats',
+    ],
+    health: [
+      'cat grass benefits',
+      'grass for cats benefits',
+      'feline kidney disease',
     ],
   },
 
   // General pet product categories
   categories: {
     beds: ['pet bed', 'pet sofa', 'pet mattress', 'pet cushion', 'pet cot'],
-    bowls: ['pet bowl', 'pet feeder', 'pet water dispenser', 'pet fountain'],
+    bowls: ['pet bowl', 'pet feeder', 'pet water dispenser', 'pet fountain', 'gulpy pet water dispenser', 'silicone pet bowl', 'foldable pet silicone bowl'],
     collars: ['pet collar', 'pet leash', 'pet harness', 'pet ID tag'],
     toys: ['pet toys', 'interactive pet toys', 'chew toys', 'puzzle toys'],
     grooming: ['pet grooming', 'pet brush', 'pet shampoo', 'pet nail care'],
-    furniture: ['pet furniture', 'pet house', 'pet carrier', 'pet crate'],
-    accessories: ['pet clothing', 'pet boots', 'pet bandana', 'pet jewelry'],
+    furniture: ['pet furniture', 'pet house', 'pet carrier', 'pet crate', 'wire pet playpen'],
+    accessories: ['pet clothing', 'pet boots', 'pet bandana', 'pet jewelry', 'pet bags'],
     health: ['pet supplements', 'pet vitamins', 'pet dental care', 'pet first aid'],
+    carriers: ['rolling pet carrier', 'rolling cat carrier', 'airline pet carrier with wheels', 'airline dog carrier with wheels'],
+  },
+
+  // Small animals & exotic pets (from GSC data)
+  smallPets: {
+    hedgehog: [
+      'hedgehog care',
+      'hedgehog care 101',
+      'baby hedgehog care guide',
+      'how to care for a hedgehog',
+      'how to care for a hedgehog as a pet',
+      'how to care for a hedgehog pet',
+      'how to care hedgehog',
+      'hedgehogs as pets care',
+      'how to take care of a hedgehog',
+    ],
+    rabbit: [
+      'rabbit care',
+      'rabit care',
+      'bunny care',
+      'bunny care guide',
+      'care for bunnies',
+    ],
+    hamster: [
+      'hamster care',
+      'extra large hamster cage',
+      '45 inch extra large hamster cage',
+      'extra large wooden hamster cage',
+    ],
+    fish: [
+      'keeping fish for beginners',
+      'easy to look after tropical fish',
+      'aquarium beginners guide',
+    ],
+    birds: [
+      'exotic bird care',
+      'bird cage with wheels',
+      'outdoor aviary flight bird cage',
+      '69 hexagonal outdoor aviary flight bird cage',
+      '60 outdoor bird cage for finches',
+      'flight aviary',
+      'double stackable bird cage on wheels',
+    ],
+    multiPet: [
+      'multi pet households',
+      'cats dogs together products',
+      'dogs cats living together',
+      'pet bonding activities',
+    ],
   },
 
   // Long-tail keywords (high conversion) - enhanced with cat tree variations
@@ -606,10 +773,24 @@ function detectProductType(productName: string, category?: string, description?:
     },
     tree: {
       type: 'cat tree',
-      benefits: ['climbing paradise', 'scratching satisfaction', 'cozy hideaways', 'territory marking'],
-      emotionalHooks: ['their own kingdom awaits', 'watch them conquer new heights'],
-      problemSolves: ['furniture scratching', 'boredom', 'lack of exercise', 'territorial issues'],
-      targetAudience: ['cat enthusiasts', 'indoor cat owners'],
+      benefits: ['climbing paradise', 'scratching satisfaction', 'cozy hideaways', 'territory marking', 'multi-level fun'],
+      emotionalHooks: ['their own kingdom awaits', 'watch them conquer new heights', 'the ultimate cat playground'],
+      problemSolves: ['furniture scratching', 'boredom', 'lack of exercise', 'territorial issues', 'indoor cat entertainment'],
+      targetAudience: ['cat enthusiasts', 'indoor cat owners', 'multi-cat households'],
+    },
+    condo: {
+      type: 'cat condo',
+      benefits: ['private retreat', 'cozy hideaway', 'multi-level climbing', 'scratching posts included'],
+      emotionalHooks: ['give them their own castle', 'where cats rule supreme'],
+      problemSolves: ['furniture scratching', 'boredom', 'need for privacy', 'lack of vertical space'],
+      targetAudience: ['cat lovers', 'apartment dwellers', 'space-conscious owners'],
+    },
+    tower: {
+      type: 'cat tower',
+      benefits: ['vertical climbing space', 'observation perch', 'exercise opportunities', 'entertainment center'],
+      emotionalHooks: ['let them survey their kingdom', 'adventure awaits at every level'],
+      problemSolves: ['boredom', 'lack of exercise', 'territorial stress', 'furniture damage'],
+      targetAudience: ['cat enthusiasts', 'active cat owners', 'multi-cat households'],
     },
     carrier: {
       type: 'carrier',
@@ -636,7 +817,9 @@ function detectProductType(productName: string, category?: string, description?:
     }
   }
 
-  // Additional checks
+  // Additional checks for cat furniture variations
+  if (combined.includes('condo')) detectedType = productTypes.condo || productTypes.tree;
+  if (combined.includes('tower')) detectedType = productTypes.tower || productTypes.tree;
   if (combined.includes('scratch')) detectedType = productTypes.tree;
   if (combined.includes('leash')) detectedType = productTypes.harness;
   if (combined.includes('feeder') || combined.includes('fountain')) detectedType = productTypes.bowl;
@@ -748,8 +931,33 @@ export function generateProductKeywords(
     keywords.push(...SEO_KEYWORDS.niche.filter(k => k.includes('toy') || k.includes('ball')));
   }
   
-  if (nameLower.includes('tree') || nameLower.includes('scratch')) {
-    keywords.push('cat tree', 'cat scratching post', 'cat tower', 'cat furniture');
+  // Enhanced cat tree/tower/condo keywords (based on GSC high-impression terms)
+  if (nameLower.includes('tree') || nameLower.includes('scratch') || nameLower.includes('tower') || nameLower.includes('condo')) {
+    // Primary GSC terms with highest impressions
+    keywords.push('cat tree', 'cat tower', 'cat condo', 'tree for cats', 'cat scratching post');
+    keywords.push('cat tree tower', 'cat condos and towers', 'cat trees and towers');
+    keywords.push('cat furniture', 'kitty condo', 'kitty tower');
+    
+    // Size-specific keywords
+    if (nameLower.includes('large') || nameLower.includes('big')) {
+      keywords.push('large cat tree', 'cat tree for large cats', 'extra large cat tower');
+    }
+    if (nameLower.includes('small') || nameLower.includes('compact')) {
+      keywords.push('small cat tree', 'cat tree for small spaces', 'compact cat tower');
+    }
+    if (nameLower.includes('tall') || nameLower.includes('floor') || nameLower.includes('ceiling')) {
+      keywords.push('tall cat tree', 'floor to ceiling cat tree', 'multi level cat tree');
+    }
+    
+    // Feature-specific keywords
+    if (nameLower.includes('hammock')) keywords.push('cat tree with hammock');
+    if (nameLower.includes('sisal') || nameLower.includes('scratch')) {
+      keywords.push('cat tree with scratching post', 'sisal scratching post', 'cat scratch tower');
+    }
+    
+    // Purchase intent keywords
+    keywords.push('cat trees for sale', 'where to buy cat tree', 'cat tower nearby');
+    
     keywords.push(...SEO_KEYWORDS.problemSolving.filter(k => k.includes('scratch') || k.includes('furniture')));
     keywords.push(...SEO_KEYWORDS.niche.filter(k => k.includes('space') || k.includes('cat')));
   }
