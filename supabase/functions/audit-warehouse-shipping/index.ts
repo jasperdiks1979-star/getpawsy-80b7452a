@@ -23,24 +23,12 @@ interface CJVariant {
   inventories?: WarehouseInventory[];
 }
 
-interface ProductShippingAudit {
-  productId: string;
-  productName: string;
-  cjProductId: string;
+interface ShippingResult {
   hasUSWarehouse: boolean;
   usInventory: number;
-  warehouses: string[];
   uspsAvailable: boolean;
   uspsShippingDays: string | null;
-  uspsShippingPrice: number | null;
-  allShippingOptions: Array<{
-    logisticName: string;
-    logisticPrice: number;
-    logisticAging: string;
-    isUSPS: boolean;
-  }>;
   recommendedShippingTime: string;
-  currentShippingTime: string | null;
 }
 
 // Get CJ access token from cache or request new one
@@ -133,7 +121,7 @@ async function getUSShippingOptions(
       body: JSON.stringify({
         startCountryCode: "US",
         endCountryCode: "US",
-        zip: "10001", // NYC zip for testing
+        zip: "10001",
         products: [{ vid, quantity: 1 }],
       }),
     });
@@ -163,7 +151,7 @@ function isUSPS(logisticName: string): boolean {
 
 // Parse shipping days from aging string
 function parseShippingDays(agingStr: string): { min: number; max: number } {
-  if (!agingStr) return { min: 30, max: 30 };
+  if (!agingStr) return { min: 7, max: 14 };
   
   const match = agingStr.match(/(\d+)\s*[-~]\s*(\d+)/);
   if (match) {
@@ -176,16 +164,23 @@ function parseShippingDays(agingStr: string): { min: number; max: number } {
     return { min: days, max: days };
   }
   
-  return { min: 30, max: 30 };
+  return { min: 7, max: 14 };
 }
 
 // Determine recommended shipping time based on shipping options
-function getRecommendedShippingTime(shippingOptions: Array<{ logisticName: string; logisticAging: string; isUSPS: boolean }>): string {
+function getRecommendedShippingTime(
+  shippingOptions: Array<{ logisticName: string; logisticAging: string; isUSPS: boolean }>,
+  hasUSWarehouse: boolean
+): string {
+  // If no US warehouse, return international shipping time
+  if (!hasUSWarehouse) {
+    return "10-20 business days";
+  }
+
   // Prioritize USPS options
   const uspsOptions = shippingOptions.filter(opt => opt.isUSPS);
   
   if (uspsOptions.length > 0) {
-    // Use the USPS option with shortest delivery time
     const fastestUSPS = uspsOptions.reduce((fastest, current) => {
       const currentDays = parseShippingDays(current.logisticAging);
       const fastestDays = parseShippingDays(fastest.logisticAging);
@@ -193,10 +188,10 @@ function getRecommendedShippingTime(shippingOptions: Array<{ logisticName: strin
     });
     
     const days = parseShippingDays(fastestUSPS.logisticAging);
-    return `${days.min}-${days.max} business days (USPS)`;
+    return `${days.min}-${days.max} business days`;
   }
   
-  // Fallback to fastest available option
+  // Fallback to fastest available option for US warehouse
   if (shippingOptions.length > 0) {
     const fastest = shippingOptions.reduce((fastest, current) => {
       const currentDays = parseShippingDays(current.logisticAging);
@@ -208,7 +203,138 @@ function getRecommendedShippingTime(shippingOptions: Array<{ logisticName: strin
     return `${days.min}-${days.max} business days`;
   }
   
-  return "7-21 business days";
+  // Default for US warehouse without specific options
+  return "3-7 business days";
+}
+
+// Get shipping info for a single product - used during import
+async function getProductShippingInfo(
+  accessToken: string,
+  cjProductId: string
+): Promise<ShippingResult> {
+  const variants = await getProductInventory(accessToken, cjProductId);
+  
+  let hasUSWarehouse = false;
+  let usInventory = 0;
+  let primaryVid = cjProductId;
+
+  if (variants && variants.length > 0) {
+    primaryVid = variants[0].vid;
+    
+    for (const variant of variants) {
+      if (variant.inventories) {
+        for (const inv of variant.inventories) {
+          if (inv.countryCode === "US" && inv.totalInventory > 0) {
+            hasUSWarehouse = true;
+            usInventory += inv.totalInventory;
+          }
+        }
+      }
+    }
+  }
+
+  // Get shipping options
+  let shippingOptions: Array<{ logisticName: string; logisticAging: string; isUSPS: boolean }> = [];
+  let uspsAvailable = false;
+  let uspsShippingDays: string | null = null;
+
+  if (hasUSWarehouse) {
+    const options = await getUSShippingOptions(accessToken, primaryVid);
+    shippingOptions = options.map(opt => ({
+      logisticName: opt.logisticName,
+      logisticAging: opt.logisticAging,
+      isUSPS: isUSPS(opt.logisticName),
+    }));
+
+    const uspsOption = shippingOptions.find(opt => opt.isUSPS);
+    if (uspsOption) {
+      uspsAvailable = true;
+      uspsShippingDays = uspsOption.logisticAging;
+    }
+  }
+
+  const recommendedShippingTime = getRecommendedShippingTime(shippingOptions, hasUSWarehouse);
+
+  return {
+    hasUSWarehouse,
+    usInventory,
+    uspsAvailable,
+    uspsShippingDays,
+    recommendedShippingTime,
+  };
+}
+
+// Batch update shipping times for all products
+async function batchUpdateShippingTimes(
+  supabase: any,
+  accessToken: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<{ updated: number; failed: number; products: any[] }> {
+  // Get products with CJ product IDs
+  const { data: products, error: productsError } = await supabase
+    .from("products")
+    .select("id, name, cj_product_id, shipping_time")
+    .not("cj_product_id", "is", null)
+    .eq("is_active", true)
+    .range(offset, offset + limit - 1);
+
+  if (productsError) {
+    throw new Error(`Failed to fetch products: ${productsError.message}`);
+  }
+
+  const results: any[] = [];
+  let updated = 0;
+  let failed = 0;
+
+  for (const product of products || []) {
+    try {
+      const shippingInfo = await getProductShippingInfo(accessToken, product.cj_product_id);
+      
+      // Update product shipping time
+      const { error: updateError } = await supabase
+        .from("products")
+        .update({ 
+          shipping_time: shippingInfo.recommendedShippingTime,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", product.id);
+
+      if (updateError) {
+        failed++;
+        results.push({
+          productId: product.id,
+          productName: product.name,
+          success: false,
+          error: updateError.message,
+        });
+      } else {
+        updated++;
+        results.push({
+          productId: product.id,
+          productName: product.name,
+          success: true,
+          oldShippingTime: product.shipping_time,
+          newShippingTime: shippingInfo.recommendedShippingTime,
+          hasUSWarehouse: shippingInfo.hasUSWarehouse,
+          uspsAvailable: shippingInfo.uspsAvailable,
+        });
+      }
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 150));
+    } catch (error) {
+      failed++;
+      results.push({
+        productId: product.id,
+        productName: product.name,
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  return { updated, failed, products: results };
 }
 
 serve(async (req) => {
@@ -222,7 +348,27 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Check authorization
+    const { action, cjProductId, limit = 20, offset = 0 } = await req.json();
+    const accessToken = await getAccessToken(supabaseAdmin);
+
+    // Action: get-shipping-time - Get shipping time for a single product (used during import)
+    if (action === "get-shipping-time") {
+      if (!cjProductId) {
+        throw new Error("cjProductId is required");
+      }
+
+      const shippingInfo = await getProductShippingInfo(accessToken, cjProductId);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: shippingInfo,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // For admin actions, check authorization
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -257,172 +403,49 @@ serve(async (req) => {
       });
     }
 
-    const { action, productIds, limit = 50, offset = 0 } = await req.json();
-
-    const accessToken = await getAccessToken(supabaseAdmin);
-
-    if (action === "audit-all" || action === "audit-batch") {
-      // Get products with CJ product IDs
-      let query = supabaseAdmin
-        .from("products")
-        .select("id, name, cj_product_id, shipping_time, variants")
-        .not("cj_product_id", "is", null)
-        .eq("is_active", true);
-
-      if (productIds && productIds.length > 0) {
-        query = query.in("id", productIds);
-      }
-
-      const { data: products, error: productsError } = await query
-        .range(offset, offset + limit - 1);
-
-      if (productsError) {
-        throw new Error(`Failed to fetch products: ${productsError.message}`);
-      }
-
-      const auditResults: ProductShippingAudit[] = [];
-      const usWarehouseProducts: string[] = [];
-      const noUSWarehouseProducts: string[] = [];
-      const uspsAvailableProducts: string[] = [];
-
-      for (const product of products || []) {
-        console.log(`Auditing product: ${product.name} (${product.cj_product_id})`);
-
-        // Get variant inventory info
-        const variants = await getProductInventory(accessToken, product.cj_product_id);
-        
-        let hasUSWarehouse = false;
-        let usInventory = 0;
-        const warehouses = new Set<string>();
-        let primaryVid = product.cj_product_id;
-
-        if (variants && variants.length > 0) {
-          primaryVid = variants[0].vid;
-          
-          for (const variant of variants) {
-            if (variant.inventories) {
-              for (const inv of variant.inventories) {
-                warehouses.add(inv.countryCode);
-                if (inv.countryCode === "US" && inv.totalInventory > 0) {
-                  hasUSWarehouse = true;
-                  usInventory += inv.totalInventory;
-                }
-              }
-            }
-          }
-        }
-
-        // Get shipping options for US warehouse
-        let shippingOptions: Array<{ logisticName: string; logisticPrice: number; logisticAging: string; isUSPS: boolean }> = [];
-        let uspsAvailable = false;
-        let uspsShippingDays: string | null = null;
-        let uspsShippingPrice: number | null = null;
-
-        if (hasUSWarehouse) {
-          const options = await getUSShippingOptions(accessToken, primaryVid);
-          shippingOptions = options.map(opt => ({
-            ...opt,
-            isUSPS: isUSPS(opt.logisticName),
-          }));
-
-          const uspsOption = shippingOptions.find(opt => opt.isUSPS);
-          if (uspsOption) {
-            uspsAvailable = true;
-            uspsShippingDays = uspsOption.logisticAging;
-            uspsShippingPrice = uspsOption.logisticPrice;
-            uspsAvailableProducts.push(product.id);
-          }
-
-          usWarehouseProducts.push(product.id);
-        } else {
-          noUSWarehouseProducts.push(product.id);
-        }
-
-        const recommendedShippingTime = getRecommendedShippingTime(shippingOptions);
-
-        auditResults.push({
-          productId: product.id,
-          productName: product.name,
-          cjProductId: product.cj_product_id,
-          hasUSWarehouse,
-          usInventory,
-          warehouses: Array.from(warehouses),
-          uspsAvailable,
-          uspsShippingDays,
-          uspsShippingPrice,
-          allShippingOptions: shippingOptions,
-          recommendedShippingTime,
-          currentShippingTime: product.shipping_time,
-        });
-
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      const totalProducts = products?.length || 0;
+    // Action: update-all - Batch update shipping times for all products
+    if (action === "update-all") {
+      const result = await batchUpdateShippingTimes(supabaseAdmin, accessToken, limit, offset);
 
       return new Response(
         JSON.stringify({
           success: true,
           summary: {
-            totalAudited: totalProducts,
-            usWarehouseCount: usWarehouseProducts.length,
-            noUSWarehouseCount: noUSWarehouseProducts.length,
-            uspsAvailableCount: uspsAvailableProducts.length,
-            usWarehousePercentage: totalProducts > 0 ? Math.round((usWarehouseProducts.length / totalProducts) * 100) : 0,
+            updated: result.updated,
+            failed: result.failed,
+            processedCount: result.products.length,
+            limit,
+            offset,
           },
-          products: auditResults,
-          productIds: {
-            usWarehouse: usWarehouseProducts,
-            noUSWarehouse: noUSWarehouseProducts,
-            uspsAvailable: uspsAvailableProducts,
-          },
+          products: result.products,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
-    if (action === "update-shipping-times") {
-      // Update shipping times for US warehouse products
-      const { productUpdates } = await req.json();
+    // Action: count - Get total count of products to process
+    if (action === "count") {
+      const { count, error } = await supabaseAdmin
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .not("cj_product_id", "is", null)
+        .eq("is_active", true);
 
-      if (!productUpdates || !Array.isArray(productUpdates)) {
-        throw new Error("productUpdates array required");
-      }
-
-      const updateResults = [];
-
-      for (const update of productUpdates) {
-        const { productId, shippingTime } = update;
-
-        const { error } = await supabaseAdmin
-          .from("products")
-          .update({ 
-            shipping_time: shippingTime,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", productId);
-
-        updateResults.push({
-          productId,
-          success: !error,
-          error: error?.message,
-        });
+      if (error) {
+        throw new Error(`Failed to count products: ${error.message}`);
       }
 
       return new Response(
         JSON.stringify({
           success: true,
-          updated: updateResults.filter(r => r.success).length,
-          failed: updateResults.filter(r => !r.success).length,
-          results: updateResults,
+          count: count || 0,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
     return new Response(
-      JSON.stringify({ error: "Invalid action. Use 'audit-all', 'audit-batch', or 'update-shipping-times'" }),
+      JSON.stringify({ error: "Invalid action. Use 'get-shipping-time', 'update-all', or 'count'" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
     );
   } catch (error) {

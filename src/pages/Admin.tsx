@@ -398,6 +398,26 @@ const Admin = () => {
           // Keep original description if SEO generation fails
         }
         
+        // Get realistic shipping time from CJ warehouse data
+        let shippingTime = "3-7 business days"; // Default for US warehouse
+        try {
+          const shippingResponse = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/audit-warehouse-shipping`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'get-shipping-time', cjProductId: p.pid }),
+            }
+          );
+          const shippingData = await shippingResponse.json();
+          if (shippingData.success && shippingData.data?.recommendedShippingTime) {
+            shippingTime = shippingData.data.recommendedShippingTime;
+          }
+        } catch (shippingErr) {
+          console.error("Shipping time lookup failed for", p.productNameEn, shippingErr);
+          // Keep default shipping time
+        }
+        
         // Get variants data and calculate selling prices for each variant
         const rawVariants = fullDetail?.variants || null;
         
@@ -460,7 +480,7 @@ const Admin = () => {
           variants: processedVariants,
           is_active: true,
           supplier_name: "CJ Dropshipping",
-          shipping_time: "Free Shipping",
+          shipping_time: shippingTime,
         });
         
         // Small delay between SEO generations to avoid rate limiting
