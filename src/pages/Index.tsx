@@ -381,8 +381,11 @@ const Index = () => {
             <img
               src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=70"
               alt=""
+              width={800}
+              height={600}
               className="w-full h-full object-cover"
               loading="eager"
+              fetchPriority="high"
             />
           </picture>
           
@@ -608,6 +611,8 @@ const Index = () => {
                       <img 
                         src={`${category.image_url || categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}?v=4`}
                         alt={category.name}
+                        width={400}
+                        height={400}
                         loading="lazy"
                         decoding="async"
                         className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-115"
@@ -775,6 +780,8 @@ const Index = () => {
                             <img 
                               src={testimonial.avatar} 
                               alt={testimonial.name}
+                              width={48}
+                              height={48}
                               loading="lazy"
                               decoding="async"
                               className="w-12 h-12 rounded-full object-cover ring-2 ring-secondary"
