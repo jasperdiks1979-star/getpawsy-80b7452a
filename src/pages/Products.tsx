@@ -72,9 +72,11 @@ const Products = () => {
   const normalizeCategory = (str: string): string => {
     return str
       .toLowerCase()
-      .replace(/&/g, '')
-      .replace(/[^\w-]/g, '')
-      .replace(/-+/g, '-');
+      .replace(/&/g, '')        // Remove ampersand
+      .replace(/\s+/g, '-')     // Convert spaces to hyphens
+      .replace(/[^\w-]/g, '')   // Remove other special chars
+      .replace(/-+/g, '-')      // Collapse multiple hyphens
+      .replace(/^-|-$/g, '');   // Remove leading/trailing hyphens
   };
 
   // Check if category param needs redirect to slug format
