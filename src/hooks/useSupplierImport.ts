@@ -435,7 +435,9 @@ export function useSupplierImport() {
     supplierProduct?: any; 
     shopProduct?: any; 
     extractedData?: any;
-    error?: string 
+    error?: string;
+    requiresLogin?: boolean;
+    partialData?: { name?: string; sku?: string; images?: string[] };
   }> => {
     setIsLoading(true);
     try {
@@ -459,6 +461,22 @@ export function useSupplierImport() {
       );
 
       const result = await response.json();
+      
+      // Check for login-required response (not a standard error)
+      if (!response.ok && result.requiresLogin) {
+        toast({
+          title: "Login vereist",
+          description: "PetDropshipper vereist inloggen om productgegevens te tonen",
+          variant: "default",
+        });
+        return { 
+          success: false, 
+          error: result.error,
+          requiresLogin: true,
+          partialData: result.partialData,
+        };
+      }
+      
       if (!response.ok) throw new Error(result.error);
 
       toast({

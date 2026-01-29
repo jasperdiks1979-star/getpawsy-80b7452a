@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
     console.log('[IMPORT-URL] Scraping PetDropshipper URL:', url);
 
-    // Scrape the product page
+    // Scrape the product page with longer wait time for dynamic content
     const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: {
@@ -61,8 +61,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         url,
         formats: ['markdown', 'html'],
-        onlyMainContent: true,
-        waitFor: 3000,
+        onlyMainContent: false, // Get full page to find product details
+        waitFor: 5000, // Wait longer for dynamic content to load
       }),
     });
 
@@ -82,7 +82,32 @@ Deno.serve(async (req) => {
     console.log('[IMPORT-URL] Scraped content length:', markdown.length);
 
     // Extract product data specifically for PetDropshipper format
+    // Check if the page requires login (wholesale/B2B site)
+    const requiresLogin = markdown.toLowerCase().includes('wholesale content only') ||
+                         markdown.toLowerCase().includes('please login to show') ||
+                         html.toLowerCase().includes('wholesale content only') ||
+                         html.toLowerCase().includes('bss-fl-message');
+
     const productData = extractPetDropshipperProduct(markdown, html, url);
+
+    if (requiresLogin) {
+      console.log('[IMPORT-URL] Page requires login - returning partial data from URL');
+      // For B2B/wholesale sites, we can still extract the name from the URL
+      // and return partial data that can be completed manually
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'PetDropshipper verbergt productgegevens achter login. De productnaam is uit de URL gehaald. Voer het product handmatig toe met de prijs van je PetDropshipper account.',
+          requiresLogin: true,
+          partialData: {
+            name: productData.name,
+            sku: productData.sku,
+            images: productData.images,
+          },
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!productData.name || !productData.price) {
       console.error('[IMPORT-URL] Could not extract product data');
@@ -244,74 +269,106 @@ function extractPetDropshipperProduct(markdown: string, html: string, url: strin
     availability: null,
   };
 
-  // Extract SKU - PetDropshipper shows "SKU: XXXXXXXX"
-  const skuMatch = markdown.match(/SKU[:\s]+([A-Z0-9]+)/i) ||
-                   html.match(/SKU[:\s]*<[^>]*>([A-Z0-9]+)/i);
-  if (skuMatch) {
-    data.sku = skuMatch[1].trim();
-  }
+  // Blocklist for false positive product names (banners, notifications, etc.)
+  const nameBlocklist = [
+    'shipping delays',
+    'weather',
+    'continue shopping',
+    'your order',
+    'skip to content',
+    'close navigation',
+    'open navigation',
+    'add to cart',
+    'out of stock',
+    'sold out',
+    'sign in',
+    'create account',
+    'my account',
+    'search',
+    'menu',
+    'cart',
+    'checkout',
+  ];
 
-  // Extract product name - usually the main heading after SKU
-  // Look for the pattern: SKU line, then Brand / Category, then Product Name
-  const lines = markdown.split('\n').filter(l => l.trim());
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    
-    // Look for the product title - usually a heading or bold text with the product name
-    // In PetDropshipper format: "Brand / Category" followed by product name
-    if (line.startsWith('#') && !line.includes('SKU')) {
-      const titleMatch = line.replace(/^#+\s*/, '').trim();
-      if (titleMatch.length > 10 && titleMatch.length < 200 && !titleMatch.includes('$')) {
-        data.name = titleMatch;
-        break;
-      }
+  // Extract from HTML meta tags first (most reliable)
+  const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+                       html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+  if (ogTitleMatch) {
+    const title = ogTitleMatch[1].trim();
+    if (!nameBlocklist.some(blocked => title.toLowerCase().includes(blocked))) {
+      data.name = title;
     }
   }
 
-  // Try alternative name extraction from bold text or specific patterns
+  // Try to get product title from Shopify-specific patterns in HTML
   if (!data.name) {
-    // Look for pattern like "**Product Name**" or just a clean product line
-    const namePatterns = [
-      /^##?\s*(.{10,100}?)\s*$/m,
-      /\*\*(.{15,100}?)\*\*/,
-      /(?:Holder|Toy|Bowl|Leash|Collar|Bed|Feeder|Treat|Food|Shampoo)\s+([A-Za-z]+(?:\s+[A-Za-z]+)*)/i,
+    const productTitlePatterns = [
+      /<h1[^>]*class=["'][^"']*product[^"']*title[^"']*["'][^>]*>([^<]+)<\/h1>/i,
+      /<h1[^>]*class=["'][^"']*product-title[^"']*["'][^>]*>([^<]+)<\/h1>/i,
+      /<h1[^>]*>([^<]{10,100})<\/h1>/i,
+      /<title>([^<]+?)(?:\s*[-–|]\s*(?:PetDropshipper|Pet Dropshipper)[^<]*)?<\/title>/i,
     ];
 
-    for (const pattern of namePatterns) {
-      const match = markdown.match(pattern);
-      if (match && match[1] && !match[1].includes('$') && !match[1].toLowerCase().includes('sku')) {
-        data.name = match[1].trim().replace(/\*\*/g, '');
-        if (data.name.length > 10) break;
+    for (const pattern of productTitlePatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        const title = match[1].trim().replace(/&amp;/g, '&').replace(/&#39;/g, "'");
+        if (title.length > 5 && title.length < 200 && 
+            !nameBlocklist.some(blocked => title.toLowerCase().includes(blocked))) {
+          data.name = title;
+          break;
+        }
       }
     }
   }
 
-  // Extract from HTML title or h1
+  // Extract from URL as fallback (product slug often contains the name)
   if (!data.name) {
-    const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/i) ||
-                    html.match(/<title>([^<]+)<\/title>/i);
-    if (h1Match) {
-      let title = h1Match[1].trim();
-      // Clean up common suffixes
-      title = title.replace(/\s*[-–|]\s*PetDropshipper.*$/i, '').trim();
-      if (title.length > 5) {
-        data.name = title;
-      }
+    const urlMatch = url.match(/\/products\/([^?#]+)/);
+    if (urlMatch) {
+      const slug = urlMatch[1];
+      // Convert slug to title case: "messy-mutts-dog-wastebag-holder-green" -> "Messy Mutts Dog Wastebag Holder Green"
+      data.name = slug
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
     }
   }
 
-  // Extract price - look for USD format "$X.XX USD"
+  // Extract SKU from HTML (Shopify pattern)
+  const skuPatterns = [
+    /SKU[:\s]*([A-Z0-9-]+)/i,
+    /"sku"\s*:\s*"([^"]+)"/i,
+    /data-sku=["']([^"']+)["']/i,
+    /<span[^>]*class=["'][^"']*sku[^"']*["'][^>]*>([A-Z0-9-]+)<\/span>/i,
+  ];
+
+  for (const pattern of skuPatterns) {
+    const match = html.match(pattern) || markdown.match(pattern);
+    if (match) {
+      data.sku = match[1].trim();
+      break;
+    }
+  }
+
+  // Extract price from HTML (Shopify patterns)
   const pricePatterns = [
+    /"price"\s*:\s*(\d+(?:\.\d{2})?)/i,
+    /data-product-price=["'](\d+(?:\.\d{2})?)["']/i,
+    /<span[^>]*class=["'][^"']*price[^"']*["'][^>]*>\s*\$?(\d+(?:\.\d{2})?)/i,
     /\$(\d+(?:\.\d{2})?)\s*USD/i,
     /\$(\d+(?:\.\d{2})?)/,
-    /(\d+(?:\.\d{2})?)\s*USD/i,
+    /"amount"\s*:\s*"?(\d+(?:\.\d{2})?)(?:00)?"?/i,
   ];
 
   for (const pattern of pricePatterns) {
-    const match = markdown.match(pattern);
+    const match = html.match(pattern) || markdown.match(pattern);
     if (match) {
-      const price = parseFloat(match[1]);
+      // Shopify sometimes stores price in cents
+      let price = parseFloat(match[1]);
+      if (price > 1000 && !match[0].includes('$')) {
+        price = price / 100; // Convert from cents
+      }
       if (!isNaN(price) && price > 0 && price < 10000) {
         data.price = price;
         break;
@@ -319,66 +376,90 @@ function extractPetDropshipperProduct(markdown: string, html: string, url: strin
     }
   }
 
-  // Extract brand - look for "Brand / Category" pattern  
-  const brandMatch = markdown.match(/\[([A-Z][a-zA-Z\s]+)\]\s*\/\s*\[/);
-  if (brandMatch) {
-    data.brand = brandMatch[1].trim();
-  } else {
-    // Try simpler brand extraction
-    const simpleBrandMatch = markdown.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*\//m);
-    if (simpleBrandMatch) {
-      data.brand = simpleBrandMatch[1].trim();
-    }
-  }
+  // Extract brand from structured data or page content
+  const brandPatterns = [
+    /"brand"\s*:\s*(?:\{[^}]*"name"\s*:\s*)?["']([^"']+)["']/i,
+    /Brand[:\s]*([A-Z][a-zA-Z\s&]+?)(?:\s*[|\/]|\s*<)/i,
+    /<span[^>]*class=["'][^"']*vendor[^"']*["'][^>]*>([^<]+)<\/span>/i,
+  ];
 
-  // Extract category from URL or markdown
-  const categoryMatch = markdown.match(/\/\s*\[([^\]]+)\]/);
-  if (categoryMatch) {
-    data.category = categoryMatch[1].trim();
-  } else {
-    // Extract from URL path
-    const urlParts = url.split('/').filter(p => p.length > 2);
-    if (urlParts.length > 1) {
-      const categoryPart = urlParts.find(p => 
-        p.toLowerCase().includes('dog') || 
-        p.toLowerCase().includes('cat') || 
-        p.toLowerCase().includes('pet')
-      );
-      if (categoryPart) {
-        data.category = categoryPart.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  for (const pattern of brandPatterns) {
+    const match = html.match(pattern) || markdown.match(pattern);
+    if (match) {
+      const brand = match[1].trim();
+      if (brand.length > 1 && brand.length < 50) {
+        data.brand = brand;
+        break;
       }
     }
   }
 
-  // Extract images from markdown and HTML
-  const mdImageMatches = [...markdown.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)];
-  const htmlImageMatches = [...html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)];
+  // Extract category from breadcrumbs or structured data
+  const categoryPatterns = [
+    /<a[^>]*class=["'][^"']*breadcrumb[^"']*["'][^>]*>([^<]+)<\/a>/gi,
+    /"category"\s*:\s*"([^"]+)"/i,
+    /collection\/([^"'/?]+)/i,
+  ];
 
-  const allImages = [
-    ...mdImageMatches.map(m => m[1]),
-    ...htmlImageMatches.map(m => m[1]),
-  ].filter(img => 
-    img.startsWith('http') && 
-    !img.includes('logo') && 
-    !img.includes('icon') &&
-    !img.includes('badge') &&
-    (img.includes('cdn.shopify') || img.includes('product'))
-  );
+  for (const pattern of categoryPatterns) {
+    const match = html.match(pattern);
+    if (match) {
+      const category = (match[1] || match[0]).replace(/-/g, ' ').trim();
+      if (category.length > 2 && category.length < 100) {
+        data.category = category.charAt(0).toUpperCase() + category.slice(1);
+        break;
+      }
+    }
+  }
 
+  // Extract images from Shopify-specific patterns
+  const imagePatterns = [
+    /data-src=["'](https:\/\/cdn\.shopify\.com\/[^"']+)["']/gi,
+    /src=["'](https:\/\/cdn\.shopify\.com\/s\/files\/[^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi,
+    /"featured_image"\s*:\s*"(https:\/\/[^"]+)"/gi,
+  ];
+
+  const allImages: string[] = [];
+  for (const pattern of imagePatterns) {
+    const matches = html.matchAll(pattern);
+    for (const match of matches) {
+      const imgUrl = match[1].replace(/\\u002F/g, '/').replace(/\\/g, '');
+      if (!imgUrl.includes('logo') && !imgUrl.includes('icon') && !imgUrl.includes('badge')) {
+        allImages.push(imgUrl);
+      }
+    }
+  }
   data.images = [...new Set(allImages)].slice(0, 5);
 
   // Check availability
-  if (markdown.toLowerCase().includes('in stock') || markdown.toLowerCase().includes('add to cart')) {
+  if (html.toLowerCase().includes('add to cart') && !html.toLowerCase().includes('out of stock')) {
     data.availability = 'In Stock';
-  } else if (markdown.toLowerCase().includes('out of stock') || markdown.toLowerCase().includes('sold out')) {
+  } else if (html.toLowerCase().includes('out of stock') || html.toLowerCase().includes('sold out')) {
     data.availability = 'Out of Stock';
   }
 
-  // Extract description - look for text after the price section
-  const descMatch = markdown.match(/USD\s*\n\n(.{50,500}?)(?:\n\n|$)/s);
-  if (descMatch) {
-    data.description = descMatch[1].trim().replace(/\*\*/g, '');
+  // Extract description from meta or product description
+  const descPatterns = [
+    /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i,
+    /<div[^>]*class=["'][^"']*product[^"']*description[^"']*["'][^>]*>([^<]{50,500})/i,
+  ];
+
+  for (const pattern of descPatterns) {
+    const match = html.match(pattern);
+    if (match) {
+      data.description = match[1].trim().replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/<[^>]+>/g, '');
+      break;
+    }
   }
+
+  console.log('[IMPORT-URL] Extracted data:', JSON.stringify({
+    name: data.name,
+    price: data.price,
+    sku: data.sku,
+    brand: data.brand,
+    imagesCount: data.images.length,
+  }));
 
   return data;
 }

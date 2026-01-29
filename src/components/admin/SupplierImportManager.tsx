@@ -112,6 +112,8 @@ export function SupplierImportManager() {
     extractedData?: any;
     shopProduct?: any;
     error?: string;
+    requiresLogin?: boolean;
+    partialData?: { name?: string; sku?: string; images?: string[] };
   } | null>(null);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -575,6 +577,38 @@ export function SupplierImportManager() {
                             </p>
                           )}
                         </div>
+                      </AlertDescription>
+                    </Alert>
+                  ) : urlImportResult.requiresLogin ? (
+                    <Alert className="border-orange-200 bg-orange-50">
+                      <AlertTriangle className="h-4 w-4 text-orange-600" />
+                      <AlertTitle className="text-orange-800">Login vereist op PetDropshipper</AlertTitle>
+                      <AlertDescription className="text-orange-700">
+                        <p className="mb-3">{urlImportResult.error}</p>
+                        {urlImportResult.partialData?.name && (
+                          <div className="space-y-2">
+                            <p><strong>Gevonden productnaam:</strong> {urlImportResult.partialData.name}</p>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                // Pre-fill the manual form with partial data
+                                setManualForm(prev => ({
+                                  ...prev,
+                                  product_name: urlImportResult.partialData?.name || "",
+                                  sku: urlImportResult.partialData?.sku || "",
+                                  image_url: urlImportResult.partialData?.images?.[0] || "",
+                                }));
+                                setActiveTab("manual");
+                                setUrlImportResult(null);
+                              }}
+                              className="mt-2"
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Handmatig invoeren met deze gegevens
+                            </Button>
+                          </div>
+                        )}
                       </AlertDescription>
                     </Alert>
                   ) : (
