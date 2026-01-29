@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText, Bell, Send, Target, Magnet, Wrench, History, Copy, Truck } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText, Bell, Send, Target, Magnet, Wrench, History, Copy, Truck, Upload } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
@@ -46,6 +46,7 @@ const WarehouseShippingAudit = lazy(() => import("@/components/admin/WarehouseSh
 const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRankingTracker").then(module => ({ default: module.KeywordRankingTracker })));
 const ProductResearchTool = lazy(() => import("@/components/admin/product-research/ProductResearchTool").then(module => ({ default: module.ProductResearchTool })));
 const ContentScraperTool = lazy(() => import("@/components/admin/content-scraper/ContentScraperTool").then(module => ({ default: module.ContentScraperTool })));
+const SupplierImportManager = lazy(() => import("@/components/admin/SupplierImportManager").then(module => ({ default: module.SupplierImportManager })));
 import { MiniKPIWidget } from "@/components/admin/MiniKPIWidget";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1357,6 +1358,12 @@ const Admin = () => {
                 <TabsTrigger value="content-scraper" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <FileText className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Scraper</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="TopDawg & PetDropshipper CSV import">
+                <TabsTrigger value="suppliers" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <Upload className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Suppliers</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -3032,6 +3039,22 @@ const Admin = () => {
                 </Card>
               }>
                 <ContentScraperTool />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Supplier Import Tab */}
+          <TabsContent value="suppliers">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Supplier import laden...</span>
+                  </div>
+                </Card>
+              }>
+                <SupplierImportManager />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>

@@ -1589,6 +1589,61 @@ export type Database = {
           },
         ]
       }
+      product_supplier_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          match_score: number | null
+          notes: string | null
+          product_id: string
+          supplier_product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          match_score?: number | null
+          notes?: string | null
+          product_id: string
+          supplier_product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          match_score?: number | null
+          notes?: string | null
+          product_id?: string
+          supplier_product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_supplier_mappings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_supplier_mappings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_supplier_mappings_supplier_product_id_fkey"
+            columns: ["supplier_product_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string | null
@@ -1977,6 +2032,114 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_import_logs: {
+        Row: {
+          completed_at: string | null
+          errors: Json | null
+          failed_count: number | null
+          filename: string | null
+          id: string
+          imported_by: string | null
+          imported_count: number | null
+          skipped_count: number | null
+          started_at: string
+          status: string | null
+          supplier: string
+          total_rows: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          errors?: Json | null
+          failed_count?: number | null
+          filename?: string | null
+          id?: string
+          imported_by?: string | null
+          imported_count?: number | null
+          skipped_count?: number | null
+          started_at?: string
+          status?: string | null
+          supplier: string
+          total_rows?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          errors?: Json | null
+          failed_count?: number | null
+          filename?: string | null
+          id?: string
+          imported_by?: string | null
+          imported_count?: number | null
+          skipped_count?: number | null
+          started_at?: string
+          status?: string | null
+          supplier?: string
+          total_rows?: number | null
+        }
+        Relationships: []
+      }
+      supplier_products: {
+        Row: {
+          brand: string | null
+          category: string | null
+          cost_price: number
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          images: string[] | null
+          msrp: number | null
+          product_name: string
+          raw_data: Json | null
+          shipping_time: string | null
+          sku: string | null
+          stock_status: string | null
+          supplier: string
+          supplier_product_id: string
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          brand?: string | null
+          category?: string | null
+          cost_price: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          images?: string[] | null
+          msrp?: number | null
+          product_name: string
+          raw_data?: Json | null
+          shipping_time?: string | null
+          sku?: string | null
+          stock_status?: string | null
+          supplier: string
+          supplier_product_id: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          brand?: string | null
+          category?: string | null
+          cost_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          images?: string[] | null
+          msrp?: number | null
+          product_name?: string
+          raw_data?: Json | null
+          shipping_time?: string | null
+          sku?: string | null
+          stock_status?: string | null
+          supplier?: string
+          supplier_product_id?: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
