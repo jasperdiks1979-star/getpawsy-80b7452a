@@ -99,7 +99,7 @@ export const SEO_KEYWORDS = {
     ],
   },
 
-  // Cat-specific keywords
+  // Cat-specific keywords (enhanced based on GSC data)
   cat: {
     general: [
       'cat supplies',
@@ -107,18 +107,56 @@ export const SEO_KEYWORDS = {
       'cat accessories',
       'best cat products',
       'premium cat supplies',
+      'cat essentials',
+      'cat care products',
+      'cat owner must haves',
+      'indoor cat supplies',
+      'outdoor cat products',
     ],
     furniture: [
+      // Primary high-volume terms (from GSC impressions)
       'cat tree',
       'cat tower',
-      'cat scratching post',
       'cat condo',
+      'tree for cats',
+      'cat tree tower',
+      'cat tower tree',
+      // Size variations
+      'tall cat tree',
+      'large cat tree',
+      'small cat tree',
+      'cat tree for large cats',
+      'cat tree for small spaces',
+      'floor to ceiling cat tree',
+      'extra large cat tower',
+      'multi level cat tree',
+      // Feature variations
+      'cat tree with hammock',
+      'cat tree with scratching post',
+      'cat tree with condo',
+      'cat tree with sisal',
+      'modern cat tree',
       'cat climbing tower',
+      'cat activity tree',
+      // Scratching posts
+      'cat scratching post',
+      'tall scratching post',
+      'sisal scratching post',
+      'cat scratch tower',
+      'scratching post for cats',
+      // Other furniture
       'cat hammock',
       'wall mounted cat shelves',
       'cat perch',
       'cat house',
       'cat hideaway',
+      'cat play tower',
+      'cat jungle gym',
+      'cat furniture',
+      'cat climbing wall',
+      'cat shelves for wall',
+      'window cat perch',
+      'cat window seat',
     ],
     litter: [
       'cat litter box',
@@ -127,6 +165,10 @@ export const SEO_KEYWORDS = {
       'cat litter mat',
       'automatic litter box',
       'odor control litter box',
+      'covered litter box',
+      'top entry litter box',
+      'corner litter box',
+      'hooded litter box',
     ],
     toys: [
       'cat toys',
@@ -137,6 +179,11 @@ export const SEO_KEYWORDS = {
       'electronic cat toys',
       'cat tunnel',
       'cat ball toys',
+      'wand toys for cats',
+      'puzzle toys for cats',
+      'motion activated cat toy',
+      'cat kicker toy',
+      'crinkle toys for cats',
     ],
     feeding: [
       'cat food bowl',
@@ -145,6 +192,10 @@ export const SEO_KEYWORDS = {
       'cat water fountain',
       'slow feeder cat bowl',
       'cat treat dispenser',
+      'raised cat bowl',
+      'whisker friendly cat bowl',
+      'ceramic cat bowl',
+      'stainless steel cat bowl',
     ],
     grooming: [
       'cat brush',
@@ -152,6 +203,10 @@ export const SEO_KEYWORDS = {
       'cat nail clippers',
       'cat shampoo',
       'cat deshedding tool',
+      'slicker brush for cats',
+      'cat comb',
+      'cat grooming kit',
+      'cat hair remover',
     ],
   },
 
@@ -167,8 +222,29 @@ export const SEO_KEYWORDS = {
     health: ['pet supplements', 'pet vitamins', 'pet dental care', 'pet first aid'],
   },
 
-  // Long-tail keywords (high conversion)
+  // Long-tail keywords (high conversion) - enhanced with cat tree variations
   longTail: [
+    // Cat tree long-tail (based on GSC search terms)
+    'best cat tree for large cats',
+    'cat tree for maine coon',
+    'cat tree for multiple cats',
+    'cat condo for indoor cats',
+    'cat tower with scratching post',
+    'sturdy cat tree for heavy cats',
+    'cat tree for apartments',
+    'modern cat tree for living room',
+    'aesthetic cat furniture',
+    'cat tree that looks like a tree',
+    'cat tree with hiding spots',
+    'cat tree tower condo',
+    'best cat tower for kittens',
+    'cat climbing tree for large cats',
+    'wooden cat tree natural',
+    'cat tree furniture modern',
+    'cat activity center with toys',
+    'sisal rope cat tree',
+    'cat playground indoor',
+    // Existing dog long-tail
     'best dog bed for large breeds',
     'orthopedic dog bed for senior dogs',
     'waterproof dog bed cover',
