@@ -454,6 +454,13 @@ const Products = () => {
         categoryName={categoryDisplayName || undefined}
         searchQuery={searchQuery || undefined}
         productCount={totalCount}
+        products={visibleItems.slice(0, 10).map(p => ({
+          id: p.id,
+          name: p.name || '',
+          slug: p.slug,
+          price: Number(p.price),
+          image_url: p.image_url,
+        }))}
       />
       <div className="container px-4 md:px-6 py-8">
         {/* Breadcrumbs */}
