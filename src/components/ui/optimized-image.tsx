@@ -8,6 +8,8 @@ interface OptimizedImageProps {
   containerClassName?: string;
   aspectRatio?: 'square' | 'video' | 'portrait' | 'auto';
   priority?: boolean;
+  width?: number;
+  height?: number;
   onLoad?: () => void;
 }
 
@@ -18,6 +20,8 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
   containerClassName,
   aspectRatio = 'auto',
   priority = false,
+  width = 400,
+  height = 400,
   onLoad,
 }, forwardedRef) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -95,6 +99,8 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
         <img
           src={hasError ? '/placeholder.svg' : src}
           alt={alt}
+          width={width}
+          height={height}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           fetchPriority={priority ? 'high' : 'auto'}

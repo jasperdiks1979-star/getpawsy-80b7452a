@@ -281,8 +281,11 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                           <img
                             src={safeImageUrl}
                             alt={safeName}
-                            loading="lazy"
+                            width={400}
+                            height={400}
+                            loading={index < 3 ? "eager" : "lazy"}
                             decoding="async"
+                            fetchPriority={index === 0 ? "high" : "auto"}
                             className={`w-full h-full object-cover transition-all duration-700 ${
                               cardStyle.isActive 
                                 ? 'group-hover:scale-110 saturate-105' 
