@@ -27,6 +27,7 @@ import { calculateSellingPrice } from '@/lib/pricing';
 import { safeString, safeNumber, safeArray } from '@/lib/safe-render';
 import FormattedDescription from '@/components/products/FormattedDescription';
 import { ProductSchema } from '@/components/seo/ProductSchema';
+import { FAQSchema, generateProductFAQs } from '@/components/seo/FAQSchema';
 import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
 import { StockNotificationForm } from '@/components/products/StockNotificationForm';
 import { ShippingCountdown } from '@/components/products/ShippingCountdown';
@@ -539,6 +540,10 @@ const ProductDetail = () => {
           sku: product.sku,
         }}
         reviews={reviews}
+      />
+      <FAQSchema 
+        faqs={generateProductFAQs(product.name || '', product.category || undefined)}
+        pageUrl={`https://getpawsy.pet/product/${product.slug || product.id}`}
       />
       {/* Decorative background - hidden on mobile to prevent overflow */}
       <div className="hidden md:block fixed inset-0 pointer-events-none overflow-hidden -z-10">

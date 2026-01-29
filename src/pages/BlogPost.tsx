@@ -13,6 +13,7 @@ import { enUS } from 'date-fns/locale';
 import { generateBlogMetaDescription } from '@/lib/seo-keywords';
 import { useInternalLinking } from '@/hooks/useInternalLinking';
 import { sanitizeHtml } from '@/lib/sanitize';
+import { ArticleSchema } from '@/components/seo/ArticleSchema';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -275,40 +276,7 @@ const BlogPostPage = () => {
     );
   }
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: post.title,
-    description: post.meta_description || post.excerpt,
-    image: post.featured_image,
-    author: {
-      '@type': 'Person',
-      name: post.author_name,
-      url: 'https://getpawsy.pet/about',
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'GetPawsy',
-      url: 'https://getpawsy.pet',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://getpawsy.pet/favicon.png',
-        width: 512,
-        height: 512,
-      },
-    },
-    datePublished: post.published_at,
-    dateModified: post.published_at,
-    mainEntityOfPage: {
-      '@type': 'WebPage',
-      '@id': `https://getpawsy.pet/blog/${post.slug}`,
-    },
-    keywords: post.meta_keywords?.join(', ') || post.tags.join(', '),
-    articleSection: post.category,
-    inLanguage: 'en-US',
-    wordCount: Math.round(post.content.length / 5),
-    isAccessibleForFree: true,
-  };
+  // jsonLd is now handled by ArticleSchema component
 
   // Generate smart meta description using the new function
   const metaDescription = post.meta_description || generateBlogMetaDescription(post.title, post.excerpt, post.category);
@@ -351,8 +319,21 @@ const BlogPostPage = () => {
         <meta name="author" content={post.author_name} />
         <meta name="article:modified_time" content={post.published_at} />
         
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
+      <ArticleSchema 
+        article={{
+          title: post.title,
+          slug: post.slug,
+          excerpt: post.excerpt,
+          content: post.content,
+          featuredImage: post.featured_image,
+          category: post.category,
+          tags: post.tags,
+          authorName: post.author_name,
+          publishedAt: post.published_at,
+          readingTimeMinutes: post.reading_time_minutes,
+        }}
+      />
 
       <article className="container max-w-4xl py-8">
         {/* Breadcrumbs */}
