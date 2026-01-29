@@ -200,19 +200,33 @@ const Products = () => {
     enabled: recentlyViewedIds.length > 0,
   });
 
-  // Build a map of parent category slugs to their subcategory slugs/names
-  const parentToSubcategories = useMemo(() => {
+  // Build a map of category slugs to ALL their descendant slugs (recursive)
+  const categoryToDescendants = useMemo(() => {
     if (!categories) return {};
     const map: Record<string, string[]> = {};
     
-    // Find parent categories (no parent_id)
-    const parentCategories = categories.filter(c => !c.parent_id);
+    // Helper function to recursively collect all descendant slugs
+    const collectDescendants = (categoryId: string): string[] => {
+      const directChildren = categories.filter(c => c.parent_id === categoryId);
+      const descendants: string[] = [];
+      
+      directChildren.forEach(child => {
+        descendants.push(child.slug);
+        descendants.push(child.name.toLowerCase());
+        // Recursively get grandchildren, etc.
+        descendants.push(...collectDescendants(child.id));
+      });
+      
+      return descendants;
+    };
     
-    parentCategories.forEach(parent => {
-      // Find all subcategories for this parent
-      const subcats = categories.filter(c => c.parent_id === parent.id);
-      map[parent.slug] = subcats.map(c => c.slug);
-      map[parent.name.toLowerCase()] = subcats.map(c => c.name.toLowerCase());
+    // Build map for all categories (not just parents)
+    categories.forEach(category => {
+      const descendants = collectDescendants(category.id);
+      if (descendants.length > 0) {
+        map[category.slug] = descendants;
+        map[category.name.toLowerCase()] = descendants;
+      }
     });
     
     return map;
@@ -257,7 +271,7 @@ const Products = () => {
           
           // Check if selected is a parent category - if so, include products from its subcategories
           const selectedSlug = toSlug(selected);
-          const subcategorySlugs = parentToSubcategories[selectedSlug] || parentToSubcategories[selected.toLowerCase()] || [];
+          const subcategorySlugs = categoryToDescendants[selectedSlug] || categoryToDescendants[selected.toLowerCase()] || [];
           if (subcategorySlugs.length > 0) {
             // Check if product's category matches any subcategory
             return subcategorySlugs.some(subSlug => {
@@ -291,7 +305,7 @@ const Products = () => {
     }
 
     return result;
-  }, [products, searchQuery, selectedCategories, sortBy, priceRange, parentToSubcategories]);
+  }, [products, searchQuery, selectedCategories, sortBy, priceRange, categoryToDescendants]);
 
   // Infinite scroll
   const {
