@@ -414,7 +414,7 @@ export const BestsellersSection = () => {
         `)
         .eq('is_active', true)
         .order('rank', { ascending: true })
-        .limit(10);
+        .limit(50);
 
       if (error) throw error;
       return data?.filter(b => b.products) || [];
