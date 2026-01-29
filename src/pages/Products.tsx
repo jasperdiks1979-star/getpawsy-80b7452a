@@ -57,13 +57,23 @@ const Products = () => {
   const hasTrackedImpressions = useRef(false);
 
   // Helper function to convert display name to slug
+  // IMPORTANT: This must match exactly how category slugs are stored in database
   const toSlug = (str: string): string => {
     return str
       .toLowerCase()
       .trim()
-      .replace(/&/g, 'and')
+      .replace(/&/g, '') // Remove ampersand entirely to match database slugs
       .replace(/[^\w\s-]/g, '')
       .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  };
+  
+  // Normalize category for comparison - handles both "Dog Collars & Leashes" and "dog-collars-leashes"
+  const normalizeCategory = (str: string): string => {
+    return str
+      .toLowerCase()
+      .replace(/&/g, '')
+      .replace(/[^\w-]/g, '')
       .replace(/-+/g, '-');
   };
 
@@ -231,33 +241,30 @@ const Products = () => {
     if (selectedCategories.length > 0) {
       result = result.filter(p => {
         if (!p.category) return false;
-        const productCategory = p.category.toLowerCase();
-        const productCategorySlug = productCategory.replace(/\s+/g, '-').replace(/&/g, '');
+        // Normalize the product's category for consistent matching
+        const productCategoryNormalized = normalizeCategory(p.category);
         
         return selectedCategories.some(selected => {
-          const selectedLower = selected.toLowerCase();
-          // Convert display name to slug format (e.g., "Bird Cages" -> "bird-cages")
-          const selectedSlug = selectedLower.replace(/\s+/g, '-').replace(/&/g, '');
+          // Normalize the selected filter
+          const selectedNormalized = normalizeCategory(selected);
           
-          // Direct match against category name or slug
-          if (productCategory === selectedLower || 
-              productCategory === selectedSlug ||
-              productCategorySlug === selectedSlug) {
+          // Direct match (normalized)
+          if (productCategoryNormalized === selectedNormalized) {
             return true;
           }
           
           // Check if selected is a parent category - if so, include products from its subcategories
-          const subcategorySlugs = parentToSubcategories[selectedSlug] || parentToSubcategories[selectedLower] || [];
+          const selectedSlug = toSlug(selected);
+          const subcategorySlugs = parentToSubcategories[selectedSlug] || parentToSubcategories[selected.toLowerCase()] || [];
           if (subcategorySlugs.length > 0) {
-            // Check if product's category matches any subcategory EXACTLY
-            // No partial matching to avoid cross-species contamination
-            return subcategorySlugs.some(subSlug => 
-              productCategory === subSlug || 
-              productCategorySlug === subSlug
-            );
+            // Check if product's category matches any subcategory
+            return subcategorySlugs.some(subSlug => {
+              const subNormalized = normalizeCategory(subSlug);
+              return productCategoryNormalized === subNormalized;
+            });
           }
           
-          // No fallback partial matching - this caused cross-category pollution
+          // No fallback partial matching
           return false;
         });
       });
