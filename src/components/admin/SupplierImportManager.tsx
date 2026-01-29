@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSupplierImport } from "@/hooks/useSupplierImport";
-import { Upload, Search, RefreshCw, Package, Truck, ArrowRightLeft, CheckCircle2 } from "lucide-react";
+import { Upload, Search, RefreshCw, Package, Truck, ArrowRightLeft, CheckCircle2, AlertTriangle, Ban } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface SupplierProduct {
@@ -48,7 +48,7 @@ interface ProductMatch {
 }
 
 export function SupplierImportManager() {
-  const { importCSV, listProducts, findMatches, switchSupplier, isImporting, isLoading } = useSupplierImport();
+  const { importCSV, listProducts, findMatches, switchSupplier, importDiscontinuedList, checkDiscontinued, isImporting, isLoading } = useSupplierImport();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("import");
@@ -62,6 +62,16 @@ export function SupplierImportManager() {
     imported: number;
     failed: number;
     skipped: number;
+  } | null>(null);
+  const [discontinuedResult, setDiscontinuedResult] = useState<{
+    discontinuedCount: number;
+    affectedProducts: Array<{
+      id: string;
+      name: string;
+      sku: string;
+      supplier: string;
+      discontinuedMatch: string;
+    }>;
   } | null>(null);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,9 +115,39 @@ export function SupplierImportManager() {
     const success = await switchSupplier(productId, supplierProductId);
     if (success) {
       // Remove from matches list
-      setMatches(prev => prev.filter(m => m.product.id !== productId));
+    setMatches(prev => prev.filter(m => m.product.id !== productId));
     }
   }, [switchSupplier]);
+
+  const handleDiscontinuedUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const content = e.target?.result as string;
+      await importDiscontinuedList(content);
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  }, [importDiscontinuedList]);
+
+  const handleCheckDiscontinued = useCallback(async () => {
+    const result = await checkDiscontinued();
+    setDiscontinuedResult(result);
+    if (result.affectedProducts.length > 0) {
+      toast({
+        title: "Discontinued producten gevonden!",
+        description: `${result.affectedProducts.length} actieve producten matchen met discontinued lijst`,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Geen problemen gevonden",
+        description: "Geen actieve producten op de discontinued lijst",
+      });
+    }
+  }, [checkDiscontinued, toast]);
 
   return (
     <div className="space-y-6">
@@ -121,10 +161,14 @@ export function SupplierImportManager() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="import" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             Import CSV
+          </TabsTrigger>
+          <TabsTrigger value="discontinued" className="flex items-center gap-2">
+            <Ban className="h-4 w-4" />
+            Discontinued
           </TabsTrigger>
           <TabsTrigger value="products" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
@@ -265,6 +309,119 @@ export function SupplierImportManager() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="discontinued" className="space-y-4">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Upload Discontinued List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Ban className="h-5 w-5 text-destructive" />
+                  Discontinued Lijst Uploaden
+                </CardTitle>
+                <CardDescription>
+                  Upload de "Discontinued List 2026" CSV/Excel van PetDropshipper
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-lg border-2 border-dashed border-destructive/30 p-6 text-center">
+                  <Upload className="mx-auto h-8 w-8 text-destructive/50 mb-2" />
+                  <Label htmlFor="discontinued-upload" className="cursor-pointer">
+                    <span className="text-sm text-muted-foreground">
+                      Klik om Discontinued List te uploaden
+                    </span>
+                    <Input
+                      id="discontinued-upload"
+                      type="file"
+                      accept=".csv,.xlsx"
+                      className="hidden"
+                      onChange={handleDiscontinuedUpload}
+                      disabled={isLoading}
+                    />
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Check Products */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-warning" />
+                  Controleer Producten
+                </CardTitle>
+                <CardDescription>
+                  Scan je actieve producten tegen de discontinued lijst
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={handleCheckDiscontinued} 
+                  disabled={isLoading}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  Controleer Actieve Producten
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Discontinued Check Results */}
+          {discontinuedResult && discontinuedResult.affectedProducts.length > 0 && (
+            <Card className="border-destructive/50 bg-destructive/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  {discontinuedResult.affectedProducts.length} Producten op Discontinued Lijst
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>SKU</TableHead>
+                      <TableHead>Leverancier</TableHead>
+                      <TableHead>Discontinued Match</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {discontinuedResult.affectedProducts.map((prod) => (
+                      <TableRow key={prod.id}>
+                        <TableCell className="font-medium">{prod.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{prod.sku}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{prod.supplier}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {prod.discontinuedMatch}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {discontinuedResult && discontinuedResult.affectedProducts.length === 0 && (
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+                  <div>
+                    <h3 className="font-semibold">Alles in orde!</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Geen van je actieve producten staat op de discontinued lijst ({discontinuedResult.discontinuedCount} items gecheckt)
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="products" className="space-y-4">

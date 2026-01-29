@@ -675,6 +675,36 @@ export type Database = {
         }
         Relationships: []
       }
+      discontinued_products: {
+        Row: {
+          created_at: string
+          discontinued_at: string
+          id: string
+          product_name: string | null
+          sku: string
+          supplier: string
+          vendor: string | null
+        }
+        Insert: {
+          created_at?: string
+          discontinued_at?: string
+          id?: string
+          product_name?: string | null
+          sku: string
+          supplier: string
+          vendor?: string | null
+        }
+        Update: {
+          created_at?: string
+          discontinued_at?: string
+          id?: string
+          product_name?: string | null
+          sku?: string
+          supplier?: string
+          vendor?: string | null
+        }
+        Relationships: []
+      }
       dispute_messages: {
         Row: {
           attachments: Json | null
@@ -2088,6 +2118,7 @@ export type Database = {
           id: string
           image_url: string | null
           images: string[] | null
+          is_discontinued: boolean | null
           msrp: number | null
           product_name: string
           raw_data: Json | null
@@ -2108,6 +2139,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: string[] | null
+          is_discontinued?: boolean | null
           msrp?: number | null
           product_name: string
           raw_data?: Json | null
@@ -2128,6 +2160,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: string[] | null
+          is_discontinued?: boolean | null
           msrp?: number | null
           product_name?: string
           raw_data?: Json | null
