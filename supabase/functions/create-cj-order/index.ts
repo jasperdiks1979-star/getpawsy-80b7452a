@@ -255,7 +255,15 @@ async function calculateFreightForWarehouse(
   return null;
 }
 
+// Check if shipping option is USPS
+function isUSPSCarrier(logisticName: string): boolean {
+  const uspsKeywords = ['usps', 'united states postal', 'us postal', 'postal service'];
+  const lowerName = logisticName.toLowerCase();
+  return uspsKeywords.some(keyword => lowerName.includes(keyword));
+}
+
 // Multi-warehouse optimization: Find best warehouse based on customer location
+// For US destinations, prioritize USPS as the carrier
 async function findOptimalWarehouse(
   accessToken: string,
   products: CJOrderProduct[],
@@ -268,6 +276,7 @@ async function findOptimalWarehouse(
   console.log(`[WAREHOUSE-OPT] Checking warehouses in order:`, optimalWarehouses.map(w => w.code));
   
   const warehouseOptions: WarehouseOption[] = [];
+  const isUSDestination = destinationCountry === 'US';
   
   // Check top 3 warehouses by regional priority
   const warehousesToCheck = optimalWarehouses.slice(0, 3);
@@ -282,11 +291,33 @@ async function findOptimalWarehouse(
     );
     
     if (freightOptions && freightOptions.length > 0) {
-      // Get the best option from this warehouse (cheapest)
-      const sortedOptions = freightOptions.sort((a: any, b: any) => a.logisticPrice - b.logisticPrice);
-      const bestOption = sortedOptions[0];
+      // For US destinations from US warehouse, prioritize USPS
+      let sortedOptions = freightOptions;
       
+      if (isUSDestination && warehouse.code === 'US') {
+        // Check for USPS options first
+        const uspsOptions = freightOptions.filter((opt: any) => isUSPSCarrier(opt.logisticName));
+        
+        if (uspsOptions.length > 0) {
+          // Sort USPS options by price and use the cheapest
+          sortedOptions = uspsOptions.sort((a: any, b: any) => a.logisticPrice - b.logisticPrice);
+          console.log(`[WAREHOUSE-OPT] Found USPS options for US->US: ${uspsOptions.map((o: any) => o.logisticName).join(', ')}`);
+        } else {
+          // No USPS available, sort all by price
+          sortedOptions = freightOptions.sort((a: any, b: any) => a.logisticPrice - b.logisticPrice);
+          console.log(`[WAREHOUSE-OPT] No USPS available for US warehouse, using cheapest option`);
+        }
+      } else {
+        // For non-US destinations, sort by price
+        sortedOptions = freightOptions.sort((a: any, b: any) => a.logisticPrice - b.logisticPrice);
+      }
+      
+      const bestOption = sortedOptions[0];
       const estimatedDays = parseShippingDays(bestOption.logisticAging);
+      
+      // Give bonus score to USPS for US destinations
+      const isUSPS = isUSPSCarrier(bestOption.logisticName);
+      const uspsBonus = isUSDestination && isUSPS ? -0.2 : 0; // Lower score is better
       
       warehouseOptions.push({
         warehouseCode: warehouse.code,
@@ -295,10 +326,10 @@ async function findOptimalWarehouse(
         logisticPrice: bestOption.logisticPrice,
         logisticAging: bestOption.logisticAging,
         estimatedDays,
-        score: 0, // Will be calculated after we have all options
+        score: uspsBonus, // Will be recalculated after we have all options
       });
       
-      console.log(`[WAREHOUSE-OPT] ${warehouse.code}: $${bestOption.logisticPrice}, ${bestOption.logisticAging}`);
+      console.log(`[WAREHOUSE-OPT] ${warehouse.code}: ${bestOption.logisticName} $${bestOption.logisticPrice}, ${bestOption.logisticAging}${isUSPS ? ' (USPS)' : ''}`);
     }
   }
   
@@ -309,13 +340,15 @@ async function findOptimalWarehouse(
   
   // Calculate scores (lower is better)
   // Factors: price weight 0.4, speed weight 0.6
+  // For US destinations, USPS gets a bonus
   const maxPrice = Math.max(...warehouseOptions.map(w => w.logisticPrice));
   const maxDays = Math.max(...warehouseOptions.map(w => w.estimatedDays));
   
   for (const option of warehouseOptions) {
     const priceScore = maxPrice > 0 ? (option.logisticPrice / maxPrice) * 0.4 : 0;
     const speedScore = maxDays > 0 ? (option.estimatedDays / maxDays) * 0.6 : 0;
-    option.score = priceScore + speedScore;
+    const uspsBonus = isUSDestination && isUSPSCarrier(option.logisticName) ? -0.15 : 0;
+    option.score = priceScore + speedScore + uspsBonus;
   }
   
   // Sort by score and select best
@@ -324,7 +357,7 @@ async function findOptimalWarehouse(
   
   console.log(`[WAREHOUSE-OPT] Selected: ${bestWarehouse.warehouseCode} (${bestWarehouse.warehouseName})`);
   console.log(`[WAREHOUSE-OPT] Shipping: ${bestWarehouse.logisticName} - $${bestWarehouse.logisticPrice} - ${bestWarehouse.logisticAging}`);
-  console.log(`[WAREHOUSE-OPT] All options:`, warehouseOptions.map(w => `${w.warehouseCode}: $${w.logisticPrice}/${w.estimatedDays}d (score: ${w.score.toFixed(2)})`));
+  console.log(`[WAREHOUSE-OPT] All options:`, warehouseOptions.map(w => `${w.warehouseCode}: ${w.logisticName} $${w.logisticPrice}/${w.estimatedDays}d (score: ${w.score.toFixed(2)})`));
   
   return bestWarehouse;
 }
