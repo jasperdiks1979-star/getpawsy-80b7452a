@@ -48,11 +48,11 @@ const categoryKeywords: Record<string, string[]> = {
   // Cat categories
   'cats': ['cat', 'cats', 'kitten', 'kittens', 'feline', 'felines', 'kitty', 'kitties', 'indoor cat', 'pet cat', 'cat owner', 'cat parent', 'cat care'],
   'cat-beds': ['cat bed', 'cat beds', 'cat cushion', 'cat hammock', 'window perch', 'cat cave', 'heated cat bed', 'cozy cat bed', 'cat sleeping'],
-  'cat-trees': ['cat tree', 'cat trees', 'scratching post', 'scratch post', 'cat tower', 'cat condo', 'climbing tower', 'cat furniture', 'cat playground', 'vertical space', 'climbing structure'],
+  'cat-trees-and-condos': ['cat tree', 'cat trees', 'scratching post', 'scratch post', 'cat tower', 'cat condo', 'climbing tower', 'cat furniture', 'cat playground', 'vertical space', 'climbing structure'],
   'cat-furniture': ['cat furniture', 'cat shelf', 'cat shelves', 'wall mounted', 'cat perch', 'cat bridge', 'cat climbing'],
-  'litter-boxes': ['litter box', 'litter boxes', 'automatic litter box', 'self-cleaning litter box', 'cat litter', 'litter tray', 'enclosed litter box', 'covered litter box', 'smart litter box', 'odor control', 'clumping litter', 'crystal litter', 'natural litter'],
-  'scratching-posts': ['scratching post', 'scratch pad', 'cardboard scratcher', 'sisal post', 'cat scratcher', 'scratching behavior', 'claw maintenance'],
-  'chase-toys': ['chase toy', 'cat toy', 'cat toys', 'feather toy', 'laser pointer', 'interactive toy', 'wand toy', 'mouse toy', 'cat playtime', 'hunting instinct'],
+  'cat-litter-boxes': ['litter box', 'litter boxes', 'automatic litter box', 'self-cleaning litter box', 'cat litter', 'litter tray', 'enclosed litter box', 'covered litter box', 'smart litter box', 'odor control', 'clumping litter', 'crystal litter', 'natural litter'],
+  'cat-scratching-posts': ['scratching post', 'scratch pad', 'cardboard scratcher', 'sisal post', 'cat scratcher', 'scratching behavior', 'claw maintenance'],
+  'cat-toys': ['chase toy', 'cat toy', 'cat toys', 'feather toy', 'laser pointer', 'interactive toy', 'wand toy', 'mouse toy', 'cat playtime', 'hunting instinct'],
   
   // Bird categories
   'birds': ['bird', 'birds', 'parrot', 'parrots', 'parakeet', 'parakeets', 'cockatiel', 'cockatiels', 'budgie', 'budgies', 'canary', 'canaries', 'finch', 'finches', 'pet bird', 'avian', 'bird owner', 'bird care', 'singing bird'],
@@ -61,8 +61,8 @@ const categoryKeywords: Record<string, string[]> = {
   'bird-toys': ['bird toy', 'bird toys', 'bird swing', 'bird perch', 'foraging toy', 'chew toy', 'climbing toy', 'mental stimulation', 'bird enrichment', 'mirror toy', 'bell toy', 'ladder toy'],
   
   // Fish & Aquarium
-  'fish': ['fish', 'tropical fish', 'goldfish', 'betta', 'guppy', 'aquatic pet'],
-  'fish-tank': ['aquarium', 'fish tank', 'tank', 'nano tank', 'planted tank', 'saltwater tank', 'freshwater tank', 'aquarium kit'],
+  'fish-aquarium': ['fish', 'tropical fish', 'goldfish', 'betta', 'guppy', 'aquatic pet'],
+  'fish-tanks': ['aquarium', 'fish tank', 'tank', 'nano tank', 'planted tank', 'saltwater tank', 'freshwater tank', 'aquarium kit'],
   
   // Small pets
   'small-pets': ['small pet', 'small pets', 'pocket pet', 'exotic pet'],
@@ -79,72 +79,59 @@ const categoryKeywords: Record<string, string[]> = {
   'reptiles': ['reptile', 'reptiles', 'lizard', 'lizards', 'gecko', 'geckos', 'bearded dragon', 'bearded dragons', 'snake', 'snakes', 'turtle', 'turtles', 'tortoise', 'tortoises', 'ball python', 'corn snake', 'leopard gecko', 'crested gecko', 'reptile care'],
   'reptile-terrariums': ['terrarium', 'terrariums', 'reptile tank', 'vivarium', 'reptile enclosure', 'reptile habitat', 'glass enclosure', 'screen enclosure', 'bioactive terrarium', 'desert terrarium', 'tropical terrarium'],
   'reptile-lighting': ['heat lamp', 'uvb light', 'uvb lighting', 'basking light', 'basking spot', 'reptile lighting', 'heat mat', 'ceramic heat emitter', 'temperature gradient', 'thermostat', 'heat source'],
-  'reptile-substrate': ['substrate', 'reptile bedding', 'coconut fiber', 'cypress mulch', 'reptile carpet', 'newspaper substrate', 'aspen shavings', 'bioactive substrate'],
   
-  // General pet supplies
-  'pet-food': ['pet food', 'dog food', 'cat food', 'treats', 'snacks', 'kibble', 'wet food', 'dry food', 'raw diet', 'premium food', 'grain-free', 'high protein', 'balanced nutrition', 'species-appropriate'],
-  'feeding': ['food bowl', 'water bowl', 'feeding bowl', 'slow feeder', 'automatic feeder', 'smart feeder', 'elevated bowl', 'stainless steel bowl', 'portion control', 'feeding schedule'],
-  'drinking': ['water fountain', 'pet fountain', 'water dispenser', 'drinking fountain', 'filtered water', 'fresh water', 'hydration'],
-  'pet-toys': ['pet toy', 'pet toys', 'interactive toy', 'puzzle toy', 'enrichment toy', 'chew toy', 'squeaky toy', 'plush toy', 'rope toy', 'ball toy', 'mental stimulation', 'physical exercise'],
-  'pet-accessories': ['pet accessory', 'accessories', 'pet supplies', 'pet products', 'pet gear', 'pet essentials'],
-  'pet-grooming': ['grooming', 'pet grooming', 'brush', 'brushing', 'comb', 'nail clipper', 'nail trimmer', 'nail grinder', 'shampoo', 'conditioner', 'deshedding', 'grooming kit', 'fur care', 'coat care', 'mat removal', 'ear cleaning', 'dental care'],
+  // General pet supplies - mapped to actual categories
+  'dog-food-treats': ['pet food', 'dog food', 'treats', 'snacks', 'kibble', 'wet food', 'dry food', 'raw diet', 'premium food', 'grain-free', 'high protein', 'balanced nutrition', 'dog treat', 'training treat', 'dental treat', 'healthy snack', 'natural treat'],
+  'cat-food-treats': ['cat food', 'cat treats', 'cat snacks'],
+  'dog-bowls-feeders': ['food bowl', 'water bowl', 'feeding bowl', 'slow feeder', 'automatic feeder', 'smart feeder', 'elevated bowl', 'stainless steel bowl', 'portion control', 'feeding schedule', 'water fountain', 'pet fountain', 'water dispenser', 'drinking fountain', 'filtered water', 'fresh water', 'hydration'],
+  'dog-toys': ['pet toy', 'pet toys', 'interactive toy', 'puzzle toy', 'enrichment toy', 'chew toy', 'squeaky toy', 'plush toy', 'rope toy', 'ball toy', 'mental stimulation', 'physical exercise', 'dog toy'],
   'pet-beds': ['pet bed', 'pet beds', 'sleeping pad', 'pet cushion', 'cozy bed', 'washable bed', 'waterproof bed'],
-  'pet-houses': ['pet house', 'pet shelter', 'outdoor house', 'indoor house'],
-  'pet-strollers': ['pet stroller', 'dog stroller', 'cat stroller', 'pet jogger', 'pet buggy', 'pet pram'],
-  'pet-gates': ['pet gate', 'dog gate', 'baby gate', 'safety gate', 'barrier gate', 'pressure mount gate'],
-  'pet-hair-care': ['deshedding tool', 'fur remover', 'lint roller', 'pet hair brush', 'undercoat rake'],
-  'collars-leashes': ['collar', 'leash', 'harness', 'pet collar', 'pet leash', 'id tag', 'name tag'],
-  'training': ['training', 'dog training', 'puppy training', 'clicker training', 'training treat', 'training pad', 'pee pad', 'potty training'],
-  'snacks': ['dog treat', 'cat treat', 'pet treat', 'training treat', 'dental treat', 'healthy snack', 'natural treat'],
-  'houses': ['pet house', 'dog house', 'cat house', 'outdoor shelter', 'indoor house'],
-  'hammocks': ['pet hammock', 'cat hammock', 'window hammock', 'hanging bed', 'suspended bed'],
-  'nests': ['pet nest', 'bird nest', 'nesting box', 'breeding box', 'cozy nest'],
-  'furniture': ['pet furniture', 'cat furniture', 'dog furniture', 'modern pet', 'designer pet'],
-  'bags': ['pet bag', 'carrier bag', 'travel bag', 'tote carrier', 'sling carrier'],
-  'supplies': ['pet supplies', 'pet essentials', 'pet care', 'pet products', 'pet accessories'],
+  'pet-houses': ['pet house', 'pet shelter', 'outdoor house', 'indoor house', 'dog house', 'cat house', 'outdoor shelter'],
+  'dog-grooming': ['grooming', 'pet grooming', 'brush', 'brushing', 'comb', 'nail clipper', 'nail trimmer', 'nail grinder', 'shampoo', 'conditioner', 'deshedding', 'grooming kit', 'fur care', 'coat care', 'mat removal', 'ear cleaning', 'dental care', 'deshedding tool', 'fur remover', 'lint roller', 'pet hair brush', 'undercoat rake'],
+  'pet-collars-leashes': ['collar', 'leash', 'harness', 'pet collar', 'pet leash', 'id tag', 'name tag'],
+  'dog-training': ['training', 'dog training', 'puppy training', 'clicker training', 'training treat', 'training pad', 'pee pad', 'potty training'],
+  'cat-hammocks': ['pet hammock', 'cat hammock', 'window hammock', 'hanging bed', 'suspended bed'],
+  'bird-nests': ['pet nest', 'bird nest', 'nesting box', 'breeding box', 'cozy nest'],
+  'pet-furniture': ['pet furniture', 'cat furniture', 'dog furniture', 'modern pet', 'designer pet'],
+  'pet-bags': ['pet bag', 'carrier bag', 'travel bag', 'tote carrier', 'sling carrier'],
 };
 
 // Product-specific keyword phrases for better matching
 // These are common phrases that appear in blog content and should link to relevant products
 const productPhrases: Record<string, string> = {
-  // Litter boxes
-  'automatic litter box': 'litter-boxes',
-  'self-cleaning litter': 'litter-boxes',
-  'smart litter box': 'litter-boxes',
-  'enclosed litter box': 'litter-boxes',
-  'litter robot': 'litter-boxes',
-  'odor control litter': 'litter-boxes',
+  // Litter boxes - using actual category slug
+  'automatic litter box': 'cat-litter-boxes',
+  'self-cleaning litter': 'cat-litter-boxes',
+  'smart litter box': 'cat-litter-boxes',
+  'enclosed litter box': 'cat-litter-boxes',
+  'litter robot': 'cat-litter-boxes',
+  'odor control litter': 'cat-litter-boxes',
   
-  // Pet tech & GPS
-  'gps tracker': 'pet-accessories',
-  'gps pet tracker': 'pet-accessories',
-  'pet camera': 'pet-accessories',
-  'smart pet': 'pet-accessories',
-  'pet monitor': 'pet-accessories',
-  'treat dispenser camera': 'pet-accessories',
-  'wifi pet camera': 'pet-accessories',
-  'two-way audio': 'pet-accessories',
-  'location tracker': 'pet-accessories',
-  'activity monitor': 'pet-accessories',
+  // Pet tech & GPS - no specific category, use dogs as fallback
+  'gps tracker': 'dogs',
+  'gps pet tracker': 'dogs',
+  'pet camera': 'dogs',
+  'smart pet': 'dogs',
+  'pet monitor': 'dogs',
   
-  // Feeding
-  'automatic feeder': 'feeding',
-  'automatic pet feeder': 'feeding',
-  'smart feeder': 'feeding',
-  'slow feeder bowl': 'feeding',
-  'elevated feeder': 'feeding',
-  'puzzle feeder': 'feeding',
-  'portion control': 'feeding',
-  'timed feeder': 'feeding',
-  'gravity feeder': 'feeding',
+  // Feeding - using actual category slug
+  'automatic feeder': 'dog-bowls-feeders',
+  'automatic pet feeder': 'dog-bowls-feeders',
+  'smart feeder': 'dog-bowls-feeders',
+  'slow feeder bowl': 'dog-bowls-feeders',
+  'elevated feeder': 'dog-bowls-feeders',
+  'puzzle feeder': 'dog-bowls-feeders',
+  'portion control': 'dog-bowls-feeders',
+  'timed feeder': 'dog-bowls-feeders',
+  'gravity feeder': 'dog-bowls-feeders',
   
-  // Water fountains
-  'water fountain': 'drinking',
-  'cat water fountain': 'drinking',
-  'pet water fountain': 'drinking',
-  'filtered water fountain': 'drinking',
-  'stainless steel fountain': 'drinking',
-  'ceramic fountain': 'drinking',
+  // Water fountains - using actual category slug
+  'water fountain': 'cat-bowls-feeders',
+  'cat water fountain': 'cat-bowls-feeders',
+  'pet water fountain': 'dog-bowls-feeders',
+  'filtered water fountain': 'cat-bowls-feeders',
+  'stainless steel fountain': 'cat-bowls-feeders',
+  'ceramic fountain': 'cat-bowls-feeders',
   
   // Health & comfort - Dog beds
   'orthopedic dog bed': 'dog-beds',
@@ -158,50 +145,58 @@ const productPhrases: Record<string, string> = {
   'waterproof bed': 'dog-beds',
   'joint support': 'dog-beds',
   
-  // Interactive toys & puzzles
-  'puzzle toy': 'pet-toys',
-  'interactive puzzle': 'pet-toys',
-  'treat puzzle': 'pet-toys',
-  'brain game': 'pet-toys',
-  'mental stimulation': 'pet-toys',
-  'enrichment toy': 'pet-toys',
-  'snuffle mat': 'pet-toys',
-  'kong toy': 'pet-toys',
+  // Interactive toys & puzzles - using actual category slug
+  'puzzle toy': 'dog-toys',
+  'interactive puzzle': 'dog-toys',
+  'treat puzzle': 'dog-toys',
+  'brain game': 'dog-toys',
+  'mental stimulation': 'dog-toys',
+  'enrichment toy': 'dog-toys',
+  'snuffle mat': 'dog-toys',
+  'kong toy': 'dog-toys',
   
-  // Travel & carriers
-  'airline approved': 'pet-carriers',
-  'travel carrier': 'pet-carriers',
-  'pet backpack': 'pet-carriers',
-  'portable carrier': 'pet-carriers',
-  'soft-sided carrier': 'pet-carriers',
-  'expandable carrier': 'pet-carriers',
-  'rolling carrier': 'pet-carriers',
-  'car seat carrier': 'pet-carriers',
+  // Travel & carriers - using actual category slugs
+  'airline approved': 'dog-carriers',
+  'travel carrier': 'dog-carriers',
+  'pet backpack': 'dog-carriers',
+  'portable carrier': 'dog-carriers',
+  'soft-sided carrier': 'dog-carriers',
+  'expandable carrier': 'dog-carriers',
+  'rolling carrier': 'dog-carriers',
+  'car seat carrier': 'dog-carriers',
   
-  // Anxiety & calming
-  'anxiety vest': 'training',
-  'calming vest': 'training',
-  'thundershirt': 'training',
-  'compression wrap': 'training',
-  'calming aid': 'training',
-  'stress relief': 'training',
-  'separation anxiety': 'training',
+  // Anxiety & calming - using actual category slug
+  'anxiety vest': 'dog-training',
+  'calming vest': 'dog-training',
+  'thundershirt': 'dog-training',
+  'compression wrap': 'dog-training',
+  'calming aid': 'dog-training',
+  'stress relief': 'dog-training',
+  'separation anxiety': 'dog-training',
   
-  // Training
-  'training collar': 'training',
-  'bark collar': 'training',
-  'invisible fence': 'training',
-  'pet door': 'pet-accessories',
-  'clicker training': 'training',
-  'training treat': 'snacks',
+  // Training - using actual category slug
+  'training collar': 'dog-training',
+  'bark collar': 'dog-training',
+  'invisible fence': 'dog-training',
+  'pet door': 'dogs',
+  'clicker training': 'dog-training',
+  'training treat': 'dog-food-treats',
   
-  // Grooming
-  'nail grinder': 'pet-grooming',
-  'pet dryer': 'pet-grooming',
-  'grooming table': 'pet-grooming',
-  'dematting comb': 'pet-grooming',
-  'deshedding brush': 'pet-grooming',
-  'slicker brush': 'pet-grooming',
+  // Grooming - using actual category slug
+  'nail grinder': 'dog-grooming',
+  'pet dryer': 'dog-grooming',
+  'grooming table': 'dog-grooming',
+  'dematting comb': 'dog-grooming',
+  'deshedding brush': 'dog-grooming',
+  'slicker brush': 'dog-grooming',
+  
+  // Small pet bedding
+  'small pet bedding': 'small-pets',
+  'hamster bedding': 'hamsters',
+  'rabbit bedding': 'rabbits',
+  'guinea pig bedding': 'guinea-pigs',
+  'pet bedding': 'small-pets',
+  'enclosure': 'small-pets',
 };
 
 // Common stop words to exclude from keyword extraction
