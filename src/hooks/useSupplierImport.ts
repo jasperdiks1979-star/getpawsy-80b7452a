@@ -228,11 +228,100 @@ export function useSupplierImport() {
     }
   };
 
+  const importDiscontinuedList = async (
+    csvContent: string
+  ): Promise<{ success: boolean; summary?: { total: number; imported: number; skipped: number } }> => {
+    setIsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-supplier-csv`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action: "import-discontinued",
+            csvContent,
+          }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+
+      toast({
+        title: "Discontinued lijst geïmporteerd",
+        description: `${result.summary.imported} producten toegevoegd aan discontinued lijst`,
+      });
+
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Import mislukt";
+      toast({
+        title: "Import fout",
+        description: message,
+        variant: "destructive",
+      });
+      return { success: false };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const checkDiscontinued = async (): Promise<{
+    discontinuedCount: number;
+    affectedProducts: Array<{
+      id: string;
+      name: string;
+      sku: string;
+      supplier: string;
+      discontinuedMatch: string;
+    }>;
+  }> => {
+    setIsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-supplier-csv`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ action: "check-discontinued" }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+
+      return {
+        discontinuedCount: result.discontinuedCount || 0,
+        affectedProducts: result.affectedProducts || [],
+      };
+    } catch (error) {
+      console.error("Failed to check discontinued:", error);
+      return { discontinuedCount: 0, affectedProducts: [] };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     importCSV,
     listProducts,
     findMatches,
     switchSupplier,
+    importDiscontinuedList,
+    checkDiscontinued,
     isImporting,
     isLoading,
   };

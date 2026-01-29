@@ -115,6 +115,7 @@ function normalizeTopDawgProduct(row: TopDawgProduct) {
     stock_status: (row['Stock Status'] || 'in_stock').toLowerCase().includes('out') ? 'out_of_stock' : 'in_stock',
     shipping_time: '2-5 business days',
     raw_data: row,
+    is_discontinued: false,
   };
 }
 
@@ -137,6 +138,7 @@ function normalizePetDropshipperProduct(row: PetDropshipperProduct) {
     stock_status: (row['In Stock'] || 'yes').toLowerCase() === 'yes' ? 'in_stock' : 'out_of_stock',
     shipping_time: '2-5 business days',
     raw_data: row,
+    is_discontinued: false,
   };
 }
 
@@ -256,6 +258,19 @@ serve(async (req) => {
           if (!normalized || !normalized.product_name || !normalized.supplier_product_id) {
             skipped++;
             continue;
+          }
+
+          // Check if product is discontinued
+          const { data: discCheck } = await supabaseAdmin
+            .from("discontinued_products")
+            .select("id")
+            .eq("supplier", normalized.supplier)
+            .eq("sku", normalized.sku)
+            .maybeSingle();
+
+          if (discCheck) {
+            // Mark as discontinued and skip
+            normalized.is_discontinued = true;
           }
 
           // Upsert the product
@@ -488,6 +503,130 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           message: `Product switched to ${supplierProduct.supplier}`,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    if (action === "import-discontinued") {
+      // Import discontinued products list (Shopify format from PetDropshipper)
+      const { csvContent: discCsvContent } = await req.json();
+      
+      if (!discCsvContent) {
+        throw new Error("CSV content is required");
+      }
+
+      const rows = parseCSV(discCsvContent);
+      let imported = 0;
+      let skipped = 0;
+
+      for (const row of rows) {
+        const sku = row['Variant SKU']?.replace(/'/g, '') || '';
+        const productName = row['Title'] || '';
+        const vendor = row['Vendor'] || '';
+
+        if (!sku) {
+          skipped++;
+          continue;
+        }
+
+        const { error } = await supabaseAdmin
+          .from("discontinued_products")
+          .upsert({
+            supplier: 'petdropshipper',
+            sku,
+            product_name: productName,
+            vendor,
+          }, {
+            onConflict: 'supplier,sku',
+          });
+
+        if (!error) {
+          imported++;
+        } else {
+          skipped++;
+        }
+      }
+
+      // Mark existing supplier_products as discontinued
+      const { data: discProducts } = await supabaseAdmin
+        .from("discontinued_products")
+        .select("sku")
+        .eq("supplier", "petdropshipper");
+
+      if (discProducts && discProducts.length > 0) {
+        const skus = discProducts.map(p => p.sku);
+        await supabaseAdmin
+          .from("supplier_products")
+          .update({ is_discontinued: true })
+          .eq("supplier", "petdropshipper")
+          .in("sku", skus);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          summary: {
+            total: rows.length,
+            imported,
+            skipped,
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    if (action === "check-discontinued") {
+      // Check existing products against discontinued list
+      const { data: ourProducts, error: prodError } = await supabaseAdmin
+        .from("products")
+        .select("id, name, sku, supplier_name")
+        .eq("is_active", true);
+
+      if (prodError) throw prodError;
+
+      const { data: discProducts } = await supabaseAdmin
+        .from("discontinued_products")
+        .select("sku, product_name, supplier");
+
+      if (!discProducts || discProducts.length === 0) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            discontinuedCount: 0,
+            affectedProducts: [],
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+
+      const discSkuSet = new Set(discProducts.map(p => p.sku.toLowerCase()));
+      const affectedProducts: Array<{
+        id: string;
+        name: string;
+        sku: string;
+        supplier: string;
+        discontinuedMatch: string;
+      }> = [];
+
+      for (const prod of ourProducts || []) {
+        if (prod.sku && discSkuSet.has(prod.sku.toLowerCase())) {
+          const match = discProducts.find(d => d.sku.toLowerCase() === prod.sku.toLowerCase());
+          affectedProducts.push({
+            id: prod.id,
+            name: prod.name,
+            sku: prod.sku,
+            supplier: prod.supplier_name || 'unknown',
+            discontinuedMatch: match?.product_name || '',
+          });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          discontinuedCount: discProducts.length,
+          affectedProducts,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
