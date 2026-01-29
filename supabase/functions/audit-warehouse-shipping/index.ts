@@ -264,20 +264,27 @@ async function getProductShippingInfo(
   };
 }
 
-// Batch update shipping times for all products
+// Batch update shipping times for products
 async function batchUpdateShippingTimes(
   supabase: any,
   accessToken: string,
   limit: number = 50,
-  offset: number = 0
+  offset: number = 0,
+  onlySlowShipping: boolean = false
 ): Promise<{ updated: number; failed: number; products: any[] }> {
   // Get products with CJ product IDs
-  const { data: products, error: productsError } = await supabase
+  let query = supabase
     .from("products")
     .select("id, name, cj_product_id, shipping_time")
     .not("cj_product_id", "is", null)
-    .eq("is_active", true)
-    .range(offset, offset + limit - 1);
+    .eq("is_active", true);
+
+  // Optionally filter to only slow shipping products
+  if (onlySlowShipping) {
+    query = query.like("shipping_time", "%10-20%");
+  }
+
+  const { data: products, error: productsError } = await query.range(offset, offset + limit - 1);
 
   if (productsError) {
     throw new Error(`Failed to fetch products: ${productsError.message}`);
@@ -291,25 +298,38 @@ async function batchUpdateShippingTimes(
     try {
       const shippingInfo = await getProductShippingInfo(accessToken, product.cj_product_id);
       
-      // Update product shipping time
-      const { error: updateError } = await supabase
-        .from("products")
-        .update({ 
-          shipping_time: shippingInfo.recommendedShippingTime,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", product.id);
+      // Only update if the shipping time actually changed
+      if (product.shipping_time !== shippingInfo.recommendedShippingTime) {
+        const { error: updateError } = await supabase
+          .from("products")
+          .update({ 
+            shipping_time: shippingInfo.recommendedShippingTime,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", product.id);
 
-      if (updateError) {
-        failed++;
-        results.push({
-          productId: product.id,
-          productName: product.name,
-          success: false,
-          error: updateError.message,
-        });
+        if (updateError) {
+          failed++;
+          results.push({
+            productId: product.id,
+            productName: product.name,
+            success: false,
+            error: updateError.message,
+          });
+        } else {
+          updated++;
+          results.push({
+            productId: product.id,
+            productName: product.name,
+            success: true,
+            oldShippingTime: product.shipping_time,
+            newShippingTime: shippingInfo.recommendedShippingTime,
+            hasUSWarehouse: shippingInfo.hasUSWarehouse,
+            uspsAvailable: shippingInfo.uspsAvailable,
+          });
+        }
       } else {
-        updated++;
+        // No change needed, still count as success
         results.push({
           productId: product.id,
           productName: product.name,
@@ -318,11 +338,12 @@ async function batchUpdateShippingTimes(
           newShippingTime: shippingInfo.recommendedShippingTime,
           hasUSWarehouse: shippingInfo.hasUSWarehouse,
           uspsAvailable: shippingInfo.uspsAvailable,
+          noChange: true,
         });
       }
 
       // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error) {
       failed++;
       results.push({
@@ -363,6 +384,90 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           data: shippingInfo,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Action: sync-slow-shipping - Update only products with 10-20 day shipping
+    // This is more efficient and targets products that might have wrong times
+    if (action === "sync-slow-shipping") {
+      const batchSize = limit || 15; // Smaller batches for faster execution
+      const startOffset = offset || 0;
+      
+      console.log(`[AUDIT-WAREHOUSE] Syncing slow-shipping products from offset ${startOffset}, batch size ${batchSize}`);
+      
+      const result = await batchUpdateShippingTimes(supabaseAdmin, accessToken, batchSize, startOffset, true);
+      
+      console.log(`[AUDIT-WAREHOUSE] Batch complete: ${result.updated} updated, ${result.failed} failed, ${result.products.length} processed`);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          summary: {
+            updated: result.updated,
+            failed: result.failed,
+            processedCount: result.products.length,
+            batchSize,
+            offset: startOffset,
+          },
+          products: result.products,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Action: sync-all-now - Full sync of all products (may timeout for large catalogs)
+    if (action === "sync-all-now") {
+      console.log("[AUDIT-WAREHOUSE] Starting sync-all-now batch update");
+      
+      const batchSize = 15; // Smaller batches
+      let totalUpdated = 0;
+      let totalFailed = 0;
+      let processedCount = 0;
+      const allResults: any[] = [];
+
+      // Get total count
+      const { count: totalCount, error: countError } = await supabaseAdmin
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .not("cj_product_id", "is", null)
+        .eq("is_active", true);
+
+      if (countError) {
+        throw new Error(`Failed to count products: ${countError.message}`);
+      }
+
+      console.log(`[AUDIT-WAREHOUSE] Processing ${totalCount} products`);
+
+      // Process in batches - limit to prevent timeout
+      const maxBatches = 3; // Only do 3 batches per call to stay within timeout
+      let batchCount = 0;
+      
+      for (let currentOffset = 0; currentOffset < (totalCount || 0) && batchCount < maxBatches; currentOffset += batchSize) {
+        const result = await batchUpdateShippingTimes(supabaseAdmin, accessToken, batchSize, currentOffset);
+        totalUpdated += result.updated;
+        totalFailed += result.failed;
+        processedCount += result.products.length;
+        allResults.push(...result.products);
+        batchCount++;
+        
+        console.log(`[AUDIT-WAREHOUSE] Batch ${batchCount}: Updated ${result.updated}, Failed ${result.failed}`);
+      }
+
+      console.log(`[AUDIT-WAREHOUSE] Sync partial complete: ${totalUpdated} updated, ${totalFailed} failed`);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          summary: {
+            totalProducts: totalCount,
+            updated: totalUpdated,
+            failed: totalFailed,
+            processedCount,
+            note: processedCount < (totalCount || 0) ? `Partial sync - call again to continue (processed ${processedCount}/${totalCount})` : undefined,
+          },
+          sampleResults: allResults.slice(0, 50),
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
@@ -445,7 +550,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ error: "Invalid action. Use 'get-shipping-time', 'update-all', or 'count'" }),
+      JSON.stringify({ error: "Invalid action. Use 'get-shipping-time', 'update-all', 'sync-all-now', or 'count'" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
     );
   } catch (error) {
