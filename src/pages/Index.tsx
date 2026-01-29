@@ -17,7 +17,7 @@ import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { BestsellersSection } from '@/components/home/BestsellersSection';
 import { AnimatedTrustBadges } from '@/components/home/AnimatedTrustBadges';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
-import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
+import { WebsiteSchema, LocalBusinessSchema } from '@/components/seo';
 import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { initPageDebug, logDataSanitization, createSectionDebugger } from '@/lib/debug-logger';
 import { useCriticalImagePreload, prefetchImages } from '@/hooks/useCriticalImagePreload';
@@ -372,6 +372,7 @@ const Index = () => {
   return (
     <Layout>
       <WebsiteSchema />
+      <LocalBusinessSchema />
       {/* Hero Section with Video Background */}
       <section ref={heroRef} className="relative overflow-hidden min-h-[90vh] flex items-center">
         {/* Video Background - Responsive with mobile optimization */}
@@ -380,7 +381,7 @@ const Index = () => {
           <picture className="md:hidden absolute inset-0">
             <img
               src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=70"
-              alt=""
+              alt="Happy golden retriever playing outdoors - GetPawsy premium pet products"
               width={800}
               height={600}
               className="w-full h-full object-cover"
@@ -610,7 +611,7 @@ const Index = () => {
                       {/* Image with zoom effect - v4 forces cache refresh */}
                       <img 
                         src={`${category.image_url || categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}?v=4`}
-                        alt={category.name}
+                        alt={`${category.name} - Shop premium ${category.name.toLowerCase()} products for pets`}
                         width={400}
                         height={400}
                         loading="lazy"
@@ -779,7 +780,7 @@ const Index = () => {
                           <div className="relative">
                             <img 
                               src={testimonial.avatar} 
-                              alt={testimonial.name}
+                              alt={`${testimonial.name} - ${testimonial.pet} customer review`}
                               width={48}
                               height={48}
                               loading="lazy"

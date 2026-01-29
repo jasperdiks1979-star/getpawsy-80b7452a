@@ -162,7 +162,7 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
         <div className="relative aspect-square overflow-hidden bg-muted">
           <OptimizedImage
             src={product.image_url || '/placeholder.svg'}
-            alt={product.name}
+            alt={`${product.name}${product.category ? ` - ${product.category}` : ''} | GetPawsy`}
             aspectRatio="square"
             className="group-hover:scale-105"
           />
