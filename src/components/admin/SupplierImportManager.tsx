@@ -57,7 +57,7 @@ interface AddToShopResult {
   productId?: string;
 }
 
-export const SupplierImportManager = forwardRef<HTMLDivElement>(function SupplierImportManager(_props, ref) {
+export const SupplierImportManager = forwardRef<HTMLDivElement, Record<string, never>>(function SupplierImportManager(_props, ref) {
   const { importCSV, listProducts, findMatches, switchSupplier, importDiscontinuedList, checkDiscontinued, addToShop, addManualProduct, importFromUrl, isImporting, isLoading } = useSupplierImport();
   const { toast } = useToast();
 
