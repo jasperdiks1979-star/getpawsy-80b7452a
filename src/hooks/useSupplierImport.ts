@@ -464,11 +464,7 @@ export function useSupplierImport() {
       
       // Check for login-required response (not a standard error)
       if (!response.ok && result.requiresLogin) {
-        toast({
-          title: "Login vereist",
-          description: "PetDropshipper vereist inloggen om productgegevens te tonen",
-          variant: "default",
-        });
+        // Don't show toast here - let the UI handle it gracefully
         return { 
           success: false, 
           error: result.error,
@@ -477,7 +473,9 @@ export function useSupplierImport() {
         };
       }
       
-      if (!response.ok) throw new Error(result.error);
+      if (!response.ok) {
+        return { success: false, error: result.error || "Import mislukt" };
+      }
 
       toast({
         title: "Product geïmporteerd",
@@ -487,11 +485,6 @@ export function useSupplierImport() {
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Import mislukt";
-      toast({
-        title: "Import fout",
-        description: message,
-        variant: "destructive",
-      });
       return { success: false, error: message };
     } finally {
       setIsLoading(false);
