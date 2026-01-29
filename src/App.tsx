@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { CartProvider } from "@/contexts/CartContext";
 import { CartAnimationProvider } from "@/contexts/CartAnimationContext";
@@ -162,6 +162,12 @@ const Security = lazyWithRetry(() => import("./pages/Security"));
 const GoogleReview = lazyWithRetry(() => import("./pages/GoogleReview"));
 const CrawlerAnalytics = lazyWithRetry(() => import("./pages/CrawlerAnalytics"));
 
+// Redirect component for /products/:slug -> /product/:slug (fixes duplicate page SEO issue)
+const ProductsSlugRedirect = () => {
+  const { slug } = useParams<{ slug: string }>();
+  return <Navigate to={`/product/${slug}`} replace />;
+};
+
 // Optimized React Query client with aggressive caching
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -268,6 +274,9 @@ const App = () => {
                         <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />
                         <Route path="/terms-of-service" element={<Navigate to="/terms" replace />} />
                         <Route path="/cookie-policy" element={<Navigate to="/cookies" replace />} />
+                        
+                        {/* Fix duplicate page issue: redirect /products/:slug to /product/:slug */}
+                        <Route path="/products/:slug" element={<ProductsSlugRedirect />} />
                         
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
