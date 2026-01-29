@@ -315,6 +315,57 @@ export function useSupplierImport() {
     }
   };
 
+  const addToShop = async (
+    supplierProductIds: string[],
+    priceMultiplier: number = 2.5
+  ): Promise<{
+    success: boolean;
+    summary?: { total: number; added: number; skipped: number };
+    results?: Array<{ name: string; success: boolean; error?: string; productId?: string }>;
+  }> => {
+    setIsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-supplier-csv`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action: "add-to-shop",
+            supplierProductIds,
+            priceMultiplier,
+          }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+
+      toast({
+        title: "Producten toegevoegd",
+        description: `${result.summary.added} producten toegevoegd aan de shop`,
+      });
+
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Toevoegen mislukt";
+      toast({
+        title: "Fout",
+        description: message,
+        variant: "destructive",
+      });
+      return { success: false };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     importCSV,
     listProducts,
@@ -322,6 +373,7 @@ export function useSupplierImport() {
     switchSupplier,
     importDiscontinuedList,
     checkDiscontinued,
+    addToShop,
     isImporting,
     isLoading,
   };

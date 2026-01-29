@@ -647,6 +647,109 @@ serve(async (req) => {
       );
     }
 
+    if (action === "add-to-shop") {
+      // Add supplier products to the shop as new products
+      const { supplierProductIds, priceMultiplier = 2.5 } = await req.json();
+
+      if (!supplierProductIds || !Array.isArray(supplierProductIds) || supplierProductIds.length === 0) {
+        throw new Error("supplierProductIds array is required");
+      }
+
+      // Get supplier products
+      const { data: supplierProducts, error: spError } = await supabaseAdmin
+        .from("supplier_products")
+        .select("*")
+        .in("id", supplierProductIds);
+
+      if (spError) throw spError;
+      if (!supplierProducts || supplierProducts.length === 0) {
+        throw new Error("No supplier products found");
+      }
+
+      let added = 0;
+      let skipped = 0;
+      const results: Array<{ name: string; success: boolean; error?: string; productId?: string }> = [];
+
+      for (const sp of supplierProducts) {
+        try {
+          // Check if product already exists with same SKU
+          const { data: existing } = await supabaseAdmin
+            .from("products")
+            .select("id")
+            .eq("sku", sp.sku)
+            .maybeSingle();
+
+          if (existing) {
+            skipped++;
+            results.push({ name: sp.product_name, success: false, error: "SKU already exists" });
+            continue;
+          }
+
+          // Calculate retail price with multiplier
+          const retailPrice = Math.ceil(sp.cost_price * priceMultiplier * 100) / 100;
+
+          // Create the product
+          const { data: newProduct, error: insertError } = await supabaseAdmin
+            .from("products")
+            .insert({
+              name: sp.product_name,
+              description: sp.description || '',
+              category: sp.category || 'General',
+              price: retailPrice,
+              cost_price: sp.cost_price,
+              image_url: sp.image_url,
+              images: sp.image_url ? [sp.image_url] : [],
+              sku: sp.sku,
+              weight: sp.weight,
+              supplier_name: sp.supplier,
+              shipping_time: sp.shipping_time,
+              stock: sp.stock_status === 'in_stock' ? 100 : 0,
+              is_active: true,
+            })
+            .select("id")
+            .single();
+
+          if (insertError) {
+            skipped++;
+            results.push({ name: sp.product_name, success: false, error: insertError.message });
+            continue;
+          }
+
+          // Create mapping between product and supplier product
+          await supabaseAdmin
+            .from("product_supplier_mappings")
+            .insert({
+              product_id: newProduct.id,
+              supplier_product_id: sp.id,
+              is_active: true,
+            });
+
+          added++;
+          results.push({ name: sp.product_name, success: true, productId: newProduct.id });
+        } catch (err) {
+          skipped++;
+          results.push({ 
+            name: sp.product_name, 
+            success: false, 
+            error: err instanceof Error ? err.message : 'Unknown error' 
+          });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          summary: {
+            total: supplierProductIds.length,
+            added,
+            skipped,
+          },
+          results,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: "Invalid action" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
