@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import logo from '@/assets/logo-getpawsy-full.png';
 import safeBrowsingScreenshot from '@/assets/safe-browsing-report.png';
-import { CheckCircle2, ExternalLink, FileText, Shield, Globe, Code, Mail } from 'lucide-react';
+import { CheckCircle2, ExternalLink, FileText, Shield, Globe, Code, Mail, Camera, AlertTriangle } from 'lucide-react';
 import { useCrawlerTracking } from '@/hooks/useCrawlerTracking';
 
 const AppealResponse = () => {
@@ -13,24 +13,46 @@ const AppealResponse = () => {
     document.title = 'Google Ads Appeal Response - GetPawsy.pet';
   }, []);
 
-  // Direct answer to Google's cloaking appeal guideline
+  // Direct answer to Google's cloaking appeal guideline (Refined by Gemini)
   const cloakingExplanation = {
-    question: 'Waarom werd er mogelijk verschillende content aan Google getoond dan aan andere gebruikers?',
+    question: 'Technical Clarifications: Why might different content have been detected?',
     googleGuideline: 'Google Ads Appeal Tip: "For cloaking violations, let us know why you were showing different content to Google than to other users."',
-    answer: `Wij hebben NOOIT verschillende content getoond aan Google dan aan andere gebruikers. De vermoedelijke cloaking-detectie is een FALSE POSITIVE, waarschijnlijk veroorzaakt door:
+    answer: `We believe the "Cloaking" flag is a **false positive** triggered by our technical stack and a recent domain migration.
 
-1. **SPA-architectuur**: Onze React Single Page Application laadt content dynamisch via JavaScript. Dit kan door geautomatiseerde systemen verkeerd worden geïnterpreteerd als "verschillende content", terwijl de uiteindelijke gerenderde HTML voor alle bezoekers identiek is.
+**1. SPA Architecture & Rendering**
+Our site (getpawsy.pet) is a React Single Page Application (SPA). The initial server response serves a shell while JavaScript renders the final content client-side. This delay in "Final State" rendering can sometimes be misinterpreted by automated crawlers as serving different content.
 
-2. **Tijdelijke domein-configuratie**: In de opstart fase was ons domein kortstondig geconfigureerd via Google Workspace's *.appstempdomain.goog systeem. Dit kan hebben geleid tot een tijdelijke redirect die door het detectiesysteem is gelogd.
+**2. Resolved Redirect Issue**
+During our initial deployment, we briefly utilized Google Workspace's temporary domain (*.appstempdomain.goog). This redirect has since been removed. We suspect the automated system may have flagged this transition as a cloaking attempt.
 
-3. **JavaScript rendering timing**: Bij de eerste load kan er een fractie van een seconde een "loading" state zichtbaar zijn voordat de volledige content is gerenderd. Dit is standaard SPA-gedrag en geen cloaking.
+**3. Content Parity Confirmation**
+We confirm that we serve **identical content to all users and bots**. There is no IP-based delivery or User-Agent gating.
 
-**BEWIJS DAT ER GEEN CLOAKING IS:**
-• Google Search Console: 918 pagina's geïndexeerd met correcte content
-• Safe Browsing Report: Geen onveilige content gevonden
-• User-Agent Comparison Tool: SHA-256 hash bewijst identieke content voor alle bezoekers
-• AdsBot Accessibility Test: 100% toegankelijk voor alle Google bots`,
+**Supporting Evidence:**
+• SHA-256 Validation: Content hash consistency proves bots and users receive the same data
+• Search Console Health: 918 pages indexed successfully with no security issues flagged
+• Safe Browsing Report: No unsafe content found
+• robots.txt: All Google crawlers explicitly allowed (no JS/CSS blocking)`,
   };
+
+  // Screenshot tips for reviewers
+  const screenshotTips = [
+    {
+      title: 'Google Search Console',
+      description: 'Screenshot van "Geen beveiligingsproblemen gevonden" pagina',
+      path: 'Security & Manual Actions → Security Issues',
+    },
+    {
+      title: 'KvK Registratie',
+      description: 'Screenshot van officiële KvK uittreksel of online verificatie',
+      path: 'kvk.nl → Zoek: 78156955',
+    },
+    {
+      title: 'Safe Browsing Report',
+      description: 'Screenshot van Google Transparency Report',
+      path: 'transparencyreport.google.com/safe-browsing/search?url=getpawsy.pet',
+    },
+  ];
 
   const questions = [
     {
@@ -241,6 +263,29 @@ const AppealResponse = () => {
                   )}
                 </div>
               </a>
+            ))}
+          </div>
+        </section>
+
+        {/* Screenshot Tips for Submission */}
+        <section className="mb-6 bg-purple-50 border border-purple-200 p-4 rounded-lg">
+          <h2 className="text-base font-bold text-purple-800 mb-3 flex items-center gap-2">
+            <Camera className="w-5 h-5" />
+            📎 Aanbevolen Bijlagen voor Bezwaar
+          </h2>
+          <p className="text-xs text-purple-700 mb-3 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            Tip: Google reviewers klikken soms niet op externe links. Voeg screenshots direct toe aan het bezwaarformulier.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {screenshotTips.map((tip, index) => (
+              <div key={index} className="bg-white p-3 rounded border border-purple-100">
+                <h3 className="text-sm font-medium text-purple-900 mb-1">{tip.title}</h3>
+                <p className="text-xs text-purple-700 mb-2">{tip.description}</p>
+                <code className="text-xs bg-purple-100 px-2 py-1 rounded block text-purple-800 break-all">
+                  {tip.path}
+                </code>
+              </div>
             ))}
           </div>
         </section>
