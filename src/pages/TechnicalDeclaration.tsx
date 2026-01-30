@@ -56,10 +56,11 @@ const TechnicalDeclaration = () => {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
           <div><strong>Domain:</strong> getpawsy.pet</div>
           <div><strong>Account:</strong> support@getpawsy.pet</div>
-          <div><strong>Date:</strong> {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+          <div><strong>Document Date:</strong> {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+          <div className="text-amber-700 font-medium"><strong>⏱️ Last Updated:</strong> 30 Jan 2026</div>
         </div>
       </header>
 
