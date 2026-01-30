@@ -13,6 +13,25 @@ const AppealResponse = () => {
     document.title = 'Google Ads Appeal Response - GetPawsy.pet';
   }, []);
 
+  // Direct answer to Google's cloaking appeal guideline
+  const cloakingExplanation = {
+    question: 'Waarom werd er mogelijk verschillende content aan Google getoond dan aan andere gebruikers?',
+    googleGuideline: 'Google Ads Appeal Tip: "For cloaking violations, let us know why you were showing different content to Google than to other users."',
+    answer: `Wij hebben NOOIT verschillende content getoond aan Google dan aan andere gebruikers. De vermoedelijke cloaking-detectie is een FALSE POSITIVE, waarschijnlijk veroorzaakt door:
+
+1. **SPA-architectuur**: Onze React Single Page Application laadt content dynamisch via JavaScript. Dit kan door geautomatiseerde systemen verkeerd worden geïnterpreteerd als "verschillende content", terwijl de uiteindelijke gerenderde HTML voor alle bezoekers identiek is.
+
+2. **Tijdelijke domein-configuratie**: In de opstart fase was ons domein kortstondig geconfigureerd via Google Workspace's *.appstempdomain.goog systeem. Dit kan hebben geleid tot een tijdelijke redirect die door het detectiesysteem is gelogd.
+
+3. **JavaScript rendering timing**: Bij de eerste load kan er een fractie van een seconde een "loading" state zichtbaar zijn voordat de volledige content is gerenderd. Dit is standaard SPA-gedrag en geen cloaking.
+
+**BEWIJS DAT ER GEEN CLOAKING IS:**
+• Google Search Console: 918 pagina's geïndexeerd met correcte content
+• Safe Browsing Report: Geen onveilige content gevonden
+• User-Agent Comparison Tool: SHA-256 hash bewijst identieke content voor alle bezoekers
+• AdsBot Accessibility Test: 100% toegankelijk voor alle Google bots`,
+  };
+
   const questions = [
     {
       id: 1,
@@ -157,6 +176,22 @@ const AppealResponse = () => {
             De opschorting wegens "cloaking" is een <strong>false positive</strong>. Alle bewijs toont aan dat 
             onze website identieke content toont aan alle bezoekers, inclusief Google crawlers.
           </p>
+        </section>
+
+        {/* Direct Cloaking Explanation - Google's Recommended Format */}
+        <section className="mb-6 bg-amber-50 border border-amber-300 p-4 rounded-lg">
+          <div className="mb-3">
+            <p className="text-xs text-amber-700 italic mb-2 flex items-center gap-1">
+              <FileText className="w-3 h-3" />
+              {cloakingExplanation.googleGuideline}
+            </p>
+            <h2 className="text-base font-bold text-amber-900">
+              {cloakingExplanation.question}
+            </h2>
+          </div>
+          <div className="text-sm text-amber-900 whitespace-pre-line">
+            {cloakingExplanation.answer}
+          </div>
         </section>
 
         {/* Evidence Section with Screenshot */}
