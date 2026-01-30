@@ -3,6 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "X-Robots-Tag": "all",
+  "X-Content-Served-Identically": "true",
 };
 
 const BASE_URL = "https://getpawsy.pet";
