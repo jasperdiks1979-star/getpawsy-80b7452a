@@ -26,7 +26,7 @@ export function VirtualizedTable<T>({
   estimateRowHeight = 52,
   overscan = 10,
   maxHeight = 600,
-  emptyMessage = 'Geen data gevonden',
+  emptyMessage = 'No data found',
   onRowClick,
   renderRow,
 }: VirtualizedTableProps<T>) {

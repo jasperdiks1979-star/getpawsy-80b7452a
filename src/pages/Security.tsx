@@ -142,7 +142,7 @@ const FindingCard = ({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
               >
-                Meer informatie
+                More info
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>

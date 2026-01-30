@@ -350,7 +350,7 @@ export const EnhancedSearch = ({
                     navigate('/products');
                   }}
                 >
-                  Bekijk alle producten
+                  View all products
                 </Button>
               </div>
             )}
