@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { trackPinterestEvent } from '@/hooks/usePinterestTracking';
 
 export interface CartItem {
   id: string;
@@ -220,6 +221,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     trackAddToCart(newItem.id, newItem.name, newItem.price, 1);
     trackCartActivity();
+    
+    // Pinterest AddToCart tracking
+    trackPinterestEvent('addtocart', {
+      value: newItem.price,
+      currency: 'EUR',
+      order_quantity: 1,
+      product_name: newItem.name,
+      product_id: newItem.id,
+      product_price: newItem.price,
+      line_items: [{
+        product_name: newItem.name,
+        product_id: newItem.id,
+        product_price: newItem.price,
+        product_quantity: 1,
+      }],
+    });
   };
 
   const removeItem = (id: string) => {
