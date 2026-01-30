@@ -179,108 +179,111 @@ function generateSitemapIndex(today: string): string {
 }
 
 function generateStaticSitemap(today: string): string {
+  // Calculate yesterday for more realistic lastmod on static pages
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+  
   return `${xmlHeader()}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Homepage -->
+  <!-- Homepage - Highest priority, changes frequently -->
   <url>
     <loc>${BASE_URL}/</loc>
     <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
+    <changefreq>hourly</changefreq>
     <priority>1.0</priority>
   </url>
   
-  <!-- Main Product Listing -->
+  <!-- Main Product Listing - High priority, very fresh -->
   <url>
     <loc>${BASE_URL}/products</loc>
     <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
   </url>
   
-  <!-- Bestsellers -->
+  <!-- Bestsellers - Popular content, changes often -->
   <url>
     <loc>${BASE_URL}/bestsellers</loc>
     <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
   </url>
   
-  <!-- Blog Index -->
+  <!-- Blog Index - Fresh content signal -->
   <url>
     <loc>${BASE_URL}/blog</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
   </url>
   
-  <!-- About Page -->
+  <!-- About Page - Trust signal -->
   <url>
     <loc>${BASE_URL}/about</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <lastmod>${yesterday}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
   
-  <!-- Contact Page -->
+  <!-- Contact Page - Trust signal -->
   <url>
     <loc>${BASE_URL}/contact</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <lastmod>${yesterday}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
   
-  <!-- FAQ Page -->
+  <!-- FAQ Page - SEO valuable -->
   <url>
     <loc>${BASE_URL}/faq</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <lastmod>${yesterday}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.65</priority>
   </url>
   
   <!-- Shipping Info -->
   <url>
     <loc>${BASE_URL}/shipping</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
+    <lastmod>${yesterday}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
   </url>
   
   <!-- Track Order -->
   <url>
     <loc>${BASE_URL}/track</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
+    <lastmod>${yesterday}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
   </url>
   
-  <!-- Return Policy - Correct route is /returns -->
+  <!-- Return Policy -->
   <url>
     <loc>${BASE_URL}/returns</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${yesterday}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   
-  <!-- Privacy Policy - Correct route is /privacy -->
+  <!-- Privacy Policy -->
   <url>
     <loc>${BASE_URL}/privacy</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${yesterday}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   
-  <!-- Terms of Service - Correct route is /terms -->
+  <!-- Terms of Service -->
   <url>
     <loc>${BASE_URL}/terms</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${yesterday}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   
-  <!-- Cookie Policy - Correct route is /cookies -->
+  <!-- Cookie Policy -->
   <url>
     <loc>${BASE_URL}/cookies</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${yesterday}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -290,18 +293,34 @@ function generateStaticSitemap(today: string): string {
 function generateProductsSitemap(products: Product[], today: string): string {
   let urls = "";
   
-  for (const product of products) {
+  // Calculate priority based on recency - newer products get higher priority
+  const now = new Date();
+  
+  for (let i = 0; i < products.length; i++) {
+    const product = products[i];
     const lastmod = product.updated_at?.split("T")[0] || today;
     const productName = escapeXml(product.name || "");
-    // Use slug for SEO-friendly URLs, fallback to id
     const productPath = product.slug || product.id;
+    
+    // Calculate priority: 0.9 for recently updated, decreasing by position
+    // Top 100 products get higher priority
+    const basePriority = i < 100 ? 0.9 : i < 500 ? 0.8 : 0.7;
+    
+    // Boost priority for products updated in last 7 days
+    const updateDate = new Date(product.updated_at || today);
+    const daysSinceUpdate = Math.floor((now.getTime() - updateDate.getTime()) / 86400000);
+    const recencyBoost = daysSinceUpdate <= 1 ? 0.05 : daysSinceUpdate <= 7 ? 0.02 : 0;
+    const priority = Math.min(0.95, basePriority + recencyBoost).toFixed(2);
+    
+    // Changefreq based on category - some categories change more often
+    const changefreq = daysSinceUpdate <= 7 ? "daily" : "weekly";
     
     urls += `
   <url>
     <loc>${BASE_URL}/product/${productPath}</loc>
     <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>${product.image_url ? `
+    <changefreq>${changefreq}</changefreq>
+    <priority>${priority}</priority>${product.image_url ? `
     <image:image>
       <image:loc>${escapeXml(product.image_url)}</image:loc>
       <image:title>${productName}</image:title>
