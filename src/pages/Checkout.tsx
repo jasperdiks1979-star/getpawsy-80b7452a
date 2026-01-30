@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { CartUpsell } from '@/components/cart/CartUpsell';
+import { trackPinterestEvent } from '@/hooks/usePinterestTracking';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -286,6 +287,19 @@ const Checkout = () => {
         totalPrice
       );
       trackCheckoutActivity();
+      
+      // Pinterest Checkout tracking
+      trackPinterestEvent('checkout', {
+        value: totalPrice,
+        currency: 'EUR',
+        order_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
+        line_items: items.map(item => ({
+          product_name: item.name,
+          product_id: item.id,
+          product_price: item.price,
+          product_quantity: item.quantity,
+        })),
+      });
     }
   }, []);
 
