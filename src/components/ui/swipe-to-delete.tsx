@@ -40,7 +40,7 @@ export function SwipeToDelete({
         <div className="flex items-center justify-between p-3 bg-destructive/10 border border-destructive/20 rounded-lg animate-fade-in">
           <span className="text-sm font-medium text-destructive flex items-center gap-2">
             <Trash2 className="w-4 h-4" />
-            Verwijderen?
+            Delete?
           </span>
           <div className="flex items-center gap-2">
             <Button

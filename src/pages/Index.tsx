@@ -561,7 +561,7 @@ const Index = () => {
       </SectionErrorBoundary>
 
       {/* Categories */}
-      <SectionErrorBoundary sectionName="Categorieën">
+      <SectionErrorBoundary sectionName="Categories">
         <section id="categories" className="py-20">
           <div className="container px-4 md:px-6">
             <motion.div 
@@ -634,7 +634,7 @@ const Index = () => {
                           {category.name}
                         </h3>
                         <p className="text-white/0 text-sm group-hover:text-white/80 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75">
-                          Bekijk producten →
+                          View products →
                         </p>
                       </div>
                       
@@ -652,7 +652,7 @@ const Index = () => {
       </SectionErrorBoundary>
 
       {/* Featured Products */}
-      <SectionErrorBoundary sectionName="Uitgelichte Producten">
+      <SectionErrorBoundary sectionName="Featured Products">
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
             <motion.div 
@@ -828,7 +828,7 @@ const Index = () => {
 
       {/* Recently Viewed Products */}
       {safeRecentlyViewedProducts.length > 0 && (
-        <SectionErrorBoundary sectionName="Recent Bekeken">
+        <SectionErrorBoundary sectionName="Recently Viewed">
           <section className="py-20 bg-muted/30">
             <div className="container px-4 md:px-6">
               <motion.div 
@@ -880,7 +880,7 @@ const Index = () => {
       )}
 
       {/* CTA Section */}
-      <SectionErrorBoundary sectionName="Nieuwsbrief">
+      <SectionErrorBoundary sectionName="Newsletter">
         <section className="py-20">
           <div className="container px-4 md:px-6">
             <motion.div 
