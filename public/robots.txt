@@ -1,13 +1,85 @@
 # GetPawsy Pet Products - Robots.txt
 # Premium pet supplies, dog beds, cat trees, pet toys & accessories
+# Last updated: 2026-01-30
 
+# =====================================================
+# GOOGLE CRAWLERS - All explicitly allowed
+# Reference: https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers
+# =====================================================
+
+# Main Googlebot (Search, Discover, Images, Video, News)
 User-agent: Googlebot
 Allow: /
 Crawl-delay: 1
 
+# Googlebot Image (Google Images, Discover, favicons)
+User-agent: Googlebot-Image
+Allow: /
+
+# Googlebot Video (Video search features)
+User-agent: Googlebot-Video
+Allow: /
+
+# Googlebot News (news.google.com, Google News app)
+User-agent: Googlebot-News
+Allow: /
+
+# Google StoreBot (Google Shopping, Shopping tab)
+User-agent: Storebot-Google
+Allow: /
+
+# Google Ads Bot (Ad quality checks)
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: AdsBot-Google-Mobile
+Allow: /
+
+# Google Media Partners (AdSense)
+User-agent: Mediapartners-Google
+Allow: /
+
+# Google Inspection Tool (Search Console, Rich Results Test)
+User-agent: Google-InspectionTool
+Allow: /
+
+# GoogleOther (Internal R&D, generic crawler)
+User-agent: GoogleOther
+Allow: /
+
+# GoogleOther-Image (Image fetching)
+User-agent: GoogleOther-Image
+Allow: /
+
+# GoogleOther-Video (Video fetching)
+User-agent: GoogleOther-Video
+Allow: /
+
+# Google Cloud Vertex Bot (Vertex AI Agents)
+User-agent: Google-CloudVertexBot
+Allow: /
+
+# Google Extended (Gemini AI training - we allow this)
+User-agent: Google-Extended
+Allow: /
+
+# =====================================================
+# OTHER MAJOR SEARCH ENGINES
+# =====================================================
+
 User-agent: Bingbot
 Allow: /
 Crawl-delay: 1
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# =====================================================
+# SOCIAL MEDIA CRAWLERS
+# =====================================================
 
 User-agent: Twitterbot
 Allow: /
@@ -21,12 +93,19 @@ Allow: /
 User-agent: Pinterest
 Allow: /
 
+# =====================================================
+# DEFAULT RULE FOR ALL OTHER BOTS
+# =====================================================
+
 User-agent: *
 Allow: /
 Crawl-delay: 2
 
-# Sitemap Index - Direct edge function URLs for reliable crawler access
+# =====================================================
+# SITEMAPS - Direct edge function URLs for reliable crawler access
 # These serve raw XML directly without JavaScript rendering
+# =====================================================
+
 Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=index
 Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=static
 Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=products
@@ -34,13 +113,17 @@ Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?
 Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=bestsellers
 Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=blog
 
-# Disallow admin and private pages
+# =====================================================
+# DISALLOWED PATHS (Private/Admin pages)
+# =====================================================
+
+# Admin and private pages
 Disallow: /admin
 Disallow: /profile
 Disallow: /orders
 Disallow: /checkout
 Disallow: /payment-success
 
-# Disallow API endpoints (not meant to be indexed)
+# API endpoints (not meant to be indexed)
 Disallow: /api/
 Disallow: /api/*
