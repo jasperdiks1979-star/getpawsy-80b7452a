@@ -14,18 +14,28 @@ const APPEAL_PAGES = [
 ];
 
 // Googlebot and other Google crawler User-Agent patterns
+// Reference: https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers
 const GOOGLE_BOT_PATTERNS = [
-  /Googlebot/i,
+  // Main Googlebot (Search, Discover, Images, Video, News)
+  /Googlebot\/\d/i,
   /Googlebot-Image/i,
-  /Googlebot-News/i,
   /Googlebot-Video/i,
+  /Googlebot-News/i,
+  // Google Ads bots
   /AdsBot-Google/i,
   /AdsBot-Google-Mobile/i,
   /Mediapartners-Google/i,
-  /Google-InspectionTool/i,
-  /GoogleOther/i,
-  /Google-Extended/i,
+  // Google Shopping (Storebot)
   /Storebot-Google/i,
+  // Search Console & Testing tools
+  /Google-InspectionTool/i,
+  // Generic crawlers (R&D, internal)
+  /GoogleOther-Image/i,
+  /GoogleOther-Video/i,
+  /GoogleOther/i,
+  // Vertex AI & Extended
+  /Google-CloudVertexBot/i,
+  /Google-Extended/i,
 ];
 
 function detectBotType(userAgent: string): { isGooglebot: boolean; botType: string | null } {
