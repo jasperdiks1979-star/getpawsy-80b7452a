@@ -8,6 +8,12 @@ import { useCart } from '@/contexts/CartContext';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import { safeString, safeNumber } from '@/lib/safe-render';
 import {
+  FREE_SHIPPING_THRESHOLD,
+  DELIVERY_TIME_STANDARD,
+  RETURNS_POLICY_SHORT,
+  TRUST_BADGES,
+} from '@/lib/shipping-constants';
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -15,8 +21,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-
-const FREE_SHIPPING_THRESHOLD = 50;
 
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
@@ -219,19 +223,19 @@ const Cart = () => {
                 </Button>
               </Link>
 
-              {/* Enhanced Trust badges */}
+              {/* Enhanced Trust badges - using centralized constants */}
               <div className="mt-6 pt-4 border-t space-y-3">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <ShieldCheck className="w-4 h-4 text-green-600" />
-                  <span>Secure checkout powered by Stripe</span>
+                  <span>{TRUST_BADGES.secure.title} • {TRUST_BADGES.secure.subtitle}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Truck className="w-4 h-4 text-primary" />
-                  <span>Ships from US warehouse • 5-10 days delivery</span>
+                  <span>Ships from US warehouse • {DELIVERY_TIME_STANDARD}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Star className="w-4 h-4 text-amber-500" />
-                  <span>30-day hassle-free returns</span>
+                  <span>{RETURNS_POLICY_SHORT}</span>
                 </div>
               </div>
             </div>

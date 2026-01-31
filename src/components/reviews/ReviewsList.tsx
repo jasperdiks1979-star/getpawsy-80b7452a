@@ -67,8 +67,12 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
           <Star className="w-8 h-8 text-muted-foreground" />
         </div>
-        <p className="text-muted-foreground">
-          No reviews yet. Be the first to write a review!
+        <h4 className="font-semibold text-foreground mb-2">No reviews yet</h4>
+        <p className="text-muted-foreground mb-4">
+          Be the first to share your experience with this product!
+        </p>
+        <p className="text-sm text-muted-foreground/70">
+          Your honest feedback helps other pet parents make informed decisions.
         </p>
       </motion.div>
     );

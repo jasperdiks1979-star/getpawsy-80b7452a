@@ -4,6 +4,14 @@ import { HelpCircle, Package, Truck, RotateCcw, CreditCard, ShieldCheck, PawPrin
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import {
+  FREE_SHIPPING_THRESHOLD,
+  DELIVERY_TIME_STANDARD,
+  PROCESSING_TIME,
+  RETURN_WINDOW_DAYS,
+  SUPPORT_EMAIL,
+  RETURNS_PROCESS,
+} from '@/lib/shipping-constants';
 
 const FAQ = () => {
   const faqCategories = [
@@ -39,15 +47,15 @@ const FAQ = () => {
       questions: [
         {
           question: 'How long does shipping take?',
-          answer: 'Standard shipping typically takes 7-21 business days depending on your location. Processing time is 1-3 business days before your order ships.',
+          answer: `Standard US shipping typically takes ${DELIVERY_TIME_STANDARD}. Processing time is ${PROCESSING_TIME} before your order ships. We ship from US warehouses for faster delivery.`,
         },
         {
           question: 'Do you offer free shipping?',
-          answer: 'Yes! We offer FREE standard shipping on all orders worldwide. No minimum purchase required.',
+          answer: `Yes! We offer FREE shipping on all US orders over $${FREE_SHIPPING_THRESHOLD}. Orders ship from our US warehouses for fast, reliable delivery.`,
         },
         {
           question: 'Do you ship internationally?',
-          answer: 'Yes! We ship to most countries worldwide. Delivery times vary by location, typically 7-21 business days. International orders may be subject to customs fees and import duties.',
+          answer: 'We primarily serve US customers. International shipping is available but delivery times are longer (10-20 business days) and orders may be subject to customs fees.',
         },
         {
           question: 'How can I track my order?',
@@ -55,11 +63,11 @@ const FAQ = () => {
         },
         {
           question: 'What carriers do you use?',
-          answer: 'We work with DHL, UPS, FedEx, PostNL, and regional delivery partners. The carrier is selected based on your location and the items ordered.',
+          answer: 'We work with USPS, UPS, FedEx, and DHL. The carrier is selected based on your location and the items ordered for the fastest delivery.',
         },
         {
           question: 'What if my package is lost or delayed?',
-          answer: 'If your package has not arrived within 45 days of dispatch, please contact us. We will investigate with the carrier and provide a resolution.',
+          answer: `If your package has not arrived within 21 days of dispatch, please contact us at ${SUPPORT_EMAIL}. We will investigate with the carrier and provide a resolution.`,
         },
       ],
     },
@@ -69,15 +77,15 @@ const FAQ = () => {
       questions: [
         {
           question: 'What is your return policy?',
-          answer: 'We accept returns within 30 days of delivery for damaged, defective, or incorrect products. Please visit our Return Policy page for complete details.',
+          answer: `We accept returns within ${RETURN_WINDOW_DAYS} days of delivery for damaged, defective, or incorrect products. Visit our Returns page for complete details.`,
         },
         {
           question: 'How do I request a return?',
-          answer: 'Contact our customer support at support@getpawsy.pet with your order number, photos of the issue, and a description of the problem. We will process your request within 1-2 business days.',
+          answer: RETURNS_PROCESS,
         },
         {
           question: 'Do I need to return the product?',
-          answer: 'In most cases, we do not require products to be returned due to high shipping costs. However, we may request photos or videos as proof of the issue.',
+          answer: 'In most cases, we do not require products to be returned due to shipping costs. However, we may request photos or videos as proof of the issue.',
         },
         {
           question: 'How long does it take to receive a refund?',
