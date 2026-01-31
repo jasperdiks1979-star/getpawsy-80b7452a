@@ -9,96 +9,105 @@
 
 @layer base {
   :root {
-    /* Warm cream/beige background */
-    --background: 40 33% 98%;
-    --foreground: 25 25% 15%;
+    /* Warm, inviting cream background - slightly warmer for premium feel */
+    --background: 38 35% 97%;
+    --foreground: 25 30% 12%;
 
-    /* Warm cream cards */
-    --card: 40 40% 97%;
-    --card-foreground: 25 25% 15%;
+    /* Soft cream cards with subtle warmth */
+    --card: 40 45% 98%;
+    --card-foreground: 25 30% 12%;
 
-    --popover: 40 40% 99%;
-    --popover-foreground: 25 25% 15%;
+    --popover: 40 45% 99%;
+    --popover-foreground: 25 30% 12%;
 
-    /* Terracotta/Warm brown primary */
-    --primary: 25 65% 45%;
-    --primary-foreground: 40 40% 98%;
+    /* Rich terracotta primary - confident but warm */
+    --primary: 22 70% 48%;
+    --primary-foreground: 40 45% 99%;
 
-    /* Sage green secondary */
-    --secondary: 140 25% 92%;
-    --secondary-foreground: 140 30% 25%;
+    /* Soft sage green secondary - calming pet-friendly */
+    --secondary: 145 28% 90%;
+    --secondary-foreground: 145 35% 22%;
 
-    /* Warm muted tones */
-    --muted: 35 30% 94%;
-    --muted-foreground: 25 15% 45%;
+    /* Warm sand/beige muted - premium feel */
+    --muted: 38 35% 93%;
+    --muted-foreground: 25 18% 42%;
 
-    /* Soft olive accent */
-    --accent: 80 25% 88%;
-    --accent-foreground: 80 35% 25%;
+    /* Warm cream accent - soft sand tone */
+    --accent: 35 40% 92%;
+    --accent-foreground: 35 45% 22%;
 
-    --destructive: 0 65% 55%;
+    /* Trust-building success green */
+    --destructive: 0 68% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 35 25% 88%;
-    --input: 35 25% 88%;
-    --ring: 25 65% 45%;
+    --border: 38 30% 88%;
+    --input: 38 30% 88%;
+    --ring: 22 70% 48%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
     /* Sidebar */
-    --sidebar-background: 40 35% 96%;
-    --sidebar-foreground: 25 25% 25%;
-    --sidebar-primary: 25 65% 45%;
-    --sidebar-primary-foreground: 40 40% 98%;
-    --sidebar-accent: 140 25% 92%;
-    --sidebar-accent-foreground: 140 30% 25%;
-    --sidebar-border: 35 25% 88%;
-    --sidebar-ring: 25 65% 45%;
+    --sidebar-background: 38 38% 96%;
+    --sidebar-foreground: 25 25% 22%;
+    --sidebar-primary: 22 70% 48%;
+    --sidebar-primary-foreground: 40 45% 99%;
+    --sidebar-accent: 145 28% 90%;
+    --sidebar-accent-foreground: 145 35% 22%;
+    --sidebar-border: 38 30% 88%;
+    --sidebar-ring: 22 70% 48%;
 
     /* Custom semantic colors */
-    --success: 140 50% 40%;
+    --success: 145 55% 38%;
     --success-foreground: 0 0% 100%;
-    --warning: 35 90% 55%;
-    --warning-foreground: 35 90% 15%;
+    --warning: 38 92% 52%;
+    --warning-foreground: 38 92% 12%;
+
+    /* NEW: Premium warm sand accent for section backgrounds */
+    --sand: 35 45% 95%;
+    --sand-foreground: 35 50% 20%;
   }
 
-  .dark {
-    --background: 25 20% 8%;
-    --foreground: 40 30% 95%;
+.dark {
+    --background: 25 22% 7%;
+    --foreground: 38 35% 94%;
 
-    --card: 25 20% 12%;
-    --card-foreground: 40 30% 95%;
+    --card: 25 22% 10%;
+    --card-foreground: 38 35% 94%;
 
-    --popover: 25 20% 10%;
-    --popover-foreground: 40 30% 95%;
+    --popover: 25 22% 9%;
+    --popover-foreground: 38 35% 94%;
 
-    --primary: 25 60% 55%;
-    --primary-foreground: 25 20% 8%;
+    --primary: 22 65% 58%;
+    --primary-foreground: 25 22% 7%;
 
-    --secondary: 140 20% 18%;
-    --secondary-foreground: 140 25% 85%;
+    --secondary: 145 22% 16%;
+    --secondary-foreground: 145 28% 82%;
 
-    --muted: 25 15% 18%;
-    --muted-foreground: 35 20% 60%;
+    --muted: 25 18% 15%;
+    --muted-foreground: 38 22% 58%;
 
-    --accent: 80 20% 18%;
-    --accent-foreground: 80 25% 85%;
+    --accent: 35 25% 15%;
+    --accent-foreground: 35 30% 82%;
 
-    --destructive: 0 60% 45%;
+    --destructive: 0 62% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 25 15% 20%;
-    --input: 25 15% 20%;
-    --ring: 25 60% 55%;
+    --border: 25 18% 18%;
+    --input: 25 18% 18%;
+    --ring: 22 65% 58%;
 
-    --sidebar-background: 25 20% 10%;
-    --sidebar-foreground: 40 30% 90%;
-    --sidebar-primary: 25 60% 55%;
-    --sidebar-primary-foreground: 25 20% 8%;
-    --sidebar-accent: 140 20% 18%;
-    --sidebar-accent-foreground: 140 25% 85%;
-    --sidebar-border: 25 15% 20%;
-    --sidebar-ring: 25 60% 55%;
+    --sidebar-background: 25 22% 9%;
+    --sidebar-foreground: 38 32% 88%;
+    --sidebar-primary: 22 65% 58%;
+    --sidebar-primary-foreground: 25 22% 7%;
+    --sidebar-accent: 145 22% 16%;
+    --sidebar-accent-foreground: 145 28% 82%;
+    --sidebar-border: 25 18% 18%;
+    --sidebar-ring: 22 65% 58%;
+
+    /* Dark mode sand */
+    --sand: 35 20% 12%;
+    --sand-foreground: 35 30% 85%;
   }
 }
 
@@ -343,39 +352,48 @@
 }
 
 @layer components {
-  /* Gradient backgrounds */
+  /* Gradient backgrounds - warmer, more inviting */
   .gradient-hero {
     background: linear-gradient(
       135deg,
-      hsl(40 40% 97%) 0%,
-      hsl(35 35% 94%) 50%,
-      hsl(140 25% 94%) 100%
+      hsl(38 35% 97%) 0%,
+      hsl(35 40% 95%) 50%,
+      hsl(145 28% 94%) 100%
     );
   }
 
   .gradient-warm {
     background: linear-gradient(
       135deg,
-      hsl(25 65% 45%) 0%,
-      hsl(30 60% 50%) 100%
+      hsl(22 70% 48%) 0%,
+      hsl(28 65% 52%) 100%
     );
   }
 
-  /* Card shadows */
+  /* Sand section background */
+  .bg-sand-section {
+    background: linear-gradient(
+      180deg,
+      hsl(35 45% 96%) 0%,
+      hsl(38 40% 98%) 100%
+    );
+  }
+
+  /* Card shadows - softer, more natural */
   .shadow-card {
     box-shadow: 
-      0 1px 3px 0 hsl(25 25% 15% / 0.04),
-      0 4px 12px -2px hsl(25 25% 15% / 0.08);
+      0 1px 2px 0 hsl(25 30% 12% / 0.03),
+      0 3px 10px -2px hsl(25 30% 12% / 0.06);
   }
 
   .shadow-card-hover {
     box-shadow: 
-      0 4px 8px 0 hsl(25 25% 15% / 0.06),
-      0 12px 24px -4px hsl(25 25% 15% / 0.12);
+      0 3px 6px 0 hsl(25 30% 12% / 0.05),
+      0 10px 20px -4px hsl(25 30% 12% / 0.1);
   }
 
   .shadow-soft {
-    box-shadow: 0 8px 30px hsl(25 25% 15% / 0.1);
+    box-shadow: 0 6px 24px hsl(25 30% 12% / 0.08);
   }
 
   /* Organic shapes */
@@ -416,50 +434,48 @@
     @apply bg-white/70 backdrop-blur-md border border-white/20;
   }
 
-  /* Enhanced glassmorphism for product cards */
+  /* Premium product cards - warm, inviting, subtle hover */
   .glass-card {
     background: linear-gradient(
       135deg,
-      hsl(40 40% 99% / 0.9) 0%,
-      hsl(40 40% 97% / 0.8) 100%
+      hsl(40 45% 99% / 0.95) 0%,
+      hsl(38 40% 98% / 0.9) 100%
     );
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid hsl(40 40% 95% / 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid hsl(38 35% 92% / 0.6);
     box-shadow: 
-      0 4px 16px hsl(25 25% 15% / 0.06),
-      0 8px 32px hsl(25 25% 15% / 0.04),
-      inset 0 1px 0 hsl(40 40% 100% / 0.5);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      0 2px 8px hsl(25 30% 12% / 0.04),
+      0 4px 16px hsl(25 30% 12% / 0.03);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .glass-card:hover {
     box-shadow: 
-      0 8px 24px hsl(25 65% 45% / 0.12),
-      0 16px 48px hsl(25 25% 15% / 0.08),
-      inset 0 1px 0 hsl(40 40% 100% / 0.6);
-    transform: translateY(-6px) scale(1.02);
-    border-color: hsl(25 65% 45% / 0.2);
+      0 4px 12px hsl(22 70% 48% / 0.08),
+      0 8px 24px hsl(25 30% 12% / 0.06);
+    transform: translateY(-4px);
+    border-color: hsl(22 70% 48% / 0.15);
   }
 
   .dark .glass-card {
     background: linear-gradient(
       135deg,
-      hsl(25 20% 14% / 0.9) 0%,
-      hsl(25 20% 12% / 0.8) 100%
+      hsl(25 22% 12% / 0.95) 0%,
+      hsl(25 22% 10% / 0.9) 100%
     );
-    border: 1px solid hsl(25 20% 25% / 0.3);
+    border: 1px solid hsl(25 18% 22% / 0.4);
     box-shadow: 
-      0 4px 16px hsl(0 0% 0% / 0.2),
-      0 8px 32px hsl(0 0% 0% / 0.15),
-      inset 0 1px 0 hsl(25 20% 30% / 0.2);
+      0 2px 8px hsl(0 0% 0% / 0.15),
+      0 4px 16px hsl(0 0% 0% / 0.1);
   }
 
   .dark .glass-card:hover {
     box-shadow: 
-      0 8px 24px hsl(25 60% 55% / 0.15),
-      0 16px 48px hsl(0 0% 0% / 0.25),
-      inset 0 1px 0 hsl(25 20% 35% / 0.3);
+      0 4px 12px hsl(22 65% 58% / 0.12),
+      0 8px 24px hsl(0 0% 0% / 0.2);
+    transform: translateY(-4px);
+    border-color: hsl(22 65% 58% / 0.2);
   }
 
   /* Animated trust badges */

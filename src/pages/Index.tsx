@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowDown, Truck, Shield, HeartHandshake, Sparkles, Loader2, Star, Leaf, Quote, Clock } from 'lucide-react';
+import { ArrowRight, Loader2, Star, Quote, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { motion, useScroll, useTransform } from 'framer-motion';
@@ -21,40 +21,13 @@ import { WebsiteSchema, LocalBusinessSchema } from '@/components/seo';
 import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { initPageDebug, logDataSanitization, createSectionDebugger } from '@/lib/debug-logger';
 import { useCriticalImagePreload, prefetchImages } from '@/hooks/useCriticalImagePreload';
-import {
-  FREE_SHIPPING_THRESHOLD,
-  RETURN_WINDOW_DAYS,
-  TRUST_BADGES,
-} from '@/lib/shipping-constants';
+// FREE_SHIPPING_THRESHOLD and RETURN_WINDOW_DAYS are now used directly in AnimatedTrustBadges
 
 // Debug loggers for each section
 const categoriesDebug = createSectionDebugger('Categories');
 const productsDebug = createSectionDebugger('FeaturedProducts');
 const recentlyViewedDebug = createSectionDebugger('RecentlyViewed');
 
-// Features using centralized shipping constants
-const features = [
-  {
-    icon: Truck,
-    title: TRUST_BADGES.shipping.title,
-    description: TRUST_BADGES.shipping.subtitle,
-  },
-  {
-    icon: Shield,
-    title: TRUST_BADGES.returns.title,
-    description: TRUST_BADGES.returns.subtitle,
-  },
-  {
-    icon: HeartHandshake,
-    title: 'Pet-Safe',
-    description: 'Vet-approved items',
-  },
-  {
-    icon: Leaf,
-    title: 'Eco-Friendly',
-    description: 'Sustainable products',
-  },
-];
 // Testimonials - labeled as early customer feedback to be transparent
 // Note: These are illustrative examples. Real reviews should come from product_reviews table.
 const testimonials = [
@@ -381,178 +354,70 @@ const Index = () => {
     <Layout>
       <WebsiteSchema />
       <LocalBusinessSchema />
-      {/* Hero Section with Video Background */}
-      <section ref={heroRef} className="relative overflow-hidden min-h-[90vh] flex items-center">
-        {/* Video Background - Responsive with mobile optimization */}
+      {/* Hero Section - Clean, Premium, Trust-Building */}
+      <section ref={heroRef} className="relative overflow-hidden min-h-[85vh] flex items-center">
+        {/* Lifestyle Background - Calm home setting with pet */}
         <div className="absolute inset-0 z-0">
-          {/* Mobile: Show optimized poster image instead of video for performance */}
-          <picture className="md:hidden absolute inset-0">
-            <img
-              src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=70"
-              alt="Happy golden retriever playing outdoors - GetPawsy premium pet products"
-              width={800}
-              height={600}
-              className="w-full h-full object-cover"
-              loading="eager"
-              fetchPriority="high"
-            />
-          </picture>
-          
-          {/* Desktop: Full HD video */}
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            poster="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1920&q=80"
-            className="hidden md:block w-full h-full object-cover"
-          >
-            {/* SD version for tablets (768px-1024px) */}
-            <source 
-              src="https://videos.pexels.com/video-files/4488282/4488282-sd_640_360_25fps.mp4" 
-              type="video/mp4"
-              media="(max-width: 1024px)"
-            />
-            {/* HD version for desktop (1024px+) */}
-            <source 
-              src="https://videos.pexels.com/video-files/4488282/4488282-hd_1920_1080_25fps.mp4" 
-              type="video/mp4" 
-            />
-          </video>
-          {/* Gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-background/30" />
+          <img
+            src="https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1920&q=85"
+            alt="Happy dog relaxing at home with premium pet products"
+            className="w-full h-full object-cover object-center"
+            loading="eager"
+            fetchPriority="high"
+          />
+          {/* Warm, soft gradient overlay - not harsh */}
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
         </div>
         
-        {/* Decorative blur elements */}
-        <div className="absolute top-20 right-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl z-0" />
-        <div className="absolute bottom-10 left-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl z-0" />
+        {/* Subtle warm blur accents */}
+        <div className="absolute top-1/4 right-1/4 w-72 h-72 bg-sand/40 rounded-full blur-3xl z-0" />
+        <div className="absolute bottom-1/3 left-1/6 w-96 h-96 bg-secondary/20 rounded-full blur-3xl z-0" />
         
         <motion.div 
-          className="container relative z-10 px-4 md:px-6 py-20 md:py-32"
+          className="container relative z-10 px-4 md:px-6 py-16 md:py-24"
           style={{ opacity: heroOpacity }}
         >
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="max-w-2xl">
             <motion.div 
-              className="space-y-8"
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
+              className="space-y-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
               style={{ y: heroContentY }}
             >
-              <motion.div 
-                className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-full text-sm font-medium"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.4 }}
-              >
-                <Sparkles className="w-4 h-4" />
-                Naturally crafted for happy pets
-              </motion.div>
-              
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-tight text-balance">
-                Where Love Meets{' '}
-                <span className="text-primary relative">
-                  Quality Care
-                  <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 12" fill="none">
-                    <path d="M2 10C50 2 150 2 198 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="text-primary/30"/>
-                  </svg>
-                </span>
+              {/* Simple, warm headline */}
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
+                Trusted Pet Products,
+                <br />
+                <span className="text-primary">Delivered Fast</span>
               </h1>
               
-              <p className="text-lg text-muted-foreground max-w-lg leading-relaxed">
-                Discover premium, eco-friendly products that your furry friends will adore. 
-                From organic treats to cozy beds, we bring nature's best to your doorstep.
+              {/* Clear, benefit-focused subline */}
+              <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
+                Premium everyday essentials for dogs and cats. 
+                Free US shipping over $35. 30-day hassle-free returns.
               </p>
               
-              <div className="flex flex-wrap gap-4">
+              {/* Single prominent CTA */}
+              <div className="flex flex-wrap items-center gap-4 pt-2">
                 <Link to="/products">
-                  <Button size="lg" className="gap-2 btn-organic rounded-full px-8 relative overflow-hidden group">
-                    {/* Shimmer effect */}
-                    <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-1000 ease-out" />
-                    <span className="relative z-10 flex items-center gap-2">
-                      Explore Collection
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </span>
+                  <Button size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                    Shop Now
+                    <ArrowRight className="w-5 h-5" />
                   </Button>
                 </Link>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="gap-2 rounded-full px-8 border-2"
-                  onClick={() => document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' })}
-                >
-                  View Categories
-                  <motion.span
-                    animate={{ y: [0, 4, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    <ArrowDown className="w-4 h-4" />
-                  </motion.span>
-                </Button>
-              </div>
-
-              {/* Trust badges */}
-              <div className="flex items-center gap-6 pt-4">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-warning text-warning" />
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">4.9/5</span> from 2,000+ happy pet parents
-                </p>
-              </div>
-            </motion.div>
-            
-            <motion.div 
-              className="relative py-6 px-6"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              {/* Main image with smooth parallax */}
-              <motion.div 
-                className="relative z-10 overflow-hidden rounded-3xl will-change-transform bg-secondary/20" 
-                style={{ y: heroImageY }}
-              >
-                <img
-                  src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=80"
-                  alt="Happy dog with natural pet products"
-                  className="shadow-soft-lg object-cover aspect-[4/5] w-full transition-transform duration-700 hover:scale-105 rounded-3xl"
-                />
-              </motion.div>
                 
-              {/* Floating cards with simplified parallax - positioned outside overflow container */}
-              <motion.div 
-                className="absolute bottom-0 left-0 bg-card p-4 rounded-2xl shadow-soft glass z-20 will-change-transform"
-                style={{ y: floatingCard1Y }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
-                    <Truck className="w-6 h-6 text-secondary-foreground" />
+                {/* Compact trust indicator */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-warning text-warning" />
+                    ))}
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm">Free Shipping</p>
-                    <p className="text-xs text-muted-foreground">On orders $50+</p>
-                  </div>
+                  <span>Loved by pet parents</span>
                 </div>
-              </motion.div>
-
-              <motion.div 
-                className="absolute top-0 right-0 bg-card p-4 rounded-2xl shadow-soft glass z-20 will-change-transform"
-                style={{ y: floatingCard2Y }}
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              >
-                <div className="flex items-center gap-2">
-                  <Leaf className="w-5 h-5 text-primary animate-pulse" />
-                  <span className="font-semibold text-sm">100% Natural</span>
-                </div>
-              </motion.div>
-
-              {/* Decorative blob */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-accent/30 blob-shape -z-10" />
+              </div>
             </motion.div>
           </div>
         </motion.div>
@@ -661,7 +526,7 @@ const Index = () => {
 
       {/* Featured Products */}
       <SectionErrorBoundary sectionName="Featured Products">
-        <section className="py-20 bg-muted/30">
+        <section className="py-20 bg-sand/40">
           <div className="container px-4 md:px-6">
             <motion.div 
               className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12"
@@ -834,7 +699,7 @@ const Index = () => {
       {/* Recently Viewed Products */}
       {safeRecentlyViewedProducts.length > 0 && (
         <SectionErrorBoundary sectionName="Recently Viewed">
-          <section className="py-20 bg-muted/30">
+          <section className="py-20 bg-sand/40">
             <div className="container px-4 md:px-6">
               <motion.div 
                 className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12"
