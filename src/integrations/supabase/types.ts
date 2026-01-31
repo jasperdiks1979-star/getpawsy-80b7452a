@@ -2174,6 +2174,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_count: number | null
+          error_messages: string[] | null
+          id: string
+          last_offset: number | null
+          last_sync_at: string | null
+          started_at: string | null
+          status: string | null
+          synced_count: number | null
+          total_products: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_count?: number | null
+          error_messages?: string[] | null
+          id?: string
+          last_offset?: number | null
+          last_sync_at?: string | null
+          started_at?: string | null
+          status?: string | null
+          synced_count?: number | null
+          total_products?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_count?: number | null
+          error_messages?: string[] | null
+          id?: string
+          last_offset?: number | null
+          last_sync_at?: string | null
+          started_at?: string | null
+          status?: string | null
+          synced_count?: number | null
+          total_products?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

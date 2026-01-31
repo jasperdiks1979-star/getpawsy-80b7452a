@@ -552,53 +552,82 @@ const Admin = () => {
     },
   });
 
-  // Stock sync mutation with retry logic
+  // Stock sync mutation with batch processing
   const syncStockMutation = useMutation({
     mutationFn: async () => {
+      const estimatedTotal = existingProducts?.filter(p => p.cj_product_id).length || 0;
+      
       // Set initial progress
       setSyncStockProgress({
         current: 0,
-        total: existingProducts?.filter(p => p.cj_product_id).length || 0,
+        total: estimatedTotal,
         status: 'syncing',
         currentItem: 'Verbinden met CJ Dropshipping...',
         synced: 0,
         errors: 0,
       });
 
-      // Execute with retry logic
-      const result = await executeWithRetry(
-        async () => {
-          const { data, error } = await invokeFunction<{
-            success: boolean;
-            synced: number;
-            errors: number;
-            errorMessages?: string[];
-            message: string;
-          }>("sync-stock");
+      // First reset progress
+      await invokeFunction("sync-stock", { body: { action: 'reset' } });
 
-          if (error) throw error;
-          return data;
-        },
-        {
-          onRetry: (attempt, error, delayMs) => {
-            setSyncStockProgress(prev => prev ? {
-              ...prev,
-              status: 'retrying',
-              retryAttempt: attempt,
-              maxRetries: 3,
-              currentItem: `Retry ${attempt}/3: ${error.message.slice(0, 50)}...`,
-            } : null);
-            toast.warning(`Sync retry ${attempt}/3 na ${Math.round(delayMs / 1000)}s...`);
-          },
-          shouldRetry: (error) => {
-            const msg = error.message.toLowerCase();
-            return msg.includes('network') || msg.includes('timeout') || 
-                   msg.includes('500') || msg.includes('503');
-          },
+      let offset = 0;
+      let hasMore = true;
+      let totalSynced = 0;
+      let totalErrors = 0;
+      const allErrorMessages: string[] = [];
+
+      // Process batches until done
+      while (hasMore) {
+        const { data, error } = await invokeFunction<{
+          success: boolean;
+          synced: number;
+          errors: number;
+          errorMessages?: string[];
+          message: string;
+          progress?: {
+            current: number;
+            total: number;
+            status: string;
+            hasMore: boolean;
+          };
+        }>("sync-stock", { body: { action: 'sync-batch', offset } });
+
+        if (error) throw error;
+        if (!data) throw new Error('No data returned from sync');
+
+        totalSynced += data.synced || 0;
+        totalErrors += data.errors || 0;
+        if (data.errorMessages) {
+          allErrorMessages.push(...data.errorMessages);
         }
-      );
 
-      return result;
+        const progress = data.progress;
+        hasMore = progress?.hasMore ?? false;
+        offset = progress?.current ?? offset + 15;
+
+        // Update UI progress
+        setSyncStockProgress({
+          current: progress?.current ?? offset,
+          total: progress?.total ?? estimatedTotal,
+          status: progress?.status === 'completed' ? 'completed' : 'syncing',
+          currentItem: `Batch ${Math.ceil(offset / 15)} van ${Math.ceil((progress?.total ?? estimatedTotal) / 15)}...`,
+          synced: totalSynced,
+          errors: totalErrors,
+        });
+
+        // Small delay between batches
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      return {
+        success: totalErrors === 0,
+        synced: totalSynced,
+        errors: totalErrors,
+        errorMessages: allErrorMessages,
+        message: `Sync completed! ${totalSynced} products updated, ${totalErrors} errors.`,
+      };
     },
     onMutate: () => {
       setSyncStockProgress({

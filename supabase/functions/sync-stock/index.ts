@@ -8,25 +8,22 @@ const corsHeaders = {
 
 const CJ_API_BASE = 'https://developers.cjdropshipping.com/api2.0/v1';
 
-interface CJAuthResponse {
-  result: boolean;
-  code: number;
-  message?: string;
-  data: {
-    accessToken: string;
-    accessTokenExpiryDate: string;
-    refreshToken: string;
-    refreshTokenExpiryDate: string;
-  };
-}
+// Process only 5 products per batch - very conservative due to CJ rate limits
+const BATCH_SIZE = 5;
+// Delay between API calls (milliseconds) - 3 seconds to respect CJ rate limits
+const API_DELAY_MS = 3000;
 
 interface SyncProgress {
-  current: number;
-  total: number;
-  currentProduct: string;
-  status: 'syncing' | 'completed' | 'error';
-  synced: number;
-  errors: number;
+  id: string;
+  last_offset: number;
+  total_products: number;
+  synced_count: number;
+  error_count: number;
+  status: string;
+  started_at: string | null;
+  last_sync_at: string | null;
+  completed_at: string | null;
+  error_messages: string[];
 }
 
 interface SyncResult {
@@ -36,46 +33,36 @@ interface SyncResult {
   errorMessages: string[];
   message: string;
   timestamp: string;
-  progress?: SyncProgress;
+  progress?: {
+    current: number;
+    total: number;
+    status: string;
+    hasMore: boolean;
+  };
 }
 
-/**
- * Sleep for a specified number of milliseconds
- */
+interface Product {
+  id: string;
+  cj_product_id: string;
+  sku: string | null;
+  name: string;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/**
- * Calculate delay for exponential backoff
- */
-function calculateBackoffDelay(attempt: number, baseDelayMs = 1000, maxDelayMs = 30000): number {
+function calculateBackoffDelay(attempt: number, baseDelayMs = 1000, maxDelayMs = 10000): number {
   const exponentialDelay = baseDelayMs * Math.pow(2, attempt);
-  const jitter = Math.random() * 0.3 * exponentialDelay;
+  const jitter = Math.random() * 0.2 * exponentialDelay;
   return Math.min(exponentialDelay + jitter, maxDelayMs);
 }
 
-/**
- * Execute a function with retry logic and exponential backoff
- */
 async function withRetry<T>(
   fn: () => Promise<T>,
-  options: {
-    maxRetries?: number;
-    baseDelayMs?: number;
-    maxDelayMs?: number;
-    shouldRetry?: (error: Error) => boolean;
-    onRetry?: (attempt: number, error: Error, delayMs: number) => void;
-  } = {}
+  maxRetries = 2,
+  shouldRetry = (_e: Error) => true
 ): Promise<T> {
-  const {
-    maxRetries = 3,
-    baseDelayMs = 1000,
-    maxDelayMs = 30000,
-    shouldRetry = () => true,
-    onRetry,
-  } = options;
-
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -83,471 +70,475 @@ async function withRetry<T>(
       return await fn();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-
       if (attempt < maxRetries && shouldRetry(lastError)) {
-        const delayMs = calculateBackoffDelay(attempt, baseDelayMs, maxDelayMs);
-        
-        if (onRetry) {
-          onRetry(attempt + 1, lastError, delayMs);
-        }
-        
-        console.log(`Retry ${attempt + 1}/${maxRetries} after ${Math.round(delayMs)}ms: ${lastError.message}`);
+        const delayMs = calculateBackoffDelay(attempt);
+        console.log(`Retry ${attempt + 1}/${maxRetries} after ${Math.round(delayMs)}ms`);
         await sleep(delayMs);
       } else {
         throw lastError;
       }
     }
   }
-
   throw lastError || new Error('Unknown error');
 }
 
-/**
- * Check if an error is retryable (network errors, rate limits, server errors)
- */
 function isRetryableError(error: Error): boolean {
   const message = error.message.toLowerCase();
   return (
     message.includes('network') ||
     message.includes('timeout') ||
-    message.includes('rate limit') ||
     message.includes('429') ||
     message.includes('500') ||
     message.includes('502') ||
     message.includes('503') ||
-    message.includes('504') ||
-    message.includes('econnreset') ||
     message.includes('fetch failed')
   );
 }
 
-// Get access token from CJ API with database-backed caching
-async function getAccessToken(): Promise<string> {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-  const { data: cachedData, error: cacheError } = await supabase
+// deno-lint-ignore no-explicit-any
+async function getAccessToken(supabase: any): Promise<string> {
+  const { data: cachedData } = await supabase
     .from('cj_token_cache')
     .select('access_token, token_expiry')
     .eq('id', 'singleton')
-    .single();
+    .maybeSingle();
 
-  if (!cacheError && cachedData) {
+  if (cachedData) {
     const tokenExpiry = new Date(cachedData.token_expiry).getTime();
     if (Date.now() < tokenExpiry) {
-      console.log('Using cached CJ access token');
       return cachedData.access_token;
     }
-    console.log('Cached token expired, requesting new one...');
   }
 
-  const apiKey = Deno.env.get('CJ_API_KEY');
   const email = Deno.env.get('CJ_EMAIL');
+  const password = Deno.env.get('CJ_API_KEY');
 
-  if (!apiKey || !email) {
-    throw new Error('CJ_API_KEY or CJ_EMAIL not configured');
+  if (!email || !password) {
+    throw new Error('CJ credentials not configured');
   }
 
-  console.log('Requesting new CJ access token...');
-  
-  const response = await withRetry(
-    async () => {
-      const res = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          password: apiKey,
-        }),
-      });
-      
-      if (!res.ok) {
-        throw new Error(`CJ Auth request failed: ${res.status}`);
-      }
-      
-      return res;
-    },
-    { maxRetries: 3, shouldRetry: isRetryableError }
-  );
+  const response = await withRetry(async () => {
+    const res = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) throw new Error(`CJ Auth failed: ${res.status}`);
+    return res;
+  }, 2, isRetryableError);
 
-  const data: CJAuthResponse = await response.json();
-  
+  const data = await response.json();
   if (!data.result) {
-    console.error('CJ Auth failed:', data);
-    throw new Error(`CJ Authentication failed: ${data.code} - ${data.message || 'Unknown error'}`);
+    throw new Error(`CJ Auth failed: ${data.message || 'Unknown error'}`);
   }
 
   const expiryDate = new Date(data.data.accessTokenExpiryDate);
-  const safeExpiry = new Date(expiryDate.getTime() - (5 * 60 * 1000));
-  
-  await supabase
-    .from('cj_token_cache')
-    .upsert({
-      id: 'singleton',
-      access_token: data.data.accessToken,
-      token_expiry: safeExpiry.toISOString(),
-      updated_at: new Date().toISOString()
-    });
+  const safeExpiry = new Date(expiryDate.getTime() - 5 * 60 * 1000);
+
+  await supabase.from('cj_token_cache').upsert({
+    id: 'singleton',
+    access_token: data.data.accessToken,
+    token_expiry: safeExpiry.toISOString(),
+    updated_at: new Date().toISOString()
+  });
 
   return data.data.accessToken;
 }
 
-// Get inventory for a product by product ID with retry logic
 async function getProductInventory(accessToken: string, productId: string) {
-  return await withRetry(
-    async () => {
-      const response = await fetch(`${CJ_API_BASE}/product/stock/getInventoryByPid?pid=${productId}`, {
+  return await withRetry(async () => {
+    const response = await fetch(
+      `${CJ_API_BASE}/product/stock/getInventoryByPid?pid=${productId}`,
+      {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'CJ-Access-Token': accessToken,
         },
-      });
+      }
+    );
 
-      if (!response.ok) {
-        // For rate limits, wait longer before throwing to trigger retry
-        if (response.status === 429) {
-          console.log(`Rate limited on ${productId}, waiting 5 seconds before retry...`);
-          await sleep(5000);
-        }
-        throw new Error(`Inventory request failed: ${response.status}`);
+    if (response.status === 429) {
+      console.log(`Rate limited on ${productId}, waiting...`);
+      await sleep(5000);
+      throw new Error('Rate limited (429)');
+    }
+
+    if (!response.ok) {
+      throw new Error(`Inventory request failed: ${response.status}`);
+    }
+
+    return await response.json();
+  }, 2, isRetryableError);
+}
+
+// deno-lint-ignore no-explicit-any
+async function getOrCreateSyncProgress(supabase: any): Promise<SyncProgress> {
+  const { data, error } = await supabase
+    .from('sync_progress')
+    .select('*')
+    .eq('id', 'stock-sync')
+    .maybeSingle();
+
+  if (data) return data as SyncProgress;
+
+  const newProgress: Partial<SyncProgress> = {
+    id: 'stock-sync',
+    last_offset: 0,
+    total_products: 0,
+    synced_count: 0,
+    error_count: 0,
+    status: 'idle',
+    error_messages: [],
+  };
+
+  await supabase.from('sync_progress').upsert(newProgress);
+  return newProgress as SyncProgress;
+}
+
+// deno-lint-ignore no-explicit-any
+async function updateSyncProgress(
+  supabase: any,
+  updates: Partial<SyncProgress>
+): Promise<void> {
+  await supabase
+    .from('sync_progress')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', 'stock-sync');
+}
+
+// deno-lint-ignore no-explicit-any
+async function syncBatch(
+  supabase: any,
+  accessToken: string,
+  offset: number,
+  isCronJob: boolean
+): Promise<SyncResult> {
+  const progress = await getOrCreateSyncProgress(supabase);
+
+  // Get products with CJ IDs
+  const { data: allProducts, error: fetchError } = await supabase
+    .from('products')
+    .select('id, cj_product_id, sku, name')
+    .not('cj_product_id', 'is', null)
+    .order('id', { ascending: true });
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch products: ${fetchError.message}`);
+  }
+
+  const products: Product[] = allProducts || [];
+  const totalProducts = products.length;
+
+  if (totalProducts === 0) {
+    await updateSyncProgress(supabase, {
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+    });
+    return {
+      success: true,
+      synced: 0,
+      errors: 0,
+      errorMessages: [],
+      message: 'No products to sync',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // If offset is 0, reset progress for a new sync run
+  if (offset === 0) {
+    await updateSyncProgress(supabase, {
+      last_offset: 0,
+      total_products: totalProducts,
+      synced_count: 0,
+      error_count: 0,
+      status: 'running',
+      started_at: new Date().toISOString(),
+      completed_at: null,
+      error_messages: [],
+    });
+  }
+
+  // Get batch
+  const batch = products.slice(offset, offset + BATCH_SIZE);
+  
+  if (batch.length === 0) {
+    // No more products - sync complete
+    await updateSyncProgress(supabase, {
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+    });
+
+    const finalProgress = await getOrCreateSyncProgress(supabase);
+    
+    // Log cron completion if applicable
+    if (isCronJob) {
+      await supabase.from('cron_job_logs').insert({
+        job_name: 'nightly-stock-sync',
+        status: 'completed',
+        success: finalProgress.error_count === 0,
+        items_processed: finalProgress.synced_count,
+        items_failed: finalProgress.error_count,
+        started_at: finalProgress.started_at,
+        completed_at: new Date().toISOString(),
+        details: { totalProducts, errorMessages: finalProgress.error_messages?.slice(0, 10) },
+      });
+    }
+
+    return {
+      success: finalProgress.error_count === 0,
+      synced: finalProgress.synced_count,
+      errors: finalProgress.error_count,
+      errorMessages: finalProgress.error_messages || [],
+      message: `Sync completed. ${finalProgress.synced_count} products updated, ${finalProgress.error_count} errors.`,
+      timestamp: new Date().toISOString(),
+      progress: {
+        current: totalProducts,
+        total: totalProducts,
+        status: 'completed',
+        hasMore: false,
+      },
+    };
+  }
+
+  console.log(`Processing batch: offset ${offset}, size ${batch.length}, total ${totalProducts}`);
+
+  let batchSynced = 0;
+  let batchErrors = 0;
+  const batchErrorMessages: string[] = [];
+
+  for (let i = 0; i < batch.length; i++) {
+    const product = batch[i];
+
+    try {
+      const inventoryResponse = await getProductInventory(accessToken, product.cj_product_id);
+
+      if (!inventoryResponse.result) {
+        console.error(`Failed to get inventory for ${product.name}:`, inventoryResponse.message);
+        batchErrorMessages.push(`${product.name}: ${inventoryResponse.message || 'Unknown error'}`);
+        batchErrors++;
+        continue;
       }
 
-      return await response.json();
+      // Calculate total stock (prefer US warehouse)
+      let totalStock = 0;
+      const inventoryData = inventoryResponse.data;
+
+      if (Array.isArray(inventoryData)) {
+        for (const inv of inventoryData) {
+          if (inv.countryCode === 'US') {
+            totalStock += inv.totalInventoryNum || 0;
+          } else if (inv.countryCode === 'CN' && totalStock === 0) {
+            totalStock = inv.totalInventoryNum || 0;
+          }
+        }
+      }
+
+      // Update product stock
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({
+          stock: totalStock,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', product.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      console.log(`✓ [${offset + i + 1}/${totalProducts}] ${product.name}: stock = ${totalStock}`);
+      batchSynced++;
+
+      // Delay between API calls to avoid rate limiting
+      if (i < batch.length - 1) {
+        await sleep(API_DELAY_MS);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      console.error(`Error syncing ${product.name}:`, errorMsg);
+      batchErrorMessages.push(`${product.name}: ${errorMsg}`);
+      batchErrors++;
+    }
+  }
+
+  // Update progress
+  const currentProgress = await getOrCreateSyncProgress(supabase);
+  const newOffset = offset + batch.length;
+  const newSyncedCount = (currentProgress.synced_count || 0) + batchSynced;
+  const newErrorCount = (currentProgress.error_count || 0) + batchErrors;
+  const newErrorMessages = [...(currentProgress.error_messages || []), ...batchErrorMessages].slice(-50);
+  const hasMore = newOffset < totalProducts;
+
+  await updateSyncProgress(supabase, {
+    last_offset: newOffset,
+    synced_count: newSyncedCount,
+    error_count: newErrorCount,
+    error_messages: newErrorMessages,
+    last_sync_at: new Date().toISOString(),
+    status: hasMore ? 'running' : 'completed',
+    completed_at: hasMore ? null : new Date().toISOString(),
+  });
+
+  console.log(`Batch complete: ${batchSynced} synced, ${batchErrors} errors. Next offset: ${newOffset}`);
+
+  return {
+    success: batchErrors === 0,
+    synced: batchSynced,
+    errors: batchErrors,
+    errorMessages: batchErrorMessages,
+    message: hasMore
+      ? `Batch complete. ${batchSynced} synced, ${batchErrors} errors. Processing ${newOffset}/${totalProducts}...`
+      : `Sync completed! ${newSyncedCount} products updated, ${newErrorCount} errors.`,
+    timestamp: new Date().toISOString(),
+    progress: {
+      current: newOffset,
+      total: totalProducts,
+      status: hasMore ? 'running' : 'completed',
+      hasMore,
     },
-    {
-      maxRetries: 2, // Reduce retries to avoid hammering the API
-      baseDelayMs: 3000, // Start with 3 second delay between retries
-      maxDelayMs: 15000, // Max 15 seconds
-      shouldRetry: isRetryableError,
-      onRetry: (attempt, error, delayMs) => {
-        console.log(`Retrying inventory fetch for ${productId} (attempt ${attempt}): ${error.message}`);
-      },
-    }
-  );
+  };
 }
 
-// Log cron job start
-// deno-lint-ignore no-explicit-any
-async function logCronStart(supabase: any, jobName: string): Promise<string> {
-  try {
-    const { data, error } = await supabase
-      .from('cron_job_logs')
-      .insert({
-        job_name: jobName,
-        status: 'running',
-        started_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single();
-
-    if (error) {
-      console.error('Failed to log cron start:', error);
-      return '';
-    }
-    return data?.id || '';
-  } catch (err) {
-    console.error('Failed to log cron start:', err);
-    return '';
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
-}
-
-// Log cron job completion
-// deno-lint-ignore no-explicit-any
-async function logCronComplete(
-  supabase: any,
-  logId: string,
-  success: boolean,
-  itemsProcessed: number,
-  itemsFailed: number,
-  errorMessage?: string,
-  details?: Record<string, unknown>
-): Promise<void> {
-  if (!logId) return;
-  
-  try {
-    const { error } = await supabase
-      .from('cron_job_logs')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        success,
-        items_processed: itemsProcessed,
-        items_failed: itemsFailed,
-        error_message: errorMessage,
-        details: details || {},
-      })
-      .eq('id', logId);
-
-    if (error) {
-      console.error('Failed to log cron completion:', error);
-    }
-  } catch (err) {
-    console.error('Failed to log cron completion:', err);
-  }
-}
-
-// Main sync function
-async function syncAllProductStock(isCronJob = false): Promise<SyncResult> {
-  console.log('=== Starting scheduled stock sync ===');
-  console.log('Time:', new Date().toISOString());
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  const errorMessages: string[] = [];
-  let cronLogId = '';
-
-  // Log start if cron job
-  if (isCronJob) {
-    cronLogId = await logCronStart(supabase, 'nightly-stock-sync');
-  }
-
   try {
-    // Get access token with retry
-    const accessToken = await getAccessToken();
-
-    // Get all products that have CJ product IDs
-    const { data: products, error: fetchError } = await supabase
-      .from('products')
-      .select('id, cj_product_id, sku, name')
-      .not('cj_product_id', 'is', null);
-
-    if (fetchError) {
-      console.error('Error fetching products:', fetchError);
-      throw new Error(`Failed to fetch products: ${fetchError.message}`);
+    // Parse request body for options
+    let body: { action?: string; offset?: number; source?: string } = {};
+    try {
+      body = await req.json();
+    } catch {
+      // Empty body is fine
     }
 
-    if (!products || products.length === 0) {
-      console.log('No products with CJ product IDs found');
-      
-      if (isCronJob) {
-        await logCronComplete(supabase, cronLogId, true, 0, 0, undefined, { message: 'No products to sync' });
-      }
-      
-      return { 
-        success: true,
-        synced: 0, 
-        errors: 0, 
-        errorMessages: [],
-        message: 'No products to sync',
-        timestamp: new Date().toISOString(),
-      };
-    }
-
-    console.log(`Found ${products.length} products to sync`);
-
-    let synced = 0;
-    let errors = 0;
-
-    for (let i = 0; i < products.length; i++) {
-      const product = products[i];
-      
-      try {
-        const inventoryResponse = await getProductInventory(accessToken, product.cj_product_id);
-        
-        if (!inventoryResponse.result) {
-          console.error(`Failed to get inventory for ${product.name}:`, inventoryResponse.message);
-          errorMessages.push(`${product.name}: ${inventoryResponse.message || 'Unknown error'}`);
-          errors++;
-          continue;
-        }
-
-        // Calculate total stock (prefer US warehouse)
-        let totalStock = 0;
-        const inventoryData = inventoryResponse.data;
-        
-        if (Array.isArray(inventoryData)) {
-          for (const inv of inventoryData) {
-            if (inv.countryCode === 'US') {
-              totalStock += inv.totalInventoryNum || 0;
-            } else if (inv.countryCode === 'CN' && totalStock === 0) {
-              totalStock = inv.totalInventoryNum || 0;
-            }
-          }
-        }
-
-        // Update product stock with retry
-        await withRetry(
-          async () => {
-            const { error: updateError } = await supabase
-              .from('products')
-              .update({ 
-                stock: totalStock,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', product.id);
-
-            if (updateError) {
-              throw updateError;
-            }
-          },
-          {
-            maxRetries: 2,
-            baseDelayMs: 500,
-            shouldRetry: (err) => err.message.includes('network') || err.message.includes('timeout'),
-          }
-        );
-
-        console.log(`✓ [${i + 1}/${products.length}] ${product.name}: stock = ${totalStock}`);
-        synced++;
-
-        // Delay to avoid CJ API rate limiting (429 errors)
-        // CJ API requires longer delays - using 3 seconds between requests
-        await sleep(3000);
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
-        console.error(`Error syncing ${product.name}:`, errorMsg);
-        errorMessages.push(`${product.name}: ${errorMsg}`);
-        errors++;
-      }
-    }
-
-    console.log('=== Stock sync completed ===');
-    console.log(`Synced: ${synced}, Errors: ${errors}`);
-
-    // Log completion if cron job
-    if (isCronJob) {
-      await logCronComplete(supabase, cronLogId, errors === 0, synced, errors, 
-        errors > 0 ? errorMessages.slice(0, 5).join('; ') : undefined,
-        { totalProducts: products.length, errorMessages: errorMessages.slice(0, 10) }
-      );
-    }
-
-    return { 
-      success: errors === 0,
-      synced, 
-      errors,
-      errorMessages,
-      message: `Stock sync completed. ${synced} products updated, ${errors} errors.`,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    
-    // Log failure if cron job
-    if (isCronJob && cronLogId) {
-      await logCronComplete(supabase, cronLogId, false, 0, 1, errorMsg);
-    }
-    
-    throw error;
-  }
-}
-
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    // Check if this is a cron job call (internal scheduled call via Authorization header)
     const authHeader = req.headers.get('Authorization');
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    // If the Authorization header contains the service role key, it's a cron job
-    if (authHeader === `Bearer ${serviceRoleKey}`) {
-      console.log('=== Cron job triggered stock sync (bypassing rate limit) ===');
-      const result = await syncAllProductStock(true); // Pass true for cron job
-      return new Response(JSON.stringify(result), {
+    const isCronJob = body.source === 'cron' || authHeader === `Bearer ${supabaseServiceKey}`;
+
+    // Auth check for non-cron requests
+    if (!isCronJob) {
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY')!;
+      const authClient = createClient(supabaseUrl, supabaseAnon, {
+        global: { headers: { Authorization: authHeader } }
+      });
+
+      const { data: { user }, error: userError } = await authClient.auth.getUser();
+      if (userError || !user) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (!roleData) {
+        return new Response(
+          JSON.stringify({ error: 'Admin access required' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Handle different actions
+    const action = body.action || 'sync-batch';
+    let offset = body.offset ?? 0;
+
+    if (action === 'status') {
+      // Return current progress
+      const progress = await getOrCreateSyncProgress(supabase);
+      return new Response(JSON.stringify(progress), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Authenticate user - require admin role (authHeader already defined above)
-    if (!authHeader?.startsWith('Bearer ')) {
-      console.error('No authorization header provided');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - no authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const authSupabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    const { data: { user }, error: userError } = await authSupabase.auth.getUser();
-    
-    if (userError || !user) {
-      console.error('User verification failed:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const userId = user.id;
-    console.log(`Authenticated user: ${userId}`);
-
-    // Check if user is admin
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    const { data: roleData, error: roleError } = await adminSupabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .maybeSingle();
-
-    if (roleError || !roleData) {
-      console.error('Admin check failed:', roleError || 'User is not admin');
-      return new Response(
-        JSON.stringify({ error: 'Forbidden - admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`Admin verified for user: ${userId}`);
-
-    // Check rate limit (30 requests per hour for sync-stock)
-    const { data: rateLimitData, error: rateLimitError } = await adminSupabase
-      .rpc('check_rate_limit', {
-        p_user_id: userId,
-        p_function_name: 'sync-stock',
-        p_max_requests: 30,
-        p_window_minutes: 60
+    if (action === 'reset') {
+      // Reset progress
+      await updateSyncProgress(supabase, {
+        last_offset: 0,
+        synced_count: 0,
+        error_count: 0,
+        status: 'idle',
+        started_at: null,
+        completed_at: null,
+        error_messages: [],
       });
-
-    if (rateLimitError) {
-      console.error('Rate limit check failed:', rateLimitError);
-    } else if (rateLimitData && rateLimitData.length > 0 && !rateLimitData[0].allowed) {
-      console.log(`Rate limit exceeded for user: ${userId}`);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Rate limit exceeded. Please try again later.',
-          reset_at: rateLimitData[0].reset_at
-        }),
-        { 
-          status: 429, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json',
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': rateLimitData[0].reset_at
-          } 
-        }
-      );
+      return new Response(JSON.stringify({ success: true, message: 'Progress reset' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const result = await syncAllProductStock();
-    
+    // For cron jobs, check if there's a running sync to resume
+    if (isCronJob && offset === 0) {
+      const existingProgress = await getOrCreateSyncProgress(supabase);
+      if (existingProgress.status === 'running' && existingProgress.last_offset > 0) {
+        // Resume from where we left off
+        offset = existingProgress.last_offset;
+        console.log(`Resuming cron sync from offset ${offset}`);
+      } else {
+        // Reset for fresh start
+        await updateSyncProgress(supabase, {
+          last_offset: 0,
+          synced_count: 0,
+          error_count: 0,
+          status: 'running',
+          started_at: new Date().toISOString(),
+          completed_at: null,
+          error_messages: [],
+        });
+      }
+    }
+
+    // Get access token
+    const accessToken = await getAccessToken(supabase);
+
+    // Run batch sync
+    const result = await syncBatch(supabase, accessToken, offset, isCronJob);
+
+    // For cron jobs: if there's more to process, trigger next batch
+    if (isCronJob && result.progress?.hasMore) {
+      const nextOffset = result.progress.current;
+      console.log(`Cron job scheduling next batch at offset ${nextOffset}`);
+      
+      // Use fetch to trigger next batch (fire and forget)
+      const functionUrl = `${supabaseUrl}/functions/v1/sync-stock`;
+      fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({ source: 'cron', offset: nextOffset }),
+      }).catch(err => console.error('Failed to trigger next batch:', err));
+    }
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Stock sync error:', errorMessage);
-    
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: errorMessage,
         success: false,
         synced: 0,
