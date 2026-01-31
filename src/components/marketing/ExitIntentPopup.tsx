@@ -97,7 +97,7 @@ const ExitPopupContent = forwardRef<HTMLDivElement, {
             {/* Benefits list */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               {[
-                '🚚 Free Shipping $50+',
+                '🚚 Free US Shipping $35+',
                 '🔄 30-Day Returns',
                 '⭐ Premium Quality',
                 '💝 Pet-Approved'
