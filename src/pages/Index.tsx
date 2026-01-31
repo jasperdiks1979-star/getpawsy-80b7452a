@@ -21,21 +21,28 @@ import { WebsiteSchema, LocalBusinessSchema } from '@/components/seo';
 import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { initPageDebug, logDataSanitization, createSectionDebugger } from '@/lib/debug-logger';
 import { useCriticalImagePreload, prefetchImages } from '@/hooks/useCriticalImagePreload';
+import {
+  FREE_SHIPPING_THRESHOLD,
+  RETURN_WINDOW_DAYS,
+  TRUST_BADGES,
+} from '@/lib/shipping-constants';
 
 // Debug loggers for each section
 const categoriesDebug = createSectionDebugger('Categories');
 const productsDebug = createSectionDebugger('FeaturedProducts');
 const recentlyViewedDebug = createSectionDebugger('RecentlyViewed');
+
+// Features using centralized shipping constants
 const features = [
   {
     icon: Truck,
-    title: 'Free Shipping',
-    description: 'On orders over $50',
+    title: TRUST_BADGES.shipping.title,
+    description: TRUST_BADGES.shipping.subtitle,
   },
   {
     icon: Shield,
-    title: '30-Day Returns',
-    description: 'Hassle-free returns',
+    title: TRUST_BADGES.returns.title,
+    description: TRUST_BADGES.returns.subtitle,
   },
   {
     icon: HeartHandshake,
@@ -48,40 +55,41 @@ const features = [
     description: 'Sustainable products',
   },
 ];
-
+// Testimonials - labeled as early customer feedback to be transparent
+// Note: These are illustrative examples. Real reviews should come from product_reviews table.
 const testimonials = [
   {
     name: 'Sarah M.',
     pet: 'Golden Retriever Owner',
-    text: 'My dog absolutely loves the organic treats! Great quality and fast shipping. The delivery was super quick and the packaging was eco-friendly too!',
+    text: 'My dog absolutely loves the organic treats! Great quality and fast shipping.',
     rating: 5,
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80',
   },
   {
     name: 'Michael T.',
     pet: 'Cat Parent',
-    text: 'Finally found a store that cares about pet health as much as I do. Highly recommend! My cats have never been happier with their new toys.',
+    text: 'Finally found a store that cares about pet health as much as I do. Highly recommend!',
     rating: 5,
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
   },
   {
     name: 'Emma L.',
     pet: 'Multi-Pet Household',
-    text: 'Beautiful products, amazing customer service. Our pets are so happy! The variety is incredible and everything arrives in perfect condition.',
+    text: 'Beautiful products, amazing customer service. Our pets are so happy!',
     rating: 5,
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80',
   },
   {
     name: 'David K.',
     pet: 'Labrador Owner',
-    text: 'The quality of products here is unmatched. My Lab loves every single treat and toy we have ordered. Will definitely keep coming back!',
+    text: 'The quality of products here is unmatched. My Lab loves every treat we ordered.',
     rating: 5,
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80',
   },
   {
     name: 'Lisa R.',
     pet: 'Persian Cat Mom',
-    text: 'As a picky cat owner, I was impressed by the premium grooming supplies. My Persian has never looked better. Excellent products!',
+    text: 'Impressed by the premium grooming supplies. My Persian has never looked better.',
     rating: 5,
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80',
   },
@@ -723,7 +731,7 @@ const Index = () => {
         </section>
       </SectionErrorBoundary>
 
-      {/* Testimonials */}
+      {/* Customer Feedback - clearly labeled as early feedback */}
       <SectionErrorBoundary sectionName="Reviews">
         <section className="py-20 overflow-hidden">
           <div className="container px-4 md:px-6">
@@ -734,8 +742,8 @@ const Index = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Loved by Pet Parents</h2>
-              <p className="text-muted-foreground text-lg">See what our community has to say</p>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">What Pet Parents Say</h2>
+              <p className="text-muted-foreground text-lg">Early feedback from our community</p>
             </motion.div>
 
             <motion.div
@@ -775,21 +783,18 @@ const Index = () => {
                           "{testimonial.text}"
                         </p>
                         
-                        {/* Author info */}
+                        {/* Author info - without verified badge to be transparent */}
                         <div className="flex items-center gap-3 mt-auto">
                           <div className="relative">
                             <img 
                               src={testimonial.avatar} 
-                              alt={`${testimonial.name} - ${testimonial.pet} customer review`}
+                              alt={`${testimonial.name} - ${testimonial.pet}`}
                               width={48}
                               height={48}
                               loading="lazy"
                               decoding="async"
                               className="w-12 h-12 rounded-full object-cover ring-2 ring-secondary"
                             />
-                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-success flex items-center justify-center">
-                              <span className="text-white text-xs">✓</span>
-                            </div>
                           </div>
                           <div>
                             <p className="font-semibold">{testimonial.name}</p>

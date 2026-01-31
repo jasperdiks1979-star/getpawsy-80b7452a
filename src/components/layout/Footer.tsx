@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, Send, ArrowRight, RotateCcw, Cookie } from 'lucide-react';
+import { Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, Send, ArrowRight, RotateCcw, Cookie, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { DebugPanel } from './DebugPanel';
+import {
+  SUPPORT_EMAIL,
+  RESPONSE_TIME,
+  BUSINESS_NAME,
+  FREE_SHIPPING_THRESHOLD,
+  RETURN_WINDOW_DAYS,
+} from '@/lib/shipping-constants';
 
 const emailSchema = z.string().trim().email({ message: 'Invalid email address' }).max(255);
 
@@ -197,16 +204,27 @@ export const Footer = () => {
                 ))}
               </div>
 
-              {/* Contact Info */}
+              {/* Contact Info - Enhanced with response time */}
               <div className="space-y-3 pt-2">
-                <a href="mailto:support@getpawsy.pet" className="flex items-center gap-3 text-sm text-background/70 hover:text-primary transition-colors">
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="flex items-center gap-3 text-sm text-background/70 hover:text-primary transition-colors">
                   <Mail className="w-4 h-4" />
-                  <span>support@getpawsy.pet</span>
+                  <span>{SUPPORT_EMAIL}</span>
                 </a>
                 <div className="flex items-center gap-3 text-sm text-background/70">
-                  <MapPin className="w-4 h-4" />
-                  <span>Apeldoorn, Nederland 🇳🇱</span>
+                  <Clock className="w-4 h-4" />
+                  <span>{RESPONSE_TIME}</span>
                 </div>
+                <div className="flex items-center gap-3 text-sm text-background/70">
+                  <MapPin className="w-4 h-4" />
+                  <span>US-based support 🇺🇸</span>
+                </div>
+              </div>
+              
+              {/* Trust highlights */}
+              <div className="pt-4 space-y-2 text-sm text-background/60">
+                <p>✓ Free shipping on orders ${FREE_SHIPPING_THRESHOLD}+</p>
+                <p>✓ {RETURN_WINDOW_DAYS}-day hassle-free returns</p>
+                <p>✓ Secure checkout via Stripe</p>
               </div>
             </div>
 

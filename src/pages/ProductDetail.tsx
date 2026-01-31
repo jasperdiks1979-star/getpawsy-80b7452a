@@ -39,6 +39,12 @@ import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
 import { CustomersAlsoBought } from '@/components/products/CustomersAlsoBought';
 import {
+  DELIVERY_TIME_STANDARD,
+  RETURNS_POLICY_SHORT,
+  US_WAREHOUSE_NOTE,
+  TRUST_BADGES,
+} from '@/lib/shipping-constants';
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -1127,10 +1133,10 @@ const ProductDetail = () => {
               className="grid grid-cols-2 gap-4 pt-6 border-t border-border/50"
             >
               {[
-                { icon: Truck, title: 'Free Shipping', subtitle: 'On all orders' },
-                { icon: Shield, title: '30-Day Returns', subtitle: 'Not happy? Money back!' },
+                { icon: Truck, title: TRUST_BADGES.shipping.title, subtitle: TRUST_BADGES.shipping.subtitle },
+                { icon: Shield, title: TRUST_BADGES.returns.title, subtitle: RETURNS_POLICY_SHORT },
                 { icon: RotateCcw, title: 'Easy Exchanges', subtitle: 'Free exchanges' },
-                { icon: Award, title: 'Quality Guarantee', subtitle: '100% satisfied' },
+                { icon: Award, title: TRUST_BADGES.quality.title, subtitle: TRUST_BADGES.quality.subtitle },
               ].map((feature, idx) => (
                 <motion.div 
                   key={feature.title}

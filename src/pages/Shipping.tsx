@@ -3,21 +3,28 @@ import { motion } from 'framer-motion';
 import { Truck, Clock, MapPin, Package, CheckCircle, AlertCircle, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import {
+  FREE_SHIPPING_THRESHOLD,
+  DELIVERY_TIME_STANDARD,
+  DELIVERY_TIME_EXPRESS,
+  PROCESSING_TIME,
+  US_WAREHOUSE_NOTE,
+} from '@/lib/shipping-constants';
 
 const Shipping = () => {
   const shippingMethods = [
     {
-      name: 'Standard Shipping',
-      time: '7-21 business days',
-      price: 'FREE',
-      description: 'Free standard shipping on all orders worldwide',
+      name: 'Standard US Shipping',
+      time: DELIVERY_TIME_STANDARD,
+      price: `FREE on orders $${FREE_SHIPPING_THRESHOLD}+`,
+      description: `Fast delivery from US warehouses. ${US_WAREHOUSE_NOTE}.`,
       icon: Truck,
     },
     {
       name: 'Express Shipping',
-      time: '5-10 business days',
+      time: DELIVERY_TIME_EXPRESS,
       price: 'From $9.99',
-      description: 'Faster delivery for urgent orders (where available)',
+      description: 'Priority handling for urgent orders (where available)',
       icon: Package,
     },
   ];
@@ -27,19 +34,19 @@ const Shipping = () => {
       step: 1,
       title: 'Order Processing',
       description: 'Your order is received and prepared for shipment',
-      time: '1-3 business days',
+      time: PROCESSING_TIME,
     },
     {
       step: 2,
       title: 'Shipped',
-      description: 'Your package leaves our fulfillment center',
-      time: 'Tracking number provided',
+      description: 'Your package leaves our US fulfillment center',
+      time: 'Tracking number provided via email',
     },
     {
       step: 3,
       title: 'In Transit',
       description: 'Your package is on its way to you',
-      time: '5-12 business days',
+      time: '3-7 business days (US)',
     },
     {
       step: 4,
@@ -50,12 +57,10 @@ const Shipping = () => {
   ];
 
   const carriers = [
-    { name: 'DHL', description: 'DHL Express Worldwide' },
+    { name: 'USPS', description: 'United States Postal Service' },
     { name: 'UPS', description: 'United Parcel Service' },
     { name: 'FedEx', description: 'Federal Express' },
-    { name: 'PostNL', description: 'Netherlands Postal Service' },
-    { name: 'USPS', description: 'United States Postal Service' },
-    { name: 'Local Carriers', description: 'Regional delivery partners' },
+    { name: 'DHL', description: 'DHL Express' },
   ];
 
   return (
@@ -85,11 +90,11 @@ const Shipping = () => {
               <div className="flex items-center justify-center gap-3 mb-2">
                 <CheckCircle className="w-6 h-6 text-green-600" />
                 <span className="text-2xl font-display font-bold text-foreground">
-                  FREE Shipping on All Orders!
+                  FREE US Shipping on Orders ${FREE_SHIPPING_THRESHOLD}+
                 </span>
               </div>
               <p className="text-muted-foreground">
-                Enjoy free standard shipping on every order worldwide. No minimum purchase required.
+                Enjoy fast, reliable delivery from our US warehouses. Most orders arrive within {DELIVERY_TIME_STANDARD}.
               </p>
             </div>
 
@@ -185,10 +190,10 @@ const Shipping = () => {
                 <div className="flex items-start gap-4 mb-4">
                   <MapPin className="w-6 h-6 text-primary flex-shrink-0" />
                   <div>
-                    <h3 className="font-semibold text-foreground mb-2">Worldwide Shipping</h3>
+                    <h3 className="font-semibold text-foreground mb-2">US-Focused Shipping</h3>
                     <p className="text-muted-foreground">
-                      We ship to most countries worldwide. Delivery times vary by location. 
-                      Most orders arrive within 7-21 business days depending on your destination.
+                      We primarily serve customers in the United States with fast domestic shipping from US warehouses. 
+                      Most US orders arrive within {DELIVERY_TIME_STANDARD}.
                     </p>
                   </div>
                 </div>
@@ -197,11 +202,11 @@ const Shipping = () => {
                     <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-1">
-                        Customs & Import Duties
+                        International Orders
                       </p>
                       <p className="text-sm text-blue-700 dark:text-blue-300">
-                        International orders may be subject to customs fees and import duties. 
-                        These charges are the responsibility of the recipient and vary by country.
+                        We do ship internationally, but delivery times are longer (10-20 business days). 
+                        International orders may be subject to customs fees and import duties, which are the responsibility of the recipient.
                       </p>
                     </div>
                   </div>

@@ -1,4 +1,13 @@
 import { Helmet } from 'react-helmet-async';
+import {
+  FREE_SHIPPING_THRESHOLD,
+  DELIVERY_TIME_STANDARD,
+  RETURN_WINDOW_DAYS,
+  SUPPORT_EMAIL,
+  FAQ_SHIPPING_ANSWER,
+  FAQ_RETURNS_ANSWER,
+  FAQ_INTERNATIONAL_ANSWER,
+} from '@/lib/shipping-constants';
 
 interface FAQItem {
   question: string;
@@ -36,15 +45,15 @@ export function FAQSchema({ faqs, pageUrl }: FAQSchemaProps) {
   );
 }
 
-// Common pet product FAQs that can be reused
+// Common pet product FAQs that can be reused - using centralized constants
 export const COMMON_PRODUCT_FAQS: FAQItem[] = [
   {
     question: 'What is your shipping policy?',
-    answer: 'We offer free shipping on all orders over $50. Standard delivery takes 5-14 business days. Express shipping options are available at checkout.',
+    answer: FAQ_SHIPPING_ANSWER,
   },
   {
     question: 'What is your return policy?',
-    answer: 'We offer a 30-day money-back guarantee on all products. If you\'re not satisfied, you can return the item for a full refund. Simply contact our customer service team to initiate a return.',
+    answer: FAQ_RETURNS_ANSWER,
   },
   {
     question: 'Are your products safe for pets?',
@@ -56,7 +65,7 @@ export const COMMON_PRODUCT_FAQS: FAQItem[] = [
   },
   {
     question: 'Do you ship internationally?',
-    answer: 'Yes, we ship to the US, UK, Netherlands, Germany, France, Belgium, Australia, and Canada. International shipping times vary by location.',
+    answer: FAQ_INTERNATIONAL_ANSWER,
   },
 ];
 
