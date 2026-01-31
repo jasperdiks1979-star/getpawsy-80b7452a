@@ -1083,14 +1083,33 @@ export const AnalyticsDashboard = ({ isConfigured = false }: AnalyticsDashboardP
   }
 
   if (error && !isLoading) {
+    // Check if it's a permissions error
+    const isPermissionsError = error.toLowerCase().includes('permission') || 
+                               error.toLowerCase().includes('403') ||
+                               error.toLowerCase().includes('insufficient');
+    
     return (
       <Card className="border-destructive">
         <CardContent className="flex flex-col items-center justify-center py-16 text-center">
           <div className="p-4 bg-destructive/10 rounded-full mb-6">
             <AlertCircle className="w-12 h-12 text-destructive" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">Fout bij laden analytics</h3>
-          <p className="text-muted-foreground max-w-md mb-6">{error}</p>
+          <h3 className="text-xl font-semibold mb-2">
+            {isPermissionsError ? 'GA4 Permissie Probleem' : 'Fout bij laden analytics'}
+          </h3>
+          <p className="text-muted-foreground max-w-md mb-4">{error}</p>
+          
+          {isPermissionsError && (
+            <div className="bg-muted/50 rounded-lg p-4 max-w-lg text-left mb-6">
+              <p className="text-sm font-medium mb-2">Oplossing:</p>
+              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Ga naar Google Analytics → Admin → Property Access Management</li>
+                <li>Voeg het service account email toe als "Viewer"</li>
+                <li>Controleer of de GA4 Property ID correct is geconfigureerd</li>
+              </ol>
+            </div>
+          )}
+          
           <Button onClick={handleRefresh} disabled={isRefreshing}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
             Opnieuw proberen
