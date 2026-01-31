@@ -128,3 +128,6 @@ verify_jwt = false
 
 [functions.product-research]
 verify_jwt = false
+
+[functions.pinterest-ads]
+verify_jwt = false

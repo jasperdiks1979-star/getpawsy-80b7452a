@@ -58,6 +58,7 @@ import { SecurityIssuesWidget } from "./SecurityIssuesWidget";
 import { CronJobsWidget } from "./CronJobsWidget";
 import { CrawlerVisitsWidget } from "./CrawlerVisitsWidget";
 import { PinterestTrafficWidget } from "./widgets/PinterestTrafficWidget";
+import { PinterestAdsWidget } from "./widgets/PinterestAdsWidget";
 import { CompetitorProductsWidget } from "./widgets/CompetitorProductsWidget";
 import { CompetitorScrapeLogsWidget } from "./widgets/CompetitorScrapeLogsWidget";
 import { SourcingOpportunitiesWidget } from "./SourcingOpportunitiesWidget";
@@ -880,6 +881,7 @@ export const SalesDashboard = ({ onNavigateToTab }: SalesDashboardProps) => {
         <CronJobsWidget />
         <CrawlerVisitsWidget />
         <PinterestTrafficWidget />
+        <PinterestAdsWidget />
       </div>
 
       {/* Charts Row */}
