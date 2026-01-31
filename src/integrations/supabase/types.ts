@@ -2237,8 +2237,12 @@ export type Database = {
           id: string
           latitude: number | null
           longitude: number | null
+          referrer: string | null
           session_id: string
           updated_at: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           activity_type: string
@@ -2248,8 +2252,12 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          referrer?: string | null
           session_id: string
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           activity_type?: string
@@ -2259,8 +2267,12 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          referrer?: string | null
           session_id?: string
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: []
       }
