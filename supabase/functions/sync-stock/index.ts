@@ -390,8 +390,9 @@ async function syncAllProductStock(isCronJob = false): Promise<SyncResult> {
         console.log(`✓ [${i + 1}/${products.length}] ${product.name}: stock = ${totalStock}`);
         synced++;
 
-        // Small delay to avoid rate limiting
-        await sleep(200);
+        // Delay to avoid CJ API rate limiting (429 errors)
+        // CJ API requires ~1.5s between requests to avoid rate limits
+        await sleep(1500);
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error';
         console.error(`Error syncing ${product.name}:`, errorMsg);
