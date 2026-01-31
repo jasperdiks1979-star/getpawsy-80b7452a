@@ -208,14 +208,20 @@ async function getProductInventory(accessToken: string, productId: string) {
       });
 
       if (!response.ok) {
+        // For rate limits, wait longer before throwing to trigger retry
+        if (response.status === 429) {
+          console.log(`Rate limited on ${productId}, waiting 5 seconds before retry...`);
+          await sleep(5000);
+        }
         throw new Error(`Inventory request failed: ${response.status}`);
       }
 
       return await response.json();
     },
     {
-      maxRetries: 3,
-      baseDelayMs: 500,
+      maxRetries: 2, // Reduce retries to avoid hammering the API
+      baseDelayMs: 3000, // Start with 3 second delay between retries
+      maxDelayMs: 15000, // Max 15 seconds
       shouldRetry: isRetryableError,
       onRetry: (attempt, error, delayMs) => {
         console.log(`Retrying inventory fetch for ${productId} (attempt ${attempt}): ${error.message}`);
