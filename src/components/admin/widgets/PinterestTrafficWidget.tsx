@@ -23,7 +23,7 @@ export const PinterestTrafficWidget = () => {
       const { data, error } = await supabase
         .from("visitor_activity")
         .select("activity_type, utm_campaign, referrer, utm_source")
-        .or(`utm_source.ilike.%pinterest%,referrer.ilike.%pinterest%`)
+        .or(`utm_source.ilike.%pinterest%,referrer.ilike.%pinterest%,referrer.ilike.%pin.it%`)
         .gte("created_at", thirtyDaysAgo.toISOString());
       
       if (error) throw error;

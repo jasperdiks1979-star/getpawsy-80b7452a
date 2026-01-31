@@ -49,15 +49,10 @@ const getUTMParams = (): UTMParams => {
   };
 };
 
-// Get referrer domain
+// Get full referrer URL for better tracking
 const getReferrer = (): string | null => {
   if (!document.referrer) return null;
-  try {
-    const url = new URL(document.referrer);
-    return url.hostname;
-  } catch {
-    return document.referrer;
-  }
+  return document.referrer;
 };
 
 export const useVisitorTracking = () => {
