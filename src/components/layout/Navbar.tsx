@@ -379,7 +379,7 @@ export const Navbar = () => {
           >
             <div className="container flex items-center justify-center gap-2 py-2 px-4 relative">
               <Truck className="w-4 h-4" />
-              <span>Free shipping on orders over $50!</span>
+              <span>Free US shipping on orders over $35</span>
               <span className="hidden sm:inline text-primary-foreground/80">•</span>
               <span className="hidden sm:inline text-primary-foreground/80">Fast delivery 🚀</span>
               <button

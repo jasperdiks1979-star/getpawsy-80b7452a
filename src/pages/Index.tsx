@@ -408,15 +408,6 @@ const Index = () => {
                   </Button>
                 </Link>
                 
-                {/* Compact trust indicator */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-warning text-warning" />
-                    ))}
-                  </div>
-                  <span>Loved by pet parents</span>
-                </div>
               </div>
             </motion.div>
           </div>
