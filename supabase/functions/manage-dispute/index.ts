@@ -420,14 +420,81 @@ serve(async (req) => {
           );
         }
 
+        // Server-side email validation
+        const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+        if (!emailRegex.test(customerEmail) || customerEmail.length > 255 || customerEmail.length < 5) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid email address' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Validate dispute type
+        const validDisputeTypes = ['damaged', 'not_received', 'wrong_item', 'quality_issue', 'other'];
+        if (!validDisputeTypes.includes(disputeType)) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid dispute type' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Validate description length
+        if (description.length < 10 || description.length > 5000) {
+          return new Response(
+            JSON.stringify({ error: 'Description must be between 10 and 5000 characters' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Validate evidence URLs if provided
+        if (evidence && Array.isArray(evidence)) {
+          if (evidence.length > 10) {
+            return new Response(
+              JSON.stringify({ error: 'Maximum 10 evidence items allowed' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          
+          const urlPattern = /^https?:\/\/.+/i;
+          for (const url of evidence) {
+            if (typeof url !== 'string' || url.length > 2000 || !urlPattern.test(url)) {
+              return new Response(
+                JSON.stringify({ error: 'Invalid evidence URL format' }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            }
+          }
+        }
+
+        // IP-based rate limiting (5 disputes per hour per IP)
+        const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                         req.headers.get('cf-connecting-ip') || 
+                         'unknown';
+        
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        
+        // Check recent disputes from this IP (using customer email as proxy since we don't store IPs)
+        const { count: recentDisputeCount } = await supabase
+          .from('disputes')
+          .select('*', { count: 'exact', head: true })
+          .eq('customer_email', customerEmail.toLowerCase())
+          .gte('created_at', oneHourAgo);
+        
+        if (recentDisputeCount && recentDisputeCount >= 5) {
+          return new Response(
+            JSON.stringify({ error: 'Too many disputes submitted. Please try again later.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
         // Create the dispute
         const { data: dispute, error: createError } = await supabase
           .from('disputes')
           .insert({
             order_id: orderId,
-            customer_email: customerEmail,
+            customer_email: customerEmail.toLowerCase().trim(),
             dispute_type: disputeType,
-            description: description,
+            description: description.trim(),
             customer_evidence: evidence || [],
             status: 'pending',
           })
