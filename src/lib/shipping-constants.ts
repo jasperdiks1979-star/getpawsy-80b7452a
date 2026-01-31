@@ -14,7 +14,7 @@
 export const FREE_SHIPPING_THRESHOLD = 35;
 
 /** Standard delivery time for US orders */
-export const DELIVERY_TIME_STANDARD = '5-10 business days';
+export const DELIVERY_TIME_STANDARD = '3-7 business days';
 
 /** Processing time before shipping */
 export const PROCESSING_TIME = '1-3 business days';
