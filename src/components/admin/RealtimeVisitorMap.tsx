@@ -4,10 +4,11 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Loader2, ExternalLink, Eye, ShoppingCart, Target, Settings2, Flame, Move, Maximize2 } from "lucide-react";
+import { MapPin, Loader2, ExternalLink, Eye, ShoppingCart, Target, Settings2, Flame, Move, Maximize2, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useVisitorLocations } from "@/hooks/useVisitorLocations";
+import { useVisitorLocations, TimeRange } from "@/hooks/useVisitorLocations";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -23,7 +24,16 @@ interface MapConfig {
   heatmapMode: boolean;
   markerSize: number;
   autoFocus: boolean;
+  timeRange: TimeRange;
 }
+
+const TIME_RANGE_LABELS: Record<TimeRange, string> = {
+  "15m": "15 minuten",
+  "1h": "1 uur",
+  "6h": "6 uur",
+  "24h": "24 uur",
+  "7d": "7 dagen",
+};
 
 const STORAGE_KEY = "visitor-map-config";
 
@@ -31,12 +41,12 @@ const getStoredConfig = (): MapConfig => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return { ...{ heatmapMode: false, markerSize: 14, autoFocus: true }, ...JSON.parse(stored) };
+      return { ...{ heatmapMode: false, markerSize: 14, autoFocus: true, timeRange: "24h" as TimeRange }, ...JSON.parse(stored) };
     }
   } catch (e) {
     console.warn("Failed to parse stored map config:", e);
   }
-  return { heatmapMode: false, markerSize: 14, autoFocus: true };
+  return { heatmapMode: false, markerSize: 14, autoFocus: true, timeRange: "24h" as TimeRange };
 };
 
 export const RealtimeVisitorMap = () => {
@@ -47,7 +57,7 @@ export const RealtimeVisitorMap = () => {
   const [mapError, setMapError] = useState<string | null>(null);
   const [config, setConfig] = useState<MapConfig>(getStoredConfig);
   
-  const { locations, locationStats, isLoading } = useVisitorLocations(15000);
+  const { locations, locationStats, isLoading } = useVisitorLocations(15000, config.timeRange);
 
   // Persist config to localStorage
   useEffect(() => {
@@ -274,9 +284,26 @@ export const RealtimeVisitorMap = () => {
               <MapPin className="w-5 h-5 text-primary" />
               Live Bezoekerskaart
             </CardTitle>
-            <CardDescription>Geografische locaties van actieve bezoekers (laatste 15 min)</CardDescription>
+            <CardDescription>Geografische locaties van actieve bezoekers ({TIME_RANGE_LABELS[config.timeRange]})</CardDescription>
           </div>
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1">
+            {/* Time Range Selector */}
+            <Select
+              value={config.timeRange}
+              onValueChange={(value) => setConfig((prev) => ({ ...prev, timeRange: value as TimeRange }))}
+            >
+              <SelectTrigger className="h-8 w-[110px] text-xs">
+                <Clock className="w-3 h-3 mr-1" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(TIME_RANGE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value} className="text-xs">
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
