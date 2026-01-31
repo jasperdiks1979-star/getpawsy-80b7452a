@@ -236,14 +236,44 @@ const Products = () => {
     if (!products) return [];
     let result = [...products];
 
-    // Filter by search
+    // Filter by search - use multi-word matching (OR logic)
+    // This allows long search queries like "car dog bed rear seat" to find products
+    // that match ANY of the significant words (length > 2)
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(p =>
-        p.name?.toLowerCase().includes(query) ||
-        (p.description?.toLowerCase().includes(query)) ||
-        (p.category?.toLowerCase().includes(query))
-      );
+      const query = searchQuery.toLowerCase().trim();
+      
+      // Split into words and filter out common stopwords and short words
+      const stopwords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'for', 'with', 'in', 'on', 'at', 'to', 'of', 'is', 'are', 'was', 'pet', 'pets']);
+      const searchWords = query
+        .split(/\s+/)
+        .filter(word => word.length > 2 && !stopwords.has(word));
+      
+      if (searchWords.length > 0) {
+        result = result.filter(p => {
+          const name = p.name?.toLowerCase() || '';
+          const description = p.description?.toLowerCase() || '';
+          const category = p.category?.toLowerCase() || '';
+          const combinedText = `${name} ${description} ${category}`;
+          
+          // Score each product by how many search words it matches
+          const matchCount = searchWords.filter(word => combinedText.includes(word)).length;
+          
+          // Require at least 1 word match, or 2 if many search words
+          const minMatches = searchWords.length >= 4 ? 2 : 1;
+          return matchCount >= minMatches;
+        });
+        
+        // Sort by match relevance (more matches = higher)
+        result.sort((a, b) => {
+          const aText = `${a.name?.toLowerCase() || ''} ${a.description?.toLowerCase() || ''} ${a.category?.toLowerCase() || ''}`;
+          const bText = `${b.name?.toLowerCase() || ''} ${b.description?.toLowerCase() || ''} ${b.category?.toLowerCase() || ''}`;
+          
+          const aMatches = searchWords.filter(word => aText.includes(word)).length;
+          const bMatches = searchWords.filter(word => bText.includes(word)).length;
+          
+          return bMatches - aMatches;
+        });
+      }
     }
 
     // Filter by price range
