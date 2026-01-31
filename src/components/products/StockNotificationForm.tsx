@@ -18,8 +18,17 @@ export function StockNotificationForm({ productId, productName }: StockNotificat
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !email.includes('@')) {
+    // Enhanced email validation
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    const trimmedEmail = email.trim().toLowerCase();
+    
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
       toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    if (trimmedEmail.length < 5 || trimmedEmail.length > 255) {
+      toast.error('Email address must be between 5 and 255 characters');
       return;
     }
 
@@ -30,7 +39,7 @@ export function StockNotificationForm({ productId, productName }: StockNotificat
         .from('stock_notifications')
         .insert({
           product_id: productId,
-          email: email.toLowerCase().trim(),
+          email: trimmedEmail,
         });
 
       if (error) {
