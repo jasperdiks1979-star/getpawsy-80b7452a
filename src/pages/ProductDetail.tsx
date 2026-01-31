@@ -1130,12 +1130,16 @@ const ProductDetail = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="text-center text-sm text-muted-foreground pt-4"
+              className="text-center text-sm text-muted-foreground pt-5 pb-2"
             >
-              <p className="mb-1">
-                <span className="font-medium text-foreground">Fast US shipping</span> • Free shipping over $35 • 30-day hassle-free returns
+              <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+                <span className="font-medium text-foreground">Fast US shipping</span>
+                <span className="text-border">•</span>
+                <span>Free shipping over $35</span>
+                <span className="text-border">•</span>
+                <span>30-day hassle-free returns</span>
               </p>
-              <p>
+              <p className="mt-1.5 text-xs">
                 Secure checkout • Real customer support
               </p>
             </motion.div>

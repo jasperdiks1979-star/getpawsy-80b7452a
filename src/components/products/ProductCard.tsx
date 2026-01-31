@@ -223,26 +223,24 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
         </div>
 
         {/* Content */}
-        <div className="p-5">
+        <div className="p-5 space-y-3">
           {product.category && (
-            <p className="text-xs text-primary font-medium uppercase tracking-wider mb-2">
+            <p className="text-xs text-primary font-medium uppercase tracking-wider">
               {safeString(product.category)}
             </p>
           )}
-          <h3 className="font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-lg leading-snug">
+          <h3 className="font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-base leading-snug min-h-[2.5rem]">
             {safeString(product.name)}
           </h3>
 
           {/* Rating Stars */}
           {rating !== undefined && reviewCount !== undefined && reviewCount > 0 && (
-            <div className="mt-2">
-              <StarRating rating={rating} reviewCount={reviewCount} size="sm" />
-            </div>
+            <StarRating rating={rating} reviewCount={reviewCount} size="sm" />
           )}
 
           {/* Price */}
-          <div className="flex items-center gap-2 mt-3">
-            <span className="text-xl font-bold text-primary">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold text-primary">
               ${safePrice(product.price)}
             </span>
             {product.compare_at_price && (
@@ -252,8 +250,13 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
             )}
           </div>
 
+          {/* Micro Trust Text - Ships from US */}
+          <p className="text-xs text-muted-foreground">
+            Ships from US when available
+          </p>
+
           {/* Mobile Actions */}
-          <div className="flex gap-2 mt-4 md:hidden">
+          <div className="flex gap-2 pt-1 md:hidden">
             <Button
               className="flex-1 gap-2 rounded-full"
               size="sm"
@@ -276,7 +279,7 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
 
           {/* Stock indicator */}
           {product.stock === 0 && (
-            <p className="text-xs text-destructive mt-3 font-medium">Out of Stock</p>
+            <p className="text-xs text-destructive font-medium">Out of Stock</p>
           )}
         </div>
         </div>
