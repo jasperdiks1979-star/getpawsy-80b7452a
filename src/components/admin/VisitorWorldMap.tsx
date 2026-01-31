@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { PinterestTrafficWidget } from "./widgets/PinterestTrafficWidget";
 
 interface VisitorActivity {
   id: string;
@@ -1810,6 +1811,9 @@ export const VisitorWorldMap = () => {
                   </div>
                 )}
               </div>
+
+              {/* Pinterest Traffic Widget */}
+              <PinterestTrafficWidget />
 
               {/* Divider */}
               <div className="border-t border-border" />
