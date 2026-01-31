@@ -30,10 +30,10 @@ export function CategorySchema({
       : 'All Pet Products | GetPawsy - Premium Pet Supplies';
 
   const pageDescription = isSearch
-    ? `Found ${productCount} products for "${searchQuery}". Shop premium pet supplies at GetPawsy with free shipping on orders over $50.`
+    ? `Found ${productCount} products for "${searchQuery}". Shop premium pet supplies at GetPawsy with free US shipping on orders over $35.`
     : categoryName
-      ? `Shop our collection of ${productCount}+ ${categoryName.toLowerCase()} at GetPawsy. Premium quality ${categoryName.toLowerCase()} for your beloved pets. Free shipping, vet-approved products.`
-      : `Browse ${productCount}+ premium pet products at GetPawsy. Quality dog beds, cat trees, pet toys, collars, and more. Free shipping on orders over $50.`;
+      ? `Shop our collection of ${productCount}+ ${categoryName.toLowerCase()} at GetPawsy. Premium quality ${categoryName.toLowerCase()} for your beloved pets. Free US shipping over $35, vet-approved products.`
+      : `Browse ${productCount}+ premium pet products at GetPawsy. Quality dog beds, cat trees, pet toys, collars, and more. Free US shipping on orders over $35.`;
 
   const keywords = categoryName
     ? getKeywordsForCategory(categoryName).slice(0, 20)

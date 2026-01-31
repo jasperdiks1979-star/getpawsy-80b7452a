@@ -493,7 +493,7 @@ const BestsellerDetail = () => {
         <title>{bestseller.seo_title || `${product.name} | GetPawsy Bestseller`}</title>
         <meta 
           name="description" 
-          content={bestseller.seo_description || product.description || `Discover ${product.name} - one of our bestsellers. Buy now with free shipping on orders over $50.`}
+          content={bestseller.seo_description || product.description || `Discover ${product.name} - one of our bestsellers. Buy now with free US shipping on orders over $35.`}
         />
         {bestseller.meta_keywords && (
           <meta name="keywords" content={bestseller.meta_keywords.join(', ')} />
@@ -1022,8 +1022,8 @@ const BestsellerDetail = () => {
                       <Truck className="w-5 h-5 text-primary" />
                     </div>
                     <div className="text-sm">
-                      <p className="font-semibold">Free Shipping</p>
-                      <p className="text-muted-foreground text-xs">Orders over $50</p>
+                      <p className="font-semibold">Free US Shipping</p>
+                      <p className="text-muted-foreground text-xs">Orders over $35</p>
                     </div>
                   </motion.div>
                   <motion.div 
@@ -1270,7 +1270,7 @@ const BestsellerDetail = () => {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-5 pl-13">
-                      We offer free shipping on all orders over $50. Standard delivery takes 5-10 business days. 
+                      We offer free US shipping on all orders over $35. Standard delivery takes 3-7 business days. 
                       Once your order is shipped, you'll receive a tracking number to monitor your package's journey to your doorstep.
                     </AccordionContent>
                   </AccordionItem>
@@ -1427,7 +1427,7 @@ const BestsellerDetail = () => {
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
                 Join thousands of happy pet owners. Order now and give your loyal companion the care they deserve.
-                <span className="block mt-2 text-primary font-medium">Free shipping on orders over $50!</span>
+                <span className="block mt-2 text-primary font-medium">Free US shipping on orders over $35!</span>
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

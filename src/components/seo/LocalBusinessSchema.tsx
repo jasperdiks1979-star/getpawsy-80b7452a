@@ -68,8 +68,8 @@ export function LocalBusinessSchema({
           '@type': 'Offer',
           itemOffered: {
             '@type': 'Service',
-            name: 'Free Worldwide Shipping',
-            description: 'Free shipping on orders over $50',
+            name: 'Free US Shipping',
+            description: 'Free shipping on orders over $35',
           },
         },
         {
