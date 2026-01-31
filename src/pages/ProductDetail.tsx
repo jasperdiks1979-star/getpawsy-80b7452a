@@ -432,7 +432,7 @@ const ProductDetail = () => {
         .trim();
       
       const searchParam = searchKeywords ? `?search=${encodeURIComponent(searchKeywords)}` : '';
-      toast.info('Product niet gevonden, we zoeken vergelijkbare producten...');
+      toast.info('Product not found. Searching for similar products...');
       navigate(`/products${searchParam}`, { replace: true });
     }
   }, [isLoading, product, navigate, id]);

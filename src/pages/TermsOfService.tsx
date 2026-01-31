@@ -123,14 +123,14 @@ const TermsOfService = () => {
                   5. Shipping and Delivery
                 </h2>
                 <p className="text-muted-foreground mb-4">
-                  We ship to most countries worldwide. Please note:
+                  We ship to customers within the United States. Please note:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
                   <li>Shipping times are estimates and not guaranteed</li>
-                  <li>Delivery times vary based on location and carrier</li>
-                  <li>Standard shipping typically takes 7-21 business days</li>
-                  <li>We are not responsible for delays caused by carriers or customs</li>
-                  <li>Risk of loss passes to you upon delivery to the carrier</li>
+                  <li>Estimated delivery: 3-7 business days</li>
+                  <li>Free US shipping on orders over $35</li>
+                  <li>Products ship from US warehouses when available</li>
+                  <li>We are not responsible for delays caused by carriers</li>
                 </ul>
                 <p className="text-muted-foreground mt-4">
                   You will receive tracking information once your order has shipped.
