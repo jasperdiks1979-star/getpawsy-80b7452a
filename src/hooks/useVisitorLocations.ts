@@ -25,7 +25,17 @@ interface LocationStats {
   };
 }
 
-export const useVisitorLocations = (refreshInterval = 30000) => {
+export type TimeRange = "15m" | "1h" | "6h" | "24h" | "7d";
+
+const TIME_RANGE_MS: Record<TimeRange, number> = {
+  "15m": 15 * 60 * 1000,
+  "1h": 60 * 60 * 1000,
+  "6h": 6 * 60 * 60 * 1000,
+  "24h": 24 * 60 * 60 * 1000,
+  "7d": 7 * 24 * 60 * 60 * 1000,
+};
+
+export const useVisitorLocations = (refreshInterval = 30000, timeRange: TimeRange = "15m") => {
   const [locations, setLocations] = useState<VisitorLocation[]>([]);
   const [locationStats, setLocationStats] = useState<LocationStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,13 +43,13 @@ export const useVisitorLocations = (refreshInterval = 30000) => {
 
   const fetchLocations = useCallback(async () => {
     try {
-      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      const cutoffTime = new Date(Date.now() - TIME_RANGE_MS[timeRange]).toISOString();
 
       // Get all visitor activities with location data in the last 15 minutes
       const { data, error: fetchError } = await supabase
         .from("visitor_activity")
         .select("id, session_id, activity_type, latitude, longitude, country, city, created_at")
-        .gte("created_at", fifteenMinutesAgo)
+        .gte("created_at", cutoffTime)
         .not("latitude", "is", null)
         .not("longitude", "is", null)
         .order("created_at", { ascending: false });
@@ -85,7 +95,7 @@ export const useVisitorLocations = (refreshInterval = 30000) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [timeRange]);
 
   // Initial fetch
   useEffect(() => {
