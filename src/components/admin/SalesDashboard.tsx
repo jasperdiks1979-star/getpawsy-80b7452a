@@ -57,6 +57,7 @@ import { BlogPostsWidget } from "./BlogPostsWidget";
 import { SecurityIssuesWidget } from "./SecurityIssuesWidget";
 import { CronJobsWidget } from "./CronJobsWidget";
 import { CrawlerVisitsWidget } from "./CrawlerVisitsWidget";
+import { PinterestTrafficWidget } from "./widgets/PinterestTrafficWidget";
 import { CompetitorProductsWidget } from "./widgets/CompetitorProductsWidget";
 import { CompetitorScrapeLogsWidget } from "./widgets/CompetitorScrapeLogsWidget";
 import { SourcingOpportunitiesWidget } from "./SourcingOpportunitiesWidget";
@@ -878,6 +879,7 @@ export const SalesDashboard = ({ onNavigateToTab }: SalesDashboardProps) => {
         <CJWebhooksWidget onNavigate={() => onNavigateToTab?.("cj-webhooks")} />
         <CronJobsWidget />
         <CrawlerVisitsWidget />
+        <PinterestTrafficWidget />
       </div>
 
       {/* Charts Row */}

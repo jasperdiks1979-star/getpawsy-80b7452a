@@ -10,6 +10,12 @@ interface GeoLocation {
   city?: string;
 }
 
+interface UTMParams {
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+}
+
 // Production domains where tracking should be active
 const PRODUCTION_DOMAINS = [
   'getpawsy.pet',
@@ -33,10 +39,33 @@ const getSessionId = (): string => {
   return sessionId;
 };
 
+// Extract UTM parameters from URL
+const getUTMParams = (): UTMParams => {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    utm_source: params.get('utm_source'),
+    utm_medium: params.get('utm_medium'),
+    utm_campaign: params.get('utm_campaign'),
+  };
+};
+
+// Get referrer domain
+const getReferrer = (): string | null => {
+  if (!document.referrer) return null;
+  try {
+    const url = new URL(document.referrer);
+    return url.hostname;
+  } catch {
+    return document.referrer;
+  }
+};
+
 export const useVisitorTracking = () => {
   const locationRef = useRef<GeoLocation | null>(null);
   const lastActivityRef = useRef<ActivityType | null>(null);
   const sessionId = useRef<string>(getSessionId());
+  const utmParamsRef = useRef<UTMParams>(getUTMParams());
+  const referrerRef = useRef<string | null>(getReferrer());
 
   // Fetch approximate location using IP geolocation
   const fetchLocation = useCallback(async (): Promise<GeoLocation | null> => {
@@ -79,6 +108,8 @@ export const useVisitorTracking = () => {
 
     try {
       const location = await fetchLocation();
+      const utmParams = utmParamsRef.current;
+      const referrer = referrerRef.current;
       
       const { error } = await supabase
         .from("visitor_activity")
@@ -89,6 +120,10 @@ export const useVisitorTracking = () => {
           longitude: location?.longitude || null,
           country: location?.country || null,
           city: location?.city || null,
+          referrer: referrer,
+          utm_source: utmParams.utm_source,
+          utm_medium: utmParams.utm_medium,
+          utm_campaign: utmParams.utm_campaign,
         });
 
       if (error) {
