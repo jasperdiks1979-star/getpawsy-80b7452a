@@ -25,7 +25,7 @@ import { sanitizeHtml } from '@/lib/sanitize';
 import { trackViewItem } from '@/lib/analytics';
 import { calculateSellingPrice } from '@/lib/pricing';
 import { safeString, safeNumber, safeArray } from '@/lib/safe-render';
-import FormattedDescription from '@/components/products/FormattedDescription';
+import USProductDescription from '@/components/products/USProductDescription';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { FAQSchema, generateProductFAQs } from '@/components/seo/FAQSchema';
 import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
@@ -1218,10 +1218,9 @@ const ProductDetail = () => {
             
             <TabsContent value="description" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
-                <FormattedDescription 
+                <USProductDescription 
                   description={product.description || 'No description available.'}
                   productName={product.name}
-                  productId={product.id}
                 />
               </div>
             </TabsContent>
