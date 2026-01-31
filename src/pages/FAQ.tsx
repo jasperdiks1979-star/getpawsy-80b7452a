@@ -1,73 +1,37 @@
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
-import { HelpCircle, Package, Truck, RotateCcw, CreditCard, ShieldCheck, PawPrint } from 'lucide-react';
+import { HelpCircle, Truck, RotateCcw, PawPrint, CreditCard, MessageCircle } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   FREE_SHIPPING_THRESHOLD,
   DELIVERY_TIME_STANDARD,
-  PROCESSING_TIME,
   RETURN_WINDOW_DAYS,
   SUPPORT_EMAIL,
-  RETURNS_PROCESS,
 } from '@/lib/shipping-constants';
 
 const FAQ = () => {
   const faqCategories = [
     {
-      title: 'Orders & Payment',
-      icon: CreditCard,
-      questions: [
-        {
-          question: 'How do I place an order?',
-          answer: 'Simply browse our products, add items to your cart, and proceed to checkout. You can pay securely using credit card, debit card, or PayPal through our Stripe payment system.',
-        },
-        {
-          question: 'What payment methods do you accept?',
-          answer: 'We accept all major credit cards (Visa, Mastercard, American Express), debit cards, and PayPal. All payments are processed securely through Stripe.',
-        },
-        {
-          question: 'Is my payment information secure?',
-          answer: 'Absolutely! We use Stripe for payment processing, which is PCI-DSS compliant. Your payment information is encrypted and never stored on our servers.',
-        },
-        {
-          question: 'Can I modify or cancel my order?',
-          answer: 'Orders can be modified or cancelled before they are shipped. Once an order has been dispatched, it cannot be cancelled. Please contact us as soon as possible if you need to make changes.',
-        },
-        {
-          question: 'Will I receive an order confirmation?',
-          answer: 'Yes! You will receive an email confirmation immediately after placing your order. This email will include your order number and a summary of your purchase.',
-        },
-      ],
-    },
-    {
-      title: 'Shipping & Delivery',
+      title: 'Orders & Shipping',
       icon: Truck,
       questions: [
         {
           question: 'How long does shipping take?',
-          answer: `Standard US shipping typically takes ${DELIVERY_TIME_STANDARD}. Processing time is ${PROCESSING_TIME} before your order ships. We ship from US warehouses for faster delivery.`,
+          answer: `Orders typically arrive within ${DELIVERY_TIME_STANDARD}. Delivery times are shown on each product page.`,
         },
         {
           question: 'Do you offer free shipping?',
-          answer: `Yes! We offer FREE shipping on all US orders over $${FREE_SHIPPING_THRESHOLD}. Orders ship from our US warehouses for fast, reliable delivery.`,
+          answer: `Yes! We offer free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}.`,
         },
         {
-          question: 'Do you ship internationally?',
-          answer: 'We primarily serve US customers. International shipping is available but delivery times are longer (10-20 business days) and orders may be subject to customs fees.',
+          question: 'Where do you ship from?',
+          answer: 'We ship from US warehouses whenever possible to ensure fast delivery.',
         },
         {
-          question: 'How can I track my order?',
-          answer: 'Once your order ships, you will receive an email with a tracking number. You can also track your order on our Track Order page using your order number and email address.',
-        },
-        {
-          question: 'What carriers do you use?',
-          answer: 'We work with USPS, UPS, FedEx, and DHL. The carrier is selected based on your location and the items ordered for the fastest delivery.',
-        },
-        {
-          question: 'What if my package is lost or delayed?',
-          answer: `If your package has not arrived within 21 days of dispatch, please contact us at ${SUPPORT_EMAIL}. We will investigate with the carrier and provide a resolution.`,
+          question: 'Will I receive tracking information?',
+          answer: 'Yes, once your order ships you will receive a tracking email so you can follow your package every step of the way.',
         },
       ],
     },
@@ -77,67 +41,61 @@ const FAQ = () => {
       questions: [
         {
           question: 'What is your return policy?',
-          answer: `We accept returns within ${RETURN_WINDOW_DAYS} days of delivery for damaged, defective, or incorrect products. Visit our Returns page for complete details.`,
+          answer: `We offer a ${RETURN_WINDOW_DAYS}-day hassle-free return policy. If you are not completely satisfied, we will make it right.`,
         },
         {
-          question: 'How do I request a return?',
-          answer: RETURNS_PROCESS,
+          question: 'How do I start a return?',
+          answer: `Simply email ${SUPPORT_EMAIL} and our team will help you through the process. Returns are easy and stress-free.`,
         },
         {
-          question: 'Do I need to return the product?',
-          answer: 'In most cases, we do not require products to be returned due to shipping costs. However, we may request photos or videos as proof of the issue.',
-        },
-        {
-          question: 'How long does it take to receive a refund?',
-          answer: 'Once your return is approved, refunds are typically processed within 5-7 business days. The refund will be credited to your original payment method.',
-        },
-        {
-          question: 'Can I exchange a product?',
-          answer: 'For size or color issues with functional products, we can arrange an exchange. Please contact us with details of what you would like to exchange.',
+          question: 'When will I receive my refund?',
+          answer: 'Once we receive and inspect your return, refunds are processed back to your original payment method within 5-7 business days.',
         },
       ],
     },
     {
-      title: 'Products',
-      icon: Package,
+      title: 'Products & Safety',
+      icon: PawPrint,
       questions: [
         {
-          question: 'Are your products safe for my pet?',
-          answer: 'We carefully curate products from trusted suppliers. However, every pet is different. Always supervise your pet with new products and consult your veterinarian if you have concerns.',
+          question: 'Are your products safe for pets?',
+          answer: 'Yes. All products are carefully selected with comfort, safety, and everyday use in mind. We only offer products we would trust with our own pets.',
         },
         {
-          question: 'How do I choose the right size?',
-          answer: 'Each product page includes size guides and measurements. If you are unsure, please contact us before ordering and we will help you choose the right size for your pet.',
+          question: 'Do your products fit all pets?',
+          answer: 'Many products come in multiple sizes. Please check the size guide on each product page to find the perfect fit for your pet.',
         },
         {
-          question: 'Are product colors accurate?',
-          answer: 'We strive to display accurate colors, but slight variations may occur due to monitor settings and lighting. Please refer to product descriptions for detailed color information.',
-        },
-        {
-          question: 'Do you test products on animals?',
-          answer: 'We never support animal testing. Our products are designed to enhance the lives of pets, and we only partner with ethical suppliers.',
+          question: 'What if a product does not fit my pet?',
+          answer: `No worries! Our ${RETURN_WINDOW_DAYS}-day return policy has you covered. Contact us and we will help you find the right size or process a return.`,
         },
       ],
     },
     {
-      title: 'Account & Privacy',
-      icon: ShieldCheck,
+      title: 'Payments & Security',
+      icon: CreditCard,
       questions: [
         {
-          question: 'Do I need an account to order?',
-          answer: 'No, you can checkout as a guest. However, creating an account allows you to track orders, save favorites, and enjoy a faster checkout experience.',
+          question: 'Is checkout secure?',
+          answer: 'Yes. All payments are processed securely using industry-standard encryption. Your payment information is always protected.',
         },
         {
-          question: 'How do I reset my password?',
-          answer: 'Click on "Sign In" and then "Forgot Password". Enter your email address and we will send you a link to reset your password.',
+          question: 'What payment methods do you accept?',
+          answer: 'We accept major credit cards (Visa, Mastercard, American Express) and secure online payment methods including PayPal.',
+        },
+      ],
+    },
+    {
+      title: 'Support',
+      icon: MessageCircle,
+      questions: [
+        {
+          question: 'How can I contact customer support?',
+          answer: `Email us at ${SUPPORT_EMAIL}. We respond within 24 business hours and are always happy to help.`,
         },
         {
-          question: 'How do you protect my data?',
-          answer: 'We take privacy seriously. Your data is encrypted and stored securely. We never sell your information to third parties. Read our Privacy Policy for complete details.',
-        },
-        {
-          question: 'How can I unsubscribe from emails?',
-          answer: 'You can unsubscribe by clicking the "Unsubscribe" link at the bottom of any marketing email, or by contacting our support team.',
+          question: 'Can I change or cancel my order?',
+          answer: `If you need to change or cancel your order, email us at ${SUPPORT_EMAIL} as soon as possible. We will do our best to accommodate your request before it ships.`,
         },
       ],
     },
@@ -161,7 +119,7 @@ const FAQ = () => {
                 Frequently Asked Questions
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Find answers to common questions about orders, shipping, returns, and more.
+                Quick answers to common questions. Can't find what you're looking for? We're just an email away.
               </p>
             </div>
 
@@ -211,14 +169,14 @@ const FAQ = () => {
                 Still Have Questions?
               </h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Could not find what you are looking for? Our friendly support team is here to help!
+                We're here to help! Our friendly support team responds within 24 business hours.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button asChild size="lg">
                   <Link to="/contact">Contact Us</Link>
                 </Button>
                 <Button asChild variant="outline" size="lg">
-                  <a href="mailto:support@getpawsy.pet">Email Support</a>
+                  <a href={`mailto:${SUPPORT_EMAIL}`}>Email Support</a>
                 </Button>
               </div>
             </motion.div>
