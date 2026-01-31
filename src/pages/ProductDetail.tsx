@@ -1111,7 +1111,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart
+              Add to Cart
               </Button>
 
               {/* Wishlist */}
@@ -1123,6 +1123,21 @@ const ProductDetail = () => {
               >
                 <Heart className={`w-5 h-5 ${inWishlist ? 'fill-current' : ''}`} />
               </Button>
+            </motion.div>
+
+            {/* Trust Microcopy - Below Add to Cart */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-center text-sm text-muted-foreground pt-4"
+            >
+              <p className="mb-1">
+                <span className="font-medium text-foreground">Fast US shipping</span> • Free shipping over $35 • 30-day hassle-free returns
+              </p>
+              <p>
+                Secure checkout • Real customer support
+              </p>
             </motion.div>
 
             {/* Trust Features */}
