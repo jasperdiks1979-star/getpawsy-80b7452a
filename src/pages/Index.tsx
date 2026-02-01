@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Loader2, Star, Quote, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
@@ -350,6 +351,18 @@ const Index = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>GetPawsy | Trusted Pet Products with Fast US Shipping</title>
+        <meta name="description" content="Shop thoughtfully selected pet products for dogs and cats. Fast US shipping, free over $35, and 30-day hassle-free returns." />
+        <link rel="canonical" href="https://getpawsy.pet" />
+        <meta property="og:title" content="GetPawsy | Trusted Pet Products with Fast US Shipping" />
+        <meta property="og:description" content="Shop thoughtfully selected pet products for dogs and cats. Fast US shipping, free over $35, and 30-day hassle-free returns." />
+        <meta property="og:url" content="https://getpawsy.pet" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="GetPawsy | Trusted Pet Products with Fast US Shipping" />
+        <meta name="twitter:description" content="Shop thoughtfully selected pet products for dogs and cats. Fast US shipping, free over $35, and 30-day hassle-free returns." />
+      </Helmet>
       <WebsiteSchema />
       <LocalBusinessSchema />
       {/* Hero Section - Clean, Premium, Trust-Building */}

@@ -1,0 +1,178 @@
+/**
+ * Long-Tail SEO Keywords Library for GetPawsy
+ * 
+ * Top-10 buyer-intent keywords per niche to guide future content creation.
+ * These keywords target US shoppers with high purchase intent.
+ * 
+ * Usage: Import these when creating SEO blogs, collections, or product content.
+ */
+
+export const LONGTAIL_KEYWORDS = {
+  // NICHE 1: DOG TRAVEL
+  dogTravel: {
+    primary: 'dog travel accessories',
+    keywords: [
+      'dog hammock for back seat',
+      'dog car safety accessories',
+      'back seat dog cover for cars',
+      'dog travel gear for road trips',
+      'best dog car seat cover',
+      'dog seat protector waterproof',
+      'dog car barrier for SUVs',
+      'dog travel accessories for long trips',
+      'safe car accessories for dogs',
+      'dog back seat safety solutions',
+    ],
+    relatedCollection: '/collections/dog-travel-accessories',
+  },
+
+  // NICHE 2: INDOOR CAT ENRICHMENT
+  indoorCatEnrichment: {
+    primary: 'indoor cat enrichment',
+    keywords: [
+      'indoor cat enrichment toys',
+      'boredom toys for indoor cats',
+      'enrichment toys for apartment cats',
+      'interactive toys for indoor cats',
+      'best toys for bored cats',
+      'mental stimulation toys for cats',
+      'toys for indoor cats home alone',
+      'cat enrichment ideas indoors',
+      'toys to keep cats active indoors',
+      'indoor cat activity toys',
+    ],
+    relatedCollection: '/collections/indoor-cat-enrichment',
+  },
+
+  // NICHE 3: MESS-FREE DOG FEEDING
+  messFreeFeeding: {
+    primary: 'no spill dog bowls',
+    keywords: [
+      'no spill dog bowls',
+      'mess free dog feeder',
+      'elevated dog bowls for large dogs',
+      'dog bowls that don\'t tip over',
+      'slow feeder bowl for messy eaters',
+      'non spill water bowl for dogs',
+      'best dog bowl for fast eaters',
+      'raised dog bowls for joint support',
+      'spill proof dog water bowl',
+      'dog feeding solutions for messy dogs',
+    ],
+    relatedCollection: '/collections/no-spill-dog-feeding',
+  },
+} as const;
+
+/**
+ * Get all keywords for a specific niche
+ */
+export function getNicheKeywords(niche: keyof typeof LONGTAIL_KEYWORDS): readonly string[] {
+  return LONGTAIL_KEYWORDS[niche].keywords;
+}
+
+/**
+ * Get primary keyword for a niche
+ */
+export function getPrimaryKeyword(niche: keyof typeof LONGTAIL_KEYWORDS): string {
+  return LONGTAIL_KEYWORDS[niche].primary;
+}
+
+/**
+ * Get related collection URL for a niche
+ */
+export function getRelatedCollection(niche: keyof typeof LONGTAIL_KEYWORDS): string {
+  return LONGTAIL_KEYWORDS[niche].relatedCollection;
+}
+
+/**
+ * Get all long-tail keywords across all niches (for sitemap/content planning)
+ */
+export function getAllLongTailKeywords(): string[] {
+  return Object.values(LONGTAIL_KEYWORDS).flatMap(niche => niche.keywords);
+}
+
+/**
+ * META TITLE TEMPLATES
+ * 
+ * Homepage: GetPawsy | Trusted Pet Products with Fast US Shipping
+ * 
+ * Collection format: [Primary Keyword] for Everyday Use | GetPawsy
+ * Example: Dog Travel Accessories for Everyday Use | GetPawsy
+ * 
+ * Blog format: [Blog Topic] | A Helpful Guide for Pet Parents
+ * Example: Indoor Cat Enrichment | A Helpful Guide for Pet Parents
+ * 
+ * Product format: [Product Name] for Dogs & Cats | GetPawsy
+ * Example: Elevated Dog Bowl Set for Dogs & Cats | GetPawsy
+ */
+export const META_TEMPLATES = {
+  homepage: {
+    title: 'GetPawsy | Trusted Pet Products with Fast US Shipping',
+    description: 'Shop thoughtfully selected pet products for dogs and cats. Fast US shipping, free over $35, and 30-day hassle-free returns.',
+  },
+  
+  collection: {
+    titleFormat: (primaryKeyword: string) => 
+      `${primaryKeyword} for Everyday Use | GetPawsy`.slice(0, 60),
+    descriptionFormat: (primaryKeyword: string) =>
+      `Discover practical ${primaryKeyword.toLowerCase()} designed for comfort and daily life. Fast US shipping and easy returns.`.slice(0, 155),
+  },
+  
+  blog: {
+    titleFormat: (topic: string) =>
+      `${topic} | A Helpful Guide for Pet Parents`.slice(0, 60),
+    descriptionFormat: (problem: string) =>
+      `Learn how to ${problem.toLowerCase()} with practical tips and trusted product recommendations for everyday pet care.`.slice(0, 155),
+  },
+  
+  product: {
+    titleFormat: (productName: string) => {
+      const shortName = productName.length > 40 ? productName.slice(0, 40) : productName;
+      return `${shortName} for Dogs & Cats | GetPawsy`.slice(0, 60);
+    },
+    descriptionFormat: () =>
+      'A practical everyday pet product designed for comfort and ease. Fast US shipping and 30-day hassle-free returns.',
+  },
+} as const;
+
+/**
+ * Generate collection meta title
+ */
+export function generateCollectionMetaTitle(primaryKeyword: string): string {
+  return META_TEMPLATES.collection.titleFormat(primaryKeyword);
+}
+
+/**
+ * Generate collection meta description
+ */
+export function generateCollectionMetaDescription(primaryKeyword: string): string {
+  return META_TEMPLATES.collection.descriptionFormat(primaryKeyword);
+}
+
+/**
+ * Generate blog meta title
+ */
+export function generateBlogMetaTitle(topic: string): string {
+  return META_TEMPLATES.blog.titleFormat(topic);
+}
+
+/**
+ * Generate blog meta description
+ */
+export function generateBlogMetaDescriptionFromProblem(problem: string): string {
+  return META_TEMPLATES.blog.descriptionFormat(problem);
+}
+
+/**
+ * Generate product meta title
+ */
+export function generateProductMetaTitle(productName: string): string {
+  return META_TEMPLATES.product.titleFormat(productName);
+}
+
+/**
+ * Generate product meta description (static template)
+ */
+export function generateProductMetaDescriptionTemplate(): string {
+  return META_TEMPLATES.product.descriptionFormat();
+}

@@ -29,6 +29,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
+import { 
+  generateCollectionMetaTitle, 
+  generateCollectionMetaDescription 
+} from '@/lib/seo-longtail-keywords';
 
 interface FAQItem {
   question: string;
@@ -267,10 +272,10 @@ const SeoCollection = () => {
   return (
     <Layout>
       <Helmet>
-        <title>{collection.meta_title || `${collection.name} | GetPawsy`}</title>
+        <title>{collection.meta_title || generateCollectionMetaTitle(collection.primary_keyword)}</title>
         <meta 
           name="description" 
-          content={collection.meta_description || collection.seo_intro.substring(0, 155)} 
+          content={collection.meta_description || generateCollectionMetaDescription(collection.primary_keyword)} 
         />
         <meta 
           name="keywords" 
@@ -429,6 +434,12 @@ const SeoCollection = () => {
             </Accordion>
           </section>
         )}
+
+        {/* Soft Email Capture for SEO Traffic */}
+        <SoftEmailCapture 
+          variant="collection" 
+          className="mb-12"
+        />
 
         {/* Section D: Internal Links */}
         <section className="grid md:grid-cols-2 gap-6">
