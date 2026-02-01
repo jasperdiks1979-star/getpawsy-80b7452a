@@ -1941,6 +1941,66 @@ export type Database = {
         }
         Relationships: []
       }
+      seo_collections: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          faq: Json | null
+          id: string
+          is_active: boolean | null
+          meta_description: string | null
+          meta_title: string | null
+          name: string
+          primary_keyword: string
+          product_category_filter: string | null
+          product_keyword_filter: string | null
+          related_blog_slug: string | null
+          related_collection_slugs: string[] | null
+          secondary_keywords: string[] | null
+          seo_intro: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          faq?: Json | null
+          id?: string
+          is_active?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          name: string
+          primary_keyword: string
+          product_category_filter?: string | null
+          product_keyword_filter?: string | null
+          related_blog_slug?: string | null
+          related_collection_slugs?: string[] | null
+          secondary_keywords?: string[] | null
+          seo_intro: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          faq?: Json | null
+          id?: string
+          is_active?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          name?: string
+          primary_keyword?: string
+          product_category_filter?: string | null
+          product_keyword_filter?: string | null
+          related_blog_slug?: string | null
+          related_collection_slugs?: string[] | null
+          secondary_keywords?: string[] | null
+          seo_intro?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           created_at: string

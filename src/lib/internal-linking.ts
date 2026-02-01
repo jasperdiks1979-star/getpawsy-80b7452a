@@ -96,6 +96,25 @@ const categoryKeywords: Record<string, string[]> = {
   'pet-bags': ['pet bag', 'carrier bag', 'travel bag', 'tote carrier', 'sling carrier'],
 };
 
+// SEO Collection URLs - high-intent landing pages with dedicated content
+const seoCollectionKeywords: Record<string, string[]> = {
+  'dog-travel-accessories': [
+    'dog travel accessories', 'dog car safety', 'dog hammock for car', 'dog back seat cover',
+    'car safety products for dogs', 'pet travel gear', 'dog car seat', 'travel crate',
+    'pet road trip', 'traveling with dogs', 'dog car harness', 'car seat protector'
+  ],
+  'indoor-cat-enrichment': [
+    'indoor cat enrichment', 'indoor cat toys', 'boredom toys for cats', 'enrichment toys for indoor cats',
+    'cat mental stimulation', 'interactive cat toys', 'cat puzzle feeders', 'keep cats happy',
+    'indoor cat activities', 'cat boredom solutions', 'stimulation for cats'
+  ],
+  'no-spill-dog-feeding': [
+    'no spill dog bowls', 'no-spill dog bowl', 'elevated dog bowls', 'mess free dog feeder',
+    'slow feeder dog bowl', 'anti-splash water bowl', 'raised dog bowl', 'spill-proof dog dishes',
+    'messy dog mealtime', 'dog gulping food', 'slow down dog eating'
+  ]
+};
+
 // Product-specific keyword phrases for better matching
 // These are common phrases that appear in blog content and should link to relevant products
 const productPhrases: Record<string, string> = {
@@ -326,6 +345,18 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
       url: `/products?category=${categorySlug}`,
       type: 'category',
       priority: 9, // High priority for specific phrases
+    });
+  });
+  
+  // Add SEO collection keywords (highest priority for dedicated landing pages)
+  Object.entries(seoCollectionKeywords).forEach(([slug, kws]) => {
+    kws.forEach((kw) => {
+      keywords.push({
+        keyword: kw.toLowerCase(),
+        url: `/collections/${slug}`,
+        type: 'category',
+        priority: 10, // Highest priority for SEO collection pages
+      });
     });
   });
   
