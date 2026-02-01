@@ -47,6 +47,7 @@ const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRanki
 const ProductResearchTool = lazy(() => import("@/components/admin/product-research/ProductResearchTool").then(module => ({ default: module.ProductResearchTool })));
 const ContentScraperTool = lazy(() => import("@/components/admin/content-scraper/ContentScraperTool").then(module => ({ default: module.ContentScraperTool })));
 const SupplierImportManager = lazy(() => import("@/components/admin/SupplierImportManager").then(module => ({ default: module.SupplierImportManager })));
+const AdvancedVisitorStatsWidget = lazy(() => import("@/components/admin/widgets/AdvancedVisitorStatsWidget").then(module => ({ default: module.AdvancedVisitorStatsWidget })));
 import { MiniKPIWidget } from "@/components/admin/MiniKPIWidget";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1279,6 +1280,12 @@ const Admin = () => {
                 <TabsTrigger value="bestsellers" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Sparkles className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Best</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Bezoekersanalyse en statistieken">
+                <TabsTrigger value="visitors" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <Eye className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Visitors</span>
                 </TabsTrigger>
               </TouchTooltip>
               <TouchTooltip content="Bezoekers wereldkaart">
@@ -2699,6 +2706,22 @@ const Admin = () => {
                 </Card>
               }>
                 <BestsellerManager />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Visitors Analytics Tab */}
+          <TabsContent value="visitors" className="space-y-6">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex items-center justify-center gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span>Bezoekersanalyse laden...</span>
+                  </div>
+                </Card>
+              }>
+                <AdvancedVisitorStatsWidget />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
