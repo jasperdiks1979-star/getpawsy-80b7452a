@@ -32,6 +32,24 @@ const PRODUCTION_DOMAINS = [
   'getpawsy.lovable.app',
 ];
 
+// Known bot user agent patterns
+const BOT_PATTERNS = [
+  'googlebot', 'bingbot', 'yandexbot', 'duckduckbot', 'slurp', 'baiduspider',
+  'facebookexternalhit', 'twitterbot', 'rogerbot', 'linkedinbot', 'embedly',
+  'quora link preview', 'showyoubot', 'outbrain', 'pinterest', 'pinterestbot',
+  'applebot', 'semrushbot', 'ahrefsbot', 'mj12bot', 'dotbot', 'petalbot',
+  'bytespider', 'gptbot', 'chatgpt', 'claudebot', 'anthropic', 'bot/', '/bot',
+  'crawler', 'spider', 'scraper', 'headless', 'phantom', 'selenium', 'puppeteer',
+  'lighthouse', 'pagespeed', 'gtmetrix', 'pingdom', 'uptimerobot',
+  'mediapartners-google', 'adsbot-google', 'apis-google', 'feedfetcher-google',
+];
+
+// Check if the current user agent is a bot
+const isBot = (): boolean => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return BOT_PATTERNS.some(pattern => userAgent.includes(pattern));
+};
+
 // Check if we're on a production domain
 const isProductionDomain = (): boolean => {
   const hostname = window.location.hostname;
@@ -211,6 +229,12 @@ export const useVisitorTracking = () => {
     // Only track on production domains
     if (!isProductionDomain()) {
       console.log('[Visitor Tracking] Skipped - not a production domain');
+      return;
+    }
+
+    // Don't track bot traffic
+    if (isBot()) {
+      console.log('[Visitor Tracking] Skipped - bot detected');
       return;
     }
 
