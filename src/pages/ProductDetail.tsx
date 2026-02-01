@@ -14,6 +14,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useCartAnimation } from '@/contexts/CartAnimationContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useRecentlyViewedProducts } from '@/hooks/useRecentlyViewedProducts';
 import { useHaptic } from '@/hooks/useHaptic';
 import { supabase } from '@/integrations/supabase/client';
@@ -315,6 +316,9 @@ const ProductDetail = () => {
     window.scrollTo(0, 0);
   }, [id]);
 
+  // Track product views in visitor analytics
+  const { trackProductView } = useVisitorTracking();
+
   // Reset selected image when product changes and add to recently viewed
   useEffect(() => {
     setSelectedImage(0);
@@ -324,8 +328,10 @@ const ProductDetail = () => {
     if (id && product) {
       addToRecentlyViewed(id);
       trackViewItem(id, product.name || '', product.price || 0, product.category || undefined);
+      // Track in visitor analytics for enhanced product view insights
+      trackProductView(product.id, product.name || '');
     }
-  }, [id, product, addToRecentlyViewed]);
+  }, [id, product, addToRecentlyViewed, trackProductView]);
 
   // Update selected image when variant is selected
   useEffect(() => {

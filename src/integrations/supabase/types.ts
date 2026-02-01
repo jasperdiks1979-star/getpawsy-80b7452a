@@ -2276,13 +2276,21 @@ export type Database = {
       visitor_activity: {
         Row: {
           activity_type: string
+          browser: string | null
           city: string | null
           country: string | null
           created_at: string
+          device_type: string | null
           id: string
           latitude: number | null
           longitude: number | null
+          page_path: string | null
+          product_id: string | null
+          product_name: string | null
           referrer: string | null
+          referrer_category: string | null
+          screen_height: number | null
+          screen_width: number | null
           session_id: string
           updated_at: string
           utm_campaign: string | null
@@ -2291,13 +2299,21 @@ export type Database = {
         }
         Insert: {
           activity_type: string
+          browser?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
+          device_type?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
+          page_path?: string | null
+          product_id?: string | null
+          product_name?: string | null
           referrer?: string | null
+          referrer_category?: string | null
+          screen_height?: number | null
+          screen_width?: number | null
           session_id: string
           updated_at?: string
           utm_campaign?: string | null
@@ -2306,20 +2322,43 @@ export type Database = {
         }
         Update: {
           activity_type?: string
+          browser?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
+          device_type?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
+          page_path?: string | null
+          product_id?: string | null
+          product_name?: string | null
           referrer?: string | null
+          referrer_category?: string | null
+          screen_height?: number | null
+          screen_width?: number | null
           session_id?: string
           updated_at?: string
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "visitor_activity_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_activity_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
