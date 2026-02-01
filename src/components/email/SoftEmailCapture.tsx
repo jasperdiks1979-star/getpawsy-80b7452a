@@ -64,6 +64,7 @@ export function SoftEmailCapture({
     setIsLoading(true);
 
     try {
+      // Add to newsletter subscribers
       const { error } = await supabase
         .from('newsletter_subscribers')
         .upsert(
@@ -87,6 +88,24 @@ export function SoftEmailCapture({
           throw error;
         }
       } else {
+        // Add to SEO nurture queue for the 3-email flow
+        await supabase
+          .from('seo_nurture_queue')
+          .upsert(
+            {
+              email,
+              signup_source: variant,
+              welcome_sent: true, // Welcome email sent immediately
+              welcome_sent_at: new Date().toISOString(),
+            },
+            { onConflict: 'email' }
+          );
+
+        // Send welcome email immediately via edge function
+        supabase.functions.invoke('send-seo-nurture-email', {
+          body: { email, emailType: 'welcome' }
+        }).catch(err => console.error('Welcome email error:', err));
+
         toast.success('Thanks for subscribing!');
         trackNewsletterSignup(email);
         setIsSuccess(true);

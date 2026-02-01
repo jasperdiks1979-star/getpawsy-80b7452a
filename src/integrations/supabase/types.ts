@@ -2001,6 +2001,51 @@ export type Database = {
         }
         Relationships: []
       }
+      seo_nurture_queue: {
+        Row: {
+          conversion_sent: boolean
+          conversion_sent_at: string | null
+          created_at: string
+          education_sent: boolean
+          education_sent_at: string | null
+          email: string
+          id: string
+          signup_source: string | null
+          subscribed_at: string
+          updated_at: string
+          welcome_sent: boolean
+          welcome_sent_at: string | null
+        }
+        Insert: {
+          conversion_sent?: boolean
+          conversion_sent_at?: string | null
+          created_at?: string
+          education_sent?: boolean
+          education_sent_at?: string | null
+          email: string
+          id?: string
+          signup_source?: string | null
+          subscribed_at?: string
+          updated_at?: string
+          welcome_sent?: boolean
+          welcome_sent_at?: string | null
+        }
+        Update: {
+          conversion_sent?: boolean
+          conversion_sent_at?: string | null
+          created_at?: string
+          education_sent?: boolean
+          education_sent_at?: string | null
+          email?: string
+          id?: string
+          signup_source?: string | null
+          subscribed_at?: string
+          updated_at?: string
+          welcome_sent?: boolean
+          welcome_sent_at?: string | null
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           created_at: string
