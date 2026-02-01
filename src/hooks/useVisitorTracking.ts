@@ -39,13 +39,24 @@ const getSessionId = (): string => {
   return sessionId;
 };
 
-// Extract UTM parameters from URL
+// Extract UTM parameters from URL, with Pinterest auto-detection
 const getUTMParams = (): UTMParams => {
   const params = new URLSearchParams(window.location.search);
+  
+  // Check for Pinterest-specific parameters
+  // Pinterest adds epik parameter for tracking
+  const hasPinterestParam = params.has('epik') || params.has('pin_id');
+  
+  // Auto-detect Pinterest as source if their params are present
+  let utm_source = params.get('utm_source');
+  if (!utm_source && hasPinterestParam) {
+    utm_source = 'pinterest';
+  }
+  
   return {
-    utm_source: params.get('utm_source'),
-    utm_medium: params.get('utm_medium'),
-    utm_campaign: params.get('utm_campaign'),
+    utm_source,
+    utm_medium: params.get('utm_medium') || (hasPinterestParam ? 'social' : null),
+    utm_campaign: params.get('utm_campaign') || (hasPinterestParam ? 'pinterest_auto' : null),
   };
 };
 
