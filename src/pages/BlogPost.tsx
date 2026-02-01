@@ -14,6 +14,7 @@ import { generateBlogMetaDescription } from '@/lib/seo-keywords';
 import { useInternalLinking } from '@/hooks/useInternalLinking';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { ArticleSchema } from '@/components/seo/ArticleSchema';
+import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -414,6 +415,12 @@ const BlogPostPage = () => {
         <div className="prose prose-lg max-w-none blog-article-content">
           {renderContent(post.content)}
         </div>
+
+        {/* Soft Email Capture for SEO Traffic */}
+        <SoftEmailCapture 
+          variant="blog" 
+          className="mt-12"
+        />
 
         {/* Tags */}
         {post.tags.length > 0 && (
