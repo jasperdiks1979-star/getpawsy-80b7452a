@@ -13,6 +13,7 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { LiveCheckoutWidget } from "@/components/admin/LiveCheckoutWidget";
 import { PinterestTag } from "@/components/tracking/PinterestTag";
+import { GlobalVisitorTracker } from "@/components/tracking/GlobalVisitorTracker";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { setupGlobalErrorHandler } from "@/lib/error-reporter";
@@ -226,6 +227,7 @@ const App = () => {
                   <LiveCheckoutWidget />
                   <ScrollToTop />
                   <PinterestTag />
+                  <GlobalVisitorTracker />
                   <RouteErrorBoundary>
                     <Suspense fallback={<RouteLoader />}>
                       <Routes>

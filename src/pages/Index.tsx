@@ -13,7 +13,7 @@ import type { CarouselApi } from '@/components/ui/carousel';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { trackNewsletterSignup } from '@/lib/analytics';
 import { toast } from 'sonner';
-import { useVisitorTracking } from '@/hooks/useVisitorTracking';
+
 import { BestsellersSection } from '@/components/home/BestsellersSection';
 import { AnimatedTrustBadges } from '@/components/home/AnimatedTrustBadges';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
@@ -116,8 +116,6 @@ const Index = () => {
     initPageDebug('Index/Homepage');
   }, []);
   
-  // Track visitor browsing activity
-  useVisitorTracking();
   
   // Parallax scroll
   const heroRef = useRef<HTMLElement>(null);
