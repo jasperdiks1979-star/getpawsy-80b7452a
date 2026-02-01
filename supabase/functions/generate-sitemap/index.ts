@@ -38,6 +38,12 @@ interface Bestseller {
   updated_at: string;
 }
 
+interface SeoCollection {
+  slug: string;
+  name: string;
+  updated_at: string;
+}
+
 function xmlHeader(): string {
   return `<?xml version="1.0" encoding="UTF-8"?>`;
 }
@@ -115,6 +121,14 @@ Deno.serve(async (req) => {
         return new Response(generateBestsellersSitemap(bestsellers || [], today), { headers, status: 200 });
       }
 
+      case "collections": {
+        const { data: collections } = await supabase
+          .from("seo_collections")
+          .select("slug, name, updated_at")
+          .eq("is_active", true);
+        return new Response(generateCollectionsSitemap(collections || [], today), { headers, status: 200 });
+      }
+
       case "blog": {
         const { data: posts } = await supabase
           .from("blog_posts")
@@ -167,6 +181,12 @@ function generateSitemapIndex(today: string): string {
   <!-- Bestsellers Sitemap -->
   <sitemap>
     <loc>${SITEMAP_BASE_URL}?type=bestsellers</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
+  
+  <!-- SEO Collections Sitemap -->
+  <sitemap>
+    <loc>${SITEMAP_BASE_URL}?type=collections</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   
@@ -407,6 +427,27 @@ function generateBestsellersSitemap(bestsellers: Bestseller[], today: string): s
   }
 
   console.log(`Bestsellers sitemap: ${bestsellers.length} bestsellers`);
+
+  return `${xmlHeader()}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
+</urlset>`;
+}
+
+function generateCollectionsSitemap(collections: SeoCollection[], today: string): string {
+  let urls = "";
+  
+  for (const collection of collections) {
+    const lastmod = collection.updated_at?.split("T")[0] || today;
+    urls += `
+  <url>
+    <loc>${BASE_URL}/collections/${collection.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>`;
+  }
+
+  console.log(`SEO Collections sitemap: ${collections.length} collections`);
 
   return `${xmlHeader()}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
