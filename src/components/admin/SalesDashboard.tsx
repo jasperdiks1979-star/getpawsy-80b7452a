@@ -66,6 +66,7 @@ import { CompetitorInsightsWidget } from "./competitor/CompetitorInsightsWidget"
 import { CompetitorAlertsWidget } from "./competitor/CompetitorAlertsWidget";
 import { CompetitorPricingChart } from "./competitor/CompetitorPricingChart";
 import { CompetitorTrendsChart } from "./competitor/CompetitorTrendsChart";
+import { AdvancedVisitorStatsWidget } from "./widgets/AdvancedVisitorStatsWidget";
 
 interface OrderItem {
   name: string;
@@ -882,6 +883,7 @@ export const SalesDashboard = ({ onNavigateToTab }: SalesDashboardProps) => {
         <CrawlerVisitsWidget />
         <PinterestTrafficWidget />
         <PinterestAdsWidget />
+        <AdvancedVisitorStatsWidget />
       </div>
 
       {/* Charts Row */}
