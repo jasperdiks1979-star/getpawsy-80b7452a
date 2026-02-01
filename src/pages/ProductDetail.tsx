@@ -1067,17 +1067,13 @@ const ProductDetail = () => {
             {/* Shipping Countdown Timer */}
             <ShippingCountdown cutoffHour={15} />
 
-            {/* Shipping Time */}
-            {product.shipping_time && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Truck className="w-4 h-4" />
-                <span className="text-sm">
-                  {product.shipping_time === 'Free Shipping' 
-                    ? 'Free shipping included' 
-                    : `Delivery: ${product.shipping_time}`}
-                </span>
-              </div>
-            )}
+            {/* Shipping Time - Always show US standard delivery time */}
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Truck className="w-4 h-4" />
+              <span className="text-sm">
+                Estimated Delivery: {DELIVERY_TIME_STANDARD}
+              </span>
+            </div>
 
             {/* Quantity & Actions - tracked for sticky bar visibility */}
             <motion.div 

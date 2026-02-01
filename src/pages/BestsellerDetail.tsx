@@ -67,6 +67,7 @@ import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCa
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useRecentlyViewedProducts } from '@/hooks/useRecentlyViewedProducts';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
+import { DELIVERY_TIME_STANDARD } from '@/lib/shipping-constants';
 
 // Generate JSON-LD structured data for product
 const generateProductJsonLd = (
@@ -929,13 +930,11 @@ const BestsellerDetail = () => {
                 {/* Shipping Countdown Timer */}
                 <ShippingCountdown cutoffHour={15} />
 
-                {/* Shipping Info */}
-                {product.shipping_time && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
-                    <Truck className="w-4 h-4" />
-                    <span>Estimated Delivery: {product.shipping_time}</span>
-                  </div>
-                )}
+                {/* Shipping Info - Always show US standard delivery time */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
+                  <Truck className="w-4 h-4" />
+                  <span>Estimated Delivery: {DELIVERY_TIME_STANDARD}</span>
+                </div>
 
                 <Separator className="my-2" />
 
