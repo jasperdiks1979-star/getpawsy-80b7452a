@@ -8,10 +8,10 @@ const corsHeaders = {
 
 const CJ_API_BASE = 'https://developers.cjdropshipping.com/api2.0/v1';
 
-// Process only 5 products per batch - very conservative due to CJ rate limits
-const BATCH_SIZE = 5;
-// Delay between API calls (milliseconds) - 3 seconds to respect CJ rate limits
-const API_DELAY_MS = 3000;
+// Process only 3 products per batch - very conservative due to CJ rate limits
+const BATCH_SIZE = 3;
+// Delay between API calls (milliseconds) - 6 seconds to respect CJ's aggressive rate limits
+const API_DELAY_MS = 6000;
 
 interface SyncProgress {
   id: string;
@@ -159,8 +159,8 @@ async function getProductInventory(accessToken: string, productId: string) {
     );
 
     if (response.status === 429) {
-      console.log(`Rate limited on ${productId}, waiting...`);
-      await sleep(5000);
+      console.log(`Rate limited on ${productId}, waiting 15s...`);
+      await sleep(15000);
       throw new Error('Rate limited (429)');
     }
 
