@@ -48,6 +48,7 @@ const ProductResearchTool = lazy(() => import("@/components/admin/product-resear
 const ContentScraperTool = lazy(() => import("@/components/admin/content-scraper/ContentScraperTool").then(module => ({ default: module.ContentScraperTool })));
 const SupplierImportManager = lazy(() => import("@/components/admin/SupplierImportManager").then(module => ({ default: module.SupplierImportManager })));
 const AdvancedVisitorStatsWidget = lazy(() => import("@/components/admin/widgets/AdvancedVisitorStatsWidget").then(module => ({ default: module.AdvancedVisitorStatsWidget })));
+const PinterestTrafficWidget = lazy(() => import("@/components/admin/widgets/PinterestTrafficWidget").then(module => ({ default: module.PinterestTrafficWidget })));
 import { MiniKPIWidget } from "@/components/admin/MiniKPIWidget";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -2713,16 +2714,35 @@ const Admin = () => {
           {/* Visitors Analytics Tab */}
           <TabsContent value="visitors" className="space-y-6">
             <AuthErrorBoundary>
-              <Suspense fallback={
-                <Card className="p-8">
-                  <div className="flex items-center justify-center gap-3">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span>Bezoekersanalyse laden...</span>
-                  </div>
-                </Card>
-              }>
-                <AdvancedVisitorStatsWidget />
-              </Suspense>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Pinterest Traffic Widget - 1 column */}
+                <div className="lg:col-span-1">
+                  <Suspense fallback={
+                    <Card className="p-8">
+                      <div className="flex items-center justify-center gap-3">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <span>Pinterest laden...</span>
+                      </div>
+                    </Card>
+                  }>
+                    <PinterestTrafficWidget />
+                  </Suspense>
+                </div>
+                
+                {/* Advanced Stats Widget - 2 columns */}
+                <div className="lg:col-span-2">
+                  <Suspense fallback={
+                    <Card className="p-8">
+                      <div className="flex items-center justify-center gap-3">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <span>Bezoekersanalyse laden...</span>
+                      </div>
+                    </Card>
+                  }>
+                    <AdvancedVisitorStatsWidget />
+                  </Suspense>
+                </div>
+              </div>
             </AuthErrorBoundary>
           </TabsContent>
 
