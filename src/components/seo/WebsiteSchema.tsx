@@ -177,7 +177,7 @@ export function WebsiteSchema({
         name: 'What shipping options does GetPawsy offer?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'GetPawsy offers free worldwide shipping on all orders. Standard delivery takes 5-14 business days depending on your location. We ship to the US, Europe, UK, Canada, Australia and many other countries.',
+          text: 'GetPawsy offers free US shipping on orders over $35. Orders ship from US fulfillment centers when available. Standard delivery takes 3-7 business days.',
         },
       },
       {

@@ -129,7 +129,7 @@ const TermsOfService = () => {
                   <li>Shipping times are estimates and not guaranteed</li>
                   <li>Estimated delivery: 3-7 business days</li>
                   <li>Free US shipping on orders over $35</li>
-                  <li>Products ship from US warehouses when available</li>
+                  <li>Orders ship from US fulfillment centers when available</li>
                   <li>We are not responsible for delays caused by carriers</li>
                 </ul>
                 <p className="text-muted-foreground mt-4">

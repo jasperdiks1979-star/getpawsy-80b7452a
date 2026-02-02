@@ -101,8 +101,8 @@ const USProductDescription: React.FC<USProductDescriptionProps> = ({
           <div className="flex items-start gap-3">
             <Truck className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
             <div>
-              <p className="font-medium text-foreground text-sm">Ships to the United States</p>
-              <p className="text-xs text-muted-foreground">Free shipping on orders over ${FREE_SHIPPING_THRESHOLD}</p>
+              <p className="font-medium text-foreground text-sm">US Fulfillment</p>
+              <p className="text-xs text-muted-foreground">Orders ship from US centers when available</p>
             </div>
           </div>
           <div className="flex items-start gap-3">

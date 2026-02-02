@@ -42,7 +42,7 @@ import { CustomersAlsoBought } from '@/components/products/CustomersAlsoBought';
 import {
   DELIVERY_TIME_STANDARD,
   RETURNS_POLICY_SHORT,
-  US_WAREHOUSE_NOTE,
+  US_FULFILLMENT_NOTE,
   TRUST_BADGES,
 } from '@/lib/shipping-constants';
 import {

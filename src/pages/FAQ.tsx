@@ -27,7 +27,7 @@ const FAQ = () => {
         },
         {
           question: 'Where do you ship from?',
-          answer: 'We ship from US warehouses whenever possible to ensure fast delivery.',
+          answer: 'Orders ship from US fulfillment centers when available to ensure fast delivery.',
         },
         {
           question: 'Will I receive tracking information?',

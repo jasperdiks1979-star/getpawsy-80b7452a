@@ -19,8 +19,8 @@ export const DELIVERY_TIME_STANDARD = '3-7 business days';
 /** Processing time before shipping */
 export const PROCESSING_TIME = '1-2 business days';
 
-/** US warehouse shipping note */
-export const US_WAREHOUSE_NOTE = 'Ships from US warehouse when available';
+/** US fulfillment shipping note - Official wording for Google Merchant Center compliance */
+export const US_FULFILLMENT_NOTE = 'Orders ship from US fulfillment centers when available';
 
 /** Express shipping time (if available) */
 export const DELIVERY_TIME_EXPRESS = '2-5 business days';
@@ -99,13 +99,13 @@ export const getCartShippingMessage = (currentTotal: number): string => {
 export const PRODUCT_SHIPPING_INFO = {
   freeShipping: `Free US shipping on orders $${FREE_SHIPPING_THRESHOLD}+`,
   deliveryTime: `Estimated delivery: ${DELIVERY_TIME_STANDARD}`,
-  usWarehouse: US_WAREHOUSE_NOTE,
+  usFulfillment: US_FULFILLMENT_NOTE,
   returns: RETURNS_POLICY_SHORT,
 };
 
 // ============= SEO/FAQ SHIPPING TEXT =============
 
-export const FAQ_SHIPPING_ANSWER = `We offer free shipping on all orders over $${FREE_SHIPPING_THRESHOLD}. Standard delivery takes ${DELIVERY_TIME_STANDARD}. Orders ship from US warehouses when available for faster delivery.`;
+export const FAQ_SHIPPING_ANSWER = `We offer free shipping on all orders over $${FREE_SHIPPING_THRESHOLD}. Standard delivery takes ${DELIVERY_TIME_STANDARD}. Orders ship from US fulfillment centers when available for faster delivery.`;
 
 export const FAQ_RETURNS_ANSWER = `We offer a ${RETURN_WINDOW_DAYS}-day money-back guarantee on all products. If you're not satisfied, contact us at ${SUPPORT_EMAIL} with your order number for a hassle-free return.`;
 
