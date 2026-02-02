@@ -29,6 +29,7 @@ import { safeString, safeNumber, safeArray } from '@/lib/safe-render';
 import USProductDescription from '@/components/products/USProductDescription';
 import { generateClarityIntro } from '@/components/products/ClarityIntro';
 import { DeliveryReassurance } from '@/components/products/DeliveryReassurance';
+import { WhyPetParentsLoveThis } from '@/components/products/WhyPetParentsLoveThis';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { FAQSchema, generateProductFAQs } from '@/components/seo/FAQSchema';
 import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
@@ -895,6 +896,12 @@ const ProductDetail = () => {
                 {generateClarityIntro(product.name, product.category || '')}
               </p>
             </div>
+
+            {/* Why Pet Parents Choose This - Benefit-driven scannable section */}
+            <WhyPetParentsLoveThis 
+              productName={product.name} 
+              category={product.category || ''} 
+            />
 
             {/* Variants */}
             {variants.length > 0 && (
