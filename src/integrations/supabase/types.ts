@@ -2387,6 +2387,7 @@ export type Database = {
           created_at: string
           device_type: string | null
           id: string
+          last_seen_at: string | null
           latitude: number | null
           longitude: number | null
           page_path: string | null
@@ -2410,6 +2411,7 @@ export type Database = {
           created_at?: string
           device_type?: string | null
           id?: string
+          last_seen_at?: string | null
           latitude?: number | null
           longitude?: number | null
           page_path?: string | null
@@ -2433,6 +2435,7 @@ export type Database = {
           created_at?: string
           device_type?: string | null
           id?: string
+          last_seen_at?: string | null
           latitude?: number | null
           longitude?: number | null
           page_path?: string | null
@@ -2554,6 +2557,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      update_session_heartbeat: {
+        Args: { p_session_id: string }
+        Returns: undefined
       }
     }
     Enums: {
