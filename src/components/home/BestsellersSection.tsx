@@ -456,7 +456,7 @@ export const BestsellersSection = () => {
         </motion.div>
 
         {/* Loading State */}
-        {isLoading && <BestsellersGridSkeleton count={5} />}
+        {isLoading && <BestsellersGridSkeleton count={4} />}
 
         {/* Bestsellers Carousel */}
         {!isLoading && bestsellers && bestsellers.length > 0 && (

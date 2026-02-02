@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export const BestsellerCardSkeleton = memo(() => {
   return (
     <div className="bg-card rounded-2xl overflow-hidden shadow-soft">
-      {/* Image */}
+      {/* Image - same aspect ratio as ProductCard */}
       <Skeleton className="aspect-square w-full" />
       
       {/* Content */}
@@ -38,9 +38,14 @@ export const BestsellerCardSkeleton = memo(() => {
 
 BestsellerCardSkeleton.displayName = 'BestsellerCardSkeleton';
 
-export const BestsellersGridSkeleton = memo(({ count = 5 }: { count?: number }) => {
+/**
+ * IMPORTANT: This skeleton MUST match the carousel layout exactly to prevent CLS
+ * Carousel uses: basis-[92%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4
+ * So skeleton uses the same responsive grid: 1 col mobile, 2 col sm, 3 col lg, 4 col xl
+ */
+export const BestsellersGridSkeleton = memo(({ count = 4 }: { count?: number }) => {
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {Array.from({ length: count }).map((_, i) => (
         <BestsellerCardSkeleton key={i} />
       ))}

@@ -13,12 +13,18 @@ interface OptimizedImageProps {
   onLoad?: () => void;
 }
 
+/**
+ * OptimizedImage component with CLS prevention
+ * - Always reserves space using aspect-ratio CSS
+ * - Uses skeleton placeholder during load
+ * - Lazy loads non-priority images
+ */
 export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProps>(({
   src,
   alt,
   className,
   containerClassName,
-  aspectRatio = 'auto',
+  aspectRatio = 'square', // Changed default from 'auto' to 'square' to prevent CLS
   priority = false,
   width = 400,
   height = 400,
@@ -63,11 +69,12 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
     setIsLoaded(true);
   };
 
+  // Map aspect ratio to CSS class - always define dimensions to prevent CLS
   const aspectRatioClass = {
     square: 'aspect-square',
     video: 'aspect-video',
     portrait: 'aspect-[3/4]',
-    auto: '',
+    auto: 'aspect-square', // Default to square for 'auto' to prevent CLS
   }[aspectRatio];
 
   // Combine refs
@@ -88,8 +95,13 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
         aspectRatioClass,
         containerClassName
       )}
+      // Always include explicit dimensions for layout calculation
+      style={{ 
+        contain: 'layout',
+        contentVisibility: priority ? 'visible' : 'auto',
+      }}
     >
-      {/* Simple skeleton placeholder */}
+      {/* Simple skeleton placeholder - always shown until image loads */}
       {!isLoaded && (
         <div className="absolute inset-0 bg-muted skeleton-pulse" />
       )}
@@ -112,6 +124,7 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
             'transition-opacity duration-200',
             className
           )}
+          style={{ contentVisibility: 'auto' }}
         />
       )}
     </div>
