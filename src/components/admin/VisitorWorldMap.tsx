@@ -264,7 +264,7 @@ export const VisitorWorldMap = () => {
   };
 
   // Fetch visitor activities with time range
-  const { data: activities, refetch, isLoading } = useQuery({
+  const { data: activities, refetch, isLoading, isFetching } = useQuery({
     queryKey: ["visitor-activities", timeRange],
     queryFn: async () => {
       const timeRangeMs = getTimeRangeMs();
@@ -1542,10 +1542,16 @@ export const VisitorWorldMap = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => refetch()}
-              disabled={isLoading}
+              onClick={async () => {
+                await refetch();
+                toast({
+                  title: "Vernieuwd",
+                  description: "Kaart data is bijgewerkt",
+                });
+              }}
+              disabled={isLoading || isFetching}
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-4 h-4 mr-2 ${(isLoading || isFetching) ? "animate-spin" : ""}`} />
               Vernieuwen
             </Button>
           </div>
