@@ -50,6 +50,7 @@ const SupplierImportManager = lazy(() => import("@/components/admin/SupplierImpo
 const AdvancedVisitorStatsWidget = lazy(() => import("@/components/admin/widgets/AdvancedVisitorStatsWidget").then(module => ({ default: module.AdvancedVisitorStatsWidget })));
 const PinterestTrafficWidget = lazy(() => import("@/components/admin/widgets/PinterestTrafficWidget").then(module => ({ default: module.PinterestTrafficWidget })));
 const PinterestAdsWidget = lazy(() => import("@/components/admin/widgets/PinterestAdsWidget").then(module => ({ default: module.PinterestAdsWidget })));
+import { TrafficReportDownload } from "@/components/admin/TrafficReportDownload";
 import { MiniKPIWidget } from "@/components/admin/MiniKPIWidget";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -2715,6 +2716,11 @@ const Admin = () => {
           {/* Visitors Analytics Tab */}
           <TabsContent value="visitors" className="space-y-6">
             <AuthErrorBoundary>
+              {/* Traffic Report Download Button */}
+              <div className="flex justify-end">
+                <TrafficReportDownload />
+              </div>
+
               {/* Pinterest Ads Performance - Full Width */}
               <Suspense fallback={
                 <Card className="p-8">
