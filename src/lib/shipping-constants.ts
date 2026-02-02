@@ -13,6 +13,9 @@
 /** Free shipping threshold in USD */
 export const FREE_SHIPPING_THRESHOLD = 35;
 
+/** Flat shipping rate for orders under threshold in USD */
+export const FLAT_SHIPPING_RATE = 5.99;
+
 /** Standard delivery time for US orders */
 export const DELIVERY_TIME_STANDARD = '3-7 business days';
 
@@ -61,7 +64,7 @@ export const OPERATING_COUNTRY = 'US-based support';
 export const TRUST_BADGES = {
   shipping: {
     title: 'Free US Shipping',
-    subtitle: `On orders $${FREE_SHIPPING_THRESHOLD}+`,
+    subtitle: `On orders over $${FREE_SHIPPING_THRESHOLD}`,
   },
   delivery: {
     title: 'Fast Delivery',
@@ -95,6 +98,9 @@ export const getCartShippingMessage = (currentTotal: number): string => {
   return `Add $${remaining.toFixed(2)} more for FREE shipping!`;
 };
 
+/** Flat rate shipping message */
+export const FLAT_RATE_MESSAGE = `Orders under $${FREE_SHIPPING_THRESHOLD} ship for a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}.`;
+
 /** Product page shipping info */
 export const PRODUCT_SHIPPING_INFO = {
   freeShipping: `Free US shipping on orders $${FREE_SHIPPING_THRESHOLD}+`,
@@ -105,7 +111,7 @@ export const PRODUCT_SHIPPING_INFO = {
 
 // ============= SEO/FAQ SHIPPING TEXT =============
 
-export const FAQ_SHIPPING_ANSWER = `We offer free shipping on all orders over $${FREE_SHIPPING_THRESHOLD}. Standard delivery takes ${DELIVERY_TIME_STANDARD}. Orders ship from US fulfillment centers when available for faster delivery.`;
+export const FAQ_SHIPPING_ANSWER = `We offer free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Orders under $${FREE_SHIPPING_THRESHOLD} ship for a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}. Standard delivery takes ${DELIVERY_TIME_STANDARD}. Orders ship from US fulfillment centers when available.`;
 
 export const FAQ_RETURNS_ANSWER = `We offer a ${RETURN_WINDOW_DAYS}-day money-back guarantee on all products. If you're not satisfied, contact us at ${SUPPORT_EMAIL} with your order number for a hassle-free return.`;
 

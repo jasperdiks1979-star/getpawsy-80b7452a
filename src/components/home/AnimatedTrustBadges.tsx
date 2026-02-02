@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Truck, Shield, HeartHandshake, Clock } from 'lucide-react';
-import { FREE_SHIPPING_THRESHOLD, RETURN_WINDOW_DAYS } from '@/lib/shipping-constants';
+import { FREE_SHIPPING_THRESHOLD, RETURN_WINDOW_DAYS, DELIVERY_TIME_STANDARD } from '@/lib/shipping-constants';
 
 const badges = [
   {
@@ -12,7 +12,7 @@ const badges = [
   {
     icon: Clock,
     title: 'Fast Delivery',
-    description: '3-7 business days',
+    description: DELIVERY_TIME_STANDARD,
     color: 'sand',
   },
   {

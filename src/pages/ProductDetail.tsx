@@ -1137,9 +1137,9 @@ const ProductDetail = () => {
               <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
                 <span className="font-medium text-foreground">Fast US shipping</span>
                 <span className="text-border">•</span>
-                <span>Free shipping over $35</span>
+                <span>Free on orders over $35</span>
                 <span className="text-border">•</span>
-                <span>30-day hassle-free returns</span>
+                <span>$5.99 flat rate under $35</span>
               </p>
               <p className="mt-1.5 text-xs">
                 Secure checkout • Real customer support
@@ -1371,10 +1371,10 @@ const ProductDetail = () => {
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
                 <div className="grid md:grid-cols-2 gap-6">
                   {[
-                    { emoji: '🇺🇸', text: 'Ships from USA' },
-                    { emoji: '📦', text: 'Standard shipping: 5-7 business days' },
-                    { emoji: '🚀', text: 'Express shipping: 2-3 business days' },
-                    { emoji: '✨', text: 'Free shipping on all orders' },
+                    { emoji: '🇺🇸', text: 'Ships from US fulfillment centers' },
+                    { emoji: '📦', text: 'Standard delivery: 3-7 business days' },
+                    { emoji: '✨', text: 'Free shipping on orders over $35' },
+                    { emoji: '💰', text: '$5.99 flat rate under $35' },
                   ].map((item, idx) => (
                     <motion.div 
                       key={idx}

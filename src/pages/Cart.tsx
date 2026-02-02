@@ -9,9 +9,11 @@ import { CartUpsell } from '@/components/cart/CartUpsell';
 import { safeString, safeNumber } from '@/lib/safe-render';
 import {
   FREE_SHIPPING_THRESHOLD,
+  FLAT_SHIPPING_RATE,
   DELIVERY_TIME_STANDARD,
   RETURNS_POLICY_SHORT,
   TRUST_BADGES,
+  US_FULFILLMENT_NOTE,
 } from '@/lib/shipping-constants';
 import {
   Breadcrumb,
@@ -25,7 +27,8 @@ import {
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
 
-  const shipping = 0; // Free shipping on all orders
+  // Apply flat rate shipping for orders under threshold
+  const shipping = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE;
   const tax = totalPrice * 0.08;
   const total = totalPrice + shipping + tax;
   
@@ -187,7 +190,11 @@ const Cart = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span className="font-medium text-green-600">Free</span>
+                  {shipping === 0 ? (
+                    <span className="font-medium text-green-600">Free</span>
+                  ) : (
+                    <span className="font-medium">${shipping.toFixed(2)}</span>
+                  )}
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tax (estimated)</span>
@@ -231,7 +238,7 @@ const Cart = () => {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Truck className="w-4 h-4 text-primary" />
-                  <span>Ships from US warehouse • {DELIVERY_TIME_STANDARD}</span>
+                  <span>{US_FULFILLMENT_NOTE} • {DELIVERY_TIME_STANDARD}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Star className="w-4 h-4 text-amber-500" />
