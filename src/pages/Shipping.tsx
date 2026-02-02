@@ -65,14 +65,14 @@ const Shipping = () => {
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <p className="text-foreground">
-                      Products ship from US warehouses when available.
+                      Orders ship from US fulfillment centers when available.
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-6 p-4 bg-muted/50 rounded-xl">
                   <p className="text-sm text-muted-foreground">
-                    <strong className="text-foreground">Please note:</strong> If a product is temporarily not available in a US warehouse, delivery may take slightly longer. Delivery estimates are always shown on each product page so you know exactly what to expect.
+                    <strong className="text-foreground">Please note:</strong> If a product is temporarily not available at a US fulfillment center, delivery may take slightly longer. Delivery estimates are always shown on each product page so you know exactly what to expect.
                   </p>
                 </div>
               </div>
