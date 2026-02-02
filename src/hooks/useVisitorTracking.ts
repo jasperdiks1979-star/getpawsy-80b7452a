@@ -69,7 +69,18 @@ const getSessionId = (): string => {
 };
 
 // Extract UTM parameters from URL, with Pinterest auto-detection
+// Also persists them to sessionStorage so cart/checkout events can inherit them
 const getUTMParams = (): UTMParams => {
+  // First check if we already have UTM params stored (to preserve attribution across page navigations)
+  const storedSource = sessionStorage.getItem("utm_source");
+  if (storedSource) {
+    return {
+      utm_source: storedSource,
+      utm_medium: sessionStorage.getItem("utm_medium"),
+      utm_campaign: sessionStorage.getItem("utm_campaign"),
+    };
+  }
+  
   const params = new URLSearchParams(window.location.search);
   
   // Check for Pinterest-specific parameters
@@ -82,16 +93,40 @@ const getUTMParams = (): UTMParams => {
     utm_source = 'pinterest';
   }
   
+  const utm_medium = params.get('utm_medium') || (hasPinterestParam ? 'social' : null);
+  const utm_campaign = params.get('utm_campaign') || (hasPinterestParam ? 'pinterest_auto' : null);
+  
+  // Store in sessionStorage for cart/checkout tracking to inherit
+  if (utm_source) {
+    sessionStorage.setItem("utm_source", utm_source);
+  }
+  if (utm_medium) {
+    sessionStorage.setItem("utm_medium", utm_medium);
+  }
+  if (utm_campaign) {
+    sessionStorage.setItem("utm_campaign", utm_campaign);
+  }
+  
   return {
     utm_source,
-    utm_medium: params.get('utm_medium') || (hasPinterestParam ? 'social' : null),
-    utm_campaign: params.get('utm_campaign') || (hasPinterestParam ? 'pinterest_auto' : null),
+    utm_medium,
+    utm_campaign,
   };
 };
 
 // Get full referrer URL for better tracking
+// Also persists to sessionStorage so cart/checkout events can inherit
 const getReferrer = (): string | null => {
+  // First check if we already have referrer stored
+  const storedReferrer = sessionStorage.getItem("original_referrer");
+  if (storedReferrer) {
+    return storedReferrer;
+  }
+  
   if (!document.referrer) return null;
+  
+  // Store the original referrer for the session
+  sessionStorage.setItem("original_referrer", document.referrer);
   return document.referrer;
 };
 

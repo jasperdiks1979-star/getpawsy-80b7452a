@@ -180,6 +180,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       
+      // Preserve UTM parameters from session storage (set on initial page load)
+      const utmSource = sessionStorage.getItem("utm_source") || null;
+      const utmMedium = sessionStorage.getItem("utm_medium") || null;
+      const utmCampaign = sessionStorage.getItem("utm_campaign") || null;
+      const referrer = sessionStorage.getItem("original_referrer") || null;
+      
       // Always insert the activity, even without location
       const { error } = await supabase.from("visitor_activity").insert({
         session_id: sessionId,
@@ -188,6 +194,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         longitude: locationData.longitude || null,
         country: locationData.country || null,
         city: locationData.city || null,
+        utm_source: utmSource,
+        utm_medium: utmMedium,
+        utm_campaign: utmCampaign,
+        referrer: referrer,
       });
       
       if (error) {
