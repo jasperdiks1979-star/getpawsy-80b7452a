@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Heart, Truck, Shield, Minus, Plus, ChevronLeft, ChevronRight, ZoomIn, Package, RotateCcw, Award, Star, Clock, MessageSquare, Ruler, Weight, Box, Info, Home } from 'lucide-react';
+import { ShoppingCart, Heart, Truck, Shield, Minus, Plus, ChevronLeft, ChevronRight, ZoomIn, Package, Award, Star, Clock, MessageSquare, Ruler, Weight, Box, Info, Home } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,11 +27,12 @@ import { trackViewItem } from '@/lib/analytics';
 import { calculateSellingPrice } from '@/lib/pricing';
 import { safeString, safeNumber, safeArray } from '@/lib/safe-render';
 import USProductDescription from '@/components/products/USProductDescription';
+import { generateClarityIntro } from '@/components/products/ClarityIntro';
+import { DeliveryReassurance } from '@/components/products/DeliveryReassurance';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { FAQSchema, generateProductFAQs } from '@/components/seo/FAQSchema';
 import { ProductDetailSkeleton } from '@/components/products/ProductDetailSkeleton';
 import { StockNotificationForm } from '@/components/products/StockNotificationForm';
-import { ShippingCountdown } from '@/components/products/ShippingCountdown';
 import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
 import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCarousel';
 import { FrequentlyBoughtTogether } from '@/components/products/FrequentlyBoughtTogether';
@@ -41,8 +42,6 @@ import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
 import { CustomersAlsoBought } from '@/components/products/CustomersAlsoBought';
 import {
   DELIVERY_TIME_STANDARD,
-  RETURNS_POLICY_SHORT,
-  US_FULFILLMENT_NOTE,
   TRUST_BADGES,
 } from '@/lib/shipping-constants';
 import {
@@ -890,17 +889,12 @@ const ProductDetail = () => {
               )}
             </motion.div>
 
-            {/* Short Description - Truncated preview */}
-            {product.description && (
-              <div className="text-muted-foreground leading-relaxed break-words overflow-hidden">
-                <p className="line-clamp-4 text-[15px] leading-relaxed">
-                  {product.description.replace(/<[^>]*>/g, '').replace(/\*\*/g, '').substring(0, 250)}
-                  {product.description.length > 250 && (
-                    <span className="text-primary font-medium cursor-pointer"> ...read more below</span>
-                  )}
-                </p>
-              </div>
-            )}
+            {/* Short Description - Clarity-first intro for cold traffic */}
+            <div className="text-muted-foreground leading-relaxed break-words overflow-hidden">
+              <p className="text-[15px] leading-relaxed">
+                {generateClarityIntro(product.name, product.category || '')}
+              </p>
+            </div>
 
             {/* Variants */}
             {variants.length > 0 && (
@@ -1048,11 +1042,11 @@ const ProductDetail = () => {
               </motion.div>
             )}
 
-            {/* Stock Status */}
+            {/* Stock Status - Simple, no quantity pressure */}
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${inStock ? 'bg-success animate-pulse' : 'bg-destructive'}`} />
+              <div className={`w-3 h-3 rounded-full ${inStock ? 'bg-success' : 'bg-destructive'}`} />
               <span className="font-medium text-foreground">
-                {inStock ? `In Stock (${product.stock} available)` : 'Out of Stock'}
+                {inStock ? 'In Stock' : 'Out of Stock'}
               </span>
             </div>
 
@@ -1064,14 +1058,11 @@ const ProductDetail = () => {
               />
             )}
 
-            {/* Shipping Countdown Timer */}
-            <ShippingCountdown cutoffHour={15} />
-
-            {/* Shipping Time - Always show US standard delivery time */}
+            {/* Shipping Info - Calm, factual delivery estimate */}
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Truck className="w-4 h-4" />
+              <Truck className="w-4 h-4 text-primary" />
               <span className="text-sm">
-                Estimated Delivery: {DELIVERY_TIME_STANDARD}
+                Estimated delivery: {DELIVERY_TIME_STANDARD}
               </span>
             </div>
 
@@ -1127,36 +1118,38 @@ const ProductDetail = () => {
               </Button>
             </motion.div>
 
-            {/* Trust Microcopy - Below Add to Cart */}
+            {/* Trust Microcopy - Below Add to Cart (Above-the-fold trust stack) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="text-center text-sm text-muted-foreground pt-5 pb-2"
+              className="pt-4 pb-2"
             >
-              <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-                <span className="font-medium text-foreground">Fast US shipping</span>
-                <span className="text-border">•</span>
-                <span>Free on orders over $35</span>
-                <span className="text-border">•</span>
-                <span>$5.99 flat rate under $35</span>
-              </p>
-              <p className="mt-1.5 text-xs">
-                Secure checkout • Real customer support
-              </p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p className="flex items-center gap-2">
+                  <span className="text-success">✔</span>
+                  <span>Free US shipping over $35</span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="text-success">✔</span>
+                  <span>Ships from US fulfillment centers</span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="text-success">✔</span>
+                  <span>30-day hassle-free returns</span>
+                </p>
+              </div>
             </motion.div>
 
-            {/* Trust Features */}
+            {/* Trust Features - Complementary to above microcopy */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="grid grid-cols-2 gap-4 pt-6 border-t border-border/50"
+              className="grid grid-cols-2 gap-3 pt-4"
             >
               {[
-                { icon: Truck, title: TRUST_BADGES.shipping.title, subtitle: TRUST_BADGES.shipping.subtitle },
-                { icon: Shield, title: TRUST_BADGES.returns.title, subtitle: RETURNS_POLICY_SHORT },
-                { icon: RotateCcw, title: 'Easy Exchanges', subtitle: 'Free exchanges' },
+                { icon: Shield, title: 'Secure Checkout', subtitle: 'Powered by Stripe' },
                 { icon: Award, title: TRUST_BADGES.quality.title, subtitle: TRUST_BADGES.quality.subtitle },
               ].map((feature, idx) => (
                 <motion.div 
@@ -1164,10 +1157,10 @@ const ProductDetail = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 + idx * 0.1 }}
-                  className="flex items-center gap-3"
+                  className="flex items-center gap-2.5"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <feature.icon className="w-5 h-5 text-primary" />
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <feature.icon className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <p className="font-medium text-sm text-foreground">{feature.title}</p>
@@ -1179,12 +1172,22 @@ const ProductDetail = () => {
           </motion.div>
         </div>
 
+        {/* Mid-Page Delivery & Returns Reassurance - Visible before scrolling to tabs */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-12"
+        >
+          <DeliveryReassurance />
+        </motion.div>
+
         {/* Tabs Section */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="mt-16"
+          className="mt-12"
         >
           <Tabs defaultValue="description" className="w-full">
             <TabsList className="w-full justify-start border-b border-border/50 bg-transparent p-0 h-auto flex-wrap">
