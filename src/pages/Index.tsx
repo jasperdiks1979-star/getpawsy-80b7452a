@@ -372,6 +372,8 @@ const Index = () => {
           <img
             src="https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1920&q=85"
             alt="Happy dog relaxing at home with premium pet products"
+            width={1920}
+            height={1080}
             className="w-full h-full object-cover object-center"
             loading="eager"
             fetchPriority="high"
