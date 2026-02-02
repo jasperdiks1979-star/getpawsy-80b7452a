@@ -39,10 +39,13 @@ export function CategorySchema({
     ? getKeywordsForCategory(categoryName).slice(0, 20)
     : [...SEO_KEYWORDS.primary, ...SEO_KEYWORDS.trending.slice(0, 10)];
 
+  // CRITICAL: Canonical URLs must be CLEAN - no query parameters for search/sort/filters
+  // This prevents duplicate content issues in Google Search Console
+  // Search pages get noindex anyway, so canonical points to base products page
   const canonicalUrl = isSearch
-    ? `${baseUrl}/products?search=${encodeURIComponent(searchQuery!)}`
+    ? `${baseUrl}/products` // Search results canonicalize to main products page
     : categoryName
-      ? `${baseUrl}/products?category=${encodeURIComponent(categoryName)}`
+      ? `${baseUrl}/products?category=${encodeURIComponent(categoryName)}` // Category is the only allowed param
       : `${baseUrl}/products`;
 
   // Enhanced Collection Schema with ItemList

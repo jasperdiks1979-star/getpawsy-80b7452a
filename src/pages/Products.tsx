@@ -484,16 +484,7 @@ const Products = () => {
 
   return (
     <Layout>
-      <Helmet>
-        <title>{pageTitle}</title>
-        <meta name="description" content={metaDescription} />
-        <meta name="keywords" content={metaKeywords} />
-        <link rel="canonical" href={`https://getpawsy.pet/products${categoryParam ? `?category=${categoryParam}` : ''}`} />
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={metaDescription} />
-        <meta property="og:type" content="website" />
-        {searchQuery && <meta name="robots" content="noindex, follow" />}
-      </Helmet>
+      {/* CategorySchema handles canonical URL, structured data, and noindex for search pages */}
       <CategorySchema 
         categoryName={categoryDisplayName || undefined}
         searchQuery={searchQuery || undefined}
@@ -506,6 +497,12 @@ const Products = () => {
           image_url: p.image_url,
         }))}
       />
+      {/* Additional meta tags not in CategorySchema */}
+      <Helmet>
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:type" content="website" />
+      </Helmet>
       <div className="container px-4 md:px-6 py-8">
         {/* Breadcrumbs */}
         <Breadcrumb className="mb-6">
