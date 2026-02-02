@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   FREE_SHIPPING_THRESHOLD,
+  FLAT_SHIPPING_RATE,
   DELIVERY_TIME_STANDARD,
   PROCESSING_TIME,
   RETURN_WINDOW_DAYS,
@@ -54,6 +55,12 @@ const Shipping = () => {
                     <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <p className="text-foreground">
                       <strong>Free US shipping</strong> on orders over ${FREE_SHIPPING_THRESHOLD}.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-foreground">
+                      Orders under ${FREE_SHIPPING_THRESHOLD} ship for a <strong>flat rate of ${FLAT_SHIPPING_RATE.toFixed(2)}</strong>.
                     </p>
                   </div>
                   <div className="flex items-start gap-3">

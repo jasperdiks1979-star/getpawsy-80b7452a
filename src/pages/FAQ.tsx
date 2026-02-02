@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   FREE_SHIPPING_THRESHOLD,
+  FLAT_SHIPPING_RATE,
   DELIVERY_TIME_STANDARD,
   RETURN_WINDOW_DAYS,
   SUPPORT_EMAIL,
@@ -23,7 +24,7 @@ const FAQ = () => {
         },
         {
           question: 'Do you offer free shipping?',
-          answer: `Yes! We offer free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}.`,
+          answer: `Yes! We offer free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Orders under $${FREE_SHIPPING_THRESHOLD} ship for a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}.`,
         },
         {
           question: 'Where do you ship from?',

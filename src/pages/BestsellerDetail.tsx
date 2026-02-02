@@ -133,7 +133,7 @@ const generateProductJsonLd = (
         '@type': 'OfferShippingDetails',
         shippingRate: {
           '@type': 'MonetaryAmount',
-          value: '0',
+          value: '5.99',
           currency: 'USD'
         },
         shippingDestination: {
@@ -145,13 +145,13 @@ const generateProductJsonLd = (
           handlingTime: {
             '@type': 'QuantitativeValue',
             minValue: 1,
-            maxValue: 3,
+            maxValue: 2,
             unitCode: 'DAY'
           },
           transitTime: {
             '@type': 'QuantitativeValue',
-            minValue: 5,
-            maxValue: 15,
+            minValue: 3,
+            maxValue: 7,
             unitCode: 'DAY'
           }
         }
@@ -1022,7 +1022,7 @@ const BestsellerDetail = () => {
                     </div>
                     <div className="text-sm">
                       <p className="font-semibold">Free US Shipping</p>
-                      <p className="text-muted-foreground text-xs">Orders over $35</p>
+                      <p className="text-muted-foreground text-xs">On orders over $35</p>
                     </div>
                   </motion.div>
                   <motion.div 
@@ -1269,8 +1269,8 @@ const BestsellerDetail = () => {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-5 pl-13">
-                      We offer free US shipping on all orders over $35. Standard delivery takes 3-7 business days. 
-                      Once your order is shipped, you'll receive a tracking number to monitor your package's journey to your doorstep.
+                      We offer free US shipping on orders over $35. Orders under $35 ship for a flat rate of $5.99. 
+                      Standard delivery takes 3-7 business days. Once your order is shipped, you'll receive a tracking number to monitor your package.
                     </AccordionContent>
                   </AccordionItem>
 
