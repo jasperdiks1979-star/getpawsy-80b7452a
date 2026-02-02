@@ -33,10 +33,12 @@ const PRODUCTION_DOMAINS = [
 ];
 
 // Known bot user agent patterns
+// Note: Do NOT include generic 'pinterest' - this blocks real users from the Pinterest in-app browser
+// Only block 'pinterestbot' which is their official crawler
 const BOT_PATTERNS = [
   'googlebot', 'bingbot', 'yandexbot', 'duckduckbot', 'slurp', 'baiduspider',
   'facebookexternalhit', 'twitterbot', 'rogerbot', 'linkedinbot', 'embedly',
-  'quora link preview', 'showyoubot', 'outbrain', 'pinterest', 'pinterestbot',
+  'quora link preview', 'showyoubot', 'outbrain', 'pinterestbot',
   'applebot', 'semrushbot', 'ahrefsbot', 'mj12bot', 'dotbot', 'petalbot',
   'bytespider', 'gptbot', 'chatgpt', 'claudebot', 'anthropic', 'bot/', '/bot',
   'crawler', 'spider', 'scraper', 'headless', 'phantom', 'selenium', 'puppeteer',
