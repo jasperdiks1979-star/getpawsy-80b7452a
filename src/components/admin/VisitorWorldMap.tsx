@@ -30,6 +30,7 @@ interface VisitorActivity {
   country: string | null;
   city: string | null;
   created_at: string;
+  last_seen_at?: string;
 }
 
 const ACTIVITY_COLORS = {
@@ -267,6 +268,31 @@ export const VisitorWorldMap = () => {
     queryKey: ["visitor-activities", timeRange],
     queryFn: async () => {
       const timeRangeMs = getTimeRangeMs();
+      
+      if (timeRange === "live") {
+        // For LIVE mode: only show sessions with heartbeat in the last 60 seconds
+        const sixtySecondsAgo = new Date(Date.now() - 60 * 1000).toISOString();
+        const { data, error } = await supabase
+          .from("visitor_activity")
+          .select("*")
+          .gte("last_seen_at", sixtySecondsAgo)
+          .order("last_seen_at", { ascending: false });
+
+        if (error) throw error;
+        
+        // Dedupe by session_id - keep only the latest activity per session
+        const sessionMap = new Map<string, VisitorActivity>();
+        (data || []).forEach((activity) => {
+          const typedActivity = activity as unknown as VisitorActivity;
+          if (!sessionMap.has(typedActivity.session_id)) {
+            sessionMap.set(typedActivity.session_id, typedActivity);
+          }
+        });
+        
+        return Array.from(sessionMap.values());
+      }
+      
+      // For historical modes: use created_at as before
       const { data, error } = await supabase
         .from("visitor_activity")
         .select("*")
@@ -276,7 +302,8 @@ export const VisitorWorldMap = () => {
       if (error) throw error;
       return (data || []) as VisitorActivity[];
     },
-    refetchInterval: timeRange === "live" ? 5000 : timeRange === "15m" || timeRange === "1h" ? 10000 : 30000,
+    // Live mode refreshes every 3 seconds for real-time feel
+    refetchInterval: timeRange === "live" ? 3000 : timeRange === "15m" || timeRange === "1h" ? 10000 : 30000,
   });
 
   // Combine fetched activities with live activities (for live mode only)
