@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { generateProductKeywords, generateMetaDescription } from '@/lib/seo-keywords';
+import { FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_RATE } from '@/lib/shipping-constants';
 
 interface ProductSchemaProps {
   product: {
@@ -104,7 +105,8 @@ export function ProductSchema({
       url: `${baseUrl}/product/${productPath}`,
       priceCurrency: 'USD',
       price: product.price.toFixed(2),
-      priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      // Use a fixed future date for stability (Google recommends at least 1 year)
+      priceValidUntil: '2027-12-31',
       availability: (product.stock ?? 0) > 0 
         ? 'https://schema.org/InStock' 
         : 'https://schema.org/OutOfStock',
@@ -117,45 +119,75 @@ export function ProductSchema({
       hasMerchantReturnPolicy: {
         '@type': 'MerchantReturnPolicy',
         '@id': `${baseUrl}/#returnpolicy`,
-        applicableCountry: ['US', 'NL', 'GB', 'DE', 'FR', 'BE', 'AU', 'CA'],
+        applicableCountry: 'US',
         returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
         merchantReturnDays: 30,
         returnMethod: 'https://schema.org/ReturnByMail',
         returnFees: 'https://schema.org/FreeReturn',
       },
-      shippingDetails: {
-        '@type': 'OfferShippingDetails',
-        '@id': `${baseUrl}/#shippingdetails`,
-        shippingRate: {
-          '@type': 'MonetaryAmount',
-          value: '0',
-          currency: 'USD',
-        },
-        shippingDestination: [
-          { '@type': 'DefinedRegion', addressCountry: 'US' },
-          { '@type': 'DefinedRegion', addressCountry: 'NL' },
-          { '@type': 'DefinedRegion', addressCountry: 'GB' },
-          { '@type': 'DefinedRegion', addressCountry: 'DE' },
-          { '@type': 'DefinedRegion', addressCountry: 'FR' },
-          { '@type': 'DefinedRegion', addressCountry: 'AU' },
-          { '@type': 'DefinedRegion', addressCountry: 'CA' },
-        ],
-        deliveryTime: {
-          '@type': 'ShippingDeliveryTime',
-          handlingTime: {
-            '@type': 'QuantitativeValue',
-            minValue: 1,
-            maxValue: 3,
-            unitCode: 'DAY',
+      // Shipping details - reflects actual policy: Free over $35, $5.99 flat rate under $35
+      shippingDetails: [
+        {
+          '@type': 'OfferShippingDetails',
+          '@id': `${baseUrl}/#shipping-free`,
+          shippingRate: {
+            '@type': 'MonetaryAmount',
+            value: '0.00',
+            currency: 'USD',
           },
-          transitTime: {
-            '@type': 'QuantitativeValue',
-            minValue: 5,
-            maxValue: 14,
-            unitCode: 'DAY',
+          shippingDestination: {
+            '@type': 'DefinedRegion',
+            addressCountry: 'US',
           },
+          deliveryTime: {
+            '@type': 'ShippingDeliveryTime',
+            handlingTime: {
+              '@type': 'QuantitativeValue',
+              minValue: 1,
+              maxValue: 2,
+              unitCode: 'DAY',
+            },
+            transitTime: {
+              '@type': 'QuantitativeValue',
+              minValue: 3,
+              maxValue: 7,
+              unitCode: 'DAY',
+            },
+          },
+          // Free shipping applies to orders over $35
+          shippingLabel: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}`,
         },
-      },
+        {
+          '@type': 'OfferShippingDetails',
+          '@id': `${baseUrl}/#shipping-flat`,
+          shippingRate: {
+            '@type': 'MonetaryAmount',
+            value: FLAT_SHIPPING_RATE.toFixed(2),
+            currency: 'USD',
+          },
+          shippingDestination: {
+            '@type': 'DefinedRegion',
+            addressCountry: 'US',
+          },
+          deliveryTime: {
+            '@type': 'ShippingDeliveryTime',
+            handlingTime: {
+              '@type': 'QuantitativeValue',
+              minValue: 1,
+              maxValue: 2,
+              unitCode: 'DAY',
+            },
+            transitTime: {
+              '@type': 'QuantitativeValue',
+              minValue: 3,
+              maxValue: 7,
+              unitCode: 'DAY',
+            },
+          },
+          // Flat rate for orders under $35
+          shippingLabel: `Flat rate $${FLAT_SHIPPING_RATE.toFixed(2)} for orders under $${FREE_SHIPPING_THRESHOLD}`,
+        },
+      ],
     },
     ...(hasReviews && aggregateRating && {
       aggregateRating: {
