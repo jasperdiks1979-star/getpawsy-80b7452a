@@ -573,13 +573,31 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats, onOp
           </div>
 
           <div className="space-y-2">
-            <Label>Content</Label>
-            <RichTextEditor
-              content={content}
-              onChange={setContent}
-              placeholder="Write your newsletter here or generate with AI..."
-              className="min-h-[200px]"
-            />
+            <div className="flex items-center justify-between">
+              <Label>Content Preview</Label>
+              {content && (
+                <Badge variant="outline" className="text-xs">
+                  Email preview
+                </Badge>
+              )}
+            </div>
+            {content ? (
+              <div className="border rounded-lg overflow-hidden bg-white">
+                <iframe
+                  srcDoc={content}
+                  title="Email Preview"
+                  className="w-full min-h-[400px] border-0"
+                  sandbox="allow-same-origin"
+                />
+              </div>
+            ) : (
+              <div className="border rounded-lg p-8 text-center text-muted-foreground bg-muted/20 min-h-[200px] flex items-center justify-center">
+                <div>
+                  <Mail className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Generate content with AI or write manually</p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
