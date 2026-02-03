@@ -6,6 +6,10 @@ interface TrafficReportData {
   totalEvents: number;
   cartSessions: number;
   checkoutSessions: number;
+  purchaseSessions: number;
+  addToCartSessions: number;
+  viewCartSessions: number;
+  productViewSessions: number;
   devices: Array<{ device_type: string; sessions: number }>;
   browsers: Array<{ browser: string; sessions: number }>;
   referrerCategories: Array<{ referrer_category: string; sessions: number }>;
@@ -13,11 +17,16 @@ interface TrafficReportData {
   locations: Array<{ country: string; city: string; sessions: number }>;
   topPages: Array<{ page_path: string; visits: number }>;
   hourlyTraffic: Array<{ hour: string; sessions: number }>;
+  funnelEvents: Array<{ activity_type: string; count: number; unique_sessions: number }>;
+  conversionRate: number;
+  cartToCheckoutRate: number;
+  checkoutToPurchaseRate: number;
 }
 
 async function fetchTrafficData(): Promise<TrafficReportData> {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
+  // Fetch all data in parallel, excluding internal traffic (Netherlands)
   const [
     devicesResult,
     browsersResult,
@@ -26,30 +35,42 @@ async function fetchTrafficData(): Promise<TrafficReportData> {
     locationsResult,
     pagesResult,
     hourlyResult,
+    funnelResult,
   ] = await Promise.all([
     supabase.from("visitor_activity")
       .select("device_type, session_id")
-      .gte("created_at", cutoff),
+      .gte("created_at", cutoff)
+      .or("is_internal.is.null,is_internal.eq.false"),
     supabase.from("visitor_activity")
       .select("browser, session_id")
-      .gte("created_at", cutoff),
+      .gte("created_at", cutoff)
+      .or("is_internal.is.null,is_internal.eq.false"),
     supabase.from("visitor_activity")
       .select("referrer_category, session_id")
-      .gte("created_at", cutoff),
+      .gte("created_at", cutoff)
+      .or("is_internal.is.null,is_internal.eq.false"),
     supabase.from("visitor_activity")
       .select("utm_source, utm_medium, utm_campaign, session_id")
       .gte("created_at", cutoff)
-      .not("utm_source", "is", null),
+      .not("utm_source", "is", null)
+      .or("is_internal.is.null,is_internal.eq.false"),
     supabase.from("visitor_activity")
       .select("country, city, session_id")
-      .gte("created_at", cutoff),
+      .gte("created_at", cutoff)
+      .or("is_internal.is.null,is_internal.eq.false"),
     supabase.from("visitor_activity")
       .select("page_path, session_id")
       .gte("created_at", cutoff)
-      .not("page_path", "is", null),
+      .not("page_path", "is", null)
+      .or("is_internal.is.null,is_internal.eq.false"),
     supabase.from("visitor_activity")
       .select("created_at, session_id")
-      .gte("created_at", cutoff),
+      .gte("created_at", cutoff)
+      .or("is_internal.is.null,is_internal.eq.false"),
+    supabase.from("visitor_activity")
+      .select("activity_type, session_id")
+      .gte("created_at", cutoff)
+      .or("is_internal.is.null,is_internal.eq.false"),
   ]);
 
   // Process devices
@@ -136,26 +157,78 @@ async function fetchTrafficData(): Promise<TrafficReportData> {
     .map(([hour, sessions]) => ({ hour, sessions: sessions.size }))
     .sort((a, b) => a.hour.localeCompare(b.hour));
 
-  // Calculate totals
+  // Process funnel events - count by activity type
+  const funnelMap = new Map<string, { count: number; sessions: Set<string> }>();
+  funnelResult.data?.forEach((row: any) => {
+    const type = row.activity_type;
+    if (!funnelMap.has(type)) {
+      funnelMap.set(type, { count: 0, sessions: new Set() });
+    }
+    const entry = funnelMap.get(type)!;
+    entry.count++;
+    entry.sessions.add(row.session_id);
+  });
+
+  const funnelEvents = Array.from(funnelMap.entries())
+    .map(([activity_type, data]) => ({
+      activity_type,
+      count: data.count,
+      unique_sessions: data.sessions.size,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // Calculate totals from funnel data
   const allSessions = new Set<string>();
   const cartSessions = new Set<string>();
   const checkoutSessions = new Set<string>();
-  
-  const allData = await supabase.from("visitor_activity")
-    .select("session_id, activity_type")
-    .gte("created_at", cutoff);
-  
-  allData.data?.forEach((row: any) => {
+  const purchaseSessions = new Set<string>();
+  const addToCartSessions = new Set<string>();
+  const viewCartSessions = new Set<string>();
+  const productViewSessions = new Set<string>();
+
+  funnelResult.data?.forEach((row: any) => {
     allSessions.add(row.session_id);
-    if (row.activity_type === "cart") cartSessions.add(row.session_id);
-    if (row.activity_type === "checkout") checkoutSessions.add(row.session_id);
+    switch (row.activity_type) {
+      case "cart":
+        cartSessions.add(row.session_id);
+        break;
+      case "checkout":
+        checkoutSessions.add(row.session_id);
+        break;
+      case "purchase":
+        purchaseSessions.add(row.session_id);
+        break;
+      case "add_to_cart":
+        addToCartSessions.add(row.session_id);
+        break;
+      case "view_cart":
+        viewCartSessions.add(row.session_id);
+        break;
+      case "product_view":
+        productViewSessions.add(row.session_id);
+        break;
+    }
   });
+
+  // Calculate conversion rates
+  const totalSessionCount = allSessions.size;
+  const addToCartCount = addToCartSessions.size || cartSessions.size;
+  const checkoutCount = checkoutSessions.size;
+  const purchaseCount = purchaseSessions.size;
+
+  const conversionRate = totalSessionCount > 0 ? (purchaseCount / totalSessionCount) * 100 : 0;
+  const cartToCheckoutRate = addToCartCount > 0 ? (checkoutCount / addToCartCount) * 100 : 0;
+  const checkoutToPurchaseRate = checkoutCount > 0 ? (purchaseCount / checkoutCount) * 100 : 0;
 
   return {
     totalSessions: allSessions.size,
-    totalEvents: allData.data?.length || 0,
+    totalEvents: funnelResult.data?.length || 0,
     cartSessions: cartSessions.size,
     checkoutSessions: checkoutSessions.size,
+    purchaseSessions: purchaseSessions.size,
+    addToCartSessions: addToCartSessions.size,
+    viewCartSessions: viewCartSessions.size,
+    productViewSessions: productViewSessions.size,
     devices,
     browsers,
     referrerCategories,
@@ -163,6 +236,10 @@ async function fetchTrafficData(): Promise<TrafficReportData> {
     locations,
     topPages,
     hourlyTraffic,
+    funnelEvents,
+    conversionRate,
+    cartToCheckoutRate,
+    checkoutToPurchaseRate,
   };
 }
 
@@ -207,7 +284,7 @@ export async function generateTrafficReportPdf(): Promise<Blob> {
 
   // Header
   const now = new Date();
-  const reportDate = now.toLocaleDateString("nl-NL", { 
+  const reportDate = now.toLocaleDateString("en-US", { 
     day: "2-digit", 
     month: "long", 
     year: "numeric",
@@ -220,44 +297,65 @@ export async function generateTrafficReportPdf(): Promise<Blob> {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("Verkeersrapport Webshop", 14, 18);
+  doc.text("Webshop Traffic Report", 14, 18);
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text(`Afgelopen 24 uur — Gegenereerd: ${reportDate}`, 14, 28);
+  doc.text(`Last 24 hours — Generated: ${reportDate}`, 14, 28);
   doc.setTextColor(0, 0, 0);
   y = 50;
 
   // Summary Stats
-  addTitle("📊 Kernstatistieken", 14);
+  addTitle("📊 Key Metrics", 14);
   y += 2;
   
   doc.setDrawColor(200, 200, 200);
   doc.setFillColor(249, 250, 251);
   doc.roundedRect(14, y - 4, pageWidth - 28, 28, 3, 3, "FD");
   
-  const statsX = [30, 75, 120, 165];
-  doc.setFontSize(18);
+  const statsX = [30, 65, 105, 145];
+  doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.text(String(data.totalSessions), statsX[0], y + 10);
-  doc.text(String(data.totalEvents), statsX[1], y + 10);
-  doc.text(String(data.cartSessions), statsX[2], y + 10);
-  doc.text(String(data.checkoutSessions), statsX[3], y + 10);
+  doc.text(String(data.addToCartSessions || data.cartSessions), statsX[1], y + 10);
+  doc.text(String(data.checkoutSessions), statsX[2], y + 10);
+  doc.text(String(data.purchaseSessions), statsX[3], y + 10);
   
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 100, 100);
-  doc.text("Sessies", statsX[0], y + 18);
-  doc.text("Events", statsX[1], y + 18);
-  doc.text("Winkelwagen", statsX[2], y + 18);
-  doc.text("Checkout", statsX[3], y + 18);
+  doc.text("Sessions", statsX[0], y + 18);
+  doc.text("Add to Cart", statsX[1], y + 18);
+  doc.text("Checkout", statsX[2], y + 18);
+  doc.text("Purchases", statsX[3], y + 18);
   doc.setTextColor(0, 0, 0);
   
   y += 38;
 
+  // Conversion Funnel
+  checkNewPage();
+  addTitle("🎯 Conversion Funnel", 12);
+  addTableRow(["Metric", "Rate"], [100, 60], true);
+  addTableRow(["Overall Conversion Rate", `${data.conversionRate.toFixed(2)}%`], [100, 60]);
+  addTableRow(["Cart → Checkout Rate", `${data.cartToCheckoutRate.toFixed(2)}%`], [100, 60]);
+  addTableRow(["Checkout → Purchase Rate", `${data.checkoutToPurchaseRate.toFixed(2)}%`], [100, 60]);
+  y += 8;
+
+  // Funnel Events Breakdown
+  checkNewPage();
+  addTitle("📈 All Funnel Events", 12);
+  addTableRow(["Event Type", "Total Events", "Unique Sessions"], [70, 50, 50], true);
+  data.funnelEvents.forEach(event => {
+    const eventLabel = event.activity_type
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+    addTableRow([eventLabel, String(event.count), String(event.unique_sessions)], [70, 50, 50]);
+  });
+  y += 5;
+
   // Devices
   checkNewPage();
-  addTitle("📱 Apparaten", 12);
-  addTableRow(["Apparaat", "Sessies", "%"], [60, 40, 40], true);
+  addTitle("📱 Devices", 12);
+  addTableRow(["Device", "Sessions", "%"], [60, 40, 40], true);
   data.devices.forEach(d => {
     const pct = data.totalSessions > 0 ? ((d.sessions / data.totalSessions) * 100).toFixed(1) : "0";
     addTableRow([d.device_type, String(d.sessions), `${pct}%`], [60, 40, 40]);
@@ -267,7 +365,7 @@ export async function generateTrafficReportPdf(): Promise<Blob> {
   // Browsers
   checkNewPage();
   addTitle("🌐 Browsers", 12);
-  addTableRow(["Browser", "Sessies", "%"], [60, 40, 40], true);
+  addTableRow(["Browser", "Sessions", "%"], [60, 40, 40], true);
   data.browsers.slice(0, 5).forEach(b => {
     const pct = data.totalSessions > 0 ? ((b.sessions / data.totalSessions) * 100).toFixed(1) : "0";
     addTableRow([b.browser, String(b.sessions), `${pct}%`], [60, 40, 40]);
@@ -276,8 +374,8 @@ export async function generateTrafficReportPdf(): Promise<Blob> {
 
   // Traffic Sources
   checkNewPage();
-  addTitle("📍 Verkeersbronnen", 12);
-  addTableRow(["Categorie", "Sessies"], [80, 40], true);
+  addTitle("📍 Traffic Sources", 12);
+  addTableRow(["Category", "Sessions"], [80, 40], true);
   data.referrerCategories.forEach(r => {
     addTableRow([r.referrer_category, String(r.sessions)], [80, 40]);
   });
@@ -286,8 +384,8 @@ export async function generateTrafficReportPdf(): Promise<Blob> {
   // UTM Campaigns
   if (data.utmSources.length > 0) {
     checkNewPage();
-    addTitle("📌 Pinterest Campagnes", 12);
-    addTableRow(["Bron", "Medium", "Campagne", "Sessies"], [35, 35, 55, 30], true);
+    addTitle("📌 Campaigns (UTM)", 12);
+    addTableRow(["Source", "Medium", "Campaign", "Sessions"], [35, 35, 55, 30], true);
     data.utmSources.slice(0, 8).forEach(u => {
       addTableRow([
         u.utm_source || "-", 
@@ -301,8 +399,8 @@ export async function generateTrafficReportPdf(): Promise<Blob> {
 
   // Locations
   checkNewPage(60);
-  addTitle("🌍 Top Locaties", 12);
-  addTableRow(["Land", "Stad", "Sessies"], [50, 70, 30], true);
+  addTitle("🌍 Top Locations", 12);
+  addTableRow(["Country", "City", "Sessions"], [50, 70, 30], true);
   data.locations.slice(0, 12).forEach(l => {
     addTableRow([l.country, l.city, String(l.sessions)], [50, 70, 30]);
   });
@@ -311,8 +409,8 @@ export async function generateTrafficReportPdf(): Promise<Blob> {
   // Top Pages
   doc.addPage();
   y = 20;
-  addTitle("📄 Meest Bezochte Pagina's", 12);
-  addTableRow(["Pagina", "Bezoeken"], [130, 30], true);
+  addTitle("📄 Most Visited Pages", 12);
+  addTableRow(["Page", "Visits"], [130, 30], true);
   data.topPages.forEach(p => {
     const pageName = p.page_path.length > 50 ? p.page_path.substring(0, 50) + "..." : p.page_path;
     addTableRow([pageName, String(p.visits)], [130, 30]);
@@ -321,10 +419,10 @@ export async function generateTrafficReportPdf(): Promise<Blob> {
 
   // Hourly Traffic
   checkNewPage(80);
-  addTitle("⏰ Verkeer per Uur (UTC)", 12);
-  addTableRow(["Tijdstip", "Sessies"], [80, 40], true);
+  addTitle("⏰ Traffic by Hour (UTC)", 12);
+  addTableRow(["Time", "Sessions"], [80, 40], true);
   data.hourlyTraffic.forEach(h => {
-    const hourDisplay = new Date(h.hour).toLocaleString("nl-NL", { 
+    const hourDisplay = new Date(h.hour).toLocaleString("en-US", { 
       day: "2-digit", 
       month: "2-digit", 
       hour: "2-digit", 
@@ -339,8 +437,8 @@ export async function generateTrafficReportPdf(): Promise<Blob> {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text(`Pagina ${i} van ${pageCount}`, pageWidth / 2, 290, { align: "center" });
-    doc.text("GetPawsy.com — Verkeersrapport", 14, 290);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, 290, { align: "center" });
+    doc.text("GetPawsy.pet — Traffic Report (Internal traffic excluded)", 14, 290);
   }
 
   return doc.output("blob");
@@ -351,7 +449,7 @@ export async function downloadTrafficReportPdf(): Promise<void> {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `verkeer-rapport-${new Date().toISOString().slice(0, 10)}.pdf`;
+  link.download = `traffic-report-${new Date().toISOString().slice(0, 10)}.pdf`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

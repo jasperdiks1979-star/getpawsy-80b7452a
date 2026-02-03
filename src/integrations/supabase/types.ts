@@ -2417,12 +2417,17 @@ export type Database = {
           created_at: string
           device_type: string | null
           id: string
+          is_internal: boolean | null
           last_seen_at: string | null
           latitude: number | null
           longitude: number | null
+          order_id: string | null
+          order_value: number | null
           page_path: string | null
           product_id: string | null
           product_name: string | null
+          product_price: number | null
+          product_quantity: number | null
           referrer: string | null
           referrer_category: string | null
           screen_height: number | null
@@ -2430,8 +2435,10 @@ export type Database = {
           session_id: string
           updated_at: string
           utm_campaign: string | null
+          utm_content: string | null
           utm_medium: string | null
           utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
           activity_type: string
@@ -2441,12 +2448,17 @@ export type Database = {
           created_at?: string
           device_type?: string | null
           id?: string
+          is_internal?: boolean | null
           last_seen_at?: string | null
           latitude?: number | null
           longitude?: number | null
+          order_id?: string | null
+          order_value?: number | null
           page_path?: string | null
           product_id?: string | null
           product_name?: string | null
+          product_price?: number | null
+          product_quantity?: number | null
           referrer?: string | null
           referrer_category?: string | null
           screen_height?: number | null
@@ -2454,8 +2466,10 @@ export type Database = {
           session_id: string
           updated_at?: string
           utm_campaign?: string | null
+          utm_content?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
           activity_type?: string
@@ -2465,12 +2479,17 @@ export type Database = {
           created_at?: string
           device_type?: string | null
           id?: string
+          is_internal?: boolean | null
           last_seen_at?: string | null
           latitude?: number | null
           longitude?: number | null
+          order_id?: string | null
+          order_value?: number | null
           page_path?: string | null
           product_id?: string | null
           product_name?: string | null
+          product_price?: number | null
+          product_quantity?: number | null
           referrer?: string | null
           referrer_category?: string | null
           screen_height?: number | null
@@ -2478,8 +2497,10 @@ export type Database = {
           session_id?: string
           updated_at?: string
           utm_campaign?: string | null
+          utm_content?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: [
           {

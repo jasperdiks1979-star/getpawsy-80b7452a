@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
+import { trackGoogleAdsAddToCart } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { trackPinterestEvent } from '@/hooks/usePinterestTracking';
+import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
 
 export interface CartItem {
   id: string;
@@ -229,13 +231,28 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       return [...prev, { ...newItem, quantity: 1 }];
     });
+    
+    // GA4 Add to Cart
     trackAddToCart(newItem.id, newItem.name, newItem.price, 1);
+    
+    // Google Ads Add to Cart
+    trackGoogleAdsAddToCart(newItem.id, newItem.name, newItem.price, 1);
+    
+    // Internal visitor_activity tracking for funnel analysis
+    trackVisitorEvent('add_to_cart', {
+      productId: newItem.id,
+      productName: newItem.name,
+      productPrice: newItem.price,
+      productQuantity: 1,
+    });
+    
+    // Legacy cart activity (for map visualization)
     trackCartActivity();
     
     // Pinterest AddToCart tracking
     trackPinterestEvent('addtocart', {
       value: newItem.price,
-      currency: 'EUR',
+      currency: 'USD',
       order_quantity: 1,
       product_name: newItem.name,
       product_id: newItem.id,

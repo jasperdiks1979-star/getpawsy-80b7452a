@@ -6,6 +6,8 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { trackPurchase, trackGoogleAdsConversion, trackGoogleAdsPageView } from '@/lib/analytics';
+import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
+import { trackPinterestEvent } from '@/hooks/usePinterestTracking';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -47,6 +49,26 @@ const PaymentSuccess = () => {
         name: item.name,
         price: item.price,
       })));
+
+      // Track in visitor_activity for internal funnel analysis
+      trackVisitorEvent('purchase', {
+        orderId: sessionId,
+        orderValue: totalPrice,
+      });
+
+      // Pinterest purchase tracking
+      trackPinterestEvent('checkout', {
+        event_id: sessionId,
+        value: totalPrice,
+        currency: 'USD',
+        order_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
+        line_items: items.map(item => ({
+          product_name: item.name,
+          product_id: item.id,
+          product_price: item.price,
+          product_quantity: item.quantity,
+        })),
+      });
 
       clearCart(true); // Mark as recovered
       setTracked(true);
