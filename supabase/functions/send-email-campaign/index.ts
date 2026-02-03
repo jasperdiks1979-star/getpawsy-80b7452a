@@ -146,19 +146,19 @@ const buildEmailTemplate = (params: {
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td width="33%" align="center" style="padding: 8px;">
-                          <a href="${trackClickUrl('https://getpawsy.pet/products?category=food')}" style="display: block;">
+                          <a href="${trackClickUrl('https://getpawsy.pet/products?category=dog-food-treats')}" style="display: block;">
                             <img src="https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?w=150&h=150&fit=crop" alt="Premium Food" width="100" height="100" style="border-radius: 12px; display: block; margin: 0 auto 8px auto;">
                             <span style="color: #78350f; font-size: 13px; font-weight: 500;">Premium Food</span>
                           </a>
                         </td>
                         <td width="33%" align="center" style="padding: 8px;">
-                          <a href="${trackClickUrl('https://getpawsy.pet/products?category=toys')}" style="display: block;">
+                          <a href="${trackClickUrl('https://getpawsy.pet/products?category=dog-toys')}" style="display: block;">
                             <img src="https://images.unsplash.com/photo-1535008652995-e95986556e32?w=150&h=150&fit=crop" alt="Fun Toys" width="100" height="100" style="border-radius: 12px; display: block; margin: 0 auto 8px auto;">
                             <span style="color: #78350f; font-size: 13px; font-weight: 500;">Fun Toys</span>
                           </a>
                         </td>
                         <td width="33%" align="center" style="padding: 8px;">
-                          <a href="${trackClickUrl('https://getpawsy.pet/products?category=beds')}" style="display: block;">
+                          <a href="${trackClickUrl('https://getpawsy.pet/products?category=dog-beds')}" style="display: block;">
                             <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=150&h=150&fit=crop" alt="Cozy Beds" width="100" height="100" style="border-radius: 12px; display: block; margin: 0 auto 8px auto;">
                             <span style="color: #78350f; font-size: 13px; font-weight: 500;">Cozy Beds</span>
                           </a>
