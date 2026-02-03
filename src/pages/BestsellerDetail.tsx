@@ -70,6 +70,7 @@ import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import { DELIVERY_TIME_STANDARD } from '@/lib/shipping-constants';
 
 // Generate JSON-LD structured data for product
+// NOTE: Reviews/ratings intentionally removed - Google requires real customer reviews
 const generateProductJsonLd = (
   product: {
     id: string;
@@ -86,8 +87,7 @@ const generateProductJsonLd = (
     seo_description?: string | null;
     hero_headline?: string | null;
     slug: string;
-  },
-  reviews: Array<{ rating: number; title?: string; content?: string | null }> = []
+  }
 ) => {
   const availability = product.stock && product.stock > 0 
     ? 'https://schema.org/InStock' 
@@ -99,11 +99,6 @@ const generateProductJsonLd = (
     : product.image_url 
       ? [product.image_url] 
       : [];
-
-  const hasReviews = reviews.length > 0;
-  const averageRating = hasReviews
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-    : null;
 
   return {
     '@context': 'https://schema.org',
@@ -122,62 +117,83 @@ const generateProductJsonLd = (
       url: `https://getpawsy.pet/bestseller/${bestseller.slug}`,
       priceCurrency: 'USD',
       price: product.price.toFixed(2),
-      priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      priceValidUntil: '2027-12-31',
       availability,
       itemCondition: 'https://schema.org/NewCondition',
       seller: {
         '@type': 'Organization',
-        name: 'GetPawsy'
+        name: 'GetPawsy',
+        url: 'https://getpawsy.pet'
       },
-      shippingDetails: {
-        '@type': 'OfferShippingDetails',
-        shippingRate: {
-          '@type': 'MonetaryAmount',
-          value: '5.99',
-          currency: 'USD'
-        },
-        shippingDestination: {
-          '@type': 'DefinedRegion',
-          addressCountry: 'US'
-        },
-        deliveryTime: {
-          '@type': 'ShippingDeliveryTime',
-          handlingTime: {
-            '@type': 'QuantitativeValue',
-            minValue: 1,
-            maxValue: 2,
-            unitCode: 'DAY'
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'US',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 30,
+        returnMethod: 'https://schema.org/ReturnByMail',
+        returnFees: 'https://schema.org/FreeReturn'
+      },
+      shippingDetails: [
+        {
+          '@type': 'OfferShippingDetails',
+          shippingRate: {
+            '@type': 'MonetaryAmount',
+            value: '0.00',
+            currency: 'USD'
           },
-          transitTime: {
-            '@type': 'QuantitativeValue',
-            minValue: 3,
-            maxValue: 7,
-            unitCode: 'DAY'
-          }
-        }
-      }
-    },
-    // Only include aggregateRating and review when actual reviews exist
-    ...(hasReviews && averageRating && {
-      aggregateRating: {
-        '@type': 'AggregateRating',
-        ratingValue: averageRating.toFixed(1),
-        reviewCount: reviews.length.toString(),
-        bestRating: '5',
-        worstRating: '1'
-      },
-      review: reviews.slice(0, 5).map((review) => ({
-        '@type': 'Review',
-        reviewRating: {
-          '@type': 'Rating',
-          ratingValue: review.rating.toString(),
-          bestRating: '5',
-          worstRating: '1'
+          shippingDestination: {
+            '@type': 'DefinedRegion',
+            addressCountry: 'US'
+          },
+          deliveryTime: {
+            '@type': 'ShippingDeliveryTime',
+            handlingTime: {
+              '@type': 'QuantitativeValue',
+              minValue: 1,
+              maxValue: 2,
+              unitCode: 'DAY'
+            },
+            transitTime: {
+              '@type': 'QuantitativeValue',
+              minValue: 3,
+              maxValue: 7,
+              unitCode: 'DAY'
+            }
+          },
+          shippingLabel: 'Free shipping on orders over $35'
         },
-        name: review.title || 'Product Review',
-        reviewBody: review.content || ''
-      }))
-    })
+        {
+          '@type': 'OfferShippingDetails',
+          shippingRate: {
+            '@type': 'MonetaryAmount',
+            value: '5.99',
+            currency: 'USD'
+          },
+          shippingDestination: {
+            '@type': 'DefinedRegion',
+            addressCountry: 'US'
+          },
+          deliveryTime: {
+            '@type': 'ShippingDeliveryTime',
+            handlingTime: {
+              '@type': 'QuantitativeValue',
+              minValue: 1,
+              maxValue: 2,
+              unitCode: 'DAY'
+            },
+            transitTime: {
+              '@type': 'QuantitativeValue',
+              minValue: 3,
+              maxValue: 7,
+              unitCode: 'DAY'
+            }
+          },
+          shippingLabel: 'Flat rate $5.99 for orders under $35'
+        }
+      ]
+    }
+    // NOTE: aggregateRating and review fields intentionally omitted
+    // Google requires real customer reviews - will be added when available
   };
 };
 
@@ -483,8 +499,8 @@ const BestsellerDetail = () => {
     ? Math.round((1 - product.price / product.compare_at_price) * 100)
     : 0;
 
-  // Generate structured data with actual reviews
-  const productJsonLd = generateProductJsonLd(product, bestseller, reviews);
+  // Generate structured data (reviews omitted per Google compliance)
+  const productJsonLd = generateProductJsonLd(product, bestseller);
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(product.name, bestseller.slug);
 
   return (

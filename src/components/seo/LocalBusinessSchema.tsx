@@ -82,42 +82,8 @@ export function LocalBusinessSchema({
         },
       ],
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      bestRating: '5',
-      worstRating: '1',
-      ratingCount: '1250',
-      reviewCount: '890',
-    },
-    review: [
-      {
-        '@type': 'Review',
-        author: {
-          '@type': 'Person',
-          name: 'Sarah M.',
-        },
-        reviewRating: {
-          '@type': 'Rating',
-          ratingValue: '5',
-          bestRating: '5',
-        },
-        reviewBody: 'My dog absolutely loves the organic treats! Great quality and fast shipping.',
-      },
-      {
-        '@type': 'Review',
-        author: {
-          '@type': 'Person',
-          name: 'Michael T.',
-        },
-        reviewRating: {
-          '@type': 'Rating',
-          ratingValue: '5',
-          bestRating: '5',
-        },
-        reviewBody: 'Finally found a store that cares about pet health as much as I do. Highly recommend!',
-      },
-    ],
+    // NOTE: aggregateRating and review fields intentionally omitted
+    // Google requires real customer reviews - will be added when real reviews are collected
   };
 
   return (

@@ -26,6 +26,8 @@ interface ProductSchemaProps {
 
 export function ProductSchema({ 
   product, 
+  // Reviews prop kept for API compatibility but not used in schema
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   reviews = [],
   baseUrl = 'https://getpawsy.pet'
 }: ProductSchemaProps) {
@@ -36,11 +38,9 @@ export function ProductSchema({
     .trim()
     .slice(0, 500) || `Premium ${product.name} for your beloved pet. Shop quality pet products at GetPawsy.`;
 
-  // Calculate aggregate rating
-  const hasReviews = reviews.length > 0;
-  const aggregateRating = hasReviews
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-    : null;
+  // NOTE: Reviews/ratings intentionally removed from structured data
+  // Google requires real customer reviews - no placeholders or fake data
+  // Will be re-enabled when real review system is implemented
 
   // Generate keywords
   const keywords = generateProductKeywords(
@@ -189,31 +189,8 @@ export function ProductSchema({
         },
       ],
     },
-    ...(hasReviews && aggregateRating && {
-      aggregateRating: {
-        '@type': 'AggregateRating',
-        ratingValue: aggregateRating.toFixed(1),
-        reviewCount: reviews.length,
-        bestRating: '5',
-        worstRating: '1',
-      },
-      review: reviews.slice(0, 5).map((review) => ({
-        '@type': 'Review',
-        reviewRating: {
-          '@type': 'Rating',
-          ratingValue: review.rating,
-          bestRating: '5',
-          worstRating: '1',
-        },
-        name: review.title,
-        reviewBody: review.content,
-        author: {
-          '@type': 'Person',
-          name: 'Verified Buyer',
-        },
-        datePublished: new Date().toISOString().split('T')[0],
-      })),
-    }),
+    // NOTE: aggregateRating and review fields intentionally omitted
+    // Google requires real customer reviews - will be added when available
   };
 
   // WebPage schema for product page
