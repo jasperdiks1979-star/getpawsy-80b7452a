@@ -96,7 +96,9 @@ Guidelines:
 - Focus on the benefits for the pet
 - Keep it concise but informative
 - No hard sales language, but include subtle call-to-actions
-- All prices are in USD ($)`;
+- All prices are in USD ($)
+- IMPORTANT: Do NOT include the brand name "GetPawsy", logos, or any branding in your content - the email template already has proper branding in the header
+- Do NOT add any links with the brand name - all branding is handled by the template`;
 
     let userPrompt = "";
     
