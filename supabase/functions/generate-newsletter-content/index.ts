@@ -217,15 +217,23 @@ Generate the following parts (in JSON format):
 
 function buildEmailHtml(content: any, products: any[]): string {
   const logoUrl = "https://getpawsy.pet/ads/google-ads-logo.png"; // Square paw icon
+  const heroImageUrl = "https://getpawsy.pet/lovable-uploads/ce16f6c9-27a9-44e9-8f20-3b1c36fa1586.png"; // Dog hero image
   const primaryColor = "#B45309"; // Terracotta/Orange
   const backgroundColor = "#FEFAF6"; // Cream
   const textColor = "#1f2937";
+  const darkFooterBg = "#1f2937";
   
-  let productHtml = "";
+  // Category images for "Featured This Week"
+  const categoryImages = {
+    food: "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=200&h=200&fit=crop",
+    toys: "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=200&h=200&fit=crop",
+    beds: "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=200&h=200&fit=crop"
+  };
   
+  // Build product cards - full width single column
+  let productCardsHtml = "";
   if (products.length > 0) {
-    // Single column layout - one product per row, full width
-    const productItems = products.map(product => {
+    const productCards = products.map(product => {
       const imageUrl = product.image_url || "https://getpawsy.pet/placeholder.svg";
       const discount = product.compare_at_price && product.compare_at_price > product.price
         ? Math.round((1 - product.price / product.compare_at_price) * 100)
@@ -234,41 +242,36 @@ function buildEmailHtml(content: any, products: any[]): string {
       return `
         <tr>
           <td style="padding: 0 0 24px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-              <tr>
-                <td style="padding: 0;">
-                  <a href="https://getpawsy.pet/product/${product.slug}" style="text-decoration: none; display: block;">
-                    <img src="${imageUrl}" alt="${product.name}" width="536" style="display: block; width: 100%; height: auto; max-height: 300px; object-fit: cover; border-radius: 12px 12px 0 0;" />
-                  </a>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 20px;">
-                  <h3 style="margin: 0 0 8px 0; font-size: 18px; color: ${textColor}; font-weight: 600; line-height: 1.4;">
-                    <a href="https://getpawsy.pet/product/${product.slug}" style="color: ${textColor}; text-decoration: none;">${product.name}</a>
-                  </h3>
-                  <p style="margin: 0 0 16px 0; font-size: 20px; font-weight: 700; color: ${primaryColor};">
-                    ${discount > 0 
-                      ? `<span style="text-decoration: line-through; color: #9ca3af; font-weight: 400; font-size: 14px;">$${product.compare_at_price}</span> $${product.price} <span style="background: #dc2626; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">-${discount}%</span>`
-                      : `$${product.price}`
-                    }
-                  </p>
-                  <a href="https://getpawsy.pet/product/${product.slug}" style="display: inline-block; background: ${primaryColor}; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">View Product</a>
-                </td>
-              </tr>
-            </table>
+            <!-- Product Image -->
+            <a href="https://getpawsy.pet/product/${product.slug}" style="text-decoration: none; display: block;">
+              <img src="${imageUrl}" alt="${product.name}" width="536" style="display: block; width: 100%; height: auto; border-radius: 0;" />
+            </a>
+            <!-- Product Info -->
+            <h3 style="margin: 16px 0 12px 0; font-size: 18px; line-height: 1.4;">
+              <a href="https://getpawsy.pet/product/${product.slug}" style="color: ${primaryColor}; text-decoration: none; font-weight: 600;">${product.name}</a>
+            </h3>
+            <p style="margin: 0 0 12px 0; font-size: 16px; color: ${textColor};">
+              ${discount > 0 
+                ? `<span style="text-decoration: line-through; color: #9ca3af;">$${product.compare_at_price}</span> <strong>$${product.price}</strong> <span style="color: ${textColor}; font-weight: 600;">-${discount}%</span>`
+                : `<strong>$${product.price}</strong>`
+              }
+            </p>
+            <a href="https://getpawsy.pet/product/${product.slug}" style="color: ${primaryColor}; text-decoration: none; font-size: 14px; font-weight: 600;">View Product</a>
           </td>
         </tr>
       `;
     }).join('');
     
-    productHtml = `
+    productCardsHtml = `
       <tr>
-        <td style="padding: 20px 32px;">
-          <h2 style="color: ${primaryColor}; font-size: 22px; margin: 0 0 20px 0; font-weight: 700;">Featured Products 🛒</h2>
+        <td style="padding: 24px 32px;">
+          <h2 style="color: ${textColor}; font-size: 22px; margin: 0 0 20px 0; font-weight: 700;">Featured Products 🛒</h2>
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-            ${productItems}
+            ${productCards}
           </table>
+          <p style="margin: 16px 0 0 0;">
+            <a href="https://getpawsy.pet/shop" style="color: ${primaryColor}; text-decoration: none; font-size: 14px; font-weight: 600;">Explore the Collection</a>
+          </p>
         </td>
       </tr>
     `;
@@ -301,37 +304,51 @@ function buildEmailHtml(content: any, products: any[]): string {
           
           <!-- Orange Header with centered logo -->
           <tr>
-            <td align="center" style="padding: 32px 40px; background-color: ${primaryColor};">
+            <td align="center" style="padding: 24px 40px; background-color: ${primaryColor};">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center" style="padding-bottom: 12px;">
-                    <img src="${logoUrl}" alt="GetPawsy" width="56" height="56" style="display: block; width: 56px; height: 56px; border: 0; border-radius: 12px;" />
+                  <td align="center" style="padding-bottom: 8px;">
+                    <img src="${logoUrl}" alt="GetPawsy" width="48" height="48" style="display: block; width: 48px; height: 48px; border: 0; border-radius: 10px;" />
                   </td>
                 </tr>
                 <tr>
                   <td align="center">
-                    <span style="font-size: 28px; font-weight: 700; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">GetPawsy</span>
+                    <span style="font-size: 26px; font-weight: 700; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">GetPawsy</span>
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" style="padding-top: 6px;">
-                    <span style="font-size: 14px; color: rgba(255,255,255,0.9); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Premium Pet Products & Care</span>
+                  <td align="center" style="padding-top: 4px;">
+                    <span style="font-size: 13px; color: rgba(255,255,255,0.9); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Premium Pet Products & Care</span>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
           
-          <!-- Small logo + brand before greeting -->
+          <!-- Hero Image -->
           <tr>
-            <td style="padding: 28px 32px 8px 32px;">
+            <td style="padding: 0;">
+              <img src="${heroImageUrl}" alt="Happy pet" width="600" style="display: block; width: 100%; height: auto;" />
+            </td>
+          </tr>
+          
+          <!-- Subject line as hero text -->
+          <tr>
+            <td style="padding: 24px 32px 12px 32px;">
+              <h1 style="color: ${textColor}; font-size: 22px; margin: 0; font-weight: 700; line-height: 1.3;">${content.subject} 🐾</h1>
+            </td>
+          </tr>
+          
+          <!-- Small logo + brand -->
+          <tr>
+            <td style="padding: 12px 32px 8px 32px;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td valign="middle" style="padding-right: 8px;">
-                    <img src="${logoUrl}" alt="" width="24" height="24" style="display: block; width: 24px; height: 24px; border: 0; border-radius: 6px;" />
+                  <td valign="middle" style="padding-right: 6px;">
+                    <img src="${logoUrl}" alt="" width="20" height="20" style="display: block; width: 20px; height: 20px; border: 0; border-radius: 5px;" />
                   </td>
                   <td valign="middle">
-                    <span style="font-size: 14px; font-weight: 600; color: ${primaryColor};">GetPawsy</span>
+                    <span style="font-size: 13px; font-weight: 600; color: ${primaryColor};">GetPawsy</span>
                   </td>
                 </tr>
               </table>
@@ -340,52 +357,180 @@ function buildEmailHtml(content: any, products: any[]): string {
           
           <!-- Greeting & Intro -->
           <tr>
-            <td style="padding: 8px 32px 16px 32px;">
-              <h1 style="color: ${textColor}; font-size: 26px; margin: 0 0 14px 0; font-weight: 700; line-height: 1.3;">${content.greeting}</h1>
-              <p style="color: ${textColor}; font-size: 16px; line-height: 1.7; margin: 0;">${content.intro}</p>
+            <td style="padding: 8px 32px 20px 32px;">
+              <h2 style="color: ${textColor}; font-size: 24px; margin: 0 0 14px 0; font-weight: 700; line-height: 1.3;">${content.greeting}</h2>
+              <p style="color: ${textColor}; font-size: 15px; line-height: 1.7; margin: 0;">${content.intro}</p>
             </td>
           </tr>
           
-          <!-- Main Content -->
+          <!-- Main Content (Product text mentions & tips) -->
           <tr>
             <td style="padding: 0 32px 24px 32px;">
-              <div style="color: ${textColor}; font-size: 16px; line-height: 1.7;">${content.mainContent}</div>
+              <div style="color: ${textColor}; font-size: 15px; line-height: 1.7;">${content.mainContent}</div>
             </td>
           </tr>
           
-          <!-- Products - Single Column -->
-          ${productHtml}
-          
-          <!-- CTA Button -->
-          <tr>
-            <td align="center" style="padding: 16px 32px 32px 32px;">
-              <a href="${content.ctaUrl}" style="display: inline-block; background: ${primaryColor}; color: white; padding: 16px 36px; border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(180, 83, 9, 0.3);">${content.ctaText}</a>
-            </td>
-          </tr>
+          <!-- Featured Products with images -->
+          ${productCardsHtml}
           
           <!-- Closing -->
           <tr>
-            <td style="padding: 0 32px 32px 32px;">
-              <p style="color: ${textColor}; font-size: 15px; line-height: 1.6; margin: 0; text-align: center;">${content.closing}</p>
+            <td style="padding: 0 32px 24px 32px;">
+              <p style="color: ${textColor}; font-size: 15px; line-height: 1.6; margin: 0;">${content.closing}</p>
             </td>
           </tr>
           
-          <!-- Footer -->
+          <!-- Signature with paw -->
           <tr>
-            <td style="background: #1f2937; padding: 28px 32px; text-align: center;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom: 14px;">
+            <td style="padding: 0 32px 32px 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td valign="middle" style="padding-right: 10px;">
-                    <img src="${logoUrl}" alt="GetPawsy" width="36" height="36" style="display: block; width: 36px; height: 36px; border: 0; border-radius: 8px;" />
+                  <td valign="top" style="padding-right: 0;">
+                    <img src="${logoUrl}" alt="" width="28" height="28" style="display: block; width: 28px; height: 28px; border: 0; border-radius: 6px;" />
                   </td>
-                  <td valign="middle">
-                    <span style="font-size: 20px; font-weight: 700; color: white;">GetPawsy</span>
+                </tr>
+                <tr>
+                  <td style="padding-top: 4px;">
+                    <span style="font-size: 13px; color: ${primaryColor}; font-weight: 500;">Pawsy</span>
                   </td>
                 </tr>
               </table>
-              <p style="color: #9ca3af; font-size: 13px; margin: 0 0 8px 0;">Premium Pet Supplies for Happy Pets 🐾</p>
-              <p style="color: #6b7280; font-size: 12px; margin: 0;">
-                <a href="https://getpawsy.pet" style="color: #9ca3af; text-decoration: none;">getpawsy.pet</a>
+              <p style="color: ${textColor}; font-size: 14px; margin: 16px 0 0 0;">Premium Pet Supplies for Happy Pets 🐾</p>
+              <a href="https://getpawsy.pet" style="color: ${primaryColor}; font-size: 14px; text-decoration: none;">getpawsy.pet</a>
+            </td>
+          </tr>
+          
+          <!-- Featured This Week Section -->
+          <tr>
+            <td style="padding: 0 32px 24px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background: #FEF9E7; border-radius: 12px; padding: 20px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: ${primaryColor};">🏆 Featured This Week</p>
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                      <tr>
+                        <td width="33%" align="center" style="padding: 0 8px;">
+                          <a href="https://getpawsy.pet/category/dog-food-treats" style="text-decoration: none;">
+                            <img src="${categoryImages.food}" alt="Premium Food" width="120" height="120" style="display: block; width: 120px; height: 120px; border-radius: 8px; object-fit: cover;" />
+                            <p style="margin: 8px 0 0 0; font-size: 12px; color: ${primaryColor}; font-weight: 500;">Premium Food</p>
+                          </a>
+                        </td>
+                        <td width="33%" align="center" style="padding: 0 8px;">
+                          <a href="https://getpawsy.pet/category/dog-toys" style="text-decoration: none;">
+                            <img src="${categoryImages.toys}" alt="Fun Toys" width="120" height="120" style="display: block; width: 120px; height: 120px; border-radius: 8px; object-fit: cover;" />
+                            <p style="margin: 8px 0 0 0; font-size: 12px; color: ${primaryColor}; font-weight: 500;">Fun Toys</p>
+                          </a>
+                        </td>
+                        <td width="33%" align="center" style="padding: 0 8px;">
+                          <a href="https://getpawsy.pet/category/beds-furniture" style="text-decoration: none;">
+                            <img src="${categoryImages.beds}" alt="Cozy Beds" width="120" height="120" style="display: block; width: 120px; height: 120px; border-radius: 8px; object-fit: cover;" />
+                            <p style="margin: 8px 0 0 0; font-size: 12px; color: ${primaryColor}; font-weight: 500;">Cozy Beds</p>
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Main CTA Button -->
+          <tr>
+            <td align="center" style="padding: 0 32px 24px 32px;">
+              <a href="${content.ctaUrl}" style="display: inline-block; background: ${primaryColor}; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 15px; font-weight: 600;">🛒 Shop Now at GetPawsy</a>
+            </td>
+          </tr>
+          
+          <!-- Trust Badges -->
+          <tr>
+            <td style="padding: 0 32px 32px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background: #f9fafb; border-radius: 12px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                      <tr>
+                        <td width="25%" align="center" style="padding: 8px;">
+                          <span style="font-size: 24px;">🚚</span>
+                          <p style="margin: 4px 0 0 0; font-size: 11px; color: ${textColor}; font-weight: 500;">Free<br/>Shipping</p>
+                        </td>
+                        <td width="25%" align="center" style="padding: 8px;">
+                          <span style="font-size: 24px;">⭐</span>
+                          <p style="margin: 4px 0 0 0; font-size: 11px; color: ${textColor}; font-weight: 500;">5-Star<br/>Reviews</p>
+                        </td>
+                        <td width="25%" align="center" style="padding: 8px;">
+                          <span style="font-size: 24px;">🔒</span>
+                          <p style="margin: 4px 0 0 0; font-size: 11px; color: ${textColor}; font-weight: 500;">Secure<br/>Payment</p>
+                        </td>
+                        <td width="25%" align="center" style="padding: 8px;">
+                          <span style="font-size: 24px;">💝</span>
+                          <p style="margin: 4px 0 0 0; font-size: 11px; color: ${textColor}; font-weight: 500;">Pet<br/>Happiness</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Dark Footer -->
+          <tr>
+            <td style="background: ${darkFooterBg}; padding: 32px;">
+              <!-- Logo + tagline -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom: 16px;">
+                <tr>
+                  <td valign="middle" style="padding-right: 8px;">
+                    <img src="${logoUrl}" alt="GetPawsy" width="28" height="28" style="display: block; width: 28px; height: 28px; border: 0; border-radius: 6px;" />
+                  </td>
+                  <td valign="middle">
+                    <span style="font-size: 18px; font-weight: 700; color: white;">GetPawsy</span>
+                  </td>
+                </tr>
+              </table>
+              <p style="color: #9ca3af; font-size: 13px; margin: 0 0 16px 0; text-align: center;">Making pets happy, one product at a time</p>
+              
+              <!-- Navigation links -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom: 20px;">
+                <tr>
+                  <td style="padding: 0 12px;">
+                    <a href="https://getpawsy.pet/shop" style="color: ${primaryColor}; text-decoration: none; font-size: 13px; font-weight: 500;">Shop</a>
+                  </td>
+                  <td style="padding: 0 12px;">
+                    <a href="https://getpawsy.pet/blog" style="color: ${primaryColor}; text-decoration: none; font-size: 13px; font-weight: 500;">Blog</a>
+                  </td>
+                  <td style="padding: 0 12px;">
+                    <a href="https://getpawsy.pet/about" style="color: ${primaryColor}; text-decoration: none; font-size: 13px; font-weight: 500;">About</a>
+                  </td>
+                  <td style="padding: 0 12px;">
+                    <a href="https://getpawsy.pet/contact" style="color: ${primaryColor}; text-decoration: none; font-size: 13px; font-weight: 500;">Contact</a>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Divider -->
+              <table width="80%" cellpadding="0" cellspacing="0" role="presentation" align="center" style="margin-bottom: 20px;">
+                <tr>
+                  <td style="border-top: 1px solid #374151;"></td>
+                </tr>
+              </table>
+              
+              <!-- Subscription notice -->
+              <p style="color: #6b7280; font-size: 11px; margin: 0 0 12px 0; text-align: center;">
+                You're receiving this email because you subscribed to our newsletter at getpawsy.pet
+              </p>
+              
+              <!-- Manage/Unsubscribe -->
+              <p style="text-align: center; margin: 0 0 16px 0;">
+                <a href="{{MANAGE_PREFERENCES_URL}}" style="color: #9ca3af; text-decoration: underline; font-size: 11px;">Manage Preferences</a>
+                <span style="color: #6b7280; margin: 0 8px;">•</span>
+                <a href="{{UNSUBSCRIBE_URL}}" style="color: #9ca3af; text-decoration: underline; font-size: 11px;">Unsubscribe</a>
+              </p>
+              
+              <!-- Copyright -->
+              <p style="color: #6b7280; font-size: 11px; margin: 0; text-align: center;">
+                © 2026 GetPawsy. All rights reserved.<br/>
+                The Netherlands 🇳🇱 | <a href="mailto:support@getpawsy.pet" style="color: ${primaryColor}; text-decoration: none;">support@getpawsy.pet</a>
               </p>
             </td>
           </tr>
