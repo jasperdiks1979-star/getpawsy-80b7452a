@@ -684,8 +684,11 @@ const BestsellerDetail = () => {
                         variant="secondary"
                         size="icon"
                         className="absolute left-3 top-1/2 -translate-y-1/2 transition-all duration-300 rounded-full shadow-lg bg-background/95 backdrop-blur-sm hover:bg-background hover:scale-110 z-20 border border-border/50"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           handlePrevImage();
                         }}
                       >
@@ -695,8 +698,11 @@ const BestsellerDetail = () => {
                         variant="secondary"
                         size="icon"
                         className="absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-300 rounded-full shadow-lg bg-background/95 backdrop-blur-sm hover:bg-background hover:scale-110 z-20 border border-border/50"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           handleNextImage();
                         }}
                       >
@@ -713,8 +719,11 @@ const BestsellerDetail = () => {
                         {images.map((_, idx) => (
                           <motion.button
                             key={idx}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
                             onClick={(e) => {
                               e.stopPropagation();
+                              e.preventDefault();
                               setSelectedImage(idx);
                             }}
                             className={`rounded-full transition-all ${
