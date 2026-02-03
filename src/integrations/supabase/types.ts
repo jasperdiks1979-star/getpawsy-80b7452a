@@ -857,12 +857,22 @@ export type Database = {
       }
       email_campaigns: {
         Row: {
+          ai_content_type: string | null
+          ai_prompt: string | null
           click_count: number
           content: string
           created_at: string
           created_by: string | null
           id: string
+          is_ai_generated: boolean
+          is_recurring: boolean
+          last_recurring_sent_at: string | null
+          next_recurring_at: string | null
           open_count: number
+          recurrence_day: number | null
+          recurrence_pattern: string | null
+          recurrence_time: string | null
+          scheduled_at: string | null
           sent_at: string | null
           sent_count: number
           status: string
@@ -873,12 +883,22 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_content_type?: string | null
+          ai_prompt?: string | null
           click_count?: number
           content: string
           created_at?: string
           created_by?: string | null
           id?: string
+          is_ai_generated?: boolean
+          is_recurring?: boolean
+          last_recurring_sent_at?: string | null
+          next_recurring_at?: string | null
           open_count?: number
+          recurrence_day?: number | null
+          recurrence_pattern?: string | null
+          recurrence_time?: string | null
+          scheduled_at?: string | null
           sent_at?: string | null
           sent_count?: number
           status?: string
@@ -889,12 +909,22 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_content_type?: string | null
+          ai_prompt?: string | null
           click_count?: number
           content?: string
           created_at?: string
           created_by?: string | null
           id?: string
+          is_ai_generated?: boolean
+          is_recurring?: boolean
+          last_recurring_sent_at?: string | null
+          next_recurring_at?: string | null
           open_count?: number
+          recurrence_day?: number | null
+          recurrence_pattern?: string | null
+          recurrence_time?: string | null
+          scheduled_at?: string | null
           sent_at?: string | null
           sent_count?: number
           status?: string
