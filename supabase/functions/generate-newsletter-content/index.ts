@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
+// Version marker for deployment verification
+const VERSION = "v2.4.0";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -14,7 +17,7 @@ interface GenerateRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("Generate newsletter content function called");
+  console.log(`[${VERSION}] Generate newsletter content function called`);
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -196,6 +199,7 @@ Generate the following parts (in JSON format):
         content: htmlContent,
         rawContent: generatedContent,
         products: products.map(p => ({ id: p.id, name: p.name, slug: p.slug })),
+        _version: VERSION,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -279,21 +283,20 @@ function buildEmailHtml(content: any, products: any[]): string {
       <td align="center" style="padding: 40px 20px;">
         <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="background-color: ${backgroundColor}; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
           
-          <!-- Header with Logo -->
+          <!-- Header with Logo - Horizontal layout like homepage -->
           <tr>
             <td align="center" style="padding: 30px 40px; background-color: ${backgroundColor};">
-              <a href="https://getpawsy.pet" style="text-decoration: none;">
-                <!--[if mso]>
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle">
-                <![endif]-->
-                <img src="${logoUrl}" alt="" width="48" height="48" style="display: inline-block; vertical-align: middle; width: 48px; height: 48px; margin-right: 12px; border: 0; border-radius: 12px; background-color: #FDF8F1;" />
-                <!--[if mso]>
-                </td><td valign="middle">
-                <![endif]-->
-                <span style="display: inline-block; vertical-align: middle; font-size: 28px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;"><span style="color: #115e59;">Get</span><span style="color: #B45309;">Pawsy</span></span>
-                <!--[if mso]>
-                </td></tr></table>
-                <![endif]-->
+              <a href="https://getpawsy.pet" style="text-decoration: none; display: inline-block;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display: inline-table;">
+                  <tr>
+                    <td valign="middle" style="padding-right: 12px;">
+                      <img src="${logoUrl}" alt="GetPawsy" width="48" height="48" style="display: block; width: 48px; height: 48px; border: 0; border-radius: 12px;" />
+                    </td>
+                    <td valign="middle">
+                      <span style="font-size: 28px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; white-space: nowrap;"><span style="color: #115e59;">Get</span><span style="color: #B45309;">Pawsy</span></span>
+                    </td>
+                  </tr>
+                </table>
               </a>
             </td>
           </tr>
