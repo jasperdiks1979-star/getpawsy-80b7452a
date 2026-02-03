@@ -281,16 +281,16 @@ function buildEmailHtml(content: any, products: any[]): string {
           
           <!-- Header with Logo -->
           <tr>
-            <td align="center" style="padding: 30px 40px; background: linear-gradient(135deg, ${primaryColor} 0%, #d97706 100%);">
+            <td align="center" style="padding: 30px 40px; background-color: ${backgroundColor};">
               <a href="https://getpawsy.pet" style="text-decoration: none;">
                 <!--[if mso]>
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle">
                 <![endif]-->
-                <img src="${logoUrl}" alt="" width="40" height="40" style="display: inline-block; vertical-align: middle; width: 40px; height: 40px; margin-right: 8px; border: 0;" />
+                <img src="${logoUrl}" alt="" width="48" height="48" style="display: inline-block; vertical-align: middle; width: 48px; height: 48px; margin-right: 12px; border: 0; border-radius: 12px; background-color: #FDF8F1;" />
                 <!--[if mso]>
                 </td><td valign="middle">
                 <![endif]-->
-                <span style="display: inline-block; vertical-align: middle; font-size: 28px; font-weight: 700; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Get<span style="color: #FED7AA;">Pawsy</span></span>
+                <span style="display: inline-block; vertical-align: middle; font-size: 28px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;"><span style="color: #115e59;">Get</span><span style="color: #B45309;">Pawsy</span></span>
                 <!--[if mso]>
                 </td></tr></table>
                 <![endif]-->
