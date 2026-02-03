@@ -698,9 +698,12 @@ const ProductDetail = () => {
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-10"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-20"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
+                      e.preventDefault();
                       handlePrevImage();
                     }}
                   >
@@ -709,9 +712,12 @@ const ProductDetail = () => {
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-10"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-20"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
+                      e.preventDefault();
                       handleNextImage();
                     }}
                   >
@@ -724,12 +730,15 @@ const ProductDetail = () => {
                   </div>
                   
                   {/* Dot Indicators - Mobile */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 md:hidden">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 md:hidden z-20">
                     {images.map((_, idx) => (
                       <motion.button
                         key={idx}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           setSelectedImage(idx);
                         }}
                         className={`rounded-full transition-all ${

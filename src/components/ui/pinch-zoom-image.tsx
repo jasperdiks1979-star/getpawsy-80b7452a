@@ -207,7 +207,9 @@ export const PinchZoomImage = ({
     <div 
       ref={containerRef}
       className={cn(
-        'relative overflow-hidden touch-none select-none',
+        'relative overflow-hidden select-none',
+        // Only apply touch-none when zoomed to allow parent swipe gestures
+        isZoomed ? 'touch-none' : 'touch-pan-x',
         containerClassName
       )}
       onTouchStart={handleTouchStart}

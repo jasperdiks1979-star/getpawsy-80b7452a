@@ -393,7 +393,7 @@ const Checkout = () => {
 
         <h1 className="text-3xl font-bold mb-8">Checkout</h1>
 
-        <div className="grid lg:grid-cols-5 gap-8">
+        <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
           {/* Left side - Email & Info */}
           <div className="lg:col-span-3 space-y-6">
             {/* Contact */}
@@ -511,7 +511,7 @@ const Checkout = () => {
 
           {/* Right side - Order Summary */}
           <div className="lg:col-span-2">
-            <div className="bg-card rounded-xl shadow-card p-6 sticky top-24">
+            <div className="bg-card rounded-xl shadow-card p-4 sm:p-6 lg:sticky lg:top-24 max-h-[calc(100vh-6rem)] lg:max-h-none overflow-y-auto lg:overflow-visible">
               <h2 className="text-xl font-bold mb-4">Order Summary</h2>
               
               {/* Items */}
@@ -656,6 +656,37 @@ const Checkout = () => {
             </div>
           </div>
         </div>
+        
+        {/* Mobile Fixed Checkout Bar */}
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg p-4 lg:hidden z-50 safe-area-inset-bottom">
+          <div className="flex items-center justify-between gap-4 max-w-lg mx-auto">
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">Total</span>
+              <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
+            </div>
+            <Button
+              size="lg"
+              className="flex-1 max-w-[200px] gap-2"
+              disabled={isProcessing || !email || !acceptedTerms}
+              onClick={handleStripeCheckout}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4" />
+                  Checkout
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+        
+        {/* Spacer for mobile fixed bar */}
+        <div className="h-24 lg:hidden" />
       </div>
     </Layout>
   );
