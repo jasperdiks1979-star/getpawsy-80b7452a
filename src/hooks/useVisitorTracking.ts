@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-type ActivityType = "browsing" | "cart" | "checkout" | "product_view";
+type ActivityType = "browsing" | "cart" | "checkout" | "product_view" | "add_to_cart" | "view_cart" | "purchase";
 
 interface GeoLocation {
   latitude: number;
@@ -14,6 +14,8 @@ interface UTMParams {
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
+  utm_term: string | null;
+  utm_content: string | null;
 }
 
 interface DeviceInfo {
@@ -32,9 +34,10 @@ const PRODUCTION_DOMAINS = [
   'getpawsy.lovable.app',
 ];
 
+// Countries to mark as internal traffic
+const INTERNAL_COUNTRIES = ['Netherlands', 'The Netherlands', 'NL'];
+
 // Known bot user agent patterns
-// Note: Do NOT include generic 'pinterest' - this blocks real users from the Pinterest in-app browser
-// Only block 'pinterestbot' which is their official crawler
 const BOT_PATTERNS = [
   'googlebot', 'bingbot', 'yandexbot', 'duckduckbot', 'slurp', 'baiduspider',
   'facebookexternalhit', 'twitterbot', 'rogerbot', 'linkedinbot', 'embedly',
@@ -68,23 +71,23 @@ const getSessionId = (): string => {
   return sessionId;
 };
 
-// Extract UTM parameters from URL, with Pinterest auto-detection
-// Also persists them to sessionStorage so cart/checkout events can inherit them
+// Extract all UTM parameters from URL, with Pinterest auto-detection
 const getUTMParams = (): UTMParams => {
-  // First check if we already have UTM params stored (to preserve attribution across page navigations)
+  // First check if we already have UTM params stored
   const storedSource = sessionStorage.getItem("utm_source");
   if (storedSource) {
     return {
       utm_source: storedSource,
       utm_medium: sessionStorage.getItem("utm_medium"),
       utm_campaign: sessionStorage.getItem("utm_campaign"),
+      utm_term: sessionStorage.getItem("utm_term"),
+      utm_content: sessionStorage.getItem("utm_content"),
     };
   }
   
   const params = new URLSearchParams(window.location.search);
   
   // Check for Pinterest-specific parameters
-  // Pinterest adds epik parameter for tracking
   const hasPinterestParam = params.has('epik') || params.has('pin_id');
   
   // Auto-detect Pinterest as source if their params are present
@@ -95,37 +98,26 @@ const getUTMParams = (): UTMParams => {
   
   const utm_medium = params.get('utm_medium') || (hasPinterestParam ? 'social' : null);
   const utm_campaign = params.get('utm_campaign') || (hasPinterestParam ? 'pinterest_auto' : null);
+  const utm_term = params.get('utm_term');
+  const utm_content = params.get('utm_content');
   
-  // Store in sessionStorage for cart/checkout tracking to inherit
-  if (utm_source) {
-    sessionStorage.setItem("utm_source", utm_source);
-  }
-  if (utm_medium) {
-    sessionStorage.setItem("utm_medium", utm_medium);
-  }
-  if (utm_campaign) {
-    sessionStorage.setItem("utm_campaign", utm_campaign);
-  }
+  // Store all UTM params in sessionStorage for funnel persistence
+  if (utm_source) sessionStorage.setItem("utm_source", utm_source);
+  if (utm_medium) sessionStorage.setItem("utm_medium", utm_medium);
+  if (utm_campaign) sessionStorage.setItem("utm_campaign", utm_campaign);
+  if (utm_term) sessionStorage.setItem("utm_term", utm_term);
+  if (utm_content) sessionStorage.setItem("utm_content", utm_content);
   
-  return {
-    utm_source,
-    utm_medium,
-    utm_campaign,
-  };
+  return { utm_source, utm_medium, utm_campaign, utm_term, utm_content };
 };
 
 // Get full referrer URL for better tracking
-// Also persists to sessionStorage so cart/checkout events can inherit
 const getReferrer = (): string | null => {
-  // First check if we already have referrer stored
   const storedReferrer = sessionStorage.getItem("original_referrer");
-  if (storedReferrer) {
-    return storedReferrer;
-  }
+  if (storedReferrer) return storedReferrer;
   
   if (!document.referrer) return null;
   
-  // Store the original referrer for the session
   sessionStorage.setItem("original_referrer", document.referrer);
   return document.referrer;
 };
@@ -136,10 +128,8 @@ const getDeviceInfo = (): DeviceInfo => {
   const screenWidth = window.screen.width;
   const screenHeight = window.screen.height;
   
-  // Detect device type
   let device_type: "mobile" | "tablet" | "desktop" = "desktop";
   
-  // Check for mobile devices
   const isMobile = /android|webos|iphone|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
   const isTablet = /ipad|tablet|playbook|silk/i.test(userAgent) || 
     (isMobile && Math.min(screenWidth, screenHeight) >= 600);
@@ -150,89 +140,78 @@ const getDeviceInfo = (): DeviceInfo => {
     device_type = "mobile";
   }
   
-  // Detect browser
   let browser = "unknown";
-  if (userAgent.includes("firefox")) {
-    browser = "Firefox";
-  } else if (userAgent.includes("edg/")) {
-    browser = "Edge";
-  } else if (userAgent.includes("chrome") && !userAgent.includes("edg/")) {
-    browser = "Chrome";
-  } else if (userAgent.includes("safari") && !userAgent.includes("chrome")) {
-    browser = "Safari";
-  } else if (userAgent.includes("opera") || userAgent.includes("opr/")) {
-    browser = "Opera";
-  }
+  if (userAgent.includes("firefox")) browser = "Firefox";
+  else if (userAgent.includes("edg/")) browser = "Edge";
+  else if (userAgent.includes("chrome") && !userAgent.includes("edg/")) browser = "Chrome";
+  else if (userAgent.includes("safari") && !userAgent.includes("chrome")) browser = "Safari";
+  else if (userAgent.includes("opera") || userAgent.includes("opr/")) browser = "Opera";
   
-  return {
-    device_type,
-    browser,
-    screen_width: screenWidth,
-    screen_height: screenHeight,
-  };
+  return { device_type, browser, screen_width: screenWidth, screen_height: screenHeight };
 };
 
 // Categorize the referrer source
 const categorizeReferrer = (referrer: string | null, utmParams: UTMParams): ReferrerCategory => {
-  // If UTM params indicate paid traffic
   if (utmParams.utm_medium === 'paid' || utmParams.utm_medium === 'cpc' || utmParams.utm_medium === 'ppc') {
     return "paid";
   }
   
-  // If UTM params indicate email
   if (utmParams.utm_medium === 'email' || utmParams.utm_source?.includes('email')) {
     return "email";
   }
   
-  // No referrer = direct traffic
-  if (!referrer) {
-    return "direct";
-  }
+  if (!referrer) return "direct";
   
   const referrerLower = referrer.toLowerCase();
   
-  // Google search (organic)
   if (referrerLower.includes('google.') && !utmParams.utm_medium?.includes('paid')) {
-    if (utmParams.utm_medium === 'organic' || !utmParams.utm_medium) {
-      return "google";
-    }
-    return "paid";
+    return utmParams.utm_medium === 'organic' || !utmParams.utm_medium ? "google" : "paid";
   }
   
-  // Social media platforms
   const socialPlatforms = [
     'facebook.com', 'fb.com', 'instagram.com', 'twitter.com', 'x.com',
     'pinterest.com', 'linkedin.com', 'tiktok.com', 'youtube.com',
     'reddit.com', 'snapchat.com', 'whatsapp.com', 't.co'
   ];
   
-  if (socialPlatforms.some(platform => referrerLower.includes(platform))) {
-    return "social";
-  }
+  if (socialPlatforms.some(platform => referrerLower.includes(platform))) return "social";
   
-  // Other search engines (organic)
   const searchEngines = ['bing.com', 'yahoo.com', 'duckduckgo.com', 'ecosia.org'];
-  if (searchEngines.some(engine => referrerLower.includes(engine))) {
-    return "organic";
-  }
+  if (searchEngines.some(engine => referrerLower.includes(engine))) return "organic";
   
   return "other";
 };
 
+// Check if location is internal (Netherlands)
+const isInternalTraffic = (country?: string): boolean => {
+  if (!country) return false;
+  return INTERNAL_COUNTRIES.some(c => 
+    country.toLowerCase().includes(c.toLowerCase())
+  );
+};
+
+export interface TrackingOptions {
+  productId?: string;
+  productName?: string;
+  productPrice?: number;
+  productQuantity?: number;
+  pagePath?: string;
+  orderId?: string;
+  orderValue?: number;
+}
+
 export const useVisitorTracking = () => {
   const locationRef = useRef<GeoLocation | null>(null);
-  const lastActivityRef = useRef<string | null>(null); // Changed to track activity + path combo
+  const lastActivityRef = useRef<string | null>(null);
   const sessionId = useRef<string>(getSessionId());
   const utmParamsRef = useRef<UTMParams>(getUTMParams());
   const referrerRef = useRef<string | null>(getReferrer());
   const deviceInfoRef = useRef<DeviceInfo>(getDeviceInfo());
 
-  // Fetch approximate location using IP geolocation
   const fetchLocation = useCallback(async (): Promise<GeoLocation | null> => {
     if (locationRef.current) return locationRef.current;
 
     try {
-      // Use a free IP geolocation API
       const response = await fetch("https://ipapi.co/json/");
       if (!response.ok) throw new Error("Failed to fetch location");
       
@@ -254,14 +233,9 @@ export const useVisitorTracking = () => {
     return null;
   }, []);
 
-  // Track visitor activity with enhanced data
   const trackActivity = useCallback(async (
     activityType: ActivityType,
-    options?: {
-      productId?: string;
-      productName?: string;
-      pagePath?: string;
-    }
+    options?: TrackingOptions
   ) => {
     // Only track on production domains
     if (!isProductionDomain()) {
@@ -276,9 +250,9 @@ export const useVisitorTracking = () => {
     }
 
     const currentPath = options?.pagePath || window.location.pathname;
-    const activityKey = `${activityType}-${currentPath}-${options?.productId || ''}`;
+    const activityKey = `${activityType}-${currentPath}-${options?.productId || ''}-${options?.orderId || ''}`;
     
-    // Don't track duplicate consecutive activities on the same page
+    // Don't track duplicate consecutive activities
     if (lastActivityRef.current === activityKey) return;
     lastActivityRef.current = activityKey;
 
@@ -288,6 +262,7 @@ export const useVisitorTracking = () => {
       const referrer = referrerRef.current;
       const deviceInfo = deviceInfoRef.current;
       const referrerCategory = categorizeReferrer(referrer, utmParams);
+      const isInternal = isInternalTraffic(location?.country);
       
       const { error } = await supabase
         .from("visitor_activity")
@@ -302,26 +277,38 @@ export const useVisitorTracking = () => {
           utm_source: utmParams.utm_source,
           utm_medium: utmParams.utm_medium,
           utm_campaign: utmParams.utm_campaign,
-          // Enhanced tracking fields
+          utm_term: utmParams.utm_term,
+          utm_content: utmParams.utm_content,
           page_path: currentPath,
           product_id: options?.productId || null,
           product_name: options?.productName || null,
+          product_price: options?.productPrice || null,
+          product_quantity: options?.productQuantity || null,
+          order_id: options?.orderId || null,
+          order_value: options?.orderValue || null,
           device_type: deviceInfo.device_type,
           browser: deviceInfo.browser,
           screen_width: deviceInfo.screen_width,
           screen_height: deviceInfo.screen_height,
           referrer_category: referrerCategory,
+          is_internal: isInternal,
         });
 
       if (error) {
         console.error("Error tracking activity:", error);
+      } else {
+        console.log(`[Visitor Tracking] ${activityType} tracked`, { 
+          productId: options?.productId, 
+          orderId: options?.orderId,
+          isInternal
+        });
       }
     } catch (error) {
       console.error("Error tracking activity:", error);
     }
   }, [fetchLocation]);
 
-  // Track browsing activity on mount
+  // Track browsing activity on mount (only once)
   useEffect(() => {
     trackActivity("browsing");
   }, [trackActivity]);
@@ -331,7 +318,75 @@ export const useVisitorTracking = () => {
     trackBrowsing: (pagePath?: string) => trackActivity("browsing", { pagePath }),
     trackCart: () => trackActivity("cart"),
     trackCheckout: () => trackActivity("checkout"),
-    trackProductView: (productId: string, productName: string) => 
-      trackActivity("product_view", { productId, productName }),
+    trackProductView: (productId: string, productName: string, productPrice?: number) => 
+      trackActivity("product_view", { productId, productName, productPrice }),
+    // New funnel events
+    trackAddToCart: (productId: string, productName: string, productPrice: number, quantity: number = 1) =>
+      trackActivity("add_to_cart", { productId, productName, productPrice, productQuantity: quantity }),
+    trackViewCart: () => trackActivity("view_cart"),
+    trackPurchase: (orderId: string, orderValue: number) =>
+      trackActivity("purchase", { orderId, orderValue }),
+    sessionId: sessionId.current,
   };
+};
+
+// Helper to track events from outside React components
+export const trackVisitorEvent = async (
+  activityType: ActivityType,
+  options?: TrackingOptions
+) => {
+  if (!isProductionDomain() || isBot()) return;
+
+  const sessionId = getSessionId();
+  const utmParams = getUTMParams();
+  const referrer = getReferrer();
+  const deviceInfo = getDeviceInfo();
+  const referrerCategory = categorizeReferrer(referrer, utmParams);
+
+  // Try to get cached location
+  const cachedLocation = sessionStorage.getItem("visitor_location");
+  let location: GeoLocation | null = null;
+  if (cachedLocation) {
+    try {
+      location = JSON.parse(cachedLocation);
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  const isInternal = isInternalTraffic(location?.country);
+
+  const { error } = await supabase
+    .from("visitor_activity")
+    .insert({
+      session_id: sessionId,
+      activity_type: activityType,
+      latitude: location?.latitude || null,
+      longitude: location?.longitude || null,
+      country: location?.country || null,
+      city: location?.city || null,
+      referrer: referrer,
+      utm_source: utmParams.utm_source,
+      utm_medium: utmParams.utm_medium,
+      utm_campaign: utmParams.utm_campaign,
+      utm_term: utmParams.utm_term,
+      utm_content: utmParams.utm_content,
+      page_path: options?.pagePath || window.location.pathname,
+      product_id: options?.productId || null,
+      product_name: options?.productName || null,
+      product_price: options?.productPrice || null,
+      product_quantity: options?.productQuantity || null,
+      order_id: options?.orderId || null,
+      order_value: options?.orderValue || null,
+      device_type: deviceInfo.device_type,
+      browser: deviceInfo.browser,
+      screen_width: deviceInfo.screen_width,
+      screen_height: deviceInfo.screen_height,
+      referrer_category: referrerCategory,
+      is_internal: isInternal,
+    });
+
+  if (error) {
+    console.error("Error tracking activity:", error);
+  }
 };

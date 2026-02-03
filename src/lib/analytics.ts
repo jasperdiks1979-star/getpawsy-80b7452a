@@ -66,7 +66,7 @@ export const trackAddToCart = (
   quantity: number = 1
 ): void => {
   trackEvent('add_to_cart', {
-    currency: 'EUR',
+    currency: 'USD',
     value: productPrice * quantity,
     items: [{
       item_id: productId,
@@ -103,7 +103,7 @@ export const trackViewItem = (
   category?: string
 ): void => {
   trackEvent('view_item', {
-    currency: 'EUR',
+    currency: 'USD',
     value: productPrice,
     items: [{
       item_id: productId,
@@ -127,7 +127,7 @@ export const trackBeginCheckout = (
   totalValue: number
 ): void => {
   trackEvent('begin_checkout', {
-    currency: 'EUR',
+    currency: 'USD',
     value: totalValue,
     items: items.map(item => ({
       item_id: item.id,
@@ -138,6 +138,7 @@ export const trackBeginCheckout = (
   });
 };
 
+
 // Purchase complete
 export const trackPurchase = (
   transactionId: string,
@@ -146,7 +147,7 @@ export const trackPurchase = (
 ): void => {
   trackEvent('purchase', {
     transaction_id: transactionId,
-    currency: 'EUR',
+    currency: 'USD',
     value: totalValue,
     items: items.map(item => ({
       item_id: item.id,
@@ -156,6 +157,7 @@ export const trackPurchase = (
     })),
   });
 };
+
 
 // User authentication
 export const trackLogin = (method: string): void => {
