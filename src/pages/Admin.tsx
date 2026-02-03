@@ -2921,7 +2921,7 @@ const Admin = () => {
                   </div>
                 </Card>
               }>
-                <EmailCampaignManager />
+                <EmailCampaignManager onNavigateToSubscribers={() => setActiveTab("newsletter")} />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
