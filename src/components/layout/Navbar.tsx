@@ -415,7 +415,7 @@ export const Navbar = () => {
             >
               <img src={logoIcon} alt="GetPawsy" className="w-full h-full object-cover" />
             </motion.div>
-            <span className="font-display text-foreground text-2xl hidden sm:block">
+            <span className="font-display text-foreground text-xl sm:text-2xl">
               Get<span className="text-primary">Pawsy</span>
             </span>
           </Link>

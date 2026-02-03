@@ -210,7 +210,7 @@ Generate the following parts (in JSON format):
 };
 
 function buildEmailHtml(content: any, products: any[]): string {
-  const logoUrl = "https://getpawsy.pet/ads/google-ads-logo.png";
+  const logoUrl = "https://getpawsy.pet/ads/google-ads-logo-landscape.png";
   const primaryColor = "#B45309"; // Terracotta
   const backgroundColor = "#FEFAF6"; // Cream
   const textColor = "#1f2937";
