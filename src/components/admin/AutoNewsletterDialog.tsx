@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   Sparkles, 
@@ -23,9 +23,12 @@ import {
   Heart,
   Tag,
   Send,
-  Eye,
   ShoppingBag,
-  Lightbulb
+  Lightbulb,
+  Plus,
+  X,
+  Users,
+  Mail
 } from "lucide-react";
 import { format, addDays, setHours, setMinutes } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -47,53 +50,58 @@ interface AutoNewsletterDialogProps {
     new_arrivals: number;
     total: number;
   };
+  onOpenSubscribers?: () => void;
 }
 
 const preferenceLabels = {
   product_updates: { label: "Product Updates", icon: Package },
-  pet_care_tips: { label: "Verzorgingstips", icon: Heart },
-  promotions: { label: "Aanbiedingen", icon: Tag },
-  new_arrivals: { label: "Nieuwe Producten", icon: Sparkles },
+  pet_care_tips: { label: "Pet Care Tips", icon: Heart },
+  promotions: { label: "Promotions", icon: Tag },
+  new_arrivals: { label: "New Arrivals", icon: Sparkles },
 };
 
 const contentTypeOptions = [
-  { value: 'new_products', label: 'Nieuwe Producten', description: 'Nieuwste toevoegingen aan de shop', icon: ShoppingBag },
-  { value: 'bestsellers', label: 'Bestsellers', description: 'Populairste producten', icon: Sparkles },
-  { value: 'tips', label: 'Verzorgingstips', description: 'Educatieve content uit blogs', icon: Lightbulb },
-  { value: 'mixed', label: 'Gemengd', description: 'Mix van producten en tips', icon: RefreshCw },
+  { value: 'new_products', label: 'New Products', description: 'Latest additions to the shop', icon: ShoppingBag },
+  { value: 'bestsellers', label: 'Bestsellers', description: 'Most popular products', icon: Sparkles },
+  { value: 'tips', label: 'Care Tips', description: 'Educational blog content', icon: Lightbulb },
+  { value: 'mixed', label: 'Mixed', description: 'Mix of products and tips', icon: RefreshCw },
 ];
 
 const recurrenceOptions = [
-  { value: 'weekly', label: 'Wekelijks' },
-  { value: 'biweekly', label: 'Om de week' },
-  { value: 'monthly', label: 'Maandelijks' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Bi-weekly' },
+  { value: 'monthly', label: 'Monthly' },
 ];
 
 const dayOptions = [
-  { value: '1', label: 'Maandag' },
-  { value: '2', label: 'Dinsdag' },
-  { value: '3', label: 'Woensdag' },
-  { value: '4', label: 'Donderdag' },
-  { value: '5', label: 'Vrijdag' },
-  { value: '6', label: 'Zaterdag' },
-  { value: '0', label: 'Zondag' },
+  { value: '1', label: 'Monday' },
+  { value: '2', label: 'Tuesday' },
+  { value: '3', label: 'Wednesday' },
+  { value: '4', label: 'Thursday' },
+  { value: '5', label: 'Friday' },
+  { value: '6', label: 'Saturday' },
+  { value: '0', label: 'Sunday' },
 ];
 
-export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: AutoNewsletterDialogProps) {
+export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats, onOpenSubscribers }: AutoNewsletterDialogProps) {
   const queryClient = useQueryClient();
   
-  // Mode: 'ai', 'scheduled', 'recurring'
-  const [mode, setMode] = useState<'ai' | 'scheduled' | 'recurring'>('ai');
+  // Mode: 'sendnow', 'ai', 'scheduled', 'recurring'
+  const [mode, setMode] = useState<'sendnow' | 'ai' | 'scheduled' | 'recurring'>('sendnow');
   
   // Common fields
   const [subject, setSubject] = useState("");
   const [content, setContent] = useState("");
   const [targetPreferences, setTargetPreferences] = useState<Preferences>({
-    product_updates: false,
-    pet_care_tips: false,
-    promotions: false,
-    new_arrivals: false,
+    product_updates: true,
+    pet_care_tips: true,
+    promotions: true,
+    new_arrivals: true,
   });
+  
+  // Additional manual emails
+  const [additionalEmails, setAdditionalEmails] = useState<string[]>([]);
+  const [newEmail, setNewEmail] = useState("");
   
   // AI generation fields
   const [aiContentType, setAiContentType] = useState<string>("mixed");
@@ -119,6 +127,24 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
 
   const hasSelectedPreference = Object.values(targetPreferences).some(Boolean);
 
+  // Add email to list
+  const addEmail = () => {
+    const email = newEmail.trim().toLowerCase();
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (email && emailRegex.test(email) && !additionalEmails.includes(email)) {
+      setAdditionalEmails(prev => [...prev, email]);
+      setNewEmail("");
+    } else if (!emailRegex.test(email)) {
+      toast.error("Invalid email address");
+    } else if (additionalEmails.includes(email)) {
+      toast.error("Email already added");
+    }
+  };
+
+  const removeEmail = (email: string) => {
+    setAdditionalEmails(prev => prev.filter(e => e !== email));
+  };
+
   // Generate AI content
   const generateContent = async () => {
     setIsGenerating(true);
@@ -135,16 +161,61 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
 
       setSubject(data.subject);
       setContent(data.content);
-      toast.success("Nieuwsbrief content gegenereerd!");
+      toast.success("Newsletter content generated!");
     } catch (error: any) {
       console.error("Generate error:", error);
-      toast.error(`Genereren mislukt: ${error.message}`);
+      toast.error(`Generation failed: ${error.message}`);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Create campaign mutation
+  // Send now mutation
+  const sendNowMutation = useMutation({
+    mutationFn: async () => {
+      // First create the campaign
+      const { data: campaign, error: createError } = await supabase
+        .from("email_campaigns")
+        .insert([{
+          subject,
+          content,
+          target_preferences: JSON.parse(JSON.stringify(targetPreferences)),
+          status: "draft",
+          is_ai_generated: false,
+        }])
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      // Then send it immediately
+      const { data, error } = await supabase.functions.invoke("send-email-campaign", {
+        body: { 
+          campaignId: campaign.id,
+          additionalEmails: additionalEmails.length > 0 ? additionalEmails : undefined,
+        },
+      });
+      
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["email-campaigns"] });
+      onOpenChange(false);
+      resetForm();
+      
+      const additionalInfo = data.additionalEmailCount > 0 
+        ? ` (including ${data.additionalEmailCount} manual emails)`
+        : '';
+      toast.success(`Newsletter sent to ${data.sentCount} recipients${additionalInfo}!`);
+    },
+    onError: (error) => {
+      toast.error(`Sending failed: ${error.message}`);
+    },
+  });
+
+  // Create campaign mutation (for scheduled/recurring)
   const createMutation = useMutation({
     mutationFn: async () => {
       let status = 'draft';
@@ -202,15 +273,15 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
       resetForm();
       
       if (mode === 'scheduled') {
-        toast.success("Campagne ingepland!");
+        toast.success("Campaign scheduled!");
       } else if (mode === 'recurring') {
-        toast.success("Terugkerende nieuwsbrief ingesteld!");
+        toast.success("Recurring newsletter set up!");
       } else {
-        toast.success("Campagne aangemaakt!");
+        toast.success("Campaign created!");
       }
     },
     onError: (error) => {
-      toast.error(`Fout: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     },
   });
 
@@ -218,16 +289,28 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
     setSubject("");
     setContent("");
     setTargetPreferences({
-      product_updates: false,
-      pet_care_tips: false,
-      promotions: false,
-      new_arrivals: false,
+      product_updates: true,
+      pet_care_tips: true,
+      promotions: true,
+      new_arrivals: true,
     });
+    setAdditionalEmails([]);
+    setNewEmail("");
     setCustomPrompt("");
-    setMode('ai');
+    setMode('sendnow');
   };
 
-  const canSubmit = subject && content && hasSelectedPreference;
+  const canSubmit = subject && content && (hasSelectedPreference || additionalEmails.length > 0);
+
+  const handleSubmit = () => {
+    if (mode === 'sendnow') {
+      sendNowMutation.mutate();
+    } else {
+      createMutation.mutate();
+    }
+  };
+
+  const isPending = sendNowMutation.isPending || createMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -235,28 +318,86 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="h-5 w-5 text-primary" />
-            Automatische Nieuwsbrief
+            Newsletter Manager
           </DialogTitle>
           <DialogDescription>
-            Laat AI je nieuwsbrief schrijven, plan hem in, of stel terugkerende verzending in
+            Create, schedule, or send newsletters with AI-generated content
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={mode} onValueChange={(v) => setMode(v as 'ai' | 'scheduled' | 'recurring')}>
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={mode} onValueChange={(v) => setMode(v as 'sendnow' | 'ai' | 'scheduled' | 'recurring')}>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="sendnow" className="gap-2">
+              <Send className="h-4 w-4" />
+              Send Now
+            </TabsTrigger>
             <TabsTrigger value="ai" className="gap-2">
               <Sparkles className="h-4 w-4" />
-              AI Genereren
+              AI Generate
             </TabsTrigger>
             <TabsTrigger value="scheduled" className="gap-2">
               <Calendar className="h-4 w-4" />
-              Inplannen
+              Schedule
             </TabsTrigger>
             <TabsTrigger value="recurring" className="gap-2">
               <RefreshCw className="h-4 w-4" />
-              Terugkerend
+              Recurring
             </TabsTrigger>
           </TabsList>
+
+          {/* Send Now Tab */}
+          <TabsContent value="sendnow" className="space-y-4 mt-4">
+            <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
+              <div className="flex items-start gap-3">
+                <Send className="h-5 w-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-medium text-sm">Immediate Delivery</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Write your content below and send it immediately to all selected subscribers.
+                    You can also add extra email addresses manually.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Manual Email Input */}
+            <div className="space-y-2">
+              <Label>Add Extra Email Addresses (optional)</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="email@example.com"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addEmail();
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" onClick={addEmail}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {additionalEmails.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {additionalEmails.map((email) => (
+                    <Badge key={email} variant="secondary" className="pl-2 pr-1 py-1">
+                      <Mail className="h-3 w-3 mr-1" />
+                      {email}
+                      <button
+                        onClick={() => removeEmail(email)}
+                        className="ml-1 hover:bg-muted rounded-sm p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
 
           {/* AI Generation Tab */}
           <TabsContent value="ai" className="space-y-4 mt-4">
@@ -286,10 +427,10 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="customPrompt">Aanvullende instructies (optioneel)</Label>
+              <Label htmlFor="customPrompt">Additional Instructions (optional)</Label>
               <Textarea
                 id="customPrompt"
-                placeholder="Bijv: Focus op winterproducten, of voeg een speciale korting toe..."
+                placeholder="E.g.: Focus on winter products, or add a special discount..."
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 rows={2}
@@ -305,12 +446,12 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
               {isGenerating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Content genereren...
+                  Generating content...
                 </>
               ) : (
                 <>
                   <Wand2 className="h-4 w-4 mr-2" />
-                  Genereer met AI
+                  Generate with AI
                 </>
               )}
             </Button>
@@ -320,7 +461,7 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
           <TabsContent value="scheduled" className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="scheduledDate">Datum</Label>
+                <Label htmlFor="scheduledDate">Date</Label>
                 <Input
                   id="scheduledDate"
                   type="date"
@@ -330,7 +471,7 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scheduledTime">Tijd</Label>
+                <Label htmlFor="scheduledTime">Time</Label>
                 <Input
                   id="scheduledTime"
                   type="time"
@@ -343,7 +484,7 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
             <div className="bg-muted/50 p-3 rounded-lg flex items-center gap-2 text-sm">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span>
-                Wordt verzonden op {format(new Date(scheduledDate), "EEEE d MMMM yyyy", { locale: nl })} om {scheduledTime}
+                Will be sent on {format(new Date(scheduledDate), "EEEE, MMMM d, yyyy")} at {scheduledTime}
               </span>
             </div>
           </TabsContent>
@@ -352,7 +493,7 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
           <TabsContent value="recurring" className="space-y-4 mt-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Frequentie</Label>
+                <Label>Frequency</Label>
                 <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
                   <SelectTrigger>
                     <SelectValue />
@@ -365,7 +506,7 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Dag</Label>
+                <Label>Day</Label>
                 <Select value={recurrenceDay} onValueChange={setRecurrenceDay}>
                   <SelectTrigger>
                     <SelectValue />
@@ -378,7 +519,7 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Tijd</Label>
+                <Label>Time</Label>
                 <Input
                   type="time"
                   value={recurrenceTime}
@@ -394,16 +535,16 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
                 onCheckedChange={(checked) => setUseAiForRecurring(!!checked)}
               />
               <Label htmlFor="useAiForRecurring" className="flex-1 cursor-pointer">
-                <span className="font-medium">Automatisch genereren met AI</span>
+                <span className="font-medium">Auto-generate with AI</span>
                 <p className="text-xs text-muted-foreground">
-                  Elke keer wordt nieuwe content gegenereerd op basis van actuele producten
+                  Fresh content will be generated each time based on current products
                 </p>
               </Label>
             </div>
 
             {useAiForRecurring && (
               <div className="space-y-2">
-                <Label>Content Type voor automatische generatie</Label>
+                <Label>Content Type for auto-generation</Label>
                 <Select value={aiContentType} onValueChange={setAiContentType}>
                   <SelectTrigger>
                     <SelectValue />
@@ -422,27 +563,35 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
         {/* Common Fields */}
         <div className="space-y-4 pt-4 border-t">
           <div className="space-y-2">
-            <Label htmlFor="subject">Onderwerp</Label>
+            <Label htmlFor="subject">Subject</Label>
             <Input
               id="subject"
-              placeholder="Bijv: Nieuwe wintercollectie voor je huisdier! 🐾"
+              placeholder="E.g.: New Winter Collection for Your Pet! 🐾"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Inhoud</Label>
+            <Label>Content</Label>
             <RichTextEditor
               content={content}
               onChange={setContent}
-              placeholder="Schrijf hier je nieuwsbrief of genereer met AI..."
+              placeholder="Write your newsletter here or generate with AI..."
               className="min-h-[200px]"
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Doelgroep</Label>
+            <div className="flex items-center justify-between">
+              <Label>Target Audience</Label>
+              {onOpenSubscribers && (
+                <Button variant="link" size="sm" className="h-auto p-0" onClick={onOpenSubscribers}>
+                  <Users className="h-3 w-3 mr-1" />
+                  Manage Subscribers
+                </Button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(preferenceLabels).map(([key, { label, icon: Icon }]) => (
                 <div
@@ -462,25 +611,32 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
                   <div className="flex-1">
                     <p className="text-sm font-medium">{label}</p>
                     <p className="text-xs text-muted-foreground">
-                      {subscriberStats?.[key as keyof Preferences] || 0} abonnees
+                      {subscriberStats?.[key as keyof Preferences] || 0} subscribers
                     </p>
                   </div>
                 </div>
               ))}
             </div>
+            {additionalEmails.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                + {additionalEmails.length} manual email{additionalEmails.length !== 1 ? 's' : ''} added
+              </p>
+            )}
           </div>
         </div>
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuleren
+            Cancel
           </Button>
           <Button
-            onClick={() => createMutation.mutate()}
-            disabled={!canSubmit || createMutation.isPending}
+            onClick={handleSubmit}
+            disabled={!canSubmit || isPending}
           >
-            {createMutation.isPending ? (
+            {isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : mode === 'sendnow' ? (
+              <Send className="h-4 w-4 mr-2" />
             ) : mode === 'scheduled' ? (
               <Calendar className="h-4 w-4 mr-2" />
             ) : mode === 'recurring' ? (
@@ -488,7 +644,7 @@ export function AutoNewsletterDialog({ open, onOpenChange, subscriberStats }: Au
             ) : (
               <Send className="h-4 w-4 mr-2" />
             )}
-            {mode === 'scheduled' ? 'Inplannen' : mode === 'recurring' ? 'Activeren' : 'Aanmaken'}
+            {mode === 'sendnow' ? 'Send Now' : mode === 'scheduled' ? 'Schedule' : mode === 'recurring' ? 'Activate' : 'Create'}
           </Button>
         </DialogFooter>
       </DialogContent>

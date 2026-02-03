@@ -76,7 +76,11 @@ const preferenceLabels = {
   new_arrivals: { label: "Nieuwe Producten", icon: Sparkles },
 };
 
-export function EmailCampaignManager() {
+interface EmailCampaignManagerProps {
+  onNavigateToSubscribers?: () => void;
+}
+
+export function EmailCampaignManager({ onNavigateToSubscribers }: EmailCampaignManagerProps = {}) {
   const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAutoDialog, setShowAutoDialog] = useState(false);
@@ -842,6 +846,7 @@ export function EmailCampaignManager() {
         open={showAutoDialog}
         onOpenChange={setShowAutoDialog}
         subscriberStats={subscriberStats}
+        onOpenSubscribers={onNavigateToSubscribers}
       />
     </div>
   );

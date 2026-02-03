@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface CampaignRequest {
   campaignId: string;
+  additionalEmails?: string[]; // Optional manually added emails
 }
 
 interface Preferences {
@@ -347,13 +348,24 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // ========== PROCESS CAMPAIGN ==========
-    const { campaignId }: CampaignRequest = await req.json();
+    const { campaignId, additionalEmails }: CampaignRequest = await req.json();
 
     if (!campaignId) {
       return new Response(
         JSON.stringify({ error: "Campaign ID is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Validate additional emails if provided
+    const validAdditionalEmails: string[] = [];
+    if (additionalEmails && Array.isArray(additionalEmails)) {
+      const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+      for (const email of additionalEmails) {
+        if (typeof email === 'string' && emailRegex.test(email.trim())) {
+          validAdditionalEmails.push(email.trim().toLowerCase());
+        }
+      }
     }
 
     // Fetch the campaign
@@ -406,9 +418,17 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }) || [];
 
-    if (targetSubscribers.length === 0) {
+    // Combine with additional manual emails (avoiding duplicates)
+    const existingEmails = new Set(targetSubscribers.map(s => s.email.toLowerCase()));
+    const additionalRecipients = validAdditionalEmails
+      .filter(email => !existingEmails.has(email))
+      .map(email => ({ email, preferences: null, preference_token: null }));
+
+    const allRecipients = [...targetSubscribers, ...additionalRecipients];
+
+    if (allRecipients.length === 0) {
       return new Response(
-        JSON.stringify({ error: "No subscribers match the target preferences", sentCount: 0 }),
+        JSON.stringify({ error: "No recipients found (no subscribers match preferences and no additional emails)", sentCount: 0 }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -430,8 +450,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send emails in batches to avoid rate limits
     const batchSize = 10;
-    for (let i = 0; i < targetSubscribers.length; i += batchSize) {
-      const batch = targetSubscribers.slice(i, i + batchSize);
+    for (let i = 0; i < allRecipients.length; i += batchSize) {
+      const batch = allRecipients.slice(i, i + batchSize);
       
       await Promise.all(
         batch.map(async (subscriber) => {
@@ -488,7 +508,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
 
       // Small delay between batches to avoid rate limits
-      if (i + batchSize < targetSubscribers.length) {
+      if (i + batchSize < allRecipients.length) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
@@ -507,13 +527,16 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Failed to update campaign status:", updateError);
     }
 
-    console.log(`Campaign ${campaignId} sent by ${user.email}: ${successCount}/${targetSubscribers.length} emails`);
+    const additionalCount = additionalRecipients.length;
+    console.log(`Campaign ${campaignId} sent by ${user.email}: ${successCount}/${allRecipients.length} emails (${targetSubscribers.length} subscribers + ${additionalCount} manual)`);
 
     return new Response(
       JSON.stringify({
         success: true,
         sentCount: successCount,
-        totalTargeted: targetSubscribers.length,
+        totalTargeted: allRecipients.length,
+        subscriberCount: targetSubscribers.length,
+        additionalEmailCount: additionalCount,
         errors: errors.length > 0 ? errors : undefined,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
