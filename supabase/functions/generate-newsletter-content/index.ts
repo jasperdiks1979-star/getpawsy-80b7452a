@@ -83,49 +83,50 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     // Build AI prompt
-    let systemPrompt = `Je bent een expert marketing copywriter voor GetPawsy, een webshop voor huisdierproducten. 
-Je schrijft warme, vriendelijke nieuwsbrieven in het Nederlands die pet parents aanspreken.
+    let systemPrompt = `You are an expert marketing copywriter for GetPawsy, an online pet supplies store. 
+You write warm, friendly newsletters in English that resonate with pet parents.
 
-Richtlijnen:
-- Gebruik een warme, persoonlijke toon
-- Spreek de lezer aan als "je" of "jij"
-- Voeg emoji's toe waar passend (niet overdrijven)
-- Focus op de voordelen voor het huisdier
-- Houd het beknopt maar informatief
-- Geen harde sales-taal, wel subtiele call-to-actions`;
+Guidelines:
+- Use a warm, personal tone
+- Address the reader as "you"
+- Add emojis where appropriate (don't overdo it)
+- Focus on the benefits for the pet
+- Keep it concise but informative
+- No hard sales language, but include subtle call-to-actions
+- All prices are in USD ($)`;
 
     let userPrompt = "";
     
     if (customPrompt) {
-      userPrompt = customPrompt;
+      userPrompt = customPrompt + "\n\nIMPORTANT: Write all content in English.";
     } else {
       switch (contentType) {
         case 'new_products':
-          userPrompt = `Schrijf een nieuwsbrief over onze nieuwste producten. Focus op wat nieuw en spannend is.
+          userPrompt = `Write a newsletter about our newest products. Focus on what's new and exciting.
 
-Producten om te highlighten:
-${products.map(p => `- ${p.name}: ${p.description?.slice(0, 100) || 'Geen beschrijving'} (€${p.price})`).join('\n')}`;
+Products to highlight:
+${products.map(p => `- ${p.name}: ${p.description?.slice(0, 100) || 'No description'} ($${p.price})`).join('\n')}`;
           break;
           
         case 'bestsellers':
-          userPrompt = `Schrijf een nieuwsbrief over onze bestsellers - producten die andere pet parents geweldig vinden.
+          userPrompt = `Write a newsletter about our bestsellers - products that other pet parents love.
 
 Bestsellers:
-${products.map(p => `- ${p.name}: ${p.description?.slice(0, 100) || 'Geen beschrijving'} (€${p.price})`).join('\n')}`;
+${products.map(p => `- ${p.name}: ${p.description?.slice(0, 100) || 'No description'} ($${p.price})`).join('\n')}`;
           break;
           
         case 'tips':
-          userPrompt = `Schrijf een nieuwsbrief met nuttige verzorgingstips voor huisdieren. Maak het educatief en praktisch.
+          userPrompt = `Write a newsletter with helpful pet care tips. Make it educational and practical.
 
-Recente blogartikelen om te refereren:
+Recent blog posts to reference:
 ${blogPosts.map(b => `- ${b.title}: ${b.excerpt?.slice(0, 100) || ''}`).join('\n')}`;
           break;
           
         case 'mixed':
-          userPrompt = `Schrijf een gevarieerde nieuwsbrief met een mix van producten en tips.
+          userPrompt = `Write a varied newsletter with a mix of products and tips.
 
-Producten:
-${products.map(p => `- ${p.name}: ${p.description?.slice(0, 100) || 'Geen beschrijving'} (€${p.price})`).join('\n')}
+Products:
+${products.map(p => `- ${p.name}: ${p.description?.slice(0, 100) || 'No description'} ($${p.price})`).join('\n')}
 
 Tips/Blogs:
 ${blogPosts.map(b => `- ${b.title}: ${b.excerpt?.slice(0, 100) || ''}`).join('\n')}`;
@@ -135,16 +136,16 @@ ${blogPosts.map(b => `- ${b.title}: ${b.excerpt?.slice(0, 100) || ''}`).join('\n
     
     userPrompt += `
 
-Genereer de volgende onderdelen (in JSON formaat):
+Generate the following parts (in JSON format):
 {
-  "subject": "Pakkende onderwerpregel (max 60 karakters)",
-  "preheader": "Korte preview tekst (max 100 karakters)",
-  "greeting": "Korte begroeting",
-  "intro": "Introductie paragraaf (2-3 zinnen)",
-  "mainContent": "Hoofdinhoud (kan HTML bevatten met <h2>, <p>, <ul> tags)",
-  "ctaText": "Call-to-action knop tekst",
+  "subject": "Catchy subject line (max 60 characters)",
+  "preheader": "Short preview text (max 100 characters)",
+  "greeting": "Short greeting",
+  "intro": "Introduction paragraph (2-3 sentences)",
+  "mainContent": "Main content (can contain HTML with <h2>, <p>, <ul> tags)",
+  "ctaText": "Call-to-action button text",
   "ctaUrl": "https://getpawsy.pet/shop",
-  "closing": "Afsluitende zin"
+  "closing": "Closing sentence"
 }`;
 
     // Call Lovable AI
