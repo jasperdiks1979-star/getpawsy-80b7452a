@@ -217,69 +217,57 @@ Generate the following parts (in JSON format):
 
 function buildEmailHtml(content: any, products: any[]): string {
   const logoUrl = "https://getpawsy.pet/ads/google-ads-logo.png"; // Square paw icon
-  const primaryColor = "#B45309"; // Terracotta
+  const primaryColor = "#B45309"; // Terracotta/Orange
   const backgroundColor = "#FEFAF6"; // Cream
   const textColor = "#1f2937";
   
   let productHtml = "";
   
   if (products.length > 0) {
-    // Use 2-column layout for products, mobile-friendly with separate rows
-    const productRows: string[] = [];
-    
-    for (let i = 0; i < products.length; i += 2) {
-      const product1 = products[i];
-      const product2 = products[i + 1];
+    // Single column layout - one product per row, full width
+    const productItems = products.map(product => {
+      const imageUrl = product.image_url || "https://getpawsy.pet/placeholder.svg";
+      const discount = product.compare_at_price && product.compare_at_price > product.price
+        ? Math.round((1 - product.price / product.compare_at_price) * 100)
+        : 0;
       
-      const buildProductCell = (product: any) => {
-        const discount = product.compare_at_price && product.compare_at_price > product.price
-          ? Math.round((1 - product.price / product.compare_at_price) * 100)
-          : 0;
-        const imageUrl = product.image_url || "https://getpawsy.pet/placeholder.svg";
-        
-        return `
-          <td width="50%" valign="top" style="padding: 8px;">
+      return `
+        <tr>
+          <td style="padding: 0 0 24px 0;">
             <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
               <tr>
                 <td style="padding: 0;">
                   <a href="https://getpawsy.pet/product/${product.slug}" style="text-decoration: none; display: block;">
-                    <img src="${imageUrl}" alt="${product.name}" width="260" height="150" style="display: block; width: 100%; height: 150px; object-fit: cover; border-radius: 12px 12px 0 0;" />
+                    <img src="${imageUrl}" alt="${product.name}" width="536" style="display: block; width: 100%; height: auto; max-height: 300px; object-fit: cover; border-radius: 12px 12px 0 0;" />
                   </a>
                 </td>
               </tr>
               <tr>
-                <td style="padding: 12px;">
-                  <h3 style="margin: 0 0 6px 0; font-size: 14px; color: ${textColor}; font-weight: 600; line-height: 1.3; height: 36px; overflow: hidden;">
-                    <a href="https://getpawsy.pet/product/${product.slug}" style="color: ${textColor}; text-decoration: none;">${product.name.length > 40 ? product.name.substring(0, 40) + '...' : product.name}</a>
+                <td style="padding: 20px;">
+                  <h3 style="margin: 0 0 8px 0; font-size: 18px; color: ${textColor}; font-weight: 600; line-height: 1.4;">
+                    <a href="https://getpawsy.pet/product/${product.slug}" style="color: ${textColor}; text-decoration: none;">${product.name}</a>
                   </h3>
-                  <p style="margin: 0 0 10px 0; font-size: 16px; font-weight: 700; color: ${primaryColor};">
+                  <p style="margin: 0 0 16px 0; font-size: 20px; font-weight: 700; color: ${primaryColor};">
                     ${discount > 0 
-                      ? `<span style="text-decoration: line-through; color: #9ca3af; font-weight: 400; font-size: 12px;">$${product.compare_at_price}</span> $${product.price} <span style="background: #dc2626; color: white; padding: 2px 4px; border-radius: 4px; font-size: 10px;">-${discount}%</span>`
+                      ? `<span style="text-decoration: line-through; color: #9ca3af; font-weight: 400; font-size: 14px;">$${product.compare_at_price}</span> $${product.price} <span style="background: #dc2626; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">-${discount}%</span>`
                       : `$${product.price}`
                     }
                   </p>
-                  <a href="https://getpawsy.pet/product/${product.slug}" style="display: inline-block; background: ${primaryColor}; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600;">View Product</a>
+                  <a href="https://getpawsy.pet/product/${product.slug}" style="display: inline-block; background: ${primaryColor}; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">View Product</a>
                 </td>
               </tr>
             </table>
           </td>
-        `;
-      };
-      
-      productRows.push(`
-        <tr>
-          ${buildProductCell(product1)}
-          ${product2 ? buildProductCell(product2) : '<td width="50%"></td>'}
         </tr>
-      `);
-    }
+      `;
+    }).join('');
     
     productHtml = `
       <tr>
         <td style="padding: 20px 32px;">
-          <h2 style="color: ${primaryColor}; font-size: 20px; margin: 0 0 16px 0; font-weight: 600;">Featured Products 🛒</h2>
+          <h2 style="color: ${primaryColor}; font-size: 22px; margin: 0 0 20px 0; font-weight: 700;">Featured Products 🛒</h2>
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-            ${productRows.join('')}
+            ${productItems}
           </table>
         </td>
       </tr>
@@ -311,46 +299,67 @@ function buildEmailHtml(content: any, products: any[]): string {
       <td align="center" style="padding: 40px 20px;">
         <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="background-color: ${backgroundColor}; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
           
-          <!-- Header with Logo - Horizontal layout like homepage -->
+          <!-- Orange Header with centered logo -->
           <tr>
-            <td align="center" style="padding: 30px 40px; background-color: ${backgroundColor};">
-              <a href="https://getpawsy.pet" style="text-decoration: none; display: inline-block;">
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display: inline-table;">
-                  <tr>
-                    <td valign="middle" style="padding-right: 12px;">
-                      <img src="${logoUrl}" alt="GetPawsy" width="48" height="48" style="display: block; width: 48px; height: 48px; border: 0; border-radius: 12px;" />
-                    </td>
-                    <td valign="middle">
-                      <span style="font-size: 28px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; white-space: nowrap;"><span style="color: #115e59;">Get</span><span style="color: #B45309;">Pawsy</span></span>
-                    </td>
-                  </tr>
-                </table>
-              </a>
+            <td align="center" style="padding: 32px 40px; background-color: ${primaryColor};">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding-bottom: 12px;">
+                    <img src="${logoUrl}" alt="GetPawsy" width="56" height="56" style="display: block; width: 56px; height: 56px; border: 0; border-radius: 12px;" />
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center">
+                    <span style="font-size: 28px; font-weight: 700; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">GetPawsy</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-top: 6px;">
+                    <span style="font-size: 14px; color: rgba(255,255,255,0.9); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Premium Pet Products & Care</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Small logo + brand before greeting -->
+          <tr>
+            <td style="padding: 28px 32px 8px 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td valign="middle" style="padding-right: 8px;">
+                    <img src="${logoUrl}" alt="" width="24" height="24" style="display: block; width: 24px; height: 24px; border: 0; border-radius: 6px;" />
+                  </td>
+                  <td valign="middle">
+                    <span style="font-size: 14px; font-weight: 600; color: ${primaryColor};">GetPawsy</span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           
           <!-- Greeting & Intro -->
           <tr>
-            <td style="padding: 32px 32px 16px 32px;">
-              <h1 style="color: ${textColor}; font-size: 24px; margin: 0 0 12px 0; font-weight: 700;">${content.greeting}</h1>
-              <p style="color: ${textColor}; font-size: 15px; line-height: 1.6; margin: 0;">${content.intro}</p>
+            <td style="padding: 8px 32px 16px 32px;">
+              <h1 style="color: ${textColor}; font-size: 26px; margin: 0 0 14px 0; font-weight: 700; line-height: 1.3;">${content.greeting}</h1>
+              <p style="color: ${textColor}; font-size: 16px; line-height: 1.7; margin: 0;">${content.intro}</p>
             </td>
           </tr>
           
           <!-- Main Content -->
           <tr>
             <td style="padding: 0 32px 24px 32px;">
-              <div style="color: ${textColor}; font-size: 15px; line-height: 1.7;">${content.mainContent}</div>
+              <div style="color: ${textColor}; font-size: 16px; line-height: 1.7;">${content.mainContent}</div>
             </td>
           </tr>
           
-          <!-- Products Grid -->
+          <!-- Products - Single Column -->
           ${productHtml}
           
           <!-- CTA Button -->
           <tr>
             <td align="center" style="padding: 16px 32px 32px 32px;">
-              <a href="${content.ctaUrl}" style="display: inline-block; background: ${primaryColor}; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(180, 83, 9, 0.3);">${content.ctaText}</a>
+              <a href="${content.ctaUrl}" style="display: inline-block; background: ${primaryColor}; color: white; padding: 16px 36px; border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(180, 83, 9, 0.3);">${content.ctaText}</a>
             </td>
           </tr>
           
@@ -363,14 +372,14 @@ function buildEmailHtml(content: any, products: any[]): string {
           
           <!-- Footer -->
           <tr>
-            <td style="background: #1f2937; padding: 24px 32px; text-align: center;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom: 12px;">
+            <td style="background: #1f2937; padding: 28px 32px; text-align: center;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom: 14px;">
                 <tr>
-                  <td valign="middle" style="padding-right: 8px;">
-                    <img src="${logoUrl}" alt="GetPawsy" width="32" height="32" style="display: block; width: 32px; height: 32px; border: 0; border-radius: 8px;" />
+                  <td valign="middle" style="padding-right: 10px;">
+                    <img src="${logoUrl}" alt="GetPawsy" width="36" height="36" style="display: block; width: 36px; height: 36px; border: 0; border-radius: 8px;" />
                   </td>
                   <td valign="middle">
-                    <span style="font-size: 18px; font-weight: 700; color: white;">GetPawsy</span>
+                    <span style="font-size: 20px; font-weight: 700; color: white;">GetPawsy</span>
                   </td>
                 </tr>
               </table>
