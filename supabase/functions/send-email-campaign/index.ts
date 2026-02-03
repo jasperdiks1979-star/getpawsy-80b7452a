@@ -18,6 +18,58 @@ interface Preferences {
   new_arrivals: boolean;
 }
 
+// Plain-text version builder for better deliverability
+const buildPlainTextEmail = (params: {
+  subject: string;
+  content: string;
+  subscriberEmail: string;
+  preferenceToken: string;
+}) => {
+  const { subject, content, subscriberEmail, preferenceToken } = params;
+  
+  const encodedEmail = encodeURIComponent(subscriberEmail);
+  const unsubscribeUrl = `https://getpawsy.pet/unsubscribe?email=${encodedEmail}`;
+  const preferencesUrl = `https://getpawsy.pet/newsletter-preferences?token=${preferenceToken}`;
+  const shopUrl = 'https://getpawsy.pet/products';
+  
+  // Strip any HTML tags that might be in content
+  const cleanContent = content.replace(/<[^>]*>/g, '');
+  
+  return `${subject}
+
+${cleanContent}
+
+---
+
+🛒 Shop Now: ${shopUrl}
+
+Featured This Week:
+• Premium Food: https://getpawsy.pet/products?category=dog-food-treats
+• Fun Toys: https://getpawsy.pet/products?category=dog-toys
+• Cozy Beds: https://getpawsy.pet/products?category=dog-beds
+
+---
+
+GetPawsy - Premium Pet Products & Care
+Making pets happy, one product at a time
+
+Shop: https://getpawsy.pet/products
+Blog: https://getpawsy.pet/blog
+About: https://getpawsy.pet/about
+Contact: https://getpawsy.pet/contact
+
+---
+
+You're receiving this email because you subscribed to our newsletter at getpawsy.pet
+
+Manage Preferences: ${preferencesUrl}
+Unsubscribe: ${unsubscribeUrl}
+
+© ${new Date().getFullYear()} GetPawsy. All rights reserved.
+The Netherlands 🇳🇱 | support@getpawsy.pet
+`;
+};
+
 // Professional email template builder for better deliverability
 const buildEmailTemplate = (params: {
   subject: string;
@@ -473,6 +525,14 @@ const handler = async (req: Request): Promise<Response> => {
               trackingPixelUrl,
             });
 
+            // Build plain-text version for better deliverability
+            const emailText = buildPlainTextEmail({
+              subject: campaign.subject,
+              content: campaign.content,
+              subscriberEmail: subscriber.email,
+              preferenceToken: subscriber.preference_token || '',
+            });
+
             const response = await fetch("https://api.resend.com/emails", {
               method: "POST",
               headers: {
@@ -485,6 +545,7 @@ const handler = async (req: Request): Promise<Response> => {
                 to: [subscriber.email],
                 subject: campaign.subject,
                 html: emailHtml,
+                text: emailText, // Plain-text alternative for spam score improvement
                 headers: {
                   "List-Unsubscribe": `<https://getpawsy.pet/unsubscribe?email=${encodedEmail}>`,
                   "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
