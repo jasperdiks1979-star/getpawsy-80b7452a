@@ -618,18 +618,18 @@ const ProductDetail = () => {
             {/* Main Image with Swipe Gestures */}
             <motion.div 
               ref={imageContainerRef}
-              className="relative w-full aspect-square rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group shadow-soft 3xl:rounded-[2rem] touch-pan-y"
+              className="relative w-full aspect-square rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted group shadow-soft 3xl:rounded-[2rem]"
             >
-              {/* Swipeable image container */}
+              {/* Desktop: Swipeable image container */}
               <motion.div
-                className="absolute inset-0 cursor-zoom-in"
+                className="absolute inset-0 cursor-zoom-in hidden md:block"
                 drag={images.length > 1 ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.2}
                 onDragStart={() => setIsDragging(true)}
                 onDrag={(_, info) => setDragX(info.offset.x)}
                 onDragEnd={(_, info) => handleDragEnd(images.length, info.offset.x, info.velocity.x)}
-                onClick={() => !isDragging && window.innerWidth >= 768 && setLightboxOpen(true)}
+                onClick={() => !isDragging && setLightboxOpen(true)}
                 whileTap={{ cursor: "grabbing" }}
               >
                 <AnimatePresence mode="wait">
@@ -641,31 +641,38 @@ const ProductDetail = () => {
                     exit={{ opacity: 0, x: dragX > 0 ? 100 : -100 }}
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   >
-                    {/* Desktop: Regular optimized image */}
-                    <div className="hidden md:block w-full h-full">
-                      <OptimizedImage
-                        src={images[selectedImage]}
-                        alt={product.name}
-                        className="object-contain pointer-events-none"
-                        containerClassName="w-full h-full"
-                        priority={selectedImage === 0}
-                      />
-                    </div>
-                    
-                    {/* Mobile: Pinch-to-zoom image - no lightbox, direct swipe */}
-                    <div className="md:hidden w-full h-full pointer-events-auto">
-                      <PinchZoomImage
-                        src={images[selectedImage]}
-                        alt={product.name}
-                        className="object-contain"
-                        containerClassName="w-full h-full"
-                        disabled={isDragging}
-                      />
-                    </div>
+                    <OptimizedImage
+                      src={images[selectedImage]}
+                      alt={product.name}
+                      className="object-contain pointer-events-none"
+                      containerClassName="w-full h-full"
+                      priority={selectedImage === 0}
+                    />
                   </motion.div>
                 </AnimatePresence>
-
               </motion.div>
+              
+              {/* Mobile: Simple static image - navigation via arrows/dots only */}
+              <div className="absolute inset-0 md:hidden">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={selectedImage}
+                    className="absolute inset-0"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <OptimizedImage
+                      src={images[selectedImage]}
+                      alt={product.name}
+                      className="object-contain"
+                      containerClassName="w-full h-full"
+                      priority={selectedImage === 0}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
               
               
               {/* Zoom indicator */}
@@ -695,34 +702,26 @@ const ProductDetail = () => {
               {/* Navigation Arrows - always visible on mobile */}
               {images.length > 1 && (
                 <>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-20"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
+                  <button
+                    type="button"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-30 h-10 w-10 flex items-center justify-center"
+                    onClick={() => {
                       handlePrevImage();
+                      haptic.lightTap();
                     }}
                   >
                     <ChevronLeft className="w-5 h-5" />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-20"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
+                  </button>
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-30 h-10 w-10 flex items-center justify-center"
+                    onClick={() => {
                       handleNextImage();
+                      haptic.lightTap();
                     }}
                   >
                     <ChevronRight className="w-5 h-5" />
-                  </Button>
+                  </button>
                   
                   {/* Image Counter - Desktop */}
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium hidden md:block">
@@ -730,24 +729,20 @@ const ProductDetail = () => {
                   </div>
                   
                   {/* Dot Indicators - Mobile */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 md:hidden z-20">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 md:hidden z-30">
                     {images.map((_, idx) => (
-                      <motion.button
+                      <button
                         key={idx}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onTouchStart={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
+                        type="button"
+                        onClick={() => {
                           setSelectedImage(idx);
+                          haptic.lightTap();
                         }}
                         className={`rounded-full transition-all ${
                           selectedImage === idx 
-                            ? 'w-6 h-2 bg-primary' 
-                            : 'w-2 h-2 bg-foreground/30'
+                            ? 'w-8 h-3 bg-primary' 
+                            : 'w-3 h-3 bg-foreground/40'
                         }`}
-                        whileTap={{ scale: 0.9 }}
-                        layout
                       />
                     ))}
                   </div>
