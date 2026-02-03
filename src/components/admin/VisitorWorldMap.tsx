@@ -1175,8 +1175,24 @@ export const VisitorWorldMap = () => {
           )}
         </div>
 
-        {/* Map Container */}
-        <div ref={mapContainer} className="w-full h-full" />
+        {/* Map Container with Error Handling */}
+        {mapError ? (
+          <div className="w-full h-full flex items-center justify-center bg-muted/50">
+            <div className="text-center text-muted-foreground">
+              <Globe className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p className="mb-4">{mapError}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleFullscreen(false)}
+              >
+                Terug
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div ref={mapContainer} className="w-full h-full" />
+        )}
         
         {/* Custom Zoom Controls */}
         <div className="absolute bottom-8 left-4 flex flex-col gap-1 z-10">
