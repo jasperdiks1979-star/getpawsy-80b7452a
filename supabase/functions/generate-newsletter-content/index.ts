@@ -210,7 +210,7 @@ Generate the following parts (in JSON format):
 };
 
 function buildEmailHtml(content: any, products: any[]): string {
-  const logoUrl = "https://getpawsy.pet/ads/google-ads-logo-landscape.png";
+  const logoUrl = "https://getpawsy.pet/ads/google-ads-logo.png"; // Square paw icon
   const primaryColor = "#B45309"; // Terracotta
   const backgroundColor = "#FEFAF6"; // Cream
   const textColor = "#1f2937";
@@ -282,8 +282,9 @@ function buildEmailHtml(content: any, products: any[]): string {
           <!-- Header with Logo -->
           <tr>
             <td align="center" style="padding: 30px 40px; background: linear-gradient(135deg, ${primaryColor} 0%, #d97706 100%);">
-              <a href="https://getpawsy.pet" style="text-decoration: none;">
-                <img src="${logoUrl}" alt="GetPawsy" width="180" style="display: block; max-width: 180px; height: auto;" />
+              <a href="https://getpawsy.pet" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                <img src="${logoUrl}" alt="GetPawsy" width="40" height="40" style="display: inline-block; width: 40px; height: 40px; object-fit: contain;" />
+                <span style="font-size: 28px; font-weight: 700; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Get<span style="color: #FED7AA;">Pawsy</span></span>
               </a>
             </td>
           </tr>
