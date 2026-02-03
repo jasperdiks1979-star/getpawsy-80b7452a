@@ -42,6 +42,10 @@ const KNOWN_JOBS: Record<string, { displayName: string; schedule: string }> = {
     displayName: 'Competitor Scrape',
     schedule: '04:00 UTC (06:00 CET)',
   },
+  'process-scheduled-campaigns': {
+    displayName: 'Nieuwsbrief Scheduler',
+    schedule: 'Elke 5 minuten',
+  },
 };
 
 export const useCronJobLogs = (limit = 50) => {
