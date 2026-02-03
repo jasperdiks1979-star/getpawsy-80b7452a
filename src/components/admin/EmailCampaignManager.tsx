@@ -28,11 +28,17 @@ import {
   MousePointerClick,
   BarChart3,
   TrendingUp,
-  ChartLine
+  ChartLine,
+  Wand2,
+  Calendar,
+  RefreshCw,
+  Pause,
+  Play
 } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { CampaignStatisticsView } from "./CampaignStatisticsView";
+import { AutoNewsletterDialog } from "./AutoNewsletterDialog";
 
 interface Preferences {
   product_updates: boolean;
@@ -54,6 +60,13 @@ interface Campaign {
   status: string;
   sent_at: string | null;
   created_at: string;
+  scheduled_at: string | null;
+  is_recurring: boolean;
+  recurrence_pattern: string | null;
+  recurrence_day: number | null;
+  recurrence_time: string | null;
+  next_recurring_at: string | null;
+  is_ai_generated: boolean;
 }
 
 const preferenceLabels = {
@@ -66,6 +79,7 @@ const preferenceLabels = {
 export function EmailCampaignManager() {
   const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showAutoDialog, setShowAutoDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
@@ -250,21 +264,44 @@ export function EmailCampaignManager() {
   const hasSelectedPreference = Object.values(newCampaign.target_preferences).some(Boolean);
 
   const draftCampaigns = campaigns?.filter((c) => c.status === "draft") || [];
+  const scheduledCampaigns = campaigns?.filter((c) => c.status === "scheduled") || [];
+  const recurringCampaigns = campaigns?.filter((c) => c.is_recurring && c.status === "active") || [];
   const sentCampaigns = campaigns?.filter((c) => c.status === "sent") || [];
+
+  // Toggle recurring campaign
+  const toggleRecurringMutation = useMutation({
+    mutationFn: async ({ id, activate }: { id: string; activate: boolean }) => {
+      const { error } = await supabase
+        .from("email_campaigns")
+        .update({ status: activate ? "active" : "paused" })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-campaigns"] });
+      toast.success("Status bijgewerkt");
+    },
+  });
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold">E-mail Campagnes</h2>
           <p className="text-muted-foreground">
             Verstuur nieuwsbrieven naar abonnees op basis van hun voorkeuren
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nieuwe Campagne
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowAutoDialog(true)}>
+            <Wand2 className="h-4 w-4 mr-2" />
+            AI / Automatisch
+          </Button>
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Handmatig
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -289,10 +326,18 @@ export function EmailCampaignManager() {
       </div>
 
       <Tabs defaultValue="drafts">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="drafts" className="gap-2">
             <Clock className="h-4 w-4" />
             Concepten ({draftCampaigns.length})
+          </TabsTrigger>
+          <TabsTrigger value="scheduled" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            Ingepland ({scheduledCampaigns.length})
+          </TabsTrigger>
+          <TabsTrigger value="recurring" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Terugkerend ({recurringCampaigns.length})
           </TabsTrigger>
           <TabsTrigger value="sent" className="gap-2">
             <CheckCircle2 className="h-4 w-4" />
@@ -361,6 +406,159 @@ export function EmailCampaignManager() {
                         >
                           <Send className="h-4 w-4 mr-2" />
                           Versturen
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Scheduled Campaigns Tab */}
+        <TabsContent value="scheduled" className="mt-4">
+          {scheduledCampaigns.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Geen ingeplande campagnes.</p>
+                <Button variant="link" onClick={() => setShowAutoDialog(true)} className="mt-2">
+                  Plan een campagne in
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {scheduledCampaigns.map((campaign) => (
+                <Card key={campaign.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold truncate">{campaign.subject}</h3>
+                          {campaign.is_ai_generated && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              AI
+                            </Badge>
+                          )}
+                        </div>
+                        {campaign.scheduled_at && (
+                          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            Gepland voor {format(new Date(campaign.scheduled_at), "EEEE d MMMM yyyy 'om' HH:mm", { locale: nl })}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {Object.entries(campaign.target_preferences).map(
+                            ([key, value]) =>
+                              value && (
+                                <Badge key={key} variant="secondary" className="text-xs">
+                                  {preferenceLabels[key as keyof Preferences]?.label}
+                                </Badge>
+                              )
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCampaign(campaign);
+                            setShowPreviewDialog(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteMutation.mutate(campaign.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Recurring Campaigns Tab */}
+        <TabsContent value="recurring" className="mt-4">
+          {recurringCampaigns.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                <RefreshCw className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Geen terugkerende nieuwsbrieven.</p>
+                <Button variant="link" onClick={() => setShowAutoDialog(true)} className="mt-2">
+                  Stel een terugkerende nieuwsbrief in
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {recurringCampaigns.map((campaign) => (
+                <Card key={campaign.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold truncate">{campaign.subject}</h3>
+                          {campaign.is_ai_generated && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              AI
+                            </Badge>
+                          )}
+                          <Badge variant="default" className="text-xs">
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            {campaign.recurrence_pattern === 'weekly' ? 'Wekelijks' : 
+                             campaign.recurrence_pattern === 'biweekly' ? 'Om de week' : 'Maandelijks'}
+                          </Badge>
+                        </div>
+                        {campaign.next_recurring_at && (
+                          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            Volgende: {format(new Date(campaign.next_recurring_at), "EEEE d MMMM 'om' HH:mm", { locale: nl })}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {Object.entries(campaign.target_preferences).map(
+                            ([key, value]) =>
+                              value && (
+                                <Badge key={key} variant="outline" className="text-xs">
+                                  {preferenceLabels[key as keyof Preferences]?.label}
+                                </Badge>
+                              )
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleRecurringMutation.mutate({ 
+                            id: campaign.id, 
+                            activate: campaign.status === 'paused' 
+                          })}
+                        >
+                          {campaign.status === 'paused' ? (
+                            <Play className="h-4 w-4" />
+                          ) : (
+                            <Pause className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteMutation.mutate(campaign.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -638,6 +836,13 @@ export function EmailCampaignManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Auto Newsletter Dialog */}
+      <AutoNewsletterDialog
+        open={showAutoDialog}
+        onOpenChange={setShowAutoDialog}
+        subscriberStats={subscriberStats}
+      />
     </div>
   );
 }
