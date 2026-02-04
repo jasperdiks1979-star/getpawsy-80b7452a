@@ -15,6 +15,7 @@ import { trackBeginCheckout } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import { trackPinterestEvent } from '@/hooks/usePinterestTracking';
+import { useBundleABTest } from '@/hooks/useBundleABTest';
 import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
@@ -168,6 +169,7 @@ CheckoutSkeleton.displayName = 'CheckoutSkeleton';
 const Checkout = () => {
   const { items, totalPrice, setAbandonedCartEmail } = useCart();
   const { user } = useAuth();
+  const abTest = useBundleABTest();
   const [isProcessing, setIsProcessing] = useState(false);
   const [email, setEmail] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -293,6 +295,9 @@ const Checkout = () => {
         totalPrice
       );
       trackCheckoutActivity();
+      
+      // A/B Test: Track checkout started with variant
+      abTest.trackCheckoutStarted(totalPrice);
       
       // Pinterest Checkout tracking
       trackPinterestEvent('checkout', {

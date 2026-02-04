@@ -69,6 +69,7 @@ import { PostAddUpsellModal } from '@/components/products/PostAddUpsellModal';
 import { VolumeDiscountSelector } from '@/components/products/VolumeDiscountSelector';
 import { OrderBump } from '@/components/products/OrderBump';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { useRecentlyViewedProducts } from '@/hooks/useRecentlyViewedProducts';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import {
@@ -270,6 +271,11 @@ const BestsellerDetail = () => {
   const { addToRecentlyViewed, getRecentlyViewedIds } = useRecentlyViewed();
   const isMobile = useIsMobile();
   
+  // A/B Test for bundle strategies
+  // Variant A: Frequently Bought Together (FBT) - 10% discount
+  // Variant B: Buy More, Save More (Volume) - tiered discounts
+  const abTest = useBundleABTest();
+  
   // Image gallery state
   const [selectedImage, setSelectedImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -431,6 +437,13 @@ const BestsellerDetail = () => {
     }
   }, [slug, product?.id, addToRecentlyViewed]);
 
+  // Track A/B test variant viewed
+  useEffect(() => {
+    if (product?.id && abTest.variant) {
+      abTest.trackVariantViewed(product.id);
+    }
+  }, [product?.id, abTest]);
+
   // Set order bump product when related products load
   useEffect(() => {
     if (relatedProducts.length >= 3) {
@@ -530,7 +543,7 @@ const BestsellerDetail = () => {
       addToCartButtonRef.current
     );
     
-    // Calculate the discounted price (volume discount applies)
+    // Calculate the discounted price (volume discount applies for Variant B)
     const discountedPrice = volumeDiscount > 0 
       ? product.price * (1 - volumeDiscount / 100)
       : product.price;
@@ -560,6 +573,23 @@ const BestsellerDetail = () => {
     const volumeSavings = volumeDiscount > 0 ? (product.price * quantity * volumeDiscount / 100) : 0;
     const bumpSavings = orderBumpChecked && orderBumpProduct ? orderBumpProduct.price * 0.1 : 0;
     const totalSavings = volumeSavings + bumpSavings;
+    
+    // Track A/B test for Volume bundle (Variant B)
+    if (abTest.isVariantB && quantity > 1) {
+      abTest.trackBundleItemAdded({
+        bundleType: 'Volume',
+        numberOfItemsAdded: quantity,
+        addedValueUsd: discountedPrice * quantity,
+      });
+    }
+    
+    // Track add_to_cart with variant context
+    const totalItems = quantity + (orderBumpChecked && orderBumpProduct ? 1 : 0);
+    const totalValue = (discountedPrice * quantity) + (orderBumpChecked && orderBumpProduct ? orderBumpProduct.price * 0.9 : 0);
+    abTest.trackAddToCart({
+      totalItemsInCart: totalItems,
+      cartValueUsd: totalValue,
+    });
     
     if (totalSavings > 0) {
       toast.success(
@@ -856,8 +886,8 @@ const BestsellerDetail = () => {
                   )}
                 </div>
 
-                {/* Frequently Bought Together - Bundle Section */}
-                {(relatedLoading || relatedProducts.length > 0) && (
+                {/* A/B Test: Variant A shows Frequently Bought Together */}
+                {abTest.isVariantA && (relatedLoading || relatedProducts.length > 0) && (
                   <BestsellerBundleSection
                     currentProduct={{
                       id: product.id,
@@ -880,6 +910,13 @@ const BestsellerDetail = () => {
                       is_active: p.is_active,
                     }))}
                     isLoading={relatedLoading}
+                    onBundleAdd={(data) => {
+                      abTest.trackBundleItemAdded({
+                        bundleType: 'FBT',
+                        numberOfItemsAdded: data.itemCount,
+                        addedValueUsd: data.totalValue,
+                      });
+                    }}
                   />
                 )}
 
@@ -895,6 +932,11 @@ const BestsellerDetail = () => {
                       <li>• reason: {availabilityReason}</li>
                       <li>• inStock: {String(inStock)}</li>
                       <li>• product.id: {product.id}</li>
+                    </ul>
+                    <p className="font-bold text-blue-800 dark:text-blue-200 mt-2 mb-1">A/B Test Debug:</p>
+                    <ul className="space-y-0.5 text-blue-700 dark:text-blue-300">
+                      <li>• variant: {abTest.variant} ({abTest.isVariantA ? 'Frequently Bought Together' : 'Buy More, Save More'})</li>
+                      <li>• device: {abTest.deviceType}</li>
                     </ul>
                   </div>
                 )}
@@ -945,12 +987,14 @@ const BestsellerDetail = () => {
 
                 <Separator className="my-2" />
 
-                {/* Buy More, Save More - Volume Discount Selector */}
-                <VolumeDiscountSelector
-                  basePrice={product.price}
-                  onQuantityChange={handleVolumeChange}
-                  selectedQuantity={quantity}
-                />
+                {/* A/B Test: Variant B shows Buy More, Save More */}
+                {abTest.isVariantB && (
+                  <VolumeDiscountSelector
+                    basePrice={product.price}
+                    onQuantityChange={handleVolumeChange}
+                    selectedQuantity={quantity}
+                  />
+                )}
 
                 {/* Action Buttons - Premium - tracked for sticky bar visibility */}
                 <div ref={mainAddToCartRef} className="flex gap-3">

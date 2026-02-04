@@ -22,11 +22,17 @@ interface Product {
   is_active?: boolean | null;
 }
 
+interface BundleAddData {
+  itemCount: number;
+  totalValue: number;
+}
+
 interface BestsellerBundleSectionProps {
   currentProduct: Product;
   relatedProducts: Product[];
   isLoading?: boolean;
   onAddToCart?: () => void;
+  onBundleAdd?: (data: BundleAddData) => void;
 }
 
 // Benefit-driven copy for upsell products
@@ -88,6 +94,7 @@ export const BestsellerBundleSection = ({
   relatedProducts,
   isLoading = false,
   onAddToCart,
+  onBundleAdd,
 }: BestsellerBundleSectionProps) => {
   const { addItem } = useCart();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -223,6 +230,12 @@ export const BestsellerBundleSection = ({
           </div>
         );
       }
+
+      // Trigger A/B test tracking callback
+      onBundleAdd?.({
+        itemCount: selectedProducts.length,
+        totalValue: bundleTotal,
+      });
 
       // Trigger post-add upsell callback
       onAddToCart?.();
