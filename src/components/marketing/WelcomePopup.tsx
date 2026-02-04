@@ -1,9 +1,11 @@
 import { useState, useEffect, forwardRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { X, Gift, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { trackNewsletterSignup } from '@/lib/analytics';
 
@@ -164,8 +166,17 @@ export function WelcomePopup() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const location = useLocation();
+  const isMobile = useIsMobile();
+
+  // Check if we're on checkout/cart pages - disable popup on mobile for these routes
+  const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
+  const shouldDisable = isMobile && isCheckoutRoute;
 
   useEffect(() => {
+    // Don't show on mobile checkout pages
+    if (shouldDisable) return;
+    
     // Check if user has already seen the popup
     const hasSeenPopup = localStorage.getItem(POPUP_STORAGE_KEY);
     
@@ -176,7 +187,7 @@ export function WelcomePopup() {
 
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [shouldDisable]);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -226,6 +237,9 @@ export function WelcomePopup() {
     toast.success('Discount code copied!');
     handleClose();
   };
+
+  // Don't render on mobile checkout pages
+  if (shouldDisable) return null;
 
   return (
     <AnimatePresence>

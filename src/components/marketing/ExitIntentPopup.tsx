@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, forwardRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { X, AlertTriangle, Gift, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { trackNewsletterSignup } from '@/lib/analytics';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const EXIT_POPUP_STORAGE_KEY = 'getpawsy_exit_popup_seen';
 const DISCOUNT_CODE = 'DONTGO15';
@@ -189,6 +191,12 @@ export function ExitIntentPopup() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [hasTriggered, setHasTriggered] = useState(false);
+  const location = useLocation();
+  const isMobile = useIsMobile();
+
+  // Check if we're on checkout/cart pages - disable popup on mobile for these routes
+  const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
+  const shouldDisable = isMobile && isCheckoutRoute;
 
   const handleExitIntent = useCallback((e: MouseEvent) => {
     // Only trigger when mouse moves to top of viewport (exit intent)
@@ -271,6 +279,9 @@ export function ExitIntentPopup() {
     toast.success('Discount code copied!');
     handleClose();
   };
+
+  // Don't render on mobile checkout pages
+  if (shouldDisable) return null;
 
   return (
     <AnimatePresence>
