@@ -363,7 +363,7 @@ const Checkout = () => {
 
   return (
     <Layout>
-      <div className="container px-4 md:px-6 py-8 max-w-4xl w-full overflow-x-hidden box-border">
+      <div className="container px-4 md:px-6 py-8 max-w-4xl w-full overflow-x-hidden box-border" style={{ maxWidth: '100%' }}>
         {/* Breadcrumbs */}
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
@@ -469,28 +469,55 @@ const Checkout = () => {
                 <span className="break-words">Terms & Conditions</span>
               </h2>
               <div className="space-y-4 w-full max-w-full">
-                <div className="flex items-start gap-3 w-full max-w-full">
+                {/* Terms checkbox row - iOS Safari safe flex wrapping */}
+                <div 
+                  className="flex items-start gap-3 w-full max-w-full pr-4 md:pr-0"
+                  style={{ boxSizing: 'border-box' }}
+                >
                   <Checkbox 
                     id="terms" 
                     checked={acceptedTerms}
                     onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                    className="mt-1 flex-shrink-0"
+                    className="mt-0.5 flex-shrink-0 flex-grow-0"
+                    style={{ flex: '0 0 auto' }}
                   />
                   <label 
                     htmlFor="terms" 
-                    className="text-sm text-muted-foreground leading-relaxed cursor-pointer flex-1 min-w-0 break-words"
-                    style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+                    className="text-sm text-muted-foreground leading-relaxed cursor-pointer"
+                    style={{ 
+                      flex: '1 1 auto',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      overflowWrap: 'anywhere', 
+                      wordBreak: 'break-word',
+                      hyphens: 'auto'
+                    }}
                   >
                     I have read and agree to the{' '}
-                    <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium inline break-words">
+                    <Link 
+                      to="/terms" 
+                      target="_blank" 
+                      className="text-primary hover:underline font-medium"
+                      style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                    >
                       Terms of Service
                     </Link>
                     ,{' '}
-                    <Link to="/privacy" target="_blank" className="text-primary hover:underline font-medium inline break-words">
+                    <Link 
+                      to="/privacy" 
+                      target="_blank" 
+                      className="text-primary hover:underline font-medium"
+                      style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                    >
                       Privacy Policy
                     </Link>
                     , and{' '}
-                    <Link to="/returns" target="_blank" className="text-primary hover:underline font-medium inline break-words">
+                    <Link 
+                      to="/returns" 
+                      target="_blank" 
+                      className="text-primary hover:underline font-medium"
+                      style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                    >
                       Return Policy
                     </Link>
                     . I understand that GetPawsy is not the manufacturer of the products and I 
@@ -658,25 +685,34 @@ const Checkout = () => {
           </div>
         </div>
         
-        {/* Mobile Fixed Checkout Bar */}
+        {/* Mobile Fixed Checkout Bar - positioned above safe area */}
         <div 
-          className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg p-4 lg:hidden z-50"
+          className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg lg:hidden z-40"
           style={{ 
             width: '100%', 
             maxWidth: '100%', 
             boxSizing: 'border-box',
-            paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))'
+            padding: '12px 16px',
+            paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))'
           }}
         >
-          <div className="flex items-center justify-between gap-3 w-full max-w-full px-1 box-border">
-            <div className="flex flex-col flex-shrink-0">
+          <div 
+            className="flex items-center justify-between gap-4 w-full"
+            style={{ maxWidth: '100%', boxSizing: 'border-box' }}
+          >
+            <div className="flex flex-col" style={{ flex: '0 0 auto' }}>
               <span className="text-xs text-muted-foreground">Total</span>
               <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
             </div>
             <Button
               size="lg"
-              className="flex-1 min-w-0 max-w-none gap-2"
-              style={{ maxWidth: 'calc(100% - 80px)' }}
+              className="gap-2"
+              style={{ 
+                flex: '1 1 auto',
+                minWidth: 0,
+                maxWidth: '100%',
+                boxSizing: 'border-box'
+              }}
               disabled={isProcessing || !email || !acceptedTerms}
               onClick={handleStripeCheckout}
             >
@@ -695,8 +731,11 @@ const Checkout = () => {
           </div>
         </div>
         
-        {/* Spacer for mobile fixed bar - increased height to prevent content overlap */}
-        <div className="h-28 lg:hidden" />
+        {/* Spacer for mobile fixed bar - must match bar height + safe area */}
+        <div 
+          className="lg:hidden" 
+          style={{ height: 'calc(88px + env(safe-area-inset-bottom, 0px))' }} 
+        />
       </div>
     </Layout>
   );
