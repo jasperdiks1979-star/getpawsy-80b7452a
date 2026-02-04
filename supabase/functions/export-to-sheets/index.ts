@@ -119,24 +119,51 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Require authentication
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Validate user authentication
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
+
+    // Verify admin role - this endpoint is for admin-only Google Ads export
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!roleData) {
+      return new Response(
+        JSON.stringify({ error: "Admin access required" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const serviceAccountJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
     if (!serviceAccountJson) {
       throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
-    }
-
-    // Get user from authorization header
-    const authHeader = req.headers.get("authorization");
-    let userId: string | null = null;
-    
-    if (authHeader) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey, {
-        global: { headers: { Authorization: authHeader } }
-      });
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      userId = user?.id || null;
     }
 
     const { sheets, spreadsheetTitle, productCount }: ExportRequest = await req.json();
@@ -250,20 +277,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
 
-    // Save export record if user is authenticated
-    if (userId) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-      
-      await supabaseAdmin.from("google_sheets_exports").insert({
-        user_id: userId,
-        spreadsheet_id: spreadsheetId,
-        spreadsheet_url: spreadsheetUrl,
-        title: spreadsheetTitle,
-        product_count: productCount || 0,
-      });
-    }
+    // Save export record (user is always authenticated now)
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    
+    await supabaseAdmin.from("google_sheets_exports").insert({
+      user_id: userId,
+      spreadsheet_id: spreadsheetId,
+      spreadsheet_url: spreadsheetUrl,
+      title: spreadsheetTitle,
+      product_count: productCount || 0,
+    });
 
     return new Response(
       JSON.stringify({ 
