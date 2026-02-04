@@ -1116,11 +1116,15 @@ const ProductDetail = () => {
               <div className="space-y-2 text-sm text-muted-foreground">
                 <p className="flex items-center gap-2">
                   <span className="text-success">✔</span>
-                  <span>Free US shipping over $35</span>
+                  <span>Free US shipping over ${FREE_SHIPPING_THRESHOLD}</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <span className="text-success">✔</span>
-                  <span>Ships from US fulfillment centers</span>
+                  <span>${FLAT_SHIPPING_RATE.toFixed(2)} flat rate shipping under ${FREE_SHIPPING_THRESHOLD}</span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="text-success">✔</span>
+                  <span>Ships from US warehouses</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <span className="text-success">✔</span>

@@ -322,11 +322,16 @@ function generateProductXml(product: Product): string {
   }
 
   // Add shipping info (matches Merchant Center: free over $35, $5.99 under)
+  // Include min/max handling and transit times for better Merchant Center compatibility
   xml += `
       <g:shipping>
         <g:country>US</g:country>
         <g:service>Standard</g:service>
         <g:price>${shippingPrice}</g:price>
+        <g:min_handling_time>1</g:min_handling_time>
+        <g:max_handling_time>1</g:max_handling_time>
+        <g:min_transit_time>0</g:min_transit_time>
+        <g:max_transit_time>6</g:max_transit_time>
       </g:shipping>`;
 
   // Add shipping weight if available (in lb for US market)
@@ -356,6 +361,10 @@ function generateProductXml(product: Product): string {
   // Availability for inventory filtering
   xml += `
       <g:custom_label_2>${getAvailability(product.stock) === 'in stock' ? 'Available' : 'Out-of-Stock'}</g:custom_label_2>`;
+
+  // Free shipping eligibility for campaign targeting
+  xml += `
+      <g:custom_label_3>${product.price >= FREE_SHIPPING_THRESHOLD ? 'Free-Shipping' : 'Paid-Shipping'}</g:custom_label_3>`;
 
   xml += `
     </item>`;
