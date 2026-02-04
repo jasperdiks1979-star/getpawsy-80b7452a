@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import smallPetsImage from '@/assets/categories/small-pets.jpg';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Loader2, Star, Quote, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -347,6 +348,7 @@ const Index = () => {
     'Food': 'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?w=400&q=80',
     'Grooming': 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=400&q=80',
     'Accessories': 'https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?w=400&q=80',
+    'Small Pets': smallPetsImage,
   };
 
   return (
