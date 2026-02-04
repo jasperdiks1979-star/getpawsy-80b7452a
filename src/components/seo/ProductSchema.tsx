@@ -68,6 +68,11 @@ export function ProductSchema({
     ? product.name.slice(0, 147) + '...' 
     : product.name;
 
+  // Dynamic priceValidUntil - 12 months from now
+  const priceValidUntil = new Date();
+  priceValidUntil.setFullYear(priceValidUntil.getFullYear() + 1);
+  const priceValidUntilStr = priceValidUntil.toISOString().split('T')[0];
+
   // JSON-LD Product Schema with enhanced trust signals
   const productSchema = {
     '@context': 'https://schema.org',
@@ -105,8 +110,7 @@ export function ProductSchema({
       url: `${baseUrl}/product/${productPath}`,
       priceCurrency: 'USD',
       price: product.price.toFixed(2),
-      // Use a fixed future date for stability (Google recommends at least 1 year)
-      priceValidUntil: '2027-12-31',
+      priceValidUntil: priceValidUntilStr,
       availability: (product.stock ?? 0) > 0 
         ? 'https://schema.org/InStock' 
         : 'https://schema.org/OutOfStock',
@@ -144,14 +148,14 @@ export function ProductSchema({
             handlingTime: {
               '@type': 'QuantitativeValue',
               minValue: 1,
-              maxValue: 2,
-              unitCode: 'DAY',
+              maxValue: 1,
+              unitCode: 'd',
             },
             transitTime: {
               '@type': 'QuantitativeValue',
-              minValue: 3,
-              maxValue: 7,
-              unitCode: 'DAY',
+              minValue: 0,
+              maxValue: 6,
+              unitCode: 'd',
             },
           },
           // Free shipping applies to orders over $35
@@ -174,14 +178,14 @@ export function ProductSchema({
             handlingTime: {
               '@type': 'QuantitativeValue',
               minValue: 1,
-              maxValue: 2,
-              unitCode: 'DAY',
+              maxValue: 1,
+              unitCode: 'd',
             },
             transitTime: {
               '@type': 'QuantitativeValue',
-              minValue: 3,
-              maxValue: 7,
-              unitCode: 'DAY',
+              minValue: 0,
+              maxValue: 6,
+              unitCode: 'd',
             },
           },
           // Flat rate for orders under $35
