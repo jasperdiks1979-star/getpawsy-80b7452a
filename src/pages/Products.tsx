@@ -8,6 +8,7 @@ import { ProductCard, Product } from '@/components/products/ProductCard';
 import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { SubcategoryGrid } from '@/components/products/SubcategoryGrid';
+import { CategoryEmptyState } from '@/components/products/CategoryEmptyState';
 import { DidYouMeanSection } from '@/components/products/DidYouMeanSection';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -69,10 +70,23 @@ const Products = () => {
   };
   
   // Normalize category for comparison - handles both "Dog Collars & Leashes" and "dog-collars-leashes"
+  // Also handles spaces vs hyphens and case differences
   const normalizeCategory = (str: string): string => {
     return str
       .toLowerCase()
+      .replace(/&/g, 'and')     // Normalize ampersand to 'and'
+      .replace(/\s+/g, '-')     // Convert spaces to hyphens
+      .replace(/[^\w-]/g, '')   // Remove other special chars
+      .replace(/-+/g, '-')      // Collapse multiple hyphens
+      .replace(/^-|-$/g, '');   // Remove leading/trailing hyphens
+  };
+
+  // Alternative normalization that removes 'and' for matching variations
+  const normalizeCategoryAlt = (str: string): string => {
+    return str
+      .toLowerCase()
       .replace(/&/g, '')        // Remove ampersand
+      .replace(/\band\b/g, '')  // Remove word 'and'
       .replace(/\s+/g, '-')     // Convert spaces to hyphens
       .replace(/[^\w-]/g, '')   // Remove other special chars
       .replace(/-+/g, '-')      // Collapse multiple hyphens
@@ -124,15 +138,25 @@ const Products = () => {
     }
   }, [products]);
 
-  // Sync category filter with URL params
+  // Track previous category to detect navigation
+  const prevCategoryRef = useRef<string | null>(null);
+  
+  // Sync category filter with URL params and reset other filters on category change
   useEffect(() => {
     if (categoryParam) {
+      // If navigating to a NEW category, reset price and search filters
+      if (prevCategoryRef.current !== null && prevCategoryRef.current !== categoryParam) {
+        setPriceRange([0, maxPrice]);
+        setSearchQuery('');
+        console.log('[Category Navigation] Reset filters - navigated from', prevCategoryRef.current, 'to', categoryParam);
+      }
       setSelectedCategories([categoryParam]);
     } else {
       // Only clear if we had a category param before and now it's gone
       setSelectedCategories([]);
     }
-  }, [categoryParam]);
+    prevCategoryRef.current = categoryParam;
+  }, [categoryParam, maxPrice]);
 
   // Update search from URL params
   useEffect(() => {
@@ -284,35 +308,64 @@ const Products = () => {
 
     // Filter by category - match against both name and slug formats
     // Also include products from subcategories when a parent category is selected
+    // Uses flexible matching: case-insensitive, hyphen/space normalized
     if (selectedCategories.length > 0) {
+      const matchedProductIds: string[] = []; // For logging
+      
       result = result.filter(p => {
         if (!p.category) return false;
-        // Normalize the product's category for consistent matching
-        const productCategoryNormalized = normalizeCategory(p.category);
         
-        return selectedCategories.some(selected => {
-          // Normalize the selected filter
+        // Normalize the product's category for consistent matching (both methods)
+        const productCategoryNormalized = normalizeCategory(p.category);
+        const productCategoryAlt = normalizeCategoryAlt(p.category);
+        
+        const matches = selectedCategories.some(selected => {
+          // Normalize the selected filter (both methods)
           const selectedNormalized = normalizeCategory(selected);
+          const selectedAlt = normalizeCategoryAlt(selected);
           
-          // Direct match (normalized)
-          if (productCategoryNormalized === selectedNormalized) {
+          // Direct match using either normalization method
+          if (productCategoryNormalized === selectedNormalized ||
+              productCategoryAlt === selectedAlt ||
+              productCategoryNormalized === selectedAlt ||
+              productCategoryAlt === selectedNormalized) {
             return true;
           }
           
           // Check if selected is a parent category - if so, include products from its subcategories
           const selectedSlug = toSlug(selected);
-          const subcategorySlugs = categoryToDescendants[selectedSlug] || categoryToDescendants[selected.toLowerCase()] || [];
+          const subcategorySlugs = categoryToDescendants[selectedSlug] || 
+                                   categoryToDescendants[selected.toLowerCase()] || 
+                                   categoryToDescendants[selectedNormalized] ||
+                                   [];
           if (subcategorySlugs.length > 0) {
             // Check if product's category matches any subcategory
             return subcategorySlugs.some(subSlug => {
               const subNormalized = normalizeCategory(subSlug);
-              return productCategoryNormalized === subNormalized;
+              const subAlt = normalizeCategoryAlt(subSlug);
+              return productCategoryNormalized === subNormalized ||
+                     productCategoryAlt === subAlt ||
+                     productCategoryNormalized === subAlt ||
+                     productCategoryAlt === subNormalized;
             });
           }
           
-          // No fallback partial matching
           return false;
         });
+        
+        if (matches && p.id) {
+          matchedProductIds.push(p.id);
+        }
+        
+        return matches;
+      });
+      
+      // Temporary logging for debugging
+      console.log('[Category Filter Debug]', {
+        categorySlug: selectedCategories[0],
+        matchedCount: matchedProductIds.length,
+        matchedIds: matchedProductIds.slice(0, 5), // First 5 for brevity
+        totalProducts: products?.length,
       });
     }
 
@@ -778,23 +831,49 @@ const Products = () => {
               </>
             )}
 
-            {/* Empty State */}
+            {/* Empty State - Enhanced with recommendations */}
             {!isLoading && filteredProducts.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-lg text-muted-foreground mb-4">
-                  {products?.length === 0 
-                    ? 'No products yet. Import products via the admin page.'
-                    : 'No products found with these filters'}
-                </p>
-                {products && products.length > 0 && (
-                  <Button
-                    variant="outline"
-                    onClick={clearAllFilters}
-                  >
-                    Clear All Filters
-                  </Button>
-                )}
-              </div>
+              (() => {
+                // Get parent category info for recommendations
+                const currentCategory = categoryParam ? categories?.find(c => 
+                  c.slug === categoryParam || normalizeCategory(c.name) === normalizeCategory(categoryParam)
+                ) : null;
+                
+                // Get parent category if current is a subcategory
+                const parentCategory = currentCategory?.parent_id 
+                  ? categories?.find(c => c.id === currentCategory.parent_id)
+                  : currentCategory;
+                
+                // Get subcategories of the parent
+                const relatedSubcategories = parentCategory 
+                  ? categories?.filter(c => c.parent_id === parentCategory.id).map(c => ({
+                      ...c,
+                      productCount: productCounts[c.name] || 0
+                    }))
+                  : [];
+                
+                // Get recommended products from parent category or popular products
+                const recommendedProducts = products
+                  ?.filter(p => {
+                    if (!parentCategory) return true; // Show popular if no parent
+                    const productCategoryNormalized = normalizeCategory(p.category || '');
+                    const parentNormalized = normalizeCategory(parentCategory.name);
+                    const parentDescendants = categoryToDescendants[parentCategory.slug] || [];
+                    return productCategoryNormalized === parentNormalized ||
+                           parentDescendants.some(d => normalizeCategory(d) === productCategoryNormalized);
+                  })
+                  .slice(0, 8) || [];
+
+                return (
+                  <CategoryEmptyState
+                    categoryName={categoryDisplayName || undefined}
+                    recommendedProducts={recommendedProducts as Product[]}
+                    subcategories={relatedSubcategories}
+                    onClearFilters={clearAllFilters}
+                    hasActiveFilters={activeFiltersCount > 0}
+                  />
+                );
+              })()
             )}
           </div>
         </div>
