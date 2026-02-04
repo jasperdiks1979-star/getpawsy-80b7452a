@@ -634,8 +634,7 @@ const BestsellerDetail = () => {
                   </motion.div>
                   
                   {/* Mobile: Static image only */}
-                  {/* CRITICAL: pointer-events-none ensures touch events pass through to navigation buttons */}
-                  <div className="absolute inset-0 md:hidden pointer-events-none">
+                  <div className="absolute inset-0 md:hidden p-4">
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={selectedImage}
@@ -666,50 +665,75 @@ const BestsellerDetail = () => {
                     <ZoomIn className="w-5 h-5" />
                   </motion.div>
 
-                  {/* Navigation Arrows - separate from image containers for reliable touch */}
+                  {/* Image Counter - Desktop */}
                   {images.length > 1 && (
-                    <>
-                      <button
-                        type="button"
-                        aria-label="Previous image"
-                        className="absolute left-2 top-1/2 -translate-y-1/2 z-50 h-14 w-14 md:h-10 md:w-10 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity active:scale-95 touch-manipulation pointer-events-auto"
-                        onClick={() => handlePrevImage()}
-                      >
-                        <ChevronLeft className="w-7 h-7 md:w-5 md:h-5 text-gray-800 dark:text-gray-100" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Next image"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 z-50 h-14 w-14 md:h-10 md:w-10 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity active:scale-95 touch-manipulation pointer-events-auto"
-                        onClick={() => handleNextImage()}
-                      >
-                        <ChevronRight className="w-7 h-7 md:w-5 md:h-5 text-gray-800 dark:text-gray-100" />
-                      </button>
-                      
-                      {/* Image Counter - Desktop */}
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium hidden md:block z-20">
-                        {selectedImage + 1} / {images.length}
-                      </div>
-                      
-                      {/* Dot Indicators - Mobile */}
-                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 md:hidden z-50 bg-black/30 backdrop-blur-sm rounded-full px-3 py-2 pointer-events-auto touch-manipulation">
-                        {images.map((_, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            aria-label={`Go to image ${idx + 1}`}
-                            className={`rounded-full transition-all active:scale-90 touch-manipulation pointer-events-auto ${
-                              selectedImage === idx 
-                                ? 'w-6 h-3 bg-white' 
-                                : 'w-3 h-3 bg-white/50'
-                            }`}
-                            onClick={() => setSelectedImage(idx)}
-                          />
-                        ))}
-                      </div>
-                    </>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium hidden md:block z-20">
+                      {selectedImage + 1} / {images.length}
+                    </div>
                   )}
                 </div>
+                
+                {/* MOBILE Navigation Controls - positioned as siblings for reliable touch */}
+                {images.length > 1 && (
+                  <div className="flex justify-between items-center px-2 -mt-[50%] mb-[calc(50%-28px)] md:hidden relative z-20">
+                    <button
+                      type="button"
+                      aria-label="Previous image"
+                      className="h-14 w-14 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center active:scale-95"
+                      onClick={() => handlePrevImage()}
+                    >
+                      <ChevronLeft className="w-7 h-7 text-gray-800 dark:text-gray-100" />
+                    </button>
+                    
+                    {/* Dot indicators in the middle */}
+                    <div className="flex gap-2 bg-black/40 backdrop-blur-sm rounded-full px-3 py-2">
+                      {images.map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          aria-label={`Go to image ${idx + 1}`}
+                          className={`rounded-full transition-all active:scale-90 ${
+                            selectedImage === idx 
+                              ? 'w-6 h-3 bg-white' 
+                              : 'w-3 h-3 bg-white/50'
+                          }`}
+                          onClick={() => setSelectedImage(idx)}
+                        />
+                      ))}
+                    </div>
+                    
+                    <button
+                      type="button"
+                      aria-label="Next image"
+                      className="h-14 w-14 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center active:scale-95"
+                      onClick={() => handleNextImage()}
+                    >
+                      <ChevronRight className="w-7 h-7 text-gray-800 dark:text-gray-100" />
+                    </button>
+                  </div>
+                )}
+                
+                {/* Desktop Navigation Arrows - positioned as siblings */}
+                {images.length > 1 && (
+                  <div className="hidden md:flex justify-between items-center px-2 -mt-[50%] mb-[calc(50%-20px)] relative z-20 pointer-events-none">
+                    <button
+                      type="button"
+                      aria-label="Previous image"
+                      className="h-10 w-10 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity active:scale-95 pointer-events-auto"
+                      onClick={() => handlePrevImage()}
+                    >
+                      <ChevronLeft className="w-5 h-5 text-gray-800 dark:text-gray-100" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next image"
+                      className="h-10 w-10 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity active:scale-95 pointer-events-auto"
+                      onClick={() => handleNextImage()}
+                    >
+                      <ChevronRight className="w-5 h-5 text-gray-800 dark:text-gray-100" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Thumbnail Carousel */}
                 {images.length > 1 && (
