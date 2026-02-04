@@ -287,6 +287,17 @@ const BestsellerDetail = () => {
   const [orderBumpProduct, setOrderBumpProduct] = useState<{id: string; name: string; price: number; image_url?: string | null; slug?: string | null; is_active?: boolean | null;} | null>(null);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [showPostAddUpsell, setShowPostAddUpsell] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<{
+    vid: string;
+    pid: string;
+    variantKey: string;
+    variantNameEn: string;
+    variantSku: string;
+    variantImage?: string;
+    variantWeight: number;
+    variantSellPrice: number;
+    variantCostPrice?: number;
+  } | null>(null);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const addToCartButtonRef = useRef<HTMLButtonElement>(null);
   const mainAddToCartRef = useRef<HTMLDivElement>(null);
@@ -328,7 +339,8 @@ const BestsellerDetail = () => {
             category,
             stock,
             shipping_time,
-            is_active
+            is_active,
+            variants
           )
         `)
         .eq('slug', slug)
@@ -345,6 +357,75 @@ const BestsellerDetail = () => {
   const sellingPoints: SellingPoint[] = bestseller?.selling_points 
     ? (bestseller.selling_points as unknown as SellingPoint[])
     : [];
+
+  // Parse product variants with safe extraction
+  interface ProductVariant {
+    vid: string;
+    pid: string;
+    variantKey: string;
+    variantNameEn: string;
+    variantSku: string;
+    variantImage?: string;
+    variantWeight: number;
+    variantSellPrice: number;
+    variantCostPrice?: number;
+  }
+
+  const variants: ProductVariant[] = useMemo(() => {
+    if (!product?.variants || !Array.isArray(product.variants)) return [];
+    
+    const productPrice = Number(product.price) || 0;
+    const productWeight = 200; // Default weight
+    
+    return (product.variants as unknown[]).map((rawVariant) => {
+      if (!rawVariant || typeof rawVariant !== 'object') return null;
+      
+      const variant = rawVariant as Record<string, unknown>;
+      
+      const variantPrice = Number(variant.variantSellPrice) || 0;
+      const variantWeight = Number(variant.variantWeight) || productWeight;
+      
+      // Helper to safely extract string
+      const extractString = (val: unknown): string => {
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'object') return '';
+        return String(val);
+      };
+      
+      const vid = extractString(variant.vid);
+      const pid = extractString(variant.pid);
+      const safeVariantKey = extractString(variant.variantKey);
+      const safeVariantNameEn = extractString(variant.variantNameEn);
+      const safeVariantSku = extractString(variant.variantSku);
+      const variantImage = extractString(variant.variantImage) || undefined;
+      
+      const displayName = safeVariantKey || safeVariantNameEn || safeVariantSku || 'Option';
+      
+      // Check if the variant price seems like a cost price
+      const isProbablyCostPrice = variantPrice > 0 && variantPrice < productPrice * 0.4;
+      
+      const cleanVariant: ProductVariant = {
+        vid,
+        pid,
+        variantKey: displayName,
+        variantNameEn: safeVariantNameEn || displayName,
+        variantSku: safeVariantSku,
+        variantImage,
+        variantWeight,
+        variantSellPrice: isProbablyCostPrice ? productPrice : variantPrice,
+        variantCostPrice: isProbablyCostPrice ? variantPrice : undefined,
+      };
+      
+      return cleanVariant;
+    }).filter((v): v is ProductVariant => v !== null);
+  }, [product?.variants, product?.price]);
+
+  // Auto-select first variant when variants load
+  useEffect(() => {
+    if (variants.length > 0 && !selectedVariant) {
+      setSelectedVariant(variants[0]);
+    }
+  }, [variants, selectedVariant]);
 
   // Fetch reviews for this product
   const { data: reviews = [], refetch: refetchReviews } = useQuery({
@@ -548,13 +629,16 @@ const BestsellerDetail = () => {
       ? product.price * (1 - volumeDiscount / 100)
       : product.price;
     
-    // Add main product(s) with volume discount applied
+    // Add main product(s) with volume discount applied and variant info
+    const variantSuffix = selectedVariant ? ` - ${selectedVariant.variantKey}` : '';
+    const cartItemImage = selectedVariant?.variantImage || product.image_url || '/placeholder.svg';
+    
     for (let i = 0; i < quantity; i++) {
       addItem({
-        id: product.id,
-        name: product.name,
+        id: selectedVariant ? `${product.id}_${selectedVariant.vid}` : product.id,
+        name: `${product.name}${variantSuffix}`,
         price: discountedPrice,
-        image: product.image_url || '/placeholder.svg',
+        image: cartItemImage,
       });
     }
     
@@ -885,6 +969,62 @@ const BestsellerDetail = () => {
                     </p>
                   )}
                 </div>
+
+                {/* Variant Selector - Show when multiple variants exist */}
+                {variants.length > 1 && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.35 }}
+                    className="space-y-3 bg-muted/30 rounded-2xl p-4 border border-border/50"
+                  >
+                    <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <Package className="w-4 h-4 text-primary" />
+                      Choose your option: <span className="text-primary">{selectedVariant ? selectedVariant.variantKey : 'Select one'}</span>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {variants.map((variant) => {
+                        const isSelected = selectedVariant?.vid === variant.vid;
+                        
+                        // Color detection for visual indicator
+                        const colorMap: Record<string, string> = {
+                          'blue': '#3b82f6', 'light blue': '#7dd3fc', 'red': '#ef4444',
+                          'green': '#22c55e', 'yellow': '#eab308', 'orange': '#f97316',
+                          'purple': '#a855f7', 'pink': '#ec4899', 'black': '#171717',
+                          'white': '#f5f5f5', 'gray': '#6b7280', 'grey': '#6b7280',
+                          'brown': '#92400e', 'beige': '#d4a574', 'navy': '#1e3a5a',
+                        };
+                        
+                        const variantLower = variant.variantKey.toLowerCase();
+                        const detectedColor = Object.keys(colorMap).find(c => variantLower.includes(c));
+                        const colorHex = detectedColor ? colorMap[detectedColor] : null;
+                        
+                        return (
+                          <motion.button
+                            key={variant.vid}
+                            onClick={() => setSelectedVariant(variant)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all ${
+                              isSelected
+                                ? 'border-primary bg-primary/10 text-primary shadow-soft ring-2 ring-primary/20'
+                                : 'border-border hover:border-primary/50 bg-background'
+                            }`}
+                          >
+                            {colorHex && (
+                              <span 
+                                className="w-4 h-4 rounded-full border border-border/50 flex-shrink-0"
+                                style={{ backgroundColor: colorHex }}
+                              />
+                            )}
+                            <span className="text-sm font-medium">{variant.variantKey}</span>
+                            {isSelected && <Check className="w-4 h-4 text-primary" />}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
 
                 {/* A/B Test: Variant A shows Frequently Bought Together */}
                 {abTest.isVariantA && (relatedLoading || relatedProducts.length > 0) && (
