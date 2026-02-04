@@ -363,7 +363,7 @@ const Checkout = () => {
 
   return (
     <Layout>
-      <div className="container px-4 md:px-6 py-8 max-w-4xl">
+      <div className="container px-4 md:px-6 py-8 max-w-4xl w-full overflow-x-hidden box-border">
         {/* Breadcrumbs */}
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
@@ -463,33 +463,34 @@ const Checkout = () => {
             </div>
 
             {/* Terms and Conditions */}
-            <div className="bg-card rounded-xl shadow-card p-6">
+            <div className="bg-card rounded-xl shadow-card p-4 sm:p-6 w-full max-w-full overflow-hidden box-border">
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Terms & Conditions
+                <FileText className="w-5 h-5 flex-shrink-0" />
+                <span className="break-words">Terms & Conditions</span>
               </h2>
-              <div className="space-y-4">
-                <div className="flex items-start space-x-3">
+              <div className="space-y-4 w-full max-w-full">
+                <div className="flex items-start gap-3 w-full max-w-full">
                   <Checkbox 
                     id="terms" 
                     checked={acceptedTerms}
                     onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                    className="mt-1"
+                    className="mt-1 flex-shrink-0"
                   />
                   <label 
                     htmlFor="terms" 
-                    className="text-sm text-muted-foreground leading-relaxed cursor-pointer"
+                    className="text-sm text-muted-foreground leading-relaxed cursor-pointer flex-1 min-w-0 break-words"
+                    style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
                   >
                     I have read and agree to the{' '}
-                    <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium">
+                    <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium inline break-words">
                       Terms of Service
                     </Link>
                     ,{' '}
-                    <Link to="/privacy" target="_blank" className="text-primary hover:underline font-medium">
+                    <Link to="/privacy" target="_blank" className="text-primary hover:underline font-medium inline break-words">
                       Privacy Policy
                     </Link>
                     , and{' '}
-                    <Link to="/returns" target="_blank" className="text-primary hover:underline font-medium">
+                    <Link to="/returns" target="_blank" className="text-primary hover:underline font-medium inline break-words">
                       Return Policy
                     </Link>
                     . I understand that GetPawsy is not the manufacturer of the products and I 
@@ -499,8 +500,8 @@ const Checkout = () => {
                 </div>
                 
                 {!acceptedTerms && (
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                    <p className="text-xs text-amber-800 dark:text-amber-200">
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 w-full max-w-full">
+                    <p className="text-xs text-amber-800 dark:text-amber-200 break-words">
                       ⚠️ You must accept the terms and conditions to proceed with your order.
                     </p>
                   </div>
@@ -658,35 +659,44 @@ const Checkout = () => {
         </div>
         
         {/* Mobile Fixed Checkout Bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg p-4 lg:hidden z-50 safe-area-inset-bottom">
-          <div className="flex items-center justify-between gap-4 max-w-lg mx-auto">
-            <div className="flex flex-col">
+        <div 
+          className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg p-4 lg:hidden z-50"
+          style={{ 
+            width: '100%', 
+            maxWidth: '100%', 
+            boxSizing: 'border-box',
+            paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))'
+          }}
+        >
+          <div className="flex items-center justify-between gap-3 w-full max-w-full px-1 box-border">
+            <div className="flex flex-col flex-shrink-0">
               <span className="text-xs text-muted-foreground">Total</span>
               <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
             </div>
             <Button
               size="lg"
-              className="flex-1 max-w-[200px] gap-2"
+              className="flex-1 min-w-0 max-w-none gap-2"
+              style={{ maxWidth: 'calc(100% - 80px)' }}
               disabled={isProcessing || !email || !acceptedTerms}
               onClick={handleStripeCheckout}
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
+                  <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+                  <span className="truncate">Processing...</span>
                 </>
               ) : (
                 <>
-                  <Lock className="w-4 h-4" />
-                  Checkout
+                  <Lock className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">Checkout</span>
                 </>
               )}
             </Button>
           </div>
         </div>
         
-        {/* Spacer for mobile fixed bar */}
-        <div className="h-24 lg:hidden" />
+        {/* Spacer for mobile fixed bar - increased height to prevent content overlap */}
+        <div className="h-28 lg:hidden" />
       </div>
     </Layout>
   );
