@@ -140,3 +140,6 @@ verify_jwt = false
 
 [functions.send-seo-nurture-email]
 verify_jwt = false
+
+[functions.shopping-assistant]
+verify_jwt = false
