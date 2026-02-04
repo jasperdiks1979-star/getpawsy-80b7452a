@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShoppingCart, Users, CreditCard, X, Minimize2, Maximize2, TrendingUp, MapPin, Percent, Volume2, VolumeX, Vibrate } from "lucide-react";
@@ -14,6 +15,7 @@ import {
 import { Link } from "react-router-dom";
 import { safeString } from "@/lib/safe-render";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LiveStats {
   totalVisitors: number;
@@ -33,6 +35,8 @@ type NotificationType = "sound" | "vibrate" | "off";
 
 export const LiveCheckoutWidget = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const isMobile = useIsMobile();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isVisible, setIsVisible] = useState(() => {
     const saved = localStorage.getItem("live-widget-visible");
@@ -236,8 +240,11 @@ export const LiveCheckoutWidget = () => {
     };
   }, [isAdmin, fetchStats, playCheckoutNotification]);
 
-  // Don't render for non-admins
-  if (!isAdmin || !isVisible) return null;
+  // Don't render for non-admins or on mobile checkout/cart pages
+  const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
+  const shouldHideOnMobile = isMobile && isCheckoutRoute;
+  
+  if (!isAdmin || !isVisible || shouldHideOnMobile) return null;
 
   // Funnel data for donut chart
   const funnelData = [

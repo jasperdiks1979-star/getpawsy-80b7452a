@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, Eye, ShoppingCart, CreditCard, MapPin } from "lucide-react";
 import {
@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Stats {
   total: number;
@@ -27,6 +28,12 @@ export const LiveVisitorBadge = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [stats, setStats] = useState<Stats>({ total: 0, browsing: 0, cart: 0, checkout: 0 });
   const [sparklineData, setSparklineData] = useState<SparklineData[]>([]);
+  const location = useLocation();
+  const isMobile = useIsMobile();
+  
+  // Hide on mobile for cart/checkout pages to prevent UI overlap
+  const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
+  const shouldHide = isMobile && isCheckoutRoute;
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -160,7 +167,8 @@ export const LiveVisitorBadge = () => {
     return () => document.removeEventListener("click", handleClick);
   }, [isOpen]);
 
-  if (!isAdmin) return null;
+  // Don't render if not admin OR if on mobile checkout pages
+  if (!isAdmin || shouldHide) return null;
 
   return (
     <div className="fixed top-20 right-4 z-50">
