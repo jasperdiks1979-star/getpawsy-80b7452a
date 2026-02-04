@@ -1,5 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { sanitizeHtml } from '@/lib/sanitize';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileProductGallery } from '@/components/products/MobileProductGallery';
 import { useQuery } from '@tanstack/react-query';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -249,6 +251,7 @@ const BestsellerDetail = () => {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { trigger } = useHaptic();
   const { addToRecentlyViewed, getRecentlyViewedIds } = useRecentlyViewed();
+  const isMobile = useIsMobile();
   
   // Image gallery state
   const [selectedImage, setSelectedImage] = useState(0);
@@ -584,172 +587,176 @@ const BestsellerDetail = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                {/* Bestseller Badge */}
-                <div className="absolute top-4 left-4 z-10 flex gap-2">
-                  <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 px-4 py-2 text-sm font-semibold shadow-lg">
-                    <Award className="w-4 h-4 mr-1" />
-                    Bestseller #{bestseller.rank}
-                  </Badge>
-                  {discount > 0 && (
-                    <Badge variant="destructive" className="px-3 py-2">
-                      -{discount}%
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Main Image Container */}
-                <div 
-                  className="relative aspect-[4/5] md:aspect-square rounded-3xl overflow-hidden bg-white shadow-2xl group"
-                >
-                  {/* Swipeable image container - works on both mobile and desktop */}
-                  <motion.div
-                    className="absolute inset-0 cursor-zoom-in"
-                    drag={images.length > 1 ? "x" : false}
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.2}
-                    onDragStart={() => setIsDragging(true)}
-                    onDrag={(_, info) => setDragX(info.offset.x)}
-                    onDragEnd={(_, info) => handleDragEnd(images.length, info.offset.x, info.velocity.x)}
-                    onClick={() => !isDragging && setLightboxOpen(true)}
-                    whileTap={{ cursor: "grabbing" }}
-                    style={{ touchAction: images.length > 1 ? 'pan-y' : 'auto' }}
-                  >
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={selectedImage}
-                        className="absolute inset-0 p-4 md:p-8"
-                        initial={{ opacity: 0, x: dragX > 0 ? -100 : 100 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: dragX > 0 ? 100 : -100 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      >
-                        <OptimizedImage
-                          src={images[selectedImage]}
-                          alt={product.name}
-                          className="object-contain pointer-events-none"
-                          containerClassName="w-full h-full"
-                          priority={selectedImage === 0}
-                        />
-                      </motion.div>
-                    </AnimatePresence>
-                  </motion.div>
-
-                  {/* Zoom indicator - Desktop only */}
-                  <motion.div 
-                    className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm text-foreground p-2.5 rounded-full shadow-soft z-20 hidden md:flex"
-                    initial={{ opacity: 0 }}
-                    whileHover={{ scale: 1.1 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <ZoomIn className="w-5 h-5" />
-                  </motion.div>
-
-                  {/* Image Counter / Dot indicators */}
-                  {images.length > 1 && (
-                    <>
-                      {/* Desktop: text counter */}
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium hidden md:block z-20">
-                        {selectedImage + 1} / {images.length}
+                {/* Mobile Gallery - uses Embla Carousel for reliable swipe */}
+                {isMobile ? (
+                  <MobileProductGallery
+                    images={images}
+                    productName={product.name}
+                    discount={discount}
+                    onImageClick={() => setLightboxOpen(true)}
+                    badge={
+                      <div className="flex gap-2 flex-wrap">
+                        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 px-3 py-1.5 text-sm font-semibold shadow-lg">
+                          <Award className="w-3 h-3 mr-1" />
+                          #{bestseller.rank}
+                        </Badge>
+                        {discount > 0 && (
+                          <Badge variant="destructive" className="px-2 py-1.5 text-xs">
+                            -{discount}%
+                          </Badge>
+                        )}
                       </div>
-                      {/* Mobile: dot indicators */}
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/40 backdrop-blur-sm rounded-full px-3 py-2 md:hidden z-20">
-                        {images.map((_, idx) => (
-                          <div
-                            key={idx}
-                            className={`rounded-full transition-all ${
-                              selectedImage === idx 
-                                ? 'w-6 h-2.5 bg-white' 
-                                : 'w-2.5 h-2.5 bg-white/50'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-                
-                {/* Desktop Navigation Arrows - positioned as siblings */}
-                {images.length > 1 && (
-                  <div className="hidden md:flex justify-between items-center px-2 -mt-[50%] mb-[calc(50%-20px)] relative z-20 pointer-events-none">
-                    <button
-                      type="button"
-                      aria-label="Previous image"
-                      className="h-10 w-10 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity active:scale-95 pointer-events-auto"
-                      onClick={() => handlePrevImage()}
-                    >
-                      <ChevronLeft className="w-5 h-5 text-gray-800 dark:text-gray-100" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Next image"
-                      className="h-10 w-10 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity active:scale-95 pointer-events-auto"
-                      onClick={() => handleNextImage()}
-                    >
-                      <ChevronRight className="w-5 h-5 text-gray-800 dark:text-gray-100" />
-                    </button>
-                  </div>
-                )}
-
-                {/* Thumbnail Carousel */}
-                {images.length > 1 && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="relative flex items-center gap-3"
-                  >
-                    {/* Left Arrow */}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="flex-shrink-0 h-10 w-10 rounded-full border-2"
-                      onClick={handlePrevImage}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-
-                    {/* Thumbnails */}
-                    <div className="flex-1 overflow-hidden relative touch-pan-x">
-                      {/* Fade edges */}
-                      <div className="absolute left-0 top-0 bottom-2 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-                      <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-                      
-                      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory px-2" style={{ WebkitOverflowScrolling: 'touch' }}>
-                        {images.map((img, idx) => (
-                          <motion.button
-                            key={idx}
-                            ref={(el) => { thumbnailRefs.current[idx] = el; }}
-                            onClick={() => setSelectedImage(idx)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden transition-all snap-start ${
-                              selectedImage === idx 
-                                ? 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-soft' 
-                                : 'opacity-60 hover:opacity-100'
-                            }`}
-                          >
-                            <OptimizedImage
-                              src={img}
-                              alt={`Product image ${idx + 1}`}
-                              aspectRatio="square"
-                              className="group-hover:scale-110"
-                            />
-                          </motion.button>
-                        ))}
-                      </div>
+                    }
+                  />
+                ) : (
+                  <>
+                    {/* Desktop: Bestseller Badge */}
+                    <div className="absolute top-4 left-4 z-10 flex gap-2">
+                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 px-4 py-2 text-sm font-semibold shadow-lg">
+                        <Award className="w-4 h-4 mr-1" />
+                        Bestseller #{bestseller.rank}
+                      </Badge>
+                      {discount > 0 && (
+                        <Badge variant="destructive" className="px-3 py-2">
+                          -{discount}%
+                        </Badge>
+                      )}
                     </div>
 
-                    {/* Right Arrow */}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="flex-shrink-0 h-10 w-10 rounded-full border-2"
-                      onClick={handleNextImage}
+                    {/* Desktop: Main Image Container */}
+                    <div 
+                      className="relative aspect-square rounded-3xl overflow-hidden bg-white shadow-2xl group"
                     >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </motion.div>
+                      <motion.div
+                        className="absolute inset-0 cursor-zoom-in"
+                        drag={images.length > 1 ? "x" : false}
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.2}
+                        onDragStart={() => setIsDragging(true)}
+                        onDrag={(_, info) => setDragX(info.offset.x)}
+                        onDragEnd={(_, info) => handleDragEnd(images.length, info.offset.x, info.velocity.x)}
+                        onClick={() => !isDragging && setLightboxOpen(true)}
+                        whileTap={{ cursor: "grabbing" }}
+                        style={{ touchAction: images.length > 1 ? 'pan-y' : 'auto' }}
+                      >
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={selectedImage}
+                            className="absolute inset-0 p-8"
+                            initial={{ opacity: 0, x: dragX > 0 ? -100 : 100 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: dragX > 0 ? 100 : -100 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          >
+                            <OptimizedImage
+                              src={images[selectedImage]}
+                              alt={product.name}
+                              className="object-contain pointer-events-none"
+                              containerClassName="w-full h-full"
+                              priority={selectedImage === 0}
+                            />
+                          </motion.div>
+                        </AnimatePresence>
+                      </motion.div>
+
+                      {/* Zoom indicator */}
+                      <motion.div 
+                        className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm text-foreground p-2.5 rounded-full shadow-soft z-20 flex"
+                        initial={{ opacity: 0 }}
+                        whileHover={{ scale: 1.1 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <ZoomIn className="w-5 h-5" />
+                      </motion.div>
+
+                      {/* Image Counter */}
+                      {images.length > 1 && (
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium z-20">
+                          {selectedImage + 1} / {images.length}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Desktop Navigation Arrows */}
+                    {images.length > 1 && (
+                      <div className="flex justify-between items-center px-2 -mt-[50%] mb-[calc(50%-20px)] relative z-20 pointer-events-none">
+                        <button
+                          type="button"
+                          aria-label="Previous image"
+                          className="h-10 w-10 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity active:scale-95 pointer-events-auto"
+                          onClick={() => handlePrevImage()}
+                        >
+                          <ChevronLeft className="w-5 h-5 text-gray-800 dark:text-gray-100" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Next image"
+                          className="h-10 w-10 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity active:scale-95 pointer-events-auto"
+                          onClick={() => handleNextImage()}
+                        >
+                          <ChevronRight className="w-5 h-5 text-gray-800 dark:text-gray-100" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Desktop Thumbnail Carousel */}
+                    {images.length > 1 && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="relative flex items-center gap-3"
+                      >
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="flex-shrink-0 h-10 w-10 rounded-full border-2"
+                          onClick={handlePrevImage}
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+
+                        <div className="flex-1 overflow-hidden relative touch-pan-x">
+                          <div className="absolute left-0 top-0 bottom-2 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+                          <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+                          
+                          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory px-2" style={{ WebkitOverflowScrolling: 'touch' }}>
+                            {images.map((img, idx) => (
+                              <motion.button
+                                key={idx}
+                                ref={(el) => { thumbnailRefs.current[idx] = el; }}
+                                onClick={() => setSelectedImage(idx)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden transition-all snap-start ${
+                                  selectedImage === idx 
+                                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-soft' 
+                                    : 'opacity-60 hover:opacity-100'
+                                }`}
+                              >
+                                <OptimizedImage
+                                  src={img}
+                                  alt={`Product image ${idx + 1}`}
+                                  aspectRatio="square"
+                                  className="group-hover:scale-110"
+                                />
+                              </motion.button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="flex-shrink-0 h-10 w-10 rounded-full border-2"
+                          onClick={handleNextImage}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </motion.div>
+                    )}
+                  </>
                 )}
               </motion.div>
 
