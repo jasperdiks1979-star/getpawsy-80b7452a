@@ -91,6 +91,7 @@ const generateProductJsonLd = (
     description?: string | null;
     category?: string | null;
     stock?: number | null;
+    is_active?: boolean | null;
   },
   bestseller: {
     seo_description?: string | null;
@@ -98,11 +99,10 @@ const generateProductJsonLd = (
     slug: string;
   }
 ) => {
-  // Only mark as OutOfStock if explicitly set to 0
-  // If stock is null/undefined, assume InStock (don't default to out-of-stock)
-  const stockValue = product.stock;
-  const isExplicitlyOOS = stockValue !== null && stockValue !== undefined && stockValue === 0;
-  const availability = isExplicitlyOOS 
+  // DROPSHIPPING MODEL: Stock value of 0 does NOT mean out of stock
+  // Only mark as OutOfStock if product.is_active === false (explicitly disabled)
+  const isProductDisabled = product.is_active === false;
+  const availability = isProductDisabled 
     ? 'https://schema.org/OutOfStock' 
     : 'https://schema.org/InStock';
 
@@ -313,7 +313,8 @@ const BestsellerDetail = () => {
             description,
             category,
             stock,
-            shipping_time
+            shipping_time,
+            is_active
           )
         `)
         .eq('slug', slug)
@@ -475,16 +476,21 @@ const BestsellerDetail = () => {
     );
   }
 
-  // STOCK LOGIC RULES:
-  // A) Only show Out of Stock when stock is EXPLICITLY 0
-  // B) If stock is null/undefined/missing => treat as IN STOCK (do NOT default to out-of-stock)
-  // C) For variants: if no variant selected => don't show OOS (not applicable here - bestsellers have no variants)
+  // STOCK LOGIC RULES FOR DROPSHIPPING:
+  // This is a dropshipping store - products are fulfilled by suppliers (CJ Dropshipping)
+  // Stock value of 0 does NOT mean out of stock - suppliers manage inventory
+  // 
+  // A) Stock = 0 or null/undefined => ALWAYS IN STOCK (dropship model - supplier has inventory)
+  // B) Only show Out of Stock if product.is_active === false (explicitly disabled)
+  // C) The stock field in our DB is not reliable for dropship availability
+  //
+  // To mark a product as truly out of stock, set is_active = false in the database
   const stockValue = product.stock;
-  const isExplicitlyOutOfStock = stockValue !== null && stockValue !== undefined && stockValue === 0;
-  const inStock = !isExplicitlyOutOfStock;
+  const isProductDisabled = product.is_active === false;
+  const inStock = !isProductDisabled; // Always in stock unless explicitly disabled
   
   // Computed availability for display and structured data
-  const computedAvailability = isExplicitlyOutOfStock ? 'out_of_stock' : 'in_stock';
+  const computedAvailability = isProductDisabled ? 'out_of_stock' : 'in_stock';
 
   const handleAddToCart = () => {
     if (!product || !inStock) return;
@@ -771,15 +777,15 @@ const BestsellerDetail = () => {
                 {/* Stock Debug - Only visible with ?debug=1 */}
                 {isDebugMode && (
                   <div className="p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-300 dark:border-yellow-700 rounded-lg text-xs font-mono">
-                    <p className="font-bold text-yellow-800 dark:text-yellow-200 mb-1">Stock Debug:</p>
+                    <p className="font-bold text-yellow-800 dark:text-yellow-200 mb-1">Stock Debug (Dropship Model):</p>
                     <ul className="space-y-0.5 text-yellow-700 dark:text-yellow-300">
                       <li>• product.stock: {product.stock === null ? 'null' : product.stock === undefined ? 'undefined' : product.stock}</li>
-                      <li>• typeof product.stock: {typeof product.stock}</li>
-                      <li>• isExplicitlyOutOfStock: {String(isExplicitlyOutOfStock)}</li>
+                      <li>• product.is_active: {String(product.is_active)}</li>
+                      <li>• isProductDisabled: {String(isProductDisabled)}</li>
                       <li>• inStock: {String(inStock)}</li>
                       <li>• computedAvailability: {computedAvailability}</li>
                       <li>• product.id: {product.id}</li>
-                      <li>• dataSource: bestsellers → products join</li>
+                      <li>• Note: Dropship = stock 0 is OK, supplier has inventory</li>
                     </ul>
                   </div>
                 )}
