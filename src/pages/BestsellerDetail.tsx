@@ -579,17 +579,17 @@ const BestsellerDetail = () => {
         </div>
 
         {/* Hero Section - Premium */}
-        <section className="relative py-6 lg:py-10 overflow-hidden">
+        <section className="relative py-6 lg:py-10 overflow-hidden bestseller-hero-section">
           {/* Decorative background */}
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background pointer-events-none" />
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-accent/10 to-transparent rounded-full blur-3xl pointer-events-none" />
           
           <div className="container px-4 relative z-10">
-            <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-start">
+            <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-start bestseller-grid">
               {/* Product Image Gallery */}
               <motion.div 
-                className="relative space-y-4"
+                className="relative space-y-4 bestseller-gallery"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
@@ -646,7 +646,7 @@ const BestsellerDetail = () => {
 
               {/* Product Info */}
               <motion.div 
-                className="space-y-6 lg:sticky lg:top-24"
+                className="space-y-6 lg:sticky lg:top-24 bestseller-info-section"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}

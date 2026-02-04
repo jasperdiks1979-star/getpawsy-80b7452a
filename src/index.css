@@ -577,6 +577,47 @@
   }
 }
 
+/* MOBILE: Fix blank space on bestseller/product pages */
+@media (max-width: 768px) {
+  /* Force content-driven heights on product page layouts */
+  .bestseller-layout,
+  .product-layout,
+  .product-hero-section,
+  .bestseller-hero-section {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  /* Grid/flex containers should not reserve empty space */
+  .product-grid,
+  .bestseller-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  /* Gallery section - content-driven */
+  .gallery-wrapper,
+  .product-gallery-container,
+  .bestseller-gallery {
+    height: auto !important;
+    min-height: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Product info section - no reserved space */
+  .product-info-section,
+  .bestseller-info-section {
+    height: auto !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+}
+
 /* Landscape mode optimizations for mobile */
 @media (orientation: landscape) and (max-height: 500px) {
   /* Reduce vertical padding in landscape */
