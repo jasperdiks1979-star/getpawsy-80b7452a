@@ -10,6 +10,7 @@ import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { trackCrossSellImpression, trackBundleAddToCart } from '@/lib/analytics';
 import { computeAvailability } from '@/lib/availability';
+import { useBundleCopy } from '@/hooks/useBundleCopy';
 
 interface Product {
   id: string;
@@ -35,7 +36,7 @@ interface BestsellerBundleSectionProps {
   onBundleAdd?: (data: BundleAddData) => void;
 }
 
-// Benefit-driven copy for upsell products
+// Legacy static benefit copy (kept as fallback)
 const PRODUCT_BENEFITS: Record<string, string> = {
   default: "Enhances your pet's comfort",
   collar: 'Keeps your dog secure',
@@ -101,6 +102,9 @@ export const BestsellerBundleSection = ({
   const [isAdding, setIsAdding] = useState(false);
   const impressionTracked = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Dynamic AI-generated copy based on user segment
+  const { copy: dynamicCopy, segment, trackCopyShown } = useBundleCopy(currentProduct.name);
 
   // Get up to 2 complementary products (1 main + 1-2 upsells)
   const bundleProducts = useMemo(() => {
@@ -122,7 +126,7 @@ export const BestsellerBundleSection = ({
     setSelectedIds(initialSelected);
   }, [currentProduct.id, bundleProducts]);
 
-  // Track impression
+  // Track impression and copy variant
   useEffect(() => {
     if (bundleProducts.length === 0 || impressionTracked.current) return;
 
@@ -142,6 +146,8 @@ export const BestsellerBundleSection = ({
             })),
             'frequently_bought'
           );
+          // Track dynamic copy variant shown
+          trackCopyShown(currentProduct.id, 'FBT');
         }
       },
       { threshold: 0.3 }
@@ -152,7 +158,7 @@ export const BestsellerBundleSection = ({
     }
 
     return () => observer.disconnect();
-  }, [bundleProducts, currentProduct]);
+  }, [bundleProducts, currentProduct, trackCopyShown]);
 
   // Calculate pricing
   const allProducts = useMemo(() => [currentProduct, ...bundleProducts], [currentProduct, bundleProducts]);
@@ -263,17 +269,22 @@ export const BestsellerBundleSection = ({
       className="bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-xl p-4 border border-primary/10"
     >
       {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-2">
         <div className="p-1.5 rounded-full bg-primary/10">
           <Sparkles className="w-4 h-4 text-primary" />
         </div>
         <h3 className="text-base font-semibold">Frequently Bought Together</h3>
         {hasUpsell && (
-          <Badge variant="secondary" className="ml-auto bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs">
+          <Badge variant="secondary" className="ml-auto bg-accent text-accent-foreground text-xs">
             Save {discountPercent}%
           </Badge>
         )}
       </div>
+      
+      {/* Dynamic AI-generated copy based on user segment */}
+      <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+        {dynamicCopy}
+      </p>
 
       {/* Product List - Mobile-first horizontal cards */}
       <div className="space-y-2.5">
@@ -373,7 +384,7 @@ export const BestsellerBundleSection = ({
               key={discountAmount.toFixed(2)}
               initial={{ scale: 1.1 }}
               animate={{ scale: 1 }}
-              className="text-sm font-medium text-green-600 dark:text-green-400"
+              className="text-sm font-medium text-accent-foreground"
             >
               Save ${discountAmount.toFixed(2)}
             </motion.span>
