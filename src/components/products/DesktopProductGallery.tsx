@@ -1,9 +1,14 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, Grid3X3 } from "lucide-react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 interface DesktopProductGalleryProps {
@@ -25,8 +30,21 @@ export function DesktopProductGallery({
 }: DesktopProductGalleryProps) {
   const [selectedImage, setSelectedImage] = React.useState(0);
   const [direction, setDirection] = React.useState(0);
+  const [isHovering, setIsHovering] = React.useState(false);
+  const [zoomPosition, setZoomPosition] = React.useState({ x: 50, y: 50 });
+  const [counterOpen, setCounterOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const imageContainerRef = React.useRef<HTMLDivElement>(null);
   const thumbnailRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Preload first 2 images on mount
+  React.useEffect(() => {
+    const preloadImages = images.slice(0, 2);
+    preloadImages.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, [images]);
 
   const handlePrevImage = React.useCallback(() => {
     setDirection(-1);
@@ -43,13 +61,41 @@ export function DesktopProductGallery({
     setSelectedImage(index);
   };
 
+  const handleImageSelect = (index: number) => {
+    setDirection(index > selectedImage ? 1 : -1);
+    setSelectedImage(index);
+    setCounterOpen(false);
+  };
+
+  // Hover zoom handlers - desktop only
+  const handleMouseEnter = () => {
+    // Only enable zoom on desktop (≥1024px) and non-touch devices
+    if (window.innerWidth >= 1024 && !('ontouchstart' in window)) {
+      setIsHovering(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    setZoomPosition({ x: 50, y: 50 });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isHovering || !imageContainerRef.current) return;
+
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    setZoomPosition({ x, y });
+  };
+
   // Keyboard navigation (← → arrows)
   React.useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only respond if the gallery container or its children are focused
       if (!container.contains(document.activeElement) && document.activeElement !== container) {
         return;
       }
@@ -74,13 +120,12 @@ export function DesktopProductGallery({
 
     let wheelTimeout: NodeJS.Timeout;
     let lastWheelTime = 0;
-    const WHEEL_DEBOUNCE = 150; // ms between wheel events
+    const WHEEL_DEBOUNCE = 150;
 
     const handleWheel = (e: WheelEvent) => {
       const now = Date.now();
       if (now - lastWheelTime < WHEEL_DEBOUNCE) return;
 
-      // Only respond to horizontal scroll or significant vertical scroll
       const isHorizontalScroll = Math.abs(e.deltaX) > Math.abs(e.deltaY);
       const delta = isHorizontalScroll ? e.deltaX : e.deltaY;
 
@@ -133,7 +178,13 @@ export function DesktopProductGallery({
       aria-label="Product image gallery"
     >
       {/* Main Image Container */}
-      <div className="relative w-full aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted shadow-soft group">
+      <div 
+        ref={imageContainerRef}
+        className="relative w-full aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted shadow-soft group"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onMouseMove={handleMouseMove}
+      >
         {/* Badge - top left */}
         {badge && (
           <div className="absolute top-4 left-4 z-20 pointer-events-none">
@@ -166,10 +217,13 @@ export function DesktopProductGallery({
           <ZoomIn className="w-5 h-5" />
         </motion.div>
 
-        {/* Main Image with Animation */}
+        {/* Main Image with Animation and Hover Zoom */}
         <div
-          className="absolute inset-0 cursor-zoom-in"
-          onClick={handleMainImageClick}
+          className={cn(
+            "absolute inset-0",
+            isHovering ? "cursor-crosshair" : "cursor-zoom-in"
+          )}
+          onClick={!isHovering ? handleMainImageClick : undefined}
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
@@ -180,13 +234,39 @@ export function DesktopProductGallery({
               exit={{ opacity: 0, x: direction > 0 ? -100 : 100 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              <OptimizedImage
-                src={images[selectedImage]}
-                alt={`${productName} - Image ${selectedImage + 1}`}
-                className="object-contain pointer-events-none"
-                containerClassName="w-full h-full"
-                priority={selectedImage === 0}
-              />
+              {/* Normal image - hidden when zooming */}
+              <div className={cn(
+                "absolute inset-0 transition-opacity duration-200",
+                isHovering ? "opacity-0" : "opacity-100"
+              )}>
+                <OptimizedImage
+                  src={images[selectedImage]}
+                  alt={`${productName} - Image ${selectedImage + 1}`}
+                  className="object-contain pointer-events-none"
+                  containerClassName="w-full h-full"
+                  priority={selectedImage < 2}
+                />
+              </div>
+
+              {/* Zoomed image - visible on hover, pan follows cursor */}
+              {isHovering && (
+                <div 
+                  className="absolute inset-0 overflow-hidden"
+                  onClick={handleMainImageClick}
+                >
+                  <img
+                    src={images[selectedImage]}
+                    alt={`${productName} - Zoomed view`}
+                    className="absolute w-[200%] h-[200%] max-w-none pointer-events-none object-contain"
+                    style={{
+                      left: `${50 - zoomPosition.x}%`,
+                      top: `${50 - zoomPosition.y}%`,
+                      transform: 'translate(-25%, -25%)',
+                    }}
+                    draggable={false}
+                  />
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -219,11 +299,55 @@ export function DesktopProductGallery({
           </>
         )}
 
-        {/* Image Counter */}
+        {/* Clickable Image Counter with Popover Navigator */}
         {images.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium z-20">
-            {selectedImage + 1} / {images.length}
-          </div>
+          <Popover open={counterOpen} onOpenChange={setCounterOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium z-20 flex items-center gap-2 hover:bg-background transition-colors cursor-pointer"
+                aria-label="Open image navigator"
+              >
+                <Grid3X3 className="w-3.5 h-3.5" />
+                <span>{selectedImage + 1} / {images.length}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent 
+              className="w-auto p-3" 
+              align="center"
+              side="top"
+              sideOffset={8}
+            >
+              <div className="grid grid-cols-4 gap-2 max-w-[280px]">
+                {images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleImageSelect(idx)}
+                    className={cn(
+                      "relative aspect-square rounded-lg overflow-hidden transition-all duration-200",
+                      selectedImage === idx
+                        ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                        : "opacity-70 hover:opacity-100"
+                    )}
+                    aria-label={`View image ${idx + 1}`}
+                    aria-pressed={selectedImage === idx}
+                  >
+                    {/* Lazy load thumbnails in popover */}
+                    <img
+                      src={img}
+                      alt={`Thumbnail ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    {/* Index overlay */}
+                    <span className="absolute bottom-0.5 right-1 text-[10px] font-medium text-white drop-shadow-md">
+                      {idx + 1}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 
@@ -272,11 +396,13 @@ export function DesktopProductGallery({
                   aria-label={`View image ${idx + 1}`}
                   aria-pressed={selectedImage === idx}
                 >
+                  {/* Priority load first 2 thumbnails, lazy load rest */}
                   <OptimizedImage
                     src={img}
                     alt={`${productName} thumbnail ${idx + 1}`}
                     aspectRatio="square"
                     className="object-cover"
+                    priority={idx < 2}
                   />
                 </motion.button>
               ))}
