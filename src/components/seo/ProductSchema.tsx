@@ -78,7 +78,7 @@ export function ProductSchema({
   priceValidUntil.setFullYear(priceValidUntil.getFullYear() + 1);
   const priceValidUntilStr = priceValidUntil.toISOString().split('T')[0];
 
-  // JSON-LD Product Schema with enhanced trust signals
+  // JSON-LD Product Schema - Google Rich Results & Merchant Center compliant
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -88,27 +88,11 @@ export function ProductSchema({
     image: images.length > 0 ? images : [primaryImage],
     sku: product.sku || product.id,
     mpn: product.id,
-    gtin12: undefined, // Can be added if available
     brand: {
       '@type': 'Brand',
       name: 'GetPawsy',
-      url: baseUrl,
-    },
-    manufacturer: {
-      '@type': 'Organization',
-      name: 'GetPawsy',
-      url: baseUrl,
     },
     category: product.category || 'Pet Supplies',
-    audience: {
-      '@type': 'PeopleAudience',
-      suggestedMinAge: '18',
-      audienceType: 'Pet Owners',
-    },
-    isRelatedTo: {
-      '@type': 'Product',
-      name: 'Pet Supplies',
-    },
     offers: {
       '@type': 'Offer',
       '@id': `${baseUrl}/product/${productPath}#offer`,
@@ -127,81 +111,43 @@ export function ProductSchema({
       },
       hasMerchantReturnPolicy: {
         '@type': 'MerchantReturnPolicy',
-        '@id': `${baseUrl}/#returnpolicy`,
         applicableCountry: 'US',
         returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
         merchantReturnDays: 30,
         returnMethod: 'https://schema.org/ReturnByMail',
         returnFees: 'https://schema.org/FreeReturn',
       },
-      // Shipping details - reflects actual policy: Free over $35, $5.99 flat rate under $35
-      shippingDetails: [
-        {
-          '@type': 'OfferShippingDetails',
-          '@id': `${baseUrl}/#shipping-free`,
-          shippingRate: {
-            '@type': 'MonetaryAmount',
-            value: '0.00',
-            currency: 'USD',
-          },
-          shippingDestination: {
-            '@type': 'DefinedRegion',
-            addressCountry: 'US',
-          },
-          deliveryTime: {
-            '@type': 'ShippingDeliveryTime',
-            handlingTime: {
-              '@type': 'QuantitativeValue',
-              minValue: 1,
-              maxValue: 1,
-              unitCode: 'd',
-            },
-            transitTime: {
-              '@type': 'QuantitativeValue',
-              minValue: 0,
-              maxValue: 6,
-              unitCode: 'd',
-            },
-          },
-          // Free shipping applies to orders over $35
-          shippingLabel: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}`,
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: product.price >= FREE_SHIPPING_THRESHOLD ? '0.00' : FLAT_SHIPPING_RATE.toFixed(2),
+          currency: 'USD',
         },
-        {
-          '@type': 'OfferShippingDetails',
-          '@id': `${baseUrl}/#shipping-flat`,
-          shippingRate: {
-            '@type': 'MonetaryAmount',
-            value: FLAT_SHIPPING_RATE.toFixed(2),
-            currency: 'USD',
-          },
-          shippingDestination: {
-            '@type': 'DefinedRegion',
-            addressCountry: 'US',
-          },
-          deliveryTime: {
-            '@type': 'ShippingDeliveryTime',
-            handlingTime: {
-              '@type': 'QuantitativeValue',
-              minValue: 1,
-              maxValue: 1,
-              unitCode: 'd',
-            },
-            transitTime: {
-              '@type': 'QuantitativeValue',
-              minValue: 0,
-              maxValue: 6,
-              unitCode: 'd',
-            },
-          },
-          // Flat rate for orders under $35
-          shippingLabel: `Flat rate $${FLAT_SHIPPING_RATE.toFixed(2)} for orders under $${FREE_SHIPPING_THRESHOLD}`,
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'US',
         },
-      ],
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 1,
+            unitCode: 'd',
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 0,
+            maxValue: 6,
+            unitCode: 'd',
+          },
+        },
+      },
     },
-    // FUTURE: aggregateRating and review fields ready for real customer reviews
-    // When reviews are collected, add:
+    // FUTURE: Add when real customer reviews are available:
     // aggregateRating: { '@type': 'AggregateRating', ratingValue: X, reviewCount: Y, bestRating: 5, worstRating: 1 }
-    // review: [{ '@type': 'Review', author: {...}, reviewRating: {...}, reviewBody: '...' }]
+    // review: [{ '@type': 'Review', author: { '@type': 'Person', name: '...' }, reviewRating: { '@type': 'Rating', ratingValue: X }, reviewBody: '...' }]
   };
 
   // WebPage schema for product page
