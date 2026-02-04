@@ -8,11 +8,13 @@ import { useCart } from '@/contexts/CartContext';
 import { trackPurchase, trackGoogleAdsConversion, trackGoogleAdsPageView } from '@/lib/analytics';
 import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
 import { trackPinterestEvent } from '@/hooks/usePinterestTracking';
+import { useBundleABTest } from '@/hooks/useBundleABTest';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const { items, totalPrice, clearCart } = useCart();
+  const abTest = useBundleABTest();
   const [tracked, setTracked] = useState(false);
 
   useEffect(() => {
@@ -70,6 +72,12 @@ const PaymentSuccess = () => {
         })),
       });
 
+      // A/B Test: Track purchase completed with variant
+      abTest.trackPurchaseCompleted({
+        orderValueUsd: totalPrice,
+        numberOfItems: items.reduce((sum, item) => sum + item.quantity, 0),
+      });
+
       clearCart(true); // Mark as recovered
       setTracked(true);
       
@@ -77,6 +85,7 @@ const PaymentSuccess = () => {
         sessionId,
         totalPrice,
         itemCount: items.length,
+        abVariant: abTest.variant,
       });
     } else if (!tracked && sessionId && items.length === 0) {
       // Cart already cleared (e.g., page refresh after purchase)
