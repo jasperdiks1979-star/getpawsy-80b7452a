@@ -47,6 +47,8 @@ const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRanki
 const ProductResearchTool = lazy(() => import("@/components/admin/product-research/ProductResearchTool").then(module => ({ default: module.ProductResearchTool })));
 const ContentScraperTool = lazy(() => import("@/components/admin/content-scraper/ContentScraperTool").then(module => ({ default: module.ContentScraperTool })));
 const SupplierImportManager = lazy(() => import("@/components/admin/SupplierImportManager").then(module => ({ default: module.SupplierImportManager })));
+const ABTestDashboard = lazy(() => import("@/components/admin/ABTestDashboard"));
+const GrowthAnalyticsDashboard = lazy(() => import("@/components/admin/GrowthAnalyticsDashboard"));
 const AdvancedVisitorStatsWidget = lazy(() => import("@/components/admin/widgets/AdvancedVisitorStatsWidget").then(module => ({ default: module.AdvancedVisitorStatsWidget })));
 const PinterestTrafficWidget = lazy(() => import("@/components/admin/widgets/PinterestTrafficWidget").then(module => ({ default: module.PinterestTrafficWidget })));
 const PinterestAdsWidget = lazy(() => import("@/components/admin/widgets/PinterestAdsWidget").then(module => ({ default: module.PinterestAdsWidget })));
@@ -1403,6 +1405,18 @@ const Admin = () => {
                 <TabsTrigger value="suppliers" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Upload className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Suppliers</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="A/B Test Analytics & Rollout">
+                <TabsTrigger value="ab-tests" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <GitCompare className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">A/B Tests</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Growth Analytics (AOV & Attach Rate)">
+                <TabsTrigger value="growth" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <Target className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Growth</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -3269,6 +3283,38 @@ const Admin = () => {
           }}
           isImporting={importMutation.isPending}
         />
+
+          {/* A/B Test Dashboard Tab */}
+          <TabsContent value="ab-tests" className="space-y-6">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">A/B Test dashboard laden...</span>
+                  </div>
+                </Card>
+              }>
+                <ABTestDashboard />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Growth Analytics Tab */}
+          <TabsContent value="growth" className="space-y-6">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Growth analytics laden...</span>
+                  </div>
+                </Card>
+              }>
+                <GrowthAnalyticsDashboard />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
 
         {/* Product Compare Dialog */}
         <ProductCompareDialog
