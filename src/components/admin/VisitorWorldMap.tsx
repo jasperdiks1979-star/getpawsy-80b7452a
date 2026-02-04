@@ -67,12 +67,36 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[]
 ];
 
 export const VisitorWorldMap = () => {
-  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [mapContainerReady, setMapContainerReady] = useState(false);
+  const mapTokenRef = useRef<string | null>(null);
+  const previousContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Callback ref to handle map container changes between render modes
+  const mapContainerCallback = useCallback((node: HTMLDivElement | null) => {
+    if (node && node !== previousContainerRef.current) {
+      // Container changed - need to reinitialize map
+      previousContainerRef.current = node;
+      (mapContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      
+      // If we already have a map token and the map was previously loaded,
+      // we need to recreate the map on the new container
+      if (map.current && mapTokenRef.current) {
+        // Destroy old map
+        map.current.remove();
+        map.current = null;
+        setMapLoaded(false);
+      }
+      
+      // Trigger reinitialization
+      setMapContainerReady(prev => !prev);
+    }
+  }, []);
   const [timeRange, setTimeRange] = useState<TimeRange>("15m");
   const [liveActivities, setLiveActivities] = useState<VisitorActivity[]>([]);
   const [mapProjection, setMapProjection] = useState<"globe" | "mercator">("globe");
@@ -139,14 +163,27 @@ export const VisitorWorldMap = () => {
     };
   }, [isFullscreen]);
 
-  // Resize map when fullscreen changes
+  // Resize map when fullscreen or fullscreenMinimal changes
   useEffect(() => {
     if (map.current && mapLoaded) {
-      setTimeout(() => {
+      // Multiple resize calls to ensure the map renders correctly after DOM changes
+      const resizeMap = () => {
         map.current?.resize();
-      }, 100);
+      };
+      
+      // Immediate resize
+      resizeMap();
+      
+      // Delayed resizes to catch DOM layout updates
+      const timeouts = [50, 100, 200, 500].map(delay => 
+        setTimeout(resizeMap, delay)
+      );
+      
+      return () => {
+        timeouts.forEach(clearTimeout);
+      };
     }
-  }, [isFullscreen, mapLoaded]);
+  }, [isFullscreen, fullscreenMinimal, mapLoaded]);
 
   // Play notification sound
   const playNotificationSound = useCallback(() => {
@@ -405,24 +442,30 @@ export const VisitorWorldMap = () => {
     };
   }, [refetch, triggerNotification, checkoutNotifications, cartNotifications, notificationMode, timeRange, pushEnabled, sendNotification]);
 
-  // Initialize map
+  // Initialize map - triggers when container becomes ready
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
+    if (!mapContainerRef.current || map.current) return;
 
     const initMap = async () => {
       try {
-        // Fetch the Mapbox token from edge function
-        const { data, error } = await supabase.functions.invoke("get-mapbox-token");
+        // Use cached token or fetch new one
+        let token = mapTokenRef.current;
         
-        if (error || !data?.token) {
-          setMapError("Mapbox token niet geconfigureerd. Voeg MAPBOX_PUBLIC_TOKEN toe aan de secrets.");
-          return;
+        if (!token) {
+          const { data, error } = await supabase.functions.invoke("get-mapbox-token");
+          
+          if (error || !data?.token) {
+            setMapError("Mapbox token niet geconfigureerd. Voeg MAPBOX_PUBLIC_TOKEN toe aan de secrets.");
+            return;
+          }
+          token = data.token;
+          mapTokenRef.current = token;
         }
 
-        mapboxgl.accessToken = data.token;
+        mapboxgl.accessToken = token;
 
         map.current = new mapboxgl.Map({
-          container: mapContainer.current!,
+          container: mapContainerRef.current!,
           style: "mapbox://styles/mapbox/dark-v11",
           projection: "globe",
           zoom: 1.5,
@@ -469,14 +512,18 @@ export const VisitorWorldMap = () => {
     };
 
     initMap();
+  }, [mapContainerReady]);
 
+  // Cleanup map on unmount
+  useEffect(() => {
     return () => {
-      map.current?.remove();
-      map.current = null;
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
     };
   }, []);
 
-  // Auto-rotate effect
   useEffect(() => {
     localStorage.setItem("map-auto-rotate", String(autoRotate));
     
@@ -1191,7 +1238,7 @@ export const VisitorWorldMap = () => {
             </div>
           </div>
         ) : (
-          <div ref={mapContainer} className="w-full h-full" />
+          <div ref={mapContainerCallback} className="w-full h-full" />
         )}
         
         {/* Custom Zoom Controls */}
@@ -1671,7 +1718,7 @@ export const VisitorWorldMap = () => {
               </div>
             ) : (
               <>
-                <div ref={mapContainer} className={`${isFullscreen ? "h-full" : "h-[500px]"} w-full`} />
+                <div ref={mapContainerCallback} className={`${isFullscreen ? "h-full" : "h-[500px]"} w-full`} />
                 {/* Custom Zoom Controls */}
                 <div className="absolute bottom-4 left-4 flex flex-col gap-1 z-10">
                   <Button
