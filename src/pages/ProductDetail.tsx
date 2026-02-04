@@ -782,89 +782,44 @@ const ProductDetail = () => {
                     const colorHex = detectedColor ? colorMap[detectedColor] : null;
                     const hasImage = !!variant.variantImage;
                     
-                    // Render as color swatch if color detected
-                    if (isColorVariant && colorHex) {
-                      return (
-                        <motion.button
-                          key={variant.vid}
-                          onClick={() => setSelectedVariant(isSelected ? null : variant)}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          title={displayValue}
-                          className={`relative w-10 h-10 rounded-full transition-all ${
-                            isSelected
-                              ? 'ring-2 ring-offset-2 ring-primary'
-                              : 'hover:ring-2 hover:ring-offset-2 hover:ring-muted-foreground/50'
-                          }`}
-                          style={{ backgroundColor: colorHex }}
-                        >
-                          {/* White/light colors need a border */}
-                          {['white', 'ivory', 'cream', 'beige'].includes(detectedColor) && (
-                            <span className="absolute inset-0 rounded-full border border-border" />
-                          )}
-                          {/* Checkmark for selected */}
-                          {isSelected && (
-                            <span className={`absolute inset-0 flex items-center justify-center ${
-                              ['white', 'ivory', 'cream', 'beige', 'yellow', 'gold', 'lime', 'mint', 'peach', 'sand', 'khaki'].includes(detectedColor)
-                                ? 'text-gray-800'
-                                : 'text-white'
-                            }`}>
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </span>
-                          )}
-                        </motion.button>
-                      );
-                    }
-                    
-                    // Render as image swatch if has image
-                    if (hasImage) {
-                      return (
-                        <motion.button
-                          key={variant.vid}
-                          onClick={() => setSelectedVariant(isSelected ? null : variant)}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          title={displayValue}
-                          className={`relative w-14 h-14 rounded-xl overflow-hidden transition-all ${
-                            isSelected
-                              ? 'ring-2 ring-offset-2 ring-primary'
-                              : 'ring-1 ring-border hover:ring-2 hover:ring-primary/50'
-                          }`}
-                        >
-                          <img 
-                            src={variant.variantImage} 
-                            alt={displayValue}
-                            className="w-full h-full object-cover"
-                          />
-                          {isSelected && (
-                            <span className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                              <svg className="w-5 h-5 text-primary drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </span>
-                          )}
-                        </motion.button>
-                      );
-                    }
-                    
-                    // Default: text button for other variants (sizes, etc.)
+                    // ALL variants now use the same style: pill button with optional color indicator
+                    // This ensures variant info (size, quantity, etc.) is ALWAYS visible to customers
                     return (
                       <motion.button
                         key={variant.vid}
                         onClick={() => setSelectedVariant(isSelected ? null : variant)}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className={`px-4 py-2.5 rounded-xl border-2 transition-all ${
+                        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all ${
                           isSelected
                             ? 'border-primary bg-primary/10 text-primary shadow-soft'
                             : 'border-border hover:border-primary/50 bg-background'
                         }`}
                       >
+                        {/* Color indicator dot if color detected */}
+                        {isColorVariant && colorHex && (
+                          <span 
+                            className={`w-4 h-4 rounded-full flex-shrink-0 ${
+                              ['white', 'ivory', 'cream', 'beige'].includes(detectedColor!) 
+                                ? 'border border-border' 
+                                : ''
+                            }`}
+                            style={{ backgroundColor: colorHex }}
+                          />
+                        )}
+                        {/* Image thumbnail if available (and no color) */}
+                        {hasImage && !isColorVariant && (
+                          <img 
+                            src={variant.variantImage} 
+                            alt=""
+                            className="w-6 h-6 rounded object-cover flex-shrink-0"
+                          />
+                        )}
+                        {/* Variant name - ALWAYS shown */}
                         <span className="text-sm font-medium">{displayValue}</span>
+                        {/* Price difference indicator */}
                         {variant.variantSellPrice && variant.variantSellPrice !== Number(product.price) && (
-                          <span className="ml-2 text-xs text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             ${Number(variant.variantSellPrice).toFixed(2)}
                           </span>
                         )}
