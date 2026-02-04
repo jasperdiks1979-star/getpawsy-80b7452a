@@ -67,6 +67,8 @@ import {
 import { ShippingCountdown } from '@/components/products/ShippingCountdown';
 import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCarousel';
 import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCarousel';
+import { BestsellerBundleSection } from '@/components/products/BestsellerBundleSection';
+import { PostAddUpsellModal } from '@/components/products/PostAddUpsellModal';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useRecentlyViewedProducts } from '@/hooks/useRecentlyViewedProducts';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
@@ -276,6 +278,7 @@ const BestsellerDetail = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [showPostAddUpsell, setShowPostAddUpsell] = useState(false);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const addToCartButtonRef = useRef<HTMLButtonElement>(null);
   const mainAddToCartRef = useRef<HTMLDivElement>(null);
@@ -517,6 +520,11 @@ const BestsellerDetail = () => {
     }
     
     toast.success(`${quantity}x ${product.name} added to cart!`);
+    
+    // Show post-add upsell modal on mobile (only if we have related products)
+    if (isMobile && relatedProducts.length > 0) {
+      setTimeout(() => setShowPostAddUpsell(true), 500);
+    }
   };
 
   const handleToggleWishlist = () => {
@@ -783,6 +791,33 @@ const BestsellerDetail = () => {
                     </p>
                   )}
                 </div>
+
+                {/* Frequently Bought Together - Bundle Section */}
+                {(relatedLoading || relatedProducts.length > 0) && (
+                  <BestsellerBundleSection
+                    currentProduct={{
+                      id: product.id,
+                      name: product.name,
+                      price: Number(product.price),
+                      compare_at_price: product.compare_at_price ? Number(product.compare_at_price) : null,
+                      image_url: product.image_url,
+                      slug: bestseller.slug,
+                      category: product.category,
+                      is_active: product.is_active,
+                    }}
+                    relatedProducts={(relatedProducts || []).map(p => ({
+                      id: p.id,
+                      name: p.name,
+                      price: Number(p.price),
+                      compare_at_price: p.compare_at_price ? Number(p.compare_at_price) : null,
+                      image_url: p.image_url,
+                      slug: (p as { slug?: string }).slug,
+                      category: p.category,
+                      is_active: p.is_active,
+                    }))}
+                    isLoading={relatedLoading}
+                  />
+                )}
 
                 {/* Stock Debug - Only visible with ?debug=1 */}
                 {isDebugMode && (
@@ -1476,6 +1511,31 @@ const BestsellerDetail = () => {
 
         {/* Spacer for sticky bar on mobile */}
         <div className={`md:hidden transition-all ${showStickyBar ? 'h-24' : 'h-0'}`} />
+
+        {/* Post-Add Upsell Modal (Mobile Only) */}
+        <PostAddUpsellModal
+          isOpen={showPostAddUpsell}
+          onClose={() => setShowPostAddUpsell(false)}
+          currentProduct={{
+            id: product.id,
+            name: product.name,
+            price: Number(product.price),
+            image_url: product.image_url,
+            slug: bestseller.slug,
+          }}
+          upsellProduct={relatedProducts.length > 1 ? {
+            id: relatedProducts[1].id,
+            name: relatedProducts[1].name,
+            price: Number(relatedProducts[1].price),
+            compare_at_price: relatedProducts[1].compare_at_price ? Number(relatedProducts[1].compare_at_price) : null,
+            image_url: relatedProducts[1].image_url,
+            slug: (relatedProducts[1] as { slug?: string }).slug,
+            category: relatedProducts[1].category,
+            is_active: relatedProducts[1].is_active,
+          } : null}
+          sourceProductId={product.id}
+          sourceProductName={product.name}
+        />
       </Layout>
   );
 };
