@@ -98,9 +98,11 @@ const generateProductJsonLd = (
     slug: string;
   }
 ) => {
-  const availability = product.stock && product.stock > 0 
-    ? 'https://schema.org/InStock' 
-    : 'https://schema.org/OutOfStock';
+  // Only mark as OutOfStock if explicitly set to 0
+  // If stock is null/undefined, assume InStock (don't default to out-of-stock)
+  const availability = product.stock === 0 
+    ? 'https://schema.org/OutOfStock' 
+    : 'https://schema.org/InStock';
 
   const imagesArray = Array.isArray(product.images) ? product.images : [];
   const images = imagesArray.length > 0
@@ -469,7 +471,10 @@ const BestsellerDetail = () => {
     );
   }
 
-  const inStock = product.stock !== null && product.stock !== undefined && product.stock > 0;
+  // Stock logic: Only show "Out of Stock" when explicitly set to 0
+  // If stock is null/undefined, assume available (don't default to out-of-stock)
+  const isExplicitlyOutOfStock = product.stock !== null && product.stock !== undefined && product.stock === 0;
+  const inStock = !isExplicitlyOutOfStock;
 
   const handleAddToCart = () => {
     if (!product || !inStock) return;

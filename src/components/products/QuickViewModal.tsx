@@ -29,7 +29,9 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
   if (!product) return null;
 
   const inWishlist = isInWishlist(product.id);
-  const isOutOfStock = product.stock === 0 || product.stock === null;
+  // Stock logic: Only show "Out of Stock" when explicitly set to 0
+  // If stock is null/undefined, assume available (don't default to out-of-stock)
+  const isOutOfStock = product.stock === 0;
   
   // Get all images
   const images = [
