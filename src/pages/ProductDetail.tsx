@@ -652,8 +652,8 @@ const ProductDetail = () => {
                 </AnimatePresence>
               </motion.div>
               
-              {/* Mobile: Simple static image - navigation via arrows/dots only */}
-              <div className="absolute inset-0 md:hidden">
+              {/* Mobile: Simple static image - NO touch handlers to allow button clicks */}
+              <div className="absolute inset-0 md:hidden pointer-events-none">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={selectedImage}
@@ -699,28 +699,46 @@ const ProductDetail = () => {
                 </motion.div>
               )}
               
-              {/* Navigation Arrows - always visible on mobile */}
+              {/* Navigation Arrows - always visible on mobile, pointer-events-auto to capture clicks */}
               {images.length > 1 && (
                 <>
                   <button
                     type="button"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-30 h-10 w-10 flex items-center justify-center"
-                    onClick={() => {
+                    className="absolute left-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-40 h-12 w-12 md:h-10 md:w-10 flex items-center justify-center pointer-events-auto touch-manipulation"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handlePrevImage();
+                      haptic.lightTap();
+                    }}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
                       handlePrevImage();
                       haptic.lightTap();
                     }}
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-6 h-6 md:w-5 md:h-5" />
                   </button>
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-30 h-10 w-10 flex items-center justify-center"
-                    onClick={() => {
+                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 rounded-full shadow-soft bg-background/90 backdrop-blur-sm hover:bg-background z-40 h-12 w-12 md:h-10 md:w-10 flex items-center justify-center pointer-events-auto touch-manipulation"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleNextImage();
+                      haptic.lightTap();
+                    }}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
                       handleNextImage();
                       haptic.lightTap();
                     }}
                   >
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-6 h-6 md:w-5 md:h-5" />
                   </button>
                   
                   {/* Image Counter - Desktop */}
@@ -728,21 +746,30 @@ const ProductDetail = () => {
                     {selectedImage + 1} / {images.length}
                   </div>
                   
-                  {/* Dot Indicators - Mobile */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 md:hidden z-30">
+                  {/* Dot Indicators - Mobile - larger touch targets */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 md:hidden z-40 pointer-events-auto">
                     {images.map((_, idx) => (
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => {
+                        className={`rounded-full transition-all touch-manipulation ${
+                          selectedImage === idx 
+                            ? 'w-8 h-4 bg-primary' 
+                            : 'w-4 h-4 bg-foreground/40'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
                           setSelectedImage(idx);
                           haptic.lightTap();
                         }}
-                        className={`rounded-full transition-all ${
-                          selectedImage === idx 
-                            ? 'w-8 h-3 bg-primary' 
-                            : 'w-3 h-3 bg-foreground/40'
-                        }`}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchEnd={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setSelectedImage(idx);
+                          haptic.lightTap();
+                        }}
                       />
                     ))}
                   </div>
