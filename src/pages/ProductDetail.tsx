@@ -728,29 +728,17 @@ const ProductDetail = () => {
               )}
             </motion.div>
 
-            {/* Short Description - Clarity-first intro for cold traffic */}
-            <div className="text-muted-foreground leading-relaxed break-words overflow-hidden">
-              <p className="text-[15px] leading-relaxed">
-                {generateClarityIntro(product.name, product.category || '')}
-              </p>
-            </div>
-
-            {/* Why Pet Parents Choose This - Benefit-driven scannable section */}
-            <WhyPetParentsLoveThis 
-              productName={product.name} 
-              category={product.category || ''} 
-            />
-
-            {/* Variants */}
+            {/* Variants - PRIORITY: Show immediately after price for visibility */}
             {variants.length > 0 && (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="space-y-3"
+                transition={{ delay: 0.35 }}
+                className="space-y-3 bg-muted/30 rounded-2xl p-4 border border-border/50"
               >
-                <label className="text-sm font-semibold text-foreground">
-                  Choose an option: <span className="text-primary">{selectedVariant ? selectedVariant.variantKey : 'Select'}</span>
+                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Package className="w-4 h-4 text-primary" />
+                  Choose your option: <span className="text-primary">{selectedVariant ? selectedVariant.variantKey : 'Select one'}</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {variants.map((variant) => {
@@ -782,8 +770,6 @@ const ProductDetail = () => {
                     const colorHex = detectedColor ? colorMap[detectedColor] : null;
                     const hasImage = !!variant.variantImage;
                     
-                    // ALL variants now use the same style: pill button with optional color indicator
-                    // This ensures variant info (size, quantity, etc.) is ALWAYS visible to customers
                     return (
                       <motion.button
                         key={variant.vid}
@@ -792,7 +778,7 @@ const ProductDetail = () => {
                         whileTap={{ scale: 0.98 }}
                         className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all ${
                           isSelected
-                            ? 'border-primary bg-primary/10 text-primary shadow-soft'
+                            ? 'border-primary bg-primary/10 text-primary shadow-soft ring-2 ring-primary/20'
                             : 'border-border hover:border-primary/50 bg-background'
                         }`}
                       >
@@ -827,20 +813,21 @@ const ProductDetail = () => {
                     );
                   })}
                 </div>
-                
-                {/* Color name tooltip when hovering */}
-                {selectedVariant && (
-                  <p className="text-sm text-muted-foreground">
-                    Selected: <span className="font-medium text-foreground">{selectedVariant.variantKey}</span>
-                    {selectedVariant.variantSellPrice && selectedVariant.variantSellPrice !== Number(product.price) && (
-                      <span className="ml-2 text-primary font-medium">
-                        ${Number(selectedVariant.variantSellPrice).toFixed(2)}
-                      </span>
-                    )}
-                  </p>
-                )}
               </motion.div>
             )}
+
+            {/* Short Description - Clarity-first intro for cold traffic */}
+            <div className="text-muted-foreground leading-relaxed break-words overflow-hidden">
+              <p className="text-[15px] leading-relaxed">
+                {generateClarityIntro(product.name, product.category || '')}
+              </p>
+            </div>
+
+            {/* Why Pet Parents Choose This - Benefit-driven scannable section */}
+            <WhyPetParentsLoveThis 
+              productName={product.name} 
+              category={product.category || ''} 
+            />
 
             {/* Stock Status - Simple, no quantity pressure */}
             <div className="flex items-center gap-3">
