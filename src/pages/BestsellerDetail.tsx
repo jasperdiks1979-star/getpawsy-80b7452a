@@ -599,18 +599,18 @@ const BestsellerDetail = () => {
 
                 {/* Main Image with swipe/navigation */}
                 <div 
-                  className="relative aspect-[4/5] md:aspect-square rounded-3xl overflow-hidden bg-white shadow-2xl group touch-pan-y"
+                  className="relative aspect-[4/5] md:aspect-square rounded-3xl overflow-hidden bg-white shadow-2xl group"
                 >
-                  {/* Swipeable image container */}
+                  {/* Desktop: Swipeable image container */}
                   <motion.div
-                    className="absolute inset-0 cursor-zoom-in"
+                    className="absolute inset-0 cursor-zoom-in hidden md:block"
                     drag={images.length > 1 ? "x" : false}
                     dragConstraints={{ left: 0, right: 0 }}
                     dragElastic={0.2}
                     onDragStart={() => setIsDragging(true)}
                     onDrag={(_, info) => setDragX(info.offset.x)}
                     onDragEnd={(_, info) => handleDragEnd(images.length, info.offset.x, info.velocity.x)}
-                    onClick={() => !isDragging && window.innerWidth >= 768 && setLightboxOpen(true)}
+                    onClick={() => !isDragging && setLightboxOpen(true)}
                     whileTap={{ cursor: "grabbing" }}
                   >
                     <AnimatePresence mode="wait">
@@ -622,49 +622,37 @@ const BestsellerDetail = () => {
                         exit={{ opacity: 0, x: dragX > 0 ? 100 : -100 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                       >
-                        {/* Desktop: Regular optimized image */}
-                        <div className="hidden md:block w-full h-full">
-                          <OptimizedImage
-                            src={images[selectedImage]}
-                            alt={product.name}
-                            className="object-contain pointer-events-none"
-                            containerClassName="w-full h-full"
-                            priority={selectedImage === 0}
-                          />
-                        </div>
-                        
-                        {/* Mobile: Pinch-to-zoom image - no lightbox, use native pinch-zoom */}
-                        <div className="md:hidden w-full h-full">
-                          <PinchZoomImage
-                            src={images[selectedImage]}
-                            alt={product.name}
-                            className="object-contain"
-                            containerClassName="w-full h-full"
-                          />
-                        </div>
+                        <OptimizedImage
+                          src={images[selectedImage]}
+                          alt={product.name}
+                          className="object-contain pointer-events-none"
+                          containerClassName="w-full h-full"
+                          priority={selectedImage === 0}
+                        />
                       </motion.div>
                     </AnimatePresence>
-
-                    {/* Swipe hint indicators - only on mobile */}
-                    {images.length > 1 && (
-                      <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between pointer-events-none md:hidden">
-                        <motion.div
-                          className="w-8 h-8 rounded-full bg-foreground/10 flex items-center justify-center ml-2"
-                          animate={{ opacity: isDragging ? 0 : [0.3, 0.6, 0.3], x: [0, -3, 0] }}
-                          transition={{ repeat: Infinity, duration: 2 }}
-                        >
-                          <ChevronLeft className="w-4 h-4 text-foreground/60" />
-                        </motion.div>
-                        <motion.div
-                          className="w-8 h-8 rounded-full bg-foreground/10 flex items-center justify-center mr-2"
-                          animate={{ opacity: isDragging ? 0 : [0.3, 0.6, 0.3], x: [0, 3, 0] }}
-                          transition={{ repeat: Infinity, duration: 2 }}
-                        >
-                          <ChevronRight className="w-4 h-4 text-foreground/60" />
-                        </motion.div>
-                      </div>
-                    )}
                   </motion.div>
+                  
+                  {/* Mobile: Static image - NO drag handlers to allow button clicks */}
+                  <div className="absolute inset-0 md:hidden pointer-events-none">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={selectedImage}
+                        className="absolute inset-0 p-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <PinchZoomImage
+                          src={images[selectedImage]}
+                          alt={product.name}
+                          className="object-contain"
+                          containerClassName="w-full h-full"
+                        />
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
 
                   {/* Zoom indicator */}
                   <motion.div 
@@ -677,62 +665,71 @@ const BestsellerDetail = () => {
                     <ZoomIn className="w-5 h-5" />
                   </motion.div>
 
-                  {/* Navigation Arrows - Always visible */}
+                  {/* Navigation Arrows - larger touch targets on mobile */}
                   {images.length > 1 && (
                     <>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 transition-all duration-300 rounded-full shadow-lg bg-background/95 backdrop-blur-sm hover:bg-background hover:scale-110 z-20 border border-border/50"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onTouchStart={(e) => e.stopPropagation()}
+                      <button
+                        type="button"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 transition-all duration-300 rounded-full shadow-lg bg-background/95 backdrop-blur-sm hover:bg-background hover:scale-110 z-40 border border-border/50 h-12 w-12 md:h-10 md:w-10 flex items-center justify-center pointer-events-auto touch-manipulation"
                         onClick={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
                           handlePrevImage();
                         }}
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-300 rounded-full shadow-lg bg-background/95 backdrop-blur-sm hover:bg-background hover:scale-110 z-20 border border-border/50"
-                        onPointerDown={(e) => e.stopPropagation()}
                         onTouchStart={(e) => e.stopPropagation()}
+                        onTouchEnd={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handlePrevImage();
+                        }}
+                      >
+                        <ChevronLeft className="w-6 h-6 md:w-5 md:h-5" />
+                      </button>
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-300 rounded-full shadow-lg bg-background/95 backdrop-blur-sm hover:bg-background hover:scale-110 z-40 border border-border/50 h-12 w-12 md:h-10 md:w-10 flex items-center justify-center pointer-events-auto touch-manipulation"
                         onClick={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
                           handleNextImage();
                         }}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchEnd={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handleNextImage();
+                        }}
                       >
-                        <ChevronRight className="w-5 h-5" />
-                      </Button>
+                        <ChevronRight className="w-6 h-6 md:w-5 md:h-5" />
+                      </button>
                       
                       {/* Image Counter - Desktop */}
                       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium hidden md:block z-20">
                         {selectedImage + 1} / {images.length}
                       </div>
                       
-                      {/* Dot Indicators - Mobile */}
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 md:hidden z-20">
+                      {/* Dot Indicators - Mobile - larger touch targets */}
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 md:hidden z-40 pointer-events-auto">
                         {images.map((_, idx) => (
-                          <motion.button
+                          <button
                             key={idx}
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onTouchStart={(e) => e.stopPropagation()}
+                            type="button"
+                            className={`rounded-full transition-all touch-manipulation ${
+                              selectedImage === idx 
+                                ? 'w-8 h-4 bg-primary' 
+                                : 'w-4 h-4 bg-foreground/30'
+                            }`}
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
                               setSelectedImage(idx);
                             }}
-                            className={`rounded-full transition-all ${
-                              selectedImage === idx 
-                                ? 'w-6 h-2 bg-primary' 
-                                : 'w-2 h-2 bg-foreground/30'
-                            }`}
-                            whileTap={{ scale: 0.9 }}
-                            layout
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onTouchEnd={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              setSelectedImage(idx);
+                            }}
                           />
                         ))}
                       </div>
