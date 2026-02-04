@@ -229,7 +229,7 @@ const NewsletterPreferences = () => {
               {!isActive && (
                 <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
                   <p className="text-yellow-800 dark:text-yellow-200 text-sm">
-                    You're currently unsubscribed. <Link to={`/unsubscribe?token=${btoa(email)}`} className="underline font-medium">Re-subscribe</Link> to receive emails.
+                    You're currently unsubscribed. <Link to={`/unsubscribe?token=${token}`} className="underline font-medium">Re-subscribe</Link> to receive emails.
                   </p>
                 </div>
               )}
@@ -329,7 +329,7 @@ const NewsletterPreferences = () => {
             <p className="text-center text-sm text-muted-foreground mt-8">
               Want to stop all emails?{' '}
               <Link 
-                to={`/unsubscribe?token=${btoa(email)}`} 
+                to={`/unsubscribe?token=${token}`} 
                 className="text-destructive hover:underline"
               >
                 Unsubscribe completely

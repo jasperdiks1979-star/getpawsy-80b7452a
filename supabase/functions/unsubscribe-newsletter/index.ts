@@ -28,33 +28,64 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Decode the token to get the email
-    let email: string;
-    try {
-      email = atob(token);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Invalid token" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid email in token" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    console.log(`Processing ${action} request for: ${email}`);
-
     // Initialize Supabase admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // First try: Check if token is a secure preference_token (UUID format)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let email: string | null = null;
+    let subscriber: any = null;
+
+    if (uuidRegex.test(token)) {
+      // Secure path: Use preference_token
+      const { data, error } = await supabaseAdmin
+        .from('newsletter_subscribers')
+        .select('email, is_active, preference_token')
+        .eq('preference_token', token)
+        .single();
+
+      if (!error && data) {
+        email = data.email;
+        subscriber = data;
+        console.log(`Found subscriber via preference_token: ${email}`);
+      }
+    }
+
+    // Fallback: Try legacy base64 token (for backward compatibility with old emails)
+    if (!email) {
+      try {
+        const decodedEmail = atob(token);
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (emailRegex.test(decodedEmail)) {
+          // Verify this email exists in our database
+          const { data, error } = await supabaseAdmin
+            .from('newsletter_subscribers')
+            .select('email, is_active, preference_token')
+            .eq('email', decodedEmail.toLowerCase())
+            .single();
+
+          if (!error && data) {
+            email = data.email;
+            subscriber = data;
+            console.log(`Found subscriber via legacy base64 token: ${email}`);
+          }
+        }
+      } catch {
+        // Invalid base64, ignore
+      }
+    }
+
+    if (!email) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log(`Processing ${action} request for: ${email}`);
 
     // Handle resubscribe action
     if (action === 'resubscribe') {
@@ -102,6 +133,12 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       console.log(`Successfully resubscribed: ${email}`);
+
+      // Get the preference_token for secure unsubscribe link
+      const preferenceToken = subscriber?.preference_token || '';
+      const unsubscribeLink = preferenceToken 
+        ? `https://getpawsy.pet/unsubscribe?token=${preferenceToken}`
+        : `https://getpawsy.pet/newsletter-preferences`;
 
       // Send welcome back email
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -152,7 +189,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <tr>
                       <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
                         <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px;">
-                          <a href="https://getpawsy.pet/unsubscribe?token=${btoa(email)}" style="color: #71717a; text-decoration: underline;">Unsubscribe</a>
+                          <a href="${unsubscribeLink}" style="color: #71717a; text-decoration: underline;">Unsubscribe</a>
                         </p>
                         <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
                           © ${new Date().getFullYear()} GetPawsy. All rights reserved.
