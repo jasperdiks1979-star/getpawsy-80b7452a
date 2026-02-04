@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from 'react';
 import { Link } from 'react-router-dom';
-import { CreditCard, Lock, Loader2, ShieldCheck, FileText, Home, ShoppingCart, Tag, CheckCircle, X } from 'lucide-react';
+import { CreditCard, Lock, Loader2, ShieldCheck, FileText, Home, ShoppingCart, Tag, CheckCircle, X, Truck, RotateCcw, Package } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,12 @@ import { trackBeginCheckout } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import { trackPinterestEvent } from '@/hooks/usePinterestTracking';
+import {
+  FREE_SHIPPING_THRESHOLD,
+  FLAT_SHIPPING_RATE,
+  DELIVERY_TIME_STANDARD,
+  RETURNS_POLICY_SHORT,
+} from '@/lib/shipping-constants';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -679,9 +685,25 @@ const Checkout = () => {
                 </p>
               )}
 
-              <p className="text-xs text-muted-foreground text-center mt-4">
-                🔒 Secure payment via Stripe
-              </p>
+              {/* Trust Signals - Checkout Reassurance */}
+              <div className="mt-4 pt-4 border-t space-y-2">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Lock className="w-4 h-4 text-success flex-shrink-0" />
+                  <span>Secure checkout powered by Stripe</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Truck className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span>Free US shipping over ${FREE_SHIPPING_THRESHOLD} • ${FLAT_SHIPPING_RATE.toFixed(2)} flat rate under</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Package className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span>Ships from US warehouses • {DELIVERY_TIME_STANDARD}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span>{RETURNS_POLICY_SHORT}</span>
+                </div>
+              </div>
               
               {/* Compact Upsell */}
               <div className="mt-6 pt-6 border-t">
