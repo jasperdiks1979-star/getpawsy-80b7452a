@@ -8,12 +8,12 @@ const corsHeaders = {
 
 const CJ_API_BASE = 'https://developers.cjdropshipping.com/api2.0/v1';
 
-// Process only 2 products per batch - very conservative due to CJ rate limits
-const BATCH_SIZE = 2;
-// Delay between API calls (milliseconds) - 10 seconds to respect CJ's aggressive rate limits
-const API_DELAY_MS = 10000;
-// Delay after rate limit hit (milliseconds) - 30 seconds
-const RATE_LIMIT_DELAY_MS = 30000;
+// Process only 1 product per batch - extremely conservative due to CJ's aggressive rate limits
+const BATCH_SIZE = 1;
+// Delay between API calls (milliseconds) - 15 seconds to respect CJ's aggressive rate limits
+const API_DELAY_MS = 15000;
+// Delay after rate limit hit (milliseconds) - 60 seconds
+const RATE_LIMIT_DELAY_MS = 60000;
 
 interface SyncProgress {
   id: string;
@@ -112,18 +112,20 @@ async function getAccessToken(supabase: any): Promise<string> {
     }
   }
 
-  const email = Deno.env.get('CJ_EMAIL');
-  const password = Deno.env.get('CJ_API_KEY');
+  // CJ API 2.0 uses apiKey only (not email+password)
+  const apiKey = Deno.env.get('CJ_API_KEY');
 
-  if (!email || !password) {
-    throw new Error('CJ credentials not configured');
+  if (!apiKey) {
+    throw new Error('CJ_API_KEY not configured');
   }
+
+  console.log('Requesting new CJ access token with apiKey...');
 
   const response = await withRetry(async () => {
     const res = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ apiKey }),
     });
     if (!res.ok) throw new Error(`CJ Auth failed: ${res.status}`);
     return res;
@@ -133,6 +135,8 @@ async function getAccessToken(supabase: any): Promise<string> {
   if (!data.result) {
     throw new Error(`CJ Auth failed: ${data.message || 'Unknown error'}`);
   }
+
+  console.log('Successfully obtained CJ access token');
 
   const expiryDate = new Date(data.data.accessTokenExpiryDate);
   const safeExpiry = new Date(expiryDate.getTime() - 5 * 60 * 1000);
