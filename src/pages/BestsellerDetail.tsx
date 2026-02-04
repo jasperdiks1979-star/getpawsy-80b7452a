@@ -69,7 +69,13 @@ import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCa
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useRecentlyViewedProducts } from '@/hooks/useRecentlyViewedProducts';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
-import { DELIVERY_TIME_STANDARD } from '@/lib/shipping-constants';
+import {
+  DELIVERY_TIME_STANDARD,
+  FREE_SHIPPING_THRESHOLD,
+  FLAT_SHIPPING_RATE,
+  RETURN_WINDOW_DAYS,
+  TRUST_BADGES,
+} from '@/lib/shipping-constants';
 
 // Generate JSON-LD structured data for product
 // NOTE: Reviews/ratings intentionally removed - Google requires real customer reviews
@@ -1252,8 +1258,8 @@ const BestsellerDetail = () => {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-5 pl-13">
-                      We offer free US shipping on orders over $35. Orders under $35 ship for a flat rate of $5.99. 
-                      Standard delivery takes 3-7 business days. Once your order is shipped, you'll receive a tracking number to monitor your package.
+                      We offer free US shipping on orders over ${FREE_SHIPPING_THRESHOLD}. Orders under ${FREE_SHIPPING_THRESHOLD} ship for a flat rate of ${FLAT_SHIPPING_RATE.toFixed(2)}. 
+                      Standard delivery takes {DELIVERY_TIME_STANDARD}. Once your order is shipped, you'll receive a tracking number to monitor your package.
                     </AccordionContent>
                   </AccordionItem>
 
@@ -1267,7 +1273,7 @@ const BestsellerDetail = () => {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-5 pl-13">
-                      We offer a 30-day money-back guarantee. If you or your pet aren't completely satisfied with your purchase, 
+                      We offer a {RETURN_WINDOW_DAYS}-day money-back guarantee. If you or your pet aren't completely satisfied with your purchase, 
                       simply contact us and we'll arrange a hassle-free return. Items must be unused and in original packaging.
                     </AccordionContent>
                   </AccordionItem>
@@ -1569,11 +1575,11 @@ const BestsellerDetail = () => {
                 <div className="flex items-center justify-center gap-4 mt-2 pt-2 border-t border-border/30">
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Truck className="w-3 h-3 text-primary" />
-                    <span>Free Shipping</span>
+                    <span>Free Shipping ${FREE_SHIPPING_THRESHOLD}+</span>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Shield className="w-3 h-3 text-primary" />
-                    <span>30-Day Returns</span>
+                    <span>{RETURN_WINDOW_DAYS}-Day Returns</span>
                   </div>
                   {inStock && (
                     <div className="flex items-center gap-1 text-xs text-emerald-600">

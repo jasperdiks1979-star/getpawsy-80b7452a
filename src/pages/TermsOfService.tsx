@@ -1,6 +1,12 @@
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
 import { FileText, Mail, AlertTriangle } from 'lucide-react';
+import {
+  DELIVERY_TIME_STANDARD,
+  FREE_SHIPPING_THRESHOLD,
+  RETURN_WINDOW_DAYS,
+  US_FULFILLMENT_NOTE,
+} from '@/lib/shipping-constants';
 
 const TermsOfService = () => {
   const lastUpdated = 'January 16, 2026';
@@ -127,9 +133,9 @@ const TermsOfService = () => {
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
                   <li>Shipping times are estimates and not guaranteed</li>
-                  <li>Estimated delivery: 3-7 business days</li>
-                  <li>Free US shipping on orders over $35</li>
-                  <li>Orders ship from US fulfillment centers when available</li>
+                  <li>Estimated delivery: {DELIVERY_TIME_STANDARD}</li>
+                  <li>Free US shipping on orders over ${FREE_SHIPPING_THRESHOLD}</li>
+                  <li>{US_FULFILLMENT_NOTE}</li>
                   <li>We are not responsible for delays caused by carriers</li>
                 </ul>
                 <p className="text-muted-foreground mt-4">
@@ -146,7 +152,7 @@ const TermsOfService = () => {
                   Key points include:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                  <li>Returns must be initiated within 30 days of delivery</li>
+                  <li>Returns must be initiated within {RETURN_WINDOW_DAYS} days of delivery</li>
                   <li>Products must be unused and in original packaging</li>
                   <li>Some products may not be eligible for return</li>
                   <li>Refunds are processed to the original payment method</li>

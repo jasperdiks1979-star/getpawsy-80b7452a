@@ -1,5 +1,12 @@
 import { Helmet } from 'react-helmet-async';
 import { SITE_KEYWORDS } from '@/lib/seo-keywords';
+import {
+  FREE_SHIPPING_THRESHOLD,
+  FLAT_SHIPPING_RATE,
+  RETURN_WINDOW_DAYS,
+  FAQ_SHIPPING_ANSWER,
+  FAQ_RETURNS_ANSWER,
+} from '@/lib/shipping-constants';
 
 interface WebsiteSchemaProps {
   title?: string;
@@ -12,7 +19,7 @@ interface WebsiteSchemaProps {
 
 export function WebsiteSchema({
   title = 'GetPawsy - Premium Pet Products & Supplies',
-  description = 'Discover premium, eco-friendly pet products at GetPawsy. Shop quality dog beds, cat trees, pet toys, collars, grooming supplies and more. Free US shipping on orders over $35. Vet-approved items for happy, healthy pets.',
+  description = `Discover premium, eco-friendly pet products at GetPawsy. Shop quality dog beds, cat trees, pet toys, collars, grooming supplies and more. Free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Vet-approved items for happy, healthy pets.`,
   keywords = SITE_KEYWORDS,
   image = '/og-image.png',
   url = 'https://getpawsy.pet',
@@ -33,7 +40,7 @@ export function WebsiteSchema({
       height: 512,
     },
     image: `${url}${image}`,
-    description: 'Premium pet products store offering quality supplies for dogs, cats, and other pets. Trusted by thousands of pet owners worldwide.',
+    description: 'Premium pet products store offering quality supplies for dogs, cats, and other pets. Trusted by pet owners across the United States.',
     foundingDate: '2024',
     slogan: 'Happy Pets, Happy Life',
     sameAs: [
@@ -47,20 +54,10 @@ export function WebsiteSchema({
         '@type': 'ContactPoint',
         contactType: 'customer service',
         email: 'support@getpawsy.pet',
-        availableLanguage: ['English', 'Dutch'],
-        areaServed: 'Worldwide',
-      },
-      {
-        '@type': 'ContactPoint',
-        contactType: 'customer support',
-        email: 'support@getpawsy.pet',
         availableLanguage: ['English'],
+        areaServed: 'US',
       },
     ],
-    address: {
-      '@type': 'PostalAddress',
-      addressCountry: 'NL',
-    },
     knowsAbout: [
       'Pet Products',
       'Dog Supplies',
@@ -87,31 +84,21 @@ export function WebsiteSchema({
     },
   };
 
-  // Enhanced Online Store Schema with trust signals
+  // Enhanced Online Store Schema - US-focused for GMC compliance
   const storeSchema = {
     '@context': 'https://schema.org',
     '@type': 'OnlineStore',
     '@id': `${url}/#store`,
     name: 'GetPawsy Pet Store',
     url: url,
-    description: 'Online pet store offering premium dog beds, cat trees, pet toys, collars, grooming supplies and accessories. Worldwide shipping with secure payment.',
+    description: 'Online pet store offering premium dog beds, cat trees, pet toys, collars, grooming supplies and accessories. Fast US shipping with secure payment.',
     priceRange: '$$',
     image: `${url}${image}`,
     logo: `${url}/favicon.png`,
-    telephone: '+31-000-000-000',
     email: 'support@getpawsy.pet',
-    address: {
-      '@type': 'PostalAddress',
-      addressCountry: 'NL',
-    },
     areaServed: {
-      '@type': 'GeoCircle',
-      geoMidpoint: {
-        '@type': 'GeoCoordinates',
-        latitude: 52.3676,
-        longitude: 4.9041,
-      },
-      geoRadius: '20000000',
+      '@type': 'Country',
+      name: 'United States',
     },
     openingHoursSpecification: {
       '@type': 'OpeningHoursSpecification',
@@ -120,7 +107,7 @@ export function WebsiteSchema({
       closes: '23:59',
     },
     paymentAccepted: ['Credit Card', 'Debit Card', 'PayPal', 'Apple Pay', 'Google Pay'],
-    currenciesAccepted: 'USD,EUR',
+    currenciesAccepted: 'USD',
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
       name: 'Pet Products Catalog',
@@ -132,42 +119,77 @@ export function WebsiteSchema({
     },
     hasMerchantReturnPolicy: {
       '@type': 'MerchantReturnPolicy',
-      applicableCountry: ['US', 'NL', 'GB', 'DE', 'FR'],
+      '@id': `${url}/#returnpolicy`,
+      applicableCountry: 'US',
       returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
-      merchantReturnDays: 30,
+      merchantReturnDays: RETURN_WINDOW_DAYS,
       returnMethod: 'https://schema.org/ReturnByMail',
       returnFees: 'https://schema.org/FreeReturn',
     },
-    shippingDetails: {
-      '@type': 'OfferShippingDetails',
-      shippingRate: {
-        '@type': 'MonetaryAmount',
-        value: '0',
-        currency: 'USD',
-      },
-      shippingDestination: {
-        '@type': 'DefinedRegion',
-        addressCountry: ['US', 'NL', 'GB', 'DE', 'FR', 'BE', 'AU', 'CA'],
-      },
-      deliveryTime: {
-        '@type': 'ShippingDeliveryTime',
-        handlingTime: {
-          '@type': 'QuantitativeValue',
-          minValue: 1,
-          maxValue: 3,
-          unitCode: 'DAY',
+    // US shipping details - matches shipping-constants.ts
+    shippingDetails: [
+      {
+        '@type': 'OfferShippingDetails',
+        '@id': `${url}/#shipping-free`,
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: '0.00',
+          currency: 'USD',
         },
-        transitTime: {
-          '@type': 'QuantitativeValue',
-          minValue: 5,
-          maxValue: 14,
-          unitCode: 'DAY',
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'US',
         },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 2,
+            unitCode: 'DAY',
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 3,
+            maxValue: 7,
+            unitCode: 'DAY',
+          },
+        },
+        shippingLabel: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}`,
       },
-    },
+      {
+        '@type': 'OfferShippingDetails',
+        '@id': `${url}/#shipping-flat`,
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: FLAT_SHIPPING_RATE.toFixed(2),
+          currency: 'USD',
+        },
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'US',
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 2,
+            unitCode: 'DAY',
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 3,
+            maxValue: 7,
+            unitCode: 'DAY',
+          },
+        },
+        shippingLabel: `Flat rate $${FLAT_SHIPPING_RATE.toFixed(2)} for orders under $${FREE_SHIPPING_THRESHOLD}`,
+      },
+    ],
   };
 
-  // FAQ Schema for common questions - helps with quality score
+  // FAQ Schema for common questions - uses centralized constants
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -177,7 +199,7 @@ export function WebsiteSchema({
         name: 'What shipping options does GetPawsy offer?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'GetPawsy offers free US shipping on orders over $35. Orders ship from US fulfillment centers when available. Standard delivery takes 3-7 business days.',
+          text: FAQ_SHIPPING_ANSWER,
         },
       },
       {
@@ -185,7 +207,7 @@ export function WebsiteSchema({
         name: 'What is your return policy?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'We offer a 30-day hassle-free return policy. If you are not completely satisfied with your purchase, you can return it within 30 days for a full refund. Returns are free of charge.',
+          text: FAQ_RETURNS_ANSWER,
         },
       },
       {
