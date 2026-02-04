@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileProductGallery } from '@/components/products/MobileProductGallery';
@@ -100,7 +100,9 @@ const generateProductJsonLd = (
 ) => {
   // Only mark as OutOfStock if explicitly set to 0
   // If stock is null/undefined, assume InStock (don't default to out-of-stock)
-  const availability = product.stock === 0 
+  const stockValue = product.stock;
+  const isExplicitlyOOS = stockValue !== null && stockValue !== undefined && stockValue === 0;
+  const availability = isExplicitlyOOS 
     ? 'https://schema.org/OutOfStock' 
     : 'https://schema.org/InStock';
 
@@ -255,6 +257,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 const BestsellerDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isDebugMode = searchParams.get('debug') === '1';
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -471,10 +475,16 @@ const BestsellerDetail = () => {
     );
   }
 
-  // Stock logic: Only show "Out of Stock" when explicitly set to 0
-  // If stock is null/undefined, assume available (don't default to out-of-stock)
-  const isExplicitlyOutOfStock = product.stock !== null && product.stock !== undefined && product.stock === 0;
+  // STOCK LOGIC RULES:
+  // A) Only show Out of Stock when stock is EXPLICITLY 0
+  // B) If stock is null/undefined/missing => treat as IN STOCK (do NOT default to out-of-stock)
+  // C) For variants: if no variant selected => don't show OOS (not applicable here - bestsellers have no variants)
+  const stockValue = product.stock;
+  const isExplicitlyOutOfStock = stockValue !== null && stockValue !== undefined && stockValue === 0;
   const inStock = !isExplicitlyOutOfStock;
+  
+  // Computed availability for display and structured data
+  const computedAvailability = isExplicitlyOutOfStock ? 'out_of_stock' : 'in_stock';
 
   const handleAddToCart = () => {
     if (!product || !inStock) return;
@@ -758,6 +768,22 @@ const BestsellerDetail = () => {
                   )}
                 </div>
 
+                {/* Stock Debug - Only visible with ?debug=1 */}
+                {isDebugMode && (
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-300 dark:border-yellow-700 rounded-lg text-xs font-mono">
+                    <p className="font-bold text-yellow-800 dark:text-yellow-200 mb-1">Stock Debug:</p>
+                    <ul className="space-y-0.5 text-yellow-700 dark:text-yellow-300">
+                      <li>• product.stock: {product.stock === null ? 'null' : product.stock === undefined ? 'undefined' : product.stock}</li>
+                      <li>• typeof product.stock: {typeof product.stock}</li>
+                      <li>• isExplicitlyOutOfStock: {String(isExplicitlyOutOfStock)}</li>
+                      <li>• inStock: {String(inStock)}</li>
+                      <li>• computedAvailability: {computedAvailability}</li>
+                      <li>• product.id: {product.id}</li>
+                      <li>• dataSource: bestsellers → products join</li>
+                    </ul>
+                  </div>
+                )}
+
                 {/* Stock Status - Urgency */}
                 <motion.div 
                   className={`flex items-center gap-3 p-4 rounded-xl ${
@@ -780,10 +806,10 @@ const BestsellerDetail = () => {
                         <span className="text-sm text-green-700 dark:text-green-400 font-semibold">
                           In Stock - Ready to Ship
                         </span>
-                        {product.stock && product.stock < 10 && (
+                        {stockValue !== null && stockValue !== undefined && stockValue > 0 && stockValue < 10 && (
                           <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1 mt-0.5">
                             <Timer className="w-3 h-3" />
-                            Only {product.stock} left - Order soon!
+                            Only {stockValue} left - Order soon!
                           </p>
                         )}
                       </div>
