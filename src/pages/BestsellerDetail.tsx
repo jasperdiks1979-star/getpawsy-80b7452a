@@ -971,7 +971,7 @@ const BestsellerDetail = () => {
                 </div>
 
                 {/* Variant Selector - Show when multiple variants exist */}
-                {variants.length > 1 && (
+                {variants.length > 0 && (
                   <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
