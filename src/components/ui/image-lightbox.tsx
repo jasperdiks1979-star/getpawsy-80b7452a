@@ -34,6 +34,18 @@ export const ImageLightbox = ({
     }
   }, [isOpen, initialIndex]);
 
+  const handlePrev = useCallback(() => {
+    setCurrentIndex(prev => prev === 0 ? images.length - 1 : prev - 1);
+    setIsZoomed(false);
+    setPosition({ x: 0, y: 0 });
+  }, [images.length]);
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex(prev => prev === images.length - 1 ? 0 : prev + 1);
+    setIsZoomed(false);
+    setPosition({ x: 0, y: 0 });
+  }, [images.length]);
+
   // Handle keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
@@ -63,19 +75,7 @@ export const ImageLightbox = ({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [isOpen, onClose]);
-
-  const handlePrev = useCallback(() => {
-    setCurrentIndex(prev => prev === 0 ? images.length - 1 : prev - 1);
-    setIsZoomed(false);
-    setPosition({ x: 0, y: 0 });
-  }, [images.length]);
-
-  const handleNext = useCallback(() => {
-    setCurrentIndex(prev => prev === images.length - 1 ? 0 : prev + 1);
-    setIsZoomed(false);
-    setPosition({ x: 0, y: 0 });
-  }, [images.length]);
+  }, [isOpen, onClose, handlePrev, handleNext]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
@@ -256,7 +256,7 @@ export const ImageLightbox = ({
 
       {/* Mobile swipe hint */}
       <div className="absolute bottom-16 left-1/2 -translate-x-1/2 text-white/60 text-xs md:hidden">
-        <p>Swipe om te navigeren • Swipe omlaag om te sluiten</p>
+        <p>Swipe to navigate • Swipe down to close</p>
       </div>
 
       {/* Instructions - desktop only */}
