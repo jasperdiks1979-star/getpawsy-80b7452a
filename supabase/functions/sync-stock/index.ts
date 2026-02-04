@@ -164,6 +164,16 @@ async function getProductInventory(accessToken: string, productId: string) {
       }
     );
 
+    // Log full response for debugging
+    const responseText = await response.text();
+    let jsonData;
+    try {
+      jsonData = JSON.parse(responseText);
+    } catch {
+      console.error(`Invalid JSON response for ${productId}:`, responseText.substring(0, 200));
+      throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
+    }
+
     if (response.status === 429) {
       console.log(`Rate limited on ${productId}, waiting ${RATE_LIMIT_DELAY_MS / 1000}s...`);
       await sleep(RATE_LIMIT_DELAY_MS);
@@ -171,10 +181,21 @@ async function getProductInventory(accessToken: string, productId: string) {
     }
 
     if (!response.ok) {
-      throw new Error(`Inventory request failed: ${response.status}`);
+      console.error(`HTTP error for ${productId}: ${response.status}`, jsonData);
+      throw new Error(`Inventory request failed: ${response.status} - ${jsonData.message || 'Unknown'}`);
     }
 
-    return await response.json();
+    // Log if result is false (API returned an error) - use log level based on code
+    if (!jsonData.result) {
+      // Code 200 with no data is expected (product has no inventory), not an error
+      if (jsonData.code === 200 || jsonData.code === '200') {
+        // Debug only - this is normal
+      } else {
+        console.warn(`CJ API issue for ${productId}: code=${jsonData.code}, message=${jsonData.message}`);
+      }
+    }
+
+    return jsonData;
   }, 2, isRetryableError);
 }
 
@@ -319,25 +340,40 @@ async function syncBatch(
     try {
       const inventoryResponse = await getProductInventory(accessToken, product.cj_product_id);
 
-      if (!inventoryResponse.result) {
-        console.error(`Failed to get inventory for ${product.name}:`, inventoryResponse.message);
-        batchErrorMessages.push(`${product.name}: ${inventoryResponse.message || 'Unknown error'}`);
-        batchErrors++;
-        continue;
-      }
-
-      // Calculate total stock (prefer US warehouse)
+      // Handle CJ API responses:
+      // - code 200 with result=false means no inventory data (set stock to 0)
+      // - "Product has been removed from shelves" means product is discontinued
+      // - Other errors should be logged but we can still set stock to 0
       let totalStock = 0;
-      const inventoryData = inventoryResponse.data;
+      
+      if (!inventoryResponse.result) {
+        const message = inventoryResponse.message || '';
+        const code = inventoryResponse.code;
+        
+        // Check if product is discontinued/removed
+        if (message.includes('removed from shelves') || message.includes('discontinued')) {
+          console.log(`[${offset + i + 1}/${totalProducts}] ${product.name}: Product discontinued, setting stock to 0`);
+        } else if (code === 200 || code === '200') {
+          // Code 200 with no result means no inventory data available - treat as 0 stock
+          console.log(`[${offset + i + 1}/${totalProducts}] ${product.name}: No inventory data (code 200), setting stock to 0`);
+        } else {
+          // Real error - log but still continue
+          console.warn(`[${offset + i + 1}/${totalProducts}] ${product.name}: API error (code=${code}): ${message}, setting stock to 0`);
+        }
+      } else {
+        // Calculate total stock (prefer US warehouse)
+        const inventoryData = inventoryResponse.data;
 
-      if (Array.isArray(inventoryData)) {
-        for (const inv of inventoryData) {
-          if (inv.countryCode === 'US') {
-            totalStock += inv.totalInventoryNum || 0;
-          } else if (inv.countryCode === 'CN' && totalStock === 0) {
-            totalStock = inv.totalInventoryNum || 0;
+        if (Array.isArray(inventoryData)) {
+          for (const inv of inventoryData) {
+            if (inv.countryCode === 'US') {
+              totalStock += inv.totalInventoryNum || 0;
+            } else if (inv.countryCode === 'CN' && totalStock === 0) {
+              totalStock = inv.totalInventoryNum || 0;
+            }
           }
         }
+        console.log(`✓ [${offset + i + 1}/${totalProducts}] ${product.name}: stock = ${totalStock}`);
       }
 
       // Update product stock
@@ -353,7 +389,6 @@ async function syncBatch(
         throw updateError;
       }
 
-      console.log(`✓ [${offset + i + 1}/${totalProducts}] ${product.name}: stock = ${totalStock}`);
       batchSynced++;
 
       // Delay between API calls to avoid rate limiting
