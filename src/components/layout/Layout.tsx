@@ -7,6 +7,7 @@ import { ExitIntentPopup } from '../marketing/ExitIntentPopup';
 import { SlowFeederLeadMagnet } from '../marketing/SlowFeederLeadMagnet';
 import { CookieConsent } from '../marketing/CookieConsent';
 import { LiveVisitorBadge } from '../admin/LiveVisitorBadge';
+import { ChatWidgetWrapper } from '../chat/ChatWidgetWrapper';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -26,6 +27,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <ExitIntentPopup />
       <SlowFeederLeadMagnet />
       <CookieConsent />
+      <ChatWidgetWrapper />
     </div>
   );
 };
