@@ -403,24 +403,21 @@ async function getAccessToken(): Promise<string> {
     console.log('Cached token expired, requesting new one...');
   }
 
+  // CJ API 2.0 uses apiKey only (not email+password)
   const apiKey = Deno.env.get('CJ_API_KEY');
-  const email = Deno.env.get('CJ_EMAIL');
 
-  if (!apiKey || !email) {
-    throw new Error('CJ_API_KEY or CJ_EMAIL not configured');
+  if (!apiKey) {
+    throw new Error('CJ_API_KEY not configured');
   }
 
-  console.log('Requesting new CJ access token...');
+  console.log('Requesting new CJ access token with apiKey...');
   
   const response = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      email: email,
-      password: apiKey,
-    }),
+    body: JSON.stringify({ apiKey }),
   });
 
   const data: CJAuthResponse = await response.json();
