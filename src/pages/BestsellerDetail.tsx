@@ -633,8 +633,8 @@ const BestsellerDetail = () => {
                     </AnimatePresence>
                   </motion.div>
                   
-                  {/* Mobile: Static image - NO drag handlers to allow button clicks */}
-                  <div className="absolute inset-0 md:hidden pointer-events-none">
+                  {/* Mobile: Static image only */}
+                  <div className="absolute inset-0 md:hidden">
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={selectedImage}
@@ -665,42 +665,24 @@ const BestsellerDetail = () => {
                     <ZoomIn className="w-5 h-5" />
                   </motion.div>
 
-                  {/* Navigation Arrows - larger touch targets on mobile */}
+                  {/* Navigation Arrows - separate from image containers for reliable touch */}
                   {images.length > 1 && (
                     <>
                       <button
                         type="button"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 transition-all duration-300 rounded-full shadow-lg bg-background/95 backdrop-blur-sm hover:bg-background hover:scale-110 z-40 border border-border/50 h-12 w-12 md:h-10 md:w-10 flex items-center justify-center pointer-events-auto touch-manipulation"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          handlePrevImage();
-                        }}
-                        onTouchStart={(e) => e.stopPropagation()}
-                        onTouchEnd={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          handlePrevImage();
-                        }}
+                        aria-label="Previous image"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 z-50 h-14 w-14 md:h-10 md:w-10 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity active:scale-95"
+                        onClick={() => handlePrevImage()}
                       >
-                        <ChevronLeft className="w-6 h-6 md:w-5 md:h-5" />
+                        <ChevronLeft className="w-7 h-7 md:w-5 md:h-5 text-gray-800 dark:text-gray-100" />
                       </button>
                       <button
                         type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-300 rounded-full shadow-lg bg-background/95 backdrop-blur-sm hover:bg-background hover:scale-110 z-40 border border-border/50 h-12 w-12 md:h-10 md:w-10 flex items-center justify-center pointer-events-auto touch-manipulation"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          handleNextImage();
-                        }}
-                        onTouchStart={(e) => e.stopPropagation()}
-                        onTouchEnd={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          handleNextImage();
-                        }}
+                        aria-label="Next image"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-50 h-14 w-14 md:h-10 md:w-10 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity active:scale-95"
+                        onClick={() => handleNextImage()}
                       >
-                        <ChevronRight className="w-6 h-6 md:w-5 md:h-5" />
+                        <ChevronRight className="w-7 h-7 md:w-5 md:h-5 text-gray-800 dark:text-gray-100" />
                       </button>
                       
                       {/* Image Counter - Desktop */}
@@ -708,28 +690,19 @@ const BestsellerDetail = () => {
                         {selectedImage + 1} / {images.length}
                       </div>
                       
-                      {/* Dot Indicators - Mobile - larger touch targets */}
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 md:hidden z-40 pointer-events-auto">
+                      {/* Dot Indicators - Mobile */}
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 md:hidden z-50 bg-black/30 backdrop-blur-sm rounded-full px-3 py-2">
                         {images.map((_, idx) => (
                           <button
                             key={idx}
                             type="button"
-                            className={`rounded-full transition-all touch-manipulation ${
+                            aria-label={`Go to image ${idx + 1}`}
+                            className={`rounded-full transition-all active:scale-90 ${
                               selectedImage === idx 
-                                ? 'w-8 h-4 bg-primary' 
-                                : 'w-4 h-4 bg-foreground/30'
+                                ? 'w-6 h-3 bg-white' 
+                                : 'w-3 h-3 bg-white/50'
                             }`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              setSelectedImage(idx);
-                            }}
-                            onTouchStart={(e) => e.stopPropagation()}
-                            onTouchEnd={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              setSelectedImage(idx);
-                            }}
+                            onClick={() => setSelectedImage(idx)}
                           />
                         ))}
                       </div>
