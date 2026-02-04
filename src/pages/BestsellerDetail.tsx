@@ -476,21 +476,22 @@ const BestsellerDetail = () => {
     );
   }
 
-  // STOCK LOGIC RULES FOR DROPSHIPPING:
-  // This is a dropshipping store - products are fulfilled by suppliers (CJ Dropshipping)
-  // Stock value of 0 does NOT mean out of stock - suppliers manage inventory
+  // STOCK LOGIC: Use centralized availability computation
+  // Import from src/lib/availability.ts for consistency across the app
   // 
-  // A) Stock = 0 or null/undefined => ALWAYS IN STOCK (dropship model - supplier has inventory)
-  // B) Only show Out of Stock if product.is_active === false (explicitly disabled)
-  // C) The stock field in our DB is not reliable for dropship availability
-  //
-  // To mark a product as truly out of stock, set is_active = false in the database
+  // DROPSHIPPING MODEL:
+  // - Stock value of 0 does NOT mean out of stock (suppliers manage inventory)
+  // - Only mark as out of stock if product.is_active === false (explicitly disabled)
+  // - Missing/undefined fields => treat as IN STOCK (never default to OOS)
   const stockValue = product.stock;
   const isProductDisabled = product.is_active === false;
-  const inStock = !isProductDisabled; // Always in stock unless explicitly disabled
+  const inStock = !isProductDisabled;
   
   // Computed availability for display and structured data
   const computedAvailability = isProductDisabled ? 'out_of_stock' : 'in_stock';
+  const availabilityReason = isProductDisabled 
+    ? 'Product is_active = false (disabled)' 
+    : 'Dropship model: in stock (no explicit OOS flag)';
 
   const handleAddToCart = () => {
     if (!product || !inStock) return;
@@ -779,13 +780,13 @@ const BestsellerDetail = () => {
                   <div className="p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-300 dark:border-yellow-700 rounded-lg text-xs font-mono">
                     <p className="font-bold text-yellow-800 dark:text-yellow-200 mb-1">Stock Debug (Dropship Model):</p>
                     <ul className="space-y-0.5 text-yellow-700 dark:text-yellow-300">
-                      <li>• product.stock: {product.stock === null ? 'null' : product.stock === undefined ? 'undefined' : product.stock}</li>
-                      <li>• product.is_active: {String(product.is_active)}</li>
-                      <li>• isProductDisabled: {String(isProductDisabled)}</li>
+                      <li>• is_active: {String(product.is_active)}</li>
+                      <li>• available: {String((product as { available?: boolean }).available)}</li>
+                      <li>• stock: {stockValue === null ? 'null' : stockValue === undefined ? 'undefined' : stockValue}</li>
+                      <li>• computed: {computedAvailability}</li>
+                      <li>• reason: {availabilityReason}</li>
                       <li>• inStock: {String(inStock)}</li>
-                      <li>• computedAvailability: {computedAvailability}</li>
                       <li>• product.id: {product.id}</li>
-                      <li>• Note: Dropship = stock 0 is OK, supplier has inventory</li>
                     </ul>
                   </div>
                 )}
@@ -831,14 +832,8 @@ const BestsellerDetail = () => {
                   )}
                 </motion.div>
 
-                {/* Shipping Countdown Timer */}
-                <ShippingCountdown cutoffHour={15} />
-
-                {/* Shipping Info - Always show US standard delivery time */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
-                  <Truck className="w-4 h-4" />
-                  <span>Estimated Delivery: {DELIVERY_TIME_STANDARD}</span>
-                </div>
+                {/* Shipping Info */}
+                <ShippingCountdown />
 
                 <Separator className="my-2" />
 

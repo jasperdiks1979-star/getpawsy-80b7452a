@@ -74,9 +74,9 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   }, [product.id, product.slug, product.category, prefetchProduct]);
   
 
-  // Stock logic: Only show "Out of Stock" when explicitly set to 0
-  // If stock is null/undefined, assume available (don't default to out-of-stock)
-  const isOutOfStock = product.stock === 0;
+  // DROPSHIP MODEL: Use centralized availability logic
+  // Stock=0 does NOT mean out of stock, only explicit is_active=false does
+  const isOutOfStock = (product as { is_active?: boolean | null }).is_active === false;
 
   const handleCardClick = () => {
     // Track select_item event for GA4 enhanced ecommerce
@@ -279,8 +279,8 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
             </Button>
           </div>
 
-          {/* Stock indicator */}
-          {product.stock === 0 && (
+          {/* Stock indicator - Only show if explicitly disabled */}
+          {(product as { is_active?: boolean | null }).is_active === false && (
             <p className="text-xs text-destructive font-medium">Out of Stock</p>
           )}
         </div>

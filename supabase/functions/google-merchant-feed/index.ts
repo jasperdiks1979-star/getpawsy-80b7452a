@@ -52,8 +52,11 @@ function formatPrice(price: number): string {
   return `${price.toFixed(2)} USD`;
 }
 
-function getAvailability(stock: number | null): string {
-  if (stock === null || stock <= 0) {
+// DROPSHIP MODEL: Only mark as out of stock if product is explicitly disabled
+// Stock value of 0 does NOT mean out of stock (suppliers manage inventory)
+function getAvailability(stock: number | null, isActive: boolean | null): string {
+  // Only mark as out of stock if explicitly disabled
+  if (isActive === false) {
     return 'out of stock';
   }
   return 'in stock';
@@ -280,7 +283,7 @@ function generateProductXml(product: Product): string {
       <g:description>${escapeXml(optimizedDescription)}</g:description>
       <g:link>${escapeXml(productUrl)}</g:link>
       <g:image_link>${escapeXml(imageUrl)}</g:image_link>
-      <g:availability>${getAvailability(product.stock)}</g:availability>
+      <g:availability>${getAvailability(product.stock, product.is_active)}</g:availability>
       <g:price>${formatPrice(product.price)}</g:price>`;
 
   // Add sale price if compare_at_price exists and is higher than price
@@ -360,7 +363,7 @@ function generateProductXml(product: Product): string {
 
   // Availability for inventory filtering
   xml += `
-      <g:custom_label_2>${getAvailability(product.stock) === 'in stock' ? 'Available' : 'Out-of-Stock'}</g:custom_label_2>`;
+      <g:custom_label_2>${getAvailability(product.stock, product.is_active) === 'in stock' ? 'Available' : 'Out-of-Stock'}</g:custom_label_2>`;
 
   // Free shipping eligibility for campaign targeting
   xml += `
