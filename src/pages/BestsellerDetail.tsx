@@ -21,14 +21,11 @@ import {
   Clock,
   Package,
   ZoomIn,
-  Minus,
-  Plus,
   Gift,
   Zap,
   BadgeCheck,
   RotateCcw,
   Timer,
-  Users,
   TrendingUp,
   HelpCircle,
   MessageCircle,
@@ -69,6 +66,8 @@ import { RecentlyViewedCarousel } from '@/components/products/RecentlyViewedCaro
 import { RelatedProductsCarousel } from '@/components/products/RelatedProductsCarousel';
 import { BestsellerBundleSection } from '@/components/products/BestsellerBundleSection';
 import { PostAddUpsellModal } from '@/components/products/PostAddUpsellModal';
+import { VolumeDiscountSelector } from '@/components/products/VolumeDiscountSelector';
+import { OrderBump } from '@/components/products/OrderBump';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useRecentlyViewedProducts } from '@/hooks/useRecentlyViewedProducts';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
@@ -277,6 +276,9 @@ const BestsellerDetail = () => {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [volumeDiscount, setVolumeDiscount] = useState(0);
+  const [orderBumpChecked, setOrderBumpChecked] = useState(false);
+  const [orderBumpProduct, setOrderBumpProduct] = useState<{id: string; name: string; price: number; image_url?: string | null; slug?: string | null; is_active?: boolean | null;} | null>(null);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [showPostAddUpsell, setShowPostAddUpsell] = useState(false);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -419,6 +421,8 @@ const BestsellerDetail = () => {
   useEffect(() => {
     setSelectedImage(0);
     setQuantity(1);
+    setVolumeDiscount(0);
+    setOrderBumpChecked(false);
     setShowStickyBar(false);
     
     // Add current product to recently viewed
@@ -426,6 +430,22 @@ const BestsellerDetail = () => {
       addToRecentlyViewed(product.id);
     }
   }, [slug, product?.id, addToRecentlyViewed]);
+
+  // Set order bump product when related products load
+  useEffect(() => {
+    if (relatedProducts.length >= 3) {
+      // Use the third related product for order bump (first two used in bundle)
+      const bumpProduct = relatedProducts[2];
+      setOrderBumpProduct({
+        id: bumpProduct.id,
+        name: bumpProduct.name,
+        price: Number(bumpProduct.price),
+        image_url: bumpProduct.image_url,
+        slug: (bumpProduct as { slug?: string }).slug,
+        is_active: bumpProduct.is_active,
+      });
+    }
+  }, [relatedProducts]);
 
   // Show/hide sticky bar based on main add-to-cart button visibility
   useEffect(() => {
@@ -510,21 +530,65 @@ const BestsellerDetail = () => {
       addToCartButtonRef.current
     );
     
+    // Calculate the discounted price (volume discount applies)
+    const discountedPrice = volumeDiscount > 0 
+      ? product.price * (1 - volumeDiscount / 100)
+      : product.price;
+    
+    // Add main product(s) with volume discount applied
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
         name: product.name,
-        price: product.price,
+        price: discountedPrice,
         image: product.image_url || '/placeholder.svg',
       });
     }
     
-    toast.success(`${quantity}x ${product.name} added to cart!`);
+    // Add order bump product if checked
+    if (orderBumpChecked && orderBumpProduct) {
+      const bumpDiscountedPrice = orderBumpProduct.price * 0.9; // 10% discount
+      addItem({
+        id: orderBumpProduct.id,
+        name: orderBumpProduct.name,
+        price: bumpDiscountedPrice,
+        image: orderBumpProduct.image_url || '/placeholder.svg',
+      });
+    }
     
-    // Show post-add upsell modal on mobile (only if we have related products)
-    if (isMobile && relatedProducts.length > 0) {
+    // Calculate total savings for toast message
+    const volumeSavings = volumeDiscount > 0 ? (product.price * quantity * volumeDiscount / 100) : 0;
+    const bumpSavings = orderBumpChecked && orderBumpProduct ? orderBumpProduct.price * 0.1 : 0;
+    const totalSavings = volumeSavings + bumpSavings;
+    
+    if (totalSavings > 0) {
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <span className="font-semibold">Added to cart!</span>
+          <span className="text-sm text-muted-foreground">
+            You saved ${totalSavings.toFixed(2)} on this order
+          </span>
+        </div>
+      );
+    } else {
+      toast.success(`${quantity}x ${product.name} added to cart!`);
+    }
+    
+    // Show post-add upsell modal on mobile (only if we have related products and not already showing order bump)
+    if (isMobile && relatedProducts.length > 0 && !orderBumpChecked) {
       setTimeout(() => setShowPostAddUpsell(true), 500);
     }
+  };
+
+  // Handle volume discount selection
+  const handleVolumeChange = (newQuantity: number, discountPercent: number) => {
+    setQuantity(newQuantity);
+    setVolumeDiscount(discountPercent);
+  };
+
+  // Handle order bump toggle
+  const handleOrderBumpToggle = (checked: boolean, bumpProduct: { id: string; name: string; price: number }) => {
+    setOrderBumpChecked(checked);
   };
 
   const handleToggleWishlist = () => {
@@ -881,41 +945,12 @@ const BestsellerDetail = () => {
 
                 <Separator className="my-2" />
 
-                {/* Quantity Selector */}
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium">Quantity:</span>
-                  <div className="flex items-center gap-2 bg-muted/50 rounded-full p-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 rounded-full"
-                      onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                      disabled={quantity <= 1}
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                    <motion.span 
-                      key={quantity}
-                      initial={{ scale: 1.2 }}
-                      animate={{ scale: 1 }}
-                      className="w-12 text-center font-semibold text-lg"
-                    >
-                      {quantity}
-                    </motion.span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 rounded-full"
-                      onClick={() => setQuantity(q => Math.min(10, q + 1))}
-                      disabled={quantity >= 10 || (product.stock !== null && quantity >= product.stock)}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    Total: <span className="font-semibold text-foreground">${(product.price * quantity).toFixed(2)}</span>
-                  </span>
-                </div>
+                {/* Buy More, Save More - Volume Discount Selector */}
+                <VolumeDiscountSelector
+                  basePrice={product.price}
+                  onQuantityChange={handleVolumeChange}
+                  selectedQuantity={quantity}
+                />
 
                 {/* Action Buttons - Premium - tracked for sticky bar visibility */}
                 <div ref={mainAddToCartRef} className="flex gap-3">
@@ -953,6 +988,16 @@ const BestsellerDetail = () => {
                     </Button>
                   </motion.div>
                 </div>
+
+                {/* Order Bump - Inline Upsell */}
+                {orderBumpProduct && (
+                  <OrderBump
+                    product={orderBumpProduct}
+                    isChecked={orderBumpChecked}
+                    onToggle={handleOrderBumpToggle}
+                    discountPercent={10}
+                  />
+                )}
 
                 {/* Trust Badges - Premium Grid */}
                 <div className="grid grid-cols-2 gap-3 pt-4">
