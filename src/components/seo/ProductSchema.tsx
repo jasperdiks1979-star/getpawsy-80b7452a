@@ -100,9 +100,11 @@ export function ProductSchema({
       priceCurrency: 'USD',
       price: product.price.toFixed(2),
       priceValidUntil: priceValidUntilStr,
-      availability: (product.stock ?? 0) > 0 
-        ? 'https://schema.org/InStock' 
-        : 'https://schema.org/OutOfStock',
+      // DROPSHIP MODEL: Only mark as OutOfStock if is_active === false
+      // Stock value of 0 does NOT mean out of stock
+      availability: (product as { is_active?: boolean | null }).is_active === false
+        ? 'https://schema.org/OutOfStock' 
+        : 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/NewCondition',
       seller: {
         '@type': 'Organization',

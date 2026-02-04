@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Home, Truck, ShieldCheck, Clock, Gift, Star } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Home, Truck, ShieldCheck, Gift, Star } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -209,11 +209,11 @@ const Cart = () => {
                 <span className="text-primary">${total.toFixed(2)}</span>
               </div>
 
-              {/* Urgency element */}
-              <div className="mt-4 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 text-center">
-                <div className="flex items-center justify-center gap-1 text-amber-700 dark:text-amber-400 text-xs font-medium">
-                  <Clock className="w-3 h-3" />
-                  <span>Order within 2 hours for same-day processing</span>
+              {/* Shipping info */}
+              <div className="mt-4 p-2 bg-muted/50 rounded-lg border border-border text-center">
+                <div className="flex items-center justify-center gap-1 text-muted-foreground text-xs">
+                  <Truck className="w-3 h-3" />
+                  <span>Processing: 1-2 business days • Delivery: 3-7 business days</span>
                 </div>
               </div>
 

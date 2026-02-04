@@ -660,7 +660,7 @@ export const SEO_KEYWORDS = {
   local: [
     'pet store near me',
     'pet supplies delivery',
-    'same day pet delivery',
+    'fast pet delivery USA',
     'buy pet products online',
     'pet shop free shipping',
     'pet store with free delivery',
