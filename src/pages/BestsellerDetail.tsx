@@ -113,6 +113,11 @@ const generateProductJsonLd = (
       ? [product.image_url] 
       : [];
 
+  // Dynamic priceValidUntil - 12 months from now
+  const priceValidUntil = new Date();
+  priceValidUntil.setFullYear(priceValidUntil.getFullYear() + 1);
+  const priceValidUntilStr = priceValidUntil.toISOString().split('T')[0];
+
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -130,7 +135,7 @@ const generateProductJsonLd = (
       url: `https://getpawsy.pet/bestseller/${bestseller.slug}`,
       priceCurrency: 'USD',
       price: product.price.toFixed(2),
-      priceValidUntil: '2027-12-31',
+      priceValidUntil: priceValidUntilStr,
       availability,
       itemCondition: 'https://schema.org/NewCondition',
       seller: {
@@ -163,17 +168,16 @@ const generateProductJsonLd = (
             handlingTime: {
               '@type': 'QuantitativeValue',
               minValue: 1,
-              maxValue: 2,
-              unitCode: 'DAY'
+              maxValue: 1,
+              unitCode: 'd'
             },
             transitTime: {
               '@type': 'QuantitativeValue',
-              minValue: 3,
-              maxValue: 7,
-              unitCode: 'DAY'
+              minValue: 0,
+              maxValue: 6,
+              unitCode: 'd'
             }
-          },
-          shippingLabel: 'Free shipping on orders over $35'
+          }
         },
         {
           '@type': 'OfferShippingDetails',
@@ -191,17 +195,16 @@ const generateProductJsonLd = (
             handlingTime: {
               '@type': 'QuantitativeValue',
               minValue: 1,
-              maxValue: 2,
-              unitCode: 'DAY'
+              maxValue: 1,
+              unitCode: 'd'
             },
             transitTime: {
               '@type': 'QuantitativeValue',
-              minValue: 3,
-              maxValue: 7,
-              unitCode: 'DAY'
+              minValue: 0,
+              maxValue: 6,
+              unitCode: 'd'
             }
-          },
-          shippingLabel: 'Flat rate $5.99 for orders under $35'
+          }
         }
       ]
     }
@@ -701,46 +704,52 @@ const BestsellerDetail = () => {
                   </p>
                 )}
 
+                {/* Trust Line - Compact Trust Signals */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <span>Loved by 500+ dog owners across the US</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Truck className="w-4 h-4 text-primary" />
+                    <span>Ships from US fulfillment centers</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <RotateCcw className="w-4 h-4 text-primary" />
+                    <span>30-Day Money-Back Guarantee</span>
+                  </span>
+                </div>
+
                 {/* Rating with social proof */}
                 <motion.div 
-                  className="flex items-center gap-4 p-4 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-2xl border border-amber-200/50 dark:border-amber-800/30"
+                  className="flex items-center gap-4 p-3 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
                   <div className="flex">
                     {[...Array(5)].map((_, i) => (
-                      <motion.div
+                      <Star 
                         key={i}
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3 + i * 0.1 }}
-                      >
-                        <Star 
-                          className={`w-5 h-5 ${
-                            i < Math.round(averageRating) 
-                              ? 'fill-amber-400 text-amber-400' 
-                              : 'fill-muted text-muted'
-                          }`} 
-                        />
-                      </motion.div>
+                        className={`w-4 h-4 ${
+                          i < Math.round(averageRating) 
+                            ? 'fill-amber-400 text-amber-400' 
+                            : 'fill-muted text-muted'
+                        }`} 
+                      />
                     ))}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 text-sm">
                     {reviews.length > 0 ? (
                       <>
                         <span className="font-semibold">{averageRating.toFixed(1)}</span>
-                        <span className="text-sm text-muted-foreground ml-1">
+                        <span className="text-muted-foreground ml-1">
                           ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
                         </span>
                       </>
                     ) : (
-                      <span className="text-sm text-muted-foreground">No reviews yet</span>
+                      <span className="text-muted-foreground">Be the first to review</span>
                     )}
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span>500+ happy pets</span>
                   </div>
                 </motion.div>
 
@@ -1414,89 +1423,51 @@ const BestsellerDetail = () => {
         <AnimatePresence>
           {showStickyBar && (
             <motion.div 
-              className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-xl border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-safe"
+              className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/98 backdrop-blur-xl border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.12)]"
+              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 35 }}
             >
-              <div className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  {/* Product thumbnail & info */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-border/50 shadow-sm">
-                      <img
-                        src={images[0]}
-                        alt={product?.name || ''}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{product?.name}</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-primary">${product?.price.toFixed(2)}</span>
-                        {product?.compare_at_price && product.compare_at_price > product.price && (
+              <div className="px-3 py-2.5">
+                <div className="flex items-center gap-2.5">
+                  {/* Product thumbnail */}
+                  <div className="relative w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 border border-border/50 shadow-sm">
+                    <img
+                      src={images[0]}
+                      alt={product?.name || ''}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  
+                  {/* Product info with discount badge */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate leading-tight">{product?.name}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-base font-bold text-primary">${product?.price.toFixed(2)}</span>
+                      {product?.compare_at_price && product.compare_at_price > product.price && (
+                        <>
                           <span className="text-xs text-muted-foreground line-through">${product.compare_at_price.toFixed(2)}</span>
-                        )}
-                      </div>
+                          <Badge variant="destructive" className="h-5 px-1.5 text-[10px] font-semibold">
+                            Save {discount}%
+                          </Badge>
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  {/* Quantity & Add button */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* Compact quantity selector */}
-                    <div className="flex items-center rounded-full bg-muted/50 border border-border/50">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full hover:bg-background"
-                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                        disabled={quantity <= 1}
-                      >
-                        <Minus className="w-3 h-3" />
-                      </Button>
-                      <span className="w-6 text-center text-sm font-medium">{quantity}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full hover:bg-background"
-                        onClick={() => setQuantity(q => Math.min(10, q + 1))}
-                        disabled={quantity >= 10}
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                    </div>
-
-                    {/* Add to Cart button */}
-                    <motion.div whileTap={{ scale: 0.95 }}>
-                      <Button
-                        onClick={handleAddToCart}
-                        disabled={!inStock}
-                        className="h-11 px-5 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 gap-2"
-                      >
-                        <ShoppingCart className="w-4 h-4" />
-                        <span className="font-semibold">Add</span>
-                      </Button>
-                    </motion.div>
-                  </div>
-                </div>
-
-                {/* Trust indicators */}
-                <div className="flex items-center justify-center gap-4 mt-2 pt-2 border-t border-border/30">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Truck className="w-3 h-3 text-primary" />
-                    <span>Free Shipping ${FREE_SHIPPING_THRESHOLD}+</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Shield className="w-3 h-3 text-primary" />
-                    <span>{RETURN_WINDOW_DAYS}-Day Returns</span>
-                  </div>
-                  {inStock && (
-                    <div className="flex items-center gap-1 text-xs text-emerald-600">
-                      <Check className="w-3 h-3" />
-                      <span>In Stock</span>
-                    </div>
-                  )}
+                  {/* CTA Button - Secure Yours Now */}
+                  <motion.div whileTap={{ scale: 0.97 }} className="flex-shrink-0">
+                    <Button
+                      onClick={handleAddToCart}
+                      disabled={!inStock}
+                      className="h-11 px-5 rounded-full bg-gradient-to-r from-primary to-primary/85 hover:from-primary/95 hover:to-primary/80 shadow-lg shadow-primary/30 font-semibold text-sm"
+                    >
+                      Secure Yours Now
+                    </Button>
+                  </motion.div>
                 </div>
               </div>
             </motion.div>
