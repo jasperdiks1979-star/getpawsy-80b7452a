@@ -1,4 +1,8 @@
 import { Helmet } from 'react-helmet-async';
+import {
+  FREE_SHIPPING_THRESHOLD,
+  RETURN_WINDOW_DAYS,
+} from '@/lib/shipping-constants';
 
 interface LocalBusinessSchemaProps {
   baseUrl?: string;
@@ -7,6 +11,8 @@ interface LocalBusinessSchemaProps {
 /**
  * LocalBusinessSchema - Enhances local SEO presence
  * Use this on the homepage or contact page for local search visibility
+ * 
+ * NOTE: Focused on US market for Google Merchant Center compliance
  */
 export function LocalBusinessSchema({
   baseUrl = 'https://getpawsy.pet',
@@ -17,34 +23,17 @@ export function LocalBusinessSchema({
     '@id': `${baseUrl}/#localbusiness`,
     name: 'GetPawsy',
     alternateName: 'GetPawsy Pet Products',
-    description: 'Premium online pet store offering quality dog beds, cat trees, pet toys, collars, grooming supplies and accessories with worldwide shipping.',
+    description: 'Premium online pet store offering quality dog beds, cat trees, pet toys, collars, grooming supplies and accessories with fast US shipping.',
     url: baseUrl,
     logo: `${baseUrl}/favicon.png`,
     image: `${baseUrl}/og-image.png`,
-    telephone: '+31-000-000-000',
     email: 'support@getpawsy.pet',
     priceRange: '$$',
-    currenciesAccepted: 'USD, EUR, GBP',
+    currenciesAccepted: 'USD',
     paymentAccepted: 'Credit Card, Debit Card, PayPal, Apple Pay, Google Pay',
-    address: {
-      '@type': 'PostalAddress',
-      addressCountry: 'NL',
-      addressRegion: 'Noord-Holland',
-    },
-    geo: {
-      '@type': 'GeoCoordinates',
-      latitude: 52.3676,
-      longitude: 4.9041,
-    },
+    // US-focused for GMC compliance
     areaServed: [
       { '@type': 'Country', name: 'United States' },
-      { '@type': 'Country', name: 'Netherlands' },
-      { '@type': 'Country', name: 'United Kingdom' },
-      { '@type': 'Country', name: 'Germany' },
-      { '@type': 'Country', name: 'France' },
-      { '@type': 'Country', name: 'Belgium' },
-      { '@type': 'Country', name: 'Australia' },
-      { '@type': 'Country', name: 'Canada' },
     ],
     openingHoursSpecification: {
       '@type': 'OpeningHoursSpecification',
@@ -69,15 +58,15 @@ export function LocalBusinessSchema({
           itemOffered: {
             '@type': 'Service',
             name: 'Free US Shipping',
-            description: 'Free shipping on orders over $35',
+            description: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}`,
           },
         },
         {
           '@type': 'Offer',
           itemOffered: {
             '@type': 'Service',
-            name: '30-Day Returns',
-            description: 'Hassle-free returns within 30 days',
+            name: `${RETURN_WINDOW_DAYS}-Day Returns`,
+            description: `Hassle-free returns within ${RETURN_WINDOW_DAYS} days`,
           },
         },
       ],

@@ -46,6 +46,9 @@ import { CustomersAlsoBought } from '@/components/products/CustomersAlsoBought';
 import {
   DELIVERY_TIME_STANDARD,
   TRUST_BADGES,
+  FREE_SHIPPING_THRESHOLD,
+  FLAT_SHIPPING_RATE,
+  US_FULFILLMENT_NOTE,
 } from '@/lib/shipping-constants';
 import {
   Breadcrumb,
@@ -1358,11 +1361,11 @@ const ProductDetail = () => {
             <TabsContent value="shipping" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
                 <div className="grid md:grid-cols-2 gap-6">
-                  {[
-                    { emoji: '🇺🇸', text: 'Ships from US fulfillment centers' },
-                    { emoji: '📦', text: 'Standard delivery: 3-7 business days' },
-                    { emoji: '✨', text: 'Free shipping on orders over $35' },
-                    { emoji: '💰', text: '$5.99 flat rate under $35' },
+                {[
+                    { emoji: '🇺🇸', text: US_FULFILLMENT_NOTE },
+                    { emoji: '📦', text: `Standard delivery: ${DELIVERY_TIME_STANDARD}` },
+                    { emoji: '✨', text: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}` },
+                    { emoji: '💰', text: `$${FLAT_SHIPPING_RATE.toFixed(2)} flat rate under $${FREE_SHIPPING_THRESHOLD}` },
                   ].map((item, idx) => (
                     <motion.div 
                       key={idx}
