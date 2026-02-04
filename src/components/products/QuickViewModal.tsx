@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingCart, Heart, ChevronLeft, ChevronRight, Minus, Plus, Truck, Shield, ExternalLink } from 'lucide-react';
+import { ShoppingCart, Heart, ChevronLeft, ChevronRight, Minus, Plus, Truck, Shield, ExternalLink, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,11 +12,37 @@ import { useHaptic } from '@/hooks/useHaptic';
 import { toast } from 'sonner';
 import type { Product } from '@/components/products/ProductCard';
 
+interface ParsedVariant {
+  vid: string;
+  variantKey: string;
+  variantSellPrice: number;
+  variantImage?: string;
+  color?: string;
+}
+
 interface QuickViewModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
 }
+
+// Color detection map
+const COLOR_MAP: Record<string, string> = {
+  'red': '#ef4444', 'blue': '#3b82f6', 'green': '#22c55e', 'yellow': '#eab308',
+  'orange': '#f97316', 'purple': '#a855f7', 'pink': '#ec4899', 'black': '#000000',
+  'white': '#ffffff', 'gray': '#6b7280', 'grey': '#6b7280', 'brown': '#92400e',
+  'beige': '#d4a574', 'navy': '#1e3a5a', 'teal': '#14b8a6', 'cyan': '#06b6d4',
+  'gold': '#fbbf24', 'silver': '#9ca3af', 'rose': '#fb7185', 'coral': '#f97171',
+  'light blue': '#93c5fd', 'dark blue': '#1e40af', 'light green': '#86efac',
+};
+
+const detectColor = (name: string): string | undefined => {
+  const lower = name.toLowerCase();
+  for (const [colorName, hex] of Object.entries(COLOR_MAP)) {
+    if (lower.includes(colorName)) return hex;
+  }
+  return undefined;
+};
 
 export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps) => {
   const { addItem } = useCart();
@@ -25,22 +51,58 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
   const { success: hapticSuccess } = useHaptic();
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedVariant, setSelectedVariant] = useState<ParsedVariant | null>(null);
+
+  // Parse variants
+  const variants = useMemo<ParsedVariant[]>(() => {
+    if (!product?.variants || !Array.isArray(product.variants)) return [];
+    
+    return (product.variants as unknown[]).map((raw): ParsedVariant | null => {
+      if (!raw || typeof raw !== 'object') return null;
+      const v = raw as Record<string, unknown>;
+      
+      const vid = String(v.vid || '');
+      if (!vid) return null;
+      
+      const variantKey = String(v.variantKey || v.variantNameEn || 'Option');
+      const variantSellPrice = Number(v.variantSellPrice) || Number(product.price) || 0;
+      const variantImage = v.variantImage ? String(v.variantImage) : undefined;
+      const color = detectColor(variantKey);
+      
+      return { vid, variantKey, variantSellPrice, variantImage, color };
+    }).filter((v): v is ParsedVariant => v !== null);
+  }, [product]);
+
+  // Auto-select first variant when product changes
+  useMemo(() => {
+    if (variants.length > 0 && !selectedVariant) {
+      setSelectedVariant(variants[0]);
+    }
+  }, [variants, selectedVariant]);
+
+  // Reset state when modal closes
+  useMemo(() => {
+    if (!isOpen) {
+      setSelectedVariant(null);
+      setQuantity(1);
+      setCurrentImageIndex(0);
+    }
+  }, [isOpen]);
 
   if (!product) return null;
 
   const inWishlist = isInWishlist(product.id);
-  // DROPSHIP MODEL: Use centralized availability logic
-  // Stock=0 does NOT mean out of stock, only explicit is_active=false does
   const isOutOfStock = (product as { is_active?: boolean | null }).is_active === false;
   
-  // Get all images
   const images = [
     product.image_url,
     ...(product.images || [])
   ].filter(Boolean) as string[];
 
+  // Use variant price if selected
+  const displayPrice = selectedVariant?.variantSellPrice || Number(product.price);
   const discount = product.compare_at_price
-    ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
+    ? Math.round((1 - displayPrice / Number(product.compare_at_price)) * 100)
     : null;
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -48,19 +110,28 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
       toast.error('This product is out of stock');
       return;
     }
+
+    // Require variant selection if variants exist
+    if (variants.length > 0 && !selectedVariant) {
+      toast.error('Please select an option first');
+      return;
+    }
     
     hapticSuccess();
     triggerAddToCart(
-      product.image_url || '/placeholder.svg',
+      selectedVariant?.variantImage || product.image_url || '/placeholder.svg',
       e.currentTarget as HTMLElement
     );
+
+    const variantSuffix = selectedVariant ? ` - ${selectedVariant.variantKey}` : '';
+    const cartId = selectedVariant ? `${product.id}_${selectedVariant.vid}` : product.id;
     
     for (let i = 0; i < quantity; i++) {
       addItem({
-        id: product.id,
-        name: product.name,
-        price: Number(product.price),
-        image: product.image_url || '/placeholder.svg',
+        id: cartId,
+        name: `${product.name}${variantSuffix}`,
+        price: displayPrice,
+        image: selectedVariant?.variantImage || product.image_url || '/placeholder.svg',
       });
     }
     
@@ -168,7 +239,7 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
             {/* Price */}
             <div className="flex items-center gap-3 mb-4">
               <span className="text-3xl font-bold text-primary">
-                ${Number(product.price).toFixed(2)}
+                ${displayPrice.toFixed(2)}
               </span>
               {product.compare_at_price && (
                 <span className="text-lg text-muted-foreground line-through">
@@ -176,6 +247,45 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
                 </span>
               )}
             </div>
+
+            {/* Variant Selector */}
+            {variants.length > 0 && (
+              <div className="mb-4">
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Choose option: <span className="text-primary">{selectedVariant?.variantKey || 'Select'}</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {variants.map((variant) => {
+                    const isSelected = selectedVariant?.vid === variant.vid;
+                    return (
+                      <button
+                        key={variant.vid}
+                        onClick={() => setSelectedVariant(variant)}
+                        className={`
+                          relative flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium
+                          border-2 transition-all duration-200
+                          ${isSelected 
+                            ? 'border-primary bg-primary/10 text-primary' 
+                            : 'border-border bg-background hover:border-primary/50'
+                          }
+                        `}
+                      >
+                        {variant.color && (
+                          <span 
+                            className="w-4 h-4 rounded-full border border-border/50 flex-shrink-0"
+                            style={{ backgroundColor: variant.color }}
+                          />
+                        )}
+                        <span className="truncate max-w-[120px]">{variant.variantKey}</span>
+                        {isSelected && (
+                          <Check className="w-3 h-3 text-primary flex-shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             
             {/* Description - clean preview */}
             {product.description && (
