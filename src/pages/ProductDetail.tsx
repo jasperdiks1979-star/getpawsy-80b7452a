@@ -674,59 +674,7 @@ const ProductDetail = () => {
                 </AnimatePresence>
               </div>
               
-              {/* MOBILE Navigation Controls - INSIDE the container with high z-index */}
-              {images.length > 1 && (
-                <div className="absolute inset-0 md:hidden z-30 pointer-events-none">
-                  {/* Left Arrow */}
-                  <button
-                    type="button"
-                    aria-label="Previous image"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center active:scale-95 pointer-events-auto touch-manipulation"
-                    onClick={() => {
-                      setSelectedImage(prev => prev === 0 ? images.length - 1 : prev - 1);
-                      pauseAutoplay();
-                      haptic.lightTap();
-                    }}
-                  >
-                    <ChevronLeft className="w-6 h-6 text-gray-800 dark:text-gray-100" />
-                  </button>
-                  
-                  {/* Right Arrow */}
-                  <button
-                    type="button"
-                    aria-label="Next image"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full shadow-lg bg-white/95 dark:bg-gray-900/95 flex items-center justify-center active:scale-95 pointer-events-auto touch-manipulation"
-                    onClick={() => {
-                      setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
-                      pauseAutoplay();
-                      haptic.lightTap();
-                    }}
-                  >
-                    <ChevronRight className="w-6 h-6 text-gray-800 dark:text-gray-100" />
-                  </button>
-                  
-                  {/* Dot indicators at bottom */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/40 backdrop-blur-sm rounded-full px-3 py-2 pointer-events-auto">
-                    {images.map((_, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        aria-label={`Go to image ${idx + 1}`}
-                        className={`rounded-full transition-all active:scale-90 touch-manipulation ${
-                          selectedImage === idx 
-                            ? 'w-6 h-3 bg-white' 
-                            : 'w-3 h-3 bg-white/50'
-                        }`}
-                        onClick={() => {
-                          setSelectedImage(idx);
-                          pauseAutoplay();
-                          haptic.lightTap();
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Mobile navigation controls removed from here - now placed outside overflow-hidden container */}
               
               {/* Zoom indicator */}
               <motion.div 
@@ -759,6 +707,90 @@ const ProductDetail = () => {
                 </div>
               )}
             </div>
+            
+            {/* MOBILE Navigation Controls - OUTSIDE overflow-hidden container */}
+            {images.length > 1 && (
+              <div className="md:hidden relative -mt-[50%] mb-[calc(50%-24px)] z-50 px-3">
+                {/* Left Arrow */}
+                <button
+                  type="button"
+                  aria-label="Previous image"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full shadow-xl bg-white dark:bg-gray-900 flex items-center justify-center active:scale-90 transition-transform"
+                  style={{ touchAction: 'manipulation' }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedImage(prev => prev === 0 ? images.length - 1 : prev - 1);
+                    pauseAutoplay();
+                    haptic.lightTap();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedImage(prev => prev === 0 ? images.length - 1 : prev - 1);
+                    pauseAutoplay();
+                    haptic.lightTap();
+                  }}
+                >
+                  <ChevronLeft className="w-7 h-7 text-gray-800 dark:text-gray-100" />
+                </button>
+                
+                {/* Right Arrow */}
+                <button
+                  type="button"
+                  aria-label="Next image"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full shadow-xl bg-white dark:bg-gray-900 flex items-center justify-center active:scale-90 transition-transform"
+                  style={{ touchAction: 'manipulation' }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
+                    pauseAutoplay();
+                    haptic.lightTap();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedImage(prev => prev === images.length - 1 ? 0 : prev + 1);
+                    pauseAutoplay();
+                    haptic.lightTap();
+                  }}
+                >
+                  <ChevronRight className="w-7 h-7 text-gray-800 dark:text-gray-100" />
+                </button>
+                
+                {/* Dot indicators */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[calc(50%+40px)] flex gap-2.5 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2.5">
+                  {images.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      aria-label={`Go to image ${idx + 1}`}
+                      className={`rounded-full transition-all ${
+                        selectedImage === idx 
+                          ? 'w-7 h-3.5 bg-white' 
+                          : 'w-3.5 h-3.5 bg-white/50 active:bg-white/80'
+                      }`}
+                      style={{ touchAction: 'manipulation' }}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedImage(idx);
+                        pauseAutoplay();
+                        haptic.lightTap();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedImage(idx);
+                        pauseAutoplay();
+                        haptic.lightTap();
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Desktop Navigation Arrows - positioned as siblings */}
             {images.length > 1 && (
