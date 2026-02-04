@@ -126,13 +126,25 @@ export function MobileProductGallery({
                 className="flex-[0_0_100%] min-w-0 h-full relative cursor-pointer"
                 onClick={handleMainImageClick}
               >
-                <OptimizedImage
-                  src={img}
-                  alt={`${productName} - Image ${idx + 1}`}
-                  className="object-contain pointer-events-none"
-                  containerClassName="w-full h-full p-2"
-                  priority={idx < 2}
-                />
+                {/* First image: eager load with high priority for LCP */}
+                {idx === 0 ? (
+                  <img
+                    src={img}
+                    alt={`${productName} - Image ${idx + 1}`}
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    className="w-full h-full object-contain p-2 pointer-events-none"
+                  />
+                ) : (
+                  <OptimizedImage
+                    src={img}
+                    alt={`${productName} - Image ${idx + 1}`}
+                    className="object-contain pointer-events-none"
+                    containerClassName="w-full h-full p-2"
+                    priority={false}
+                  />
+                )}
               </div>
             ))}
           </div>
