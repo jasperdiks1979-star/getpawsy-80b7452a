@@ -462,73 +462,78 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Terms and Conditions */}
-            <div className="bg-card rounded-xl shadow-card p-4 sm:p-6 w-full max-w-full overflow-hidden box-border">
+            {/* Terms and Conditions - Mobile stacked layout */}
+            <div className="bg-card rounded-xl shadow-card p-4 sm:p-6 w-full">
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <FileText className="w-5 h-5 flex-shrink-0" />
-                <span className="break-words">Terms & Conditions</span>
+                <span>Terms & Conditions</span>
               </h2>
-              <div className="space-y-4 w-full max-w-full">
-                {/* Terms checkbox row - iOS Safari safe flex wrapping */}
-                <div 
-                  className="flex items-start gap-3 w-full max-w-full pr-4 md:pr-0"
-                  style={{ boxSizing: 'border-box' }}
-                >
+              
+              {/* Mobile: Stacked layout | Desktop: Inline */}
+              <div className="space-y-3 w-full">
+                {/* Checkbox + short agreement text */}
+                <div className="flex items-start gap-3">
                   <Checkbox 
                     id="terms" 
                     checked={acceptedTerms}
                     onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                    className="mt-0.5 flex-shrink-0 flex-grow-0"
-                    style={{ flex: '0 0 auto' }}
+                    className="mt-0.5 flex-shrink-0"
                   />
                   <label 
                     htmlFor="terms" 
                     className="text-sm text-muted-foreground leading-relaxed cursor-pointer"
-                    style={{ 
-                      flex: '1 1 auto',
-                      minWidth: 0,
-                      maxWidth: '100%',
-                      overflowWrap: 'anywhere', 
-                      wordBreak: 'break-word',
-                      hyphens: 'auto'
-                    }}
                   >
-                    I have read and agree to the{' '}
-                    <Link 
-                      to="/terms" 
-                      target="_blank" 
-                      className="text-primary hover:underline font-medium"
-                      style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
-                    >
-                      Terms of Service
-                    </Link>
-                    ,{' '}
-                    <Link 
-                      to="/privacy" 
-                      target="_blank" 
-                      className="text-primary hover:underline font-medium"
-                      style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
-                    >
-                      Privacy Policy
-                    </Link>
-                    , and{' '}
-                    <Link 
-                      to="/returns" 
-                      target="_blank" 
-                      className="text-primary hover:underline font-medium"
-                      style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
-                    >
-                      Return Policy
-                    </Link>
-                    . I understand that GetPawsy is not the manufacturer of the products and I 
-                    accept full responsibility for the use of products purchased, including any 
-                    risks to myself, others, or my pets.
+                    {/* Desktop: full inline text */}
+                    <span className="hidden sm:inline">
+                      I have read and agree to the{' '}
+                      <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium">
+                        Terms of Service
+                      </Link>
+                      ,{' '}
+                      <Link to="/privacy" target="_blank" className="text-primary hover:underline font-medium">
+                        Privacy Policy
+                      </Link>
+                      , and{' '}
+                      <Link to="/returns" target="_blank" className="text-primary hover:underline font-medium">
+                        Return Policy
+                      </Link>
+                      . I understand that GetPawsy is not the manufacturer of the products and I 
+                      accept full responsibility for the use of products purchased, including any 
+                      risks to myself, others, or my pets.
+                    </span>
+                    
+                    {/* Mobile: stacked/split text for guaranteed no clipping */}
+                    <span className="sm:hidden">
+                      I agree to the Terms & Conditions
+                    </span>
                   </label>
                 </div>
                 
+                {/* Mobile only: Links on separate lines */}
+                <div className="sm:hidden pl-7 space-y-2">
+                  <div className="flex flex-wrap gap-x-2 gap-y-1 text-sm">
+                    <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium">
+                      Terms of Service
+                    </Link>
+                    <span className="text-muted-foreground">•</span>
+                    <Link to="/privacy" target="_blank" className="text-primary hover:underline font-medium">
+                      Privacy Policy
+                    </Link>
+                    <span className="text-muted-foreground">•</span>
+                    <Link to="/returns" target="_blank" className="text-primary hover:underline font-medium">
+                      Return Policy
+                    </Link>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    I understand that GetPawsy is not the manufacturer of the products and I 
+                    accept full responsibility for the use of products purchased, including any 
+                    risks to myself, others, or my pets.
+                  </p>
+                </div>
+                
                 {!acceptedTerms && (
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 w-full max-w-full">
-                    <p className="text-xs text-amber-800 dark:text-amber-200 break-words">
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                    <p className="text-xs text-amber-800 dark:text-amber-200">
                       ⚠️ You must accept the terms and conditions to proceed with your order.
                     </p>
                   </div>
@@ -557,7 +562,12 @@ const Checkout = () => {
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.name}</p>
+                      <p className="text-sm font-medium leading-tight" style={{ 
+                        whiteSpace: 'normal',
+                        overflowWrap: 'anywhere',
+                        wordBreak: 'break-word',
+                        display: 'block'
+                      }}>{item.name}</p>
                       {item.variant && (
                         <p className="text-xs text-muted-foreground">{item.variant}</p>
                       )}
