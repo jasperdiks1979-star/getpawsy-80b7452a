@@ -597,155 +597,156 @@ const BestsellerDetail = () => {
                   )}
                 </div>
 
-                {/* Main Image with swipe/navigation */}
-                <div 
-                  className="relative aspect-[4/5] md:aspect-square rounded-3xl overflow-hidden bg-white shadow-2xl group"
-                >
-                  {/* Desktop: Swipeable image container */}
-                  <motion.div
-                    className="absolute inset-0 cursor-zoom-in hidden md:block"
-                    drag={images.length > 1 ? "x" : false}
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.2}
-                    onDragStart={() => setIsDragging(true)}
-                    onDrag={(_, info) => setDragX(info.offset.x)}
-                    onDragEnd={(_, info) => handleDragEnd(images.length, info.offset.x, info.velocity.x)}
-                    onClick={() => !isDragging && setLightboxOpen(true)}
-                    whileTap={{ cursor: "grabbing" }}
+                {/* Main Image Container with Controls Overlay */}
+                <div className="relative w-full">
+                  {/* Image Container */}
+                  <div 
+                    className="relative aspect-[4/5] md:aspect-square rounded-3xl overflow-hidden bg-white shadow-2xl group"
                   >
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={selectedImage}
-                        className="absolute inset-0 p-4 md:p-8"
-                        initial={{ opacity: 0, x: dragX > 0 ? -100 : 100 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: dragX > 0 ? 100 : -100 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      >
-                        <OptimizedImage
-                          src={images[selectedImage]}
-                          alt={product.name}
-                          className="object-contain pointer-events-none"
-                          containerClassName="w-full h-full"
-                          priority={selectedImage === 0}
-                        />
-                      </motion.div>
-                    </AnimatePresence>
-                  </motion.div>
-                  
-                  {/* Mobile: Static image only - pointer-events-none to allow touch through to controls */}
-                  <div className="absolute inset-0 md:hidden p-4 pointer-events-none">
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={selectedImage}
-                        className="absolute inset-0 p-4"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <PinchZoomImage
-                          src={images[selectedImage]}
-                          alt={product.name}
-                          className="object-contain"
-                          containerClassName="w-full h-full pointer-events-auto"
-                        />
-                      </motion.div>
-                    </AnimatePresence>
+                    {/* Desktop: Swipeable image container */}
+                    <motion.div
+                      className="absolute inset-0 cursor-zoom-in hidden md:block"
+                      drag={images.length > 1 ? "x" : false}
+                      dragConstraints={{ left: 0, right: 0 }}
+                      dragElastic={0.2}
+                      onDragStart={() => setIsDragging(true)}
+                      onDrag={(_, info) => setDragX(info.offset.x)}
+                      onDragEnd={(_, info) => handleDragEnd(images.length, info.offset.x, info.velocity.x)}
+                      onClick={() => !isDragging && setLightboxOpen(true)}
+                      whileTap={{ cursor: "grabbing" }}
+                    >
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={selectedImage}
+                          className="absolute inset-0 p-4 md:p-8"
+                          initial={{ opacity: 0, x: dragX > 0 ? -100 : 100 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: dragX > 0 ? 100 : -100 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        >
+                          <OptimizedImage
+                            src={images[selectedImage]}
+                            alt={product.name}
+                            className="object-contain pointer-events-none"
+                            containerClassName="w-full h-full"
+                            priority={selectedImage === 0}
+                          />
+                        </motion.div>
+                      </AnimatePresence>
+                    </motion.div>
+                    
+                    {/* Mobile: Static image with pinch zoom */}
+                    <div className="absolute inset-0 md:hidden p-4">
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={selectedImage}
+                          className="absolute inset-0 p-4"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <PinchZoomImage
+                            src={images[selectedImage]}
+                            alt={product.name}
+                            className="object-contain"
+                            containerClassName="w-full h-full"
+                          />
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Zoom indicator - Desktop only */}
+                    <motion.div 
+                      className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm text-foreground p-2.5 rounded-full shadow-soft z-20 hidden md:flex"
+                      initial={{ opacity: 0 }}
+                      whileHover={{ scale: 1.1 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <ZoomIn className="w-5 h-5" />
+                    </motion.div>
+
+                    {/* Image Counter - Desktop */}
+                    {images.length > 1 && (
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium hidden md:block z-20">
+                        {selectedImage + 1} / {images.length}
+                      </div>
+                    )}
                   </div>
-
-                  {/* Mobile navigation controls removed - placed outside container */}
-
-                  {/* Zoom indicator */}
-                  <motion.div 
-                    className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm text-foreground p-2.5 rounded-full shadow-soft z-20"
-                    initial={{ opacity: 0 }}
-                    whileHover={{ scale: 1.1 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <ZoomIn className="w-5 h-5" />
-                  </motion.div>
-
-                  {/* Image Counter - Desktop */}
+                  
+                  {/* MOBILE Navigation Controls - Overlay on top of image container */}
                   {images.length > 1 && (
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium hidden md:block z-20">
-                      {selectedImage + 1} / {images.length}
+                    <div className="absolute inset-0 md:hidden z-50 pointer-events-none">
+                      {/* Left Arrow */}
+                      <button
+                        type="button"
+                        aria-label="Previous image"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full shadow-xl bg-white dark:bg-gray-900 flex items-center justify-center active:scale-90 transition-transform pointer-events-auto"
+                        style={{ touchAction: 'manipulation' }}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handlePrevImage();
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handlePrevImage();
+                        }}
+                      >
+                        <ChevronLeft className="w-7 h-7 text-gray-800 dark:text-gray-100" />
+                      </button>
+                      
+                      {/* Right Arrow */}
+                      <button
+                        type="button"
+                        aria-label="Next image"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full shadow-xl bg-white dark:bg-gray-900 flex items-center justify-center active:scale-90 transition-transform pointer-events-auto"
+                        style={{ touchAction: 'manipulation' }}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleNextImage();
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleNextImage();
+                        }}
+                      >
+                        <ChevronRight className="w-7 h-7 text-gray-800 dark:text-gray-100" />
+                      </button>
+                      
+                      {/* Dot indicators */}
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2.5 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2.5 pointer-events-auto">
+                        {images.map((_, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            aria-label={`Go to image ${idx + 1}`}
+                            className={`rounded-full transition-all ${
+                              selectedImage === idx 
+                                ? 'w-7 h-3.5 bg-white' 
+                                : 'w-3.5 h-3.5 bg-white/50 active:bg-white/80'
+                            }`}
+                            style={{ touchAction: 'manipulation' }}
+                            onTouchEnd={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedImage(idx);
+                            }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedImage(idx);
+                            }}
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
-                
-                {/* MOBILE Navigation Controls - OUTSIDE overflow-hidden container */}
-                {images.length > 1 && (
-                  <div className="md:hidden relative -mt-[50%] mb-[calc(50%-24px)] z-50 px-3">
-                    {/* Left Arrow */}
-                    <button
-                      type="button"
-                      aria-label="Previous image"
-                      className="absolute left-3 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full shadow-xl bg-white dark:bg-gray-900 flex items-center justify-center active:scale-90 transition-transform"
-                      style={{ touchAction: 'manipulation' }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handlePrevImage();
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handlePrevImage();
-                      }}
-                    >
-                      <ChevronLeft className="w-7 h-7 text-gray-800 dark:text-gray-100" />
-                    </button>
-                    
-                    {/* Right Arrow */}
-                    <button
-                      type="button"
-                      aria-label="Next image"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full shadow-xl bg-white dark:bg-gray-900 flex items-center justify-center active:scale-90 transition-transform"
-                      style={{ touchAction: 'manipulation' }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleNextImage();
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleNextImage();
-                      }}
-                    >
-                      <ChevronRight className="w-7 h-7 text-gray-800 dark:text-gray-100" />
-                    </button>
-                    
-                    {/* Dot indicators */}
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[calc(50%+40px)] flex gap-2.5 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2.5">
-                      {images.map((_, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          aria-label={`Go to image ${idx + 1}`}
-                          className={`rounded-full transition-all ${
-                            selectedImage === idx 
-                              ? 'w-7 h-3.5 bg-white' 
-                              : 'w-3.5 h-3.5 bg-white/50 active:bg-white/80'
-                          }`}
-                          style={{ touchAction: 'manipulation' }}
-                          onTouchEnd={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSelectedImage(idx);
-                          }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSelectedImage(idx);
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
                 
                 {/* Desktop Navigation Arrows - positioned as siblings */}
                 {images.length > 1 && (
