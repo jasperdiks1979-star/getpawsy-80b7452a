@@ -31,12 +31,17 @@ export function ProductSchema({
   reviews = [],
   baseUrl = 'https://getpawsy.pet'
 }: ProductSchemaProps) {
-  // Clean description from HTML
-  const cleanDescription = product.description
+  // Clean description from HTML and make it benefit-driven for US market
+  const rawDescription = product.description
     ?.replace(/<[^>]*>/g, '')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 500) || `Premium ${product.name} for your beloved pet. Shop quality pet products at GetPawsy.`;
+    .slice(0, 500);
+  
+  // Ensure description is always populated with benefit-driven copy
+  const cleanDescription = rawDescription && rawDescription.length > 50 
+    ? rawDescription 
+    : `Shop ${product.name} at GetPawsy. Premium quality pet product designed for comfort and durability. Fast US shipping, 30-day hassle-free returns.`;
 
   // NOTE: Reviews/ratings intentionally removed from structured data
   // Google requires real customer reviews - no placeholders or fake data
@@ -87,7 +92,7 @@ export function ProductSchema({
     brand: {
       '@type': 'Brand',
       name: 'GetPawsy',
-      logo: `${baseUrl}/favicon.png`,
+      url: baseUrl,
     },
     manufacturer: {
       '@type': 'Organization',
@@ -193,8 +198,10 @@ export function ProductSchema({
         },
       ],
     },
-    // NOTE: aggregateRating and review fields intentionally omitted
-    // Google requires real customer reviews - will be added when available
+    // FUTURE: aggregateRating and review fields ready for real customer reviews
+    // When reviews are collected, add:
+    // aggregateRating: { '@type': 'AggregateRating', ratingValue: X, reviewCount: Y, bestRating: 5, worstRating: 1 }
+    // review: [{ '@type': 'Review', author: {...}, reviewRating: {...}, reviewBody: '...' }]
   };
 
   // WebPage schema for product page
