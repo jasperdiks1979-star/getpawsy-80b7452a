@@ -22,13 +22,27 @@ const Unsubscribe = () => {
       return;
     }
 
-    // Decode the token to show the email
-    try {
-      const decodedEmail = atob(token);
-      setEmail(decodedEmail);
+    // Check if token is a UUID (secure preference_token) or legacy base64
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    
+    if (uuidRegex.test(token)) {
+      // Secure UUID token - we'll get the email from the server
       setStatus('confirming');
-    } catch {
-      setStatus('invalid');
+      // Email will be revealed after unsubscribe action for privacy
+      setEmail('your email');
+    } else {
+      // Try legacy base64 decode for backward compatibility
+      try {
+        const decodedEmail = atob(token);
+        if (decodedEmail.includes('@')) {
+          setEmail(decodedEmail);
+          setStatus('confirming');
+        } else {
+          setStatus('invalid');
+        }
+      } catch {
+        setStatus('invalid');
+      }
     }
   }, [token]);
 

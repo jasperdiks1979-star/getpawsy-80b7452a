@@ -192,7 +192,7 @@ const handler = async (req: Request): Promise<Response> => {
                     </p>
                     <p style="margin: 0; color: #a1a1aa; font-size: 11px;">
                       ${preferenceToken ? `<a href="https://getpawsy.pet/newsletter-preferences?token=${preferenceToken}" style="color: #a1a1aa; text-decoration: underline;">Manage Preferences</a> | ` : ''}
-                      <a href="https://getpawsy.pet/unsubscribe?token=${btoa(email)}" style="color: #a1a1aa; text-decoration: underline;">Unsubscribe</a>
+                      <a href="https://getpawsy.pet/unsubscribe?token=${preferenceToken || ''}" style="color: #a1a1aa; text-decoration: underline;">Unsubscribe</a>
                     </p>
                   </td>
                 </tr>

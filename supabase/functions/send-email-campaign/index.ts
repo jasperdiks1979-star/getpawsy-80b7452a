@@ -6,6 +6,38 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HMAC signature generation for tracking URLs
+async function generateHMAC(data: string, secretKey: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secretKey);
+  const dataBuffer = encoder.encode(data);
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, dataBuffer);
+  
+  return btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+async function generateTrackingSignature(
+  campaignId: string,
+  email: string,
+  eventType: string,
+  secretKey: string
+): Promise<string> {
+  const data = `${campaignId}:${email}:${eventType}`;
+  return generateHMAC(data, secretKey);
+}
+
 interface CampaignRequest {
   campaignId: string;
   additionalEmails?: string[]; // Optional manually added emails
@@ -27,8 +59,9 @@ const buildPlainTextEmail = (params: {
 }) => {
   const { subject, content, subscriberEmail, preferenceToken } = params;
   
-  const encodedEmail = encodeURIComponent(subscriberEmail);
-  const unsubscribeUrl = `https://getpawsy.pet/unsubscribe?email=${encodedEmail}`;
+  const unsubscribeUrl = preferenceToken 
+    ? `https://getpawsy.pet/unsubscribe?token=${preferenceToken}`
+    : `https://getpawsy.pet/newsletter-preferences`;
   const preferencesUrl = `https://getpawsy.pet/newsletter-preferences?token=${preferenceToken}`;
   const shopUrl = 'https://getpawsy.pet/products';
   
@@ -82,8 +115,10 @@ const buildEmailTemplate = (params: {
 }) => {
   const { subject, content, campaignId, subscriberEmail, preferenceToken, trackClickUrl, trackingPixelUrl } = params;
   
-  const encodedEmail = encodeURIComponent(subscriberEmail);
-  const unsubscribeUrl = `https://getpawsy.pet/unsubscribe?email=${encodedEmail}`;
+  // Use secure preference_token for unsubscribe, not email in URL
+  const unsubscribeUrl = preferenceToken 
+    ? `https://getpawsy.pet/unsubscribe?token=${preferenceToken}`
+    : `https://getpawsy.pet/newsletter-preferences`;
   const preferencesUrl = `https://getpawsy.pet/newsletter-preferences?token=${preferenceToken}`;
   const shopUrl = trackClickUrl('https://getpawsy.pet/products');
   const logoUrl = 'https://getpawsy.pet/favicon.png';
@@ -509,11 +544,23 @@ const handler = async (req: Request): Promise<Response> => {
         batch.map(async (subscriber) => {
           try {
             const encodedEmail = encodeURIComponent(subscriber.email);
+            const trackingSecret = Deno.env.get("TRACKING_HMAC_SECRET");
             
-            // Tracking URLs
-            const trackingPixelUrl = `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/track-email-event?c=${campaignId}&e=${encodedEmail}&t=open`;
-            const trackClickUrl = (url: string) => 
-              `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/track-email-event?c=${campaignId}&e=${encodedEmail}&t=click&url=${encodeURIComponent(url)}`;
+            // Generate HMAC signatures for tracking URLs if secret is configured
+            let openSignature = '';
+            let clickSignature = '';
+            if (trackingSecret) {
+              openSignature = await generateTrackingSignature(campaignId, subscriber.email, 'open', trackingSecret);
+              clickSignature = await generateTrackingSignature(campaignId, subscriber.email, 'click', trackingSecret);
+            }
+            
+            // Tracking URLs with HMAC signatures
+            const trackingPixelUrl = trackingSecret
+              ? `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/track-email-event?c=${campaignId}&e=${encodedEmail}&t=open&s=${openSignature}`
+              : `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/track-email-event?c=${campaignId}&e=${encodedEmail}&t=open`;
+            const trackClickUrl = (url: string) => trackingSecret
+              ? `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/track-email-event?c=${campaignId}&e=${encodedEmail}&t=click&s=${clickSignature}&url=${encodeURIComponent(url)}`
+              : `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/track-email-event?c=${campaignId}&e=${encodedEmail}&t=click&url=${encodeURIComponent(url)}`;
 
             const emailHtml = buildEmailTemplate({
               subject: campaign.subject,
@@ -533,6 +580,11 @@ const handler = async (req: Request): Promise<Response> => {
               preferenceToken: subscriber.preference_token || '',
             });
 
+            // Use secure preference_token for List-Unsubscribe header
+            const unsubscribeUrl = subscriber.preference_token
+              ? `https://getpawsy.pet/unsubscribe?token=${subscriber.preference_token}`
+              : `https://getpawsy.pet/newsletter-preferences`;
+
             const response = await fetch("https://api.resend.com/emails", {
               method: "POST",
               headers: {
@@ -547,7 +599,7 @@ const handler = async (req: Request): Promise<Response> => {
                 html: emailHtml,
                 text: emailText, // Plain-text alternative for spam score improvement
                 headers: {
-                  "List-Unsubscribe": `<https://getpawsy.pet/unsubscribe?email=${encodedEmail}>`,
+                  "List-Unsubscribe": `<${unsubscribeUrl}>`,
                   "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
                 },
               }),
