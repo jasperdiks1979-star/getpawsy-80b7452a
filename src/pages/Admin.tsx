@@ -3163,9 +3163,40 @@ const Admin = () => {
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
+
+          {/* A/B Test Dashboard Tab */}
+          <TabsContent value="ab-tests" className="space-y-6">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">A/B Test dashboard laden...</span>
+                  </div>
+                </Card>
+              }>
+                <ABTestDashboard />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Growth Analytics Tab */}
+          <TabsContent value="growth" className="space-y-6">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Growth analytics laden...</span>
+                  </div>
+                </Card>
+              }>
+                <GrowthAnalyticsDashboard />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
         </Tabs>
 
-        {/* Product Edit Dialog */}
         <ProductEditDialog
           product={editProduct}
           open={editDialogOpen}
@@ -3283,38 +3314,6 @@ const Admin = () => {
           }}
           isImporting={importMutation.isPending}
         />
-
-          {/* A/B Test Dashboard Tab */}
-          <TabsContent value="ab-tests" className="space-y-6">
-            <AuthErrorBoundary>
-              <Suspense fallback={
-                <Card className="p-8">
-                  <div className="flex items-center justify-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-muted-foreground">A/B Test dashboard laden...</span>
-                  </div>
-                </Card>
-              }>
-                <ABTestDashboard />
-              </Suspense>
-            </AuthErrorBoundary>
-          </TabsContent>
-
-          {/* Growth Analytics Tab */}
-          <TabsContent value="growth" className="space-y-6">
-            <AuthErrorBoundary>
-              <Suspense fallback={
-                <Card className="p-8">
-                  <div className="flex items-center justify-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-muted-foreground">Growth analytics laden...</span>
-                  </div>
-                </Card>
-              }>
-                <GrowthAnalyticsDashboard />
-              </Suspense>
-            </AuthErrorBoundary>
-          </TabsContent>
 
         {/* Product Compare Dialog */}
         <ProductCompareDialog
