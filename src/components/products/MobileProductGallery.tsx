@@ -31,6 +31,15 @@ export function MobileProductGallery({
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const thumbnailContainerRef = React.useRef<HTMLDivElement>(null);
 
+  // Preload first 2 images on mount for instant gallery feel
+  React.useEffect(() => {
+    const preloadImages = images.slice(0, 2);
+    preloadImages.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, [images]);
+
   // Update selected index when carousel scrolls
   React.useEffect(() => {
     if (!emblaApi) return;
@@ -122,7 +131,7 @@ export function MobileProductGallery({
                   alt={`${productName} - Image ${idx + 1}`}
                   className="object-contain pointer-events-none"
                   containerClassName="w-full h-full p-2"
-                  priority={idx === 0}
+                  priority={idx < 2}
                 />
               </div>
             ))}
@@ -179,6 +188,7 @@ export function MobileProductGallery({
                 alt={`Thumbnail ${idx + 1}`}
                 aspectRatio="square"
                 className="object-cover"
+                priority={idx < 2}
               />
             </button>
           ))}
