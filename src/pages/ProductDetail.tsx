@@ -628,14 +628,20 @@ const ProductDetail = () => {
                 images={images}
                 productName={safeString(product.name)}
                 discount={discount}
-                onImageClick={() => setLightboxOpen(true)}
+                onImageClick={(index) => {
+                  setSelectedImage(index);
+                  setLightboxOpen(true);
+                }}
               />
             ) : (
               <DesktopProductGallery
                 images={images}
                 productName={safeString(product.name)}
                 discount={discount}
-                onImageClick={() => setLightboxOpen(true)}
+                onImageClick={(index) => {
+                  setSelectedImage(index);
+                  setLightboxOpen(true);
+                }}
               />
             )}
           </motion.div>
