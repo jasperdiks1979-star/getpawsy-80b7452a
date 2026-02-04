@@ -2,8 +2,9 @@ import { useState, useEffect, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Cookie, X, Settings } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Banner component with forwardRef for AnimatePresence compatibility
 const CookieBanner = forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<typeof motion.div>>(
@@ -31,6 +32,12 @@ export const CookieConsent = () => {
     analytics: true,
     marketing: true,
   });
+  const location = useLocation();
+  const isMobile = useIsMobile();
+
+  // Check if we're on checkout/cart pages - disable banner on mobile for these routes
+  const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
+  const shouldDisable = isMobile && isCheckoutRoute;
 
   useEffect(() => {
     const consent = localStorage.getItem(CONSENT_KEY);
@@ -118,6 +125,9 @@ export const CookieConsent = () => {
     if (key === 'necessary') return; // Necessary cookies cannot be disabled
     setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
   };
+
+  // Don't render on mobile checkout pages
+  if (shouldDisable) return null;
 
   return (
     <AnimatePresence>

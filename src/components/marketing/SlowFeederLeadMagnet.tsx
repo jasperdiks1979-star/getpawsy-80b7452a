@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { trackNewsletterSignup, trackEvent } from '@/lib/analytics';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getStoredUTMParams } from '@/hooks/useUTMTracking';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Backdrop component with forwardRef for AnimatePresence compatibility
 const SlowFeederBackdrop = forwardRef<HTMLDivElement, { onClick: () => void }>(
@@ -45,6 +46,12 @@ export function SlowFeederLeadMagnet({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isMobile = useIsMobile();
+
+  // Check if we're on checkout/cart pages - disable popup on mobile for these routes
+  const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
+  const shouldDisable = isMobile && isCheckoutRoute;
 
   const isOpen = controlledIsOpen ?? internalIsOpen;
 
@@ -213,6 +220,9 @@ export function SlowFeederLeadMagnet({
     { icon: Brain, text: 'Mental stimulation' },
     { icon: Timer, text: 'Slows eating by 10x' },
   ];
+
+  // Don't render on mobile checkout pages
+  if (shouldDisable) return null;
 
   return (
     <AnimatePresence>
