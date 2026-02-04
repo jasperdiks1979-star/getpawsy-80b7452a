@@ -477,8 +477,10 @@ const ProductDetail = () => {
     );
   }
 
-  // Check stock status first - used by handleAddToCart and in rendering
-  const inStock = product.stock !== null && product.stock > 0;
+  // Stock logic: Only show "Out of Stock" when explicitly set to 0
+  // If stock is null/undefined, assume available (don't default to out-of-stock)
+  const isExplicitlyOutOfStock = product.stock !== null && product.stock !== undefined && product.stock === 0;
+  const inStock = !isExplicitlyOutOfStock;
 
   const handleAddToCart = () => {
     // Prevent adding out-of-stock items
