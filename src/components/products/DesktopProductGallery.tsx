@@ -1,14 +1,9 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ZoomIn, Grid3X3 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 interface DesktopProductGalleryProps {
@@ -32,7 +27,6 @@ export function DesktopProductGallery({
   const [direction, setDirection] = React.useState(0);
   const [isHovering, setIsHovering] = React.useState(false);
   const [zoomPosition, setZoomPosition] = React.useState({ x: 50, y: 50 });
-  const [counterOpen, setCounterOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const imageContainerRef = React.useRef<HTMLDivElement>(null);
   const thumbnailRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
@@ -59,12 +53,6 @@ export function DesktopProductGallery({
   const handleThumbnailClick = (index: number) => {
     setDirection(index > selectedImage ? 1 : -1);
     setSelectedImage(index);
-  };
-
-  const handleImageSelect = (index: number) => {
-    setDirection(index > selectedImage ? 1 : -1);
-    setSelectedImage(index);
-    setCounterOpen(false);
   };
 
   // Hover zoom handlers - desktop only
@@ -299,55 +287,22 @@ export function DesktopProductGallery({
           </>
         )}
 
-        {/* Clickable Image Counter with Popover Navigator */}
+        {/* Clickable Image Counter - Opens Lightbox */}
         {images.length > 1 && (
-          <Popover open={counterOpen} onOpenChange={setCounterOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium z-20 flex items-center gap-2 hover:bg-background transition-colors cursor-pointer"
-                aria-label="Open image navigator"
-              >
-                <Grid3X3 className="w-3.5 h-3.5" />
-                <span>{selectedImage + 1} / {images.length}</span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent 
-              className="w-auto p-3" 
-              align="center"
-              side="top"
-              sideOffset={8}
-            >
-              <div className="grid grid-cols-4 gap-2 max-w-[280px]">
-                {images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleImageSelect(idx)}
-                    className={cn(
-                      "relative aspect-square rounded-lg overflow-hidden transition-all duration-200",
-                      selectedImage === idx
-                        ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
-                        : "opacity-70 hover:opacity-100"
-                    )}
-                    aria-label={`View image ${idx + 1}`}
-                    aria-pressed={selectedImage === idx}
-                  >
-                    {/* Lazy load thumbnails in popover */}
-                    <img
-                      src={img}
-                      alt={`Thumbnail ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    {/* Index overlay */}
-                    <span className="absolute bottom-0.5 right-1 text-[10px] font-medium text-white drop-shadow-md">
-                      {idx + 1}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+          <button
+            type="button"
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm text-foreground text-sm px-4 py-1.5 rounded-full shadow-soft font-medium z-20 flex items-center gap-2 hover:bg-background transition-colors cursor-pointer"
+            aria-label="Open fullscreen image viewer"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onImageClick) {
+                onImageClick(selectedImage);
+              }
+            }}
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+            <span>{selectedImage + 1} / {images.length}</span>
+          </button>
         )}
       </div>
 
