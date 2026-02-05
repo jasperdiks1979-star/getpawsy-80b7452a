@@ -1278,6 +1278,57 @@ export type Database = {
         }
         Relationships: []
       }
+      monitoring_ai_summaries: {
+        Row: {
+          actions_taken: Json | null
+          ai_summary: string
+          confidence_level: string | null
+          created_at: string
+          current_risks: Json | null
+          id: string
+          incidents: Json | null
+          model_used: string | null
+          recommendation: string
+          score: number | null
+          status: string
+          status_emoji: string
+          summary_date: string
+          what_changed: string[] | null
+        }
+        Insert: {
+          actions_taken?: Json | null
+          ai_summary: string
+          confidence_level?: string | null
+          created_at?: string
+          current_risks?: Json | null
+          id?: string
+          incidents?: Json | null
+          model_used?: string | null
+          recommendation: string
+          score?: number | null
+          status: string
+          status_emoji: string
+          summary_date: string
+          what_changed?: string[] | null
+        }
+        Update: {
+          actions_taken?: Json | null
+          ai_summary?: string
+          confidence_level?: string | null
+          created_at?: string
+          current_risks?: Json | null
+          id?: string
+          incidents?: Json | null
+          model_used?: string | null
+          recommendation?: string
+          score?: number | null
+          status?: string
+          status_emoji?: string
+          summary_date?: string
+          what_changed?: string[] | null
+        }
+        Relationships: []
+      }
       monitoring_alerts: {
         Row: {
           affected_urls: string[] | null
@@ -1427,6 +1478,57 @@ export type Database = {
           },
         ]
       }
+      monitoring_budget_tapers: {
+        Row: {
+          affected_urls: string[] | null
+          campaign_ids: string[] | null
+          created_at: string
+          executed_at: string | null
+          id: string
+          is_recommendation: boolean
+          original_budget_percent: number
+          platform: string
+          revert_reason: string | null
+          reverted_at: string | null
+          taper_reason: string
+          tapered_budget_percent: number
+          trigger_id: string | null
+          trigger_type: string
+        }
+        Insert: {
+          affected_urls?: string[] | null
+          campaign_ids?: string[] | null
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          is_recommendation?: boolean
+          original_budget_percent?: number
+          platform: string
+          revert_reason?: string | null
+          reverted_at?: string | null
+          taper_reason: string
+          tapered_budget_percent: number
+          trigger_id?: string | null
+          trigger_type: string
+        }
+        Update: {
+          affected_urls?: string[] | null
+          campaign_ids?: string[] | null
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          is_recommendation?: boolean
+          original_budget_percent?: number
+          platform?: string
+          revert_reason?: string | null
+          reverted_at?: string | null
+          taper_reason?: string
+          tapered_budget_percent?: number
+          trigger_id?: string | null
+          trigger_type?: string
+        }
+        Relationships: []
+      }
       monitoring_conversion_baselines: {
         Row: {
           baseline_period_end: string
@@ -1545,6 +1647,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      monitoring_predictive_alerts: {
+        Row: {
+          affected_components: string[] | null
+          affected_urls: string[] | null
+          alert_type: string
+          created_at: string
+          estimated_hours_to_nogo: number | null
+          id: string
+          indicators: Json
+          is_active: boolean
+          recommended_actions: string[] | null
+          resolution_reason: string | null
+          resolved_at: string | null
+          risk_level: string
+          severity: string
+          updated_at: string
+        }
+        Insert: {
+          affected_components?: string[] | null
+          affected_urls?: string[] | null
+          alert_type: string
+          created_at?: string
+          estimated_hours_to_nogo?: number | null
+          id?: string
+          indicators?: Json
+          is_active?: boolean
+          recommended_actions?: string[] | null
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          risk_level: string
+          severity?: string
+          updated_at?: string
+        }
+        Update: {
+          affected_components?: string[] | null
+          affected_urls?: string[] | null
+          alert_type?: string
+          created_at?: string
+          estimated_hours_to_nogo?: number | null
+          id?: string
+          indicators?: Json
+          is_active?: boolean
+          recommended_actions?: string[] | null
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          risk_level?: string
+          severity?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       monitoring_release_guards: {
         Row: {
