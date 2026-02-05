@@ -1568,6 +1568,78 @@ export type Database = {
         }
         Relationships: []
       }
+      monitoring_founder_snapshots: {
+        Row: {
+          add_to_cart_rate_7day_avg: number | null
+          add_to_cart_rate_today: number | null
+          ads_health_status: string
+          aov_7day_avg: number | null
+          aov_today: number | null
+          cart_health: string | null
+          checkout_health: string | null
+          checkout_start_rate_7day_avg: number | null
+          checkout_start_rate_today: number | null
+          confidence_score: number | null
+          conversion_rate_7day_avg: number | null
+          conversion_rate_today: number | null
+          created_at: string
+          id: string
+          pdp_health: string | null
+          recent_incidents: Json | null
+          revenue_7day_avg: number | null
+          revenue_today: number | null
+          snapshot_date: string
+          status_explanation: string | null
+          top_landing_pages: Json | null
+        }
+        Insert: {
+          add_to_cart_rate_7day_avg?: number | null
+          add_to_cart_rate_today?: number | null
+          ads_health_status: string
+          aov_7day_avg?: number | null
+          aov_today?: number | null
+          cart_health?: string | null
+          checkout_health?: string | null
+          checkout_start_rate_7day_avg?: number | null
+          checkout_start_rate_today?: number | null
+          confidence_score?: number | null
+          conversion_rate_7day_avg?: number | null
+          conversion_rate_today?: number | null
+          created_at?: string
+          id?: string
+          pdp_health?: string | null
+          recent_incidents?: Json | null
+          revenue_7day_avg?: number | null
+          revenue_today?: number | null
+          snapshot_date?: string
+          status_explanation?: string | null
+          top_landing_pages?: Json | null
+        }
+        Update: {
+          add_to_cart_rate_7day_avg?: number | null
+          add_to_cart_rate_today?: number | null
+          ads_health_status?: string
+          aov_7day_avg?: number | null
+          aov_today?: number | null
+          cart_health?: string | null
+          checkout_health?: string | null
+          checkout_start_rate_7day_avg?: number | null
+          checkout_start_rate_today?: number | null
+          confidence_score?: number | null
+          conversion_rate_7day_avg?: number | null
+          conversion_rate_today?: number | null
+          created_at?: string
+          id?: string
+          pdp_health?: string | null
+          recent_incidents?: Json | null
+          revenue_7day_avg?: number | null
+          revenue_today?: number | null
+          snapshot_date?: string
+          status_explanation?: string | null
+          top_landing_pages?: Json | null
+        }
+        Relationships: []
+      }
       monitoring_incidents: {
         Row: {
           acknowledged_at: string | null
@@ -1765,6 +1837,71 @@ export type Database = {
         }
         Relationships: []
       }
+      monitoring_priority_rankings: {
+        Row: {
+          ad_spend_at_risk: number | null
+          affected_urls: string[] | null
+          conversion_drop_percent: number | null
+          created_at: string
+          estimated_impact: string
+          fix_complexity: string | null
+          id: string
+          is_active: boolean | null
+          issue_summary: string
+          priority_rank: number
+          recommended_action: string
+          related_incident_id: string | null
+          resolved_at: string | null
+          revenue_impact_score: number | null
+          updated_at: string
+          why_it_matters: string
+        }
+        Insert: {
+          ad_spend_at_risk?: number | null
+          affected_urls?: string[] | null
+          conversion_drop_percent?: number | null
+          created_at?: string
+          estimated_impact: string
+          fix_complexity?: string | null
+          id?: string
+          is_active?: boolean | null
+          issue_summary: string
+          priority_rank: number
+          recommended_action: string
+          related_incident_id?: string | null
+          resolved_at?: string | null
+          revenue_impact_score?: number | null
+          updated_at?: string
+          why_it_matters: string
+        }
+        Update: {
+          ad_spend_at_risk?: number | null
+          affected_urls?: string[] | null
+          conversion_drop_percent?: number | null
+          created_at?: string
+          estimated_impact?: string
+          fix_complexity?: string | null
+          id?: string
+          is_active?: boolean | null
+          issue_summary?: string
+          priority_rank?: number
+          recommended_action?: string
+          related_incident_id?: string | null
+          resolved_at?: string | null
+          revenue_impact_score?: number | null
+          updated_at?: string
+          why_it_matters?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_priority_rankings_related_incident_id_fkey"
+            columns: ["related_incident_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monitoring_realtime_alerts: {
         Row: {
           affected_campaigns: string[] | null
@@ -1933,6 +2070,54 @@ export type Database = {
           run_type?: string
           started_at?: string
           success?: boolean | null
+        }
+        Relationships: []
+      }
+      monitoring_scaling_thresholds: {
+        Row: {
+          auto_protections: Json | null
+          created_at: string
+          failure_modes: Json | null
+          id: string
+          is_active: boolean | null
+          metrics_to_watch: Json | null
+          pause_conditions: Json | null
+          required_checks: Json | null
+          scale_conditions: Json | null
+          tier_multiplier: number
+          traffic_tier: string
+          updated_at: string
+          warning_signs: Json | null
+        }
+        Insert: {
+          auto_protections?: Json | null
+          created_at?: string
+          failure_modes?: Json | null
+          id?: string
+          is_active?: boolean | null
+          metrics_to_watch?: Json | null
+          pause_conditions?: Json | null
+          required_checks?: Json | null
+          scale_conditions?: Json | null
+          tier_multiplier?: number
+          traffic_tier: string
+          updated_at?: string
+          warning_signs?: Json | null
+        }
+        Update: {
+          auto_protections?: Json | null
+          created_at?: string
+          failure_modes?: Json | null
+          id?: string
+          is_active?: boolean | null
+          metrics_to_watch?: Json | null
+          pause_conditions?: Json | null
+          required_checks?: Json | null
+          scale_conditions?: Json | null
+          tier_multiplier?: number
+          traffic_tier?: string
+          updated_at?: string
+          warning_signs?: Json | null
         }
         Relationships: []
       }
