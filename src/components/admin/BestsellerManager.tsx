@@ -365,11 +365,12 @@ export const BestsellerManager = () => {
   const { data: availableProducts } = useQuery({
     queryKey: ['available-products-for-bestseller'],
     queryFn: async () => {
+      // DROPSHIPPING MODEL: is_active is the only filter
+      // Stock = 0 doesn't mean out of stock - supplier manages inventory
       const { data: allProducts, error: productsError } = await supabase
         .from('products')
         .select('id, name, price, image_url, category, description')
         .eq('is_active', true)
-        .gt('stock', 0)
         .order('name');
 
       if (productsError) throw productsError;

@@ -43,7 +43,10 @@ export const SubcategoryGrid = ({ subcategories, parentCategoryName, isLoading }
     return <SubcategoryGridSkeleton />;
   }
 
-  if (!subcategories || subcategories.length === 0) return null;
+  // Only show subcategories that have products to prevent dead-end navigation
+  const subcategoriesWithProducts = subcategories?.filter(s => (s.productCount ?? 0) > 0) || [];
+  
+  if (subcategoriesWithProducts.length === 0) return null;
 
   return (
     <div className="mb-10">
@@ -52,12 +55,12 @@ export const SubcategoryGrid = ({ subcategories, parentCategoryName, isLoading }
           Shop {parentCategoryName} by Category
         </h2>
         <span className="text-sm text-muted-foreground">
-          {subcategories.length} subcategories
+          {subcategoriesWithProducts.length} subcategories
         </span>
       </div>
       
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
-        {subcategories.map((subcategory, index) => (
+        {subcategoriesWithProducts.map((subcategory, index) => (
           <motion.div
             key={subcategory.id}
             initial={{ opacity: 0, y: 20 }}

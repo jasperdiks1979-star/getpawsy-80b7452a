@@ -216,9 +216,6 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
                   -{discount}%
                 </Badge>
               )}
-              {product.stock !== null && product.stock < 5 && product.stock > 0 && (
-                <Badge variant="secondary">Low stock</Badge>
-              )}
             </div>
           </div>
           

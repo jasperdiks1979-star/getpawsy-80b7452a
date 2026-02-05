@@ -115,10 +115,11 @@ const Products = () => {
         .from('products_public')
         .select('*')
         .eq('is_active', true)
-        .gt('stock', 0)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
+      // DROPSHIPPING MODEL: stock=0 does NOT mean out of stock
+      // Only is_active=false marks a product as unavailable
       return data;
     },
   });
@@ -222,6 +223,43 @@ const Products = () => {
       ) || [];
     },
     enabled: recentlyViewedIds.length > 0,
+  });
+
+  // Fetch bestsellers for empty state fallback
+  const { data: bestsellers } = useQuery({
+    queryKey: ['bestsellers-products-fallback'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bestsellers')
+        .select(`
+          id,
+          rank,
+          product:products!bestsellers_product_id_fkey (
+            id,
+            name,
+            slug,
+            price,
+            compare_at_price,
+            image_url,
+            images,
+            category,
+            is_active,
+            stock
+          )
+        `)
+        .eq('is_active', true)
+        .order('rank', { ascending: true })
+        .limit(8);
+      
+      if (error) throw error;
+      
+      // Extract and filter active products
+      return data
+        ?.map(b => b.product)
+        .filter((p): p is NonNullable<typeof p> => p !== null && p.is_active === true)
+        || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Build a map of category slugs to ALL their descendant slugs (recursive)
@@ -868,6 +906,7 @@ const Products = () => {
                   <CategoryEmptyState
                     categoryName={categoryDisplayName || undefined}
                     recommendedProducts={recommendedProducts as Product[]}
+                    bestsellers={(bestsellers as Product[]) || []}
                     subcategories={relatedSubcategories}
                     onClearFilters={clearAllFilters}
                     hasActiveFilters={activeFiltersCount > 0}

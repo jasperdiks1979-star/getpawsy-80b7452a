@@ -7,6 +7,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getSchemaAvailability } from '@/lib/availability';
 import { 
   Home, 
   ChevronRight, 
@@ -92,9 +93,8 @@ const generateCollectionJsonLd = (collection: SeoCollectionData, products: Colle
           '@type': 'Offer',
           price: product.price.toFixed(2),
           priceCurrency: 'USD',
-          availability: product.stock && product.stock > 0 
-            ? 'https://schema.org/InStock' 
-            : 'https://schema.org/OutOfStock'
+          // DROPSHIPPING MODEL: Use centralized availability logic
+          availability: getSchemaAvailability(product)
         }
       }
     }))

@@ -190,7 +190,6 @@ const Index = () => {
         .from('products_public')
         .select('*')
         .eq('is_active', true)
-        .gt('stock', 0)
         .order('created_at', { ascending: false })
         .limit(12);
       
@@ -202,14 +201,58 @@ const Index = () => {
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ['homepage-categories'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch parent categories
+      const { data: categoriesData, error } = await supabase
         .from('categories')
         .select('*')
         .is('parent_id', null)
         .order('display_order', { ascending: true });
       
       if (error) throw error;
-      return data;
+      if (!categoriesData) return [];
+
+      // Fetch active products to calculate counts
+      // DROPSHIPPING MODEL: is_active is the only indicator, NOT stock
+      const { data: productsData } = await supabase
+        .from('products')
+        .select('category')
+        .eq('is_active', true);
+
+      // Build a count map
+      const countMap: Record<string, number> = {};
+      productsData?.forEach(p => {
+        if (p.category) {
+          // Normalize category name for matching
+          const normalizedCat = p.category.toLowerCase().trim();
+          countMap[normalizedCat] = (countMap[normalizedCat] || 0) + 1;
+        }
+      });
+
+      // Add product counts to categories
+      // Also check if any subcategory has products (for parent categories)
+      const { data: allCategories } = await supabase
+        .from('categories')
+        .select('id, parent_id, name');
+
+      const categoriesWithCounts = categoriesData.map(cat => {
+        // Direct count for this category
+        const directCount = countMap[cat.name.toLowerCase().trim()] || 0;
+        
+        // Count products in all subcategories
+        const subcategoryIds = allCategories?.filter(c => c.parent_id === cat.id) || [];
+        const subcategoryCount = subcategoryIds.reduce((sum, sub) => {
+          return sum + (countMap[sub.name.toLowerCase().trim()] || 0);
+        }, 0);
+
+        return {
+          ...cat,
+          product_count: directCount + subcategoryCount,
+        };
+      });
+
+      // Only return categories with at least 1 product (directly or in subcategories)
+      // This prevents "dead end" navigation
+      return categoriesWithCounts.filter(cat => cat.product_count > 0);
     },
   });
 
@@ -275,8 +318,7 @@ const Index = () => {
         .from('products_public')
         .select('*')
         .in('id', recentlyViewedIds)
-        .eq('is_active', true)
-        .gt('stock', 0);
+        .eq('is_active', true);
       
       if (error) throw error;
       if (!data) return [];

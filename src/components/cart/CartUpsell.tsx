@@ -100,12 +100,12 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
     queryKey: ['upsell-products', cartCategories, baseProductIds],
     queryFn: async () => {
       if (cartCategories.length === 0) {
-        // If no categories, fetch bestsellers or random products
+        // If no categories, fetch bestsellers or random active products
+        // DROPSHIPPING MODEL: is_active is the only filter, NOT stock
         const { data, error } = await supabase
           .from('products_public')
           .select('*')
           .eq('is_active', true)
-          .gt('stock', 0)
           .limit(maxItems * 2);
         
         if (error) throw error;
@@ -118,11 +118,11 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
       }
 
       // Fetch products from same categories
+      // DROPSHIPPING MODEL: is_active is the only filter, NOT stock
       const { data, error } = await supabase
         .from('products_public')
         .select('*')
         .eq('is_active', true)
-        .gt('stock', 0)
         .in('category', cartCategories)
         .limit(maxItems * 3);
       

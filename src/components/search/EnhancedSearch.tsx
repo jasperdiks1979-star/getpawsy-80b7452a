@@ -127,7 +127,6 @@ export const EnhancedSearch = ({
           .from('products_public')
           .select('id, name, price, image_url, category, stock')
           .eq('is_active', true)
-          .gt('stock', 0)
           .or(`name.ilike.%${query}%,description.ilike.%${query}%,category.ilike.%${query}%`)
           .limit(5);
 
