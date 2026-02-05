@@ -68,6 +68,7 @@ import { BestsellerBundleSection } from '@/components/products/BestsellerBundleS
 import { PostAddUpsellModal } from '@/components/products/PostAddUpsellModal';
 import { VolumeDiscountSelector } from '@/components/products/VolumeDiscountSelector';
 import { OrderBump } from '@/components/products/OrderBump';
+import { TrustMicrocopy } from '@/components/products/TrustMicrocopy';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { useRecentlyViewedProducts } from '@/hooks/useRecentlyViewedProducts';
@@ -1183,6 +1184,9 @@ const BestsellerDetail = () => {
                     </Button>
                   </motion.div>
                 </div>
+
+                {/* Trust Microcopy - Below Add to Cart */}
+                <TrustMicrocopy className="pt-3" />
 
                 {/* Order Bump - Inline Upsell */}
                 {orderBumpProduct && (
