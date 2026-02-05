@@ -1176,6 +1176,51 @@ export type Database = {
           },
         ]
       }
+      monitoring_ad_landing_pages: {
+        Row: {
+          created_at: string
+          cta_visible: boolean | null
+          fallback_url: string | null
+          id: string
+          is_active: boolean | null
+          last_check_at: string | null
+          last_status: string | null
+          load_time_ms: number | null
+          page_type: string
+          product_visible: boolean | null
+          updated_at: string
+          url_path: string
+        }
+        Insert: {
+          created_at?: string
+          cta_visible?: boolean | null
+          fallback_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_check_at?: string | null
+          last_status?: string | null
+          load_time_ms?: number | null
+          page_type: string
+          product_visible?: boolean | null
+          updated_at?: string
+          url_path: string
+        }
+        Update: {
+          created_at?: string
+          cta_visible?: boolean | null
+          fallback_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_check_at?: string | null
+          last_status?: string | null
+          load_time_ms?: number | null
+          page_type?: string
+          product_visible?: boolean | null
+          updated_at?: string
+          url_path?: string
+        }
+        Relationships: []
+      }
       monitoring_alerts: {
         Row: {
           affected_urls: string[] | null
@@ -1232,6 +1277,169 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      monitoring_auto_actions: {
+        Row: {
+          action_details: Json
+          action_type: string
+          created_at: string
+          error_message: string | null
+          id: string
+          incident_id: string | null
+          reverted_at: string | null
+          target_component: string | null
+          was_successful: boolean | null
+        }
+        Insert: {
+          action_details: Json
+          action_type: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          incident_id?: string | null
+          reverted_at?: string | null
+          target_component?: string | null
+          was_successful?: boolean | null
+        }
+        Update: {
+          action_details?: Json
+          action_type?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          incident_id?: string | null
+          reverted_at?: string | null
+          target_component?: string | null
+          was_successful?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_auto_actions_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monitoring_conversion_baselines: {
+        Row: {
+          baseline_period_end: string
+          baseline_period_start: string
+          baseline_value: number
+          created_at: string
+          current_value: number | null
+          id: string
+          last_updated_at: string
+          metric_name: string
+          page_type: string
+          sample_size: number
+        }
+        Insert: {
+          baseline_period_end: string
+          baseline_period_start: string
+          baseline_value: number
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          last_updated_at?: string
+          metric_name: string
+          page_type: string
+          sample_size?: number
+        }
+        Update: {
+          baseline_period_end?: string
+          baseline_period_start?: string
+          baseline_value?: number
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          last_updated_at?: string
+          metric_name?: string
+          page_type?: string
+          sample_size?: number
+        }
+        Relationships: []
+      }
+      monitoring_incidents: {
+        Row: {
+          acknowledged_at: string | null
+          affected_component: string | null
+          affected_files: string[] | null
+          alert_id: string | null
+          auto_action_details: Json | null
+          auto_action_taken: string | null
+          created_at: string
+          detected_at: string
+          dom_snapshot: string | null
+          fallback_activated: boolean | null
+          id: string
+          incident_type: string
+          network_logs: Json | null
+          recent_changes: Json | null
+          resolved_at: string | null
+          rollback_applied: boolean | null
+          root_cause_summary: string | null
+          screenshots: Json | null
+          severity: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          affected_component?: string | null
+          affected_files?: string[] | null
+          alert_id?: string | null
+          auto_action_details?: Json | null
+          auto_action_taken?: string | null
+          created_at?: string
+          detected_at?: string
+          dom_snapshot?: string | null
+          fallback_activated?: boolean | null
+          id?: string
+          incident_type: string
+          network_logs?: Json | null
+          recent_changes?: Json | null
+          resolved_at?: string | null
+          rollback_applied?: boolean | null
+          root_cause_summary?: string | null
+          screenshots?: Json | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          affected_component?: string | null
+          affected_files?: string[] | null
+          alert_id?: string | null
+          auto_action_details?: Json | null
+          auto_action_taken?: string | null
+          created_at?: string
+          detected_at?: string
+          dom_snapshot?: string | null
+          fallback_activated?: boolean | null
+          id?: string
+          incident_type?: string
+          network_logs?: Json | null
+          recent_changes?: Json | null
+          resolved_at?: string | null
+          rollback_applied?: boolean | null
+          root_cause_summary?: string | null
+          screenshots?: Json | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_incidents_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       monitoring_runs: {
         Row: {
