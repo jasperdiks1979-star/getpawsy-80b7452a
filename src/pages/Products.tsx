@@ -263,20 +263,28 @@ const Products = () => {
   });
 
   // Build a map of category slugs to ALL their descendant slugs (recursive)
+  // CRITICAL: This map MUST include the actual category NAMES that products use
+  // Products are assigned categories like "Hamster Cages" (name), not "hamster-cages" (slug)
   const categoryToDescendants = useMemo(() => {
     if (!categories) return {};
-    const map: Record<string, string[]> = {};
+    const map: Record<string, Set<string>> = {};
     
-    // Helper function to recursively collect all descendant slugs
-    const collectDescendants = (categoryId: string): string[] => {
+    // Helper function to recursively collect all descendant category identifiers
+    // Returns both names and slugs for flexible matching
+    const collectDescendants = (categoryId: string): Set<string> => {
       const directChildren = categories.filter(c => c.parent_id === categoryId);
-      const descendants: string[] = [];
+      const descendants = new Set<string>();
       
       directChildren.forEach(child => {
-        descendants.push(child.slug);
-        descendants.push(child.name.toLowerCase());
-        // Recursively get grandchildren, etc.
-        descendants.push(...collectDescendants(child.id));
+        // Add both slug and name (in various formats for matching)
+        descendants.add(child.slug);
+        descendants.add(child.slug.toLowerCase());
+        descendants.add(child.name);
+        descendants.add(child.name.toLowerCase());
+        
+        // Recursively get grandchildren and their variations
+        const grandchildren = collectDescendants(child.id);
+        grandchildren.forEach(gc => descendants.add(gc));
       });
       
       return descendants;
@@ -285,8 +293,11 @@ const Products = () => {
     // Build map for all categories (not just parents)
     categories.forEach(category => {
       const descendants = collectDescendants(category.id);
-      if (descendants.length > 0) {
+      if (descendants.size > 0) {
+        // Store as Set for O(1) lookups, keyed by multiple formats
         map[category.slug] = descendants;
+        map[category.slug.toLowerCase()] = descendants;
+        map[category.name] = descendants;
         map[category.name.toLowerCase()] = descendants;
       }
     });
@@ -372,19 +383,24 @@ const Products = () => {
           
           // Check if selected is a parent category - if so, include products from its subcategories
           const selectedSlug = toSlug(selected);
-          const subcategorySlugs = categoryToDescendants[selectedSlug] || 
+          const subcategorySet = categoryToDescendants[selectedSlug] || 
                                    categoryToDescendants[selected.toLowerCase()] || 
                                    categoryToDescendants[selectedNormalized] ||
-                                   [];
-          if (subcategorySlugs.length > 0) {
-            // Check if product's category matches any subcategory
-            return subcategorySlugs.some(subSlug => {
-              const subNormalized = normalizeCategory(subSlug);
-              const subAlt = normalizeCategoryAlt(subSlug);
-              return productCategoryNormalized === subNormalized ||
-                     productCategoryAlt === subAlt ||
-                     productCategoryNormalized === subAlt ||
-                     productCategoryAlt === subNormalized;
+                                   null;
+          if (subcategorySet && subcategorySet.size > 0) {
+            // Check if product's category matches any subcategory (direct set lookup)
+            if (subcategorySet.has(p.category) || 
+                subcategorySet.has(p.category.toLowerCase()) ||
+                subcategorySet.has(productCategoryNormalized) ||
+                subcategorySet.has(productCategoryAlt)) {
+              return true;
+            }
+            
+            // Also check with normalized versions in case of edge cases
+            return Array.from(subcategorySet).some(subCat => {
+              const subNormalized = normalizeCategory(subCat);
+              const subAlt = normalizeCategoryAlt(subCat);
+              return productCategoryNormalized === subNormalized || productCategoryAlt === subAlt;
             });
           }
           
@@ -896,7 +912,9 @@ const Products = () => {
                     if (!parentCategory) return true; // Show popular if no parent
                     const productCategoryNormalized = normalizeCategory(p.category || '');
                     const parentNormalized = normalizeCategory(parentCategory.name);
-                    const parentDescendants = categoryToDescendants[parentCategory.slug] || [];
+                    const parentDescendantsSet = categoryToDescendants[parentCategory.slug];
+                    if (!parentDescendantsSet) return productCategoryNormalized === parentNormalized;
+                    const parentDescendants = Array.from(parentDescendantsSet);
                     return productCategoryNormalized === parentNormalized ||
                            parentDescendants.some(d => normalizeCategory(d) === productCategoryNormalized);
                   })

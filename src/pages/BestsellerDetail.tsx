@@ -586,11 +586,22 @@ const BestsellerDetail = () => {
   if (error || !bestseller || !product) {
     return (
       <Layout>
+        <Helmet>
+          <meta name="robots" content="noindex" />
+        </Helmet>
         <div className="container px-4 py-20 text-center">
           <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
-          <Button onClick={() => navigate('/products')}>
-            View All Products
-          </Button>
+          <p className="text-muted-foreground mb-6">
+            This product may have been renamed or is no longer available.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={() => navigate('/bestsellers')}>
+              View Bestsellers
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/products')}>
+              Browse All Products
+            </Button>
+          </div>
         </div>
       </Layout>
     );
