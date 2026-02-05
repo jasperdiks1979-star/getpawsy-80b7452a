@@ -42,21 +42,20 @@
      });
  
      // ════════════════════════════════════════════
-     // CHECK 1: Performance Metrics (LCP from stored data)
+    // CHECK 1: Performance Metrics (LCP)
      // ════════════════════════════════════════════
-     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
      
      const { data: recentLCP } = await supabase
        .from("performance_metrics")
        .select("metric_value, page_url, rating")
        .eq("metric_name", "LCP")
-       .gte("created_at", oneHourAgo);
+      .gte("created_at", sixHoursAgo);
  
      const poorLCPPages: string[] = [];
-     const LCP_THRESHOLD = 3000; // 3 seconds
+    const LCP_THRESHOLD = 3000;
  
      if (recentLCP && recentLCP.length > 0) {
-       // Group by page and check averages
        const pageMetrics: Record<string, number[]> = {};
        
        for (const metric of recentLCP) {
@@ -79,7 +78,7 @@
            severity: 'P2',
            category: 'performance',
            title: `${poorLCPPages.length} pages with slow LCP (>3s)`,
-           description: `Pages experiencing poor LCP performance: ${poorLCPPages.slice(0, 5).join(', ')}`,
+          description: `Pages with slow LCP: ${poorLCPPages.slice(0, 5).join(', ')}`,
            affected_urls: poorLCPPages.slice(0, 10),
            suggested_fix: 'Optimize hero images, implement preloading, review lazy loading strategy',
          });
@@ -87,32 +86,29 @@
          checksPassed++;
        }
      } else {
-       checksPassed++; // No data to check
+      checksPassed++;
      }
  
      // ════════════════════════════════════════════
-     // CHECK 2: Broken Images Detection
+    // CHECK 2: Broken Images
      // ════════════════════════════════════════════
      const { data: productsWithImages } = await supabase
        .from("products")
        .select("id, name, slug, image_url, images")
        .eq("is_active", true)
-       .limit(20);
+      .limit(50);
  
      const brokenImageProducts: string[] = [];
  
      for (const product of productsWithImages || []) {
-       // Check main image URL format (basic validation)
        if (product.image_url) {
          try {
            new URL(product.image_url);
-           // Could add HEAD request check here, but keeping lightweight
          } catch {
            brokenImageProducts.push(product.name);
          }
        }
        
-       // Check images array
        if (product.images && Array.isArray(product.images)) {
          for (const imgUrl of product.images) {
            try {
@@ -145,12 +141,12 @@
      }
  
      // ════════════════════════════════════════════
-     // CHECK 3: Core Web Vitals Summary
+    // CHECK 3: Core Web Vitals
      // ════════════════════════════════════════════
      const { data: recentMetrics } = await supabase
        .from("performance_metrics")
        .select("metric_name, rating")
-       .gte("created_at", oneHourAgo);
+      .gte("created_at", sixHoursAgo);
  
      if (recentMetrics && recentMetrics.length > 0) {
        const poorCount = recentMetrics.filter(m => m.rating === 'poor').length;
@@ -163,8 +159,8 @@
            alert_key: `cwv_poor_rate_high`,
            severity: 'P2',
            category: 'performance',
-           title: `High rate of poor Core Web Vitals (${poorPercentage.toFixed(1)}%)`,
-           description: `${poorCount} of ${totalCount} recent metrics rated "poor". This may impact user experience and SEO.`,
+          title: `High poor CWV rate (${poorPercentage.toFixed(1)}%)`,
+          description: `${poorCount} of ${totalCount} metrics rated poor. May impact UX and SEO.`,
            affected_urls: [`${SITE_URL}`],
            suggested_fix: 'Review performance dashboard and optimize slow pages',
          });
@@ -175,8 +171,38 @@
        checksPassed++;
      }
  
+    // ════════════════════════════════════════════
+    // CHECK 4: Ad Landing Page Load Times
+    // ════════════════════════════════════════════
+    const { data: adPages } = await supabase
+      .from("monitoring_ad_landing_pages")
+      .select("*")
+      .eq("is_active", true);
+
+    const slowAdPages: string[] = [];
+    for (const page of adPages || []) {
+      if (page.load_time_ms && page.load_time_ms > 4000) {
+        slowAdPages.push(page.url_path);
+      }
+    }
+
+    if (slowAdPages.length > 0) {
+      checksFailed++;
+      alerts.push({
+        alert_key: `ad_landing_slow_${slowAdPages.length}`,
+        severity: 'P2',
+        category: 'ad_landing',
+        title: `${slowAdPages.length} ad landing pages loading slowly`,
+        description: `Slow loading ad landing pages: ${slowAdPages.join(', ')}`,
+        affected_urls: slowAdPages.map(p => `${SITE_URL}${p}`),
+        suggested_fix: 'Optimize images and reduce JS bundle size for ad landing pages',
+      });
+    } else {
+      checksPassed++;
+    }
+
      // ════════════════════════════════════════════
-     // Process Alerts (same logic as P1)
+    // Process Alerts
      // ════════════════════════════════════════════
      const { data: existingAlerts } = await supabase
        .from("monitoring_alerts")
@@ -195,70 +221,54 @@
            last_detected_at: new Date().toISOString(),
            is_active: true,
            resolved_at: null,
-         }, {
-           onConflict: 'alert_key',
-         });
+        }, { onConflict: 'alert_key' });
  
        if (!existingAlertKeys.has(alert.alert_key)) {
          newAlertKeys.push(alert.alert_key);
        }
      }
  
-     // Mark resolved P2 alerts
      const newAlertKeySet = new Set(alerts.map(a => a.alert_key));
      for (const existingKey of existingAlertKeys) {
        if (!newAlertKeySet.has(existingKey)) {
-         await supabase
-           .from("monitoring_alerts")
-           .update({
-             is_active: false,
-             resolved_at: new Date().toISOString(),
-           })
-           .eq("alert_key", existingKey);
+        await supabase.from("monitoring_alerts").update({
+          is_active: false,
+          resolved_at: new Date().toISOString(),
+        }).eq("alert_key", existingKey);
        }
      }
  
-     // Complete run
-     await supabase
-       .from("monitoring_runs")
-       .update({
-         completed_at: new Date().toISOString(),
-         success: checksFailed === 0,
-         checks_passed: checksPassed,
-         checks_failed: checksFailed,
-         details: {
-           alerts_created: newAlertKeys.length,
-           total_active_alerts: alerts.length,
-         },
-       })
-       .eq("id", runId);
+    await supabase.from("monitoring_runs").update({
+      completed_at: new Date().toISOString(),
+      success: checksFailed === 0,
+      checks_passed: checksPassed,
+      checks_failed: checksFailed,
+      details: {
+        alerts_created: newAlertKeys.length,
+        total_active_alerts: alerts.length,
+        lcp_pages_checked: recentLCP?.length || 0,
+        products_checked: productsWithImages?.length || 0,
+      },
+    }).eq("id", runId);
  
-     return new Response(
-       JSON.stringify({
-         success: true,
-         run_id: runId,
-         checks_passed: checksPassed,
-         checks_failed: checksFailed,
-         new_alerts: newAlertKeys.length,
-         alerts: alerts,
-       }),
-       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-     );
+    return new Response(JSON.stringify({
+      success: true,
+      run_id: runId,
+      checks_passed: checksPassed,
+      checks_failed: checksFailed,
+      new_alerts: newAlertKeys.length,
+      alerts: alerts,
+    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
    } catch (error) {
      console.error("Monitoring P2 error:", error);
      
-     await supabase
-       .from("monitoring_runs")
-       .update({
-         completed_at: new Date().toISOString(),
-         success: false,
-         details: { error: error instanceof Error ? error.message : "Unknown error" },
-       })
-       .eq("id", runId);
+    await supabase.from("monitoring_runs").update({
+      completed_at: new Date().toISOString(),
+      success: false,
+      details: { error: error instanceof Error ? error.message : "Unknown error" },
+    }).eq("id", runId);
  
-     return new Response(
-       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-     );
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
    }
  });
