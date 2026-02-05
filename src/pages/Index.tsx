@@ -223,15 +223,30 @@ const Index = () => {
          .from('categories')
          .select('id, parent_id, name, slug');
  
-       // Build a mapping of subcategory name/slug to parent category ID
-       const subcatToParentMap: Record<string, string> = {};
-       allCategories?.forEach(cat => {
-         if (cat.parent_id) {
-           // Map by both name and slug for flexible matching
-           subcatToParentMap[cat.name.toLowerCase().trim()] = cat.parent_id;
-           subcatToParentMap[cat.slug?.toLowerCase().trim() || ''] = cat.parent_id;
-         }
-       });
+        // Build a recursive mapping to find the ROOT parent category for any category
+        // This handles multi-level hierarchies (e.g., Small Pets > Hamsters > Hamster Cages)
+        const findRootParent = (categoryId: string, visited = new Set<string>()): string | null => {
+          if (visited.has(categoryId)) return null; // Prevent infinite loops
+          visited.add(categoryId);
+          
+          const cat = allCategories?.find(c => c.id === categoryId);
+          if (!cat) return null;
+          if (!cat.parent_id) return categoryId; // This is a root category
+          return findRootParent(cat.parent_id, visited);
+        };
+        
+        // Build a mapping of category name/slug to ROOT parent category ID
+        const catToRootParentMap: Record<string, string> = {};
+        allCategories?.forEach(cat => {
+          const rootParentId = findRootParent(cat.id);
+          if (rootParentId && rootParentId !== cat.id) {
+            // Map by both name and slug for flexible matching
+            catToRootParentMap[cat.name.toLowerCase().trim()] = rootParentId;
+            if (cat.slug) {
+              catToRootParentMap[cat.slug.toLowerCase().trim()] = rootParentId;
+            }
+          }
+        });
  
        // Count products per parent category
        const parentCountMap: Record<string, number> = {};
@@ -248,8 +263,8 @@ const Index = () => {
            if (parentMatch) {
              parentCountMap[parentMatch.id] = (parentCountMap[parentMatch.id] || 0) + 1;
            } else {
-             // Check if product category matches a subcategory
-             const parentId = subcatToParentMap[normalizedCat];
+              // Check if product category matches any descendant category
+              const parentId = catToRootParentMap[normalizedCat];
              if (parentId) {
                parentCountMap[parentId] = (parentCountMap[parentId] || 0) + 1;
              }
