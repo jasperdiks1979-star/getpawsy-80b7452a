@@ -32,6 +32,7 @@ import { safeString, safeNumber, safeArray } from '@/lib/safe-render';
 import USProductDescription from '@/components/products/USProductDescription';
 import { generateClarityIntro } from '@/components/products/ClarityIntro';
 import { DeliveryReassurance } from '@/components/products/DeliveryReassurance';
+import { TrustMicrocopy } from '@/components/products/TrustMicrocopy';
 import { WhyPetParentsLoveThis } from '@/components/products/WhyPetParentsLoveThis';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { FAQSchema, generateProductFAQs } from '@/components/seo/FAQSchema';
@@ -912,24 +913,7 @@ const ProductDetail = () => {
               transition={{ delay: 0.5 }}
               className="pt-4 pb-2"
             >
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p className="flex items-center gap-2">
-                  <span className="text-success">✔</span>
-                  <span>Free US shipping over ${FREE_SHIPPING_THRESHOLD}</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <span className="text-success">✔</span>
-                  <span>${FLAT_SHIPPING_RATE.toFixed(2)} flat rate shipping under ${FREE_SHIPPING_THRESHOLD}</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <span className="text-success">✔</span>
-                  <span>Ships from US warehouses</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <span className="text-success">✔</span>
-                  <span>30-day hassle-free returns</span>
-                </p>
-              </div>
+              <TrustMicrocopy />
             </motion.div>
 
             {/* Trust Features - Complementary to above microcopy */}
