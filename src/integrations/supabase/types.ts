@@ -1176,6 +1176,99 @@ export type Database = {
           },
         ]
       }
+      monitoring_alerts: {
+        Row: {
+          affected_urls: string[] | null
+          alert_key: string
+          category: string
+          created_at: string
+          description: string
+          first_detected_at: string
+          id: string
+          is_active: boolean
+          last_detected_at: string
+          notification_sent: boolean
+          resolved_at: string | null
+          screenshot_url: string | null
+          severity: string
+          suggested_fix: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affected_urls?: string[] | null
+          alert_key: string
+          category: string
+          created_at?: string
+          description: string
+          first_detected_at?: string
+          id?: string
+          is_active?: boolean
+          last_detected_at?: string
+          notification_sent?: boolean
+          resolved_at?: string | null
+          screenshot_url?: string | null
+          severity: string
+          suggested_fix?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affected_urls?: string[] | null
+          alert_key?: string
+          category?: string
+          created_at?: string
+          description?: string
+          first_detected_at?: string
+          id?: string
+          is_active?: boolean
+          last_detected_at?: string
+          notification_sent?: boolean
+          resolved_at?: string | null
+          screenshot_url?: string | null
+          severity?: string
+          suggested_fix?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monitoring_runs: {
+        Row: {
+          checks_failed: number | null
+          checks_passed: number | null
+          completed_at: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          run_type: string
+          started_at: string
+          success: boolean | null
+        }
+        Insert: {
+          checks_failed?: number | null
+          checks_passed?: number | null
+          completed_at?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          run_type: string
+          started_at?: string
+          success?: boolean | null
+        }
+        Update: {
+          checks_failed?: number | null
+          checks_passed?: number | null
+          completed_at?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          run_type?: string
+          started_at?: string
+          success?: boolean | null
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           email: string
