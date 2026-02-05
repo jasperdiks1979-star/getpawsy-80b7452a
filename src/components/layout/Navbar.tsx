@@ -287,7 +287,8 @@ export const Navbar = () => {
       // Fetch all categories
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
-        .select('id, name, slug, parent_id, image_url, display_order');
+         .select('id, name, slug, parent_id, image_url, display_order')
+         .order('display_order', { ascending: true });
 
       if (categoriesError) throw categoriesError;
 
@@ -300,37 +301,57 @@ export const Navbar = () => {
 
       if (productsError) throw productsError;
 
-      // Count products per category (by name match)
+       // Build a recursive function to find the ROOT parent category for any category
+       // This handles multi-level hierarchies (e.g., Small Pets > Hamsters > Hamster Cages)
+       const findRootParent = (categoryId: string, visited = new Set<string>()): string | null => {
+         if (visited.has(categoryId)) return null; // Prevent infinite loops
+         visited.add(categoryId);
+         
+         const cat = categoriesData?.find(c => c.id === categoryId);
+         if (!cat) return null;
+         if (!cat.parent_id) return categoryId; // This is a root category
+         return findRootParent(cat.parent_id, visited);
+       };
+       
+       // Build mappings for counting
+       const categoryById: Record<string, { id: string; parent_id: string | null }> = {};
+       const catNameToId: Record<string, string> = {};
+       categoriesData?.forEach(cat => {
+         categoryById[cat.id] = { id: cat.id, parent_id: cat.parent_id };
+         catNameToId[cat.name.toLowerCase().trim()] = cat.id;
+         if (cat.slug) {
+           catNameToId[cat.slug.toLowerCase().trim()] = cat.id;
+         }
+       });
+ 
+       // Count products per category (direct count) AND per root parent
       const countMap: Record<string, number> = {};
+       const rootCountMap: Record<string, number> = {};
       productsData?.forEach((p) => {
         if (p.category) {
           const normalizedCat = p.category.toLowerCase().trim();
-          countMap[normalizedCat] = (countMap[normalizedCat] || 0) + 1;
+           const catId = catNameToId[normalizedCat];
+           if (catId) {
+             // Direct count for this category
+             countMap[catId] = (countMap[catId] || 0) + 1;
+             
+             // Also count for root parent
+             const rootId = findRootParent(catId);
+             if (rootId) {
+               rootCountMap[rootId] = (rootCountMap[rootId] || 0) + 1;
+             }
+           }
         }
       });
 
-      // Add counts to categories (matching by name)
+       // Add counts to categories (matching by ID)
       const categoriesWithCounts = (categoriesData || []).map((cat) => ({
         ...cat,
-        product_count: countMap[cat.name.toLowerCase().trim()] || 0,
+         // For root categories, use rootCountMap; for children, use direct countMap
+         product_count: cat.parent_id ? (countMap[cat.id] || 0) : (rootCountMap[cat.id] || 0),
       })) as Category[];
 
-      // For parent categories, also sum up children's counts
-      const enrichedCategories = categoriesWithCounts.map(cat => {
-        if (!cat.parent_id) {
-          // Parent category - sum up all children's counts
-          const childrenCounts = categoriesWithCounts
-            .filter(c => c.parent_id === cat.id)
-            .reduce((sum, c) => sum + (c.product_count || 0), 0);
-          return {
-            ...cat,
-            product_count: (cat.product_count || 0) + childrenCounts,
-          };
-        }
-        return cat;
-      });
-
-      return enrichedCategories;
+       return categoriesWithCounts;
     },
     staleTime: 5 * 60 * 1000,
   });
