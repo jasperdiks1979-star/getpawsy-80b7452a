@@ -179,16 +179,9 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
                 -{discount}%
               </Badge>
             )}
-            {product.stock !== null && product.stock !== undefined && product.stock > 0 && product.stock <= 5 && (
-              <Badge variant="secondary" className="bg-amber-500/90 text-white shadow-soft border-0 animate-pulse">
-                Only {product.stock} left!
-              </Badge>
-            )}
-            {product.stock !== null && product.stock !== undefined && product.stock > 5 && product.stock <= 10 && (
-              <Badge variant="secondary" className="bg-amber-600/80 text-white shadow-soft border-0">
-                Low stock
-              </Badge>
-            )}
+            {/* DROPSHIPPING MODEL: Stock badges removed
+                stock=0 doesn't mean out of stock - supplier manages inventory
+                Only is_active=false indicates unavailability */}
           </div>
 
           {/* Quick Actions - Desktop */}

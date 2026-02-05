@@ -284,31 +284,53 @@ export const Navbar = () => {
   const { data: categories = [] } = useQuery({
     queryKey: ['navbar-categories'],
     queryFn: async () => {
-      // Fetch categories with product counts
+      // Fetch all categories
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('id, name, slug, parent_id, image_url, display_order');
 
       if (categoriesError) throw categoriesError;
 
-      // Fetch product counts per category
-      const { data: productCounts, error: countsError } = await supabase
-        .from('product_categories')
-        .select('category_id');
+      // Fetch active products to calculate counts based on category name
+      // DROPSHIPPING MODEL: is_active is the only indicator, NOT stock
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('category')
+        .eq('is_active', true);
 
-      if (countsError) throw countsError;
+      if (productsError) throw productsError;
 
-      // Count products per category
+      // Count products per category (by name match)
       const countMap: Record<string, number> = {};
-      productCounts?.forEach((pc) => {
-        countMap[pc.category_id] = (countMap[pc.category_id] || 0) + 1;
+      productsData?.forEach((p) => {
+        if (p.category) {
+          const normalizedCat = p.category.toLowerCase().trim();
+          countMap[normalizedCat] = (countMap[normalizedCat] || 0) + 1;
+        }
       });
 
-      // Add counts to categories
-      return (categoriesData || []).map((cat) => ({
+      // Add counts to categories (matching by name)
+      const categoriesWithCounts = (categoriesData || []).map((cat) => ({
         ...cat,
-        product_count: countMap[cat.id] || 0,
+        product_count: countMap[cat.name.toLowerCase().trim()] || 0,
       })) as Category[];
+
+      // For parent categories, also sum up children's counts
+      const enrichedCategories = categoriesWithCounts.map(cat => {
+        if (!cat.parent_id) {
+          // Parent category - sum up all children's counts
+          const childrenCounts = categoriesWithCounts
+            .filter(c => c.parent_id === cat.id)
+            .reduce((sum, c) => sum + (c.product_count || 0), 0);
+          return {
+            ...cat,
+            product_count: (cat.product_count || 0) + childrenCounts,
+          };
+        }
+        return cat;
+      });
+
+      return enrichedCategories;
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -318,10 +340,13 @@ export const Navbar = () => {
     const buildTree = (parentId: string | null): CategoryWithChildren[] => {
       return categories
         .filter((cat) => cat.parent_id === parentId)
+        // Filter out categories with 0 products at parent level
+        .filter((cat) => parentId !== null || (cat.product_count || 0) > 0)
         .sort((a, b) => (a.display_order || 999) - (b.display_order || 999))
         .map((cat) => ({
           ...cat,
-          children: buildTree(cat.id),
+          // Filter out children with 0 products
+          children: buildTree(cat.id).filter(child => (child.product_count || 0) > 0),
         }));
     };
     return buildTree(null);
