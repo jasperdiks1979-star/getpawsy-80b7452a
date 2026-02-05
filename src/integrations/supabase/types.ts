@@ -1648,6 +1648,72 @@ export type Database = {
           },
         ]
       }
+      monitoring_landing_page_scores: {
+        Row: {
+          add_to_cart_stability_score: number | null
+          bestseller_health_score: number | null
+          campaign_id: string | null
+          category_integrity_score: number | null
+          checkout_reachability_score: number | null
+          conversion_trend_score: number | null
+          created_at: string
+          health_status: string
+          id: string
+          last_calculated_at: string
+          mobile_performance_score: number | null
+          overall_score: number
+          page_type: string
+          previous_score: number | null
+          product_availability_score: number | null
+          score_breakdown: Json | null
+          score_delta: number | null
+          updated_at: string
+          url_path: string
+        }
+        Insert: {
+          add_to_cart_stability_score?: number | null
+          bestseller_health_score?: number | null
+          campaign_id?: string | null
+          category_integrity_score?: number | null
+          checkout_reachability_score?: number | null
+          conversion_trend_score?: number | null
+          created_at?: string
+          health_status?: string
+          id?: string
+          last_calculated_at?: string
+          mobile_performance_score?: number | null
+          overall_score?: number
+          page_type: string
+          previous_score?: number | null
+          product_availability_score?: number | null
+          score_breakdown?: Json | null
+          score_delta?: number | null
+          updated_at?: string
+          url_path: string
+        }
+        Update: {
+          add_to_cart_stability_score?: number | null
+          bestseller_health_score?: number | null
+          campaign_id?: string | null
+          category_integrity_score?: number | null
+          checkout_reachability_score?: number | null
+          conversion_trend_score?: number | null
+          created_at?: string
+          health_status?: string
+          id?: string
+          last_calculated_at?: string
+          mobile_performance_score?: number | null
+          overall_score?: number
+          page_type?: string
+          previous_score?: number | null
+          product_availability_score?: number | null
+          score_breakdown?: Json | null
+          score_delta?: number | null
+          updated_at?: string
+          url_path?: string
+        }
+        Relationships: []
+      }
       monitoring_predictive_alerts: {
         Row: {
           affected_components: string[] | null
@@ -1696,6 +1762,87 @@ export type Database = {
           risk_level?: string
           severity?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      monitoring_realtime_alerts: {
+        Row: {
+          affected_campaigns: string[] | null
+          affected_urls: string[] | null
+          alert_group_key: string | null
+          alert_type: string
+          created_at: string
+          current_score: number | null
+          delivered_email: boolean | null
+          delivered_lovable: boolean | null
+          delivered_slack: boolean | null
+          delivered_whatsapp: boolean | null
+          expires_at: string | null
+          grouped_count: number | null
+          id: string
+          is_grouped: boolean | null
+          is_suppressed: boolean | null
+          payload: Json | null
+          previous_score: number | null
+          recommended_action: string | null
+          score_delta: number | null
+          screenshot_urls: string[] | null
+          severity: string
+          summary: string
+          suppression_reason: string | null
+          title: string
+        }
+        Insert: {
+          affected_campaigns?: string[] | null
+          affected_urls?: string[] | null
+          alert_group_key?: string | null
+          alert_type: string
+          created_at?: string
+          current_score?: number | null
+          delivered_email?: boolean | null
+          delivered_lovable?: boolean | null
+          delivered_slack?: boolean | null
+          delivered_whatsapp?: boolean | null
+          expires_at?: string | null
+          grouped_count?: number | null
+          id?: string
+          is_grouped?: boolean | null
+          is_suppressed?: boolean | null
+          payload?: Json | null
+          previous_score?: number | null
+          recommended_action?: string | null
+          score_delta?: number | null
+          screenshot_urls?: string[] | null
+          severity?: string
+          summary: string
+          suppression_reason?: string | null
+          title: string
+        }
+        Update: {
+          affected_campaigns?: string[] | null
+          affected_urls?: string[] | null
+          alert_group_key?: string | null
+          alert_type?: string
+          created_at?: string
+          current_score?: number | null
+          delivered_email?: boolean | null
+          delivered_lovable?: boolean | null
+          delivered_slack?: boolean | null
+          delivered_whatsapp?: boolean | null
+          expires_at?: string | null
+          grouped_count?: number | null
+          id?: string
+          is_grouped?: boolean | null
+          is_suppressed?: boolean | null
+          payload?: Json | null
+          previous_score?: number | null
+          recommended_action?: string | null
+          score_delta?: number | null
+          screenshot_urls?: string[] | null
+          severity?: string
+          summary?: string
+          suppression_reason?: string | null
+          title?: string
         }
         Relationships: []
       }
@@ -1786,6 +1933,33 @@ export type Database = {
           run_type?: string
           started_at?: string
           success?: boolean | null
+        }
+        Relationships: []
+      }
+      monitoring_score_history: {
+        Row: {
+          health_status: string
+          id: string
+          overall_score: number
+          recorded_at: string
+          score_breakdown: Json | null
+          url_path: string
+        }
+        Insert: {
+          health_status: string
+          id?: string
+          overall_score: number
+          recorded_at?: string
+          score_breakdown?: Json | null
+          url_path: string
+        }
+        Update: {
+          health_status?: string
+          id?: string
+          overall_score?: number
+          recorded_at?: string
+          score_breakdown?: Json | null
+          url_path?: string
         }
         Relationships: []
       }
@@ -2249,6 +2423,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_qa_results: {
+        Row: {
+          add_to_cart_check: boolean | null
+          all_checks_passed: boolean
+          block_reason: string | null
+          blocked_from_ads: boolean | null
+          blocked_from_bestsellers: boolean | null
+          created_at: string
+          failed_checks: Json | null
+          failure_screenshots: Json | null
+          id: string
+          image_gallery_check: boolean | null
+          override_approved_at: string | null
+          override_approved_by: string | null
+          override_reason: string | null
+          page_loads_check: boolean | null
+          price_check: boolean | null
+          product_id: string
+          product_name: string
+          product_slug: string
+          qa_status: string
+          schema_check: boolean | null
+          shipping_copy_check: boolean | null
+          stock_status_check: boolean | null
+          trigger_type: string
+          updated_at: string
+          url_check: boolean | null
+        }
+        Insert: {
+          add_to_cart_check?: boolean | null
+          all_checks_passed?: boolean
+          block_reason?: string | null
+          blocked_from_ads?: boolean | null
+          blocked_from_bestsellers?: boolean | null
+          created_at?: string
+          failed_checks?: Json | null
+          failure_screenshots?: Json | null
+          id?: string
+          image_gallery_check?: boolean | null
+          override_approved_at?: string | null
+          override_approved_by?: string | null
+          override_reason?: string | null
+          page_loads_check?: boolean | null
+          price_check?: boolean | null
+          product_id: string
+          product_name: string
+          product_slug: string
+          qa_status?: string
+          schema_check?: boolean | null
+          shipping_copy_check?: boolean | null
+          stock_status_check?: boolean | null
+          trigger_type: string
+          updated_at?: string
+          url_check?: boolean | null
+        }
+        Update: {
+          add_to_cart_check?: boolean | null
+          all_checks_passed?: boolean
+          block_reason?: string | null
+          blocked_from_ads?: boolean | null
+          blocked_from_bestsellers?: boolean | null
+          created_at?: string
+          failed_checks?: Json | null
+          failure_screenshots?: Json | null
+          id?: string
+          image_gallery_check?: boolean | null
+          override_approved_at?: string | null
+          override_approved_by?: string | null
+          override_reason?: string | null
+          page_loads_check?: boolean | null
+          price_check?: boolean | null
+          product_id?: string
+          product_name?: string
+          product_slug?: string
+          qa_status?: string
+          schema_check?: boolean | null
+          shipping_copy_check?: boolean | null
+          stock_status_check?: boolean | null
+          trigger_type?: string
+          updated_at?: string
+          url_check?: boolean | null
+        }
+        Relationships: []
       }
       product_reviews: {
         Row: {
