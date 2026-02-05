@@ -1176,6 +1176,48 @@ export type Database = {
           },
         ]
       }
+      monitoring_ad_actions: {
+        Row: {
+          action_type: string
+          affected_urls: string[] | null
+          campaign_ids: string[] | null
+          created_at: string
+          executed_at: string | null
+          id: string
+          is_recommendation: boolean | null
+          platform: string
+          reverted_at: string | null
+          trigger_reason: string
+          trigger_status: string
+        }
+        Insert: {
+          action_type: string
+          affected_urls?: string[] | null
+          campaign_ids?: string[] | null
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          is_recommendation?: boolean | null
+          platform: string
+          reverted_at?: string | null
+          trigger_reason: string
+          trigger_status: string
+        }
+        Update: {
+          action_type?: string
+          affected_urls?: string[] | null
+          campaign_ids?: string[] | null
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          is_recommendation?: boolean | null
+          platform?: string
+          reverted_at?: string | null
+          trigger_reason?: string
+          trigger_status?: string
+        }
+        Relationships: []
+      }
       monitoring_ad_landing_pages: {
         Row: {
           alternative_url: string | null
@@ -1290,6 +1332,54 @@ export type Database = {
           suggested_fix?: string | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      monitoring_audit_logs: {
+        Row: {
+          action_result: string | null
+          action_taken: string
+          action_type: string
+          affected_components: string[] | null
+          affected_urls: string[] | null
+          id: string
+          is_recommendation: boolean | null
+          metadata: Json | null
+          related_incident_id: string | null
+          related_run_id: string | null
+          severity: string
+          timestamp: string
+          trigger_condition: string
+        }
+        Insert: {
+          action_result?: string | null
+          action_taken: string
+          action_type: string
+          affected_components?: string[] | null
+          affected_urls?: string[] | null
+          id?: string
+          is_recommendation?: boolean | null
+          metadata?: Json | null
+          related_incident_id?: string | null
+          related_run_id?: string | null
+          severity: string
+          timestamp?: string
+          trigger_condition: string
+        }
+        Update: {
+          action_result?: string | null
+          action_taken?: string
+          action_type?: string
+          affected_components?: string[] | null
+          affected_urls?: string[] | null
+          id?: string
+          is_recommendation?: boolean | null
+          metadata?: Json | null
+          related_incident_id?: string | null
+          related_run_id?: string | null
+          severity?: string
+          timestamp?: string
+          trigger_condition?: string
         }
         Relationships: []
       }
