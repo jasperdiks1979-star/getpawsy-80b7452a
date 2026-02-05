@@ -1178,9 +1178,13 @@ export type Database = {
       }
       monitoring_ad_landing_pages: {
         Row: {
+          alternative_url: string | null
+          at_risk: boolean | null
           created_at: string
           cta_visible: boolean | null
           fallback_url: string | null
+          funnel_metrics: Json | null
+          health_status: string | null
           id: string
           is_active: boolean | null
           last_check_at: string | null
@@ -1188,13 +1192,18 @@ export type Database = {
           load_time_ms: number | null
           page_type: string
           product_visible: boolean | null
+          risk_reason: string | null
           updated_at: string
           url_path: string
         }
         Insert: {
+          alternative_url?: string | null
+          at_risk?: boolean | null
           created_at?: string
           cta_visible?: boolean | null
           fallback_url?: string | null
+          funnel_metrics?: Json | null
+          health_status?: string | null
           id?: string
           is_active?: boolean | null
           last_check_at?: string | null
@@ -1202,13 +1211,18 @@ export type Database = {
           load_time_ms?: number | null
           page_type: string
           product_visible?: boolean | null
+          risk_reason?: string | null
           updated_at?: string
           url_path: string
         }
         Update: {
+          alternative_url?: string | null
+          at_risk?: boolean | null
           created_at?: string
           cta_visible?: boolean | null
           fallback_url?: string | null
+          funnel_metrics?: Json | null
+          health_status?: string | null
           id?: string
           is_active?: boolean | null
           last_check_at?: string | null
@@ -1216,6 +1230,7 @@ export type Database = {
           load_time_ms?: number | null
           page_type?: string
           product_visible?: boolean | null
+          risk_reason?: string | null
           updated_at?: string
           url_path?: string
         }
@@ -1441,6 +1456,60 @@ export type Database = {
           },
         ]
       }
+      monitoring_release_guards: {
+        Row: {
+          add_to_cart_check_passed: boolean | null
+          affected_components: string[] | null
+          all_checks_passed: boolean
+          bestseller_check_passed: boolean | null
+          blocked: boolean
+          category_check_passed: boolean | null
+          created_at: string
+          failure_report: Json | null
+          id: string
+          mobile_render_check_passed: boolean | null
+          override_approved_at: string | null
+          override_approved_by: string | null
+          revenue_impact_summary: string | null
+          run_at: string
+          triggered_by: string
+        }
+        Insert: {
+          add_to_cart_check_passed?: boolean | null
+          affected_components?: string[] | null
+          all_checks_passed?: boolean
+          bestseller_check_passed?: boolean | null
+          blocked?: boolean
+          category_check_passed?: boolean | null
+          created_at?: string
+          failure_report?: Json | null
+          id?: string
+          mobile_render_check_passed?: boolean | null
+          override_approved_at?: string | null
+          override_approved_by?: string | null
+          revenue_impact_summary?: string | null
+          run_at?: string
+          triggered_by?: string
+        }
+        Update: {
+          add_to_cart_check_passed?: boolean | null
+          affected_components?: string[] | null
+          all_checks_passed?: boolean
+          bestseller_check_passed?: boolean | null
+          blocked?: boolean
+          category_check_passed?: boolean | null
+          created_at?: string
+          failure_report?: Json | null
+          id?: string
+          mobile_render_check_passed?: boolean | null
+          override_approved_at?: string | null
+          override_approved_by?: string | null
+          revenue_impact_summary?: string | null
+          run_at?: string
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       monitoring_runs: {
         Row: {
           checks_failed: number | null
@@ -1474,6 +1543,45 @@ export type Database = {
           run_type?: string
           started_at?: string
           success?: boolean | null
+        }
+        Relationships: []
+      }
+      monitoring_self_healing_logs: {
+        Row: {
+          action_taken: string
+          affected_url: string | null
+          component_name: string
+          created_at: string
+          fallback_state: Json | null
+          id: string
+          original_state: Json | null
+          permanent_fix_suggestion: string | null
+          reverted_at: string | null
+          trigger_reason: string
+        }
+        Insert: {
+          action_taken: string
+          affected_url?: string | null
+          component_name: string
+          created_at?: string
+          fallback_state?: Json | null
+          id?: string
+          original_state?: Json | null
+          permanent_fix_suggestion?: string | null
+          reverted_at?: string | null
+          trigger_reason: string
+        }
+        Update: {
+          action_taken?: string
+          affected_url?: string | null
+          component_name?: string
+          created_at?: string
+          fallback_state?: Json | null
+          id?: string
+          original_state?: Json | null
+          permanent_fix_suggestion?: string | null
+          reverted_at?: string | null
+          trigger_reason?: string
         }
         Relationships: []
       }
