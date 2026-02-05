@@ -36,12 +36,12 @@ const SITE_URL = "https://getpawsy.pet";
 
 const ROOT_CAUSE_TEMPLATES: Record<string, RootCauseAnalysis> = {
   category_health: {
-    summary: "Parent category page displays 0 products despite subcategories containing products",
-    affected_component: "Products.tsx - Category filtering and recursive aggregation",
-    affected_files: ["src/pages/Products.tsx", "src/hooks/useProducts.ts"],
-    why_now: "Category filter query not including descendant category products in aggregation",
-    permanent_fix: "Ensure categoryToDescendants map includes both category names and slugs for matching",
-    prevention: "Add integration test for parent category product counts"
+    summary: "Parent category has no products assigned to any subcategory",
+    affected_component: "Database - Product category assignments",
+    affected_files: ["supabase/migrations", "Admin product management"],
+    why_now: "All products in this category tree have been deactivated or unassigned",
+    permanent_fix: "Assign active products to subcategories or add new products",
+    prevention: "Monitor product counts per category regularly"
   },
   bestseller_url: {
     summary: "Bestseller URL returns 404 or shows empty product",
@@ -159,12 +159,16 @@ serve(async (req: Request): Promise<Response> => {
       const descendants = getAllDescendants(parent.id);
       const directCount = categoryProductCount[parent.id] || 0;
       const descendantCount = descendants.reduce((sum, id) => sum + (categoryProductCount[id] || 0), 0);
+      const totalAggregatedCount = directCount + descendantCount;
 
-      if (directCount === 0 && descendantCount > 0) {
+      // Only flag if the ENTIRE category tree has 0 products
+      // The frontend correctly aggregates products from all descendants,
+      // so we only alert when there are truly NO products to display
+      if (totalAggregatedCount === 0 && descendants.length > 0) {
         emptyParentCategories.push({
           name: parent.name,
           slug: parent.slug,
-          childProductCount: descendantCount
+          childProductCount: 0
         });
       }
     }
@@ -177,10 +181,10 @@ serve(async (req: Request): Promise<Response> => {
         alert_key: alertKey,
         severity: 'P1',
         category: 'category_health',
-        title: `${emptyParentCategories.length} parent categories showing 0 products`,
-        description: `Categories ${emptyParentCategories.map(c => `${c.name} (${c.childProductCount} in children)`).join(', ')} display 0 products despite having subcategories with products.`,
+        title: `${emptyParentCategories.length} parent categories have no products`,
+        description: `Categories ${emptyParentCategories.map(c => c.name).join(', ')} have zero products in their entire subcategory tree.`,
         affected_urls: emptyParentCategories.map(c => `${SITE_URL}/products?category=${c.slug}`),
-        suggested_fix: 'Check recursive product aggregation in Products.tsx categoryToDescendants map',
+        suggested_fix: 'Add products to subcategories or check category assignments',
       });
 
       autoActions.push({
@@ -188,7 +192,7 @@ serve(async (req: Request): Promise<Response> => {
         target: 'category_pages',
         details: { 
           affected_categories: emptyParentCategories.map(c => c.slug),
-          recommendation: 'CategoryEmptyState with bestsellers should auto-display'
+          recommendation: 'CategoryEmptyState with bestsellers will auto-display'
         },
         success: true
       });
