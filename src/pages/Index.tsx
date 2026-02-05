@@ -198,63 +198,76 @@ const Index = () => {
     },
   });
 
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['homepage-categories'],
-    queryFn: async () => {
-      // Fetch parent categories
-      const { data: categoriesData, error } = await supabase
-        .from('categories')
-        .select('*')
-        .is('parent_id', null)
-        .order('display_order', { ascending: true });
-      
-      if (error) throw error;
-      if (!categoriesData) return [];
-
-      // Fetch active products to calculate counts
-      // DROPSHIPPING MODEL: is_active is the only indicator, NOT stock
-      const { data: productsData } = await supabase
-        .from('products')
-        .select('category')
-        .eq('is_active', true);
-
-      // Build a count map
-      const countMap: Record<string, number> = {};
-      productsData?.forEach(p => {
-        if (p.category) {
-          // Normalize category name for matching
-          const normalizedCat = p.category.toLowerCase().trim();
-          countMap[normalizedCat] = (countMap[normalizedCat] || 0) + 1;
-        }
-      });
-
-      // Add product counts to categories
-      // Also check if any subcategory has products (for parent categories)
-      const { data: allCategories } = await supabase
-        .from('categories')
-        .select('id, parent_id, name');
-
-      const categoriesWithCounts = categoriesData.map(cat => {
-        // Direct count for this category
-        const directCount = countMap[cat.name.toLowerCase().trim()] || 0;
-        
-        // Count products in all subcategories
-        const subcategoryIds = allCategories?.filter(c => c.parent_id === cat.id) || [];
-        const subcategoryCount = subcategoryIds.reduce((sum, sub) => {
-          return sum + (countMap[sub.name.toLowerCase().trim()] || 0);
-        }, 0);
-
-        return {
-          ...cat,
-          product_count: directCount + subcategoryCount,
-        };
-      });
-
-      // Only return categories with at least 1 product (directly or in subcategories)
-      // This prevents "dead end" navigation
-      return categoriesWithCounts.filter(cat => cat.product_count > 0);
-    },
-  });
+   const { data: categories, isLoading: categoriesLoading } = useQuery({
+     queryKey: ['homepage-categories'],
+     queryFn: async () => {
+       // Fetch parent categories
+       const { data: categoriesData, error } = await supabase
+         .from('categories')
+         .select('*')
+         .is('parent_id', null)
+         .order('display_order', { ascending: true });
+       
+       if (error) throw error;
+       if (!categoriesData) return [];
+ 
+       // Fetch active products to calculate counts
+       // DROPSHIPPING MODEL: is_active is the only indicator, NOT stock
+       const { data: productsData } = await supabase
+         .from('products')
+         .select('category')
+         .eq('is_active', true);
+ 
+       // Fetch all subcategories to map products to parent categories
+       const { data: allCategories } = await supabase
+         .from('categories')
+         .select('id, parent_id, name, slug');
+ 
+       // Build a mapping of subcategory name/slug to parent category ID
+       const subcatToParentMap: Record<string, string> = {};
+       allCategories?.forEach(cat => {
+         if (cat.parent_id) {
+           // Map by both name and slug for flexible matching
+           subcatToParentMap[cat.name.toLowerCase().trim()] = cat.parent_id;
+           subcatToParentMap[cat.slug?.toLowerCase().trim() || ''] = cat.parent_id;
+         }
+       });
+ 
+       // Count products per parent category
+       const parentCountMap: Record<string, number> = {};
+       productsData?.forEach(p => {
+         if (p.category) {
+           const normalizedCat = p.category.toLowerCase().trim();
+           
+           // Check if this is a direct match to a parent category
+           const parentMatch = categoriesData.find(
+             parent => parent.name.toLowerCase().trim() === normalizedCat ||
+                       parent.slug?.toLowerCase().trim() === normalizedCat
+           );
+           
+           if (parentMatch) {
+             parentCountMap[parentMatch.id] = (parentCountMap[parentMatch.id] || 0) + 1;
+           } else {
+             // Check if product category matches a subcategory
+             const parentId = subcatToParentMap[normalizedCat];
+             if (parentId) {
+               parentCountMap[parentId] = (parentCountMap[parentId] || 0) + 1;
+             }
+           }
+         }
+       });
+ 
+       // Add product counts to categories
+       const categoriesWithCounts = categoriesData.map(cat => ({
+         ...cat,
+         product_count: parentCountMap[cat.id] || 0,
+       }));
+ 
+       // Only return categories with at least 1 product
+       // This prevents "dead end" navigation
+        return categoriesWithCounts.filter(cat => cat.product_count > 0);
+     },
+   });
 
   // Sanitize categories to prevent React error #310
   const safeCategories = useMemo(() => {
