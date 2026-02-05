@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ShoppingCart, Heart, Truck, Shield, Minus, Plus, ChevronLeft, ChevronRight, ZoomIn, Package, Award, Star, Clock, MessageSquare, Ruler, Weight, Box, Info, Home } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileProductGallery } from '@/components/products/MobileProductGallery';
@@ -52,6 +53,7 @@ import {
   FLAT_SHIPPING_RATE,
   US_FULFILLMENT_NOTE,
 } from '@/lib/shipping-constants';
+import { isAdTraffic } from '@/lib/ad-traffic';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -436,9 +438,13 @@ const ProductDetail = () => {
   }, [product]);
 
   // Redirect to products page with search parameter if product not found
-  // IMPORTANT: This hook MUST be before any early returns to follow React hooks rules
+  // LANDING INTENT LOCK: Do NOT redirect ad traffic — show stable "Not Found" UI instead
+  // This prevents Pinterest in-app browser issues (blank screens, content switching)
   useEffect(() => {
     if (!isLoading && !product && id) {
+      // Never redirect ad traffic — stability > helpfulness for paid visitors
+      if (isAdTraffic()) return;
+      
       // Extract keywords from the slug/id for search
       const searchKeywords = id
         .replace(/-/g, ' ')  // Convert hyphens to spaces
@@ -462,16 +468,30 @@ const ProductDetail = () => {
   if (!product) {
     return (
       <Layout>
+        <Helmet>
+          <meta name="robots" content="noindex" />
+        </Helmet>
         <div className="min-h-[60vh] flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center"
+            className="text-center max-w-md px-4"
           >
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
-              <Package className="w-10 h-10 text-muted-foreground animate-pulse" />
+              <Package className="w-10 h-10 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">Redirecting to products...</p>
+            <h1 className="text-xl font-semibold mb-2">Product Not Available</h1>
+            <p className="text-muted-foreground mb-6">
+              This product may have been renamed or is no longer available.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => navigate('/bestsellers')}>
+                View Bestsellers
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/products')}>
+                Browse All Products
+              </Button>
+            </div>
           </motion.div>
         </div>
       </Layout>
