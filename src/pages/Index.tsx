@@ -213,10 +213,9 @@ const Index = () => {
  
        // Fetch active products to calculate counts
        // DROPSHIPPING MODEL: is_active is the only indicator, NOT stock
-       const { data: productsData } = await supabase
-         .from('products')
-         .select('category')
-         .eq('is_active', true);
+        const { data: productsData } = await supabase
+          .from('products_public')
+          .select('category');
  
        // Fetch all subcategories to map products to parent categories
        const { data: allCategories } = await supabase
