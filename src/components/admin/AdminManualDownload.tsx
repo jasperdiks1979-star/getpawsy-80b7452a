@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FileDown, Loader2, BookOpen } from "lucide-react";
+import { Loader2, BookOpen } from "lucide-react";
 import { downloadAdminManualPdf } from "@/utils/adminManualPdf";
 import { toast } from "sonner";
 
@@ -12,10 +12,10 @@ export const AdminManualDownload = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 100));
       downloadAdminManualPdf();
-      toast.success("PDF handleiding gedownload!");
+      toast.success("Admin & Compliance Guide downloaded!");
     } catch (error) {
       console.error("Error generating PDF:", error);
-      toast.error("Kon PDF niet genereren");
+      toast.error("Could not generate PDF");
     } finally {
       setIsGenerating(false);
     }
@@ -30,12 +30,12 @@ export const AdminManualDownload = () => {
       {isGenerating ? (
         <>
           <Loader2 className="h-4 w-4 animate-spin" />
-          Genereren...
+          Generating...
         </>
       ) : (
         <>
           <BookOpen className="h-4 w-4" />
-          Download Admin Handleiding (PDF)
+          Download Admin & Compliance Guide (PDF)
         </>
       )}
     </Button>

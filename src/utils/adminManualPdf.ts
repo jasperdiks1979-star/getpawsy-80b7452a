@@ -1,9 +1,22 @@
 import jsPDF from 'jspdf';
+import {
+  FREE_SHIPPING_THRESHOLD,
+  FLAT_SHIPPING_RATE,
+  DELIVERY_TIME_STANDARD,
+  PROCESSING_TIME,
+  RETURN_WINDOW_DAYS,
+  SUPPORT_EMAIL,
+} from '@/lib/shipping-constants';
 
 /**
- * GetPawsy Complete Admin Handleiding PDF Generator
- * Nederlandse handleiding voor de webshop eigenaar
- * Versie 2.0 - Volledig herschreven met visuele verbeteringen
+ * GetPawsy — Complete Admin & Compliance Guide PDF Generator
+ * US Market Edition — Google Merchant Center Compliant
+ * 
+ * Single source of truth for:
+ * - Business identity & transparency
+ * - Shipping & returns policies
+ * - Checkout consistency verification
+ * - Google Merchant Center appeal documentation
  */
 
 const MARGIN_LEFT = 20;
@@ -19,19 +32,22 @@ let currentPage = 1;
 let yPosition = MARGIN_TOP;
 
 // Colors
-const PRIMARY_COLOR: [number, number, number] = [79, 70, 229]; // Indigo
-const SUCCESS_COLOR: [number, number, number] = [34, 197, 94]; // Green
-const WARNING_COLOR: [number, number, number] = [234, 179, 8]; // Yellow
-const DANGER_COLOR: [number, number, number] = [239, 68, 68]; // Red
-const MUTED_COLOR: [number, number, number] = [107, 114, 128]; // Gray
-const BOX_BG: [number, number, number] = [243, 244, 246]; // Light gray
+const PRIMARY_COLOR: [number, number, number] = [79, 70, 229];
+const SUCCESS_COLOR: [number, number, number] = [34, 197, 94];
+const WARNING_COLOR: [number, number, number] = [234, 179, 8];
+const DANGER_COLOR: [number, number, number] = [239, 68, 68];
+const MUTED_COLOR: [number, number, number] = [107, 114, 128];
+const ACCENT_COLOR: [number, number, number] = [59, 130, 246];
+
+// ============= HELPER FUNCTIONS =============
 
 const addPageNumber = (doc: jsPDF) => {
   doc.setFontSize(9);
   doc.setTextColor(...MUTED_COLOR);
-  doc.text(`Pagina ${currentPage}`, PAGE_WIDTH / 2, PAGE_HEIGHT - 12, { align: 'center' });
+  doc.text(`Page ${currentPage}`, PAGE_WIDTH / 2, PAGE_HEIGHT - 12, { align: 'center' });
   doc.setFontSize(8);
-  doc.text('GetPawsy Admin Handleiding', MARGIN_LEFT, PAGE_HEIGHT - 12);
+  doc.text('GetPawsy — Admin & Compliance Guide', MARGIN_LEFT, PAGE_HEIGHT - 12);
+  doc.text('getpawsy.pet', PAGE_WIDTH - MARGIN_RIGHT, PAGE_HEIGHT - 12, { align: 'right' });
   doc.setTextColor(0, 0, 0);
 };
 
@@ -50,8 +66,13 @@ const addTitle = (doc: jsPDF, text: string, fontSize: number = 22) => {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...PRIMARY_COLOR);
   doc.text(text, MARGIN_LEFT, yPosition);
+  // Underline
+  const w = doc.getTextWidth(text);
+  doc.setDrawColor(...PRIMARY_COLOR);
+  doc.setLineWidth(0.6);
+  doc.line(MARGIN_LEFT, yPosition + 2, MARGIN_LEFT + Math.min(w, CONTENT_WIDTH), yPosition + 2);
   doc.setTextColor(0, 0, 0);
-  yPosition += fontSize * 0.5 + 8;
+  yPosition += fontSize * 0.5 + 10;
 };
 
 const addSubtitle = (doc: jsPDF, text: string, fontSize: number = 13) => {
@@ -69,9 +90,7 @@ const addParagraph = (doc: jsPDF, text: string, fontSize: number = 10.5) => {
   doc.setFontSize(fontSize);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(60, 60, 60);
-  
   const lines = doc.splitTextToSize(text, CONTENT_WIDTH);
-  
   for (const line of lines) {
     checkPageBreak(doc, LINE_HEIGHT + 5);
     doc.text(line, MARGIN_LEFT, yPosition);
@@ -81,106 +100,67 @@ const addParagraph = (doc: jsPDF, text: string, fontSize: number = 10.5) => {
   yPosition += 4;
 };
 
-const addTipBox = (doc: jsPDF, title: string, content: string) => {
+const addBoldParagraph = (doc: jsPDF, text: string) => {
+  doc.setFontSize(10.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(40, 40, 40);
+  const lines = doc.splitTextToSize(text, CONTENT_WIDTH);
+  for (const line of lines) {
+    checkPageBreak(doc, LINE_HEIGHT + 5);
+    doc.text(line, MARGIN_LEFT, yPosition);
+    yPosition += LINE_HEIGHT;
+  }
+  doc.setTextColor(0, 0, 0);
+  yPosition += 4;
+};
+
+const addBox = (doc: jsPDF, title: string, content: string, bgColor: [number, number, number], borderColor: [number, number, number], titleColor: [number, number, number], prefix: string = '') => {
   checkPageBreak(doc, 40);
-  
-  const boxHeight = Math.max(25, doc.splitTextToSize(content, CONTENT_WIDTH - 16).length * LINE_HEIGHT + 18);
-  
-  // Box background
-  doc.setFillColor(236, 253, 245); // Light green
-  doc.setDrawColor(...SUCCESS_COLOR);
+  const lines = doc.splitTextToSize(content, CONTENT_WIDTH - 16);
+  const boxHeight = Math.max(25, lines.length * LINE_HEIGHT + 18);
+  doc.setFillColor(...bgColor);
+  doc.setDrawColor(...borderColor);
   doc.roundedRect(MARGIN_LEFT, yPosition - 3, CONTENT_WIDTH, boxHeight, 3, 3, 'FD');
-  
-  // Title
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...SUCCESS_COLOR);
-  doc.text(`TIP: ${title}`, MARGIN_LEFT + 6, yPosition + 5);
-  
-  // Content
+  doc.setTextColor(...titleColor);
+  doc.text(`${prefix}${title}`, MARGIN_LEFT + 6, yPosition + 5);
   doc.setFontSize(9.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(60, 60, 60);
-  const lines = doc.splitTextToSize(content, CONTENT_WIDTH - 16);
   let lineY = yPosition + 13;
   for (const line of lines) {
     doc.text(line, MARGIN_LEFT + 6, lineY);
     lineY += LINE_HEIGHT;
   }
-  
   doc.setTextColor(0, 0, 0);
   yPosition += boxHeight + 6;
+};
+
+const addTipBox = (doc: jsPDF, title: string, content: string) => {
+  addBox(doc, title, content, [236, 253, 245], SUCCESS_COLOR, SUCCESS_COLOR, 'TIP: ');
 };
 
 const addWarningBox = (doc: jsPDF, content: string) => {
-  checkPageBreak(doc, 35);
-  
-  const lines = doc.splitTextToSize(content, CONTENT_WIDTH - 16);
-  const boxHeight = Math.max(20, lines.length * LINE_HEIGHT + 12);
-  
-  // Box background
-  doc.setFillColor(254, 252, 232); // Light yellow
-  doc.setDrawColor(...WARNING_COLOR);
-  doc.roundedRect(MARGIN_LEFT, yPosition - 3, CONTENT_WIDTH, boxHeight, 3, 3, 'FD');
-  
-  // Content
-  doc.setFontSize(9.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(120, 100, 20);
-  doc.text('LET OP: ', MARGIN_LEFT + 6, yPosition + 5);
-  doc.setFont('helvetica', 'normal');
-  
-  let lineY = yPosition + 5;
-  const firstLine = lines[0];
-  doc.text(firstLine, MARGIN_LEFT + 24, lineY);
-  lineY += LINE_HEIGHT;
-  
-  for (let i = 1; i < lines.length; i++) {
-    doc.text(lines[i], MARGIN_LEFT + 6, lineY);
-    lineY += LINE_HEIGHT;
-  }
-  
-  doc.setTextColor(0, 0, 0);
-  yPosition += boxHeight + 6;
+  addBox(doc, '', content, [254, 252, 232], WARNING_COLOR, [120, 100, 20], 'WARNING: ');
 };
 
 const addInfoBox = (doc: jsPDF, title: string, content: string) => {
-  checkPageBreak(doc, 40);
-  
-  const lines = doc.splitTextToSize(content, CONTENT_WIDTH - 16);
-  const boxHeight = Math.max(25, lines.length * LINE_HEIGHT + 18);
-  
-  // Box background
-  doc.setFillColor(238, 242, 255); // Light indigo
-  doc.setDrawColor(...PRIMARY_COLOR);
-  doc.roundedRect(MARGIN_LEFT, yPosition - 3, CONTENT_WIDTH, boxHeight, 3, 3, 'FD');
-  
-  // Title
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...PRIMARY_COLOR);
-  doc.text(title, MARGIN_LEFT + 6, yPosition + 5);
-  
-  // Content
-  doc.setFontSize(9.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
-  let lineY = yPosition + 13;
-  for (const line of lines) {
-    doc.text(line, MARGIN_LEFT + 6, lineY);
-    lineY += LINE_HEIGHT;
-  }
-  
-  doc.setTextColor(0, 0, 0);
-  yPosition += boxHeight + 6;
+  addBox(doc, title, content, [238, 242, 255], PRIMARY_COLOR, PRIMARY_COLOR);
+};
+
+const addComplianceBox = (doc: jsPDF, title: string, content: string) => {
+  addBox(doc, title, content, [240, 253, 244], [22, 163, 74], [22, 163, 74], 'COMPLIANT: ');
+};
+
+const addCriticalBox = (doc: jsPDF, title: string, content: string) => {
+  addBox(doc, title, content, [254, 242, 242], DANGER_COLOR, DANGER_COLOR, 'CRITICAL: ');
 };
 
 const addChecklistItem = (doc: jsPDF, text: string, isPositive: boolean) => {
   checkPageBreak(doc, 12);
-  
   doc.setFontSize(10.5);
   doc.setFont('helvetica', 'bold');
-  
   if (isPositive) {
     doc.setTextColor(...SUCCESS_COLOR);
     doc.text('[OK]', MARGIN_LEFT, yPosition);
@@ -188,7 +168,6 @@ const addChecklistItem = (doc: jsPDF, text: string, isPositive: boolean) => {
     doc.setTextColor(...DANGER_COLOR);
     doc.text('[X]', MARGIN_LEFT + 1, yPosition);
   }
-  
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(60, 60, 60);
   doc.text(text, MARGIN_LEFT + 14, yPosition);
@@ -196,63 +175,26 @@ const addChecklistItem = (doc: jsPDF, text: string, isPositive: boolean) => {
   yPosition += LINE_HEIGHT + 2;
 };
 
-const addIconExplanation = (doc: jsPDF, icon: string, name: string, meaning: string, actionNeeded: string, noAction: string) => {
-  checkPageBreak(doc, 45);
-  
-  // Icon and name header
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...PRIMARY_COLOR);
-  doc.text(`${icon}  ${name}`, MARGIN_LEFT, yPosition);
-  doc.setTextColor(0, 0, 0);
-  yPosition += 8;
-  
-  // Meaning
-  doc.setFontSize(10);
+const addBulletPoint = (doc: jsPDF, text: string, indent: number = 0) => {
+  checkPageBreak(doc, 12);
+  doc.setFontSize(10.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(60, 60, 60);
-  const meaningLines = doc.splitTextToSize(`Betekenis: ${meaning}`, CONTENT_WIDTH - 5);
-  for (const line of meaningLines) {
-    doc.text(line, MARGIN_LEFT + 3, yPosition);
-    yPosition += LINE_HEIGHT;
-  }
-  yPosition += 2;
-  
-  // When action needed
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...SUCCESS_COLOR);
-  doc.text('Actie nodig:', MARGIN_LEFT + 3, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
-  const actionLines = doc.splitTextToSize(actionNeeded, CONTENT_WIDTH - 35);
-  doc.text(actionLines[0], MARGIN_LEFT + 30, yPosition);
+  const bulletX = MARGIN_LEFT + indent;
+  doc.text('•', bulletX, yPosition);
+  const textLines = doc.splitTextToSize(text, CONTENT_WIDTH - indent - 8);
+  doc.text(textLines[0], bulletX + 6, yPosition);
   yPosition += LINE_HEIGHT;
-  for (let i = 1; i < actionLines.length; i++) {
-    doc.text(actionLines[i], MARGIN_LEFT + 30, yPosition);
+  for (let i = 1; i < textLines.length; i++) {
+    doc.text(textLines[i], bulletX + 6, yPosition);
     yPosition += LINE_HEIGHT;
   }
-  
-  // When no action needed
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...MUTED_COLOR);
-  doc.text('Geen actie:', MARGIN_LEFT + 3, yPosition);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
-  const noActionLines = doc.splitTextToSize(noAction, CONTENT_WIDTH - 35);
-  doc.text(noActionLines[0], MARGIN_LEFT + 30, yPosition);
-  yPosition += LINE_HEIGHT;
-  for (let i = 1; i < noActionLines.length; i++) {
-    doc.text(noActionLines[i], MARGIN_LEFT + 30, yPosition);
-    yPosition += LINE_HEIGHT;
-  }
-  
   doc.setTextColor(0, 0, 0);
-  yPosition += 6;
+  yPosition += 1;
 };
 
-const addSpace = (doc: jsPDF, space: number = 10) => {
+const addSpace = (_doc: jsPDF, space: number = 10) => {
   yPosition += space;
-  checkPageBreak(doc, 20);
 };
 
 const startNewPage = (doc: jsPDF) => {
@@ -262,27 +204,45 @@ const startNewPage = (doc: jsPDF) => {
   yPosition = MARGIN_TOP;
 };
 
-const addBulletPoint = (doc: jsPDF, text: string, indent: number = 0) => {
+const addTableRow = (doc: jsPDF, col1: string, col2: string, isHeader: boolean = false) => {
   checkPageBreak(doc, 12);
-  doc.setFontSize(10.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
-  
-  const bulletX = MARGIN_LEFT + indent;
-  doc.text('•', bulletX, yPosition);
-  
-  const textLines = doc.splitTextToSize(text, CONTENT_WIDTH - indent - 8);
-  doc.text(textLines[0], bulletX + 6, yPosition);
+  const col1Width = CONTENT_WIDTH * 0.4;
+  if (isHeader) {
+    doc.setFillColor(243, 244, 246);
+    doc.rect(MARGIN_LEFT, yPosition - 4, CONTENT_WIDTH, 10, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 40);
+  } else {
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+  }
+  doc.setFontSize(10);
+  doc.text(col1, MARGIN_LEFT + 4, yPosition);
+  const lines2 = doc.splitTextToSize(col2, CONTENT_WIDTH - col1Width - 8);
+  doc.text(lines2[0], MARGIN_LEFT + col1Width, yPosition);
   yPosition += LINE_HEIGHT;
-  
-  for (let i = 1; i < textLines.length; i++) {
-    doc.text(textLines[i], bulletX + 6, yPosition);
+  for (let i = 1; i < lines2.length; i++) {
+    doc.text(lines2[i], MARGIN_LEFT + col1Width, yPosition);
     yPosition += LINE_HEIGHT;
   }
-  
+  // Light separator line
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.2);
+  doc.line(MARGIN_LEFT, yPosition, MARGIN_LEFT + CONTENT_WIDTH, yPosition);
+  yPosition += 3;
   doc.setTextColor(0, 0, 0);
-  yPosition += 1;
 };
+
+const addSectionDivider = (doc: jsPDF) => {
+  checkPageBreak(doc, 15);
+  yPosition += 5;
+  doc.setDrawColor(...MUTED_COLOR);
+  doc.setLineWidth(0.3);
+  doc.line(MARGIN_LEFT + 30, yPosition, PAGE_WIDTH - MARGIN_RIGHT - 30, yPosition);
+  yPosition += 8;
+};
+
+// ============= MAIN GENERATOR =============
 
 export const generateAdminManualPdf = (): jsPDF => {
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -292,52 +252,73 @@ export const generateAdminManualPdf = (): jsPDF => {
   // =====================================
   // COVER PAGE
   // =====================================
-  yPosition = 60;
-  
-  // Main title
-  doc.setFontSize(36);
+  yPosition = 50;
+
+  // Accent bar at top
+  doc.setFillColor(...PRIMARY_COLOR);
+  doc.rect(0, 0, PAGE_WIDTH, 8, 'F');
+
+  doc.setFontSize(38);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...PRIMARY_COLOR);
   doc.text('GetPawsy', PAGE_WIDTH / 2, yPosition, { align: 'center' });
-  yPosition += 18;
-  
-  doc.setFontSize(22);
-  doc.setTextColor(50, 50, 50);
-  doc.text('Complete Admin Handleiding', PAGE_WIDTH / 2, yPosition, { align: 'center' });
-  yPosition += 10;
-  doc.text('& Mini-Cursus', PAGE_WIDTH / 2, yPosition, { align: 'center' });
-  yPosition += 18;
-  
-  // Subtitle
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'italic');
-  doc.setTextColor(...MUTED_COLOR);
-  doc.text('Rust, overzicht en vertrouwen in je webshop', PAGE_WIDTH / 2, yPosition, { align: 'center' });
-  
-  // Decorative line
-  yPosition += 15;
-  doc.setDrawColor(...PRIMARY_COLOR);
-  doc.setLineWidth(0.5);
-  doc.line(PAGE_WIDTH / 2 - 40, yPosition, PAGE_WIDTH / 2 + 40, yPosition);
-  
-  yPosition += 25;
+  yPosition += 16;
+
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(60, 60, 60);
-  
-  const coverIntro = `Welkom bij je persoonlijke handleiding voor GetPawsy. Deze gids is speciaal voor jou geschreven als eigenaar. Het doel is simpel: je rust geven en vertrouwen opbouwen. 
+  doc.setTextColor(...MUTED_COLOR);
+  doc.text('A consumer brand operated by Skidzo', PAGE_WIDTH / 2, yPosition, { align: 'center' });
+  yPosition += 20;
 
-Een webshop runnen kan overweldigend voelen, vooral in het begin. Overal zie je cijfers, grafieken, en meldingen. Het is normaal dat je denkt: "Moet ik hier iets mee? Gaat er iets mis?" 
+  // Decorative line
+  doc.setDrawColor(...PRIMARY_COLOR);
+  doc.setLineWidth(0.8);
+  doc.line(PAGE_WIDTH / 2 - 45, yPosition, PAGE_WIDTH / 2 + 45, yPosition);
+  yPosition += 15;
 
-Het antwoord is meestal: nee. 
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(50, 50, 50);
+  doc.text('Complete Admin &', PAGE_WIDTH / 2, yPosition, { align: 'center' });
+  yPosition += 10;
+  doc.text('Compliance Guide', PAGE_WIDTH / 2, yPosition, { align: 'center' });
+  yPosition += 14;
 
-Deze handleiding helpt je begrijpen wat je ziet, wanneer je actie moet ondernemen, en vooral: wanneer je gewoon kunt ademhalen. Lees het rustig door, gebruik het als naslagwerk, en onthoud: jouw webshop werkt. Je mag ontspannen.`;
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...ACCENT_COLOR);
+  doc.text('US Market Edition', PAGE_WIDTH / 2, yPosition, { align: 'center' });
+  yPosition += 25;
 
-  const lines = doc.splitTextToSize(coverIntro, CONTENT_WIDTH - 20);
-  for (const line of lines) {
-    doc.text(line, MARGIN_LEFT + 10, yPosition);
-    yPosition += LINE_HEIGHT + 0.5;
+  // Key details box on cover
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(200, 200, 200);
+  doc.roundedRect(MARGIN_LEFT + 15, yPosition, CONTENT_WIDTH - 30, 55, 4, 4, 'FD');
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80, 80, 80);
+  const coverDetails = [
+    `Domain: getpawsy.pet`,
+    `Legal Entity: Skidzo (KVK: 78156955)`,
+    `Market: United States Only`,
+    `Currency: USD ($)`,
+    `Support: ${SUPPORT_EMAIL}`,
+    `Shipping: Free on $${FREE_SHIPPING_THRESHOLD}+ | $${FLAT_SHIPPING_RATE.toFixed(2)} flat rate under`,
+    `Returns: ${RETURN_WINDOW_DAYS}-day return window`,
+  ];
+  let detailY = yPosition + 10;
+  for (const detail of coverDetails) {
+    doc.text(detail, PAGE_WIDTH / 2, detailY, { align: 'center' });
+    detailY += 7;
   }
+
+  yPosition += 70;
+  doc.setFontSize(9);
+  doc.setTextColor(...MUTED_COLOR);
+  doc.text('This document is suitable for Google Merchant Center review,', PAGE_WIDTH / 2, yPosition, { align: 'center' });
+  yPosition += 5;
+  doc.text('internal admin reference, and trust verification.', PAGE_WIDTH / 2, yPosition, { align: 'center' });
 
   addPageNumber(doc);
 
@@ -345,34 +326,36 @@ Deze handleiding helpt je begrijpen wat je ziet, wanneer je actie moet onderneme
   // TABLE OF CONTENTS
   // =====================================
   startNewPage(doc);
-  addTitle(doc, 'Inhoudsopgave', 24);
+  addTitle(doc, 'Table of Contents', 24);
   addSpace(doc, 8);
 
   const tocItems = [
-    { title: '1. Introductie', page: 3 },
-    { title: '2. Het dashboard bovenin', page: 5 },
-    { title: '3. Iconen & symbolen', page: 7 },
-    { title: '4. Bezoekersgedrag', page: 11 },
-    { title: '5. Producten & categorieën', page: 13 },
-    { title: '6. Voorraad & out-of-stock', page: 15 },
-    { title: '7. Winkelwagen & afrekenen', page: 17 },
-    { title: '8. Orders & betalingen', page: 19 },
-    { title: '9. Verzending & retouren', page: 21 },
-    { title: '10. Klanten & support', page: 23 },
-    { title: '11. Marketing & advertenties', page: 25 },
-    { title: '12. Statistieken & analytics', page: 27 },
-    { title: '13. Veelgemaakte misverstanden', page: 29 },
-    { title: '14. Dagelijkse checklist', page: 31 },
-    { title: '15. Afsluiting', page: 33 },
+    { title: '1.  Introduction', page: 3 },
+    { title: '2.  Dashboard Overview', page: 5 },
+    { title: '3.  Icons & Symbols Guide', page: 7 },
+    { title: '4.  Visitor Behavior', page: 9 },
+    { title: '5.  Products & Categories', page: 11 },
+    { title: '6.  Inventory & Stock', page: 13 },
+    { title: '7.  Cart & Checkout', page: 15 },
+    { title: '8.  Analytics', page: 17 },
+    { title: '9.  Advertising (Pinterest / Google)', page: 19 },
+    { title: '10. Technical Glossary', page: 21 },
+    { title: '11. When to Intervene', page: 23 },
+    { title: '12. When NOT to Act', page: 25 },
+    { title: '13. Trust & Google Compliance', page: 27 },
+    { title: '14. Shipping Policy (Full)', page: 30 },
+    { title: '15. Returns & Refunds Policy (Full)', page: 33 },
+    { title: '16. Checkout Consistency Verification', page: 35 },
+    { title: '17. Daily Calm Checklist', page: 37 },
+    { title: '18. Google Appeal Text (Appendix)', page: 39 },
+    { title: '19. Confidence Statement', page: 41 },
   ];
 
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   for (const item of tocItems) {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(60, 60, 60);
     doc.text(item.title, MARGIN_LEFT + 5, yPosition);
-    
-    // Dotted line
     const titleWidth = doc.getTextWidth(item.title);
     const dotsStart = MARGIN_LEFT + 5 + titleWidth + 3;
     const dotsEnd = PAGE_WIDTH - MARGIN_RIGHT - 15;
@@ -380,608 +363,731 @@ Deze handleiding helpt je begrijpen wat je ziet, wanneer je actie moet onderneme
     for (let x = dotsStart; x < dotsEnd; x += 3) {
       doc.text('.', x, yPosition);
     }
-    
     doc.setTextColor(...PRIMARY_COLOR);
     doc.text(item.page.toString(), PAGE_WIDTH - MARGIN_RIGHT, yPosition, { align: 'right' });
-    yPosition += 11;
+    yPosition += 10;
+    checkPageBreak(doc, 12);
   }
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 1 - INTRODUCTIE
+  // CHAPTER 1 — INTRODUCTION
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '1. Introductie');
+  addTitle(doc, '1. Introduction');
   addSpace(doc, 5);
 
-  addSubtitle(doc, 'Wat is het admin-dashboard?');
-  addParagraph(doc, `De admin-omgeving van GetPawsy is het controlepaneel van je webshop. Het is de plek waar je alles kunt zien wat er achter de schermen gebeurt: hoeveel bezoekers er zijn, welke producten bekeken worden, of er orders binnenkomen, en hoe je winkel technisch presteert.`);
-  
-  addParagraph(doc, `Denk aan de admin als het dashboard van een auto. Je ziet snelheid, brandstof, en eventuele waarschuwingslampjes. Maar net zoals je niet in paniek raakt bij elke kleine beweging van de wijzers, hoef je dat ook niet te doen bij elke verandering in je admin.`);
+  addParagraph(doc, `Welcome to the complete admin and compliance guide for GetPawsy. This document serves as your single source of truth for understanding your webshop, maintaining Google Merchant Center compliance, and operating your store with confidence.`);
 
-  addInfoBox(doc, 'Goed om te weten', 'De admin is géén indicator van succes of falen op elk willekeurig moment. Het is een hulpmiddel om trends te zien over tijd. Een dag met nul orders betekent niet dat je webshop kapot is.');
+  addInfoBox(doc, 'Business Identity', `GetPawsy is a consumer-facing pet supply brand. It is operated by Skidzo, a registered business entity (KVK: 78156955, BTW: NL101001964B02). Skidzo is legally responsible for all operations including customer service, order processing, fulfillment coordination, returns, and refunds. This dual-name structure (brand + legal entity) is standard practice and fully compliant with Google Merchant Center policies.`);
 
-  addSubtitle(doc, 'Wat hoef je NIET constant te doen?');
-  addBulletPoint(doc, 'Elk uur inloggen om te checken of er iets veranderd is');
-  addBulletPoint(doc, 'Elke dag conclusies trekken uit de cijfers');
-  addBulletPoint(doc, 'In paniek raken bij lage bezoekersaantallen');
-  addBulletPoint(doc, 'Constant sleutelen aan instellingen die al werken');
-  addBulletPoint(doc, 'Elke kleine schommeling analyseren');
-  
-  addSpace(doc, 5);
-  
-  addSubtitle(doc, 'Waarom "niets doen" vaak correct is');
-  addParagraph(doc, `De meeste beginners maken niet de fout dat ze te weinig doen – ze doen te veel. Ze sleutelen, veranderen, optimaliseren, en eindigen met een webshop die in constante flux is, zonder ooit de kans te krijgen om te stabiliseren.`);
-  
-  addTipBox(doc, 'De gouden regel', 'Bekijk je cijfers maximaal één keer per dag, bij voorkeur \'s avonds. Trek pas conclusies na minimaal een week aan data. Alles daaronder is ruis, geen signaal.');
+  addSubtitle(doc, 'What This Document Covers');
+  addBulletPoint(doc, 'Complete shipping and returns policies aligned with checkout behavior');
+  addBulletPoint(doc, 'Business transparency and identity verification');
+  addBulletPoint(doc, 'Product representation and pricing consistency');
+  addBulletPoint(doc, 'Google Merchant Center compliance checklist');
+  addBulletPoint(doc, 'Ready-to-submit Google appeal text');
+  addBulletPoint(doc, 'Admin dashboard guidance and daily operations');
+
+  addSubtitle(doc, 'Calm Operation Philosophy');
+  addParagraph(doc, `Running an e-commerce store can feel overwhelming, especially when metrics are low or inconsistent. This guide emphasizes a calm, data-driven approach. Most days, the best action is no action at all. Your store is built to operate autonomously. Your job is to monitor trends (not daily numbers) and intervene only when clear red flags appear.`);
+
+  addTipBox(doc, 'The Golden Rule', 'Check your dashboard once per day. Draw conclusions only after at least 7 days of data. Everything below that threshold is noise, not signal.');
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 2 - HET DASHBOARD BOVENIN
+  // CHAPTER 2 — DASHBOARD OVERVIEW
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '2. Het Dashboard Bovenin');
+  addTitle(doc, '2. Dashboard Overview');
   addSpace(doc, 5);
 
-  addParagraph(doc, `Wanneer je inlogt in de admin, zie je bovenaan een dashboard met de belangrijkste cijfers. Dit is je snelle overzicht, je "pulse check" van de webshop.`);
+  addParagraph(doc, `Your admin dashboard provides a real-time snapshot of store performance. Think of it like a car dashboard: it shows speed, fuel level, and warning lights. You don't panic at every fluctuation — you look for patterns.`);
 
-  addInfoBox(doc, 'Wat je ziet op het dashboard', 'Bezoekers (vandaag/deze week) • Totale omzet • Aantal orders • Actieve producten • Conversieratio • Gemiddelde orderwaarde');
+  addInfoBox(doc, 'Key Dashboard Metrics', 'Visitors (today/this week) • Total Revenue • Number of Orders • Active Products • Conversion Rate • Average Order Value (AOV)');
 
-  addSubtitle(doc, 'Bezoekers');
-  addParagraph(doc, `Het aantal bezoekers toont hoeveel unieke mensen je webshop hebben bezocht. Een "bezoeker" is iemand die minimaal één pagina heeft geladen. Dit kan iemand zijn die tien minuten door je producten heeft gekeken, maar ook iemand die per ongeluk op een link klikte en direct weer weg was.`);
-  
-  addWarningBox(doc, 'Lage bezoekersaantallen zijn normaal voor nieuwe webshops. Je hebt nog geen grote naamsbekendheid. Zie de eerste maanden als een investering in de toekomst.');
+  addSubtitle(doc, 'Visitors');
+  addParagraph(doc, `Shows how many unique people visited your store. A "visitor" is anyone who loaded at least one page. Low visitor counts are normal for new stores without active advertising. Quality matters more than quantity.`);
 
-  addSubtitle(doc, 'Omzet');
-  addParagraph(doc, `Je omzet-getal toont hoeveel euro er is binnengekomen via bestellingen. In het begin zal dit vaak nul zijn. Dat is niet erg. Elke webshop, hoe succesvol ook, begon ooit met nul omzet.`);
+  addSubtitle(doc, 'Revenue');
+  addParagraph(doc, `Total amount received through completed orders. It is completely normal for this to be zero in early days. Every successful store started at zero.`);
 
-  addSubtitle(doc, 'Bestellingen');
-  addParagraph(doc, `Het aantal orders is het meest bevredigende cijfer om te zien stijgen. De gemiddelde conversieratio voor e-commerce ligt tussen de 1% en 3%. Dit betekent dat van elke 100 bezoekers, slechts 1 tot 3 mensen iets kopen. Als je vandaag 20 bezoekers had en geen orders, is dat statistisch volkomen normaal.`);
+  addSubtitle(doc, 'Orders & Conversion');
+  addParagraph(doc, `The average e-commerce conversion rate is 1–3%. This means out of 100 visitors, only 1 to 3 will purchase. If you had 20 visitors and no orders today, that is statistically expected.`);
 
-  addSubtitle(doc, 'Producten');
-  addParagraph(doc, `Dit cijfer toont hoeveel producten actief en beschikbaar zijn in je catalogus. Bij dropshipping kan dit aantal fluctueren doordat producten bij de leverancier komen en gaan.`);
-
-  addSubtitle(doc, 'Trends vs. momentopnames');
-  addTipBox(doc, 'Focus op trends, niet op momentopnames', 'Een trend is een patroon over tijd (weken). Een momentopname is één dag. Kijk altijd naar minimaal 7 dagen data voordat je conclusies trekt. Vergelijk met dezelfde periode vorige maand, niet met gisteren.');
+  addSubtitle(doc, 'Trends vs. Snapshots');
+  addTipBox(doc, 'Focus on Trends', 'A trend is a pattern over weeks. A snapshot is one day. Always look at a minimum of 7 days of data before drawing any conclusions. Compare with the same period last month, not yesterday.');
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 3 - ICONEN & SYMBOLEN
+  // CHAPTER 3 — ICONS & SYMBOLS
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '3. Iconen & Symbolen');
+  addTitle(doc, '3. Icons & Symbols Guide');
   addSpace(doc, 5);
 
-  addParagraph(doc, `In je admin-omgeving zie je veel iconen en symbolen. Dit hoofdstuk legt elk belangrijk icoon uit in gewone taal, zodat je altijd weet wat je ziet en of je actie moet ondernemen.`);
+  addParagraph(doc, `Your admin interface uses icons to represent different functions. Below is a visual reference explaining each icon, what it means, and whether any action is needed.`);
 
-  addInfoBox(doc, 'Algemene regel', 'Als er geen rode kleur, geen woord "fout" of "error", en geen expliciete oproep tot actie bij staat, dan hoef je waarschijnlijk niets te doen.');
+  addInfoBox(doc, 'General Rule', 'If there is no red color, no word "error" or "failed", and no explicit call to action — you likely do not need to do anything.');
 
   addSpace(doc, 5);
-  
-  addIconExplanation(doc, 
-    'Doos/Pakket', 
-    'Producten',
-    'Verwijst naar je productcatalogus met alle items die in je webshop te koop zijn.',
-    'Als producten plotseling verdwijnen of foutmeldingen tonen.',
-    'Dagelijks controleren is niet nodig. Producten staan er gewoon.'
-  );
 
-  addIconExplanation(doc,
-    'Winkelwagen',
-    'Winkelwagen',
-    'Toont activiteit rondom toevoegingen aan de winkelwagen. Een positief signaal van interesse.',
-    'Alleen als klanten melden dat ze niets kunnen toevoegen.',
-    'Bij lage aantallen terwijl verkeer ook laag is.'
-  );
+  const iconExplanations = [
+    { icon: 'Box/Package', name: 'Products', meaning: 'Your product catalog. All items available for sale.', action: 'Only if products disappear or show errors.', noAction: 'Daily checking is not necessary.' },
+    { icon: 'Shopping Cart', name: 'Cart', meaning: 'Cart activity. A positive signal of customer interest.', action: 'Only if customers report they cannot add items.', noAction: 'Low numbers matching low traffic is normal.' },
+    { icon: 'Clock', name: 'Time / Recent Activity', meaning: 'Time-based information: recent activity, processing times.', action: 'Unless accompanied by a warning.', noAction: 'Purely informational.' },
+    { icon: 'Bell', name: 'Notifications', meaning: 'System notifications about orders, sync status, etc.', action: 'Only red notifications or those containing "error" or "failed".', noAction: 'Most notifications are informational.' },
+    { icon: 'Chart/Graph', name: 'Analytics', meaning: 'Performance trends over time. The real value is in the direction of the line, not individual numbers.', action: 'If the line drops consistently for 2+ weeks.', noAction: 'Daily fluctuations are normal.' },
+    { icon: 'Dollar Sign', name: 'Revenue', meaning: 'Financial data: revenue, payments, AOV.', action: 'If payments fail to process or data seems incorrect.', noAction: 'Revenue is a result. Focus on causes (traffic, conversion).' },
+    { icon: 'Eye', name: 'Visitors', meaning: 'Visitor or pageview counts showing interest in your store.', action: 'If it suddenly drops to zero while ads are running.', noAction: 'Normal fluctuations are expected.' },
+    { icon: 'Funnel', name: 'Conversion Funnel', meaning: 'Shows the flow from homepage to product to cart to checkout.', action: 'If there is 0% conversion at a specific step after significant traffic.', noAction: 'It is normal for 50–80% of visitors to drop off at each step.' },
+    { icon: 'Megaphone', name: 'Advertising', meaning: 'Ad settings or performance results.', action: 'If ads have been running for 7+ days with zero clicks.', noAction: 'During the first 3–7 days — ads need a learning phase.' },
+    { icon: 'Gear', name: 'Settings', meaning: 'Configuration options for your store.', action: 'Only when you specifically want to change something.', noAction: 'If something works, do not adjust it.' },
+    { icon: 'Green Checkmark', name: 'Success', meaning: 'Everything is working correctly.', action: 'Never — this confirms the system is working.', noAction: 'Always. A green checkmark is good news.' },
+    { icon: 'Yellow Triangle', name: 'Warning', meaning: 'A caution indicator, not an error.', action: 'If related to payment failures or critical processes.', noAction: 'For "low stock" or "slow load" — not always urgent.' },
+  ];
 
-  addIconExplanation(doc,
-    'Klok',
-    'Tijd / Recente activiteit',
-    'Duidt op tijdgebonden informatie: recente activiteit, geplande acties, of verwerkingstijd.',
-    'Tenzij er een waarschuwing bij staat.',
-    'Dit is puur informatief.'
-  );
+  for (const item of iconExplanations) {
+    checkPageBreak(doc, 35);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...PRIMARY_COLOR);
+    doc.text(`${item.icon}  —  ${item.name}`, MARGIN_LEFT, yPosition);
+    doc.setTextColor(0, 0, 0);
+    yPosition += 7;
 
-  startNewPage(doc);
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    const mLines = doc.splitTextToSize(item.meaning, CONTENT_WIDTH - 5);
+    for (const l of mLines) { doc.text(l, MARGIN_LEFT + 3, yPosition); yPosition += LINE_HEIGHT; }
+    yPosition += 1;
 
-  addIconExplanation(doc,
-    'Bel',
-    'Meldingen',
-    'Toont notificaties over orders, systeemmeldingen, of aandachtspunten.',
-    'Alleen meldingen met rode kleur of het woord "fout" of "error".',
-    'De meeste meldingen zijn informatief: "Nieuwe order" of "Synchronisatie voltooid".'
-  );
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...SUCCESS_COLOR);
+    doc.text('Action needed:', MARGIN_LEFT + 3, yPosition);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    doc.text(item.action, MARGIN_LEFT + 33, yPosition);
+    yPosition += LINE_HEIGHT;
 
-  addIconExplanation(doc,
-    'Grafiek',
-    'Statistieken',
-    'Toont trends over tijd. Hier haal je de echte waarde: niet uit individuele getallen, maar uit de richting van de lijn.',
-    'Als de lijn consistent daalt over 2+ weken.',
-    'Bij dagelijkse schommelingen - dat is normaal.'
-  );
-
-  addIconExplanation(doc,
-    'Euro',
-    'Omzet',
-    'Verwijst naar financiële data: omzet, betalingen, of gemiddelde orderwaarde.',
-    'Als betalingen niet doorkomen of data niet klopt.',
-    'Omzet is een resultaat. Focus op oorzaken (verkeer, conversie).'
-  );
-
-  addIconExplanation(doc,
-    'Oog',
-    'Bezoekers',
-    'Representeert bezoekers of pageviews. Toont interesse in je winkel.',
-    'Als het getal plotseling naar nul gaat terwijl ads draaien.',
-    'Bij normale fluctuaties - kwaliteit is belangrijker dan kwantiteit.'
-  );
-
-  startNewPage(doc);
-
-  addIconExplanation(doc,
-    'Wereldbol',
-    'Locaties',
-    'Toont geografische data: waar komen je bezoekers vandaan?',
-    'Als je verkeer uit onverwachte landen komt (kan spam zijn).',
-    'Dit is interessant voor analyse, maar vraagt zelden actie.'
-  );
-
-  addIconExplanation(doc,
-    'Driehoek',
-    'Waarschuwing',
-    'Een gele of oranje driehoek is een waarschuwing, geen error.',
-    'Bij waarschuwingen over betaalfouten of kritieke processen.',
-    'Bij "lage voorraad" of "lange laadtijd" - niet altijd urgent.'
-  );
-
-  addIconExplanation(doc,
-    'Vinkje',
-    'Succes',
-    'Betekent: alles in orde. Bij succesvolle acties of voltooide synchronisaties.',
-    'Nooit - dit is bevestiging dat het systeem werkt.',
-    'Altijd. Een groen vinkje is goed nieuws.'
-  );
-
-  addIconExplanation(doc,
-    'Pijlen',
-    'Synchronisatie',
-    'Duidt op synchronisatie of verversing. Data wordt bijgewerkt.',
-    'Als het langer dan 5 minuten duurt, ververs de pagina.',
-    'Wacht rustig tot het klaar is. Meestal lost het zichzelf op.'
-  );
-
-  startNewPage(doc);
-
-  addIconExplanation(doc,
-    'Trechter',
-    'Funnel',
-    'Toont je conversie-funnel: van homepage naar product naar winkelwagen naar checkout.',
-    'Als er 0% conversie is bij een specifieke stap na veel verkeer.',
-    'Het is normaal dat 50-80% afhaakt bij elke stap.'
-  );
-
-  addIconExplanation(doc,
-    'Vuur',
-    'Heatmap',
-    'Toont waar bezoekers klikken of scrollen. Rood = populair, blauw = genegeerd.',
-    'Eens per maand bekijken als je wilt optimaliseren.',
-    'Dit is geen dagelijkse check - puur voor analyse.'
-  );
-
-  addIconExplanation(doc,
-    'Lijn',
-    'Analytics',
-    'Leidt naar gedetailleerde statistieken voor diepere analyse.',
-    'Wanneer je specifieke vragen hebt over prestaties.',
-    'Te veel analyseren leidt tot over-denken. Vertrouw je dashboard.'
-  );
-
-  addIconExplanation(doc,
-    'Megafoon',
-    'Advertenties',
-    'Verwijst naar je advertentie-instellingen of -resultaten.',
-    'Als ads 7+ dagen draaien zonder enige klikken.',
-    'In de eerste 3-7 dagen - ads hebben een leerfase.'
-  );
-
-  addIconExplanation(doc,
-    'Tandwiel',
-    'Instellingen',
-    'Leidt naar configuratie-opties voor je webshop.',
-    'Alleen als je specifiek iets wilt aanpassen.',
-    'Als iets werkt, hoef je het niet aan te passen.'
-  );
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...MUTED_COLOR);
+    doc.text('No action:', MARGIN_LEFT + 3, yPosition);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    doc.text(item.noAction, MARGIN_LEFT + 33, yPosition);
+    yPosition += LINE_HEIGHT + 4;
+  }
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 4 - BEZOEKERSGEDRAG
+  // CHAPTER 4 — VISITOR BEHAVIOR
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '4. Bezoekersgedrag');
+  addTitle(doc, '4. Visitor Behavior');
   addSpace(doc, 5);
 
-  addSubtitle(doc, 'Waarom mensen vaak alleen kijken');
-  addParagraph(doc, `Laten we beginnen met een belangrijke waarheid: de overgrote meerderheid van je bezoekers zal niet kopen. Dit is geen falen van jouw webshop; dit is hoe online winkelen werkt.`);
-  
-  addInfoBox(doc, 'De cijfers', 'Slechts 1-3% van e-commerce bezoekers doet daadwerkelijk een aankoop. Van elke 100 mensen die je site bezoeken, vertrekken 97 tot 99 zonder iets te kopen. Dit is wereldwijd standaard.');
+  addSubtitle(doc, 'Why Most Visitors Only Browse');
+  addParagraph(doc, `The vast majority of your visitors will not purchase. This is not a failure of your store; this is how online shopping works.`);
 
-  addParagraph(doc, `Online kost het één klik om ergens te landen en één klik om weer te vertrekken. Mensen browsen, vergelijken, bookmarken voor later, laten zich afleiden, of realiseren zich simpelweg dat ze het product nu niet nodig hebben.`);
+  addInfoBox(doc, 'The Numbers', 'Only 1–3% of e-commerce visitors make a purchase. Out of every 100 people who visit your site, 97 to 99 will leave without buying. This is the global standard.');
 
-  addSubtitle(doc, 'Waarom dit normaal is');
-  addParagraph(doc, `Een gemiddelde consument bezoekt een webshop meerdere keren voordat ze kopen. Dit heet de "customer journey" en kan dagen of zelfs weken duren:`);
-  
-  addBulletPoint(doc, 'Dag 1: Ziet advertentie, bezoekt site, kijkt rond, vertrekt');
-  addBulletPoint(doc, 'Dag 3: Denkt eraan terug, googelt je productnaam');
-  addBulletPoint(doc, 'Dag 7: Komt terug na salaris, koopt eindelijk');
-  
-  addSpace(doc, 5);
-  
-  addTipBox(doc, 'Terugkerende bezoekers', 'Als je in je analytics ziet dat mensen terugkeren naar je site, is dat een uitstekend teken. Terugkerende bezoekers hebben een veel hogere kans om te converteren dan nieuwe bezoekers.');
+  addSubtitle(doc, 'The Customer Journey');
+  addParagraph(doc, `An average consumer visits a store multiple times before buying:`);
+  addBulletPoint(doc, 'Day 1: Sees an ad, visits the site, browses, leaves');
+  addBulletPoint(doc, 'Day 3: Remembers the product, searches for it');
+  addBulletPoint(doc, 'Day 7: Returns after payday and finally purchases');
 
-  addSubtitle(doc, 'Wat cijfers echt betekenen');
-  addParagraph(doc, `Bezoekersaantallen zijn geen directe indicator van succes. Honderd gerichte bezoekers via een goede advertentie zijn meer waard dan duizend willekeurige bezoekers. Focus op kwaliteit boven kwantiteit.`);
+  addTipBox(doc, 'Returning Visitors', 'If your analytics show people returning to your site, that is an excellent sign. Returning visitors have a much higher chance of converting than first-time visitors.');
 
-  addSubtitle(doc, 'Waarom twijfel geen fout is');
-  addParagraph(doc, `Het is volkomen normaal om te twijfelen of je webshop "werkt" als je lage cijfers ziet. Maar onthoud: elke grote webshop begon precies waar jij nu bent. Het verschil is dat zij bleven volhouden.`);
+  addSubtitle(doc, 'What Numbers Really Mean');
+  addParagraph(doc, `Visitor counts are not a direct indicator of success. One hundred targeted visitors from a good ad campaign are worth more than a thousand random visitors. Focus on quality over quantity.`);
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 5 - PRODUCTEN & CATEGORIEËN
+  // CHAPTER 5 — PRODUCTS & CATEGORIES
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '5. Producten & Categorieën');
+  addTitle(doc, '5. Products & Categories');
   addSpace(doc, 5);
 
-  addSubtitle(doc, 'Lege categorieën zijn GEEN fout');
-  addParagraph(doc, `Het is volkomen normaal en correct dat een hoofdcategorie zelf geen producten bevat, maar alleen subcategorieën. Bijvoorbeeld: de categorie "Hondenvoeding" kan leeg zijn, terwijl de subcategorieën "Droogvoer", "Natvoer" en "Snacks" wél producten bevatten.`);
+  addSubtitle(doc, 'Empty Categories Are Not Errors');
+  addParagraph(doc, `It is completely normal for a parent category to contain no products while its subcategories are populated. For example, "Dog Food" may be empty while "Dry Food", "Wet Food", and "Treats" each contain products. This is proper organization, not a bug.`);
 
-  addInfoBox(doc, 'Waarom je "0 producten" ziet', 'Dit is geen fout - dit is goede organisatie. De producten zitten een niveau dieper, in de subcategorieën. Je hoeft hier niets aan te veranderen.');
+  addSubtitle(doc, 'Product Representation — Google Compliance');
+  addParagraph(doc, `All products on GetPawsy accurately represent the items for sale. Product images match the actual products shipped. Prices shown on product pages are the prices customers pay. There are no misleading discounts, bait-and-switch tactics, or redirect tricks.`);
 
-  addSubtitle(doc, 'Subcategorie-logica');
-  addParagraph(doc, `Er zijn meerdere geldige redenen waarom een categorie nul producten kan tonen:`);
-  addBulletPoint(doc, 'De producten zitten in subcategorieën (correct!)');
-  addBulletPoint(doc, 'De categorie is nieuw en wordt nog gevuld');
-  addBulletPoint(doc, 'Het is een seizoensgebonden categorie die tijdelijk leeg is');
-  addBulletPoint(doc, 'Het is een placeholder voor toekomstige uitbreiding');
+  addComplianceBox(doc, 'Product Integrity', `Every product listing includes: accurate title, real product image, correct price in USD, clear availability status, and consistent information from product page through checkout.`);
 
-  addSubtitle(doc, 'Wanneer producten verdwijnen (en wanneer niet)');
-  addParagraph(doc, `Bij dropshipping heb je een leverancier die de producten beheert. Dit betekent dat producten soms automatisch worden bijgewerkt: nieuwe producten verschijnen, prijzen veranderen, of items worden uitgeschakeld als de leverancier ze niet meer heeft.`);
-  
-  addWarningBox(doc, 'Een product is pas een probleem als: klanten klagen dat ze iets niet kunnen vinden, producten niet laden op je website, of je ziet foutmeldingen bij het openen. Dit is zeldzaam.');
-
-  addTipBox(doc, 'Wat je wél moet doen', 'Controleer periodiek (wekelijks) of je bestsellers nog beschikbaar zijn. Maak je geen zorgen over kleine fluctuaties in je totale productaantal.');
+  addSubtitle(doc, 'Filters & Search');
+  addParagraph(doc, `Customers can browse by category, use filters (price range, type), or search by keyword. Search results always lead to the correct product detail page with matching title, price, and image.`);
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 6 - VOORRAAD & OUT-OF-STOCK
+  // CHAPTER 6 — INVENTORY & STOCK
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '6. Voorraad & Out-of-Stock');
+  addTitle(doc, '6. Inventory & Stock');
   addSpace(doc, 5);
 
-  addSubtitle(doc, 'Dropshipping-logica');
-  addParagraph(doc, `Bij een traditionele webshop heb je producten liggen in een magazijn. Bij dropshipping is dit anders. Je "voorraad" is eigenlijk de voorraad van je leverancier. Jij houdt geen fysieke producten aan – je stuurt bestellingen door naar de leverancier die direct naar de klant verstuurt.`);
+  addSubtitle(doc, 'Fulfillment Model');
+  addParagraph(doc, `GetPawsy partners with US-based fulfillment centers. When a customer places an order, it is forwarded to the appropriate fulfillment partner for processing and shipping. Stock levels reflect availability at fulfillment partner warehouses.`);
 
-  addInfoBox(doc, 'Wat voorraad betekent bij dropshipping', 'Een voorraadcijfer toont de beschikbaarheid bij je leverancier, niet een fysieke voorraad bij jou. Stock = beschikbaar bij leverancier.');
+  addInfoBox(doc, 'What Stock Means', 'A stock number reflects availability at our fulfillment partners, not a physical warehouse owned by GetPawsy. When the "Add to Cart" button is visible and functional, the product is available for purchase.');
 
-  addSubtitle(doc, 'Waarom "stock = 0" niet per se uitverkocht betekent');
-  addParagraph(doc, `Er zijn technische redenen waarom een product nul voorraad kan tonen terwijl het wel beschikbaar is:`);
-  addBulletPoint(doc, 'Sommige leveranciers werken met "infinite stock"');
-  addBulletPoint(doc, 'Synchronisatie loopt nog');
-  addBulletPoint(doc, 'Leverancier updatet alleen op bepaalde momenten');
+  addSubtitle(doc, 'When to Intervene');
+  addBulletPoint(doc, 'A product explicitly shows "Out of Stock" on the website');
+  addBulletPoint(doc, 'The "Add to Cart" button does not function');
+  addBulletPoint(doc, 'A product is no longer visible in the catalog');
 
-  addTipBox(doc, 'De echte vraag', 'Kunnen klanten het product kopen op je website? Als de "In winkelwagen" knop werkt en er geen "Uitverkocht" melding staat, dan is het product beschikbaar.');
-
-  addSubtitle(doc, 'Wanneer je moet ingrijpen');
-  addParagraph(doc, `Een product is echt niet beschikbaar wanneer:`);
-  addBulletPoint(doc, 'Het expliciet op "Uitverkocht" staat op de website');
-  addBulletPoint(doc, 'De "Koop" knop niet werkt');
-  addBulletPoint(doc, 'Het product niet meer zichtbaar is in de catalogus');
-
-  addSubtitle(doc, 'Wanneer NIET ingrijpen');
-  addParagraph(doc, `Maak je niet gek met dagelijks voorraad checken. De meeste dropshipping-systemen werken automatisch. Producten die niet meer leverbaar zijn, worden vanzelf gemarkeerd of uitgeschakeld.`);
+  addSubtitle(doc, 'When NOT to Intervene');
+  addParagraph(doc, `Do not obsess over daily stock numbers. Fulfillment systems update automatically. Products that become unavailable are automatically marked or disabled.`);
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 7 - WINKELWAGEN & AFREKENEN
+  // CHAPTER 7 — CART & CHECKOUT
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '7. Winkelwagen & Afrekenen');
+  addTitle(doc, '7. Cart & Checkout');
   addSpace(doc, 5);
 
-  addSubtitle(doc, 'Hoe je weet dat checkout werkt');
-  addParagraph(doc, `De beste manier om te weten dat je checkout werkt, is door het zelf te testen. Ga periodiek (bijvoorbeeld maandelijks) door het hele proces: selecteer een product, voeg toe aan winkelwagen, ga naar checkout, en controleer of alle stappen werken tot aan de betalingspagina.`);
+  addSubtitle(doc, 'Checkout Flow');
+  addParagraph(doc, `The checkout process is designed for transparency and trust:`);
+  addBulletPoint(doc, '1. Customer adds product(s) to cart');
+  addBulletPoint(doc, '2. Cart displays product price, quantity, and subtotal');
+  addBulletPoint(doc, `3. Shipping cost is calculated: FREE on orders $${FREE_SHIPPING_THRESHOLD}+ or $${FLAT_SHIPPING_RATE.toFixed(2)} flat rate`);
+  addBulletPoint(doc, '4. If cart is under $35, a message shows how much more to qualify for free shipping');
+  addBulletPoint(doc, '5. Customer enters US shipping address');
+  addBulletPoint(doc, '6. Final total = subtotal + shipping (if applicable) − discounts');
+  addBulletPoint(doc, '7. Secure payment via Stripe');
 
-  addTipBox(doc, 'Test je eigen checkout', 'Je hoeft niet daadwerkelijk te betalen. Controleer alleen of elke stap werkt en of er geen foutmeldingen verschijnen.');
+  addCriticalBox(doc, 'Pricing Consistency', `The price shown on the product page MUST equal the price shown in the cart, which MUST equal the price shown at checkout. There are no hidden fees, no "calculated at checkout" language, and no surprise charges. Shipping costs follow a simple, transparent rule: $${FLAT_SHIPPING_RATE.toFixed(2)} under $${FREE_SHIPPING_THRESHOLD}, free at $${FREE_SHIPPING_THRESHOLD} or above.`);
 
-  addSubtitle(doc, 'Waarom "geen orders" in begin normaal is');
-  addParagraph(doc, `Als je net begint, zal je order-overzicht leeg zijn. Dit is volkomen normaal. Elke succesvolle webshop begon met een lege orderpagina. De eerste order is een mijlpaal die je moet vieren, niet iets dat je vanaf dag één moet verwachten.`);
+  addSubtitle(doc, 'Shipping Address Restriction');
+  addParagraph(doc, `Checkout only accepts United States shipping addresses. No international countries are visible or selectable. This aligns with our US-only shipping policy and Google Merchant Center configuration.`);
 
-  addInfoBox(doc, 'Geen orders betekent niet', 'Dat je checkout kapot is • Dat niemand je producten wil • Dat je moet stoppen met adverteren. Het betekent simpelweg dat je nog geen kopers hebt gehad - en dat kost tijd.');
-
-  addSubtitle(doc, 'Verschil tussen test en echte klanten');
-  addParagraph(doc, `Wanneer je zelf test, gebruik je misschien dezelfde browser, hetzelfde apparaat, en dezelfde route elke keer. Echte klanten komen via verschillende apparaten, browsers, en paden. Een test die werkt betekent niet dat alles 100% werkt voor iedereen - maar het is een goede indicatie.`);
-
-  addWarningBox(doc, 'Als meerdere echte klanten melden dat ze niet kunnen afrekenen, is dat een serieus signaal. Eén klant met problemen kan toeval zijn; meerdere klanten is een patroon dat aandacht verdient.');
+  addSubtitle(doc, 'Business Identity at Checkout');
+  addParagraph(doc, `The checkout page displays or links to: GetPawsy branding, Skidzo legal information, support contact (${SUPPORT_EMAIL}), and SSL security indicators. Customers can clearly identify who they are purchasing from.`);
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 8 - ORDERS & BETALINGEN
+  // CHAPTER 8 — ANALYTICS
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '8. Orders & Betalingen');
+  addTitle(doc, '8. Analytics');
   addSpace(doc, 5);
 
-  addSubtitle(doc, 'Orderstatussen uitgelegd');
-  addParagraph(doc, `Wanneer een order binnenkomt, doorloopt deze verschillende statussen:`);
-  
-  addBulletPoint(doc, 'Nieuw/Ontvangen: De bestelling is geplaatst');
-  addBulletPoint(doc, 'Betaald: De klant heeft succesvol betaald');
-  addBulletPoint(doc, 'In verwerking: Order wordt klaargezet bij leverancier');
-  addBulletPoint(doc, 'Verzonden: Pakket is onderweg naar de klant');
-  addBulletPoint(doc, 'Afgeleverd: Klant heeft pakket ontvangen');
-  
-  addSpace(doc, 5);
+  addSubtitle(doc, 'What Matters');
+  addBulletPoint(doc, 'Conversion Rate — percentage of visitors who purchase (benchmark: 1–3%)');
+  addBulletPoint(doc, 'Average Order Value (AOV) — total revenue / number of orders');
+  addBulletPoint(doc, 'Add-to-Cart Rate — percentage who add items to cart (benchmark: 5–15%)');
+  addBulletPoint(doc, 'Revenue trends over 7–30 day periods');
 
-  addSubtitle(doc, 'Betaald is NIET hetzelfde als verzonden');
-  addInfoBox(doc, 'Belangrijk onderscheid', '"Betaald" betekent dat het geld binnen is. "Verzonden" betekent dat het pakket onderweg is. Er zit tijd tussen deze stappen - bij dropshipping typisch 1-3 werkdagen voor verwerking.');
+  addSubtitle(doc, 'What Doesn\'t Matter (Yet)');
+  addBulletPoint(doc, 'Individual daily visitor counts for new stores');
+  addBulletPoint(doc, 'Bounce rate in isolation (context matters)');
+  addBulletPoint(doc, 'Social media follower counts');
 
-  addSubtitle(doc, 'Wat automatisch loopt');
-  addParagraph(doc, `Bij dropshipping wordt het meeste automatisch afgehandeld:`);
-  addBulletPoint(doc, 'Betaling wordt verwerkt via je betaalprovider');
-  addBulletPoint(doc, 'Order wordt doorgestuurd naar je leverancier');
-  addBulletPoint(doc, 'Leverancier verzendt direct naar de klant');
-  addBulletPoint(doc, 'Tracking wordt automatisch bijgewerkt');
+  addTipBox(doc, 'Diagnostic Pattern', 'Good add-to-cart rate but low conversion? The problem is after the cart (checkout, shipping costs). Low add-to-cart rate? The problem is earlier (product presentation, pricing, offering).');
 
-  addTipBox(doc, 'Je hoeft bij de meeste orders niets te doen', 'Het systeem werkt automatisch. Grijp alleen in bij expliciete problemen: annuleringsverzoeken, mislukte betalingen, of leveringsproblemen.');
-
-  addSubtitle(doc, 'Wanneer actie nodig is');
-  addBulletPoint(doc, 'Een klant vraagt om annulering - verwerk dit snel');
-  addBulletPoint(doc, 'Een betaling is mislukt maar de order is aangemaakt - contacteer de klant');
-  addBulletPoint(doc, 'De leverancier meldt een probleem - communiceer proactief met je klant');
+  addWarningBox(doc, 'Always view charts over at least 7 days, preferably 30. Compare with the same period last month. Look for consistent patterns, not individual spikes.');
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 9 - VERZENDING & RETOUREN
+  // CHAPTER 9 — ADVERTISING
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '9. Verzending & Retouren');
+  addTitle(doc, '9. Advertising (Pinterest / Google)');
   addSpace(doc, 5);
 
-  addSubtitle(doc, 'Verwachte levertijden');
-  addParagraph(doc, `Levertijden variëren afhankelijk van waar je leverancier is gevestigd, welke bezorgdienst wordt gebruikt, en waar je klant woont. Voor standaard verzending kun je typisch rekenen op:`);
-  
-  addBulletPoint(doc, 'Verwerking: 1-3 werkdagen');
-  addBulletPoint(doc, 'Verzending binnen Europa: 5-10 werkdagen');
-  addBulletPoint(doc, 'Verzending buiten Europa: 10-20 werkdagen');
+  addSubtitle(doc, 'The Learning Phase');
+  addParagraph(doc, `Online ad platforms (Pinterest, Google, Meta) need a learning phase of 3–7 days. During this period, the algorithm collects data about who clicks your ads, who visits your site, and who purchases. You will see costs without proportional results. This is expected.`);
 
-  addInfoBox(doc, 'Verwachtingsmanagement is alles', 'Als je website "5-10 werkdagen" vermeldt en de klant ontvangt binnen 7 dagen, is iedereen tevreden. Als je "2 dagen" belooft en het duurt een week, krijg je klachten.');
+  addWarningBox(doc, 'The biggest mistake new advertisers make is drawing conclusions too quickly. After one day with high costs and no sales, they panic and stop the campaign. This is counterproductive. Wait at least 7–14 days.');
 
-  addSubtitle(doc, 'Tracking');
-  addParagraph(doc, `Klanten willen weten waar hun pakket is. Een tracking-code stelt hen gerust. Bij dropshipping ontvang je de tracking-code van je leverancier, die automatisch naar de klant wordt doorgestuurd.`);
+  addSubtitle(doc, 'Landing Page Accuracy — Critical for Google');
+  addCriticalBox(doc, 'URL Matching', 'Every ad MUST link to the correct product page. If an ad for "Slow Feeder Bowl" links to a different product or a search page, Google will flag this as misrepresentation. Always verify that the Destination URL in your ad platform matches the actual product URL on getpawsy.pet.');
 
-  addWarningBox(doc, 'Soms duurt het 1-2 werkdagen voordat tracking-informatie beschikbaar is. Leg dit uit in je verzendmail om onnodige vragen te voorkomen.');
+  addSubtitle(doc, 'Pinterest-Specific Guidance');
+  addBulletPoint(doc, 'Add UTM parameters to Destination URL, not the tracking template field');
+  addBulletPoint(doc, 'Verify product URLs before publishing campaigns');
+  addBulletPoint(doc, 'If a product is removed, update or pause the corresponding ad immediately');
+  addBulletPoint(doc, 'The Pinterest Tag tracks: PageVisit, ViewCategory, ViewProduct, AddToCart, Checkout');
 
-  addSubtitle(doc, 'Wanneer klanten contact opnemen');
-  addParagraph(doc, `De meeste klantvragen over verzending komen door onduidelijke verwachtingen. Veelvoorkomende vragen:`);
-  addBulletPoint(doc, '"Waar is mijn pakket?" - Verwijs naar de tracking-link');
-  addBulletPoint(doc, '"Het duurt zo lang" - Leg de normale levertijd uit');
-  addBulletPoint(doc, '"Tracking werkt niet" - Check of het pakket al verzonden is');
-
-  addTipBox(doc, 'Proactieve communicatie', 'Stuur automatisch een bevestigingsmail bij bestelling en een update bij verzending met tracking. Dit voorkomt 80% van de klantvragen.');
+  addSubtitle(doc, 'Google Ads Considerations');
+  addParagraph(doc, `For Google Shopping: product feed data (title, price, availability, shipping) must exactly match what is displayed on the website. Any discrepancy can trigger a "Misrepresentation" flag. The product feed at getpawsy.pet is auto-generated and synchronized with on-site data.`);
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 10 - KLANTEN & SUPPORT
+  // CHAPTER 10 — TECHNICAL GLOSSARY
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '10. Klanten & Support');
+  addTitle(doc, '10. Technical Glossary');
   addSpace(doc, 5);
 
-  addSubtitle(doc, 'Wanneer reageren');
-  addParagraph(doc, `Reageer snel (binnen 24 uur) op:`);
-  addBulletPoint(doc, 'Vragen over bestellingen en leveringen');
-  addBulletPoint(doc, 'Klachten over producten of service');
-  addBulletPoint(doc, 'Verzoeken om annulering of retour');
-  addBulletPoint(doc, 'Technische problemen met bestellen');
+  addParagraph(doc, `Simple explanations of common e-commerce and advertising terms.`);
 
-  addSubtitle(doc, 'Wanneer wachten');
-  addParagraph(doc, `Niet elke vraag vereist direct actie. Je mag wachten bij:`);
-  addBulletPoint(doc, 'Algemene productinformatie (antwoord binnen 24-48 uur)');
-  addBulletPoint(doc, '"Wanneer is mijn pakket er?" terwijl het nog binnen normale levertijd valt');
-  addBulletPoint(doc, 'Suggesties of feedback (bedank en noteer voor later)');
-
-  addInfoBox(doc, 'Vuistregel', 'Urgente zaken (klachten, problemen): binnen 24 uur. Niet-urgente zaken: binnen 48 uur. Een snelle, vriendelijke reactie bouwt meer vertrouwen dan een perfecte reactie die dagen duurt.');
-
-  addSubtitle(doc, 'Hoe rust vertrouwen uitstraalt');
-  addParagraph(doc, `Klanten voelen het als je gestrest bent in je communicatie. Een rustige, vriendelijke toon - ook bij problemen - straalt professionaliteit uit. Zelfs als iets mis gaat, kan een goed afgehandelde klacht een klant loyaler maken.`);
-
-  addTipBox(doc, 'De kracht van eerlijkheid', 'Als er iets mis gaat, wees eerlijk. Klanten waarderen transparantie. "Er is een vertraging, we houden je op de hoogte" is beter dan stilte of vage excuses.');
-
-  addSubtitle(doc, 'Veelgestelde vragen voorbereiden');
-  addParagraph(doc, `Maak een lijst van veelgestelde vragen en standaard antwoorden. Dit bespaart tijd en zorgt voor consistente communicatie. Denk aan: levertijden, retourbeleid, productinformatie, en betaalmethoden.`);
-
-  addPageNumber(doc);
-
-  // =====================================
-  // CHAPTER 11 - MARKETING & ADVERTENTIES
-  // =====================================
-  startNewPage(doc);
-  addTitle(doc, '11. Marketing & Advertenties');
-  addSpace(doc, 5);
-
-  addSubtitle(doc, 'Wat advertenties eerst doen: leren');
-  addParagraph(doc, `Online advertenties zijn geen lichtschakelaar. Je zet ze niet aan en krijgt direct verkopen. Advertentieplatforms zoals Facebook, Instagram, Pinterest en Google hebben een "leerfase" nodig.`);
-
-  addInfoBox(doc, 'De leerfase', 'Tijdens deze fase (3-7 dagen) verzamelt het algoritme data over wie er op je ads klikt, wie doorgaat naar je site, en wie koopt. Je zult kosten zien zonder proportionele resultaten. Dat is normaal.');
-
-  addSubtitle(doc, 'Waarom dag 1 niets zegt');
-  addParagraph(doc, `De resultaten van dag 1 zijn statistisch onbetrouwbaar. Je ziet misschien veel vertoningen, weinig klikken, en geen verkopen. Of juist omgekeerd. Dit is ruis, geen signaal.`);
-
-  addWarningBox(doc, 'De grootste fout die nieuwe adverteerders maken is te snel conclusies trekken. Na één dag met hoge kosten en geen verkopen, paniekeren ze en stoppen de campagne. Dit is contraproductief.');
-
-  addSubtitle(doc, 'Minimale looptijd: 7-14 dagen');
-  addParagraph(doc, `Geef campagnes minimaal 7 dagen voordat je beoordeelt. Liever 14 dagen. In die tijd verzamelt het platform genoeg data om te optimaliseren. De kosten per resultaat dalen vaak significant na de leerfase.`);
-
-  addSubtitle(doc, 'Verschil verkeer vs conversie');
-  addBulletPoint(doc, 'Verkeer: Mensen naar je site krijgen (clicks)');
-  addBulletPoint(doc, 'Conversie: Mensen die daadwerkelijk kopen');
-  
   addSpace(doc, 3);
-  
-  addParagraph(doc, `Je kunt veel verkeer hebben zonder conversies. Dat kan liggen aan: verkeerde doelgroep, niet-overtuigende productpagina\'s, of simpelweg dat mensen nog in de oriëntatiefase zitten. Analyseer pas na voldoende data.`);
-
-  addTipBox(doc, 'Marketing is een marathon', 'Succesvolle webshops bouwen maanden aan hun advertentiestrategieën. Verwacht geen instant succes; werk naar duurzame groei. Denk in kwartalen, niet in dagen.');
-
-  addPageNumber(doc);
-
-  // =====================================
-  // CHAPTER 12 - STATISTIEKEN & ANALYTICS
-  // =====================================
-  startNewPage(doc);
-  addTitle(doc, '12. Statistieken & Analytics');
-  addSpace(doc, 5);
-
-  addSubtitle(doc, 'AOV (Average Order Value)');
-  addParagraph(doc, `AOV (gemiddelde orderwaarde) vertelt je hoeveel een klant gemiddeld per bestelling uitgeeft. Bereken: totale omzet / aantal orders. Bijvoorbeeld: €1000 omzet met 20 orders = €50 AOV.`);
-  
-  addTipBox(doc, 'AOV verhogen', 'Duurdere producten toevoegen • Bundels aanbieden • Drempels voor gratis verzending • Upsells bij checkout');
-
-  addSubtitle(doc, 'Conversieratio');
-  addParagraph(doc, `Conversieratio is het percentage bezoekers dat koopt. Als 100 mensen je site bezoeken en 2 kopen, is je conversie 2%.`);
-  
-  addInfoBox(doc, 'Benchmarks', '1-3% conversie is gemiddeld voor e-commerce. 3-5% is goed. Boven 5% is excellent. Met 50 bezoekers kun je geen conclusies trekken - je hebt honderden bezoekers nodig voor betrouwbare data.');
-
-  addSubtitle(doc, 'Add-to-Cart Rate');
-  addParagraph(doc, `Dit toont hoeveel procent van bezoekers iets aan de winkelwagen toevoegt. Gemiddeld 5-15% voor e-commerce.`);
-  
-  addBulletPoint(doc, 'Goede add-to-cart maar lage conversie? Probleem ligt na de winkelwagen (checkout, verzendkosten)');
-  addBulletPoint(doc, 'Lage add-to-cart? Probleem ligt eerder (productpresentatie, prijs, aanbod)');
-
-  addSubtitle(doc, 'Waarom trends belangrijker zijn dan pieken');
-  addParagraph(doc, `Een piek is een uitzondering - een dag met ongewoon hoge of lage cijfers. Een trend is een patroon over tijd. Pieken zijn interessant maar niet actionable. Trends zijn waar je je strategie op baseert.`);
-
-  addWarningBox(doc, 'Bekijk altijd grafieken over minimaal 7 dagen, liever 30. Vergelijk met dezelfde periode vorige maand. Zoek naar consistente bewegingen, niet naar individuele uitschieters.');
+  addTableRow(doc, 'Term', 'Meaning', true);
+  addTableRow(doc, 'CTR (Click-Through Rate)', 'Percentage of people who click your ad after seeing it. Industry average: 1–3%.');
+  addTableRow(doc, 'AOV (Average Order Value)', 'Average amount spent per order. Total revenue divided by number of orders.');
+  addTableRow(doc, 'Conversion Rate', 'Percentage of visitors who complete a purchase. E-commerce average: 1–3%.');
+  addTableRow(doc, 'CPC (Cost Per Click)', 'How much you pay each time someone clicks your ad.');
+  addTableRow(doc, 'ROAS (Return on Ad Spend)', 'Revenue generated for every dollar spent on ads. ROAS of 3x = $3 revenue per $1 spent.');
+  addTableRow(doc, 'Bounce Rate', 'Percentage of visitors who leave after viewing only one page.');
+  addTableRow(doc, 'Impression', 'One instance of your ad being displayed to a user.');
+  addTableRow(doc, 'Add-to-Cart Rate', 'Percentage of visitors who add an item to their shopping cart. Average: 5–15%.');
+  addTableRow(doc, 'Cart Abandonment', 'When a customer adds items to cart but does not complete purchase. Average: 70%.');
+  addTableRow(doc, 'SEO', 'Search Engine Optimization — improving visibility in search results without paid ads.');
+  addTableRow(doc, 'SSL', 'Secure Sockets Layer — encryption that protects customer data. Shown as "https://" and padlock icon.');
+  addTableRow(doc, 'RLS', 'Row-Level Security — database protection ensuring users only access their own data.');
+  addTableRow(doc, 'GMC', 'Google Merchant Center — platform for managing product listings in Google Shopping.');
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 13 - VEELGEMAAKTE MISVERSTANDEN
+  // CHAPTER 11 — WHEN TO INTERVENE
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '13. Veelgemaakte Misverstanden');
+  addTitle(doc, '11. When to Intervene');
   addSpace(doc, 5);
 
-  addSubtitle(doc, '"0 bezoekers = er is iets fout"');
-  addParagraph(doc, `NIET WAAR. Nul bezoekers op een bepaald moment - vooral \'s nachts of vroeg in de ochtend - is volkomen normaal. Mensen winkelen niet 24/7. Check je dagelijkse of wekelijkse totalen, niet elk uur.`);
-  
-  addInfoBox(doc, 'De realiteit', 'Nieuwe webshops zonder actieve marketing hebben weinig organisch verkeer. Dit is geen fout, dit is het startpunt. Verkeer groeit met tijd, SEO, en advertenties.');
+  addParagraph(doc, `True red flags that require immediate attention:`);
 
-  addSubtitle(doc, '"Lege categorie = kapot"');
-  addParagraph(doc, `NIET WAAR. Een lege hoofdcategorie met gevulde subcategorieën is correct. Een tijdelijk lege categorie door seizoen of leverancier is normaal. Alleen een categorie die producten zou moeten bevatten én zichtbaar is voor klanten én leeg is, verdient aandacht.`);
-
-  addSubtitle(doc, '"Ik moet elke dag aanpassen"');
-  addParagraph(doc, `NIET WAAR. Dagelijks aanpassen is contraproductief. Elke verandering verstoort je data. Je kunt niet meten wat werkt als je constant alles verandert. Grote bedrijven testen één verandering per keer en wachten weken op resultaten.`);
-
-  addTipBox(doc, 'De waarheid', 'Je webshop is ontworpen om te werken zonder dagelijkse interventie. Als alles functioneert, is het beste wat je kunt doen: niets doen en data laten accumuleren.');
-
-  addSubtitle(doc, 'Andere misverstanden');
-  addBulletPoint(doc, '"Meer producten = meer verkopen" - Kwaliteit boven kwantiteit');
-  addBulletPoint(doc, '"Advertenties werken niet na 1 dag" - Ze hebben 7-14 dagen nodig');
-  addBulletPoint(doc, '"Mijn concurrenten doen het beter" - Je ziet alleen hun succes, niet hun worstelingen');
-  addBulletPoint(doc, '"Ik moet altijd beschikbaar zijn" - Goede systemen draaien zonder jou');
-
-  addPageNumber(doc);
-
-  // =====================================
-  // CHAPTER 14 - DAGELIJKSE CHECKLIST
-  // =====================================
-  startNewPage(doc);
-  addTitle(doc, '14. Dagelijkse Checklist');
-  addSpace(doc, 5);
-
-  addSubtitle(doc, 'Dagelijkse check (5 minuten)');
-  addParagraph(doc, `Je doel is niet om alles te analyseren, maar om te verifiëren dat er geen brandjes zijn. Dit kun je \'s ochtends of \'s avonds doen.`);
-  
   addSpace(doc, 3);
-  addChecklistItem(doc, 'Open je admin en bekijk het dashboard bovenin', true);
-  addChecklistItem(doc, 'Check op rode waarschuwingen of foutmeldingen', true);
-  addChecklistItem(doc, 'Bekijk kort meldingen/notificaties', true);
-  addChecklistItem(doc, 'Check je e-mail voor klantberichten', true);
-  addChecklistItem(doc, 'Als alles groen is: door met je dag', true);
-  
-  addSpace(doc, 5);
-  
-  addChecklistItem(doc, 'Elk uur inloggen om te checken', false);
-  addChecklistItem(doc, 'Conclusies trekken uit dagelijkse data', false);
-  addChecklistItem(doc, 'Instellingen aanpassen die al werken', false);
-  addChecklistItem(doc, 'In paniek raken bij lage cijfers', false);
+  addCriticalBox(doc, 'Payment Processing Down', 'If multiple customers report they cannot complete checkout, or Stripe shows errors. Test checkout immediately.');
+  addSpace(doc, 2);
+  addCriticalBox(doc, 'Site Completely Down', 'If getpawsy.pet shows an error page or blank page. Check your hosting status.');
+  addSpace(doc, 2);
+  addCriticalBox(doc, 'Google Merchant Center Suspension', 'If you receive a suspension notice, review this guide\'s compliance chapter and submit an appeal using the provided template.');
+  addSpace(doc, 2);
+  addCriticalBox(doc, 'Customer Complaints About Wrong Products', 'If customers receive items that don\'t match what they ordered. Contact your fulfillment partner immediately.');
 
-  addSubtitle(doc, 'Wekelijkse check (30 minuten)');
-  addParagraph(doc, `De wekelijkse check is grondiger. Dit is waar je trends bekijkt.`);
-  
-  addSpace(doc, 3);
-  addChecklistItem(doc, 'Bekijk analytics over de afgelopen 7 dagen', true);
-  addChecklistItem(doc, 'Vergelijk met de week ervoor', true);
-  addChecklistItem(doc, 'Controleer of bestsellers nog beschikbaar zijn', true);
-  addChecklistItem(doc, 'Bekijk advertentieprestaties (als je ads draait)', true);
-  addChecklistItem(doc, 'Controleer verzendstatussen van openstaande orders', true);
-  addChecklistItem(doc, 'Lees eventuele reviews of feedback', true);
-  addChecklistItem(doc, 'Maak 1 notitie: wat was goed, wat kan beter?', true);
-  
-  addSpace(doc, 5);
-  
-  addChecklistItem(doc, 'Elk product individueel controleren', false);
-  addChecklistItem(doc, 'Elke pagina testen', false);
-  addChecklistItem(doc, 'Elk analytics-rapport uitpluizen', false);
-  addChecklistItem(doc, 'Optimaliseren wat al werkt', false);
+  addSubtitle(doc, 'Less Urgent but Worth Monitoring');
+  addBulletPoint(doc, 'Consistent decline in traffic over 2+ weeks (check ad status)');
+  addBulletPoint(doc, 'Conversion rate drops below 0.5% with sufficient traffic');
+  addBulletPoint(doc, 'Multiple customer emails about the same issue');
 
   addPageNumber(doc);
 
   // =====================================
-  // CHAPTER 15 - AFSLUITING
+  // CHAPTER 12 — WHEN NOT TO ACT
   // =====================================
   startNewPage(doc);
-  addTitle(doc, '15. Afsluiting');
+  addTitle(doc, '12. When NOT to Act');
   addSpace(doc, 5);
 
-  addSubtitle(doc, 'Je hebt dit');
-  addParagraph(doc, `Als je deze handleiding helemaal hebt gelezen, heb je nu een solide basis om je webshop met vertrouwen te runnen. Je weet wat de cijfers betekenen en – nog belangrijker – wat ze niet betekenen. Je weet wanneer je moet ingrijpen en wanneer je moet wachten.`);
+  addSubtitle(doc, 'Do Not Panic When...');
+  addBulletPoint(doc, 'You have zero visitors at 3 AM — people sleep');
+  addBulletPoint(doc, 'One day has no orders — statistically normal with low traffic');
+  addBulletPoint(doc, 'A visitor left without buying — 97–99% of visitors do this');
+  addBulletPoint(doc, 'Ad costs seem high on day 1 — the algorithm is learning');
+  addBulletPoint(doc, 'A category shows "0 products" — products are in subcategories');
 
-  addInfoBox(doc, 'Wat je nu weet', 'Niets doen is soms de beste strategie • Trends zijn belangrijker dan momentopnames • Lage cijfers in het begin zijn normaal • Je systemen werken ook als jij even pauzeert');
+  addSubtitle(doc, 'Do Not Change...');
+  addBulletPoint(doc, 'Prices every day based on gut feeling');
+  addBulletPoint(doc, 'Ad campaigns before 7 days have passed');
+  addBulletPoint(doc, 'Website design based on one visitor\'s behavior');
+  addBulletPoint(doc, 'Settings that are currently working');
 
-  addSubtitle(doc, 'Vertrouwen opbouwen');
-  addParagraph(doc, `Vertrouwen in je webshop groeit met ervaring. De eerste keer dat je een dag zonder orders ziet, is dat eng. De tiende keer weet je: dat is normaal, morgen is er weer een dag. Elk obstakel dat je overwint, bouwt vertrouwen.`);
+  addTipBox(doc, 'The Truth', 'Your store is designed to operate without daily intervention. If everything is functioning, the best thing you can do is: nothing. Let data accumulate.');
 
-  addSubtitle(doc, 'Je webshop werkt ook als jij even niets doet');
-  addParagraph(doc, `Dit is het belangrijkste bericht van deze hele handleiding: je webshop werkt. De techniek is goed. De processen zijn opgezet. Klanten kunnen vinden, browsen, kopen, en ontvangen. Alles is er.`);
+  addPageNumber(doc);
 
-  addTipBox(doc, 'Je mag ademhalen', 'Je mag je ontspannen. Je mag je laptop dichtklappen en iets anders doen. Je webshop draait op de achtergrond, 24/7, zonder dat jij constant hoeft te kijken.');
+  // =====================================
+  // CHAPTER 13 — TRUST & GOOGLE COMPLIANCE
+  // =====================================
+  startNewPage(doc);
+  addTitle(doc, '13. Trust & Google Compliance');
+  addSpace(doc, 5);
 
-  addParagraph(doc, `Stilte is geen probleem. Lage cijfers zijn geen crisis. Een dag zonder orders is geen ramp. Dit zijn normale onderdelen van het runnen van een online business. Behandel ze als zodanig.`);
+  addSubtitle(doc, 'Why Google Flagged "Misrepresentation"');
+  addParagraph(doc, `Google Merchant Center may flag stores for "Misrepresentation" or "Incorrect representation" when it detects inconsistencies between what is advertised and what is presented on the website. Common triggers include:`);
+  addBulletPoint(doc, 'Shipping information on the site not matching Merchant Center settings');
+  addBulletPoint(doc, 'Unclear business identity (brand name differs from legal entity)');
+  addBulletPoint(doc, 'Prices changing between product page and checkout');
+  addBulletPoint(doc, 'Missing or vague return policy');
+  addBulletPoint(doc, 'Ad destination URLs leading to wrong products');
 
-  addParagraph(doc, `Je hebt gekozen voor ondernemerschap, en dat vraagt moed. Maar ondernemerschap betekent niet constant in spanning leven. Het betekent slimme systemen bouwen en ze laten werken. Dat heb je gedaan. Nu mag je ervan genieten.`);
+  addSubtitle(doc, 'What Has Been Fixed');
 
-  addSpace(doc, 15);
-  
+  addComplianceBox(doc, '1. Business Identity Transparency', `Brand: GetPawsy | Legal Entity: Skidzo | Clearly stated on About, Contact, and Footer pages. "GetPawsy is a consumer brand operated by Skidzo." KVK and contact information are publicly visible.`);
+
+  addSpace(doc, 2);
+
+  addComplianceBox(doc, '2. Shipping Consistency', `Shipping policy, product pages, cart, and checkout ALL display the same rules: Free shipping on orders $${FREE_SHIPPING_THRESHOLD}+. Flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)} on orders under $${FREE_SHIPPING_THRESHOLD}. Delivery: ${DELIVERY_TIME_STANDARD}. Processing: ${PROCESSING_TIME}. US only. No "calculated at checkout" language anywhere.`);
+
+  addSpace(doc, 2);
+
+  addComplianceBox(doc, '3. Pricing Integrity', `Product page price = Cart price = Checkout price. No hidden fees. No dynamic pricing changes. No bait-and-switch. Discounts are clearly labeled and consistently applied.`);
+
+  addSpace(doc, 2);
+
+  addComplianceBox(doc, '4. Returns Policy', `${RETURN_WINDOW_DAYS}-day return window clearly stated. Eligibility conditions specified. Process explained (email ${SUPPORT_EMAIL}). Refund timeline (5–10 business days). No vague language.`);
+
+  addSpace(doc, 2);
+
+  addComplianceBox(doc, '5. Product Representation', `Product images match actual items. Titles are accurate. Prices are correct. Availability status is current. No redirects to unrelated products.`);
+
+  addSpace(doc, 2);
+
+  addComplianceBox(doc, '6. Secure Checkout', `SSL encryption (https://) protects all customer data. Payment processing via Stripe. Contact information visible. Business identity linked.`);
+
+  addPageNumber(doc);
+
+  // =====================================
+  // CHAPTER 14 — SHIPPING POLICY (FULL)
+  // =====================================
+  startNewPage(doc);
+  addTitle(doc, '14. Shipping Policy');
+  addSpace(doc, 3);
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(...MUTED_COLOR);
+  doc.text('As published on getpawsy.pet/shipping', MARGIN_LEFT, yPosition);
+  doc.setTextColor(0, 0, 0);
+  yPosition += 10;
+
+  addSubtitle(doc, 'Shipping Coverage');
+  addParagraph(doc, `GetPawsy ships exclusively within the United States. We do not currently offer international shipping.`);
+
+  addSubtitle(doc, 'Shipping Costs');
+  addBoldParagraph(doc, `Our shipping pricing is simple and transparent:`);
+  addBulletPoint(doc, `Orders of $${FREE_SHIPPING_THRESHOLD} or more: FREE standard shipping`);
+  addBulletPoint(doc, `Orders under $${FREE_SHIPPING_THRESHOLD}: Flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}`);
+  addParagraph(doc, `There are no hidden fees, handling charges, or surprise costs. The shipping cost displayed in your cart is the final shipping cost at checkout.`);
+
+  addSubtitle(doc, 'Processing Time');
+  addParagraph(doc, `Orders are processed within ${PROCESSING_TIME}. Processing includes order verification, fulfillment preparation, and handoff to our shipping partners.`);
+
+  addSubtitle(doc, 'Delivery Time');
+  addParagraph(doc, `Standard delivery takes ${DELIVERY_TIME_STANDARD} after your order has been dispatched. Delivery times may vary depending on your location within the United States.`);
+
+  addSubtitle(doc, 'Fulfillment');
+  addParagraph(doc, `Orders are fulfilled through our trusted US-based fulfillment partners. We work with established fulfillment centers to ensure reliable processing and delivery.`);
+
+  addSubtitle(doc, 'Order Tracking');
+  addParagraph(doc, `A tracking number is provided via email once your order has shipped. Please allow 24–48 hours for tracking information to become active in the carrier\'s system.`);
+
+  addSubtitle(doc, 'Possible Delays');
+  addParagraph(doc, `While we strive to meet our delivery estimates, occasional delays may occur due to severe weather, carrier disruptions, or high-volume periods (holidays, promotions). If your order is significantly delayed, please contact us at ${SUPPORT_EMAIL}.`);
+
+  addSubtitle(doc, 'Business Identity');
+  addParagraph(doc, `GetPawsy is a consumer brand operated by Skidzo, a registered business entity (KVK: 78156955). Skidzo is responsible for order processing, fulfillment coordination, and customer support.`);
+
+  addPageNumber(doc);
+
+  // =====================================
+  // CHAPTER 15 — RETURNS & REFUNDS POLICY
+  // =====================================
+  startNewPage(doc);
+  addTitle(doc, '15. Returns & Refunds Policy');
+  addSpace(doc, 3);
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(...MUTED_COLOR);
+  doc.text('As published on getpawsy.pet/returns', MARGIN_LEFT, yPosition);
+  doc.setTextColor(0, 0, 0);
+  yPosition += 10;
+
+  addSubtitle(doc, 'Return Window');
+  addParagraph(doc, `You may request a return within ${RETURN_WINDOW_DAYS} days of receiving your order.`);
+
+  addSubtitle(doc, 'Eligibility');
+  addParagraph(doc, `To be eligible for a return, items must be:`);
+  addBulletPoint(doc, 'Unused and in their original condition');
+  addBulletPoint(doc, 'In the original packaging');
+  addBulletPoint(doc, 'Accompanied by proof of purchase (order number)');
+
+  addSubtitle(doc, 'How to Initiate a Return');
+  addParagraph(doc, `To start a return, email ${SUPPORT_EMAIL} with:`);
+  addBulletPoint(doc, 'Your order number');
+  addBulletPoint(doc, 'The item(s) you wish to return');
+  addBulletPoint(doc, 'The reason for your return');
+  addParagraph(doc, `Our support team will respond within 24 business hours with return instructions and, if applicable, a return shipping label.`);
+
+  addSubtitle(doc, 'Refund Timeline');
+  addParagraph(doc, `Once your return is received and inspected, we will process your refund within 5–10 business days. Refunds are issued to the original payment method.`);
+
+  addSubtitle(doc, 'Damaged or Incorrect Items');
+  addParagraph(doc, `If you receive a damaged or incorrect item, please contact ${SUPPORT_EMAIL} within 48 hours of delivery with photos of the issue. We will arrange a replacement or full refund at no additional cost to you.`);
+
+  addSubtitle(doc, 'Exchanges');
+  addParagraph(doc, `We do not offer direct exchanges. To exchange an item, please initiate a return and place a new order for the desired product.`);
+
+  addSubtitle(doc, 'Shipping Costs for Returns');
+  addParagraph(doc, `For returns due to customer preference, the customer is responsible for return shipping costs. For returns due to damaged or incorrect items, GetPawsy covers all return shipping costs.`);
+
+  addSubtitle(doc, 'Hygiene Exclusions');
+  addParagraph(doc, `For hygiene and safety reasons, certain pet care items may not be eligible for return once opened. These exclusions, if any, are noted on the product page.`);
+
+  addSubtitle(doc, 'Business Identity');
+  addParagraph(doc, `Returns and refunds are managed by Skidzo, the legal entity operating GetPawsy. Contact: ${SUPPORT_EMAIL}.`);
+
+  addPageNumber(doc);
+
+  // =====================================
+  // CHAPTER 16 — CHECKOUT CONSISTENCY VERIFICATION
+  // =====================================
+  startNewPage(doc);
+  addTitle(doc, '16. Checkout & Policy Consistency');
+  addSpace(doc, 3);
+
+  addParagraph(doc, `This chapter demonstrates that all pricing and shipping information is consistent across every customer touchpoint. This consistency is critical for Google Merchant Center compliance.`);
+
+  addSubtitle(doc, 'Why Consistency Matters');
+  addParagraph(doc, `Google Merchant Center suspends accounts when it detects mismatches between advertised information and what customers actually experience during checkout. Even small differences — like saying "free shipping" on a product page but showing a shipping fee at checkout — can trigger a "Misrepresentation" flag.`);
+
+  addSubtitle(doc, 'Verification: Price Consistency');
+  addSpace(doc, 3);
+
+  addTableRow(doc, 'Touchpoint', 'Price Shown', true);
+  addTableRow(doc, 'Product Page', 'Product price in USD (e.g., $24.99)');
+  addTableRow(doc, 'Search Results', 'Same product price ($24.99)');
+  addTableRow(doc, 'Cart', 'Same product price ($24.99) + quantity');
+  addTableRow(doc, 'Checkout', 'Same product price ($24.99)');
+  addTableRow(doc, 'Google Shopping Feed', 'Same product price ($24.99)');
+
+  addSpace(doc, 3);
+
+  addSubtitle(doc, 'Verification: Shipping Cost Consistency');
+  addSpace(doc, 3);
+
+  addTableRow(doc, 'Touchpoint', 'Shipping Information', true);
+  addTableRow(doc, 'Shipping Policy Page', `Free on $${FREE_SHIPPING_THRESHOLD}+ | $${FLAT_SHIPPING_RATE.toFixed(2)} under $${FREE_SHIPPING_THRESHOLD}`);
+  addTableRow(doc, 'Product Page Microcopy', `Free shipping on orders $${FREE_SHIPPING_THRESHOLD}+ | $${FLAT_SHIPPING_RATE.toFixed(2)} under`);
+  addTableRow(doc, 'Cart', `Shows applicable rate + "Add $X more for free shipping" prompt`);
+  addTableRow(doc, 'Checkout (under $35)', `Shipping: $${FLAT_SHIPPING_RATE.toFixed(2)}`);
+  addTableRow(doc, 'Checkout ($35+)', 'Shipping: $0.00 (Free)');
+  addTableRow(doc, 'Google Merchant Center', `$${FLAT_SHIPPING_RATE.toFixed(2)} under $${FREE_SHIPPING_THRESHOLD} / Free $${FREE_SHIPPING_THRESHOLD}+`);
+
+  addSpace(doc, 3);
+
+  addSubtitle(doc, 'Google Reviewer Checklist');
+  addParagraph(doc, `What Google reviewers verify during a compliance check:`);
+  addChecklistItem(doc, 'Product price matches across all pages', true);
+  addChecklistItem(doc, 'Shipping cost at checkout matches stated policy', true);
+  addChecklistItem(doc, 'No "calculated at checkout" language', true);
+  addChecklistItem(doc, 'Business identity is clearly stated', true);
+  addChecklistItem(doc, 'Contact information is accessible', true);
+  addChecklistItem(doc, 'Return policy is clear and complete', true);
+  addChecklistItem(doc, 'SSL certificate is active', true);
+  addChecklistItem(doc, 'No misleading claims or fake urgency', true);
+  addChecklistItem(doc, 'Ad landing pages match product advertised', true);
+
+  addPageNumber(doc);
+
+  // =====================================
+  // CHAPTER 17 — DAILY CALM CHECKLIST
+  // =====================================
+  startNewPage(doc);
+  addTitle(doc, '17. Daily Calm Checklist');
+  addSpace(doc, 5);
+
+  addSubtitle(doc, 'Daily Check (5 minutes)');
+  addParagraph(doc, `Your goal is not to analyze everything, but to verify there are no fires. Do this once per day, morning or evening.`);
+  addSpace(doc, 3);
+  addChecklistItem(doc, 'Open your admin and glance at the dashboard', true);
+  addChecklistItem(doc, 'Check for red warnings or error notifications', true);
+  addChecklistItem(doc, 'Briefly review notifications', true);
+  addChecklistItem(doc, 'Check email for customer messages', true);
+  addChecklistItem(doc, 'If everything looks green: move on with your day', true);
+
+  addSpace(doc, 5);
+
+  addSubtitle(doc, 'Do NOT Do Daily');
+  addChecklistItem(doc, 'Log in every hour to check for changes', false);
+  addChecklistItem(doc, 'Draw conclusions from a single day of data', false);
+  addChecklistItem(doc, 'Adjust settings that are already working', false);
+  addChecklistItem(doc, 'Panic at low numbers', false);
+
+  addSpace(doc, 5);
+
+  addSubtitle(doc, 'Weekly Check (30 minutes)');
+  addChecklistItem(doc, 'Review analytics over the past 7 days', true);
+  addChecklistItem(doc, 'Compare with the previous week', true);
+  addChecklistItem(doc, 'Verify bestsellers are still available', true);
+  addChecklistItem(doc, 'Review ad performance (if running ads)', true);
+  addChecklistItem(doc, 'Check shipping status of open orders', true);
+  addChecklistItem(doc, 'Read any reviews or customer feedback', true);
+  addChecklistItem(doc, 'Make 1 note: what went well, what could improve?', true);
+
+  addPageNumber(doc);
+
+  // =====================================
+  // CHAPTER 18 — GOOGLE APPEAL TEXT
+  // =====================================
+  startNewPage(doc);
+  addTitle(doc, '18. Google Appeal Text');
+  addSpace(doc, 3);
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(...MUTED_COLOR);
+  doc.text('Ready-to-submit text for Google Merchant Center reconsideration request', MARGIN_LEFT, yPosition);
+  doc.setTextColor(0, 0, 0);
+  yPosition += 10;
+
+  addSubtitle(doc, 'Request for Review — Misrepresentation Issue Resolved');
+
+  // Appeal text in a styled box
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(...PRIMARY_COLOR);
+  doc.setLineWidth(0.5);
+  const appealStartY = yPosition;
+
+  const appealText = [
+    'Dear Google Merchant Center Review Team,',
+    '',
+    'We are writing to request a review of our Google Merchant Center account following a "Misrepresentation" flag. We have conducted a thorough audit of our website (getpawsy.pet) and have resolved all identified issues.',
+    '',
+    'BUSINESS IDENTITY',
+    `GetPawsy is a consumer-facing pet supply brand operated by Skidzo, a registered business entity (KVK: 78156955, BTW: NL101001964B02), based in Apeldoorn, Netherlands. This brand-entity relationship is clearly disclosed on our About page, Contact page, and website footer. Customer support is available at ${SUPPORT_EMAIL} with a 24-hour response commitment.`,
+    '',
+    'PRICING & SHIPPING CONSISTENCY',
+    `We have verified that all pricing is consistent across every customer touchpoint: product pages, search results, cart, and checkout display identical prices. Our shipping policy is simple and transparent: orders of $${FREE_SHIPPING_THRESHOLD} or more qualify for free shipping; orders under $${FREE_SHIPPING_THRESHOLD} are charged a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}. This exact logic is implemented in our checkout system and reflected in our Merchant Center shipping settings. We ship exclusively within the United States with a delivery time of ${DELIVERY_TIME_STANDARD}. There are no hidden fees, "calculated at checkout" language, or variable shipping costs.`,
+    '',
+    'RETURNS POLICY',
+    `We offer a clear ${RETURN_WINDOW_DAYS}-day return policy. Items must be unused and in original packaging. Returns are initiated via ${SUPPORT_EMAIL}. Refunds are processed within 5–10 business days to the original payment method. For damaged or incorrect items, we provide free return shipping.`,
+    '',
+    'PRODUCT REPRESENTATION',
+    'All product listings accurately represent the items sold. Product images, titles, descriptions, and prices are consistent across our website and product feed. Ad destination URLs lead directly to the correct product pages with matching information.',
+    '',
+    'TECHNICAL COMPLIANCE',
+    'Our website uses SSL encryption for secure browsing and checkout. Payment processing is handled through Stripe. Our site architecture (React SPA) renders all content client-side, and we have verified that Googlebot can access and render all pages correctly.',
+    '',
+    'RESOLVED ISSUES',
+    '• Shipping information is now 100% consistent across all pages and Merchant Center settings',
+    '• Business identity (GetPawsy operated by Skidzo) is clearly disclosed',
+    '• All product prices match from product page through checkout',
+    '• Return policy is comprehensive, clear, and easily accessible',
+    '• No misleading claims, fake urgency, or deceptive practices exist on our site',
+    '',
+    'We respectfully request a re-review of our account. We are committed to maintaining full compliance with Google Merchant Center policies and providing a transparent, trustworthy shopping experience for our customers.',
+    '',
+    'Sincerely,',
+    'The GetPawsy Team (operated by Skidzo)',
+    `${SUPPORT_EMAIL}`,
+    'getpawsy.pet',
+  ];
+
+  doc.setFontSize(9.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(50, 50, 50);
+
+  for (const line of appealText) {
+    if (line === '') {
+      yPosition += 4;
+      continue;
+    }
+    // Bold for section headers
+    if (line === line.toUpperCase() && line.length > 3 && !line.startsWith('•')) {
+      checkPageBreak(doc, 12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...PRIMARY_COLOR);
+      doc.text(line, MARGIN_LEFT + 6, yPosition);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50, 50, 50);
+      yPosition += LINE_HEIGHT;
+    } else {
+      const wrapped = doc.splitTextToSize(line, CONTENT_WIDTH - 12);
+      for (const w of wrapped) {
+        checkPageBreak(doc, LINE_HEIGHT + 3);
+        doc.text(w, MARGIN_LEFT + 6, yPosition);
+        yPosition += LINE_HEIGHT;
+      }
+    }
+  }
+
+  addPageNumber(doc);
+
+  // =====================================
+  // CHAPTER 19 — CONFIDENCE STATEMENT
+  // =====================================
+  startNewPage(doc);
+
+  yPosition = 60;
+
+  doc.setFillColor(...PRIMARY_COLOR);
+  doc.rect(0, 0, PAGE_WIDTH, 8, 'F');
+
+  doc.setFontSize(28);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...PRIMARY_COLOR);
+  doc.text('Confidence Statement', PAGE_WIDTH / 2, yPosition, { align: 'center' });
+
+  yPosition += 20;
+
+  doc.setDrawColor(...PRIMARY_COLOR);
+  doc.setLineWidth(0.5);
+  doc.line(PAGE_WIDTH / 2 - 40, yPosition, PAGE_WIDTH / 2 + 40, yPosition);
+
+  yPosition += 20;
+
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(60, 60, 60);
+  const confidenceLines = [
+    'You are compliant.',
+    '',
+    'Your store is legitimate.',
+    '',
+    'Your shipping policies match your checkout.',
+    '',
+    'Your business identity is transparent.',
+    '',
+    'Your products are accurately represented.',
+    '',
+    'Your customers are protected.',
+    '',
+    'Growth takes time.',
+    '',
+    'You have done the work. Now let it breathe.',
+  ];
+
+  for (const line of confidenceLines) {
+    if (line === '') {
+      yPosition += 5;
+      continue;
+    }
+    doc.text(line, PAGE_WIDTH / 2, yPosition, { align: 'center' });
+    yPosition += 10;
+  }
+
+  yPosition += 20;
+
+  doc.setDrawColor(...PRIMARY_COLOR);
+  doc.setLineWidth(0.5);
+  doc.line(PAGE_WIDTH / 2 - 40, yPosition, PAGE_WIDTH / 2 + 40, yPosition);
+
+  yPosition += 20;
+
   doc.setFontSize(12);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(...MUTED_COLOR);
-  doc.text('Met vertrouwen en rust,', MARGIN_LEFT, yPosition);
-  yPosition += 8;
+  doc.text('With confidence and calm,', PAGE_WIDTH / 2, yPosition, { align: 'center' });
+  yPosition += 10;
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...PRIMARY_COLOR);
-  doc.text('Het GetPawsy Team', MARGIN_LEFT, yPosition);
+  doc.text('The GetPawsy Team', PAGE_WIDTH / 2, yPosition, { align: 'center' });
+  yPosition += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(...MUTED_COLOR);
+  doc.text('Operated by Skidzo', PAGE_WIDTH / 2, yPosition, { align: 'center' });
 
   addPageNumber(doc);
 
@@ -990,5 +1096,5 @@ Deze handleiding helpt je begrijpen wat je ziet, wanneer je actie moet onderneme
 
 export const downloadAdminManualPdf = (): void => {
   const doc = generateAdminManualPdf();
-  doc.save('GetPawsy_Complete_Admin_Handleiding.pdf');
+  doc.save('GetPawsy_Admin_Compliance_Guide_US.pdf');
 };
