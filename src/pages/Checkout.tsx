@@ -302,7 +302,7 @@ const Checkout = () => {
       // Pinterest Checkout tracking
       trackPinterestEvent('checkout', {
         value: totalPrice,
-        currency: 'EUR',
+        currency: 'USD',
         order_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
         line_items: items.map(item => ({
           product_name: item.name,

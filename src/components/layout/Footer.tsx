@@ -95,8 +95,8 @@ export const Footer = () => {
     company: [
       { label: 'About Us', href: '/about' },
       { label: 'Blog', href: '/blog' },
-      { label: 'Careers', href: '/careers' },
-      { label: 'Partners', href: '/partners' },
+      { label: 'Privacy Policy', href: '/privacy' },
+      { label: 'Terms of Service', href: '/terms' },
     ],
   };
 
@@ -290,8 +290,8 @@ export const Footer = () => {
             <div className="flex flex-col gap-4">
               {/* Business Registration Info */}
               <div className="flex flex-col items-center gap-2 text-xs text-background/40 border-b border-background/10 pb-4">
-                <p>
-                  GetPawsy is a trading name of <strong className="text-background/60">Skidzo</strong>, a registered business (Chamber of Commerce / KVK: 78156955).
+              <p>
+                  GetPawsy is a consumer brand operated by <strong className="text-background/60">Skidzo</strong>, a registered business (KVK: 78156955). Skidzo is responsible for all orders, payments, shipping, and customer service.
                 </p>
                 <p>
                   Customer support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-background/60 hover:text-primary transition-colors">{SUPPORT_EMAIL}</a>

@@ -98,7 +98,7 @@ const Contact = () => {
       icon: Clock,
       title: 'Business Hours',
       content: 'Monday – Friday',
-      description: '9:00 AM – 6:00 PM CET',
+      description: '9:00 AM – 5:00 PM EST',
       href: null,
     },
   ];
