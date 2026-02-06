@@ -108,24 +108,9 @@ export function computeAvailability(
       };
     }
 
-    // Variant inventory explicitly 0 (only if field exists and is exactly 0)
-    if (variantInventory !== null && variantInventory !== undefined && variantInventory === 0) {
-      // For dropship model, even variant inventory 0 could mean supplier has stock
-      // Only mark OOS if there's also an explicit flag
-      // For safety, we'll still treat explicit 0 as OOS for variants
-      return {
-        isInStock: false,
-        reason: 'Variant inventory = 0',
-        debugInfo: {
-          is_active: product.is_active,
-          available: product.available,
-          stock: product.stock,
-          hasVariant: true,
-          variantAvailable,
-          variantInventory,
-        },
-      };
-    }
+    // DROPSHIPPING MODEL: Variant inventory = 0 does NOT mean out of stock.
+    // Only explicit flags (is_active=false, available=false, out_of_stock=true) trigger OOS.
+    // Stock is supplier-managed and 0 just means no local count, not unavailable.
 
     // Variant is available
     return {
