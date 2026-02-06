@@ -183,7 +183,7 @@ const Checkout = () => {
     'DONTGO15': { discount: 15, label: "Don't Go 15% Off" },
   };
 
-  const shipping = 0; // Free shipping on all orders
+  const shipping = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE;
   const discountPercent = discountApplied ? VALID_DISCOUNT_CODES[discountApplied]?.discount || 0 : 0;
   const discountAmount = (totalPrice * discountPercent) / 100;
   const total = totalPrice - discountAmount + shipping;
@@ -654,8 +654,17 @@ const Checkout = () => {
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span className="text-green-600">Free</span>
+                  {shipping === 0 ? (
+                    <span className="text-green-600">Free</span>
+                  ) : (
+                    <span>${shipping.toFixed(2)}</span>
+                  )}
                 </div>
+                {shipping > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Add ${(FREE_SHIPPING_THRESHOLD - totalPrice).toFixed(2)} more for free shipping
+                  </p>
+                )}
               </div>
 
               <Separator className="my-4" />
