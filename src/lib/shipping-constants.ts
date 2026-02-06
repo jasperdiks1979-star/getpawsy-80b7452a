@@ -20,7 +20,7 @@ export const FLAT_SHIPPING_RATE = 5.99;
 export const DELIVERY_TIME_STANDARD = '3-7 business days';
 
 /** Processing time before shipping */
-export const PROCESSING_TIME = '1-2 business days';
+export const PROCESSING_TIME = '1-3 business days';
 
 /** US fulfillment shipping note - Official wording for Google Merchant Center compliance */
 export const US_FULFILLMENT_NOTE = 'Orders ship from US fulfillment centers when available';
