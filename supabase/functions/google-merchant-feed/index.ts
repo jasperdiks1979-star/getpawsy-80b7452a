@@ -283,13 +283,18 @@ function generateProductXml(product: Product): string {
       <g:description>${escapeXml(optimizedDescription)}</g:description>
       <g:link>${escapeXml(productUrl)}</g:link>
       <g:image_link>${escapeXml(imageUrl)}</g:image_link>
-      <g:availability>${getAvailability(product.stock, product.is_active)}</g:availability>
-      <g:price>${formatPrice(product.price)}</g:price>`;
+      <g:availability>${getAvailability(product.stock, product.is_active)}</g:availability>`;
 
-  // Add sale price if compare_at_price exists and is higher than price
+  // Google Merchant Center pricing rules:
+  // - g:price = the original/regular price (compare_at_price if on sale, otherwise selling price)
+  // - g:sale_price = the current discounted price (only when on sale)
   if (product.compare_at_price && product.compare_at_price > product.price) {
     xml += `
+      <g:price>${formatPrice(product.compare_at_price)}</g:price>
       <g:sale_price>${formatPrice(product.price)}</g:sale_price>`;
+  } else {
+    xml += `
+      <g:price>${formatPrice(product.price)}</g:price>`;
   }
 
   xml += `
