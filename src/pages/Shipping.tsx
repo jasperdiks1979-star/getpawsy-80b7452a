@@ -243,7 +243,7 @@ const Shipping = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-3">
-                  <strong>GetPawsy</strong> is a trading name of <strong>Skidzo</strong>, a registered business (KVK: 78156955).
+                  <strong>GetPawsy</strong> is a consumer brand operated by <strong>Skidzo</strong>, a registered business (KVK: 78156955).
                 </p>
                 <p className="text-muted-foreground mb-4">
                   Skidzo is the legal entity responsible for all shipping operations, fulfillment coordination, and customer service related to your GetPawsy order. If you have any questions or concerns about your shipment, Skidzo's customer support team is here to help.
