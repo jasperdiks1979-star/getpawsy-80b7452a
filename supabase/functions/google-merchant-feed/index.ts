@@ -52,14 +52,16 @@ function formatPrice(price: number): string {
   return `${price.toFixed(2)} USD`;
 }
 
-// DROPSHIP MODEL: Only mark as out of stock if product is explicitly disabled
-// Stock value of 0 does NOT mean out of stock (suppliers manage inventory)
+// REAL SUPPLIER STOCK: Use actual stock values for availability
+// stock > 0 = in stock, stock <= 0 or null = out of stock, is_active=false = out of stock
 function getAvailability(stock: number | null, isActive: boolean | null): string {
-  // Only mark as out of stock if explicitly disabled
   if (isActive === false) {
     return 'out of stock';
   }
-  return 'in stock';
+  if (stock !== null && stock !== undefined && stock > 0) {
+    return 'in stock';
+  }
+  return 'out of stock';
 }
 
 // Determine pet type from category for optimized titles
@@ -255,13 +257,10 @@ function getProductTypeTaxonomy(category: string | null): string {
   return taxonomy;
 }
 
-// Determine shipping cost based on price (matches Merchant Center settings)
-function getShippingPrice(productPrice: number): string {
-  if (productPrice >= FREE_SHIPPING_THRESHOLD) {
-    return '0.00 USD';
-  }
-  return `${FLAT_SHIPPING_RATE.toFixed(2)} USD`;
-}
+// Shipping is ORDER-THRESHOLD based (free >= $35, $5.99 < $35).
+// This CANNOT be expressed per-item in the feed — it must be configured in
+// Google Merchant Center account shipping settings.
+// We intentionally do NOT include <g:shipping> blocks in the feed.
 
 function generateProductXml(product: Product): string {
   const productUrl = product.slug 
@@ -275,7 +274,6 @@ function generateProductXml(product: Product): string {
   const optimizedDescription = generateOptimizedDescription(product);
   const googleCategory = getGoogleProductCategory(product.category);
   const productTypeTaxonomy = getProductTypeTaxonomy(product.category);
-  const shippingPrice = getShippingPrice(product.price);
   
   let xml = `    <item>
       <g:id>${escapeXml(product.id)}</g:id>
@@ -329,18 +327,9 @@ function generateProductXml(product: Product): string {
     }
   }
 
-  // Add shipping info (matches Merchant Center: free over $35, $5.99 under)
-  // Include min/max handling and transit times for better Merchant Center compatibility
-  xml += `
-      <g:shipping>
-        <g:country>US</g:country>
-        <g:service>Standard</g:service>
-        <g:price>${shippingPrice}</g:price>
-        <g:min_handling_time>1</g:min_handling_time>
-        <g:max_handling_time>1</g:max_handling_time>
-        <g:min_transit_time>0</g:min_transit_time>
-        <g:max_transit_time>6</g:max_transit_time>
-      </g:shipping>`;
+  // NOTE: <g:shipping> blocks intentionally OMITTED.
+  // Shipping is order-threshold based (free >= $35, $5.99 < $35) and must be
+  // configured in Google Merchant Center account shipping settings, not per-item.
 
   // Add shipping weight if available (in lb for US market)
   if (product.weight) {

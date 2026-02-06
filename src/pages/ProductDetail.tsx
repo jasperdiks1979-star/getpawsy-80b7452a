@@ -30,6 +30,7 @@ import { sanitizeHtml } from '@/lib/sanitize';
 import { trackViewItem } from '@/lib/analytics';
 import { calculateSellingPrice } from '@/lib/pricing';
 import { safeString, safeNumber, safeArray } from '@/lib/safe-render';
+import { computeAvailability } from '@/lib/availability';
 import USProductDescription from '@/components/products/USProductDescription';
 import { generateClarityIntro } from '@/components/products/ClarityIntro';
 import { DeliveryReassurance } from '@/components/products/DeliveryReassurance';
@@ -498,10 +499,9 @@ const ProductDetail = () => {
     );
   }
 
-  // DROPSHIP MODEL: Use centralized availability logic
-  // Stock=0 does NOT mean out of stock, only explicit is_active=false does
-  const isProductDisabled = (product as { is_active?: boolean | null }).is_active === false;
-  const inStock = !isProductDisabled;
+  // Use centralized availability logic (real supplier stock)
+  const availabilityResult = computeAvailability(product as { stock?: number | null; is_active?: boolean | null });
+  const inStock = availabilityResult.isInStock;
 
   const handleAddToCart = () => {
     // Prevent adding out-of-stock items

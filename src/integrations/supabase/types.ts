@@ -2811,6 +2811,7 @@ export type Database = {
           image_url: string | null
           images: string[] | null
           is_active: boolean | null
+          last_stock_sync_at: string | null
           name: string
           price: number
           shipping_time: string | null
@@ -2833,6 +2834,7 @@ export type Database = {
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
+          last_stock_sync_at?: string | null
           name: string
           price: number
           shipping_time?: string | null
@@ -2855,6 +2857,7 @@ export type Database = {
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
+          last_stock_sync_at?: string | null
           name?: string
           price?: number
           shipping_time?: string | null

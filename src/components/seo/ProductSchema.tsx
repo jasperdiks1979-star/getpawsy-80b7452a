@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { generateProductKeywords, generateMetaDescription } from '@/lib/seo-keywords';
-import { FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_RATE } from '@/lib/shipping-constants';
+import { computeAvailability } from '@/lib/availability';
 
 interface ProductSchemaProps {
   product: {
@@ -100,11 +100,10 @@ export function ProductSchema({
       priceCurrency: 'USD',
       price: product.price.toFixed(2),
       priceValidUntil: priceValidUntilStr,
-      // DROPSHIP MODEL: Only mark as OutOfStock if is_active === false
-      // Stock value of 0 does NOT mean out of stock
-      availability: (product as { is_active?: boolean | null }).is_active === false
-        ? 'https://schema.org/OutOfStock' 
-        : 'https://schema.org/InStock',
+      // Use centralized availability logic (real supplier stock)
+      availability: computeAvailability(product as { stock?: number | null; is_active?: boolean | null }).isInStock
+        ? 'https://schema.org/InStock' 
+        : 'https://schema.org/OutOfStock',
       itemCondition: 'https://schema.org/NewCondition',
       seller: {
         '@type': 'Organization',
@@ -119,13 +118,11 @@ export function ProductSchema({
         returnMethod: 'https://schema.org/ReturnByMail',
         returnFees: 'https://schema.org/FreeReturn',
       },
+      // NOTE: Shipping rate in schema is per-item estimate; actual shipping is order-threshold based
+      // ($0 for orders >= $35, $5.99 for orders < $35) configured in Merchant Center settings.
+      // We omit shippingRate here to avoid mismatch with order-level logic.
       shippingDetails: {
         '@type': 'OfferShippingDetails',
-        shippingRate: {
-          '@type': 'MonetaryAmount',
-          value: product.price >= FREE_SHIPPING_THRESHOLD ? '0.00' : FLAT_SHIPPING_RATE.toFixed(2),
-          currency: 'USD',
-        },
         shippingDestination: {
           '@type': 'DefinedRegion',
           addressCountry: 'US',
@@ -226,7 +223,7 @@ export function ProductSchema({
       <meta property="og:site_name" content="GetPawsy" />
       <meta property="product:price:amount" content={product.price.toString()} />
       <meta property="product:price:currency" content="USD" />
-      <meta property="product:availability" content="in stock" />
+      <meta property="product:availability" content={computeAvailability(product as { stock?: number | null; is_active?: boolean | null }).isInStock ? 'in stock' : 'out of stock'} />
       {product.category && <meta property="product:category" content={product.category} />}
 
       {/* Twitter */}
