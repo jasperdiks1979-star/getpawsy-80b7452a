@@ -1,10 +1,13 @@
 /**
  * Single source of truth for product availability computation.
  * 
- * DROPSHIPPING MODEL RULES:
- * - Stock value of 0 does NOT mean out of stock (suppliers manage inventory)
- * - Only mark as out of stock when explicitly flagged
- * - Missing/undefined fields => treat as IN STOCK (never default to OOS)
+ * REAL SUPPLIER STOCK MODEL:
+ * - stock > 0 → IN STOCK (purchasable)
+ * - stock <= 0 or null → OUT OF STOCK (not purchasable)
+ * - is_active === false → OUT OF STOCK (disabled by admin)
+ * 
+ * This ensures Google Merchant Center compliance:
+ * availability in feed, schema, and UI all derive from the same logic.
  */
 
 export interface AvailabilityProduct {
@@ -39,28 +42,27 @@ export interface AvailabilityResult {
 /**
  * Compute availability for a product, optionally with a selected variant.
  * 
- * Rules:
- * A) If selectedVariant exists:
- *    - isInStock = (variant.available !== false) AND (variant.inventory !== 0 if inventory field exists)
- *    - BUT if variant.out_of_stock === true => OUT OF STOCK
+ * Rules (priority order):
+ * 1. is_active === false → OUT OF STOCK
+ * 2. available === false → OUT OF STOCK
+ * 3. out_of_stock === true → OUT OF STOCK
+ * 4. stock > 0 → IN STOCK
+ * 5. stock <= 0 or null → OUT OF STOCK
  * 
- * B) Else (no variant):
- *    - If product.is_active === false => OUT OF STOCK
- *    - Else if product.available === false => OUT OF STOCK
- *    - Else if product.out_of_stock === true => OUT OF STOCK
- *    - Else => IN STOCK (dropship model: stock=0 is OK, supplier has inventory)
- * 
- * C) If fields are missing/undefined => IN STOCK (never default to OOS)
+ * For variants:
+ * - variant.out_of_stock === true → OUT OF STOCK
+ * - variant.available === false → OUT OF STOCK
+ * - variant.inventory/stock checked if present, falls back to product stock
  */
 export function computeAvailability(
   product: AvailabilityProduct | null | undefined,
   selectedVariant?: AvailabilityVariant | null
 ): AvailabilityResult {
-  // No product = treat as in stock (loading state, etc.)
+  // No product = treat as out of stock (safe default for Google compliance)
   if (!product) {
     return {
-      isInStock: true,
-      reason: 'No product data (loading)',
+      isInStock: false,
+      reason: 'No product data',
       debugInfo: {
         is_active: undefined,
         available: undefined,
@@ -70,13 +72,52 @@ export function computeAvailability(
     };
   }
 
-  // If a variant is selected, use variant availability
+  // Product-level disqualifiers (always checked, even with variant)
+  if (product.is_active === false) {
+    return {
+      isInStock: false,
+      reason: 'Product is_active = false (disabled)',
+      debugInfo: {
+        is_active: product.is_active,
+        available: product.available,
+        stock: product.stock,
+        hasVariant: !!selectedVariant,
+      },
+    };
+  }
+
+  if (product.available === false) {
+    return {
+      isInStock: false,
+      reason: 'Product available = false',
+      debugInfo: {
+        is_active: product.is_active,
+        available: product.available,
+        stock: product.stock,
+        hasVariant: !!selectedVariant,
+      },
+    };
+  }
+
+  if (product.out_of_stock === true) {
+    return {
+      isInStock: false,
+      reason: 'Product out_of_stock = true',
+      debugInfo: {
+        is_active: product.is_active,
+        available: product.available,
+        stock: product.stock,
+        hasVariant: !!selectedVariant,
+      },
+    };
+  }
+
+  // If a variant is selected, check variant-level availability
   if (selectedVariant) {
     const variantAvailable = selectedVariant.available;
     const variantInventory = selectedVariant.inventory ?? selectedVariant.stock;
     const variantOOS = selectedVariant.out_of_stock;
 
-    // Explicit out_of_stock flag on variant
     if (variantOOS === true) {
       return {
         isInStock: false,
@@ -92,7 +133,6 @@ export function computeAvailability(
       };
     }
 
-    // Variant available field explicitly false
     if (variantAvailable === false) {
       return {
         isInStock: false,
@@ -108,82 +148,42 @@ export function computeAvailability(
       };
     }
 
-    // DROPSHIPPING MODEL: Variant inventory = 0 does NOT mean out of stock.
-    // Only explicit flags (is_active=false, available=false, out_of_stock=true) trigger OOS.
-    // Stock is supplier-managed and 0 just means no local count, not unavailable.
+    // If variant has its own inventory field, use it
+    if (variantInventory !== null && variantInventory !== undefined) {
+      const inStock = variantInventory > 0;
+      return {
+        isInStock: inStock,
+        reason: inStock 
+          ? `Variant in stock (inventory: ${variantInventory})`
+          : `Variant out of stock (inventory: ${variantInventory})`,
+        debugInfo: {
+          is_active: product.is_active,
+          available: product.available,
+          stock: product.stock,
+          hasVariant: true,
+          variantAvailable,
+          variantInventory,
+        },
+      };
+    }
 
-    // Variant is available
-    return {
-      isInStock: true,
-      reason: 'Variant available',
-      debugInfo: {
-        is_active: product.is_active,
-        available: product.available,
-        stock: product.stock,
-        hasVariant: true,
-        variantAvailable,
-        variantInventory,
-      },
-    };
+    // Variant has no inventory field → fall through to product-level stock
   }
 
-  // No variant selected - check product-level availability
+  // Product-level stock check (real supplier stock)
+  const stockValue = product.stock ?? product.inventory ?? product.qty;
+  const hasStock = stockValue !== null && stockValue !== undefined && stockValue > 0;
 
-  // Explicit is_active = false => OUT OF STOCK
-  if (product.is_active === false) {
-    return {
-      isInStock: false,
-      reason: 'Product is_active = false (disabled)',
-      debugInfo: {
-        is_active: product.is_active,
-        available: product.available,
-        stock: product.stock,
-        hasVariant: false,
-      },
-    };
-  }
-
-  // Explicit available = false => OUT OF STOCK
-  if (product.available === false) {
-    return {
-      isInStock: false,
-      reason: 'Product available = false',
-      debugInfo: {
-        is_active: product.is_active,
-        available: product.available,
-        stock: product.stock,
-        hasVariant: false,
-      },
-    };
-  }
-
-  // Explicit out_of_stock flag => OUT OF STOCK
-  if (product.out_of_stock === true) {
-    return {
-      isInStock: false,
-      reason: 'Product out_of_stock = true',
-      debugInfo: {
-        is_active: product.is_active,
-        available: product.available,
-        stock: product.stock,
-        hasVariant: false,
-      },
-    };
-  }
-
-  // DROPSHIP MODEL: stock = 0 does NOT mean out of stock
-  // Suppliers manage their own inventory
-  // Only explicit flags (is_active=false, available=false, out_of_stock=true) mark as OOS
-
-  // All other cases => IN STOCK
   return {
-    isInStock: true,
-    reason: 'Dropship model: in stock (no explicit OOS flag)',
+    isInStock: hasStock,
+    reason: hasStock
+      ? `In stock (supplier stock: ${stockValue})`
+      : `Out of stock (stock: ${stockValue ?? 'unknown'})`,
     debugInfo: {
       is_active: product.is_active,
       available: product.available,
       stock: product.stock,
-      hasVariant: false,
+      hasVariant: !!selectedVariant,
     },
   };
 }

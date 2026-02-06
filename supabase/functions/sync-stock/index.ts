@@ -381,7 +381,8 @@ async function syncBatch(
         .from('products')
         .update({
           stock: totalStock,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          last_stock_sync_at: new Date().toISOString()
         })
         .eq('id', product.id);
 
