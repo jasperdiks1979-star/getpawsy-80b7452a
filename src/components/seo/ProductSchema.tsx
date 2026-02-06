@@ -132,13 +132,13 @@ export function ProductSchema({
           handlingTime: {
             '@type': 'QuantitativeValue',
             minValue: 1,
-            maxValue: 1,
+            maxValue: 3,
             unitCode: 'd',
           },
           transitTime: {
             '@type': 'QuantitativeValue',
-            minValue: 0,
-            maxValue: 6,
+            minValue: 3,
+            maxValue: 7,
             unitCode: 'd',
           },
         },
