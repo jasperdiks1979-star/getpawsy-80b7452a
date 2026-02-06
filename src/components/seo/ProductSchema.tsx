@@ -226,7 +226,7 @@ export function ProductSchema({
       <meta property="og:site_name" content="GetPawsy" />
       <meta property="product:price:amount" content={product.price.toString()} />
       <meta property="product:price:currency" content="USD" />
-      <meta property="product:availability" content={(product.stock ?? 0) > 0 ? 'in stock' : 'out of stock'} />
+      <meta property="product:availability" content="in stock" />
       {product.category && <meta property="product:category" content={product.category} />}
 
       {/* Twitter */}
