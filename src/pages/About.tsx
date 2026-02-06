@@ -1,6 +1,6 @@
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
-import { Heart, Shield, Truck, PawPrint, CheckCircle, Mail, Clock, Package } from 'lucide-react';
+import { Heart, Shield, Truck, PawPrint, CheckCircle, Mail, Clock, Package, Building2, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import logoIcon from '@/assets/logo-getpawsy.png';
@@ -45,7 +45,7 @@ const About = () => {
           </div>
         </section>
 
-        {/* Our Story */}
+        {/* Who We Are */}
         <section className="py-16 lg:py-20">
           <div className="container px-4 md:px-6 max-w-4xl mx-auto">
             <motion.div
@@ -58,27 +58,99 @@ const About = () => {
                   <PawPrint className="w-6 h-6 text-primary" />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-                  Our Story
+                  Who We Are
                 </h2>
               </div>
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
-                  GetPawsy was created by pet lovers who wanted something better—everyday products that actually work for dogs and cats, without the guesswork.
+                  GetPawsy is an online pet supply store dedicated to providing thoughtfully curated products for dogs and cats. We focus on quality, comfort, and practical design—because your pet deserves products that truly deliver.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  We noticed that finding quality pet products online often meant sifting through endless options, unclear sizing, and questionable quality. So we set out to change that.
+                  We noticed that finding quality pet products online often meant sifting through endless options, unclear sizing, and questionable quality. So we set out to change that by offering a carefully selected range of pet essentials that pet parents can trust.
                 </p>
                 <p className="text-muted-foreground">
-                  Today, GetPawsy offers a carefully curated selection of pet essentials—products chosen for their comfort, quality, and practical design. Every item is selected with real pets in mind, because we believe your pet deserves products that truly deliver.
+                  Today, GetPawsy serves pet parents across the United States with a smooth, reliable shopping experience from browse to delivery.
                 </p>
               </div>
             </motion.div>
           </div>
         </section>
 
-        {/* Our Mission */}
+        {/* Legal Entity & Business Operations */}
         <section className="py-16 lg:py-20 bg-muted/30">
+          <div className="container px-4 md:px-6 max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Building2 className="w-6 h-6 text-primary" />
+                </div>
+                <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
+                  Our Business & Legal Information
+                </h2>
+              </div>
+              
+              <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
+                <p className="text-foreground text-lg mb-4">
+                  <strong>GetPawsy</strong> is the trading name (brand name) of <strong>Skidzo</strong>, a legally registered business under the Dutch Chamber of Commerce (Kamer van Koophandel).
+                </p>
+                
+                <div className="bg-muted/50 rounded-xl p-5 mb-6">
+                  <h3 className="font-semibold text-foreground mb-3">Business Registration</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <span className="text-muted-foreground min-w-[140px]">Legal entity:</span>
+                      <span className="text-foreground font-medium">Skidzo</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-muted-foreground min-w-[140px]">Trading name:</span>
+                      <span className="text-foreground font-medium">GetPawsy</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-muted-foreground min-w-[140px]">Registration (KVK):</span>
+                      <span className="text-foreground font-medium">78156955</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-muted-foreground min-w-[140px]">Website:</span>
+                      <a href="https://getpawsy.pet" className="text-primary hover:underline font-medium">getpawsy.pet</a>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-muted-foreground min-w-[140px]">Customer support:</span>
+                      <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline font-medium">{SUPPORT_EMAIL}</a>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-muted-foreground mb-4">
+                  Skidzo is the legal entity responsible for all operations of the GetPawsy webshop, including:
+                </p>
+                
+                <div className="space-y-3">
+                  {[
+                    'Webshop operations and website management',
+                    'Payment processing and transaction security',
+                    'Customer service and support',
+                    'Shipping coordination and order fulfillment',
+                    'Returns, refunds, and warranty handling',
+                    'Compliance with consumer protection regulations',
+                  ].map((item) => (
+                    <div key={item} className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-foreground">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Our Mission */}
+        <section className="py-16 lg:py-20">
           <div className="container px-4 md:px-6 max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -125,7 +197,7 @@ const About = () => {
         </section>
 
         {/* Quality & Safety */}
-        <section className="py-16 lg:py-20">
+        <section className="py-16 lg:py-20 bg-muted/30">
           <div className="container px-4 md:px-6 max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -171,8 +243,8 @@ const About = () => {
           </div>
         </section>
 
-        {/* Shipping Transparency */}
-        <section className="py-16 lg:py-20 bg-muted/30">
+        {/* Shipping & Fulfillment Transparency */}
+        <section className="py-16 lg:py-20">
           <div className="container px-4 md:px-6 max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -184,22 +256,20 @@ const About = () => {
                   <Truck className="w-6 h-6 text-primary" />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-                  Shipping Transparency
+                  Shipping & Fulfillment
                 </h2>
               </div>
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
-                <div className="space-y-4">
+                <p className="text-foreground text-lg mb-4">
+                  We work with trusted fulfillment partners, primarily based in the United States, to ensure your orders are handled with care and delivered reliably.
+                </p>
+                
+                <div className="space-y-4 mb-6">
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
                     <p className="text-foreground">
-                      We ship to customers across the <strong>United States</strong>.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
-                    <p className="text-foreground">
-                      Orders ship from <strong>US warehouses</strong> when available.
+                      Orders ship from <strong>US fulfillment centers</strong> when available.
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
@@ -211,14 +281,20 @@ const About = () => {
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
                     <p className="text-foreground">
-                      Delivery times are <strong>shown clearly</strong> on each product page.
+                      Estimated delivery: <strong>{DELIVERY_TIME_STANDARD}</strong>.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
+                    <p className="text-foreground">
+                      <strong>{RETURN_WINDOW_DAYS}-day hassle-free return policy</strong> on all orders.
                     </p>
                   </div>
                 </div>
                 
-                <div className="mt-6 p-4 bg-muted/50 rounded-xl">
+                <div className="p-4 bg-muted/50 rounded-xl">
                   <p className="text-sm text-muted-foreground">
-                    Most orders arrive within {DELIVERY_TIME_STANDARD}. We believe in honest delivery estimates—no surprises.
+                    Skidzo (operating as GetPawsy) coordinates all shipping and fulfillment. If you have any questions about your order, please contact us at <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>.
                   </p>
                 </div>
               </div>
@@ -227,7 +303,7 @@ const About = () => {
         </section>
 
         {/* Real Support */}
-        <section className="py-16 lg:py-20">
+        <section className="py-16 lg:py-20 bg-muted/30">
           <div className="container px-4 md:px-6 max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}

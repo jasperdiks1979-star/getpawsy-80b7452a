@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
-import { Mail, Clock, Send, MessageSquare, CheckCircle, MapPin } from 'lucide-react';
+import { Mail, Clock, Send, MessageSquare, CheckCircle, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
+import { SUPPORT_EMAIL } from '@/lib/shipping-constants';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -89,22 +90,15 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Email Us',
-      content: 'support@getpawsy.pet',
-      description: 'We reply within 24-48 hours',
-      href: 'mailto:support@getpawsy.pet',
+      content: SUPPORT_EMAIL,
+      description: 'We reply within 24 hours',
+      href: `mailto:${SUPPORT_EMAIL}`,
     },
     {
       icon: Clock,
       title: 'Business Hours',
-      content: 'Monday - Friday',
-      description: '9:00 AM - 6:00 PM CET',
-      href: null,
-    },
-    {
-      icon: MapPin,
-      title: 'Location',
-      content: 'Apeldoorn, Netherlands',
-      description: 'Worldwide shipping available',
+      content: 'Monday – Friday',
+      description: '9:00 AM – 6:00 PM CET',
       href: null,
     },
   ];
@@ -127,7 +121,7 @@ const Contact = () => {
               </h1>
               <p className="text-muted-foreground text-lg mb-8">
                 Thank you for contacting us. We have received your message and will get back 
-                to you within 24-48 hours.
+                to you within 24 hours.
               </p>
               <Button onClick={() => setIsSubmitted(false)} variant="outline">
                 Send Another Message
@@ -263,7 +257,7 @@ const Contact = () => {
               transition={{ delay: 0.3 }}
               className="space-y-6"
             >
-              {contactInfo.map((info, index) => (
+              {contactInfo.map((info) => (
                 <div 
                   key={info.title}
                   className="bg-card rounded-xl shadow-card p-6"
@@ -290,11 +284,37 @@ const Contact = () => {
                 </div>
               ))}
 
+              {/* Business Entity Info */}
+              <div className="bg-card rounded-xl shadow-card p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Business Information</h3>
+                    <div className="space-y-1.5 text-sm">
+                      <p className="text-muted-foreground">
+                        <span className="text-foreground font-medium">Legal name:</span> Skidzo
+                      </p>
+                      <p className="text-muted-foreground">
+                        <span className="text-foreground font-medium">Trading as:</span> GetPawsy
+                      </p>
+                      <p className="text-muted-foreground">
+                        <span className="text-foreground font-medium">KVK:</span> 78156955
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-3">
+                      Skidzo operates and is fully responsible for the GetPawsy webshop, including all orders, payments, shipping, and customer service.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Response Time */}
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-6">
                 <h3 className="font-semibold text-foreground mb-2">Response Time</h3>
                 <p className="text-sm text-muted-foreground">
-                  We typically respond to all inquiries within 24-48 business hours. 
+                  We typically respond to all inquiries within 24 business hours. 
                   For urgent matters, please include your order number for faster assistance.
                 </p>
               </div>

@@ -289,10 +289,13 @@ export const Footer = () => {
         <div className="container px-4 md:px-6 py-6">
             <div className="flex flex-col gap-4">
               {/* Business Registration Info */}
-              <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs text-background/40 border-b border-background/10 pb-4">
-                <span>Skidzo (Eenmanszaak)</span>
-                <span>KvK: 78156955</span>
-                <span>BTW: NL101001964B02</span>
+              <div className="flex flex-col items-center gap-2 text-xs text-background/40 border-b border-background/10 pb-4">
+                <p>
+                  GetPawsy is a trading name of <strong className="text-background/60">Skidzo</strong>, a registered business (Chamber of Commerce / KVK: 78156955).
+                </p>
+                <p>
+                  Customer support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-background/60 hover:text-primary transition-colors">{SUPPORT_EMAIL}</a>
+                </p>
               </div>
               
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
