@@ -87,6 +87,7 @@ Deno.serve(async (req) => {
           .from("products")
           .select("id, name, slug, updated_at, category, image_url")
           .eq("is_active", true)
+          .eq("is_duplicate", false)
           .order("updated_at", { ascending: false });
         return new Response(generateProductsSitemap(products || [], today), { headers, status: 200 });
       }
@@ -100,7 +101,8 @@ Deno.serve(async (req) => {
         const { data: products } = await supabase
           .from("products")
           .select("category")
-          .eq("is_active", true);
+          .eq("is_active", true)
+          .eq("is_duplicate", false);
         
         const productCategories = new Set<string>();
         (products || []).forEach((p) => {

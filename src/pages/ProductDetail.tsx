@@ -141,7 +141,8 @@ const ProductDetail = () => {
   };
 
   // Fetch product from database - supports both UUID and slug
-  // Uses products_public view which is publicly accessible
+  // Uses products_public view which filters out duplicates automatically
+  // If product not found in view, checks if it's a duplicate and redirects to canonical
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: async () => {
@@ -156,6 +157,29 @@ const ProductDetail = () => {
           .maybeSingle();
         
         if (error) throw error;
+        
+        // If not found in view, check if it's a duplicate product
+        if (!data) {
+          const { data: dupData } = await supabase
+            .from('products')
+            .select('is_duplicate, canonical_product_id')
+            .eq('id', id)
+            .maybeSingle();
+          
+          if (dupData?.is_duplicate && dupData?.canonical_product_id) {
+            // Fetch canonical product's slug for redirect
+            const { data: canonical } = await supabase
+              .from('products_public')
+              .select('slug, id')
+              .eq('id', dupData.canonical_product_id)
+              .maybeSingle();
+            
+            if (canonical) {
+              return { ...canonical, _redirect: true } as any;
+            }
+          }
+        }
+        
         return data;
       }
 
@@ -168,6 +192,27 @@ const ProductDetail = () => {
       
       if (slugError) throw slugError;
       if (slugData && slugData.is_active) return slugData;
+
+      // If slug not found in view, check if it's a duplicate
+      if (!slugData) {
+        const { data: dupBySlug } = await supabase
+          .from('products')
+          .select('is_duplicate, canonical_product_id')
+          .eq('slug', id)
+          .maybeSingle();
+        
+        if (dupBySlug?.is_duplicate && dupBySlug?.canonical_product_id) {
+          const { data: canonical } = await supabase
+            .from('products_public')
+            .select('slug, id')
+            .eq('id', dupBySlug.canonical_product_id)
+            .maybeSingle();
+          
+          if (canonical) {
+            return { ...canonical, _redirect: true } as any;
+          }
+        }
+      }
 
       // Fallback: try to find by name (for legacy URLs)
       const searchName = id.replace(/-/g, ' ').toLowerCase();
@@ -185,9 +230,12 @@ const ProductDetail = () => {
     enabled: !!id,
   });
 
-  // Redirect to slug-based URL if accessed via UUID (for SEO)
-  // IMPORTANT: This must be in useEffect, NOT in queryFn to avoid hooks issues
+  // Redirect to canonical product if this is a duplicate, or to slug URL if accessed via UUID
   useEffect(() => {
+    if (product?._redirect) {
+      navigate(`/product/${product.slug || product.id}`, { replace: true });
+      return;
+    }
     if (product?.slug && id && isValidUUID(id)) {
       navigate(`/product/${product.slug}`, { replace: true });
     }
