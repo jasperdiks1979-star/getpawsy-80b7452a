@@ -203,8 +203,8 @@ const TechnicalDeclaration = () => {
               <td className="border border-gray-300 p-1">78156955</td>
             </tr>
             <tr>
-              <td className="border border-gray-300 p-1 font-medium bg-gray-50">VAT (BTW)</td>
-              <td className="border border-gray-300 p-1">NL101001964B02</td>
+              <td className="border border-gray-300 p-1 font-medium bg-gray-50">VAT ID</td>
+              <td className="border border-gray-300 p-1">NL003295015B69</td>
             </tr>
             <tr>
               <td className="border border-gray-300 p-1 font-medium bg-gray-50">Address</td>
