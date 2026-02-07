@@ -291,7 +291,7 @@ export const Footer = () => {
               {/* Business Registration Info */}
               <div className="flex flex-col items-center gap-2 text-xs text-background/40 border-b border-background/10 pb-4">
               <p>
-                  GetPawsy is a consumer brand operated by <strong className="text-background/60">Skidzo</strong>, a registered business (KVK: 78156955). Skidzo is responsible for all orders, payments, shipping, and customer service.
+                  GetPawsy is a consumer brand operated by <strong className="text-background/60">Skidzo</strong>, a registered business (KVK: 78156955, VAT ID: NL003295015B69). Skidzo is responsible for all orders, payments, shipping, and customer service.
                 </p>
                 <p>
                   Customer support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-background/60 hover:text-primary transition-colors">{SUPPORT_EMAIL}</a>

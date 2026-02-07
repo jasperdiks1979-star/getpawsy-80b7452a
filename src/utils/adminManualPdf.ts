@@ -380,7 +380,7 @@ export const generateAdminManualPdf = (): jsPDF => {
 
   addParagraph(doc, `Welcome to the complete admin and compliance guide for GetPawsy. This document serves as your single source of truth for understanding your webshop, maintaining Google Merchant Center compliance, and operating your store with confidence.`);
 
-  addInfoBox(doc, 'Business Identity', `GetPawsy is a consumer-facing pet supply brand. It is operated by Skidzo, a registered business entity (KVK: 78156955, BTW: NL101001964B02). Skidzo is legally responsible for all operations including customer service, order processing, fulfillment coordination, returns, and refunds. This dual-name structure (brand + legal entity) is standard practice and fully compliant with Google Merchant Center policies.`);
+  addInfoBox(doc, 'Business Identity', `GetPawsy is a consumer-facing pet supply brand. It is operated by Skidzo, a registered business entity (KVK: 78156955, VAT ID: NL003295015B69). Skidzo is legally responsible for all operations including customer service, order processing, fulfillment coordination, returns, and refunds. This dual-name structure (brand + legal entity) is standard practice and fully compliant with Google Merchant Center policies.`);
 
   addSubtitle(doc, 'What This Document Covers');
   addBulletPoint(doc, 'Complete shipping and returns policies aligned with checkout behavior');
@@ -955,7 +955,7 @@ export const generateAdminManualPdf = (): jsPDF => {
     'We are writing to request a review of our Google Merchant Center account following a "Misrepresentation" flag. We have conducted a thorough audit of our website (getpawsy.pet) and have resolved all identified issues.',
     '',
     'BUSINESS IDENTITY',
-    `GetPawsy is a consumer-facing pet supply brand operated by Skidzo, a registered business entity (KVK: 78156955, BTW: NL101001964B02), based in Apeldoorn, Netherlands. This brand-entity relationship is clearly disclosed on our About page, Contact page, and website footer. Customer support is available at ${SUPPORT_EMAIL} with a 24-hour response commitment.`,
+    `GetPawsy is a consumer-facing pet supply brand operated by Skidzo, a registered business entity (KVK: 78156955, VAT ID: NL003295015B69), based in Apeldoorn, Netherlands. This brand-entity relationship is clearly disclosed on our About page, Contact page, and website footer. Customer support is available at ${SUPPORT_EMAIL} with a 24-hour response commitment.`,
     '',
     'PRICING & SHIPPING CONSISTENCY',
     `We have verified that all pricing is consistent across every customer touchpoint: product pages, search results, cart, and checkout display identical prices. Our shipping policy is simple and transparent: orders of $${FREE_SHIPPING_THRESHOLD} or more qualify for free shipping; orders under $${FREE_SHIPPING_THRESHOLD} are charged a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}. This exact logic is implemented in our checkout system and reflected in our Merchant Center shipping settings. We ship exclusively within the United States with a delivery time of ${DELIVERY_TIME_STANDARD}. There are no hidden fees, "calculated at checkout" language, or variable shipping costs.`,

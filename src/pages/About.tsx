@@ -115,6 +115,10 @@ const About = () => {
                       <span className="text-foreground font-medium">78156955</span>
                     </div>
                     <div className="flex items-start gap-2">
+                      <span className="text-muted-foreground min-w-[140px]">VAT ID:</span>
+                      <span className="text-foreground font-medium">NL003295015B69</span>
+                    </div>
+                    <div className="flex items-start gap-2">
                       <span className="text-muted-foreground min-w-[140px]">Website:</span>
                       <a href="https://getpawsy.pet" className="text-primary hover:underline font-medium">getpawsy.pet</a>
                     </div>

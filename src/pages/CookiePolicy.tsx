@@ -215,7 +215,7 @@ const CookiePolicy = () => {
                     <p className="m-0">7312 VG Apeldoorn</p>
                     <p className="m-0">Nederland</p>
                     <p className="m-0 mt-3 text-sm">KvK: 78156955</p>
-                    <p className="m-0 text-sm">BTW: NL101001964B02</p>
+                    <p className="m-0 text-sm">VAT ID: NL003295015B69</p>
                   </div>
                 </div>
               </section>

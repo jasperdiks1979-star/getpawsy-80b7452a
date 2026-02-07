@@ -302,6 +302,9 @@ const Contact = () => {
                       <p className="text-muted-foreground">
                         <span className="text-foreground font-medium">KVK:</span> 78156955
                       </p>
+                      <p className="text-muted-foreground">
+                        <span className="text-foreground font-medium">VAT ID:</span> NL003295015B69
+                      </p>
                     </div>
                     <p className="text-xs text-muted-foreground mt-3">
                       Skidzo operates and is fully responsible for the GetPawsy webshop, including all orders, payments, shipping, and customer service.

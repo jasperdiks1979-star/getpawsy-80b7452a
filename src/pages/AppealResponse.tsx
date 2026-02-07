@@ -336,7 +336,7 @@ We confirm that we serve **identical content to all users and bots**. There is n
             <div>
               <p><strong>Bedrijfsnaam:</strong> Skidzo (Eenmanszaak)</p>
               <p><strong>KvK:</strong> 78156955</p>
-              <p><strong>BTW:</strong> NL101001964B02</p>
+              <p><strong>VAT ID:</strong> NL003295015B69</p>
             </div>
             <div>
               <p><strong>Adres:</strong> De Haasstraat 11, 7312 VG Apeldoorn, NL</p>

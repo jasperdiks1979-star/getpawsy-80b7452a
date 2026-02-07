@@ -200,8 +200,8 @@ const GoogleReview = () => {
                       <td className="px-4 py-3 font-mono">78156955</td>
                     </tr>
                     <tr className="border-b border-gray-100">
-                      <td className="px-4 py-3 font-medium text-gray-600">VAT (BTW)</td>
-                      <td className="px-4 py-3 font-mono">NL101001964B02</td>
+                      <td className="px-4 py-3 font-medium text-gray-600">VAT ID</td>
+                      <td className="px-4 py-3 font-mono">NL003295015B69</td>
                     </tr>
                     <tr className="border-b border-gray-100">
                       <td className="px-4 py-3 font-medium text-gray-600">Address</td>
@@ -226,7 +226,7 @@ const GoogleReview = () => {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span><strong>VAT Verification:</strong> Valid through EU VIES system (NL101001964B02)</span>
+                    <span><strong>VAT Verification:</strong> Valid through EU VIES system (NL003295015B69)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
