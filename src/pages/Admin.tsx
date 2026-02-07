@@ -54,6 +54,7 @@ const PinterestTrafficWidget = lazy(() => import("@/components/admin/widgets/Pin
 const PinterestAdsWidget = lazy(() => import("@/components/admin/widgets/PinterestAdsWidget").then(module => ({ default: module.PinterestAdsWidget })));
 import { TrafficReportDownload } from "@/components/admin/TrafficReportDownload";
 import { AdminManualDownload } from "@/components/admin/AdminManualDownload";
+import { ProductCsvExport } from "@/components/admin/ProductCsvExport";
 import { MiniKPIWidget } from "@/components/admin/MiniKPIWidget";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -2182,6 +2183,7 @@ const Admin = () => {
                   Store Products ({existingProducts?.length || 0})
                 </h2>
                 <div className="flex flex-wrap gap-2 items-center">
+                  <ProductCsvExport />
                   <div className="text-xs text-muted-foreground flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     Auto-sync daily at 05:00 NL time
