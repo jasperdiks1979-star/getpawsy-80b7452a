@@ -402,11 +402,12 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch all active products
+    // Fetch all active canonical products (exclude duplicates)
     const { data: products, error } = await supabase
       .from('products')
       .select('id, name, description, price, compare_at_price, image_url, images, stock, category, sku, slug, shipping_time, weight, is_active')
       .eq('is_active', true)
+      .eq('is_duplicate', false)
       .order('created_at', { ascending: false });
 
     if (error) {

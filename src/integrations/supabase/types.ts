@@ -675,6 +675,71 @@ export type Database = {
         }
         Relationships: []
       }
+      dedupe_conflicts: {
+        Row: {
+          canonical_price: number | null
+          canonical_product_id: string | null
+          created_at: string
+          dedupe_key: string
+          duplicate_price: number | null
+          duplicate_product_id: string | null
+          id: string
+          price_diff_pct: number | null
+          resolved: boolean
+        }
+        Insert: {
+          canonical_price?: number | null
+          canonical_product_id?: string | null
+          created_at?: string
+          dedupe_key: string
+          duplicate_price?: number | null
+          duplicate_product_id?: string | null
+          id?: string
+          price_diff_pct?: number | null
+          resolved?: boolean
+        }
+        Update: {
+          canonical_price?: number | null
+          canonical_product_id?: string | null
+          created_at?: string
+          dedupe_key?: string
+          duplicate_price?: number | null
+          duplicate_product_id?: string | null
+          id?: string
+          price_diff_pct?: number | null
+          resolved?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dedupe_conflicts_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dedupe_conflicts_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dedupe_conflicts_duplicate_product_id_fkey"
+            columns: ["duplicate_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dedupe_conflicts_duplicate_product_id_fkey"
+            columns: ["duplicate_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discontinued_products: {
         Row: {
           created_at: string
@@ -2801,16 +2866,19 @@ export type Database = {
       }
       products: {
         Row: {
+          canonical_product_id: string | null
           category: string | null
           cj_product_id: string | null
           compare_at_price: number | null
           cost_price: number | null
           created_at: string
+          dedupe_key: string | null
           description: string | null
           id: string
           image_url: string | null
           images: string[] | null
           is_active: boolean | null
+          is_duplicate: boolean
           last_stock_sync_at: string | null
           name: string
           price: number
@@ -2824,16 +2892,19 @@ export type Database = {
           weight: number | null
         }
         Insert: {
+          canonical_product_id?: string | null
           category?: string | null
           cj_product_id?: string | null
           compare_at_price?: number | null
           cost_price?: number | null
           created_at?: string
+          dedupe_key?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
+          is_duplicate?: boolean
           last_stock_sync_at?: string | null
           name: string
           price: number
@@ -2847,16 +2918,19 @@ export type Database = {
           weight?: number | null
         }
         Update: {
+          canonical_product_id?: string | null
           category?: string | null
           cj_product_id?: string | null
           compare_at_price?: number | null
           cost_price?: number | null
           created_at?: string
+          dedupe_key?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
+          is_duplicate?: boolean
           last_stock_sync_at?: string | null
           name?: string
           price?: number
@@ -2869,7 +2943,22 @@ export type Database = {
           variants?: Json | null
           weight?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
