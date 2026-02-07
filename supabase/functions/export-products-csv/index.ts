@@ -115,6 +115,10 @@ interface Product {
   canonical_product_id: string | null;
   dedupe_key: string | null;
   cj_product_id: string | null;
+  stock_sync_status: string | null;
+  stock_sync_error: string | null;
+  stock_source: string | null;
+  supplier_warehouse: string | null;
 }
 
 function productToRow(p: Product): string[] {
@@ -181,10 +185,10 @@ function productToRow(p: Product): string[] {
     supplierStock !== null ? String(supplierStock) : "",
     availability,
     bool(addToCartEnabled),
-    p.cj_product_id ? "supplier" : "manual",
+    p.cj_product_id ? (p.stock_source || "supplier") : "manual",
     p.last_stock_sync_at || "",
-    "", // stock_sync_status – not stored per-product
-    "", // stock_sync_error – not stored per-product
+    p.stock_sync_status || "",
+    p.stock_sync_error || "",
     // E
     primaryImage,
     additional.join("|"),
@@ -277,7 +281,7 @@ const handler = async (req: Request): Promise<Response> => {
       let query = supabaseAdmin
         .from("products")
         .select(
-          "id, name, slug, sku, category, price, compare_at_price, image_url, images, stock, is_active, supplier_name, created_at, updated_at, last_stock_sync_at, is_duplicate, canonical_product_id, dedupe_key, cj_product_id"
+          "id, name, slug, sku, category, price, compare_at_price, image_url, images, stock, is_active, supplier_name, created_at, updated_at, last_stock_sync_at, is_duplicate, canonical_product_id, dedupe_key, cj_product_id, stock_sync_status, stock_sync_error, stock_source, supplier_warehouse"
         )
         .order("created_at", { ascending: true })
         .range(from, from + pageSize - 1);

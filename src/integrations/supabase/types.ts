@@ -2886,7 +2886,11 @@ export type Database = {
           sku: string | null
           slug: string | null
           stock: number | null
+          stock_source: string | null
+          stock_sync_error: string | null
+          stock_sync_status: string | null
           supplier_name: string | null
+          supplier_warehouse: string | null
           updated_at: string
           variants: Json | null
           weight: number | null
@@ -2912,7 +2916,11 @@ export type Database = {
           sku?: string | null
           slug?: string | null
           stock?: number | null
+          stock_source?: string | null
+          stock_sync_error?: string | null
+          stock_sync_status?: string | null
           supplier_name?: string | null
+          supplier_warehouse?: string | null
           updated_at?: string
           variants?: Json | null
           weight?: number | null
@@ -2938,7 +2946,11 @@ export type Database = {
           sku?: string | null
           slug?: string | null
           stock?: number | null
+          stock_source?: string | null
+          stock_sync_error?: string | null
+          stock_sync_status?: string | null
           supplier_name?: string | null
+          supplier_warehouse?: string | null
           updated_at?: string
           variants?: Json | null
           weight?: number | null
@@ -3385,6 +3397,48 @@ export type Database = {
           },
         ]
       }
+      stock_sync_logs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_count: number
+          id: string
+          ok_count: number
+          positive_stock_count: number
+          run_at: string
+          sample_errors: Json | null
+          total_checked: number
+          triggered_by: string | null
+          zero_stock_count: number
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_count?: number
+          id?: string
+          ok_count?: number
+          positive_stock_count?: number
+          run_at?: string
+          sample_errors?: Json | null
+          total_checked?: number
+          triggered_by?: string | null
+          zero_stock_count?: number
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_count?: number
+          id?: string
+          ok_count?: number
+          positive_stock_count?: number
+          run_at?: string
+          sample_errors?: Json | null
+          total_checked?: number
+          triggered_by?: string | null
+          zero_stock_count?: number
+        }
+        Relationships: []
+      }
       supplier_import_logs: {
         Row: {
           completed_at: string | null
@@ -3710,66 +3764,105 @@ export type Database = {
     Views: {
       products_public: {
         Row: {
+          canonical_product_id: string | null
           category: string | null
           cj_product_id: string | null
           compare_at_price: number | null
           created_at: string | null
+          dedupe_key: string | null
           description: string | null
           id: string | null
           image_url: string | null
           images: string[] | null
           is_active: boolean | null
+          is_duplicate: boolean | null
+          last_stock_sync_at: string | null
           name: string | null
           price: number | null
           shipping_time: string | null
           sku: string | null
           slug: string | null
           stock: number | null
+          stock_source: string | null
+          stock_sync_status: string | null
+          supplier_name: string | null
+          supplier_warehouse: string | null
           updated_at: string | null
           variants: Json | null
           weight: number | null
         }
         Insert: {
+          canonical_product_id?: string | null
           category?: string | null
           cj_product_id?: string | null
           compare_at_price?: number | null
           created_at?: string | null
+          dedupe_key?: string | null
           description?: string | null
           id?: string | null
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
+          is_duplicate?: boolean | null
+          last_stock_sync_at?: string | null
           name?: string | null
           price?: number | null
           shipping_time?: string | null
           sku?: string | null
           slug?: string | null
           stock?: number | null
+          stock_source?: string | null
+          stock_sync_status?: string | null
+          supplier_name?: string | null
+          supplier_warehouse?: string | null
           updated_at?: string | null
           variants?: Json | null
           weight?: number | null
         }
         Update: {
+          canonical_product_id?: string | null
           category?: string | null
           cj_product_id?: string | null
           compare_at_price?: number | null
           created_at?: string | null
+          dedupe_key?: string | null
           description?: string | null
           id?: string | null
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
+          is_duplicate?: boolean | null
+          last_stock_sync_at?: string | null
           name?: string | null
           price?: number | null
           shipping_time?: string | null
           sku?: string | null
           slug?: string | null
           stock?: number | null
+          stock_source?: string | null
+          stock_sync_status?: string | null
+          supplier_name?: string | null
+          supplier_warehouse?: string | null
           updated_at?: string | null
           variants?: Json | null
           weight?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
