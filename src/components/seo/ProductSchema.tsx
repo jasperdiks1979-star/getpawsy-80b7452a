@@ -101,7 +101,7 @@ export function ProductSchema({
       price: product.price.toFixed(2),
       priceValidUntil: priceValidUntilStr,
       // Use centralized availability logic (real supplier stock)
-      availability: computeAvailability(product as { stock?: number | null; is_active?: boolean | null }).isInStock
+      availability: computeAvailability(product).isInStock
         ? 'https://schema.org/InStock' 
         : 'https://schema.org/OutOfStock',
       itemCondition: 'https://schema.org/NewCondition',
@@ -223,7 +223,7 @@ export function ProductSchema({
       <meta property="og:site_name" content="GetPawsy" />
       <meta property="product:price:amount" content={product.price.toString()} />
       <meta property="product:price:currency" content="USD" />
-      <meta property="product:availability" content={computeAvailability(product as { stock?: number | null; is_active?: boolean | null }).isInStock ? 'in stock' : 'out of stock'} />
+      <meta property="product:availability" content={computeAvailability(product).isInStock ? 'in stock' : 'out of stock'} />
       {product.category && <meta property="product:category" content={product.category} />}
 
       {/* Twitter */}

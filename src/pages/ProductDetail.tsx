@@ -548,7 +548,7 @@ const ProductDetail = () => {
   }
 
   // Use centralized availability logic (real supplier stock)
-  const availabilityResult = computeAvailability(product as { stock?: number | null; is_active?: boolean | null });
+  const availabilityResult = computeAvailability(product);
   const inStock = availabilityResult.isInStock;
 
   const handleAddToCart = () => {

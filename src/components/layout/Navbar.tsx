@@ -292,8 +292,7 @@ export const Navbar = () => {
 
       if (categoriesError) throw categoriesError;
 
-      // Fetch active products to calculate counts based on category name
-      // DROPSHIPPING MODEL: is_active is the only indicator, NOT stock
+      // Fetch active canonical products to calculate counts
        const { data: productsData, error: productsError } = await supabase
          .from('products_public')
          .select('category');

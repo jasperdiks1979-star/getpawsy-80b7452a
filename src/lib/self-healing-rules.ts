@@ -43,12 +43,12 @@
    },
    {
      id: 'stock_mismatch',
-     name: 'Stock Logic Fallback',
-     description: 'Active dropship product incorrectly shows Out of Stock',
-     component: 'AddToCartButton.tsx / availability.ts',
-     triggerCondition: 'product.is_active === true BUT UI shows out of stock',
-     fallbackAction: 'Use computeAvailability() result - treat as In Stock',
-     permanentFix: 'Ensure all availability checks use centralized computeAvailability()',
+     name: 'Stock Logic Consistency',
+     description: 'Availability must match real supplier stock from CJ',
+     component: 'availability.ts',
+     triggerCondition: 'stock=0 but UI shows in stock, or stock>0 but UI shows out of stock',
+     fallbackAction: 'Use computeAvailability() result - stock is the single source of truth',
+     permanentFix: 'All availability checks use centralized computeAvailability(product)',
      enabled: true,
    },
    {
