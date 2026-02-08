@@ -39,6 +39,7 @@ const COLUMNS = [
   "effective_price_usd",
   // D) Availability & supplier stock
   "supplier_stock",
+  "effective_stock",
   "availability",
   "add_to_cart_enabled",
   "stock_source",
@@ -183,6 +184,7 @@ function productToRow(p: Product): string[] {
     effectivePrice.toFixed(2),
     // D
     supplierStock !== null ? String(supplierStock) : "",
+    supplierStock !== null ? String(supplierStock) : "", // effective_stock = supplier_stock
     availability,
     bool(addToCartEnabled),
     p.cj_product_id ? (p.stock_source || "supplier") : "manual",

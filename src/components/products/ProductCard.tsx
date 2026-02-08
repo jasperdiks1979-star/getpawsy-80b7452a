@@ -76,7 +76,7 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   
 
   // Use centralized availability logic based on real supplier stock
-  const isOutOfStock = !computeAvailability(product as { stock?: number | null; is_active?: boolean | null }).isInStock;
+  const isOutOfStock = !computeAvailability(product).isInStock;
 
   const handleCardClick = () => {
     // Track select_item event for GA4 enhanced ecommerce
