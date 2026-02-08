@@ -102,12 +102,13 @@ const generateProductJsonLd = (
     slug: string;
   }
 ) => {
-  // DROPSHIPPING MODEL: Stock value of 0 does NOT mean out of stock
-  // Only mark as OutOfStock if product.is_active === false (explicitly disabled)
-  const isProductDisabled = product.is_active === false;
-  const availability = isProductDisabled 
-    ? 'https://schema.org/OutOfStock' 
-    : 'https://schema.org/InStock';
+  // Use real supplier stock for availability
+  const stockVal = product.stock;
+  const isActive = product.is_active !== false;
+  const inStock = isActive && stockVal !== null && stockVal !== undefined && stockVal > 0;
+  const availability = inStock
+    ? 'https://schema.org/InStock' 
+    : 'https://schema.org/OutOfStock';
 
   const imagesArray = Array.isArray(product.images) ? product.images : [];
   const images = imagesArray.length > 0

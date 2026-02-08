@@ -14,6 +14,7 @@ import { PawConfetti, usePawConfetti } from '@/components/products/PawConfetti';
 import { toast } from 'sonner';
 import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
 import { safeString, safePrice } from '@/lib/safe-render';
+import { computeAvailability } from '@/lib/availability';
 
 export interface Product {
   id: string;
@@ -74,9 +75,8 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   }, [product.id, product.slug, product.category, prefetchProduct]);
   
 
-  // DROPSHIP MODEL: Use centralized availability logic
-  // Stock=0 does NOT mean out of stock, only explicit is_active=false does
-  const isOutOfStock = (product as { is_active?: boolean | null }).is_active === false;
+  // Use centralized availability logic based on real supplier stock
+  const isOutOfStock = !computeAvailability(product as { stock?: number | null; is_active?: boolean | null }).isInStock;
 
   const handleCardClick = () => {
     // Track select_item event for GA4 enhanced ecommerce
@@ -179,9 +179,11 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
                 -{discount}%
               </Badge>
             )}
-            {/* DROPSHIPPING MODEL: Stock badges removed
-                stock=0 doesn't mean out of stock - supplier manages inventory
-                Only is_active=false indicates unavailability */}
+            {isOutOfStock && (
+              <Badge variant="secondary" className="bg-muted text-muted-foreground shadow-soft">
+                Out of Stock
+              </Badge>
+            )}
           </div>
 
           {/* Quick Actions - Desktop */}
@@ -272,8 +274,8 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
             </Button>
           </div>
 
-          {/* Stock indicator - Only show if explicitly disabled */}
-          {(product as { is_active?: boolean | null }).is_active === false && (
+          {/* Stock indicator */}
+          {isOutOfStock && (
             <p className="text-xs text-destructive font-medium">Out of Stock</p>
           )}
         </div>

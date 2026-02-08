@@ -212,7 +212,7 @@ const Index = () => {
        if (!categoriesData) return [];
  
        // Fetch active products to calculate counts
-       // DROPSHIPPING MODEL: is_active is the only indicator, NOT stock
+       // products_public view already filters is_active=true AND is_duplicate=false
         const { data: productsData } = await supabase
           .from('products_public')
           .select('category');

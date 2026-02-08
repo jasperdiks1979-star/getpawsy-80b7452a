@@ -118,9 +118,17 @@ const Products = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      // DROPSHIPPING MODEL: stock=0 does NOT mean out of stock
-      // Only is_active=false marks a product as unavailable
-      return data;
+      
+      // Dedupe safety guard: ensure one product per dedupe_key
+      if (!data) return data;
+      const seen = new Set<string>();
+      return data.filter(p => {
+        const key = (p as any).dedupe_key;
+        if (!key) return true; // no dedupe_key = unique
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     },
   });
 
