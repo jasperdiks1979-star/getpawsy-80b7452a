@@ -365,8 +365,7 @@ export const BestsellerManager = () => {
   const { data: availableProducts } = useQuery({
     queryKey: ['available-products-for-bestseller'],
     queryFn: async () => {
-      // DROPSHIPPING MODEL: is_active is the only filter
-      // Stock = 0 doesn't mean out of stock - supplier manages inventory
+      // Fetch all active products for bestseller selection
       const { data: allProducts, error: productsError } = await supabase
         .from('products')
         .select('id, name, price, image_url, category, description')

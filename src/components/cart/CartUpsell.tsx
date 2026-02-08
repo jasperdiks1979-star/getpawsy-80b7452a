@@ -101,7 +101,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
     queryFn: async () => {
       if (cartCategories.length === 0) {
         // If no categories, fetch bestsellers or random active products
-        // DROPSHIPPING MODEL: is_active is the only filter, NOT stock
+        // Fetch active products (products_public already filters duplicates)
         const { data, error } = await supabase
           .from('products_public')
           .select('*')
@@ -118,7 +118,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
       }
 
       // Fetch products from same categories
-      // DROPSHIPPING MODEL: is_active is the only filter, NOT stock
+      // Fetch products from same categories (products_public filters duplicates)
       const { data, error } = await supabase
         .from('products_public')
         .select('*')
