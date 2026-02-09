@@ -1,4 +1,4 @@
-import { Star, User, ThumbsUp, Trash2 } from 'lucide-react';
+import { Star, User, ThumbsUp, Trash2, BadgeCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ interface Review {
   content: string | null;
   created_at: string;
   helpful_count: number;
+  is_verified_buyer?: boolean;
+  reviewer_name?: string | null;
 }
 
 interface ReviewsListProps {
@@ -146,7 +148,8 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
       {/* Reviews List */}
       <AnimatePresence mode="popLayout">
         {reviews.map((review, idx) => {
-          const displayName = 'Verified buyer';
+          const displayName = review.reviewer_name || 'Customer';
+          const isVerified = review.is_verified_buyer;
           const isOwner = user?.id === review.user_id;
 
           return (
@@ -171,6 +174,12 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
                       <span className="font-semibold text-foreground">
                         {displayName}
                       </span>
+                      {isVerified && (
+                        <span className="inline-flex items-center gap-1 text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
+                          <BadgeCheck className="w-3 h-3" />
+                          Verified Buyer
+                        </span>
+                      )}
                       <span className="text-sm text-muted-foreground">•</span>
                       <span className="text-sm text-muted-foreground">
                         {formatDistanceToNow(new Date(review.created_at), {
