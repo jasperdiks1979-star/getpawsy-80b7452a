@@ -87,6 +87,7 @@ const generateProductJsonLd = (
   product: {
     id: string;
     name: string;
+    slug?: string | null;
     price: number;
     compare_at_price?: number | null;
     image_url?: string | null;
@@ -102,6 +103,9 @@ const generateProductJsonLd = (
     slug: string;
   }
 ) => {
+  // CANONICAL URL: Always use the product's canonical URL, never the bestseller URL
+  // This prevents "Duplicate page without user-selected canonical" in GSC
+  const canonicalProductUrl = `https://getpawsy.pet/product/${product.slug || product.id}`;
   // Use real supplier stock for availability
   const stockVal = product.stock;
   const isActive = product.is_active !== false;
@@ -136,7 +140,7 @@ const generateProductJsonLd = (
     category: product.category || 'Pet Products',
     offers: {
       '@type': 'Offer',
-      url: `https://getpawsy.pet/bestseller/${bestseller.slug}`,
+      url: canonicalProductUrl,
       priceCurrency: 'USD',
       price: product.price.toFixed(2),
       priceValidUntil: priceValidUntilStr,
@@ -333,6 +337,7 @@ const BestsellerDetail = () => {
           products:product_id (
             id,
             name,
+            slug,
             price,
             compare_at_price,
             image_url,
@@ -749,14 +754,17 @@ const BestsellerDetail = () => {
         {bestseller.meta_keywords && (
           <meta name="keywords" content={bestseller.meta_keywords.join(', ')} />
         )}
-        <link rel="canonical" href={`https://getpawsy.pet/bestseller/${bestseller.slug}`} />
+        {/* CANONICAL: Point to the product's canonical URL to prevent GSC "Duplicate without user-selected canonical" */}
+        <link rel="canonical" href={`https://getpawsy.pet/product/${product.slug || product.id}`} />
+        {/* NOINDEX: Bestseller pages are marketing views of canonical products, not separate indexable entities */}
+        <meta name="robots" content="noindex, follow" />
         
         {/* Open Graph */}
         <meta property="og:type" content="product" />
         <meta property="og:title" content={bestseller.hero_headline || product.name} />
         <meta property="og:description" content={bestseller.seo_description || product.description || ''} />
         <meta property="og:image" content={product.image_url || '/og-image.png'} />
-        <meta property="og:url" content={`https://getpawsy.pet/bestseller/${bestseller.slug}`} />
+        <meta property="og:url" content={`https://getpawsy.pet/product/${product.slug || product.id}`} />
         <meta property="product:price:amount" content={product.price.toFixed(2)} />
         <meta property="product:price:currency" content="USD" />
         
