@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText, Bell, Send, Target, Magnet, Wrench, History, Copy, Truck, Upload } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText, Bell, Send, Target, Magnet, Wrench, History, Copy, Truck, Upload, Star } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
@@ -50,6 +50,7 @@ const ContentScraperTool = lazy(() => import("@/components/admin/content-scraper
 const SupplierImportManager = lazy(() => import("@/components/admin/SupplierImportManager").then(module => ({ default: module.SupplierImportManager })));
 const ABTestDashboard = lazy(() => import("@/components/admin/ABTestDashboard"));
 const GrowthAnalyticsDashboard = lazy(() => import("@/components/admin/GrowthAnalyticsDashboard"));
+const ReviewModerationManager = lazy(() => import("@/components/admin/ReviewModerationManager").then(module => ({ default: module.ReviewModerationManager })));
 const AdvancedVisitorStatsWidget = lazy(() => import("@/components/admin/widgets/AdvancedVisitorStatsWidget").then(module => ({ default: module.AdvancedVisitorStatsWidget })));
 const PinterestTrafficWidget = lazy(() => import("@/components/admin/widgets/PinterestTrafficWidget").then(module => ({ default: module.PinterestTrafficWidget })));
 const PinterestAdsWidget = lazy(() => import("@/components/admin/widgets/PinterestAdsWidget").then(module => ({ default: module.PinterestAdsWidget })));
@@ -1420,6 +1421,12 @@ const Admin = () => {
                 <TabsTrigger value="growth" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
                   <Target className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">Growth</span>
+                </TabsTrigger>
+              </TouchTooltip>
+              <TouchTooltip content="Review moderatie">
+                <TabsTrigger value="reviews" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
+                  <Star className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Reviews</span>
                 </TabsTrigger>
               </TouchTooltip>
             </TabsList>
@@ -3200,6 +3207,22 @@ const Admin = () => {
                 </Card>
               }>
                 <GrowthAnalyticsDashboard />
+              </Suspense>
+            </AuthErrorBoundary>
+          </TabsContent>
+
+          {/* Reviews Moderation Tab */}
+          <TabsContent value="reviews" className="space-y-6">
+            <AuthErrorBoundary>
+              <Suspense fallback={
+                <Card className="p-8">
+                  <div className="flex items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Reviews laden...</span>
+                  </div>
+                </Card>
+              }>
+                <ReviewModerationManager />
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>
