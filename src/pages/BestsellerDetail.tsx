@@ -1102,7 +1102,7 @@ const BestsellerDetail = () => {
                   </div>
                 )}
 
-                {/* Stock Status - Urgency */}
+                {/* Stock Status */}
                 <motion.div 
                   className={`flex items-center gap-3 p-4 rounded-xl ${
                     inStock 
@@ -1124,12 +1124,6 @@ const BestsellerDetail = () => {
                         <span className="text-sm text-green-700 dark:text-green-400 font-semibold">
                           In Stock - Ready to Ship
                         </span>
-                        {stockValue !== null && stockValue !== undefined && stockValue > 0 && stockValue < 10 && (
-                          <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1 mt-0.5">
-                            <Timer className="w-3 h-3" />
-                            Only {stockValue} left - Order soon!
-                          </p>
-                        )}
                       </div>
                       <Zap className="w-5 h-5 text-green-500" />
                     </>
