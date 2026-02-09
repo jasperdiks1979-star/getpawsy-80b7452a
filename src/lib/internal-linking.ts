@@ -48,11 +48,13 @@ const categoryKeywords: Record<string, string[]> = {
   // Cat categories
   'cats': ['cat', 'cats', 'kitten', 'kittens', 'feline', 'felines', 'kitty', 'kitties', 'indoor cat', 'pet cat', 'cat owner', 'cat parent', 'cat care'],
   'cat-beds': ['cat bed', 'cat beds', 'cat cushion', 'cat hammock', 'window perch', 'cat cave', 'heated cat bed', 'cozy cat bed', 'cat sleeping'],
-  'cat-trees-and-condos': ['cat tree', 'cat trees', 'scratching post', 'scratch post', 'cat tower', 'cat condo', 'climbing tower', 'cat furniture', 'cat playground', 'vertical space', 'climbing structure'],
+  'cat-trees-and-condos': ['cat tree', 'cat trees', 'scratching post', 'scratch post', 'cat tower', 'cat towers', 'cat condo', 'cat condos', 'climbing tower', 'cat furniture', 'cat playground', 'vertical space', 'climbing structure', 'cat tree house', 'tree for cats', 'pear wood cat tree'],
   'cat-furniture': ['cat furniture', 'cat shelf', 'cat shelves', 'wall mounted', 'cat perch', 'cat bridge', 'cat climbing'],
   'cat-litter-boxes': ['litter box', 'litter boxes', 'automatic litter box', 'self-cleaning litter box', 'cat litter', 'litter tray', 'enclosed litter box', 'covered litter box', 'smart litter box', 'odor control', 'clumping litter', 'crystal litter', 'natural litter'],
   'cat-scratching-posts': ['scratching post', 'scratch pad', 'cardboard scratcher', 'sisal post', 'cat scratcher', 'scratching behavior', 'claw maintenance'],
   'cat-toys': ['chase toy', 'cat toy', 'cat toys', 'feather toy', 'laser pointer', 'interactive toy', 'wand toy', 'mouse toy', 'cat playtime', 'hunting instinct'],
+  'cat-carriers': ['cat carrier', 'portable cat carrier', 'soft-sided cat carrier', 'cat kennel', 'travel pet crate', 'cat travel crate', 'airline approved cat carrier'],
+  'cat-houses': ['cat house', 'cat houses', 'cat igloo', 'indoor cat house', 'cat shelter'],
   
   // Bird categories
   'birds': ['bird', 'birds', 'parrot', 'parrots', 'parakeet', 'parakeets', 'cockatiel', 'cockatiels', 'budgie', 'budgies', 'canary', 'canaries', 'finch', 'finches', 'pet bird', 'avian', 'bird owner', 'bird care', 'singing bird'],
@@ -71,9 +73,9 @@ const categoryKeywords: Record<string, string[]> = {
   'hamster-wheels': ['hamster wheel', 'exercise wheel', 'silent wheel', 'running wheel'],
   'rabbits': ['rabbit', 'rabbits', 'bunny', 'bunnies', 'pet rabbit'],
   'rabbit-cages': ['rabbit cage', 'rabbit hutch', 'bunny cage', 'rabbit pen', 'rabbit enclosure'],
-  'guinea-pigs': ['guinea pig', 'guinea pigs', 'cavy', 'cavies'],
-  'guinea-pig-cages': ['guinea pig cage', 'guinea pig habitat', 'cavy cage', 'c&c cage'],
-  'guinea-pig-toys': ['guinea pig toy', 'guinea pig toys', 'hideout', 'tunnel', 'hay feeder'],
+  'guinea-pigs': ['guinea pig', 'guinea pigs', 'cavy', 'cavies', 'guinea pig care', 'pet guinea pig'],
+  'guinea-pig-cages': ['guinea pig cage', 'guinea pig cages', 'guinea pig habitat', 'cavy cage', 'c&c cage', 'guinea pig playpen', 'guinea pig enclosure', 'guinea pig pen', 'guinea pig hutch'],
+  'guinea-pig-toys': ['guinea pig toy', 'guinea pig toys', 'hideout', 'tunnel', 'hay feeder', 'guinea pig enrichment'],
   
   // Reptiles
   'reptiles': ['reptile', 'reptiles', 'lizard', 'lizards', 'gecko', 'geckos', 'bearded dragon', 'bearded dragons', 'snake', 'snakes', 'turtle', 'turtles', 'tortoise', 'tortoises', 'ball python', 'corn snake', 'leopard gecko', 'crested gecko', 'reptile care'],
@@ -84,7 +86,7 @@ const categoryKeywords: Record<string, string[]> = {
   'dog-food-treats': ['pet food', 'dog food', 'treats', 'snacks', 'kibble', 'wet food', 'dry food', 'raw diet', 'premium food', 'grain-free', 'high protein', 'balanced nutrition', 'dog treat', 'training treat', 'dental treat', 'healthy snack', 'natural treat'],
   'cat-food-treats': ['cat food', 'cat treats', 'cat snacks'],
   'dog-bowls-feeders': ['food bowl', 'water bowl', 'feeding bowl', 'slow feeder', 'automatic feeder', 'smart feeder', 'elevated bowl', 'stainless steel bowl', 'portion control', 'feeding schedule', 'water fountain', 'pet fountain', 'water dispenser', 'drinking fountain', 'filtered water', 'fresh water', 'hydration'],
-  'dog-toys': ['pet toy', 'pet toys', 'interactive toy', 'puzzle toy', 'enrichment toy', 'chew toy', 'squeaky toy', 'plush toy', 'rope toy', 'ball toy', 'mental stimulation', 'physical exercise', 'dog toy'],
+  'dog-toys': ['pet toy', 'pet toys', 'interactive toy', 'puzzle toy', 'enrichment toy', 'chew toy', 'squeaky toy', 'plush toy', 'rope toy', 'ball toy', 'mental stimulation', 'physical exercise', 'dog toy', 'dog enrichment toys', 'interactive dog games', 'outdoor dog games'],
   'pet-beds': ['pet bed', 'pet beds', 'sleeping pad', 'pet cushion', 'cozy bed', 'washable bed', 'waterproof bed'],
   'pet-houses': ['pet house', 'pet shelter', 'outdoor house', 'indoor house', 'dog house', 'cat house', 'outdoor shelter'],
   'dog-grooming': ['grooming', 'pet grooming', 'brush', 'brushing', 'comb', 'nail clipper', 'nail trimmer', 'nail grinder', 'shampoo', 'conditioner', 'deshedding', 'grooming kit', 'fur care', 'coat care', 'mat removal', 'ear cleaning', 'dental care', 'deshedding tool', 'fur remover', 'lint roller', 'pet hair brush', 'undercoat rake'],
@@ -112,6 +114,10 @@ const seoCollectionKeywords: Record<string, string[]> = {
     'no spill dog bowls', 'no-spill dog bowl', 'elevated dog bowls', 'mess free dog feeder',
     'slow feeder dog bowl', 'anti-splash water bowl', 'raised dog bowl', 'spill-proof dog dishes',
     'messy dog mealtime', 'dog gulping food', 'slow down dog eating'
+  ],
+  'guinea-pig-cages-playpens': [
+    'guinea pig cage', 'guinea pig cages', 'guinea pig playpen', 'guinea pig enclosure',
+    'guinea pig habitat', 'cavy cage', 'c&c cage', 'guinea pig pen', 'guinea pig hutch'
   ]
 };
 
@@ -209,13 +215,35 @@ const productPhrases: Record<string, string> = {
   'deshedding brush': 'dog-grooming',
   'slicker brush': 'dog-grooming',
   
-  // Small pet bedding
+  // Small pet bedding & enclosures
   'small pet bedding': 'small-pets',
   'hamster bedding': 'hamsters',
   'rabbit bedding': 'rabbits',
   'guinea pig bedding': 'guinea-pigs',
+  'guinea pig playpen': 'guinea-pig-cages',
+  'guinea pig enclosure': 'guinea-pig-cages',
+  'guinea pig hutch': 'guinea-pig-cages',
   'pet bedding': 'small-pets',
   'enclosure': 'small-pets',
+  
+  // Cat carriers (target keywords)
+  'portable cat carrier': 'cat-carriers',
+  'soft-sided cat carrier': 'cat-carriers',
+  'cat kennel': 'cat-carriers',
+  'travel pet crate': 'cat-carriers',
+  'cat travel carrier': 'cat-carriers',
+  
+  // Cat trees target keywords
+  'pear wood cat tree': 'cat-trees-and-condos',
+  'cat tree house': 'cat-trees-and-condos',
+  'tree for cats': 'cat-trees-and-condos',
+  'cat condo': 'cat-trees-and-condos',
+  'cat condos': 'cat-trees-and-condos',
+  
+  // Dog enrichment target keywords
+  'dog enrichment toys': 'dog-toys',
+  'interactive dog games': 'dog-toys',
+  'outdoor dog games': 'dog-toys',
 };
 
 // Common stop words to exclude from keyword extraction

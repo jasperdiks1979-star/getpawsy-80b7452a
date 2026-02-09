@@ -173,7 +173,7 @@ const Products = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select('id, name, slug, parent_id, image_url')
+        .select('id, name, slug, parent_id, image_url, description')
         .order('name');
       
       if (error) throw error;
@@ -569,7 +569,30 @@ const Products = () => {
     return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
+  // Get category description for SEO intro
+  const getCategoryDescription = (slug: string): string | null => {
+    const category = categories?.find(c => c.slug === slug || c.name.toLowerCase() === slug.toLowerCase());
+    return category?.description || null;
+  };
+
   const categoryDisplayName = categoryParam ? getCategoryDisplayName(categoryParam) : null;
+  const categoryDescription = categoryParam ? getCategoryDescription(categoryParam) : null;
+
+  // SEO-optimized H1 titles for target keyword categories
+  const seoH1Overrides: Record<string, string> = {
+    'guinea-pig-cages': 'Guinea Pig Cages & Playpens',
+    'cat-trees-and-condos': 'Cat Trees, Condos & Towers',
+    'dog-toys': 'Dog Toys & Enrichment Games',
+    'cat-carriers': 'Cat Carriers & Travel Crates',
+    'dog-carriers': 'Dog Carriers & Portable Travel Crates',
+    'guinea-pig-toys': 'Guinea Pig Toys & Enrichment',
+    'cat-houses': 'Cat Houses & Indoor Shelters',
+    'cat-toys': 'Cat Toys & Interactive Games',
+  };
+
+  const categoryH1 = categoryParam && seoH1Overrides[categoryParam]
+    ? seoH1Overrides[categoryParam]
+    : categoryDisplayName;
 
   // Generate dynamic SEO content
   const pageTitle = categoryDisplayName 
@@ -657,9 +680,14 @@ const Products = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            {categoryDisplayName || (searchQuery ? `Search: "${searchQuery}"` : 'All Products')}
+            {categoryH1 || (searchQuery ? `Search: "${searchQuery}"` : 'All Products')}
           </h1>
-          <p className="text-muted-foreground">
+          {categoryDescription && (
+            <p className="text-muted-foreground leading-relaxed max-w-3xl mb-3">
+              {categoryDescription}
+            </p>
+          )}
+          <p className="text-sm text-muted-foreground">
             Showing {displayCount > totalCount ? totalCount : displayCount} of {totalCount} product{totalCount !== 1 ? 's' : ''}
           </p>
         </div>
