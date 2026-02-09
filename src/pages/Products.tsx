@@ -24,6 +24,7 @@ import { useProductRatings } from '@/hooks/useProductRatings';
 import { CategorySchema } from '@/components/seo/CategorySchema';
 import { generateCategoryMetaDescription, getKeywordsForCategory } from '@/lib/seo-keywords';
 import { trackViewItemList } from '@/lib/analytics';
+import { dedupeProducts } from '@/lib/dedupe-products';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -118,17 +119,7 @@ const Products = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      
-      // Dedupe safety guard: ensure one product per dedupe_key
-      if (!data) return data;
-      const seen = new Set<string>();
-      return data.filter(p => {
-        const key = (p as any).dedupe_key;
-        if (!key) return true; // no dedupe_key = unique
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      return dedupeProducts(data || []);
     },
   });
 

@@ -10,6 +10,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
 import { supabase } from '@/integrations/supabase/client';
+import { dedupeProducts } from '@/lib/dedupe-products';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { CarouselApi } from '@/components/ui/carousel';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
@@ -194,7 +195,7 @@ const Index = () => {
         .limit(12);
       
       if (error) throw error;
-      return data;
+      return dedupeProducts(data || []);
     },
   });
 

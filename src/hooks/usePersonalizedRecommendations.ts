@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { dedupeProducts } from '@/lib/dedupe-products';
 import { useRecentlyViewed } from './useRecentlyViewed';
 import { useUserPurchaseHistory, getCategoryPreferences, getPurchasedProductIds } from './useUserPurchaseHistory';
 
@@ -242,7 +243,7 @@ export const usePersonalizedRecommendations = ({
         }
       }
 
-      return scoredProducts;
+      return dedupeProducts(scoredProducts);
     },
     enabled: enabled && !!currentProductId,
     staleTime: 3 * 60 * 1000, // 3 minutes (shorter for personalized content)

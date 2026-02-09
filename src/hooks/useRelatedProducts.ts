@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { dedupeProducts } from '@/lib/dedupe-products';
 
 interface ProductPublic {
   id: string;
@@ -189,7 +190,7 @@ export const useRelatedProducts = ({
         }
       }
 
-      return scoredProducts;
+      return dedupeProducts(scoredProducts);
     },
     enabled: enabled && !!productId,
     staleTime: 10 * 60 * 1000, // 10 minutes - increased for better caching
