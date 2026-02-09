@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { dedupeProducts } from '@/lib/dedupe-products';
 
 interface RecentlyViewedProduct {
   id: string;
@@ -56,7 +57,7 @@ export const useRecentlyViewedProducts = ({
         idsToFetch.indexOf(a.id) - idsToFetch.indexOf(b.id)
       );
 
-      return sortedProducts as RecentlyViewedProduct[];
+      return dedupeProducts(sortedProducts) as RecentlyViewedProduct[];
     },
     enabled: recentlyViewedIds.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes - balance freshness with performance
