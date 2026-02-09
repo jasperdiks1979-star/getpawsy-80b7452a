@@ -65,7 +65,7 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
 
       if (error) throw error;
 
-      toast.success('Thanks for your review! 🎉');
+      toast.success('Thanks for your review! It will appear after moderation. 🎉');
       setRating(0);
       setTitle('');
       setContent('');

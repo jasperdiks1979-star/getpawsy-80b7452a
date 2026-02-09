@@ -26,8 +26,6 @@ interface ProductSchemaProps {
 
 export function ProductSchema({ 
   product, 
-  // Reviews prop kept for API compatibility but not used in schema
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   reviews = [],
   baseUrl = 'https://getpawsy.pet'
 }: ProductSchemaProps) {
@@ -43,9 +41,30 @@ export function ProductSchema({
     ? rawDescription 
     : `Shop ${product.name} at GetPawsy. Premium quality pet product designed for comfort and durability. Fast US shipping, 30-day hassle-free returns.`;
 
-  // NOTE: Reviews/ratings intentionally removed from structured data
-  // Google requires real customer reviews - no placeholders or fake data
-  // Will be re-enabled when real review system is implemented
+  // Build real review structured data ONLY when approved reviews exist
+  const hasRealReviews = reviews.length > 0;
+  const aggregateRating = hasRealReviews ? {
+    '@type': 'AggregateRating',
+    ratingValue: (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1),
+    reviewCount: reviews.length,
+    bestRating: '5',
+    worstRating: '1',
+  } : undefined;
+
+  const reviewSchema = hasRealReviews ? reviews.slice(0, 10).map((r) => ({
+    '@type': 'Review',
+    reviewRating: {
+      '@type': 'Rating',
+      ratingValue: r.rating,
+      bestRating: 5,
+      worstRating: 1,
+    },
+    reviewBody: r.content || r.title || '',
+    author: {
+      '@type': 'Person',
+      name: 'Verified Buyer',
+    },
+  })) : undefined;
 
   // Generate keywords
   const keywords = generateProductKeywords(
@@ -144,9 +163,9 @@ export function ProductSchema({
         },
       },
     },
-    // FUTURE: Add when real customer reviews are available:
-    // aggregateRating: { '@type': 'AggregateRating', ratingValue: X, reviewCount: Y, bestRating: 5, worstRating: 1 }
-    // review: [{ '@type': 'Review', author: { '@type': 'Person', name: '...' }, reviewRating: { '@type': 'Rating', ratingValue: X }, reviewBody: '...' }]
+    // Only include when real approved reviews exist — no placeholders
+    ...(aggregateRating ? { aggregateRating } : {}),
+    ...(reviewSchema ? { review: reviewSchema } : {}),
   };
 
   // WebPage schema for product page

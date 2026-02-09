@@ -2764,8 +2764,11 @@ export type Database = {
           created_at: string
           helpful_count: number
           id: string
+          is_approved: boolean
+          is_verified_buyer: boolean
           product_id: string
           rating: number
+          reviewer_name: string | null
           title: string
           updated_at: string
           user_id: string
@@ -2775,8 +2778,11 @@ export type Database = {
           created_at?: string
           helpful_count?: number
           id?: string
+          is_approved?: boolean
+          is_verified_buyer?: boolean
           product_id: string
           rating: number
+          reviewer_name?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -2786,8 +2792,11 @@ export type Database = {
           created_at?: string
           helpful_count?: number
           id?: string
+          is_approved?: boolean
+          is_verified_buyer?: boolean
           product_id?: string
           rating?: number
+          reviewer_name?: string | null
           title?: string
           updated_at?: string
           user_id?: string

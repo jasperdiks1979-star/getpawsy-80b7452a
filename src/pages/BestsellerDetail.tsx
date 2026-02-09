@@ -101,7 +101,8 @@ const generateProductJsonLd = (
     seo_description?: string | null;
     hero_headline?: string | null;
     slug: string;
-  }
+  },
+  reviews: Array<{ rating: number; title: string; content: string | null }> = []
 ) => {
   // CANONICAL URL: Always use the product's canonical URL, never the bestseller URL
   // This prevents "Duplicate page without user-selected canonical" in GSC
@@ -215,9 +216,28 @@ const generateProductJsonLd = (
           }
         }
       ]
-    }
-    // NOTE: aggregateRating and review fields intentionally omitted
-    // Google requires real customer reviews - will be added when available
+    },
+    // Conditionally add real review data when approved reviews exist
+    ...(reviews.length > 0 ? {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1),
+        reviewCount: reviews.length,
+        bestRating: '5',
+        worstRating: '1',
+      },
+      review: reviews.slice(0, 10).map((r) => ({
+        '@type': 'Review',
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: r.rating,
+          bestRating: 5,
+          worstRating: 1,
+        },
+        reviewBody: r.content || r.title || '',
+        author: { '@type': 'Person', name: 'Verified Buyer' },
+      })),
+    } : {}),
   };
 };
 
@@ -443,6 +463,7 @@ const BestsellerDetail = () => {
         .from('product_reviews')
         .select('*')
         .eq('product_id', product.id)
+        .eq('is_approved', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -738,8 +759,8 @@ const BestsellerDetail = () => {
     ? Math.round((1 - product.price / product.compare_at_price) * 100)
     : 0;
 
-  // Generate structured data (reviews omitted per Google compliance)
-  const productJsonLd = generateProductJsonLd(product, bestseller);
+  // Generate structured data with real reviews when available
+  const productJsonLd = generateProductJsonLd(product, bestseller, reviews);
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(product.name, bestseller.slug);
 
   return (
