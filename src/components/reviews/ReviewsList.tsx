@@ -1,4 +1,4 @@
-import { Star, User, ThumbsUp, Trash2, BadgeCheck } from 'lucide-react';
+import { Star, User, ThumbsUp, Trash2, BadgeCheck, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -67,11 +67,11 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
         className="text-center py-12"
       >
         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-          <Star className="w-8 h-8 text-muted-foreground" />
+          <MessageSquare className="w-8 h-8 text-muted-foreground" />
         </div>
         <h4 className="font-semibold text-foreground mb-2">No reviews yet</h4>
         <p className="text-muted-foreground mb-4">
-          Be the first to share your experience with this product!
+          Be the first to review this product.
         </p>
         <p className="text-sm text-muted-foreground/70">
           Your honest feedback helps other pet parents make informed decisions.
