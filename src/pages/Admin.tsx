@@ -43,6 +43,7 @@ const DisputeManager = lazy(() => import("@/components/admin/DisputeManager"));
 const CJWebhookManager = lazy(() => import("@/components/admin/CJWebhookManager"));
 const PackagingManager = lazy(() => import("@/components/admin/PackagingManager"));
 const WarehouseShippingAudit = lazy(() => import("@/components/admin/WarehouseShippingAudit"));
+const OosResyncAudit = lazy(() => import("@/components/admin/OosResyncAudit"));
 const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRankingTracker").then(module => ({ default: module.KeywordRankingTracker })));
 const ProductResearchTool = lazy(() => import("@/components/admin/product-research/ProductResearchTool").then(module => ({ default: module.ProductResearchTool })));
 const ContentScraperTool = lazy(() => import("@/components/admin/content-scraper/ContentScraperTool").then(module => ({ default: module.ContentScraperTool })));
@@ -3100,6 +3101,9 @@ const Admin = () => {
                 </Card>
               }>
                 <WarehouseShippingAudit />
+                <div className="mt-8">
+                  <OosResyncAudit />
+                </div>
               </Suspense>
             </AuthErrorBoundary>
           </TabsContent>

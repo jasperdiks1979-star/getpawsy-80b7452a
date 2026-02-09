@@ -143,3 +143,6 @@ verify_jwt = false
 
 [functions.shopping-assistant]
 verify_jwt = false
+
+[functions.resync-oos-products]
+verify_jwt = false
