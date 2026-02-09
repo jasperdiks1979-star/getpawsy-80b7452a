@@ -33,16 +33,21 @@ export const GlobalVisitorTracker = () => {
   useEffect(() => {
     const path = location.pathname;
 
+    // Send SPA page_view to all gtag configs (GA4, Ads, GT)
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'page_view', {
+        page_location: window.location.href,
+        page_path: path,
+        page_title: document.title,
+      });
+    }
+
     // Determine activity type based on current route
     if (path === '/checkout') {
-      // BeginCheckout funnel event
       trackCheckout();
     } else if (path === '/cart') {
-      // ViewCart funnel event
       trackViewCart();
     } else {
-      // All other pages count as browsing with specific path
-      // Note: product_view is tracked separately on PDP pages with product details
       trackBrowsing(path);
     }
   }, [location.pathname, trackBrowsing, trackViewCart, trackCheckout]);
