@@ -248,6 +248,66 @@ export const SEO_CONTENT_CLUSTERS: ContentCluster[] = [
       'dog beds',
     ],
   },
+
+  // ============= GUINEA PIG CARE CLUSTER =============
+  {
+    name: 'Guinea Pig Care',
+    pillarSlug: 'guinea-pig-cages-playpens',
+    pillarKeyword: 'guinea pig cage',
+    secondaryKeywords: [
+      'guinea pig playpen',
+      'guinea pig enclosure',
+      'guinea pig habitat',
+      'cavy cage',
+      'guinea pig setup',
+    ],
+    blogTopics: [
+      {
+        slug: 'how-to-choose-the-right-guinea-pig-cage',
+        title: 'How to Choose the Right Guinea Pig Cage',
+        targetKeyword: 'guinea pig cage',
+        searchIntent: 'commercial',
+        linkedCollection: 'guinea-pig-cages-playpens',
+      },
+    ],
+    internalLinkAnchors: [
+      'guinea pig cage',
+      'guinea pig cages',
+      'guinea pig playpen',
+      'guinea pig enclosure',
+      'cavy cage',
+    ],
+  },
+
+  // ============= CAT CARRIERS & TRAVEL CLUSTER =============
+  {
+    name: 'Cat Travel',
+    pillarSlug: 'cat-carriers',
+    pillarKeyword: 'cat carrier',
+    secondaryKeywords: [
+      'portable cat carrier',
+      'soft-sided cat carrier',
+      'cat kennel',
+      'travel pet crate',
+      'airline approved carrier',
+    ],
+    blogTopics: [
+      {
+        slug: 'how-to-choose-a-cat-carrier-for-travel',
+        title: 'How to Choose a Cat Carrier for Safe, Stress-Free Travel',
+        targetKeyword: 'cat carrier',
+        searchIntent: 'commercial',
+        linkedCollection: 'cat-carriers',
+      },
+    ],
+    internalLinkAnchors: [
+      'cat carrier',
+      'portable cat carrier',
+      'soft-sided cat carrier',
+      'travel pet crate',
+      'cat kennel',
+    ],
+  },
 ];
 
 // ============= INTERNAL LINKING RULES =============

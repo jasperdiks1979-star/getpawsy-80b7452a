@@ -64,6 +64,60 @@ export const LONGTAIL_KEYWORDS = {
     ],
     relatedCollection: '/collections/no-spill-dog-feeding',
   },
+
+  // NICHE 4: GUINEA PIG CAGES & PLAYPENS
+  guineaPigCages: {
+    primary: 'guinea pig cage',
+    keywords: [
+      'guinea pig cage',
+      'guinea pig cages',
+      'guinea pig playpen',
+      'guinea pig enclosure',
+      'guinea pig habitat',
+      'c&c cage guinea pig',
+      'guinea pig cage setup',
+      'best guinea pig cage',
+      'guinea pig hutch indoor',
+      'guinea pig pen',
+    ],
+    relatedCollection: '/collections/guinea-pig-cages-playpens',
+  },
+
+  // NICHE 5: CAT CARRIERS & TRAVEL
+  catCarriers: {
+    primary: 'cat carrier',
+    keywords: [
+      'portable cat carrier',
+      'soft-sided cat carrier',
+      'cat kennel',
+      'travel pet crate',
+      'airline approved cat carrier',
+      'expandable cat carrier',
+      'cat travel crate',
+      'cat carrier for vet',
+      'two cat carrier',
+      'cat carrier backpack',
+    ],
+    relatedCollection: '/products?category=cat-carriers',
+  },
+
+  // NICHE 6: DOG ENRICHMENT & GAMES
+  dogEnrichment: {
+    primary: 'dog enrichment toys',
+    keywords: [
+      'dog enrichment toys',
+      'interactive dog games',
+      'outdoor dog games',
+      'dog puzzle toys',
+      'mental stimulation for dogs',
+      'dog brain games',
+      'snuffle mat for dogs',
+      'dog foraging toys',
+      'boredom busters for dogs',
+      'dog activity toys',
+    ],
+    relatedCollection: '/products?category=dog-toys',
+  },
 } as const;
 
 /**
