@@ -201,6 +201,16 @@ const GuidePage = () => {
           <p className="text-lg text-muted-foreground mt-4">{guide.excerpt}</p>
         </header>
 
+        {/* Quick Answer Snippet */}
+        {guide.quickAnswer && (
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 mb-8">
+            <h2 className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">
+              ✅ Quick Answer
+            </h2>
+            <p className="text-foreground leading-relaxed text-[15px]">{guide.quickAnswer}</p>
+          </div>
+        )}
+
         {/* Quick Recommendation Box */}
         {guide.quickRecommendation && (
           <QuickRecommendation data={guide.quickRecommendation} />

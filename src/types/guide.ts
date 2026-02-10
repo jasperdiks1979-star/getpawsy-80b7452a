@@ -67,4 +67,5 @@ export interface GuideData extends GuideMeta {
   commonMistakes?: GuideCommonMistake[];
   quickRecommendation?: QuickRecommendation;
   comparisonProducts?: ComparisonProduct[];
+  quickAnswer?: string;
 }
