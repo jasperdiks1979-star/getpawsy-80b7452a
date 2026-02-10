@@ -7,13 +7,13 @@ const corsHeaders = {
   "X-Content-Served-Identically": "true",
 };
 
-// Guide slugs for sitemap (must match public/data/guides/index.json)
-const GUIDE_SLUGS = [
-  "how-to-choose-guinea-pig-cage",
-  "guinea-pig-cage-vs-playpen",
-  "cat-condo-vs-cat-tower",
-  "choosing-safe-cat-tree-indoor",
-  "outdoor-dog-games-enrichment",
+// Guide data with lastmod dates (synced from public/data/guides/index.json)
+const GUIDES: Array<{ slug: string; updatedAt: string }> = [
+  { slug: "how-to-choose-guinea-pig-cage", updatedAt: "2026-02-10" },
+  { slug: "guinea-pig-cage-vs-playpen", updatedAt: "2026-02-10" },
+  { slug: "cat-condo-vs-cat-tower", updatedAt: "2026-02-10" },
+  { slug: "choosing-safe-cat-tree-indoor", updatedAt: "2026-02-10" },
+  { slug: "outdoor-dog-games-enrichment", updatedAt: "2026-02-10" },
 ];
 
 const BASE_URL = "https://getpawsy.pet";
@@ -506,23 +506,24 @@ function generateBlogSitemap(posts: BlogPost[], today: string): string {
 function generateGuidesSitemap(today: string): string {
   let urls = `
   <url>
-    <loc>${BASE_URL}/guides</loc>
+    <loc>${BASE_URL}/guides/</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
 
-  for (const slug of GUIDE_SLUGS) {
+  for (const guide of GUIDES) {
+    const lastmod = guide.updatedAt || today;
     urls += `
   <url>
-    <loc>${BASE_URL}/guides/${slug}</loc>
-    <lastmod>${today}</lastmod>
+    <loc>${BASE_URL}/guides/${guide.slug}/</loc>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>`;
   }
 
-  console.log(`Guides sitemap: ${GUIDE_SLUGS.length} guides`);
+  console.log(`Guides sitemap: ${GUIDES.length} guides`);
 
   return `${xmlHeader()}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}

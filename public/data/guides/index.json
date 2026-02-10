@@ -6,9 +6,9 @@
     "category": "Small Pets",
     "keywords": ["guinea pig cage", "guinea pig cages"],
     "publishedAt": "2025-06-15",
-    "updatedAt": "2025-06-15",
+    "updatedAt": "2026-02-10",
     "featuredImage": "/images/guides/guinea-pig-cage.jpg",
-    "readingTime": 8,
+    "readingTime": 10,
     "relatedCategories": ["small-pet-habitats"]
   },
   {
@@ -18,9 +18,9 @@
     "category": "Small Pets",
     "keywords": ["guinea pig cage", "guinea pig playpen"],
     "publishedAt": "2025-06-18",
-    "updatedAt": "2025-06-18",
+    "updatedAt": "2026-02-10",
     "featuredImage": "/images/guides/guinea-pig-playpen.jpg",
-    "readingTime": 7,
+    "readingTime": 8,
     "relatedCategories": ["small-pet-habitats"]
   },
   {
@@ -30,9 +30,9 @@
     "category": "Cat Furniture",
     "keywords": ["cat condo", "cat condos", "cat tower"],
     "publishedAt": "2025-06-20",
-    "updatedAt": "2025-06-20",
+    "updatedAt": "2026-02-10",
     "featuredImage": "/images/guides/cat-condo-tower.jpg",
-    "readingTime": 7,
+    "readingTime": 8,
     "relatedCategories": ["cat-trees-and-condos", "cat-furniture"]
   },
   {
@@ -42,9 +42,9 @@
     "category": "Cat Furniture",
     "keywords": ["cat tree house", "tree for cats"],
     "publishedAt": "2025-06-22",
-    "updatedAt": "2025-06-22",
+    "updatedAt": "2026-02-10",
     "featuredImage": "/images/guides/cat-tree-indoor.jpg",
-    "readingTime": 9,
+    "readingTime": 10,
     "relatedCategories": ["cat-trees-and-condos"]
   },
   {
@@ -54,9 +54,9 @@
     "category": "Dog Activities",
     "keywords": ["outdoor dog games"],
     "publishedAt": "2025-06-25",
-    "updatedAt": "2025-06-25",
+    "updatedAt": "2026-02-10",
     "featuredImage": "/images/guides/outdoor-dog-games.jpg",
-    "readingTime": 8,
+    "readingTime": 9,
     "relatedCategories": ["dog-toys", "dog-outdoor"]
   }
 ]

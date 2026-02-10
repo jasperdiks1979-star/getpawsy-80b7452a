@@ -106,6 +106,7 @@ Crawl-delay: 2
 # These serve raw XML directly without JavaScript rendering
 # =====================================================
 
+Sitemap: https://getpawsy.pet/sitemap.xml
 Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=index
 Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=static
 Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=products
@@ -113,6 +114,7 @@ Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?
 Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=bestsellers
 Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=collections
 Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=blog
+Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=guides
 
 # =====================================================
 # DISALLOWED PATHS (Private/Admin pages)

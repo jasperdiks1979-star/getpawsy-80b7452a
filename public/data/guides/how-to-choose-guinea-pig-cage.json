@@ -5,9 +5,9 @@
   "category": "Small Pets",
   "keywords": ["guinea pig cage", "guinea pig cages"],
   "publishedAt": "2025-06-15",
-  "updatedAt": "2025-06-15",
+  "updatedAt": "2026-02-10",
   "featuredImage": "/images/guides/guinea-pig-cage.jpg",
-  "readingTime": 8,
+  "readingTime": 10,
   "relatedCategories": ["small-pet-habitats"],
   "sections": [
     {
@@ -31,6 +31,51 @@
       "content": "A good cage setup includes more than just the enclosure itself. Essential accessories include:\n\n- **Water bottle or bowl**: A drip-free water bottle mounted on the cage wall is the most hygienic option.\n- **Hay rack**: Keeps timothy hay clean and accessible (hay should make up 80% of their diet).\n- **Hiding spots**: Guinea pigs need at least one hide per pig to feel secure.\n- **Bedding**: Paper-based or fleece bedding is recommended. Avoid cedar or pine shavings.\n- **Food bowl**: A heavy ceramic bowl prevents tipping."
     }
   ],
+  "buyingCriteria": {
+    "title": "Key Buying Criteria for Guinea Pig Cages",
+    "criteria": [
+      { "name": "Floor Space", "description": "Minimum 7.5 sq ft for one pig, 10.5 sq ft for two. More is always better." },
+      { "name": "Material Safety", "description": "Powder-coated wire, non-toxic plastics, or untreated wood only." },
+      { "name": "Ventilation", "description": "Open-top or wire-top designs prevent ammonia buildup from urine." },
+      { "name": "Ease of Cleaning", "description": "Removable base trays and smooth surfaces make weekly cleaning manageable." },
+      { "name": "Bar Spacing", "description": "No wider than 1 inch to prevent escapes and injuries." },
+      { "name": "Expandability", "description": "C&C cages allow future expansion if you add more guinea pigs." }
+    ]
+  },
+  "prosAndCons": {
+    "pros": [
+      "C&C cages offer the best size-to-price ratio and are fully customizable",
+      "Wire-top cages are widely available at most pet stores and easy to set up",
+      "Indoor placement provides stable temperatures and better bonding opportunities",
+      "Proper cage sizing dramatically reduces stress-related health issues",
+      "Many modern cages include built-in storage underneath for supplies"
+    ],
+    "cons": [
+      "Large cages take up significant floor space in your home",
+      "Quality enclosures can be expensive upfront ($50–$200+)",
+      "C&C cages require assembly time and basic DIY skills",
+      "Wooden hutches are difficult to sanitize and can harbor bacteria",
+      "Most pet store cages are too small and need upgrading"
+    ]
+  },
+  "commonMistakes": [
+    {
+      "mistake": "Buying a cage that's too small",
+      "whyItMatters": "Most pet store cages marketed for guinea pigs don't meet minimum size requirements. Undersized cages lead to obesity, depression, and aggression."
+    },
+    {
+      "mistake": "Using wire flooring without a solid cover",
+      "whyItMatters": "Wire floors cause bumblefoot (pododermatitis), a painful and potentially serious infection on guinea pig feet."
+    },
+    {
+      "mistake": "Placing the cage in direct sunlight or drafts",
+      "whyItMatters": "Guinea pigs are very sensitive to temperature. Heatstroke can occur above 80°F, and cold drafts cause respiratory infections."
+    },
+    {
+      "mistake": "Using cedar or pine shavings as bedding",
+      "whyItMatters": "Aromatic wood shavings release phenols that damage guinea pig respiratory systems. Use paper-based or fleece bedding instead."
+    }
+  ],
   "faq": [
     {
       "question": "What is the minimum cage size for one guinea pig?",
@@ -43,6 +88,14 @@
     {
       "question": "How often should I clean a guinea pig cage?",
       "answer": "Spot-clean daily by removing soiled bedding and uneaten fresh food. Do a full bedding change and cage wipe-down at least once a week, or more frequently for smaller cages."
+    },
+    {
+      "question": "Are multi-level cages good for guinea pigs?",
+      "answer": "Guinea pigs prefer horizontal space over vertical. Multi-level cages are acceptable if ramps are low-angle and have side walls, but the ground floor should still meet minimum size requirements."
+    },
+    {
+      "question": "What's the best bedding for a guinea pig cage?",
+      "answer": "Paper-based bedding (like Carefresh) or washable fleece liners are the safest options. Avoid cedar and pine shavings, which release harmful phenols. Fleece liners are more economical long-term."
     }
   ]
 }
