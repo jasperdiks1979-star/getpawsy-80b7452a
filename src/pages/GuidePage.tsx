@@ -5,6 +5,9 @@ import { Layout } from '@/components/layout/Layout';
 import { useGuide, useGuidesList } from '@/hooks/useGuides';
 import { Loader2 } from 'lucide-react';
 import NotFound from './NotFound';
+import { QuickRecommendation } from '@/components/guides/QuickRecommendation';
+import { ComparisonTable } from '@/components/guides/ComparisonTable';
+import { StickyCTA } from '@/components/guides/StickyCTA';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -166,6 +169,12 @@ const GuidePage = () => {
           <p className="text-lg text-muted-foreground mt-4">{guide.excerpt}</p>
         </header>
 
+        {/* Quick Recommendation Box */}
+        {guide.quickRecommendation && (
+          <QuickRecommendation data={guide.quickRecommendation} />
+        )}
+
+
         {/* Table of Contents */}
         <nav className="bg-muted/50 rounded-xl p-6 mb-10 border border-border">
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
@@ -227,6 +236,11 @@ const GuidePage = () => {
             {renderContent(section.content)}
           </section>
         ))}
+
+        {/* Comparison Table */}
+        {guide.comparisonProducts && guide.comparisonProducts.length > 0 && (
+          <ComparisonTable products={guide.comparisonProducts} />
+        )}
 
         {/* Buying Criteria Block */}
         {guide.buyingCriteria && (
@@ -362,6 +376,14 @@ const GuidePage = () => {
           </section>
         )}
       </article>
+
+      {/* Sticky CTA */}
+      {guide.relatedCategories.length > 0 && (
+        <StickyCTA
+          categorySlug={guide.relatedCategories[0]}
+          categoryLabel={guide.relatedCategories[0].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+        />
+      )}
     </Layout>
   );
 };
