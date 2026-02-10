@@ -47,6 +47,8 @@ import { CompleteTheLook } from '@/components/products/CompleteTheLook';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
 import { CustomersAlsoBought } from '@/components/products/CustomersAlsoBought';
+import { RelatedGuides } from '@/components/guides/RelatedGuides';
+import { useGuidesList } from '@/hooks/useGuides';
 import {
   DELIVERY_TIME_STANDARD,
   TRUST_BADGES,
@@ -270,6 +272,17 @@ const ProductDetail = () => {
   const { data: recentlyViewedProducts, isLoading: recentlyViewedLoading } = useRecentlyViewedProducts({
     recentlyViewedIds,
   });
+
+  // Fetch guides for Related Guides section
+  const { data: allGuides } = useGuidesList();
+  const relatedGuides = useMemo(() => {
+    if (!allGuides || !product?.category) return [];
+    const cat = product.category.toLowerCase();
+    return allGuides.filter((g) =>
+      g.keywords.some((kw) => cat.includes(kw.split(' ')[0])) ||
+      g.relatedCategories.some((rc) => cat.includes(rc.replace(/-/g, ' ').split(' ')[0]))
+    ).slice(0, 3);
+  }, [allGuides, product?.category]);
 
   // Fetch product reviews
   const { data: reviews = [] } = useQuery({
@@ -1326,6 +1339,11 @@ const ProductDetail = () => {
             </div>
           </div>
         </motion.section>
+
+        {/* Related Guides */}
+        {relatedGuides.length > 0 && (
+          <RelatedGuides guides={relatedGuides} />
+        )}
 
         {/* Frequently Bought Together */}
         {(relatedLoading || (relatedProducts && relatedProducts.length >= 2)) && (

@@ -7,6 +7,15 @@ const corsHeaders = {
   "X-Content-Served-Identically": "true",
 };
 
+// Guide slugs for sitemap (must match public/data/guides/index.json)
+const GUIDE_SLUGS = [
+  "how-to-choose-guinea-pig-cage",
+  "guinea-pig-cage-vs-playpen",
+  "cat-condo-vs-cat-tower",
+  "choosing-safe-cat-tree-indoor",
+  "outdoor-dog-games-enrichment",
+];
+
 const BASE_URL = "https://getpawsy.pet";
 // Use edge function URL for sitemap index references (Google can't follow SPA redirects)
 const SITEMAP_BASE_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap";
@@ -78,6 +87,10 @@ Deno.serve(async (req) => {
     switch (type) {
       case "index":
         return new Response(generateSitemapIndex(today), { headers, status: 200 });
+
+      case "guides":
+        return new Response(generateGuidesSitemap(today), { headers, status: 200 });
+
 
       case "static":
         return new Response(generateStaticSitemap(today), { headers, status: 200 });
@@ -195,6 +208,12 @@ function generateSitemapIndex(today: string): string {
   <!-- Blog Posts Sitemap -->
   <sitemap>
     <loc>${SITEMAP_BASE_URL}?type=blog</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
+  
+  <!-- Guides Sitemap -->
+  <sitemap>
+    <loc>${SITEMAP_BASE_URL}?type=guides</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
 </sitemapindex>`;
@@ -481,5 +500,31 @@ function generateBlogSitemap(posts: BlogPost[], today: string): string {
   return `${xmlHeader()}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls}
+</urlset>`;
+}
+
+function generateGuidesSitemap(today: string): string {
+  let urls = `
+  <url>
+    <loc>${BASE_URL}/guides</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+
+  for (const slug of GUIDE_SLUGS) {
+    urls += `
+  <url>
+    <loc>${BASE_URL}/guides/${slug}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+  }
+
+  console.log(`Guides sitemap: ${GUIDE_SLUGS.length} guides`);
+
+  return `${xmlHeader()}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
 </urlset>`;
 }
