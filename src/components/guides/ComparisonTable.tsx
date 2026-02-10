@@ -37,7 +37,16 @@ export function ComparisonTable({ products }: Props) {
                 />
               )}
               <h3 className="font-semibold text-foreground text-sm mb-1">{product.name}</h3>
-              <p className="text-lg font-bold text-foreground mb-3">{product.price}</p>
+              <p className="text-lg font-bold text-foreground mb-1">{product.price}</p>
+              {product.availability && (
+                <span className={`text-xs font-medium mb-3 inline-block ${
+                  product.availability === 'InStock' ? 'text-green-600' :
+                  product.availability === 'PreOrder' ? 'text-amber-600' : 'text-red-600'
+                }`}>
+                  {product.availability === 'InStock' ? '✓ In Stock' :
+                   product.availability === 'PreOrder' ? '⏳ Pre-Order' : '✗ Out of Stock'}
+                </span>
+              )}
               <ul className="space-y-1.5 mb-4 flex-1">
                 {product.advantages.map((adv, j) => (
                   <li key={j} className="flex items-start gap-1.5 text-xs text-muted-foreground">

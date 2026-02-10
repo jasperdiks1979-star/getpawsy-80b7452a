@@ -81,6 +81,30 @@ const GuidePage = () => {
     ],
   };
 
+  // Product schema for comparison products
+  const productSchemas = guide.comparisonProducts?.map((product) => ({
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    image: product.image,
+    description: product.description || product.advantages.join('. '),
+    brand: { '@type': 'Brand', name: 'GetPawsy' },
+    ...(product.sku ? { sku: product.sku } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: parseFloat(product.price.replace(/[^0-9.]/g, '')),
+      priceCurrency: 'USD',
+      availability: `https://schema.org/${product.availability || 'InStock'}`,
+      url: `${BASE_URL}${product.link}`,
+      seller: { '@type': 'Organization', name: 'GetPawsy' },
+    },
+    review: {
+      '@type': 'Review',
+      author: { '@type': 'Organization', name: 'GetPawsy' },
+      reviewRating: { '@type': 'Rating', ratingValue: '4.5', bestRating: '5' },
+    },
+  })) || [];
+
   // Render markdown-like content (bold, paragraphs, lists)
   const renderContent = (content: string) => {
     const paragraphs = content.split('\n\n');
@@ -136,6 +160,9 @@ const GuidePage = () => {
         {faqSchema && (
           <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         )}
+        {productSchemas.length > 0 && productSchemas.map((schema, i) => (
+          <script key={`product-${i}`} type="application/ld+json">{JSON.stringify(schema)}</script>
+        ))}
       </Helmet>
 
       <article className="container mx-auto px-4 py-12 max-w-3xl">
