@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Clock, BookOpen, ChevronRight } from 'lucide-react';
+import { Clock, BookOpen, ChevronRight, ShoppingBag, CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { useGuide, useGuidesList } from '@/hooks/useGuides';
 import { Loader2 } from 'lucide-react';
@@ -27,7 +27,8 @@ const GuidePage = () => {
     return <NotFound />;
   }
 
-  const guideUrl = `${BASE_URL}/guides/${guide.slug}`;
+  // Canonical with trailing slash
+  const guideUrl = `${BASE_URL}/guides/${guide.slug}/`;
 
   // Related guides from same category
   const relatedGuides = allGuides?.filter(
@@ -72,7 +73,7 @@ const GuidePage = () => {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: BASE_URL },
-      { '@type': 'ListItem', position: 2, name: 'Guides', item: `${BASE_URL}/guides` },
+      { '@type': 'ListItem', position: 2, name: 'Guides', item: `${BASE_URL}/guides/` },
       { '@type': 'ListItem', position: 3, name: guide.title, item: guideUrl },
     ],
   };
@@ -81,7 +82,6 @@ const GuidePage = () => {
   const renderContent = (content: string) => {
     const paragraphs = content.split('\n\n');
     return paragraphs.map((para, i) => {
-      // Check if it's a list
       const lines = para.split('\n');
       const isList = lines.every((l) => l.startsWith('- ') || l.startsWith('**') || l.trim() === '');
 
@@ -105,10 +105,12 @@ const GuidePage = () => {
     });
   };
 
-  // Bold and inline formatting
   const formatInline = (text: string) => {
     return text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
   };
+
+  // Updated year badge
+  const updatedYear = guide.updatedAt ? new Date(guide.updatedAt).getFullYear() : new Date().getFullYear();
 
   return (
     <Layout>
@@ -153,6 +155,10 @@ const GuidePage = () => {
               <Clock className="w-3.5 h-3.5" />
               {guide.readingTime} min read
             </span>
+            <span className="flex items-center gap-1.5 bg-accent/60 text-accent-foreground px-2.5 py-0.5 rounded-full text-xs font-medium">
+              <RefreshCw className="w-3 h-3" />
+              Updated for {updatedYear}
+            </span>
           </div>
           <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground leading-tight">
             {guide.title}
@@ -177,6 +183,30 @@ const GuidePage = () => {
                 </a>
               </li>
             ))}
+            {guide.buyingCriteria && (
+              <li>
+                <a href="#buying-criteria" className="text-sm text-primary hover:underline flex items-center gap-2">
+                  <span className="text-muted-foreground text-xs w-5">✓</span>
+                  Buying Criteria
+                </a>
+              </li>
+            )}
+            {guide.prosAndCons && (
+              <li>
+                <a href="#pros-cons" className="text-sm text-primary hover:underline flex items-center gap-2">
+                  <span className="text-muted-foreground text-xs w-5">±</span>
+                  Pros &amp; Cons
+                </a>
+              </li>
+            )}
+            {guide.commonMistakes && guide.commonMistakes.length > 0 && (
+              <li>
+                <a href="#common-mistakes" className="text-sm text-primary hover:underline flex items-center gap-2">
+                  <span className="text-muted-foreground text-xs w-5">!</span>
+                  Common Mistakes
+                </a>
+              </li>
+            )}
             {guide.faq.length > 0 && (
               <li>
                 <a href="#faq" className="text-sm text-primary hover:underline flex items-center gap-2">
@@ -188,7 +218,7 @@ const GuidePage = () => {
           </ol>
         </nav>
 
-        {/* Sections */}
+        {/* Main Sections */}
         {guide.sections.map((section, i) => (
           <section key={i} id={`section-${i}`} className="mb-10 scroll-mt-24">
             <h2 className="text-2xl font-display font-bold text-foreground mb-4">
@@ -197,6 +227,78 @@ const GuidePage = () => {
             {renderContent(section.content)}
           </section>
         ))}
+
+        {/* Buying Criteria Block */}
+        {guide.buyingCriteria && (
+          <section id="buying-criteria" className="mb-10 scroll-mt-24">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-4">
+              {guide.buyingCriteria.title || 'What to Look For'}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {guide.buyingCriteria.criteria.map((item, i) => (
+                <div key={i} className="bg-muted/30 rounded-lg p-4 border border-border">
+                  <h3 className="font-semibold text-foreground text-sm mb-1">{item.name}</h3>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Pros & Cons Block */}
+        {guide.prosAndCons && (
+          <section id="pros-cons" className="mb-10 scroll-mt-24">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-4">
+              Pros &amp; Cons
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-5 border border-green-200 dark:border-green-900">
+                <h3 className="font-semibold text-foreground flex items-center gap-2 mb-3">
+                  <CheckCircle className="w-4 h-4 text-green-600" /> Pros
+                </h3>
+                <ul className="space-y-2">
+                  {guide.prosAndCons.pros.map((pro, i) => (
+                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">+</span> {pro}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-5 border border-red-200 dark:border-red-900">
+                <h3 className="font-semibold text-foreground flex items-center gap-2 mb-3">
+                  <XCircle className="w-4 h-4 text-red-600" /> Cons
+                </h3>
+                <ul className="space-y-2">
+                  {guide.prosAndCons.cons.map((con, i) => (
+                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-red-600 mt-0.5">−</span> {con}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Common Mistakes Block */}
+        {guide.commonMistakes && guide.commonMistakes.length > 0 && (
+          <section id="common-mistakes" className="mb-10 scroll-mt-24">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-4">
+              Common Mistakes to Avoid
+            </h2>
+            <div className="space-y-3">
+              {guide.commonMistakes.map((mistake, i) => (
+                <div key={i} className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg p-4 border border-amber-200 dark:border-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">{mistake.mistake}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{mistake.whyItMatters}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* FAQ */}
         {guide.faq.length > 0 && (
@@ -215,18 +317,21 @@ const GuidePage = () => {
           </section>
         )}
 
-        {/* Internal links to categories */}
+        {/* Shop Category CTA */}
         {guide.relatedCategories.length > 0 && (
-          <div className="bg-muted/30 rounded-xl p-6 mb-10 border border-border">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Related Categories</h3>
+          <div className="bg-primary/5 rounded-xl p-6 mb-10 border border-primary/20">
+            <div className="flex items-center gap-3 mb-3">
+              <ShoppingBag className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-foreground">Shop Related Products</h3>
+            </div>
             <div className="flex flex-wrap gap-2">
               {guide.relatedCategories.map((cat) => (
                 <Link
                   key={cat}
                   to={`/products?category=${cat}`}
-                  className="text-sm bg-background border border-border rounded-full px-4 py-1.5 hover:border-primary/40 hover:text-primary transition-colors"
+                  className="text-sm bg-background border border-border rounded-full px-4 py-1.5 hover:border-primary/40 hover:text-primary transition-colors font-medium"
                 >
-                  {cat.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                  Shop all {cat.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                 </Link>
               ))}
             </div>
