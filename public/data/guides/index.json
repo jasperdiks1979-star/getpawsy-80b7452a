@@ -8,7 +8,7 @@
     "publishedAt": "2026-02-10",
     "updatedAt": "2026-02-10",
     "featuredImage": "/images/guides/best-cat-litter-box-2026.jpg",
-    "readingTime": 14,
+    "readingTime": 18,
     "relatedCategories": ["cat-litter-boxes"]
   },
   {
@@ -70,6 +70,102 @@
     "featuredImage": "/images/guides/cat-tree-apartment.jpg",
     "readingTime": 11,
     "relatedCategories": ["cat-trees-and-condos", "cat-furniture"]
+  },
+  {
+    "slug": "best-litter-box-small-apartments",
+    "title": "Best Litter Box for Small Apartments (2026) – Compact & Discreet Picks Tested",
+    "excerpt": "7 compact litter boxes tested in real apartments under 600 sq ft. Discreet, odor-controlling picks for studios, one-bedrooms, and tight spaces.",
+    "category": "Cat Litter",
+    "keywords": ["litter box for small apartment", "compact litter box", "apartment litter box", "small space litter box"],
+    "publishedAt": "2026-02-15",
+    "updatedAt": "2026-02-15",
+    "featuredImage": "/images/guides/litter-box-small-apartment.jpg",
+    "readingTime": 12,
+    "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "best-litter-box-odor-bathroom",
+    "title": "Best Litter Box for Odor in Bathrooms (2026) – Tested for Smell Control",
+    "excerpt": "6 litter boxes tested specifically for bathroom use. Reviewed for odor control, moisture resistance, and compact size.",
+    "category": "Cat Litter",
+    "keywords": ["litter box for bathroom", "best litter box odor bathroom", "bathroom cat litter box"],
+    "publishedAt": "2026-02-15",
+    "updatedAt": "2026-02-15",
+    "featuredImage": "/images/guides/litter-box-bathroom-odor.jpg",
+    "readingTime": 11,
+    "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "best-low-tracking-litter-box",
+    "title": "Best Low-Tracking Litter Box (2026) – Tested Picks That Keep Litter Off Your Floor",
+    "excerpt": "6 low-tracking litter boxes tested side by side. Top-entry, enclosed, and two-room designs reviewed for tracking reduction.",
+    "category": "Cat Litter",
+    "keywords": ["low tracking litter box", "litter box less tracking", "no mess litter box", "anti tracking cat litter box"],
+    "publishedAt": "2026-02-15",
+    "updatedAt": "2026-02-15",
+    "featuredImage": "/images/guides/low-tracking-litter-box.jpg",
+    "readingTime": 11,
+    "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "best-litter-box-kittens",
+    "title": "Best Litter Box for Kittens (2026) – Safe Starter Picks With Low Entry",
+    "excerpt": "5 kitten-safe litter boxes tested for low entry height, safety, and easy training. Reviewed with honest pros & cons.",
+    "category": "Cat Litter",
+    "keywords": ["best litter box for kittens", "kitten litter box", "first litter box kitten"],
+    "publishedAt": "2026-02-15",
+    "updatedAt": "2026-02-15",
+    "featuredImage": "/images/guides/litter-box-kittens.jpg",
+    "readingTime": 10,
+    "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "best-litter-box-senior-cats",
+    "title": "Best Litter Box for Senior Cats (2026) – Low Entry & Arthritis-Friendly Picks",
+    "excerpt": "5 senior-cat-friendly litter boxes tested for low entry, stability, and easy access for cats with arthritis and mobility issues.",
+    "category": "Cat Litter",
+    "keywords": ["litter box for senior cats", "low entry litter box", "arthritis friendly litter box"],
+    "publishedAt": "2026-02-15",
+    "updatedAt": "2026-02-15",
+    "featuredImage": "/images/guides/litter-box-senior-cats.jpg",
+    "readingTime": 10,
+    "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "best-litter-box-under-100",
+    "title": "Top Rated Litter Box Under $100 (2026) – Budget Picks That Don't Stink",
+    "excerpt": "5 litter boxes under $100 tested for quality, odor control, and durability. Honest reviews proving you don't need to overspend.",
+    "category": "Cat Litter",
+    "keywords": ["best litter box under 100", "cheap litter box", "budget cat litter box", "affordable litter box"],
+    "publishedAt": "2026-02-15",
+    "updatedAt": "2026-02-15",
+    "featuredImage": "/images/guides/litter-box-under-100.jpg",
+    "readingTime": 10,
+    "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "best-litter-box-studio-apartment",
+    "title": "Best Litter Box for Studio Apartments (2026) – Ultra-Compact & Odor-Free Picks",
+    "excerpt": "5 litter boxes tested in real studio apartments under 400 sq ft. Ultra-compact, odor-controlling picks for the tightest spaces.",
+    "category": "Cat Litter",
+    "keywords": ["litter box for studio apartment", "studio apartment cat litter", "compact litter box studio"],
+    "publishedAt": "2026-02-15",
+    "updatedAt": "2026-02-15",
+    "featuredImage": "/images/guides/litter-box-studio.jpg",
+    "readingTime": 10,
+    "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "best-high-sided-litter-box",
+    "title": "Best High-Sided Litter Box (2026) – Tested for Spray, Scatter & Big Cats",
+    "excerpt": "5 high-sided litter boxes tested for spray prevention, litter containment, and large cat comfort with real measurements.",
+    "category": "Cat Litter",
+    "keywords": ["high sided litter box", "high sided cat litter box", "litter box for spraying cats", "tall litter box"],
+    "publishedAt": "2026-02-15",
+    "updatedAt": "2026-02-15",
+    "featuredImage": "/images/guides/high-sided-litter-box.jpg",
+    "readingTime": 10,
+    "relatedCategories": ["cat-litter-boxes"]
   },
   {
     "slug": "how-to-choose-guinea-pig-cage",
