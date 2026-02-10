@@ -8,7 +8,15 @@ const corsHeaders = {
 };
 
 // Guide data with lastmod dates (synced from public/data/guides/index.json)
-const GUIDES: Array<{ slug: string; updatedAt: string }> = [
+const GUIDES: Array<{ slug: string; updatedAt: string; priority?: string }> = [
+  // Week 1 — Cat Litter cluster (cornerstone first)
+  { slug: "best-cat-litter-box-2026", updatedAt: "2026-02-10", priority: "0.9" },
+  { slug: "how-many-litter-boxes-per-cat", updatedAt: "2026-02-10", priority: "0.8" },
+  { slug: "best-cat-litter-box-furniture-enclosures-2026", updatedAt: "2026-02-11", priority: "0.8" },
+  { slug: "best-litter-boxes-multi-cat", updatedAt: "2026-02-12", priority: "0.75" },
+  { slug: "best-extra-large-litter-boxes", updatedAt: "2026-02-13", priority: "0.75" },
+  { slug: "best-cat-trees-small-apartments", updatedAt: "2026-02-14", priority: "0.75" },
+  // Original guides
   { slug: "how-to-choose-guinea-pig-cage", updatedAt: "2026-02-10" },
   { slug: "guinea-pig-cage-vs-playpen", updatedAt: "2026-02-10" },
   { slug: "cat-condo-vs-cat-tower", updatedAt: "2026-02-10" },
@@ -514,12 +522,13 @@ function generateGuidesSitemap(today: string): string {
 
   for (const guide of GUIDES) {
     const lastmod = guide.updatedAt || today;
+    const priority = guide.priority || "0.7";
     urls += `
   <url>
     <loc>${BASE_URL}/guides/${guide.slug}/</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>${priority}</priority>
   </url>`;
   }
 

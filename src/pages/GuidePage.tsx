@@ -152,6 +152,11 @@ const GuidePage = () => {
         <meta property="article:published_time" content={guide.publishedAt} />
         <meta property="article:modified_time" content={guide.updatedAt} />
         <meta property="article:section" content={guide.category} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={guide.title} />
+        <meta name="twitter:description" content={guide.excerpt} />
+        {guide.featuredImage && <meta property="og:image" content={`${BASE_URL}${guide.featuredImage}`} />}
+        {guide.featuredImage && <meta name="twitter:image" content={`${BASE_URL}${guide.featuredImage}`} />}
         {guide.keywords.map((kw, i) => (
           <meta key={i} property="article:tag" content={kw} />
         ))}
