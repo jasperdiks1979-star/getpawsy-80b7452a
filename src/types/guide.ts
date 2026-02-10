@@ -41,10 +41,27 @@ export interface GuideMeta {
   relatedCategories: string[];
 }
 
+export interface QuickRecommendation {
+  bestOverall: { name: string; reason: string; link: string };
+  bestBudget: { name: string; reason: string; link: string };
+  bestPremium: { name: string; reason: string; link: string };
+}
+
+export interface ComparisonProduct {
+  name: string;
+  image?: string;
+  price: string;
+  advantages: string[];
+  link: string;
+  badge?: string;
+}
+
 export interface GuideData extends GuideMeta {
   sections: GuideSection[];
   faq: GuideFAQ[];
   buyingCriteria?: GuideBuyingCriteria;
   prosAndCons?: GuideProsAndCons;
   commonMistakes?: GuideCommonMistake[];
+  quickRecommendation?: QuickRecommendation;
+  comparisonProducts?: ComparisonProduct[];
 }
