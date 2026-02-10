@@ -164,6 +164,7 @@ const Security = lazyWithRetry(() => import("./pages/Security"));
 const GoogleReview = lazyWithRetry(() => import("./pages/GoogleReview"));
 const CrawlerAnalytics = lazyWithRetry(() => import("./pages/CrawlerAnalytics"));
 const UserAgentComparison = lazyWithRetry(() => import("./pages/UserAgentComparison"));
+const GuidesDashboard = lazyWithRetry(() => import("./pages/admin/GuidesDashboard"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
@@ -277,6 +278,7 @@ const App = () => {
                         <Route path="/google-review" element={<GoogleReview />} />
                         <Route path="/admin/crawler-analytics" element={<CrawlerAnalytics />} />
                         <Route path="/admin/user-agent-comparison" element={<UserAgentComparison />} />
+                        <Route path="/admin/guides-dashboard" element={<GuidesDashboard />} />
                         
                         {/* SEO Collection Pages */}
                         <Route path="/collections/:slug" element={<SeoCollection />} />
