@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import smallPetsImage from '@/assets/categories/small-pets.jpg';
 import { Helmet } from 'react-helmet-async';
-import { ArrowRight, Loader2, Star, Quote, Clock } from 'lucide-react';
+import { ArrowRight, Loader2, Star, Quote, Clock, BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { motion, useScroll, useTransform } from 'framer-motion';
@@ -824,6 +824,79 @@ const Index = () => {
           </section>
         </SectionErrorBoundary>
       )}
+
+      {/* New Expert Guides — Internal Authority Signal */}
+      <SectionErrorBoundary sectionName="Expert Guides">
+        <section className="py-20 bg-muted/30">
+          <div className="container px-4 md:px-6">
+            <motion.div
+              className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-display font-bold">New Expert Guides</h2>
+                  <p className="text-muted-foreground text-lg">In-depth buying guides tested by real pet owners</p>
+                </div>
+              </div>
+              <Link to="/guides" className="group flex items-center gap-2 text-primary font-semibold hover:underline">
+                View all guides <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </motion.div>
+
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <Link
+                to="/guides/best-cat-litter-box-2026"
+                className="group bg-card rounded-2xl border border-border p-6 hover:border-primary/30 hover:shadow-soft transition-all"
+              >
+                <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">Cornerstone Guide</span>
+                <h3 className="font-display font-bold text-lg mt-3 mb-2 group-hover:text-primary transition-colors">
+                  Best Cat Litter Box (2026)
+                </h3>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  12 tested picks for odor control, large cats & multi-cat homes — with pros & cons.
+                </p>
+              </Link>
+              <Link
+                to="/guides/how-many-litter-boxes-per-cat"
+                className="group bg-card rounded-2xl border border-border p-6 hover:border-primary/30 hover:shadow-soft transition-all"
+              >
+                <span className="text-xs font-medium text-accent-foreground bg-accent/60 px-2.5 py-1 rounded-full">Expert Advice</span>
+                <h3 className="font-display font-bold text-lg mt-3 mb-2 group-hover:text-primary transition-colors">
+                  How Many Litter Boxes Per Cat?
+                </h3>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  The vet-backed n+1 rule explained with real placement tips.
+                </p>
+              </Link>
+              <Link
+                to="/guides/best-cat-trees-small-apartments"
+                className="group bg-card rounded-2xl border border-border p-6 hover:border-primary/30 hover:shadow-soft transition-all"
+              >
+                <span className="text-xs font-medium text-accent-foreground bg-accent/60 px-2.5 py-1 rounded-full">New</span>
+                <h3 className="font-display font-bold text-lg mt-3 mb-2 group-hover:text-primary transition-colors">
+                  Best Cat Trees for Small Apartments
+                </h3>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  7 compact cat trees tested in real apartments under 600 sq ft.
+                </p>
+              </Link>
+            </motion.div>
+          </div>
+        </section>
+      </SectionErrorBoundary>
 
       {/* CTA Section */}
       <SectionErrorBoundary sectionName="Newsletter">
