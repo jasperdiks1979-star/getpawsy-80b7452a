@@ -214,9 +214,9 @@ export interface ExperimentDecision {
   uplift: number; // percentage
 }
 
-const MIN_IMPRESSIONS = 300;
-const MIN_DAYS = 14;
-const MIN_UPLIFT_PCT = 15;
+const MIN_IMPRESSIONS = 150;
+const MIN_DAYS = 10;
+const MIN_UPLIFT_PCT = 12;
 
 /**
  * Evaluate whether an experiment has enough data to declare a winner.
