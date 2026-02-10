@@ -54,6 +54,9 @@ export interface ComparisonProduct {
   advantages: string[];
   link: string;
   badge?: string;
+  availability?: 'InStock' | 'OutOfStock' | 'PreOrder';
+  description?: string;
+  sku?: string;
 }
 
 export interface GuideData extends GuideMeta {
