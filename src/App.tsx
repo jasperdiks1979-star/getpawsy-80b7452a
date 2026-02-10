@@ -165,6 +165,8 @@ const GoogleReview = lazyWithRetry(() => import("./pages/GoogleReview"));
 const CrawlerAnalytics = lazyWithRetry(() => import("./pages/CrawlerAnalytics"));
 const UserAgentComparison = lazyWithRetry(() => import("./pages/UserAgentComparison"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
+const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
+const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
 
 // Redirect component for /products/:slug -> /product/:slug (fixes duplicate page SEO issue)
 const ProductsSlugRedirect = () => {
@@ -278,6 +280,10 @@ const App = () => {
                         
                         {/* SEO Collection Pages */}
                         <Route path="/collections/:slug" element={<SeoCollection />} />
+                        
+                        {/* Guides */}
+                        <Route path="/guides" element={<GuidesIndex />} />
+                        <Route path="/guides/:slug" element={<GuidePage />} />
                         
                         {/* Legacy URL redirects for SEO */}
                         <Route path="/return-policy" element={<Navigate to="/returns" replace />} />

@@ -11,6 +11,7 @@ const SITEMAP_TYPE_MAP: Record<string, string> = {
   '/sitemap-bestsellers.xml': 'bestsellers',
   '/sitemap-collections.xml': 'collections',
   '/sitemap-blog.xml': 'blog',
+  '/sitemap-guides.xml': 'guides',
 };
 
 /**
