@@ -406,8 +406,96 @@ serve(async (req) => {
       );
     }
 
+    // ============= ACTION: GSC DIAGNOSTIC =============
+    if (action === 'gsc_diagnostic') {
+      const SITE_URL = 'sc-domain:getpawsy.pet';
+
+      const today = new Date();
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() - 3);
+      const startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - 7);
+
+      const formatDate = (d: Date) => d.toISOString().split('T')[0];
+      const startStr = formatDate(startDate);
+      const endStr = formatDate(endDate);
+
+      let serviceAccountEmail = 'unknown';
+      try {
+        const sa = JSON.parse(serviceAccountJson);
+        serviceAccountEmail = sa.client_email || 'unknown';
+      } catch {}
+
+      try {
+        const accessToken = await getAccessToken(serviceAccountJson);
+
+        const gscData = await fetchGSCData(
+          accessToken, SITE_URL, startStr, endStr,
+          ['page'], 20
+        );
+
+        if (!gscData.rows || gscData.rows.length === 0) {
+          return new Response(
+            JSON.stringify({
+              status: 'NO_DATA',
+              property: SITE_URL,
+              propertyType: 'DOMAIN',
+              serviceAccountEmail,
+              dateRange: { start: startStr, end: endStr },
+              rowsFetched: 0,
+              connected: true,
+              possible_causes: [
+                'New domain (insufficient crawl history)',
+                'No indexed guide pages yet',
+                'Service account may lack full access',
+                'Domain property not fully verified',
+                'GSC data delay (up to 3–5 days)',
+              ],
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({
+            status: 'OK',
+            property: SITE_URL,
+            propertyType: 'DOMAIN',
+            serviceAccountEmail,
+            dateRange: { start: startStr, end: endStr },
+            rowsFetched: gscData.rows.length,
+            connected: true,
+            sampleRows: gscData.rows.slice(0, 5).map(r => ({
+              page: r.keys[0],
+              impressions: r.impressions,
+              clicks: r.clicks,
+              position: Math.round(r.position * 10) / 10,
+            })),
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } catch (diagError) {
+        return new Response(
+          JSON.stringify({
+            status: 'ERROR',
+            property: SITE_URL,
+            propertyType: 'DOMAIN',
+            serviceAccountEmail,
+            connected: false,
+            issue: diagError instanceof Error ? diagError.message : 'Unknown error',
+            fix_recommendation: diagError instanceof Error && diagError.message.includes('Token exchange')
+              ? 'Service account credentials may be invalid. Re-upload GOOGLE_SERVICE_ACCOUNT_JSON.'
+              : diagError instanceof Error && diagError.message.includes('403')
+              ? 'Service account lacks permission. Grant OWNER access in Google Search Console.'
+              : 'Check that the Search Console API is enabled in Google Cloud Console.',
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     return new Response(
-      JSON.stringify({ error: 'Invalid action. Valid: sync, get_guide_metrics, add_keyword' }),
+      JSON.stringify({ error: 'Invalid action. Valid: sync, get_guide_metrics, add_keyword, gsc_diagnostic' }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
