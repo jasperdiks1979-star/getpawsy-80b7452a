@@ -122,6 +122,9 @@ Disallow: /auth/
 Disallow: /track
 Disallow: /cart
 Disallow: /google-review
+Disallow: /security
+Disallow: /install
+Disallow: /live-map
 
 # API endpoints (not meant to be indexed)
 Disallow: /api/

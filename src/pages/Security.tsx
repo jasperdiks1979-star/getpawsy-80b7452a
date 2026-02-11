@@ -20,6 +20,7 @@ import {
   EyeOff
 } from "lucide-react";
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useNavigate } from "react-router-dom";
 import { useSecurityScan, getSeverityFromLevel, getCategoryFromId, SecurityFinding } from "@/hooks/useSecurityScan";
@@ -175,6 +176,7 @@ const SecurityPage = () => {
   if (isLoading) {
     return (
       <Layout>
+        <Helmet><meta name="robots" content="noindex, follow" /></Helmet>
         <div className="container mx-auto py-8 px-4 max-w-5xl">
           <Skeleton className="h-12 w-64 mb-8" />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -194,6 +196,7 @@ const SecurityPage = () => {
 
   return (
     <Layout>
+      <Helmet><meta name="robots" content="noindex, follow" /></Helmet>
       <div className="container mx-auto py-8 px-4 max-w-5xl">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">

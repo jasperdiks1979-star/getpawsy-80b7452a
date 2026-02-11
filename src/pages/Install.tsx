@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Download, Smartphone, Check, Share, Plus, MoreVertical, ArrowRight, Wifi, Bell, Zap } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
@@ -78,6 +79,7 @@ const Install = () => {
 
   return (
     <Layout>
+      <Helmet><meta name="robots" content="noindex, follow" /></Helmet>
       <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
