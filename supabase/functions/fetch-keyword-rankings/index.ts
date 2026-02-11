@@ -115,21 +115,29 @@ async function fetchGSCData(
 // ============= GUIDE SLUG MAPPING =============
 
 /**
- * Dynamically extract guide slug from any /guides/SLUG URL.
- * No hardcoded list — matches any guide page.
+ * Extract guide slug from a GSC page URL.
+ * GSC returns full URLs like: https://getpawsy.pet/guides/best-dog-bed-2026
+ * We need to extract: best-dog-bed-2026
  */
 function matchPageToSlug(pageUrl: string): string | null {
-  // Match /guides/SLUG or /guides/SLUG/
-  const match = pageUrl.match(/\/guides\/([a-z0-9][a-z0-9\-]*[a-z0-9])\/?(?:\?|#|$)/i);
-  if (match) return match[1];
-  // Fallback: try path extraction
   try {
-    const url = new URL(pageUrl);
-    const parts = url.pathname.split('/').filter(Boolean);
+    // Handle full URLs
+    const url = new URL(pageUrl.startsWith('http') ? pageUrl : `https://example.com${pageUrl}`);
+    const pathname = url.pathname.replace(/\/+$/, ''); // strip trailing slashes
+    const parts = pathname.split('/').filter(Boolean);
+    // Match /guides/SLUG pattern
     if (parts[0] === 'guides' && parts[1]) {
-      return parts[1].replace(/\/$/, '');
+      const slug = parts[1].toLowerCase().trim();
+      if (slug.length > 0 && slug.length < 200) return slug;
     }
-  } catch {}
+  } catch {
+    // Fallback: regex on raw string
+    const match = pageUrl.match(/\/guides\/([^/?#]+)/i);
+    if (match) {
+      const slug = match[1].replace(/\/+$/, '').toLowerCase().trim();
+      if (slug.length > 0) return slug;
+    }
+  }
   return null;
 }
 
@@ -245,12 +253,24 @@ serve(async (req) => {
 
       console.log(`[GSC Sync] Got ${allRows.length} query rows, ${pageData.rows?.length ?? 0} page rows`);
 
+      // Debug: log first 10 page URLs from GSC to diagnose matching
+      if (pageData.rows && pageData.rows.length > 0) {
+        const sampleUrls = pageData.rows.slice(0, 10).map(r => r.keys[0]);
+        console.log(`[GSC Sync] Sample page URLs from GSC:`, JSON.stringify(sampleUrls));
+        // Test matching on samples
+        for (const url of sampleUrls) {
+          const slug = matchPageToSlug(url);
+          console.log(`[GSC Sync] URL: ${url} → slug: ${slug || 'NO_MATCH'}`);
+        }
+      }
+
       // Aggregate per guide slug
       const slugAggregates: Record<string, {
         impressions: number; clicks: number; positions: number[]; queries: string[];
       }> = {};
 
       let unmatchedCount = 0;
+      const unmatchedSamples: string[] = [];
 
       for (const row of allRows) {
         const pageUrl = row.keys[0];
@@ -259,6 +279,7 @@ serve(async (req) => {
 
         if (!slug) {
           unmatchedCount++;
+          if (unmatchedSamples.length < 5) unmatchedSamples.push(pageUrl);
           continue;
         }
 
@@ -272,6 +293,10 @@ serve(async (req) => {
         if (!slugAggregates[slug].queries.includes(query)) {
           slugAggregates[slug].queries.push(query);
         }
+      }
+
+      if (unmatchedSamples.length > 0) {
+        console.log(`[GSC Sync] Unmatched URL samples:`, JSON.stringify(unmatchedSamples));
       }
 
       // Also incorporate page-level data (more accurate totals per slug)
