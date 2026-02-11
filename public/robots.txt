@@ -102,22 +102,13 @@ Allow: /
 Crawl-delay: 2
 
 # =====================================================
-# SITEMAPS - Direct edge function URLs for reliable crawler access
-# These serve raw XML directly without JavaScript rendering
+# SITEMAPS
 # =====================================================
 
 Sitemap: https://getpawsy.pet/sitemap.xml
-Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=index
-Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=static
-Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=products
-Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=categories
-Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=bestsellers
-Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=collections
-Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=blog
-Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=guides
 
 # =====================================================
-# DISALLOWED PATHS (Private/Admin pages)
+# DISALLOWED PATHS (Private/Admin/Non-SEO pages)
 # =====================================================
 
 # Admin and private pages
@@ -126,6 +117,10 @@ Disallow: /profile
 Disallow: /orders
 Disallow: /checkout
 Disallow: /payment-success
+Disallow: /auth
+Disallow: /auth/
+Disallow: /track
+Disallow: /cart
 
 # API endpoints (not meant to be indexed)
 Disallow: /api/

@@ -449,13 +449,33 @@ export default function GuidesDashboard() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">🔧 Orphan Repair Engine</CardTitle>
-                  <button
-                    onClick={() => { setRepairRunning(true); setTimeout(() => { setRepairResult(runOrphanRepair()); setRepairRunning(false); }, 100); }}
-                    disabled={repairRunning}
-                    className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {repairRunning ? 'Running...' : repairResult ? 'Re-run Repair' : 'Run Repair'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        // Force recalculation of link matrix + orphan counts
+                        setOptimizerResult(runLinkMatrixOptimizer());
+                      }}
+                      className="px-3 py-1.5 text-xs font-medium rounded-md border hover:bg-muted"
+                    >
+                      Recalculate Authority Map
+                    </button>
+                    <button
+                      onClick={() => {
+                        setRepairRunning(true);
+                        setTimeout(() => {
+                          const result = runOrphanRepair();
+                          setRepairResult(result);
+                          // Re-run optimizer after repair to sync counts
+                          setOptimizerResult(runLinkMatrixOptimizer());
+                          setRepairRunning(false);
+                        }, 100);
+                      }}
+                      disabled={repairRunning}
+                      className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {repairRunning ? 'Running...' : repairResult ? 'Re-run Repair' : 'Run Repair'}
+                    </button>
+                  </div>
                 </div>
               </CardHeader>
               {repairResult && (

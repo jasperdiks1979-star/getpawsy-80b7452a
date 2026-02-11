@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
       `${xmlHeader()}
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}/sitemap-static.xml</loc>
+    <loc>${BASE_URL}/sitemap-static.xml</loc>
     <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
   </sitemap>
 </sitemapindex>`,
@@ -183,45 +183,32 @@ Deno.serve(async (req) => {
 function generateSitemapIndex(today: string): string {
   return `${xmlHeader()}
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Static Pages Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=static</loc>
+    <loc>${BASE_URL}/sitemap-static.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
-  
-  <!-- Products Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=products</loc>
+    <loc>${BASE_URL}/sitemap-products.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
-  
-  <!-- Categories Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=categories</loc>
+    <loc>${BASE_URL}/sitemap-categories.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
-  
-  <!-- Bestsellers Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=bestsellers</loc>
+    <loc>${BASE_URL}/sitemap-bestsellers.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
-  
-  <!-- SEO Collections Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=collections</loc>
+    <loc>${BASE_URL}/sitemap-collections.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
-  
-  <!-- Blog Posts Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=blog</loc>
+    <loc>${BASE_URL}/sitemap-blog.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
-  
-  <!-- Guides Sitemap -->
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=guides</loc>
+    <loc>${BASE_URL}/sitemap-guides.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
 </sitemapindex>`;
@@ -297,14 +284,6 @@ function generateStaticSitemap(today: string): string {
     <priority>0.5</priority>
   </url>
   
-  <!-- Track Order -->
-  <url>
-    <loc>${BASE_URL}/track</loc>
-    <lastmod>${yesterday}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
   <!-- Return Policy -->
   <url>
     <loc>${BASE_URL}/returns</loc>
@@ -324,14 +303,6 @@ function generateStaticSitemap(today: string): string {
   <!-- Terms of Service -->
   <url>
     <loc>${BASE_URL}/terms</loc>
-    <lastmod>${yesterday}</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  
-  <!-- Cookie Policy -->
-  <url>
-    <loc>${BASE_URL}/cookies</loc>
     <lastmod>${yesterday}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
