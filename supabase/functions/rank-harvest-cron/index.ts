@@ -64,27 +64,56 @@ async function getAccessToken(serviceAccountJson: string): Promise<string> {
 
 // ============= GUIDE SLUG MATCHING =============
 
-const NON_GUIDE_PATHS = [
-  '/auth', '/track', '/cart', '/cookies', '/contact', '/about', '/shipping',
-  '/blog', '/products', '/product/', '/bestseller', '/admin', '/login',
-];
+let _knownSlugs: Set<string> | null = null;
 
-function matchPageToSlug(pageUrl: string): string | null {
-  // Must contain /guides/ path
-  const guidesMatch = pageUrl.match(/\/guides\/([a-z0-9-]+)/);
-  if (!guidesMatch) return null;
-
-  const slug = guidesMatch[1];
-
-  // Skip index/collection pages
-  if (!slug || slug === 'guides' || slug.length < 5) return null;
-
-  // Make sure it's not a non-guide path that happens to match
-  for (const path of NON_GUIDE_PATHS) {
-    if (pageUrl.includes(path)) return null;
+async function loadKnownSlugs(): Promise<Set<string>> {
+  if (_knownSlugs) return _knownSlugs;
+  try {
+    const res = await fetch('https://getpawsy.pet/data/guides/index.json');
+    if (res.ok) {
+      const guides = await res.json();
+      _knownSlugs = new Set(guides.map((g: { slug: string }) => g.slug.toLowerCase()));
+    } else {
+      _knownSlugs = new Set();
+    }
+  } catch {
+    _knownSlugs = new Set();
   }
+  return _knownSlugs;
+}
 
-  return slug;
+function extractSlugFromUrl(pageUrl: string): string | null {
+  try {
+    const url = new URL(pageUrl.startsWith('http') ? pageUrl : `https://example.com${pageUrl}`);
+    const pathname = url.pathname.replace(/\/+$/, '').replace(/^\/+/, '');
+    if (!pathname) return null;
+    const parts = pathname.split('/').filter(Boolean);
+    if (parts[0] === 'guides' && parts[1]) return parts[1].toLowerCase().trim();
+    if (parts.length === 1) return parts[0].toLowerCase().trim();
+    return null;
+  } catch {
+    const match = pageUrl.match(/\/([a-z0-9-]+)\/?(?:\?.*)?$/i);
+    return match ? match[1].toLowerCase().trim() : null;
+  }
+}
+
+function matchPageToSlug(pageUrl: string, knownSlugs: Set<string>): string | null {
+  const slug = extractSlugFromUrl(pageUrl);
+  if (!slug || slug.length < 5) return null;
+
+  const skipPaths = ['auth', 'track', 'cart', 'cookies', 'contact', 'about', 'shipping',
+    'blog', 'products', 'admin', 'login', 'sitemap', 'robots', 'favicon',
+    'bestseller', 'product', 'category', 'search', 'checkout', 'order',
+    'privacy', 'terms', 'security', 'install', 'live-map', 'google-review'];
+  if (skipPaths.includes(slug)) return null;
+
+  if (knownSlugs.has(slug)) return slug;
+  if (/^best-/.test(slug) || /-202[4-9]$/.test(slug) || /^how-to-/.test(slug) ||
+      /^choosing-/.test(slug) || /-vs-/.test(slug) || /^guide-/.test(slug)) return slug;
+  for (const known of knownSlugs) {
+    if (slug.endsWith(known) || slug === known) return known;
+  }
+  return null;
 }
 
 // ============= MAIN HANDLER =============
@@ -122,6 +151,10 @@ serve(async (req) => {
     const endStr = formatDate(endDate);
 
     console.log(`[rank-harvest-cron] Fetching ${startStr} to ${endStr}`);
+
+    _knownSlugs = null;
+    const knownSlugs = await loadKnownSlugs();
+    console.log(`[rank-harvest-cron] Known guide slugs: ${knownSlugs.size}`);
 
     const accessToken = await getAccessToken(serviceAccountJson);
 
@@ -180,7 +213,7 @@ serve(async (req) => {
     for (const row of rows) {
       const pageUrl = row.keys[0];
       const query = row.keys[1];
-      const slug = matchPageToSlug(pageUrl);
+      const slug = matchPageToSlug(pageUrl, knownSlugs);
       if (!slug) continue;
 
       if (!slugAggregates[slug]) {
@@ -234,10 +267,10 @@ serve(async (req) => {
 
     // Also store query-level data
     const queryRankings = rows
-      .filter((row: any) => matchPageToSlug(row.keys[0]) !== null)
+      .filter((row: any) => matchPageToSlug(row.keys[0], knownSlugs) !== null)
       .map((row: any) => ({
         keyword: row.keys[1],
-        slug: matchPageToSlug(row.keys[0]),
+        slug: matchPageToSlug(row.keys[0], knownSlugs),
         position: Math.round(row.position * 10) / 10,
         clicks: row.clicks,
         impressions: row.impressions,
