@@ -146,3 +146,9 @@ verify_jwt = false
 
 [functions.resync-oos-products]
 verify_jwt = false
+
+[functions.generate-gap-guide]
+verify_jwt = false
+
+[functions.rank-harvest-cron]
+verify_jwt = false
