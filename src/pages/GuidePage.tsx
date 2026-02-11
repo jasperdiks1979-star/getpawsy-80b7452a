@@ -140,6 +140,7 @@ const GuidePage = () => {
       <Helmet>
         <title>{guide.title} | GetPawsy</title>
         <meta name="description" content={guide.excerpt} />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <link rel="canonical" href={guideUrl} />
         <meta property="og:title" content={guide.title} />
         <meta property="og:description" content={guide.excerpt} />
