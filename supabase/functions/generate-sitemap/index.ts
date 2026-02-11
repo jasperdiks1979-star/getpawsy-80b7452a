@@ -115,7 +115,7 @@ function staticSitemap(today: string): string {
 }
 
 async function productsSitemap(today: string): Promise<string> {
-  const products = await sbQuery("products", "select=id,name,slug,updated_at,category,image_url&is_active=eq.true&is_duplicate=eq.false&order=updated_at.desc") as Array<{id:string;name:string;slug:string|null;updated_at:string;image_url:string|null}>;
+  const products = await sbQuery("products", "select=id,slug,updated_at&is_active=eq.true&is_duplicate=eq.false&order=updated_at.desc") as Array<{id:string;slug:string|null;updated_at:string}>;
   const now = Date.now();
   let urls = "";
   for (let i = 0; i < products.length; i++) {
@@ -124,10 +124,10 @@ async function productsSitemap(today: string): Promise<string> {
     const path = p.slug || p.id;
     const days = Math.floor((now - new Date(p.updated_at || today).getTime()) / 86400000);
     const pri = Math.min(0.95, (i < 100 ? 0.9 : i < 500 ? 0.8 : 0.7) + (days <= 1 ? 0.05 : days <= 7 ? 0.02 : 0)).toFixed(2);
-    urls += `\n  <url>\n    <loc>${BASE_URL}/product/${path}</loc>\n    <lastmod>${lm}</lastmod>\n    <changefreq>${days <= 7 ? "daily" : "weekly"}</changefreq>\n    <priority>${pri}</priority>${p.image_url ? `\n    <image:image>\n      <image:loc>${esc(p.image_url)}</image:loc>\n      <image:title>${esc(p.name || "")}</image:title>\n    </image:image>` : ""}\n  </url>`;
+    urls += `\n  <url>\n    <loc>${BASE_URL}/product/${path}</loc>\n    <lastmod>${lm}</lastmod>\n    <changefreq>${days <= 7 ? "daily" : "weekly"}</changefreq>\n    <priority>${pri}</priority>\n  </url>`;
   }
   console.log(`[sitemap] Products: ${products.length}`);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls}\n</urlset>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
 }
 
 async function categoriesSitemap(today: string): Promise<string> {
@@ -159,9 +159,9 @@ async function collectionsSitemap(today: string): Promise<string> {
 }
 
 async function blogSitemap(today: string): Promise<string> {
-  const data = await sbQuery("blog_posts", "select=slug,title,published_at,featured_image&is_published=eq.true&order=published_at.desc") as Array<{slug:string;title:string;published_at:string;featured_image:string|null}>;
+  const data = await sbQuery("blog_posts", "select=slug,published_at&is_published=eq.true&order=published_at.desc") as Array<{slug:string;published_at:string}>;
   let urls = "";
-  for (const p of data) { const lm = p.published_at?.split("T")[0] || today; urls += `\n  <url>\n    <loc>${BASE_URL}/blog/${p.slug}</loc>\n    <lastmod>${lm}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>${p.featured_image ? `\n    <image:image>\n      <image:loc>${esc(p.featured_image)}</image:loc>\n      <image:title>${esc(p.title || "")}</image:title>\n    </image:image>` : ""}\n  </url>`; }
+  for (const p of data) { const lm = p.published_at?.split("T")[0] || today; urls += `\n  <url>\n    <loc>${BASE_URL}/blog/${p.slug}</loc>\n    <lastmod>${lm}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>`; }
   console.log(`[sitemap] Blog: ${data.length}`);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls}\n</urlset>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
 }
