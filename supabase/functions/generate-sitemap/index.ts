@@ -2,11 +2,13 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Content-Type": "application/xml; charset=utf-8",
-  "Cache-Control": "public, max-age=300, s-maxage=3600",
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+  "Pragma": "no-cache",
+  "Expires": "0",
 };
 
-const BASE_URL = "https://getpawsy.pet";
-const SITEMAP_FN_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap";
+const CANONICAL_ORIGIN = "https://getpawsy.pet";
+const BASE_URL = CANONICAL_ORIGIN;
 
 interface GuideEntry { slug: string; updatedAt: string; priority: string }
 
@@ -86,7 +88,7 @@ Deno.serve(async (req: Request) => {
 
 function sitemapIndex(today: string): string {
   const types = ["static", "products", "categories", "bestsellers", "collections", "blog", "guides"];
-  const entries = types.map(t => `  <sitemap>\n    <loc>${SITEMAP_FN_URL}?type=${t}</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`).join("\n");
+  const entries = types.map(t => `  <sitemap>\n    <loc>${CANONICAL_ORIGIN}/sitemap-${t}.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</sitemapindex>`;
 }
 
