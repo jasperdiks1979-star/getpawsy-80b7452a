@@ -9,10 +9,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowUp, ArrowDown, Minus, AlertTriangle, CheckCircle, 
-  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug, Activity, Wifi, WifiOff, Search, Crown, FileSearch 
+  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug, Activity, Wifi, WifiOff, Search, Crown, FileSearch, Clock, Power
 } from 'lucide-react';
 import { getExperimentsSummary } from '@/lib/guide-experiments';
-import { fetchGSCMetricsForGuides, triggerGSCSync, runGSCDiagnostic, type GSCGuideReport, type GSCFetchResult, type GSCDiagnosticResult, type GSCOptimizationFlag } from '@/lib/gsc';
+import { fetchGSCMetricsForGuides, triggerGSCSync, runGSCDiagnostic, fetchSyncRuns, fetchSyncSettings, updateSyncSettings, type GSCGuideReport, type GSCFetchResult, type GSCDiagnosticResult, type GSCOptimizationFlag, type GSCSyncRun, type GSCSyncSettings } from '@/lib/gsc';
 import { evaluateGuideAlerts, type GuideHealthStatus } from '@/lib/guide-monitoring';
 import { getScalingSummary, getWeeklySchedule, checkCannibalization, SCALING_GUIDES } from '@/lib/guide-scaling-150';
 import { detectBoostTargetsAdaptive, getBoostSummary, type RankBoostTarget, type BoostEngineResult } from '@/lib/rank-push-engine';
@@ -44,6 +44,8 @@ export default function GuidesDashboard() {
   const [gapReport, setGapReport] = useState<GapHijackReport | null>(null);
   const [dominanceReport, setDominanceReport] = useState<DominanceReport | null>(null);
   const [auditReport, setAuditReport] = useState<LinkAuditReport | null>(null);
+  const [syncRuns, setSyncRuns] = useState<GSCSyncRun[]>([]);
+  const [syncSettings, setSyncSettings] = useState<GSCSyncSettings | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -61,7 +63,11 @@ export default function GuidesDashboard() {
     setLoading(false);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+    fetchSyncRuns(10).then(setSyncRuns);
+    fetchSyncSettings().then(setSyncSettings);
+  }, []);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -88,6 +94,19 @@ export default function GuidesDashboard() {
       toast.error(`GSC sync failed: ${msg}`);
     } finally {
       setSyncing(false);
+      fetchSyncRuns(10).then(setSyncRuns);
+    }
+  };
+
+  const handleToggleAutoSync = async () => {
+    if (!syncSettings) return;
+    const newValue = !syncSettings.auto_sync_enabled;
+    const ok = await updateSyncSettings(newValue);
+    if (ok) {
+      setSyncSettings({ ...syncSettings, auto_sync_enabled: newValue });
+      toast.success(`Auto-sync ${newValue ? 'enabled' : 'disabled'}`);
+    } else {
+      toast.error('Failed to update auto-sync setting');
     }
   };
 
@@ -237,6 +256,61 @@ export default function GuidesDashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Sync Runs & Auto-Sync Panel */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-1.5"><Clock className="h-4 w-4" />GSC Sync History</CardTitle>
+              <div className="flex items-center gap-3">
+                {syncSettings && (
+                  <button onClick={handleToggleAutoSync} className="flex items-center gap-1.5 text-xs">
+                    <Power className={`h-3.5 w-3.5 ${syncSettings.auto_sync_enabled ? 'text-green-600' : 'text-muted-foreground'}`} />
+                    Auto-sync: <span className="font-medium">{syncSettings.auto_sync_enabled ? 'ON (daily 03:30)' : 'OFF'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="text-xs">
+            {syncRuns.length === 0 ? (
+              <p className="text-muted-foreground">No sync runs yet. Click "Force GSC Sync" to start.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead><tr className="border-b text-muted-foreground">
+                    <th className="text-left py-1 pr-2">Time</th>
+                    <th className="text-left py-1 pr-2">Reason</th>
+                    <th className="text-left py-1 pr-2">Status</th>
+                    <th className="text-right py-1 pr-2">Guides</th>
+                    <th className="text-right py-1 pr-2">Rows</th>
+                    <th className="text-right py-1 pr-2">Impressions</th>
+                    <th className="text-right py-1 pr-2">Duration</th>
+                    <th className="text-left py-1">Error</th>
+                  </tr></thead>
+                  <tbody>
+                    {syncRuns.map(run => (
+                      <tr key={run.id} className="border-b border-muted/30">
+                        <td className="py-1 pr-2 font-mono">{new Date(run.started_at).toLocaleString()}</td>
+                        <td className="py-1 pr-2"><Badge variant="outline" className="text-[10px]">{run.reason}</Badge></td>
+                        <td className="py-1 pr-2">
+                          <Badge variant={run.status === 'success' ? 'default' : run.status === 'error' ? 'destructive' : run.status === 'running' ? 'secondary' : 'outline'} className="text-[10px]">
+                            {run.status.toUpperCase()}
+                          </Badge>
+                        </td>
+                        <td className="py-1 pr-2 text-right">{run.guide_count}</td>
+                        <td className="py-1 pr-2 text-right">{run.rows_upserted}</td>
+                        <td className="py-1 pr-2 text-right">{run.total_impressions.toLocaleString()}</td>
+                        <td className="py-1 pr-2 text-right">{run.duration_ms ? `${(run.duration_ms / 1000).toFixed(1)}s` : '—'}</td>
+                        <td className="py-1 text-destructive truncate max-w-[200px]">{run.error_message || ''}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="experiments" className="space-y-4">
           <TabsList className="flex flex-wrap gap-1 h-auto">

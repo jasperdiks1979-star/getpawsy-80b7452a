@@ -44,7 +44,7 @@ export interface GSCGuideReport {
   } | null;
 }
 
-export type GSCDataStatus = 'loading' | 'no_sync' | 'no_data' | 'ready' | 'active';
+export type GSCDataStatus = 'loading' | 'no_sync' | 'no_data' | 'ready' | 'active' | 'error';
 
 export interface GSCOptimizationFlag {
   slug: string;
@@ -71,14 +71,47 @@ export interface GSCFetchResult {
   optimizationFlags?: GSCOptimizationFlag[];
 }
 
+export interface GSCSyncRun {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  duration_ms: number | null;
+  reason: string;
+  status: string;
+  days: number;
+  guide_count: number;
+  rows_upserted: number;
+  pages_with_data: number;
+  total_impressions: number;
+  total_clicks: number;
+  total_raw_rows: number;
+  unmatched_rows: number;
+  error_message: string | null;
+  metadata: Record<string, unknown> | null;
+}
+
+export interface GSCSyncSettings {
+  auto_sync_enabled: boolean;
+  sync_hour: number;
+  sync_minute: number;
+  updated_at: string;
+}
+
 // ============= DATA FETCHING =============
 
-/**
- * Fetch GSC metrics from the keyword_rankings table.
- * Returns structured data with explicit status for dashboard display.
- */
 export async function fetchGSCMetricsForGuides(): Promise<GSCFetchResult> {
-  // Fetch all rows with a slug (guide-level data)
+  // Check last sync run status from edge function
+  let lastSyncRun: GSCSyncRun | null = null;
+  try {
+    const runsResponse = await supabase.functions.invoke('fetch-keyword-rankings', {
+      body: { action: 'get_sync_runs', limit: 1 },
+    });
+    const runs = (runsResponse.data?.runs || []) as GSCSyncRun[];
+    lastSyncRun = runs[0] || null;
+  } catch {
+    // Ignore — will show no_sync status
+  }
+
   const { data: allRankings, error } = await supabase
     .from('keyword_rankings')
     .select('keyword, slug, impressions, clicks, ctr, position, tracked_date, last_synced_at')
@@ -90,7 +123,7 @@ export async function fetchGSCMetricsForGuides(): Promise<GSCFetchResult> {
     console.error('[GSC] Fetch error:', error);
     return {
       reports: [],
-      status: 'no_sync',
+      status: 'error',
       statusMessage: `Database error: ${error.message}`,
       lastSyncedAt: null,
       totalRows: 0,
@@ -98,21 +131,36 @@ export async function fetchGSCMetricsForGuides(): Promise<GSCFetchResult> {
   }
 
   if (!allRankings || allRankings.length === 0) {
+    // Determine status based on last sync run
+    let status: GSCDataStatus = 'no_sync';
+    let statusMessage = 'No GSC data synced yet. Click "Force GSC Sync" to fetch data.';
+
+    if (lastSyncRun) {
+      if (lastSyncRun.status === 'error') {
+        status = 'error';
+        statusMessage = `Last sync failed: ${lastSyncRun.error_message || 'Unknown error'}`;
+      } else if (lastSyncRun.status === 'no_data') {
+        status = 'no_data';
+        statusMessage = 'Sync ran but GSC returned no guide data. Pages may not be indexed yet.';
+      } else if (lastSyncRun.status === 'success' && lastSyncRun.guide_count === 0) {
+        status = 'no_data';
+        statusMessage = 'Sync succeeded but no /guides/ URLs found in GSC data.';
+      }
+    }
+
     return {
       reports: [],
-      status: 'no_sync',
-      statusMessage: 'No GSC data synced yet. Click "Force GSC Sync" to fetch data from Google Search Console.',
-      lastSyncedAt: null,
+      status,
+      statusMessage,
+      lastSyncedAt: lastSyncRun?.finished_at || null,
       totalRows: 0,
     };
   }
 
-  // Get last sync timestamp
   const lastSyncedAt = allRankings
     .filter(r => r.last_synced_at)
     .sort((a, b) => new Date(b.last_synced_at!).getTime() - new Date(a.last_synced_at!).getTime())[0]?.last_synced_at || null;
 
-  // Group by slug
   const slugMap = new Map<string, typeof allRankings>();
   for (const row of allRankings) {
     if (!row.slug) continue;
@@ -120,42 +168,30 @@ export async function fetchGSCMetricsForGuides(): Promise<GSCFetchResult> {
     slugMap.get(row.slug)!.push(row);
   }
 
-  const now = new Date();
-  const d7 = new Date(now.getTime() - 7 * 86400000).toISOString().split('T')[0];
-  const d14 = new Date(now.getTime() - 14 * 86400000).toISOString().split('T')[0];
-  const d28 = new Date(now.getTime() - 28 * 86400000).toISOString().split('T')[0];
+  const d28 = new Date(Date.now() - 28 * 86400000).toISOString().split('T')[0];
 
   const reports: GSCGuideReport[] = [];
 
   for (const [slug, rows] of slugMap) {
-    // Separate slug-level aggregates (keyword === slug) from query-level data
     const slugRows = rows.filter(r => r.keyword === slug);
     const queryRows = rows.filter(r => r.keyword !== slug);
-
-    // Use the most recent slug-level aggregate for metrics
-    const latestSlug = slugRows[0]; // already sorted desc
+    const latestSlug = slugRows[0];
 
     const buildPeriodMetrics = (periodRows: typeof slugRows, period: '7d' | '28d' | '90d'): GSCPageMetrics | null => {
       if (!periodRows || periodRows.length === 0) return null;
-      // Sum across period
       const totalImpr = periodRows.reduce((s, r) => s + (r.impressions || 0), 0);
       const totalClicks = periodRows.reduce((s, r) => s + (r.clicks || 0), 0);
       const avgPos = periodRows.reduce((s, r) => s + (r.position || 0), 0) / periodRows.length;
       return {
-        page: `/guides/${slug}/`,
-        slug,
-        impressions: totalImpr,
-        clicks: totalClicks,
+        page: `/guides/${slug}/`, slug,
+        impressions: totalImpr, clicks: totalClicks,
         ctr: totalImpr > 0 ? (totalClicks / totalImpr) * 100 : 0,
-        avgPosition: Math.round(avgPos * 10) / 10,
-        period,
+        avgPosition: Math.round(avgPos * 10) / 10, period,
       };
     };
 
-    // For guide-level, just use latest row data
     const current7d = latestSlug ? {
-      page: `/guides/${slug}/`,
-      slug,
+      page: `/guides/${slug}/`, slug,
       impressions: latestSlug.impressions || 0,
       clicks: latestSlug.clicks || 0,
       ctr: latestSlug.ctr ? latestSlug.ctr * 100 : 0,
@@ -163,43 +199,32 @@ export async function fetchGSCMetricsForGuides(): Promise<GSCFetchResult> {
       period: '7d' as const,
     } : null;
 
-    // 28d: aggregate all slug-level rows in last 28 days
     const rows28d = slugRows.filter(r => r.tracked_date >= d28);
     const metrics28d = buildPeriodMetrics(rows28d, '28d');
 
-    // Top queries from query-level data
     const topQueries: GSCQueryMetrics[] = queryRows
       .sort((a, b) => (b.impressions || 0) - (a.impressions || 0))
       .slice(0, 10)
       .map(r => ({
-        query: r.keyword,
-        page: `/guides/${slug}/`,
-        impressions: r.impressions || 0,
-        clicks: r.clicks || 0,
-        ctr: (r.ctr || 0) * 100,
-        position: r.position || 0,
+        query: r.keyword, page: `/guides/${slug}/`,
+        impressions: r.impressions || 0, clicks: r.clicks || 0,
+        ctr: (r.ctr || 0) * 100, position: r.position || 0,
       }));
 
     reports.push({
       slug,
-      periods: {
-        '7d': current7d,
-        '28d': metrics28d,
-        '90d': null,
-      },
+      periods: { '7d': current7d, '28d': metrics28d, '90d': null },
       topQueries,
-      delta7d: null, // Will compute once we have multiple sync points
+      delta7d: null,
     });
   }
 
-  // Compute sitewide metrics
   const totalImpressions = reports.reduce((s, r) => s + (r.periods['7d']?.impressions || 0), 0);
   const totalClicks = reports.reduce((s, r) => s + (r.periods['7d']?.clicks || 0), 0);
   const positionValues = reports.filter(r => r.periods['7d']?.avgPosition).map(r => r.periods['7d']!.avgPosition);
   const avgPosition = positionValues.length > 0 ? Math.round((positionValues.reduce((s, p) => s + p, 0) / positionValues.length) * 10) / 10 : 0;
   const totalQueries = reports.reduce((s, r) => s + r.topQueries.length, 0);
 
-  // Generate optimization flags
   const optimizationFlags: GSCOptimizationFlag[] = [];
   for (const report of reports) {
     const d7 = report.periods['7d'];
@@ -227,22 +252,19 @@ export async function fetchGSCMetricsForGuides(): Promise<GSCFetchResult> {
       ? `ACTIVE — ${reports.length} guides synced, ${totalImpressions} impressions, avg position ${avgPosition}`
       : reports.length > 0
       ? `${reports.length} guides with GSC data`
-      : 'GSC data synced but no guide pages matched. Ensure guides are indexed.',
+      : 'GSC data synced but no guide pages matched.',
     lastSyncedAt,
     totalRows: allRankings.length,
     sitewide: {
-      totalImpressions,
-      totalClicks,
-      avgPosition,
-      totalGuidesWithData: reports.length,
-      totalQueries,
+      totalImpressions, totalClicks, avgPosition,
+      totalGuidesWithData: reports.length, totalQueries,
     },
     optimizationFlags,
   };
 }
-/**
- * Trigger a manual GSC sync via the edge function.
- */
+
+// ============= SYNC TRIGGER =============
+
 export async function triggerGSCSync(): Promise<{
   success: boolean;
   message: string;
@@ -274,10 +296,12 @@ export async function triggerGSCSync(): Promise<{
     const queryCount = d.queryCount || 0;
     const totalRaw = d.totalRawRows || 0;
     const unmatched = d.unmatchedRows || 0;
+    const totalImpressions = d.totalImpressions || 0;
+    const totalClicks = d.totalClicks || 0;
 
     const msg = guideCount > 0
-      ? `✅ Synced ${guideCount} guide slugs, ${queryCount} queries (${totalRaw} raw GSC rows, ${unmatched} non-guide URLs)`
-      : `⚠️ GSC returned ${totalRaw} rows but 0 matched /guides/ URLs. Your guide pages may not be indexed yet. ${unmatched} URLs were non-guide pages (products, categories, etc).`;
+      ? `✅ Synced ${guideCount} guide slugs, ${queryCount} queries (${totalImpressions} impressions, ${totalClicks} clicks)`
+      : `⚠️ GSC returned ${totalRaw} rows but 0 matched /guides/ URLs. ${unmatched} non-guide URLs found.`;
 
     return {
       success: guideCount > 0,
@@ -293,6 +317,35 @@ export async function triggerGSCSync(): Promise<{
       data: { ok: false, stage: 'exception', error: errMsg },
     };
   }
+}
+
+// ============= SYNC RUNS =============
+
+export async function fetchSyncRuns(limit = 10): Promise<GSCSyncRun[]> {
+  const response = await supabase.functions.invoke('fetch-keyword-rankings', {
+    body: { action: 'get_sync_runs', limit },
+  });
+  if (response.error) {
+    console.error('[GSC] Failed to fetch sync runs:', response.error);
+    return [];
+  }
+  return (response.data?.runs || []) as GSCSyncRun[];
+}
+
+// ============= SYNC SETTINGS =============
+
+export async function fetchSyncSettings(): Promise<GSCSyncSettings> {
+  const response = await supabase.functions.invoke('fetch-keyword-rankings', {
+    body: { action: 'get_sync_settings' },
+  });
+  return (response.data?.settings || { auto_sync_enabled: true, sync_hour: 3, sync_minute: 30, updated_at: '' }) as GSCSyncSettings;
+}
+
+export async function updateSyncSettings(autoSyncEnabled: boolean): Promise<boolean> {
+  const response = await supabase.functions.invoke('fetch-keyword-rankings', {
+    body: { action: 'update_sync_settings', auto_sync_enabled: autoSyncEnabled },
+  });
+  return response.data?.ok === true;
 }
 
 // ============= GSC DIAGNOSTIC =============
@@ -311,20 +364,13 @@ export interface GSCDiagnosticResult {
   possible_causes?: string[];
 }
 
-/**
- * Run GSC diagnostic test — validates connection, property, and returns sample data.
- */
 export async function runGSCDiagnostic(): Promise<GSCDiagnosticResult> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
     return {
-      status: 'ERROR',
-      property: 'sc-domain:getpawsy.pet',
-      propertyType: 'DOMAIN',
-      serviceAccountEmail: 'unknown',
-      connected: false,
-      issue: 'Not authenticated',
-      fix_recommendation: 'Log in as admin first.',
+      status: 'ERROR', property: 'sc-domain:getpawsy.pet', propertyType: 'DOMAIN',
+      serviceAccountEmail: 'unknown', connected: false,
+      issue: 'Not authenticated', fix_recommendation: 'Log in as admin first.',
     };
   }
 
@@ -334,13 +380,9 @@ export async function runGSCDiagnostic(): Promise<GSCDiagnosticResult> {
 
   if (response.error) {
     return {
-      status: 'ERROR',
-      property: 'sc-domain:getpawsy.pet',
-      propertyType: 'DOMAIN',
-      serviceAccountEmail: 'unknown',
-      connected: false,
-      issue: response.error.message,
-      fix_recommendation: 'Check edge function logs for details.',
+      status: 'ERROR', property: 'sc-domain:getpawsy.pet', propertyType: 'DOMAIN',
+      serviceAccountEmail: 'unknown', connected: false,
+      issue: response.error.message, fix_recommendation: 'Check edge function logs for details.',
     };
   }
 

@@ -84,8 +84,17 @@ async function fetchGSCData(
   startDate: string,
   endDate: string,
   dimensions: string[],
-  rowLimit = 1000,
+  rowLimit = 5000,
 ): Promise<GSCResponse> {
+  const body = {
+    startDate,
+    endDate,
+    dimensions,
+    rowLimit,
+    startRow: 0,
+  };
+  console.log(`[GSC] API request: dims=${dimensions.join(',')}, range=${startDate}→${endDate}, limit=${rowLimit}`);
+
   const response = await fetch(
     `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
     {
@@ -94,13 +103,7 @@ async function fetchGSCData(
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        startDate,
-        endDate,
-        dimensions,
-        rowLimit,
-        startRow: 0,
-      }),
+      body: JSON.stringify(body),
     }
   );
 
@@ -114,24 +117,16 @@ async function fetchGSCData(
 
 // ============= GUIDE SLUG MAPPING =============
 
-/**
- * Extract guide slug from a GSC page URL.
- * GSC returns full URLs like: https://getpawsy.pet/guides/best-dog-bed-2026
- * We need to extract: best-dog-bed-2026
- */
 function matchPageToSlug(pageUrl: string): string | null {
   try {
-    // Handle full URLs
     const url = new URL(pageUrl.startsWith('http') ? pageUrl : `https://example.com${pageUrl}`);
-    const pathname = url.pathname.replace(/\/+$/, ''); // strip trailing slashes
+    const pathname = url.pathname.replace(/\/+$/, '');
     const parts = pathname.split('/').filter(Boolean);
-    // Match /guides/SLUG pattern
     if (parts[0] === 'guides' && parts[1]) {
       const slug = parts[1].toLowerCase().trim();
       if (slug.length > 0 && slug.length < 200) return slug;
     }
   } catch {
-    // Fallback: regex on raw string
     const match = pageUrl.match(/\/guides\/([^/?#]+)/i);
     if (match) {
       const slug = match[1].replace(/\/+$/, '').toLowerCase().trim();
@@ -139,6 +134,291 @@ function matchPageToSlug(pageUrl: string): string | null {
     }
   }
   return null;
+}
+
+// ============= CONCURRENCY LOCK =============
+
+async function acquireSyncLock(db: ReturnType<typeof createClient>, reason: string): Promise<{ lockId: string | null; error: string | null }> {
+  // Check for running syncs (with 10-minute timeout safeguard)
+  const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { data: running } = await db
+    .from('gsc_sync_runs')
+    .select('id, started_at')
+    .eq('status', 'running')
+    .gte('started_at', tenMinAgo)
+    .limit(1);
+
+  if (running && running.length > 0) {
+    return { lockId: null, error: 'SYNC_IN_PROGRESS' };
+  }
+
+  // Mark any stale "running" entries as failed (older than 10 min)
+  await db
+    .from('gsc_sync_runs')
+    .update({ status: 'error', error_message: 'Timed out (exceeded 10 min)', finished_at: new Date().toISOString() })
+    .eq('status', 'running')
+    .lt('started_at', tenMinAgo);
+
+  // Create new run record
+  const { data: run, error } = await db
+    .from('gsc_sync_runs')
+    .insert({ reason, status: 'running', days: 90 })
+    .select('id')
+    .single();
+
+  if (error || !run) {
+    return { lockId: null, error: `Failed to create sync run: ${error?.message || 'unknown'}` };
+  }
+
+  return { lockId: run.id, error: null };
+}
+
+async function releaseSyncLock(
+  db: ReturnType<typeof createClient>,
+  lockId: string,
+  result: {
+    status: string;
+    guideCount: number;
+    rowsUpserted: number;
+    pagesWithData: number;
+    totalImpressions: number;
+    totalClicks: number;
+    totalRawRows: number;
+    unmatchedRows: number;
+    errorMessage?: string;
+    metadata?: Record<string, unknown>;
+  }
+) {
+  const startedAt = await db.from('gsc_sync_runs').select('started_at').eq('id', lockId).single();
+  const durationMs = startedAt.data ? Date.now() - new Date(startedAt.data.started_at).getTime() : 0;
+
+  await db.from('gsc_sync_runs').update({
+    status: result.status,
+    finished_at: new Date().toISOString(),
+    duration_ms: durationMs,
+    guide_count: result.guideCount,
+    rows_upserted: result.rowsUpserted,
+    pages_with_data: result.pagesWithData,
+    total_impressions: result.totalImpressions,
+    total_clicks: result.totalClicks,
+    total_raw_rows: result.totalRawRows,
+    unmatched_rows: result.unmatchedRows,
+    error_message: result.errorMessage || null,
+    metadata: result.metadata || null,
+  }).eq('id', lockId);
+}
+
+// ============= CORE SYNC SERVICE =============
+
+async function runGSCSync(
+  adminSupabase: ReturnType<typeof createClient>,
+  serviceAccountJson: string,
+  reason: string,
+): Promise<Response> {
+  const SITE_URL = 'sc-domain:getpawsy.pet';
+  console.log(`[GSC Sync] === START (reason: ${reason}) ===`);
+
+  // 1. Acquire lock
+  const { lockId, error: lockError } = await acquireSyncLock(adminSupabase, reason);
+  if (!lockId) {
+    console.log(`[GSC Sync] Lock denied: ${lockError}`);
+    return new Response(
+      JSON.stringify({ ok: false, error: lockError, stage: 'lock' }),
+      { status: lockError === 'SYNC_IN_PROGRESS' ? 409 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  console.log(`[GSC Sync] Lock acquired: ${lockId}`);
+
+  try {
+    // 2. Date range
+    const today = new Date();
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() - 3);
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - 90);
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+    const startStr = formatDate(startDate);
+    const endStr = formatDate(endDate);
+
+    console.log(`[GSC Sync] Date range: ${startStr} → ${endStr}, property: ${SITE_URL}`);
+
+    // 3. Get access token
+    const accessToken = await getAccessToken(serviceAccountJson);
+    console.log('[GSC Sync] Access token obtained');
+
+    // 4. Fetch page-level data
+    const pageData = await fetchGSCData(accessToken, SITE_URL, startStr, endStr, ['page'], 5000);
+    const pageRows = pageData.rows || [];
+    console.log(`[GSC Sync] Page-level rows: ${pageRows.length}`);
+
+    // 5. Fetch page+query data
+    const queryData = await fetchGSCData(accessToken, SITE_URL, startStr, endStr, ['page', 'query'], 5000);
+    const queryRows = queryData.rows || [];
+    console.log(`[GSC Sync] Page+query rows: ${queryRows.length}`);
+
+    // Debug: log sample URLs
+    if (pageRows.length > 0) {
+      const samples = pageRows.slice(0, 5).map(r => `${r.keys[0]} → ${matchPageToSlug(r.keys[0]) || 'NO_MATCH'}`);
+      console.log(`[GSC Sync] Sample URL→slug mapping:\n  ${samples.join('\n  ')}`);
+    }
+
+    if (pageRows.length === 0 && queryRows.length === 0) {
+      console.log('[GSC Sync] No data returned from GSC API');
+      await releaseSyncLock(adminSupabase, lockId, {
+        status: 'no_data',
+        guideCount: 0, rowsUpserted: 0, pagesWithData: 0,
+        totalImpressions: 0, totalClicks: 0, totalRawRows: 0, unmatchedRows: 0,
+        errorMessage: 'GSC API returned 0 rows',
+        metadata: { siteUrl: SITE_URL, startDate: startStr, endDate: endStr },
+      });
+      return new Response(
+        JSON.stringify({
+          ok: true, success: true, count: 0, queryCount: 0, status: 'no_data',
+          totalRawRows: 0, unmatchedRows: 0, runId: lockId,
+          message: `No rows from GSC for ${SITE_URL} (${startStr}→${endStr}). Guides may not be indexed yet.`,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 6. Aggregate per guide slug
+    const slugAggregates: Record<string, {
+      impressions: number; clicks: number; positions: number[]; queries: string[];
+    }> = {};
+    let unmatchedCount = 0;
+
+    for (const row of queryRows) {
+      const slug = matchPageToSlug(row.keys[0]);
+      if (!slug) { unmatchedCount++; continue; }
+      if (!slugAggregates[slug]) {
+        slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [] };
+      }
+      slugAggregates[slug].impressions += row.impressions;
+      slugAggregates[slug].clicks += row.clicks;
+      slugAggregates[slug].positions.push(row.position);
+      const query = row.keys[1];
+      if (query && !slugAggregates[slug].queries.includes(query)) {
+        slugAggregates[slug].queries.push(query);
+      }
+    }
+
+    // Override with page-level totals (more accurate)
+    for (const row of pageRows) {
+      const slug = matchPageToSlug(row.keys[0]);
+      if (!slug) { unmatchedCount++; continue; }
+      if (!slugAggregates[slug]) {
+        slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [] };
+      }
+      slugAggregates[slug].impressions = row.impressions;
+      slugAggregates[slug].clicks = row.clicks;
+      slugAggregates[slug].positions = [row.position];
+    }
+
+    const now = new Date().toISOString();
+    const rankings = Object.entries(slugAggregates).map(([slug, agg]) => {
+      const avgPos = agg.positions.reduce((s, p) => s + p, 0) / agg.positions.length;
+      const ctr = agg.impressions > 0 ? agg.clicks / agg.impressions : 0;
+      return {
+        keyword: slug, slug,
+        position: Math.round(avgPos * 10) / 10,
+        clicks: agg.clicks, impressions: agg.impressions,
+        ctr: Math.round(ctr * 10000) / 10000,
+        country: 'all', device: 'all',
+        tracked_date: endStr, last_synced_at: now,
+      };
+    });
+
+    const totalImpressions = rankings.reduce((s, r) => s + r.impressions, 0);
+    const totalClicks = rankings.reduce((s, r) => s + r.clicks, 0);
+
+    console.log(`[GSC Sync] Matched ${rankings.length} guide slugs, ${totalImpressions} total impressions, ${totalClicks} total clicks`);
+
+    // 7. Query-level rows
+    const queryRankings = queryRows
+      .filter(row => matchPageToSlug(row.keys[0]) !== null)
+      .map(row => ({
+        keyword: row.keys[1], slug: matchPageToSlug(row.keys[0]),
+        position: Math.round(row.position * 10) / 10,
+        clicks: row.clicks, impressions: row.impressions,
+        ctr: Math.round(row.ctr * 10000) / 10000,
+        country: 'all', device: 'all',
+        tracked_date: endStr, last_synced_at: now,
+      }));
+
+    // 8. DB Upsert
+    let rowsUpserted = 0;
+    const { error: upsertError } = await adminSupabase
+      .from('keyword_rankings')
+      .upsert(rankings, { onConflict: 'keyword,country,device,tracked_date' });
+
+    if (upsertError) {
+      console.error('[GSC Sync] Slug upsert FAILED:', upsertError);
+      throw new Error(`DB upsert failed: ${upsertError.message}`);
+    }
+    rowsUpserted += rankings.length;
+
+    if (queryRankings.length > 0) {
+      const { error: qErr } = await adminSupabase
+        .from('keyword_rankings')
+        .upsert(queryRankings, { onConflict: 'keyword,country,device,tracked_date' });
+      if (qErr) {
+        console.warn('[GSC Sync] Query upsert warning:', qErr.message);
+      } else {
+        rowsUpserted += queryRankings.length;
+      }
+    }
+
+    console.log(`[GSC Sync] DB upserted ${rowsUpserted} rows`);
+
+    // 9. Release lock with success
+    const finalStatus = totalImpressions > 0 ? 'success' : 'no_data';
+    await releaseSyncLock(adminSupabase, lockId, {
+      status: finalStatus,
+      guideCount: rankings.length,
+      rowsUpserted,
+      pagesWithData: rankings.filter(r => r.impressions > 0).length,
+      totalImpressions, totalClicks,
+      totalRawRows: pageRows.length + queryRows.length,
+      unmatchedRows: unmatchedCount,
+      metadata: {
+        dateRange: { start: startStr, end: endStr },
+        slugs: rankings.map(r => ({ slug: r.slug, impressions: r.impressions, clicks: r.clicks, position: r.position })),
+      },
+    });
+
+    console.log(`[GSC Sync] === DONE (${finalStatus}) ===`);
+
+    return new Response(
+      JSON.stringify({
+        ok: true, success: true, status: finalStatus,
+        count: rankings.length, queryCount: queryRankings.length,
+        rowsUpserted, unmatchedRows: unmatchedCount,
+        totalRawRows: pageRows.length + queryRows.length,
+        totalImpressions, totalClicks,
+        syncedAt: now, runId: lockId,
+        dateRange: { start: startStr, end: endStr },
+        slugs: rankings.map(r => ({
+          slug: r.slug, impressions: r.impressions, clicks: r.clicks, position: r.position,
+        })),
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[GSC Sync] === FAILED: ${errMsg} ===`);
+    await releaseSyncLock(adminSupabase, lockId, {
+      status: 'error',
+      guideCount: 0, rowsUpserted: 0, pagesWithData: 0,
+      totalImpressions: 0, totalClicks: 0, totalRawRows: 0, unmatchedRows: 0,
+      errorMessage: errMsg,
+    });
+    return new Response(
+      JSON.stringify({ ok: false, error: errMsg, stage: 'sync', runId: lockId }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 }
 
 // ============= MAIN HANDLER =============
@@ -149,7 +429,43 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate user
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const serviceAccountJson = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_JSON');
+    if (!serviceAccountJson) {
+      return new Response(
+        JSON.stringify({ ok: false, error: 'GOOGLE_SERVICE_ACCOUNT_JSON secret not configured' }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const { action } = body;
+
+    // ============= ACTION: CRON SYNC (no auth required — called by pg_cron) =============
+    if (action === 'cron_sync') {
+      // Verify auto-sync is enabled
+      const { data: settings } = await adminSupabase
+        .from('gsc_sync_settings')
+        .select('auto_sync_enabled')
+        .eq('id', 'default')
+        .single();
+
+      if (!settings?.auto_sync_enabled) {
+        console.log('[GSC Cron] Auto-sync is disabled, skipping');
+        return new Response(
+          JSON.stringify({ ok: true, skipped: true, reason: 'auto_sync_disabled' }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return await runGSCSync(adminSupabase, serviceAccountJson, 'cron');
+    }
+
+    // ============= AUTH CHECK (for manual actions) =============
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
@@ -158,8 +474,6 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const authSupabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
@@ -171,10 +485,6 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Check admin role
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: roleData } = await adminSupabase
       .from('user_roles')
@@ -190,204 +500,50 @@ serve(async (req) => {
       );
     }
 
-    const body = await req.json().catch(() => ({}));
-    const { action } = body;
+    // ============= ACTION: SYNC (manual) =============
+    if (action === 'sync') {
+      return await runGSCSync(adminSupabase, serviceAccountJson, 'manual');
+    }
 
-    const serviceAccountJson = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_JSON');
-    if (!serviceAccountJson) {
+    // ============= ACTION: GET SYNC RUNS =============
+    if (action === 'get_sync_runs') {
+      const { data: runs, error } = await adminSupabase
+        .from('gsc_sync_runs')
+        .select('*')
+        .order('started_at', { ascending: false })
+        .limit(body.limit || 10);
+
+      if (error) throw error;
       return new Response(
-        JSON.stringify({ error: 'GOOGLE_SERVICE_ACCOUNT_JSON secret not configured', reason: 'missing_credentials' }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ runs: runs || [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // ============= ACTION: SYNC =============
-    if (action === 'sync') {
-      const SITE_URL = 'sc-domain:getpawsy.pet';
-
-      const today = new Date();
-      const endDate = new Date(today);
-      endDate.setDate(endDate.getDate() - 3); // GSC data delayed ~3 days
-      const startDate = new Date(endDate);
-      startDate.setDate(startDate.getDate() - 90); // Last 90 days for full coverage
-
-      const formatDate = (d: Date) => d.toISOString().split('T')[0];
-      const startStr = formatDate(startDate);
-      const endStr = formatDate(endDate);
-
-      console.log(`[GSC Sync] Fetching ${startStr} to ${endStr} for ${SITE_URL}`);
-
-      const accessToken = await getAccessToken(serviceAccountJson);
-
-      // Fetch page-level data first (for guide-level aggregates)
-      console.log('[GSC Sync] Fetching page-level data...');
-      const pageData = await fetchGSCData(
-        accessToken, SITE_URL, startStr, endStr,
-        ['page'], 5000
-      );
-      console.log(`[GSC Sync] Page-level rows: ${pageData.rows?.length ?? 0}`);
-
-      // Fetch with page + query dimensions for query-level detail
-      console.log('[GSC Sync] Fetching page+query data...');
-      const gscData = await fetchGSCData(
-        accessToken, SITE_URL, startStr, endStr,
-        ['page', 'query'], 5000
-      );
-      console.log(`[GSC Sync] Page+query rows: ${gscData.rows?.length ?? 0}`);
-
-      // Merge: use page-level for slug aggregates if available, query-level for detail
-      const allRows = gscData.rows || [];
-
-      if (allRows.length === 0 && (!pageData.rows || pageData.rows.length === 0)) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            count: 0,
-            reason: 'no_data',
-            message: `No rows returned from GSC for ${SITE_URL} (${startStr} to ${endStr}). Possible causes: (1) domain property not verified, (2) service account lacks access, (3) no indexed guide pages yet.`,
-            debug: { siteUrl: SITE_URL, startDate: startStr, endDate: endStr, dimensions: ['page', 'query'] },
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      console.log(`[GSC Sync] Got ${allRows.length} query rows, ${pageData.rows?.length ?? 0} page rows`);
-
-      // Debug: log first 10 page URLs from GSC to diagnose matching
-      if (pageData.rows && pageData.rows.length > 0) {
-        const sampleUrls = pageData.rows.slice(0, 10).map(r => r.keys[0]);
-        console.log(`[GSC Sync] Sample page URLs from GSC:`, JSON.stringify(sampleUrls));
-        // Test matching on samples
-        for (const url of sampleUrls) {
-          const slug = matchPageToSlug(url);
-          console.log(`[GSC Sync] URL: ${url} → slug: ${slug || 'NO_MATCH'}`);
-        }
-      }
-
-      // Aggregate per guide slug
-      const slugAggregates: Record<string, {
-        impressions: number; clicks: number; positions: number[]; queries: string[];
-      }> = {};
-
-      let unmatchedCount = 0;
-      const unmatchedSamples: string[] = [];
-
-      for (const row of allRows) {
-        const pageUrl = row.keys[0];
-        const query = row.keys[1];
-        const slug = matchPageToSlug(pageUrl);
-
-        if (!slug) {
-          unmatchedCount++;
-          if (unmatchedSamples.length < 5) unmatchedSamples.push(pageUrl);
-          continue;
-        }
-
-        if (!slugAggregates[slug]) {
-          slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [] };
-        }
-
-        slugAggregates[slug].impressions += row.impressions;
-        slugAggregates[slug].clicks += row.clicks;
-        slugAggregates[slug].positions.push(row.position);
-        if (!slugAggregates[slug].queries.includes(query)) {
-          slugAggregates[slug].queries.push(query);
-        }
-      }
-
-      if (unmatchedSamples.length > 0) {
-        console.log(`[GSC Sync] Unmatched URL samples:`, JSON.stringify(unmatchedSamples));
-      }
-
-      // Also incorporate page-level data (more accurate totals per slug)
-      if (pageData.rows) {
-        for (const row of pageData.rows) {
-          const pageUrl = row.keys[0];
-          const slug = matchPageToSlug(pageUrl);
-          if (!slug) continue;
-          // Page-level data gives us the true aggregate — override if present
-          if (!slugAggregates[slug]) {
-            slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [] };
-          }
-          // Use page-level totals as the canonical source
-          slugAggregates[slug].impressions = row.impressions;
-          slugAggregates[slug].clicks = row.clicks;
-          slugAggregates[slug].positions = [row.position];
-        }
-      }
-
-      const now = new Date().toISOString();
-      const rankings = Object.entries(slugAggregates).map(([slug, agg]) => {
-        const avgPos = agg.positions.reduce((s, p) => s + p, 0) / agg.positions.length;
-        const ctr = agg.impressions > 0 ? agg.clicks / agg.impressions : 0;
-        return {
-          keyword: slug,
-          slug,
-          position: Math.round(avgPos * 10) / 10,
-          clicks: agg.clicks,
-          impressions: agg.impressions,
-          ctr: Math.round(ctr * 10000) / 10000,
-          country: 'all',
-          device: 'all',
-          tracked_date: endStr,
-          last_synced_at: now,
-        };
-      });
-
-      console.log(`[GSC Sync] Aggregated ${rankings.length} guide slugs, ${Object.values(slugAggregates).reduce((s, a) => s + a.queries.length, 0)} unique queries`);
-
-      // Also store individual query-level data
-      const queryRankings = allRows
-        .filter(row => matchPageToSlug(row.keys[0]) !== null)
-        .map(row => ({
-          keyword: row.keys[1],
-          slug: matchPageToSlug(row.keys[0]),
-          position: Math.round(row.position * 10) / 10,
-          clicks: row.clicks,
-          impressions: row.impressions,
-          ctr: Math.round(row.ctr * 10000) / 10000,
-          country: 'all',
-          device: 'all',
-          tracked_date: endStr,
-          last_synced_at: now,
-        }));
-
-      // Upsert slug-level aggregates
-      const { error: upsertError } = await adminSupabase
-        .from('keyword_rankings')
-        .upsert(rankings, { onConflict: 'keyword,country,device,tracked_date' });
-
-      if (upsertError) {
-        console.error('[GSC Sync] Slug upsert error:', upsertError);
-        throw upsertError;
-      }
-
-      // Upsert query-level data
-      const { error: queryError } = await adminSupabase
-        .from('keyword_rankings')
-        .upsert(queryRankings, { onConflict: 'keyword,country,device,tracked_date' });
-
-      if (queryError) {
-        console.error('[GSC Sync] Query upsert error:', queryError);
-        // Non-fatal, continue
-      }
+    // ============= ACTION: GET/UPDATE SYNC SETTINGS =============
+    if (action === 'get_sync_settings') {
+      const { data: settings } = await adminSupabase
+        .from('gsc_sync_settings')
+        .select('*')
+        .eq('id', 'default')
+        .single();
 
       return new Response(
-        JSON.stringify({
-          success: true,
-          count: rankings.length,
-          queryCount: queryRankings.length,
-          unmatchedRows: unmatchedCount,
-          totalRawRows: allRows.length,
-          syncedAt: now,
-          dateRange: { start: startStr, end: endStr },
-          slugs: rankings.map(r => ({
-            slug: r.slug,
-            impressions: r.impressions,
-            clicks: r.clicks,
-            position: r.position,
-          })),
-        }),
+        JSON.stringify({ settings: settings || { auto_sync_enabled: true, sync_hour: 3, sync_minute: 30 } }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === 'update_sync_settings') {
+      const { auto_sync_enabled } = body;
+      const { error } = await adminSupabase
+        .from('gsc_sync_settings')
+        .update({ auto_sync_enabled, updated_at: new Date().toISOString(), updated_by: user.id })
+        .eq('id', 'default');
+
+      if (error) throw error;
+      return new Response(
+        JSON.stringify({ ok: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -403,7 +559,6 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      // Get last sync timestamp
       const { data: lastSync } = await adminSupabase
         .from('keyword_rankings')
         .select('last_synced_at')
@@ -454,13 +609,11 @@ serve(async (req) => {
     // ============= ACTION: GSC DIAGNOSTIC =============
     if (action === 'gsc_diagnostic') {
       const SITE_URL = 'sc-domain:getpawsy.pet';
-
       const today = new Date();
       const endDate = new Date(today);
       endDate.setDate(endDate.getDate() - 3);
       const startDate = new Date(endDate);
       startDate.setDate(startDate.getDate() - 7);
-
       const formatDate = (d: Date) => d.toISOString().split('T')[0];
       const startStr = formatDate(startDate);
       const endStr = formatDate(endDate);
@@ -469,31 +622,22 @@ serve(async (req) => {
       try {
         const sa = JSON.parse(serviceAccountJson);
         serviceAccountEmail = sa.client_email || 'unknown';
-      } catch {}
+      } catch { /* ignore */ }
 
       try {
         const accessToken = await getAccessToken(serviceAccountJson);
-
-        const gscData = await fetchGSCData(
-          accessToken, SITE_URL, startStr, endStr,
-          ['page'], 20
-        );
+        const gscData = await fetchGSCData(accessToken, SITE_URL, startStr, endStr, ['page'], 20);
 
         if (!gscData.rows || gscData.rows.length === 0) {
           return new Response(
             JSON.stringify({
-              status: 'NO_DATA',
-              property: SITE_URL,
-              propertyType: 'DOMAIN',
-              serviceAccountEmail,
-              dateRange: { start: startStr, end: endStr },
-              rowsFetched: 0,
-              connected: true,
+              status: 'NO_DATA', property: SITE_URL, propertyType: 'DOMAIN',
+              serviceAccountEmail, dateRange: { start: startStr, end: endStr },
+              rowsFetched: 0, connected: true,
               possible_causes: [
                 'New domain (insufficient crawl history)',
                 'No indexed guide pages yet',
                 'Service account may lack full access',
-                'Domain property not fully verified',
                 'GSC data delay (up to 3–5 days)',
               ],
             }),
@@ -503,18 +647,12 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify({
-            status: 'OK',
-            property: SITE_URL,
-            propertyType: 'DOMAIN',
-            serviceAccountEmail,
-            dateRange: { start: startStr, end: endStr },
-            rowsFetched: gscData.rows.length,
-            connected: true,
+            status: 'OK', property: SITE_URL, propertyType: 'DOMAIN',
+            serviceAccountEmail, dateRange: { start: startStr, end: endStr },
+            rowsFetched: gscData.rows.length, connected: true,
             sampleRows: gscData.rows.slice(0, 5).map(r => ({
-              page: r.keys[0],
-              impressions: r.impressions,
-              clicks: r.clicks,
-              position: Math.round(r.position * 10) / 10,
+              page: r.keys[0], impressions: r.impressions,
+              clicks: r.clicks, position: Math.round(r.position * 10) / 10,
             })),
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -522,11 +660,8 @@ serve(async (req) => {
       } catch (diagError) {
         return new Response(
           JSON.stringify({
-            status: 'ERROR',
-            property: SITE_URL,
-            propertyType: 'DOMAIN',
-            serviceAccountEmail,
-            connected: false,
+            status: 'ERROR', property: SITE_URL, propertyType: 'DOMAIN',
+            serviceAccountEmail, connected: false,
             issue: diagError instanceof Error ? diagError.message : 'Unknown error',
             fix_recommendation: diagError instanceof Error && diagError.message.includes('Token exchange')
               ? 'Service account credentials may be invalid. Re-upload GOOGLE_SERVICE_ACCOUNT_JSON.'
@@ -540,14 +675,14 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ error: 'Invalid action. Valid: sync, get_guide_metrics, add_keyword, gsc_diagnostic' }),
+      JSON.stringify({ error: 'Invalid action. Valid: sync, cron_sync, get_sync_runs, get_sync_settings, update_sync_settings, get_guide_metrics, add_keyword, gsc_diagnostic' }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error("Error:", error);
+    console.error("[GSC] Unhandled error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ ok: false, error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
