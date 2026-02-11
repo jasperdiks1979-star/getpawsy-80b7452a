@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const SITEMAP_BASE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap';
+const SITEMAP_BASE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/sitemap-xml';
 
 // Map of frontend paths to sitemap types
 const SITEMAP_TYPE_MAP: Record<string, string> = {
