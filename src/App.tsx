@@ -168,6 +168,10 @@ const GuidesDashboard = lazyWithRetry(() => import("./pages/admin/GuidesDashboar
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
+const AboutTheAuthor = lazyWithRetry(() => import("./pages/AboutTheAuthor"));
+const EditorialGuidelines = lazyWithRetry(() => import("./pages/EditorialGuidelines"));
+const HowWeTestProducts = lazyWithRetry(() => import("./pages/HowWeTestProducts"));
+const AffiliateDisclosure = lazyWithRetry(() => import("./pages/AffiliateDisclosure"));
 
 // Redirect component for /products/:slug -> /product/:slug (fixes duplicate page SEO issue)
 const ProductsSlugRedirect = () => {
@@ -286,6 +290,12 @@ const App = () => {
                         {/* Guides */}
                         <Route path="/guides" element={<GuidesIndex />} />
                         <Route path="/guides/:slug" element={<GuidePage />} />
+                        
+                        {/* Trust & Transparency Pages */}
+                        <Route path="/about-the-author" element={<AboutTheAuthor />} />
+                        <Route path="/editorial-guidelines" element={<EditorialGuidelines />} />
+                        <Route path="/how-we-test-products" element={<HowWeTestProducts />} />
+                        <Route path="/affiliate-disclosure" element={<AffiliateDisclosure />} />
                         
                         {/* Legacy URL redirects for SEO */}
                         <Route path="/return-policy" element={<Navigate to="/returns" replace />} />

@@ -99,6 +99,12 @@ export const Footer = () => {
       { label: 'Privacy Policy', href: '/privacy' },
       { label: 'Terms of Service', href: '/terms' },
     ],
+    transparency: [
+      { label: 'About the Author', href: '/about-the-author' },
+      { label: 'Editorial Guidelines', href: '/editorial-guidelines' },
+      { label: 'How We Test Products', href: '/how-we-test-products' },
+      { label: 'Affiliate Disclosure', href: '/affiliate-disclosure' },
+    ],
   };
 
   const socialLinks = [
@@ -271,6 +277,24 @@ export const Footer = () => {
               <h4 className="font-display font-semibold text-lg mb-5">Company</h4>
               <ul className="space-y-3">
                 {footerLinks.company.map((link) => (
+                  <li key={link.href}>
+                    <Link 
+                      to={link.href} 
+                      className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
+                    >
+                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      <span>{link.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Editorial & Transparency Links */}
+            <div>
+              <h4 className="font-display font-semibold text-lg mb-5">Editorial & Transparency</h4>
+              <ul className="space-y-3">
+                {footerLinks.transparency.map((link) => (
                   <li key={link.href}>
                     <Link 
                       to={link.href} 

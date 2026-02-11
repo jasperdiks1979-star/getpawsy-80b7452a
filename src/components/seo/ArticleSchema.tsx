@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { AUTHOR, getAuthorSchema, getPublisherSchema } from '@/lib/author-entity';
 
 interface ArticleSchemaProps {
   article: {
@@ -46,22 +47,8 @@ export function ArticleSchema({
     articleSection: article.category,
     keywords: article.tags?.join(', ') || article.category,
     inLanguage: 'en-US',
-    author: {
-      '@type': 'Person',
-      name: article.authorName || 'Pawsy Team',
-      url: baseUrl,
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'GetPawsy',
-      logo: {
-        '@type': 'ImageObject',
-        url: `${baseUrl}/favicon.png`,
-        width: 512,
-        height: 512,
-      },
-      url: baseUrl,
-    },
+    author: getAuthorSchema(),
+    publisher: getPublisherSchema(),
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': articleUrl,
