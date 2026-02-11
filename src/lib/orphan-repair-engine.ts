@@ -49,21 +49,21 @@ export interface RepairResult {
 // ============= CONSTANTS =============
 
 const MIN_INBOUND: Record<string, number> = {
-  cornerstone: 20,
-  hub: 5,
-  subguide: 3,
+  cornerstone: 60,
+  hub: 15,
+  subguide: 5,
 };
 
-const MAX_NEW_LINKS_PER_PAGE = 5;
-const MAX_CROSS_CLUSTER_PERCENT = 25;
+const MAX_NEW_LINKS_PER_PAGE = 10;
+const MAX_CROSS_CLUSTER_PERCENT = 15;
 const BRAND_NAME = 'Pawsy';
 
 // ============= ANCHOR STRATEGY =============
 
 const ANCHOR_DISTRIBUTION: { type: AnchorType; weight: number }[] = [
-  { type: 'partial', weight: 40 },
-  { type: 'semantic', weight: 30 },
-  { type: 'exact', weight: 20 },
+  { type: 'exact', weight: 40 },
+  { type: 'partial', weight: 30 },
+  { type: 'semantic', weight: 20 },
   { type: 'branded', weight: 10 },
 ];
 
@@ -269,50 +269,64 @@ export function runOrphanRepair(): RepairResult {
     log.push(`\n--- Repairing: ${orphan.slug} (${orphan.role}, need ${needed} links) ---`);
 
     if (guide.role === 'subguide') {
-      // 1 from cluster hub
+      // 1 from each cluster hub
       const hubs = findGuidesByRole(guide.cluster, 'hub');
       for (const hub of hubs) {
         if (injected >= needed) break;
         if (tryInjectLink(hub.slug, guide.slug, injections, extraLinks, log)) injected++;
       }
 
-      // 1 from cornerstone
+      // 1 from cornerstone (mandatory link to cornerstone)
       const cornerstones = findGuidesByRole(guide.cluster, 'cornerstone');
       for (const cs of cornerstones) {
         if (injected >= needed) break;
         if (tryInjectLink(cs.slug, guide.slug, injections, extraLinks, log)) injected++;
       }
 
-      // 1 from related subguide in same cluster
+      // Fill remaining from related subguides in same cluster
       const siblings = findGuidesByRole(guide.cluster, 'subguide', [guide.slug]);
       for (const sib of siblings) {
         if (injected >= needed) break;
         if (tryInjectLink(sib.slug, guide.slug, injections, extraLinks, log)) injected++;
       }
     } else if (guide.role === 'hub') {
-      // 2 from subguides
+      // Get links from all subguides in cluster
       const subguides = findGuidesByRole(guide.cluster, 'subguide');
-      let subCount = 0;
       for (const sub of subguides) {
-        if (subCount >= 2 || injected >= needed) break;
-        if (tryInjectLink(sub.slug, guide.slug, injections, extraLinks, log)) {
-          injected++;
-          subCount++;
-        }
+        if (injected >= needed) break;
+        if (tryInjectLink(sub.slug, guide.slug, injections, extraLinks, log)) injected++;
       }
 
-      // 1 from cornerstone
+      // From cornerstone
       const cornerstones = findGuidesByRole(guide.cluster, 'cornerstone');
       for (const cs of cornerstones) {
         if (injected >= needed) break;
         if (tryInjectLink(cs.slug, guide.slug, injections, extraLinks, log)) injected++;
       }
+
+      // Cross-cluster hub links (up to 15%)
+      const otherHubs = SCALING_GUIDES.filter(
+        g => g.cluster !== guide.cluster && g.role === 'hub' && g.slug !== guide.slug
+      );
+      for (const oh of otherHubs) {
+        if (injected >= needed) break;
+        if (tryInjectLink(oh.slug, guide.slug, injections, extraLinks, log)) injected++;
+      }
     } else if (guide.role === 'cornerstone') {
-      // Need 20+ inbound — get links from all cluster subguides
+      // Need 60+ inbound — get links from ALL cluster guides
       const allCluster = SCALING_GUIDES.filter(
         g => g.cluster === guide.cluster && g.slug !== guide.slug
       );
       for (const src of allCluster) {
+        if (injected >= needed) break;
+        if (tryInjectLink(src.slug, guide.slug, injections, extraLinks, log)) injected++;
+      }
+
+      // Cross-cluster links from other cornerstones and hubs
+      const crossCluster = SCALING_GUIDES.filter(
+        g => g.cluster !== guide.cluster && (g.role === 'cornerstone' || g.role === 'hub')
+      );
+      for (const src of crossCluster) {
         if (injected >= needed) break;
         if (tryInjectLink(src.slug, guide.slug, injections, extraLinks, log)) injected++;
       }

@@ -87,7 +87,7 @@ export const Footer = () => {
     ],
     support: [
       { label: 'Contact', href: '/contact' },
-      { label: 'Shipping', href: '/shipping' },
+      { label: 'Shipping', href: '/shipping', noFollow: true },
       { label: 'Returns', href: '/returns' },
       { label: 'FAQ', href: '/faq' },
       { label: 'Track Order', href: '/track', noFollow: true },
@@ -95,6 +95,7 @@ export const Footer = () => {
     company: [
       { label: 'About Us', href: '/about' },
       { label: 'Blog', href: '/blog' },
+      { label: 'Guides', href: '/guides' },
       { label: 'Privacy Policy', href: '/privacy' },
       { label: 'Terms of Service', href: '/terms' },
     ],

@@ -504,6 +504,78 @@ const Index = () => {
         <AnimatedTrustBadges />
       </SectionErrorBoundary>
 
+      {/* Popular Guides - SEO Authority Injection */}
+      <SectionErrorBoundary sectionName="Popular Guides">
+        <section className="py-16 bg-sand/30">
+          <div className="container px-4 md:px-6">
+            <motion.div
+              className="text-center mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Popular Guides</h2>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Expert-tested buying guides to help you choose the best products for your pet
+              </p>
+            </motion.div>
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              {[
+                {
+                  slug: 'best-cat-litter-box-2026',
+                  title: 'Best Cat Litter Boxes (2026)',
+                  desc: '12 tested picks for odor control, large cats & multi-cat homes.',
+                  icon: '🐱',
+                },
+                {
+                  slug: 'best-dog-bed-2026',
+                  title: 'Best Dog Beds (2026)',
+                  desc: 'Orthopedic, calming & durable picks tested by real dog owners.',
+                  icon: '🐶',
+                },
+                {
+                  slug: 'best-cat-litter-box-furniture-enclosures-2026',
+                  title: 'Best Litter Box Furniture (2026)',
+                  desc: 'Hidden enclosures & cabinets that blend into your home décor.',
+                  icon: '🏠',
+                },
+              ].map((guide) => (
+                <motion.div key={guide.slug} variants={itemVariants}>
+                  <Link
+                    to={`/guides/${guide.slug}`}
+                    className="group block bg-card rounded-2xl p-6 shadow-soft hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1 border border-border/50"
+                  >
+                    <span className="text-3xl mb-3 block">{guide.icon}</span>
+                    <h3 className="font-display font-semibold text-lg text-foreground group-hover:text-primary transition-colors mb-2">
+                      {guide.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-3">{guide.desc}</p>
+                    <span className="text-sm font-medium text-primary inline-flex items-center gap-1">
+                      Read Guide <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+            <div className="text-center mt-8">
+              <Link to="/guides">
+                <Button variant="outline" className="gap-2 rounded-full">
+                  View All Guides
+                  <BookOpen className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      </SectionErrorBoundary>
+
       {/* Bestsellers Section */}
       <SectionErrorBoundary sectionName="Bestsellers">
         <BestsellersSection />
