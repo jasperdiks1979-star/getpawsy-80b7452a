@@ -114,34 +114,22 @@ async function fetchGSCData(
 
 // ============= GUIDE SLUG MAPPING =============
 
-const GUIDE_SLUG_PATTERNS = [
-  'best-cat-litter-box-2026',
-  'how-many-litter-boxes-per-cat',
-  'best-cat-litter-box-furniture-enclosures-2026',
-  'best-litter-boxes-multi-cat',
-  'best-extra-large-litter-boxes',
-  'best-cat-trees-small-apartments',
-  'best-high-sided-litter-box',
-  'best-litter-box-kittens',
-  'best-litter-box-odor-bathroom',
-  'best-litter-box-senior-cats',
-  'best-litter-box-small-apartments',
-  'best-litter-box-studio-apartment',
-  'best-litter-box-under-100',
-  'best-low-tracking-litter-box',
-  'cat-condo-vs-cat-tower',
-  'choosing-safe-cat-tree-indoor',
-  'guinea-pig-cage-vs-playpen',
-  'how-to-choose-guinea-pig-cage',
-  'outdoor-dog-games-enrichment',
-];
-
+/**
+ * Dynamically extract guide slug from any /guides/SLUG URL.
+ * No hardcoded list — matches any guide page.
+ */
 function matchPageToSlug(pageUrl: string): string | null {
-  for (const slug of GUIDE_SLUG_PATTERNS) {
-    if (pageUrl.includes(`/guides/${slug}`)) {
-      return slug;
+  // Match /guides/SLUG or /guides/SLUG/
+  const match = pageUrl.match(/\/guides\/([a-z0-9][a-z0-9\-]*[a-z0-9])\/?(?:\?|#|$)/i);
+  if (match) return match[1];
+  // Fallback: try path extraction
+  try {
+    const url = new URL(pageUrl);
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (parts[0] === 'guides' && parts[1]) {
+      return parts[1].replace(/\/$/, '');
     }
-  }
+  } catch {}
   return null;
 }
 
@@ -213,7 +201,7 @@ serve(async (req) => {
       const endDate = new Date(today);
       endDate.setDate(endDate.getDate() - 3); // GSC data delayed ~3 days
       const startDate = new Date(endDate);
-      startDate.setDate(startDate.getDate() - 28); // Last 28 days
+      startDate.setDate(startDate.getDate() - 90); // Last 90 days for full coverage
 
       const formatDate = (d: Date) => d.toISOString().split('T')[0];
       const startStr = formatDate(startDate);
@@ -223,13 +211,26 @@ serve(async (req) => {
 
       const accessToken = await getAccessToken(serviceAccountJson);
 
-      // Fetch with page + query dimensions
+      // Fetch page-level data first (for guide-level aggregates)
+      console.log('[GSC Sync] Fetching page-level data...');
+      const pageData = await fetchGSCData(
+        accessToken, SITE_URL, startStr, endStr,
+        ['page'], 5000
+      );
+      console.log(`[GSC Sync] Page-level rows: ${pageData.rows?.length ?? 0}`);
+
+      // Fetch with page + query dimensions for query-level detail
+      console.log('[GSC Sync] Fetching page+query data...');
       const gscData = await fetchGSCData(
         accessToken, SITE_URL, startStr, endStr,
-        ['page', 'query'], 2000
+        ['page', 'query'], 5000
       );
+      console.log(`[GSC Sync] Page+query rows: ${gscData.rows?.length ?? 0}`);
 
-      if (!gscData.rows || gscData.rows.length === 0) {
+      // Merge: use page-level for slug aggregates if available, query-level for detail
+      const allRows = gscData.rows || [];
+
+      if (allRows.length === 0 && (!pageData.rows || pageData.rows.length === 0)) {
         return new Response(
           JSON.stringify({
             success: true,
@@ -242,7 +243,7 @@ serve(async (req) => {
         );
       }
 
-      console.log(`[GSC Sync] Got ${gscData.rows.length} raw rows`);
+      console.log(`[GSC Sync] Got ${allRows.length} query rows, ${pageData.rows?.length ?? 0} page rows`);
 
       // Aggregate per guide slug
       const slugAggregates: Record<string, {
@@ -251,7 +252,7 @@ serve(async (req) => {
 
       let unmatchedCount = 0;
 
-      for (const row of gscData.rows) {
+      for (const row of allRows) {
         const pageUrl = row.keys[0];
         const query = row.keys[1];
         const slug = matchPageToSlug(pageUrl);
@@ -273,12 +274,29 @@ serve(async (req) => {
         }
       }
 
+      // Also incorporate page-level data (more accurate totals per slug)
+      if (pageData.rows) {
+        for (const row of pageData.rows) {
+          const pageUrl = row.keys[0];
+          const slug = matchPageToSlug(pageUrl);
+          if (!slug) continue;
+          // Page-level data gives us the true aggregate — override if present
+          if (!slugAggregates[slug]) {
+            slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [] };
+          }
+          // Use page-level totals as the canonical source
+          slugAggregates[slug].impressions = row.impressions;
+          slugAggregates[slug].clicks = row.clicks;
+          slugAggregates[slug].positions = [row.position];
+        }
+      }
+
       const now = new Date().toISOString();
       const rankings = Object.entries(slugAggregates).map(([slug, agg]) => {
         const avgPos = agg.positions.reduce((s, p) => s + p, 0) / agg.positions.length;
         const ctr = agg.impressions > 0 ? agg.clicks / agg.impressions : 0;
         return {
-          keyword: slug, // use slug as keyword identifier
+          keyword: slug,
           slug,
           position: Math.round(avgPos * 10) / 10,
           clicks: agg.clicks,
@@ -291,8 +309,10 @@ serve(async (req) => {
         };
       });
 
+      console.log(`[GSC Sync] Aggregated ${rankings.length} guide slugs, ${Object.values(slugAggregates).reduce((s, a) => s + a.queries.length, 0)} unique queries`);
+
       // Also store individual query-level data
-      const queryRankings = gscData.rows
+      const queryRankings = allRows
         .filter(row => matchPageToSlug(row.keys[0]) !== null)
         .map(row => ({
           keyword: row.keys[1],
@@ -333,7 +353,7 @@ serve(async (req) => {
           count: rankings.length,
           queryCount: queryRankings.length,
           unmatchedRows: unmatchedCount,
-          totalRawRows: gscData.rows.length,
+          totalRawRows: allRows.length,
           syncedAt: now,
           dateRange: { start: startStr, end: endStr },
           slugs: rankings.map(r => ({

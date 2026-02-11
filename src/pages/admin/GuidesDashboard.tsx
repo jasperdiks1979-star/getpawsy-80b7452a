@@ -11,7 +11,7 @@ import {
   TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug, Activity, Wifi, WifiOff, Search, Crown, FileSearch 
 } from 'lucide-react';
 import { getExperimentsSummary } from '@/lib/guide-experiments';
-import { fetchGSCMetricsForGuides, triggerGSCSync, runGSCDiagnostic, type GSCGuideReport, type GSCFetchResult, type GSCDiagnosticResult } from '@/lib/gsc';
+import { fetchGSCMetricsForGuides, triggerGSCSync, runGSCDiagnostic, type GSCGuideReport, type GSCFetchResult, type GSCDiagnosticResult, type GSCOptimizationFlag } from '@/lib/gsc';
 import { evaluateGuideAlerts, type GuideHealthStatus } from '@/lib/guide-monitoring';
 import { getScalingSummary, getWeeklySchedule, checkCannibalization, SCALING_GUIDES } from '@/lib/guide-scaling-150';
 import { detectBoostTargetsAdaptive, getBoostSummary, type RankBoostTarget, type BoostEngineResult } from '@/lib/rank-push-engine';
@@ -167,11 +167,22 @@ export default function GuidesDashboard() {
 
         {/* Status bar */}
         {gscResult && (
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>Status: <Badge variant={gscResult.status === 'ready' ? 'default' : 'secondary'} className="text-[10px]">{gscResult.status}</Badge></span>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+            <span>Status: <Badge variant={gscResult.status === 'active' ? 'default' : gscResult.status === 'ready' ? 'default' : 'secondary'} className="text-[10px]">{gscResult.status.toUpperCase()}</Badge></span>
             {gscResult.lastSyncedAt && <span>Last sync: {new Date(gscResult.lastSyncedAt).toLocaleString()}</span>}
             <span>Rows: {gscResult.totalRows}</span>
+            {gscResult.sitewide && (
+              <>
+                <span>Guides: {gscResult.sitewide.totalGuidesWithData}</span>
+                <span>Impressions: {gscResult.sitewide.totalImpressions.toLocaleString()}</span>
+                <span>Avg Pos: {gscResult.sitewide.avgPosition}</span>
+                <span>Queries: {gscResult.sitewide.totalQueries}</span>
+              </>
+            )}
             <span>Orphans: <span className={liveOrphans.length > 0 ? 'text-destructive font-medium' : ''}>{liveOrphans.length}</span></span>
+            {gscResult.optimizationFlags && gscResult.optimizationFlags.length > 0 && (
+              <span>Flags: {gscResult.optimizationFlags.length}</span>
+            )}
           </div>
         )}
 
@@ -262,34 +273,79 @@ export default function GuidesDashboard() {
             ) : gscResult?.status === 'no_data' ? (
               <Alert><AlertTriangle className="h-4 w-4" /><AlertTitle>No Guide Data</AlertTitle><AlertDescription className="text-xs">{gscResult.statusMessage}</AlertDescription></Alert>
             ) : (
-              <div className="grid gap-4">
-                {gscData.map(report => {
-                  const d7 = report.periods['7d'];
-                  return (
-                    <Card key={report.slug}>
-                      <CardHeader className="pb-3"><CardTitle className="text-base">{report.slug}</CardTitle></CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-4 gap-4 text-center text-sm">
-                          <div><p className="text-muted-foreground text-xs">Impressions</p><p className="text-lg font-bold">{d7?.impressions ?? <EmptyMetric reason="Not indexed yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.impressions} suffix="" />}</div>
-                          <div><p className="text-muted-foreground text-xs">Clicks</p><p className="text-lg font-bold">{d7?.clicks ?? <EmptyMetric reason="No impressions yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.clicks} suffix="" />}</div>
-                          <div><p className="text-muted-foreground text-xs">CTR</p><p className="text-lg font-bold">{d7 ? `${d7.ctr.toFixed(2)}%` : <EmptyMetric reason="No impressions yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.ctr} suffix="%" />}</div>
-                          <div><p className="text-muted-foreground text-xs">Avg Position</p><p className="text-lg font-bold">{d7?.avgPosition ?? <EmptyMetric reason="Not indexed yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.position} suffix="" inverted />}</div>
-                        </div>
-                        {report.topQueries.length > 0 && (
-                          <div className="mt-3">
-                            <p className="text-xs font-medium text-muted-foreground mb-1">Top Queries</p>
-                            <div className="flex flex-wrap gap-1">
-                              {report.topQueries.slice(0, 5).map(q => (
-                                <Badge key={q.query} variant="outline" className="text-xs">{q.query} (pos {q.position.toFixed(1)})</Badge>
-                              ))}
-                            </div>
+              <div className="space-y-4">
+                {/* Sitewide Summary */}
+                {gscResult?.sitewide && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Sitewide GSC Summary (90d)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-5 gap-4 text-center text-sm">
+                        <div><p className="text-muted-foreground text-xs">Synced Guides</p><p className="text-lg font-bold">{gscResult.sitewide.totalGuidesWithData}</p></div>
+                        <div><p className="text-muted-foreground text-xs">Total Impressions</p><p className="text-lg font-bold">{gscResult.sitewide.totalImpressions.toLocaleString()}</p></div>
+                        <div><p className="text-muted-foreground text-xs">Total Clicks</p><p className="text-lg font-bold">{gscResult.sitewide.totalClicks.toLocaleString()}</p></div>
+                        <div><p className="text-muted-foreground text-xs">Avg Position</p><p className="text-lg font-bold">{gscResult.sitewide.avgPosition}</p></div>
+                        <div><p className="text-muted-foreground text-xs">Queries</p><p className="text-lg font-bold">{gscResult.sitewide.totalQueries}</p></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Optimization Flags */}
+                {gscResult?.optimizationFlags && gscResult.optimizationFlags.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Zap className="h-4 w-4" /> Auto-Optimization Flags ({gscResult.optimizationFlags.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1.5">
+                        {gscResult.optimizationFlags.map((flag, i) => (
+                          <div key={i} className="flex items-center gap-2 text-xs p-1.5 rounded bg-muted">
+                            <Badge variant={flag.flag === 'rank_boost_candidate' ? 'default' : flag.flag === 'ctr_optimization_required' ? 'destructive' : 'secondary'} className="text-[10px] shrink-0">
+                              {flag.flag === 'rank_boost_candidate' ? '🚀 RANK BOOST' : flag.flag === 'ctr_optimization_required' ? '📊 CTR FIX' : '🔍 INDEX BOOST'}
+                            </Badge>
+                            <span className="font-medium truncate">{flag.slug}</span>
+                            <span className="text-muted-foreground truncate">{flag.reason}</span>
                           </div>
-                        )}
-                        {report.topQueries.length === 0 && d7 && <p className="text-xs text-muted-foreground mt-2">No query-level data yet.</p>}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Per-guide reports */}
+                <div className="grid gap-4">
+                  {gscData.map(report => {
+                    const d7 = report.periods['7d'];
+                    return (
+                      <Card key={report.slug}>
+                        <CardHeader className="pb-3"><CardTitle className="text-base">{report.slug}</CardTitle></CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-4 gap-4 text-center text-sm">
+                            <div><p className="text-muted-foreground text-xs">Impressions</p><p className="text-lg font-bold">{d7?.impressions ?? <EmptyMetric reason="Not indexed yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.impressions} suffix="" />}</div>
+                            <div><p className="text-muted-foreground text-xs">Clicks</p><p className="text-lg font-bold">{d7?.clicks ?? <EmptyMetric reason="No impressions yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.clicks} suffix="" />}</div>
+                            <div><p className="text-muted-foreground text-xs">CTR</p><p className="text-lg font-bold">{d7 ? `${d7.ctr.toFixed(2)}%` : <EmptyMetric reason="No impressions yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.ctr} suffix="%" />}</div>
+                            <div><p className="text-muted-foreground text-xs">Avg Position</p><p className="text-lg font-bold">{d7?.avgPosition ?? <EmptyMetric reason="Not indexed yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.position} suffix="" inverted />}</div>
+                          </div>
+                          {report.topQueries.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">Top Queries</p>
+                              <div className="flex flex-wrap gap-1">
+                                {report.topQueries.slice(0, 5).map(q => (
+                                  <Badge key={q.query} variant="outline" className="text-xs">{q.query} (pos {q.position.toFixed(1)})</Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {report.topQueries.length === 0 && d7 && <p className="text-xs text-muted-foreground mt-2">No query-level data yet.</p>}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </TabsContent>
