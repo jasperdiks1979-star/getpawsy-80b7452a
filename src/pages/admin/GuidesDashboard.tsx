@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowUp, ArrowDown, Minus, AlertTriangle, CheckCircle, 
-  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug, Activity, Wifi, WifiOff, Search, Crown 
+  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug, Activity, Wifi, WifiOff, Search, Crown, FileSearch 
 } from 'lucide-react';
 import { getExperimentsSummary } from '@/lib/guide-experiments';
 import { fetchGSCMetricsForGuides, triggerGSCSync, runGSCDiagnostic, type GSCGuideReport, type GSCFetchResult, type GSCDiagnosticResult } from '@/lib/gsc';
@@ -21,6 +21,7 @@ import { runLinkMatrixOptimizer, type LinkMatrixOptimizerResult } from '@/lib/li
 import { runAccelerationEngine, type AccelerationReport } from '@/lib/rank-acceleration-engine';
 import { runGapHijackEngine, type GapHijackReport, type GapQuery } from '@/lib/gap-hijack-engine';
 import { runDominanceEngine, type DominanceReport } from '@/lib/dominance-engine';
+import { runInternalLinkAudit, type LinkAuditReport } from '@/lib/internal-link-audit';
 
 export default function GuidesDashboard() {
   const [searchParams] = useSearchParams();
@@ -40,6 +41,7 @@ export default function GuidesDashboard() {
   const [accelReport, setAccelReport] = useState<AccelerationReport | null>(null);
   const [gapReport, setGapReport] = useState<GapHijackReport | null>(null);
   const [dominanceReport, setDominanceReport] = useState<DominanceReport | null>(null);
+  const [auditReport, setAuditReport] = useState<LinkAuditReport | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -53,6 +55,7 @@ export default function GuidesDashboard() {
     const gapR = runGapHijackEngine(result.reports);
     setGapReport(gapR);
     setDominanceReport(runDominanceEngine(gapR, accelR));
+    setAuditReport(runInternalLinkAudit());
     setLoading(false);
   };
 
@@ -208,6 +211,7 @@ export default function GuidesDashboard() {
             <TabsTrigger value="acceleration"><TrendingUp className="h-4 w-4 mr-1" />Acceleration</TabsTrigger>
             <TabsTrigger value="gap-hijack"><Search className="h-4 w-4 mr-1" />Gap Hijack</TabsTrigger>
             <TabsTrigger value="dominance"><Crown className="h-4 w-4 mr-1" />Dominance</TabsTrigger>
+            <TabsTrigger value="link-audit"><FileSearch className="h-4 w-4 mr-1" />Link Audit</TabsTrigger>
           </TabsList>
 
           {/* TAB 1: A/B EXPERIMENTS */}
@@ -942,6 +946,173 @@ export default function GuidesDashboard() {
                     </CardContent>
                   </Card>
                 )}
+              </>
+            )}
+          </TabsContent>
+          {/* TAB: LINK AUDIT */}
+          <TabsContent value="link-audit" className="space-y-4">
+            {!auditReport ? (
+              <div className="space-y-4">{[1,2].map(i => <Card key={i}><CardContent className="pt-4"><Skeleton className="h-24 w-full" /></CardContent></Card>)}</div>
+            ) : (
+              <>
+                {/* Summary KPIs */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{auditReport.summary.totalPagesCrawled}</p><p className="text-[10px] text-muted-foreground">Pages Crawled</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{auditReport.summary.totalInternalLinks}</p><p className="text-[10px] text-muted-foreground">Internal Links</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className={`text-2xl font-bold ${auditReport.summary.brokenLinksCount > 0 ? 'text-destructive' : ''}`}>{auditReport.summary.brokenLinksCount}</p><p className="text-[10px] text-muted-foreground">Broken Links</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className={`text-2xl font-bold ${auditReport.summary.orphanCount > 0 ? 'text-destructive' : ''}`}>{auditReport.summary.orphanCount}</p><p className="text-[10px] text-muted-foreground">Orphan Pages</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{auditReport.summary.cornerstoneHealthy}/{auditReport.summary.cornerstoneTotal}</p><p className="text-[10px] text-muted-foreground">Cornerstones OK</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className={`text-2xl font-bold ${auditReport.summary.overOptimizedCount > 0 ? 'text-destructive' : ''}`}>{auditReport.summary.overOptimizedCount}</p><p className="text-[10px] text-muted-foreground">Over-Optimized</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className={`text-2xl font-bold ${auditReport.summary.underLinkedCount > 0 ? 'text-destructive' : ''}`}>{auditReport.summary.underLinkedCount}</p><p className="text-[10px] text-muted-foreground">Under-Linked</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className={`text-2xl font-bold ${auditReport.summary.sitemapMismatchCount > 0 ? 'text-destructive' : ''}`}>{auditReport.summary.sitemapMismatchCount}</p><p className="text-[10px] text-muted-foreground">Sitemap Issues</p></CardContent></Card>
+                </div>
+
+                {/* Utility Authority Leak */}
+                <Alert variant={auditReport.utilityAuthorityLeakStatus === 'leaking' ? 'destructive' : 'default'}>
+                  <Shield className="h-4 w-4" />
+                  <AlertTitle className="text-sm">Utility Authority Leak: {auditReport.utilityAuthorityLeakStatus === 'clean' ? '✅ Clean' : '⚠️ Leaking'}</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    {auditReport.utilityAuthorityLeakStatus === 'clean'
+                      ? 'No utility pages have excessive inbound links. Authority is flowing to content pages.'
+                      : 'Some utility pages (auth, cart, etc.) have >10 inbound links, leaking authority from content pages.'}
+                  </AlertDescription>
+                </Alert>
+
+                {/* Broken Links */}
+                {auditReport.brokenLinks.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">🔴 Broken Links ({auditReport.brokenLinks.length})</CardTitle></CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[200px]">
+                        <div className="space-y-1">
+                          {auditReport.brokenLinks.map((bl, i) => (
+                            <div key={i} className="flex items-center gap-2 text-[10px] font-mono p-1 rounded border">
+                              <Badge variant="destructive" className="text-[8px]">{bl.statusCode}</Badge>
+                              <span className="text-muted-foreground">{bl.sourcePage}</span>
+                              <span>→</span>
+                              <span className="font-medium">{bl.targetPage}</span>
+                              <span className="text-muted-foreground italic">"{bl.anchorText}"</span>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                )}
+                {auditReport.brokenLinks.length === 0 && (
+                  <Alert><CheckCircle className="h-4 w-4" /><AlertTitle className="text-sm">No Broken Links</AlertTitle><AlertDescription className="text-xs">All internal links resolve correctly.</AlertDescription></Alert>
+                )}
+
+                {/* Orphan Pages */}
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">👻 Orphan Pages ({auditReport.orphanCount})</CardTitle></CardHeader>
+                  <CardContent>
+                    {auditReport.orphanPages.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No orphan pages detected.</p>
+                    ) : (
+                      <ScrollArea className="h-[200px]">
+                        <div className="space-y-1">
+                          {auditReport.orphanPages.map((op, i) => (
+                            <div key={i} className="p-2 rounded border text-xs">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-[8px]">{op.type}</Badge>
+                                <span className="font-mono font-medium">{op.slug}</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{op.reason}</p>
+                              <div className="flex gap-2 mt-0.5">
+                                <Badge variant={op.linkedFromHomepage ? 'default' : 'destructive'} className="text-[8px]">
+                                  HP: {op.linkedFromHomepage ? '✓' : '✗'}
+                                </Badge>
+                                <Badge variant={op.linkedFromHub ? 'default' : 'destructive'} className="text-[8px]">
+                                  Hub: {op.linkedFromHub ? '✓' : '✗'}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Cornerstone Validation */}
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">🏛️ Cornerstone Validation</CardTitle></CardHeader>
+                  <CardContent className="space-y-2">
+                    {auditReport.cornerstoneStatus.map((cs, i) => (
+                      <div key={i} className="p-2 rounded border">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-mono font-medium">{cs.slug}</span>
+                          <Badge variant={cs.healthy ? 'default' : 'destructive'} className="text-[8px]">
+                            {cs.healthy ? '✅ Healthy' : `⚠️ ${cs.issues.length} issues`}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 mt-1 text-[10px]">
+                          <div>Inbound: <span className="font-bold">{cs.inboundLinks}</span></div>
+                          <div>Homepage: <span className={cs.homepageLinkPresent ? '' : 'text-destructive font-bold'}>{cs.homepageLinkPresent ? '✓' : '✗'}</span></div>
+                          <div>Hub links: <span className={cs.hubLinksPresent ? '' : 'text-destructive font-bold'}>{cs.hubLinksPresent ? '✓' : '✗'}</span></div>
+                          <div>Anchors: E{cs.anchorDistribution.exact}% P{cs.anchorDistribution.partial}% S{cs.anchorDistribution.semantic}% B{cs.anchorDistribution.branded}%</div>
+                        </div>
+                        {cs.issues.length > 0 && (
+                          <div className="mt-1 text-[10px] text-destructive">
+                            {cs.issues.map((issue, j) => <p key={j}>• {issue}</p>)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* Authority Distribution (Top 20) */}
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">📊 Authority Distribution (Top 20)</CardTitle></CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[300px]">
+                      <div className="space-y-1">
+                        {auditReport.authorityDistribution.slice(0, 20).map((ap, i) => (
+                          <div key={i} className="flex items-center gap-2 p-1.5 rounded border text-[10px]">
+                            <span className="w-5 text-muted-foreground font-bold">{i + 1}</span>
+                            <Badge variant="outline" className="text-[8px] min-w-[50px] justify-center">{ap.role}</Badge>
+                            <span className="font-mono flex-1 truncate">{ap.slug}</span>
+                            <span className="text-muted-foreground">In:{ap.inboundCount}</span>
+                            <span className="text-muted-foreground">Out:{ap.outboundCount}</span>
+                            <span className="text-muted-foreground">E:{ap.exactAnchorPercent}%</span>
+                            {ap.overOptimized && <Badge variant="destructive" className="text-[8px]">Over-opt</Badge>}
+                            {ap.underLinked && <Badge variant="destructive" className="text-[8px]">Under-linked</Badge>}
+                            {ap.utilityWithExcessiveInbound && <Badge variant="destructive" className="text-[8px]">Utility leak</Badge>}
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+
+                {/* Sitemap Mismatches */}
+                {auditReport.sitemapMismatches.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">🗺️ Sitemap Mismatches ({auditReport.sitemapMismatchCount})</CardTitle></CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {auditReport.sitemapMismatches.map((sm, i) => (
+                          <div key={i} className="flex items-center gap-2 text-[10px] p-1 rounded border">
+                            <Badge variant="outline" className="text-[8px]">{sm.issue.replace(/_/g, ' ')}</Badge>
+                            <span className="font-mono">{sm.url}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* JSON Summary */}
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">📋 Audit Summary (JSON)</CardTitle></CardHeader>
+                  <CardContent>
+                    <pre className="text-[10px] font-mono bg-muted p-3 rounded overflow-auto max-h-[200px]">
+                      {JSON.stringify(auditReport.summary, null, 2)}
+                    </pre>
+                  </CardContent>
+                </Card>
               </>
             )}
           </TabsContent>
