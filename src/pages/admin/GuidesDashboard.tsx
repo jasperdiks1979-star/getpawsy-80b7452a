@@ -14,12 +14,15 @@ import { evaluateGuideAlerts, type GuideHealthStatus } from '@/lib/guide-monitor
 import { getScalingSummary, getWeeklySchedule, checkCannibalization, SCALING_GUIDES } from '@/lib/guide-scaling-150';
 import { detectBoostTargets, getBoostSummary, type RankBoostTarget } from '@/lib/rank-push-engine';
 import { getLinkMatrixSummary, analyzeInternalLinks, type LinkAnalysis } from '@/lib/internal-link-matrix';
+import { runOrphanRepair, generateOrphanReport, type RepairResult } from '@/lib/orphan-repair-engine';
 
 export default function GuidesDashboard() {
   const [gscData, setGscData] = useState<GSCGuideReport[]>([]);
   const [healthStatuses, setHealthStatuses] = useState<GuideHealthStatus[]>([]);
   const [boostTargets, setBoostTargets] = useState<RankBoostTarget[]>([]);
   const [loading, setLoading] = useState(true);
+  const [repairResult, setRepairResult] = useState<RepairResult | null>(null);
+  const [repairRunning, setRepairRunning] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -240,14 +243,104 @@ export default function GuidesDashboard() {
             </ScrollArea>
           </TabsContent>
 
-          {/* TAB 5: LINK AUTHORITY FLOW */}
+          {/* TAB 5: LINK AUTHORITY FLOW + ORPHAN REPAIR */}
           <TabsContent value="links" className="space-y-4">
+            {/* Summary cards */}
             <div className="grid grid-cols-4 gap-4">
               <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{linkSummary.totalGuides}</p><p className="text-xs text-muted-foreground">Total Guides</p></CardContent></Card>
               <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{linkSummary.avgLinkStrength}</p><p className="text-xs text-muted-foreground">Avg Strength</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold text-destructive">{linkSummary.orphanCount}</p><p className="text-xs text-muted-foreground">Orphans</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold text-destructive">{linkSummary.orphanCount}</p><p className="text-xs text-muted-foreground">Orphans (Before)</p></CardContent></Card>
               <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{linkSummary.overusedAnchors.length}</p><p className="text-xs text-muted-foreground">Overused Anchors</p></CardContent></Card>
             </div>
+
+            {/* Orphan Repair Panel */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">🔧 Orphan Repair Engine</CardTitle>
+                  <button
+                    onClick={() => { setRepairRunning(true); setTimeout(() => { setRepairResult(runOrphanRepair()); setRepairRunning(false); }, 100); }}
+                    disabled={repairRunning}
+                    className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {repairRunning ? 'Running...' : repairResult ? 'Re-run Repair' : 'Run Repair'}
+                  </button>
+                </div>
+              </CardHeader>
+              {repairResult && (
+                <CardContent className="space-y-4">
+                  {/* Before/After */}
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="text-center p-3 rounded bg-muted">
+                      <p className="text-2xl font-bold text-destructive">{repairResult.orphansBefore}</p>
+                      <p className="text-[10px] text-muted-foreground">Orphans Before</p>
+                    </div>
+                    <div className="text-center p-3 rounded bg-muted">
+                      <p className={`text-2xl font-bold ${repairResult.orphansAfter < 20 ? 'text-green-600' : 'text-destructive'}`}>{repairResult.orphansAfter}</p>
+                      <p className="text-[10px] text-muted-foreground">Orphans After</p>
+                    </div>
+                    <div className="text-center p-3 rounded bg-muted">
+                      <p className="text-2xl font-bold">{repairResult.totalInjections}</p>
+                      <p className="text-[10px] text-muted-foreground">Links Injected</p>
+                    </div>
+                    <div className="text-center p-3 rounded bg-muted">
+                      <p className="text-2xl font-bold">{repairResult.avgInboundAfter}</p>
+                      <p className="text-[10px] text-muted-foreground">Avg Inbound (After)</p>
+                    </div>
+                  </div>
+
+                  {/* Cornerstone Inbound */}
+                  <div>
+                    <p className="text-xs font-semibold mb-2">Cornerstone Inbound Links</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {Object.entries(repairResult.cornerstoneInbound).map(([slug, count]) => (
+                        <div key={slug} className="flex items-center justify-between text-xs p-2 rounded border">
+                          <span className="truncate font-medium">{slug}</span>
+                          <Badge variant={count >= 20 ? 'default' : 'destructive'} className="text-[10px] shrink-0 ml-2">↓{count}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Cluster Authority */}
+                  <div>
+                    <p className="text-xs font-semibold mb-2">Cluster Authority Scores</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {Object.entries(repairResult.clusterAuthority).map(([cluster, score]) => (
+                        <div key={cluster} className="text-center p-2 rounded border">
+                          <p className={`text-xl font-bold ${score >= 60 ? 'text-green-600' : score >= 40 ? 'text-yellow-600' : 'text-destructive'}`}>{score}</p>
+                          <p className="text-[10px] text-muted-foreground">{cluster}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Top 10 Weakest */}
+                  <div>
+                    <p className="text-xs font-semibold mb-2">Top 10 Weakest Guides</p>
+                    <div className="space-y-1">
+                      {repairResult.weakestGuides.map((g, i) => (
+                        <div key={g.slug} className="flex items-center gap-2 text-xs p-2 rounded border">
+                          <span className="text-muted-foreground shrink-0 w-4">{i + 1}</span>
+                          <Badge variant={g.role === 'cornerstone' ? 'default' : g.role === 'hub' ? 'secondary' : 'outline'} className="text-[10px] shrink-0">{g.role}</Badge>
+                          <span className="font-medium truncate flex-1">{g.slug}</span>
+                          <span className="text-muted-foreground shrink-0">↓{g.inbound}</span>
+                          <span className={`font-bold shrink-0 ${g.strength >= 70 ? 'text-green-600' : g.strength >= 40 ? 'text-yellow-600' : 'text-destructive'}`}>{g.strength}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Repair Log */}
+                  <details className="text-xs">
+                    <summary className="cursor-pointer font-semibold text-muted-foreground">View Repair Log ({repairResult.log.length} entries)</summary>
+                    <ScrollArea className="h-[200px] mt-2">
+                      <pre className="text-[10px] whitespace-pre-wrap p-2 rounded bg-muted">{repairResult.log.join('\n')}</pre>
+                    </ScrollArea>
+                  </details>
+                </CardContent>
+              )}
+            </Card>
 
             {/* Cluster Health */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -275,7 +368,7 @@ export default function GuidesDashboard() {
               </Alert>
             )}
 
-            {/* Top guides by strength */}
+            {/* All guides by strength */}
             <ScrollArea className="h-[400px]">
               <div className="space-y-1">
                 {linkAnalyses
@@ -285,7 +378,7 @@ export default function GuidesDashboard() {
                       <Badge variant={a.role === 'cornerstone' ? 'default' : a.role === 'hub' ? 'secondary' : 'outline'} className="text-[10px] shrink-0">{a.role}</Badge>
                       <span className="font-medium truncate flex-1">{a.slug}</span>
                       <span className="text-muted-foreground shrink-0">↓{a.inboundCount}/{a.targetInbound}</span>
-                      <span className={`font-bold shrink-0 ${a.linkStrengthScore >= 70 ? 'text-green-600' : a.linkStrengthScore >= 40 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      <span className={`font-bold shrink-0 ${a.linkStrengthScore >= 70 ? 'text-green-600' : a.linkStrengthScore >= 40 ? 'text-yellow-600' : 'text-destructive'}`}>
                         {a.linkStrengthScore}
                       </span>
                       {a.isOrphan && <Badge variant="destructive" className="text-[10px]">orphan</Badge>}
