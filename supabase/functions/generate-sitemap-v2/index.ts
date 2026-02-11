@@ -66,7 +66,7 @@ async function getGuides(): Promise<GuideEntry[]> {
 function sitemapIndex(today: string): string {
   const types = ["static", "products", "categories", "bestsellers", "collections", "blog", "guides"];
   const entries = types
-    .map(t => `  <sitemap>\n    <loc>https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap-v2?type=${t}</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`)
+    .map(t => `  <sitemap>\n    <loc>https://getpawsy.pet/sitemap-${t}.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`)
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</sitemapindex>`;
 }
