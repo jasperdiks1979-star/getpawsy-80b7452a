@@ -234,6 +234,7 @@ function buildCrawledPages(): CrawledPage[] {
 
 function buildLinkGraph(pages: CrawledPage[]): void {
   const pageMap = new Map(pages.map(p => [p.slug, p]));
+  const genericAnchors = ['read the full guide', 'see full comparison', 'explore the guide', 'view detailed picks', 'see our recommendations'];
 
   // Build links from guide linksTo data
   for (const guide of SCALING_GUIDES) {
@@ -241,12 +242,35 @@ function buildLinkGraph(pages: CrawledPage[]): void {
     const sourcePage = pageMap.get(sourceSlug);
     if (!sourcePage) continue;
 
-    for (const targetGuideSlug of guide.linksTo) {
+    for (let li = 0; li < guide.linksTo.length; li++) {
+      const targetGuideSlug = guide.linksTo[li];
       const targetSlug = `/guides/${targetGuideSlug}`;
       const targetPage = pageMap.get(targetSlug);
 
       const targetGuide = SCALING_GUIDES.find(g => g.slug === targetGuideSlug);
-      const anchor = targetGuide?.primaryKW || targetGuideSlug;
+      const rawKW = targetGuide?.primaryKW || targetGuideSlug;
+      const kwWords = rawKW.split(' ').filter(w => !['best', 'top', 'the', 'for', 'a', 'an'].includes(w));
+
+      // Rotate anchor types deterministically: partial → semantic → branded → generic
+      const linksToAnchorTypes = ['partial', 'semantic', 'branded', 'generic', 'partial', 'semantic'] as const;
+      const aType = linksToAnchorTypes[(li + guide.slug.length) % linksToAnchorTypes.length];
+      let anchor: string;
+      switch (aType) {
+        case 'partial':
+          anchor = kwWords.length >= 2 ? `${kwWords.slice(0, 2).join(' ')} guide` : `${rawKW} picks`;
+          break;
+        case 'semantic':
+          anchor = kwWords.length >= 2 ? `our ${kwWords.slice(-2).join(' ')} picks` : `expert ${rawKW} tips`;
+          break;
+        case 'branded':
+          anchor = `GetPawsy ${kwWords.slice(-2).join(' ')} guide`;
+          break;
+        case 'generic':
+          anchor = genericAnchors[(li + guide.slug.length) % genericAnchors.length];
+          break;
+        default:
+          anchor = `${rawKW} guide`;
+      }
 
       const link: InternalLink = {
         sourcePage: sourceSlug,
@@ -470,7 +494,7 @@ function buildLinkGraph(pages: CrawledPage[]): void {
   // Anchor type rotation for diversified distribution
   // Target: ≤30% exact, 30-40% partial, 15-25% branded, 10-20% generic
   const anchorTypes = ['partial', 'branded', 'semantic', 'generic', 'partial', 'branded', 'semantic', 'generic', 'partial'] as const;
-  const genericAnchors = ['read the full guide', 'see full comparison', 'explore the guide', 'view detailed picks', 'see our recommendations'];
+  // genericAnchors already declared above
 
   for (let i = 0; i < SCALING_GUIDES.length; i++) {
     const guide = SCALING_GUIDES[i];
@@ -552,7 +576,7 @@ function buildLinkGraph(pages: CrawledPage[]): void {
 
     // Cross-cluster contextual links (max ~15% of total, deterministic selection)
     // Cat guides link to dog-bed cornerstone, and vice versa
-    if (i % 7 === 0 && guide.role === 'subguide') {
+    if (i % 3 === 0 && guide.role !== 'cornerstone') {
       const crossTargets = Object.entries(clusterCornerstones)
         .filter(([cluster]) => cluster !== guide.cluster)
         .map(([, slug]) => slug);
@@ -631,10 +655,10 @@ function buildLinkGraph(pages: CrawledPage[]): void {
 
       // Count how many new links we've added in this pass
       let newLinksAdded = 0;
-      const MAX_NEW_LINKS = 3;
+      const MAX_NEW_LINKS = 5;
 
-      // Link to up to 3 nearby guides in the same cluster (neighbors by sorted index)
-      for (let offset = 1; offset <= 5 && newLinksAdded < MAX_NEW_LINKS; offset++) {
+      // Link to up to 5 nearby guides in the same cluster (neighbors by sorted index)
+      for (let offset = 1; offset <= 8 && newLinksAdded < MAX_NEW_LINKS; offset++) {
         const neighborIdx = (si + offset) % sorted.length;
         if (neighborIdx === si) continue;
         const neighbor = sorted[neighborIdx];
@@ -865,7 +889,7 @@ function analyzeAuthorityDistribution(pages: CrawledPage[]): AuthorityPage[] {
         partialAnchorPercent: partialPct,
         semanticAnchorPercent: semanticPct,
         overOptimized: exactPct > 30,
-        underLinked: page.inboundLinks.length < 5 && page.type === 'guide',
+        underLinked: page.inboundLinks.length < 20 && page.type === 'guide',
         utilityWithExcessiveInbound: isUtility && page.inboundLinks.length > 10,
       };
     })
