@@ -103,11 +103,10 @@ Crawl-delay: 2
 
 # =====================================================
 # SITEMAPS
-# Edge function serves proper XML directly — no JS required
+# Direct edge function serving valid XML (no cache)
 # =====================================================
 
-Sitemap: https://getpawsy.pet/sitemap.xml
-Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap?type=index
+Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap-v2?type=index
 
 # =====================================================
 # DISALLOWED PATHS (Private/Admin/Non-SEO pages)

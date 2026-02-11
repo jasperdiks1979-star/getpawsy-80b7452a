@@ -81,6 +81,9 @@ verify_jwt = false
 [functions.generate-sitemap]
 verify_jwt = false
 
+[functions.generate-sitemap-v2]
+verify_jwt = false
+
 [functions.unsubscribe-newsletter]
 verify_jwt = false
 
