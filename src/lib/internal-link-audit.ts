@@ -417,17 +417,38 @@ function buildLinkGraph(pages: CrawledPage[]): void {
     }
   }
 
+  // ============= AUTHORITY BOOST: Rules-based link injection =============
+  const clusterCornerstones: Record<string, string> = {
+    'cat-litter': 'best-cat-litter-box-2026',
+    'cat-furniture': 'best-cat-litter-box-furniture-enclosures-2026',
+    'dog-beds': 'best-dog-bed-2026',
+  };
+
   // Guides index links to all guide pages (simulated)
+  // Use partial/semantic anchors for cornerstones to avoid exact-match stacking
   if (guidesPage) {
-    for (const guide of SCALING_GUIDES) {
+    const cornerstoneSet = new Set(Object.values(clusterCornerstones));
+    for (let gi = 0; gi < SCALING_GUIDES.length; gi++) {
+      const guide = SCALING_GUIDES[gi];
       const targetSlug = `/guides/${guide.slug}`;
       const targetPage = pageMap.get(targetSlug);
       if (!targetPage) continue;
 
+      // Diversify anchors for cornerstones — use partial variant instead of exact title
+      let anchorText = guide.title;
+      if (cornerstoneSet.has(guide.slug)) {
+        const variants = [
+          `${guide.title} — Expert Picks`,
+          `See Our ${guide.primaryKW.split(' ').slice(1, 4).join(' ')} Guide`,
+          `${guide.title} Comparison`,
+        ];
+        anchorText = variants[gi % variants.length];
+      }
+
       const link: InternalLink = {
         sourcePage: '/guides',
         targetPage: targetSlug,
-        anchorText: guide.title,
+        anchorText,
         relAttribute: '',
         httpStatus: 200,
         redirectChain: [],
@@ -437,15 +458,8 @@ function buildLinkGraph(pages: CrawledPage[]): void {
     }
   }
 
-  // ============= AUTHORITY BOOST: Rules-based link injection =============
   // Phase 3-5: Every subguide links to its cluster cornerstone + primary hub
   // This ensures cornerstones reach 60-70+ inbound and hubs reach 40+
-
-  const clusterCornerstones: Record<string, string> = {
-    'cat-litter': 'best-cat-litter-box-2026',
-    'cat-furniture': 'best-cat-litter-box-furniture-enclosures-2026',
-    'dog-beds': 'best-dog-bed-2026',
-  };
 
   const clusterHubs: Record<string, string[]> = {
     'cat-litter': ['how-many-litter-boxes-per-cat', 'best-self-cleaning-litter-box-2026'],
@@ -454,8 +468,9 @@ function buildLinkGraph(pages: CrawledPage[]): void {
   };
 
   // Anchor type rotation for diversified distribution
-  // Uses guide index position (deterministic, same for all users)
-  const anchorTypes = ['partial', 'semantic', 'branded', 'partial', 'semantic'] as const;
+  // Target: ≤30% exact, 30-40% partial, 15-25% branded, 10-20% generic
+  const anchorTypes = ['partial', 'branded', 'semantic', 'generic', 'partial', 'branded', 'semantic', 'generic', 'partial'] as const;
+  const genericAnchors = ['read the full guide', 'see full comparison', 'explore the guide', 'view detailed picks', 'see our recommendations'];
 
   for (let i = 0; i < SCALING_GUIDES.length; i++) {
     const guide = SCALING_GUIDES[i];
@@ -483,6 +498,8 @@ function buildLinkGraph(pages: CrawledPage[]): void {
           anchor = `our ${csGuide?.primaryKW?.split(' ').slice(-2).join(' ')} guide` || anchor;
         } else if (anchorType === 'branded') {
           anchor = `GetPawsy ${csGuide?.primaryKW?.split(' ').slice(-2).join(' ')} guide` || anchor;
+        } else if (anchorType === 'generic') {
+          anchor = genericAnchors[i % genericAnchors.length];
         }
         const link: InternalLink = {
           sourcePage: sourceSlug,
@@ -517,6 +534,8 @@ function buildLinkGraph(pages: CrawledPage[]): void {
           anchor = `learn about ${hubGuide?.primaryKW?.split(' ').slice(-2).join(' ')}` || anchor;
         } else if (hubAnchorType === 'branded') {
           anchor = `GetPawsy ${hubGuide?.primaryKW?.split(' ').slice(-2).join(' ')} picks` || anchor;
+        } else if (hubAnchorType === 'generic') {
+          anchor = genericAnchors[(i + h) % genericAnchors.length];
         }
         const link: InternalLink = {
           sourcePage: sourceSlug,
@@ -566,10 +585,16 @@ function buildLinkGraph(pages: CrawledPage[]): void {
         if (!alreadyLinked) {
           const otherPage = pageMap.get(otherHubSlug);
           const otherGuide = SCALING_GUIDES.find(g => g.slug === otherHub);
+          // Use semantic/branded anchor instead of exact primaryKW
+          const hubCrossAnchors = [
+            `explore ${otherGuide?.primaryKW?.split(' ').slice(-2).join(' ')} tips`,
+            `GetPawsy ${otherGuide?.primaryKW?.split(' ').slice(-2).join(' ')} guide`,
+            `see related ${otherGuide?.primaryKW?.split(' ').slice(-2).join(' ')} picks`,
+          ];
           const link: InternalLink = {
             sourcePage: sourceSlug,
             targetPage: otherHubSlug,
-            anchorText: otherGuide?.primaryKW || otherHub,
+            anchorText: hubCrossAnchors[i % hubCrossAnchors.length],
             relAttribute: '',
             httpStatus: otherPage ? 200 : 404,
             redirectChain: [],
@@ -719,16 +744,22 @@ function analyzeAuthorityDistribution(pages: CrawledPage[]): AuthorityPage[] {
       const primaryKW = guide?.primaryKW?.toLowerCase() || '';
       const secondaryKWs = (guide?.secondaryKWs || []).map(k => k.toLowerCase());
 
-      let exact = 0, partial = 0, semantic = 0, branded = 0;
+      let exact = 0, partial = 0, semantic = 0, branded = 0, generic = 0;
+      const genericPatterns = ['read', 'see ', 'view', 'explore', 'learn', 'full guide', 'full comparison', 'recommendations', 'check out'];
+      // Use first 2+ significant words for partial matching (skip common "best")
+      const kwSignificantWords = primaryKW.split(' ').filter(w => !['best', 'top', 'the', 'for', 'a', 'an'].includes(w));
+      const partialMatchStr = kwSignificantWords.slice(0, 2).join(' ');
       for (const anchor of anchors) {
         if (!anchor) continue;
         if (anchor === primaryKW) {
           exact++;
-        } else if (primaryKW && anchor.includes(primaryKW.split(' ')[0])) {
-          partial++;
         } else if (anchor.includes('getpawsy') || anchor.includes('pawsy')) {
           branded++;
-        } else if (secondaryKWs.some(kw => anchor.includes(kw.split(' ')[0]))) {
+        } else if (genericPatterns.some(p => anchor.includes(p))) {
+          generic++;
+        } else if (partialMatchStr && anchor.includes(partialMatchStr)) {
+          partial++;
+        } else if (secondaryKWs.some(kw => anchor.includes(kw.split(' ').filter(w => w.length > 3)[0] || kw))) {
           semantic++;
         } else {
           partial++; // Default to partial
@@ -752,7 +783,7 @@ function analyzeAuthorityDistribution(pages: CrawledPage[]): AuthorityPage[] {
         exactAnchorPercent: exactPct,
         partialAnchorPercent: partialPct,
         semanticAnchorPercent: semanticPct,
-        overOptimized: exactPct > 35,
+        overOptimized: exactPct > 30,
         underLinked: page.inboundLinks.length < 5 && page.type === 'guide',
         utilityWithExcessiveInbound: isUtility && page.inboundLinks.length > 10,
       };
@@ -779,11 +810,15 @@ function validateCornerstones(pages: CrawledPage[]): CornerstoneStatus[] {
     // Anchor distribution
     const anchors = inboundLinks.map(l => l.anchorText.toLowerCase());
     const primaryKW = cs.primaryKW.toLowerCase();
-    let exact = 0, partial = 0, semantic = 0, branded = 0;
+    const genericPatterns = ['read', 'see ', 'view', 'explore', 'learn', 'full guide', 'full comparison', 'recommendations', 'check out'];
+    const kwSignificantWords = primaryKW.split(' ').filter(w => !['best', 'top', 'the', 'for', 'a', 'an'].includes(w));
+    const partialMatchStr = kwSignificantWords.slice(0, 2).join(' ');
+    let exact = 0, partial = 0, semantic = 0, branded = 0, generic = 0;
     for (const anchor of anchors) {
       if (anchor === primaryKW) exact++;
       else if (anchor.includes('getpawsy') || anchor.includes('pawsy')) branded++;
-      else if (primaryKW && anchor.includes(primaryKW.split(' ')[0])) partial++;
+      else if (genericPatterns.some(p => anchor.includes(p))) generic++;
+      else if (partialMatchStr && anchor.includes(partialMatchStr)) partial++;
       else semantic++;
     }
 
@@ -793,7 +828,7 @@ function validateCornerstones(pages: CrawledPage[]): CornerstoneStatus[] {
     if (!homepageLinkPresent) issues.push('Not linked from homepage');
     if (!hubLinksPresent) issues.push('No hub links in same cluster');
     if (inboundLinks.length < 8) issues.push(`Only ${inboundLinks.length} inbound links (target: 8+)`);
-    if (Math.round((exact / total) * 100) > 35) issues.push('Over-optimized anchor distribution (>35% exact)');
+    if (Math.round((exact / total) * 100) > 30) issues.push('Over-optimized anchor distribution (>30% exact)');
 
     return {
       slug: cs.slug,
