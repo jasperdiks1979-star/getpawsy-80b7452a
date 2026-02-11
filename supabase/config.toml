@@ -152,3 +152,6 @@ verify_jwt = false
 
 [functions.rank-harvest-cron]
 verify_jwt = false
+
+[functions.fetch-keyword-rankings]
+verify_jwt = false
