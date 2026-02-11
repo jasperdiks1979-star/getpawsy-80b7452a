@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -66,15 +67,25 @@ export default function GuidesDashboard() {
     setSyncing(true);
     setSyncMessage(null);
     setSyncDebugData(null);
+    console.log('[GSC] Force GSC Sync button clicked');
+    toast.info('GSC Sync started…');
     try {
       const result = await triggerGSCSync();
+      console.log('[GSC] Sync result:', result);
       setSyncMessage(result.message);
       setSyncDebugData(result.data || null);
-      if (result.success) await loadData();
+      if (result.success) {
+        toast.success(`GSC sync done: ${result.data?.count || 0} guides, ${result.data?.queryCount || 0} queries`);
+        await loadData();
+      } else {
+        toast.error(result.message || 'GSC sync returned no matching guides');
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error('[GSC] Sync exception:', err);
       setSyncMessage(`Unexpected error: ${msg}`);
       setSyncDebugData({ ok: false, error: msg });
+      toast.error(`GSC sync failed: ${msg}`);
     } finally {
       setSyncing(false);
     }
