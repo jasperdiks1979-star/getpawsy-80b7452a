@@ -216,3 +216,55 @@ export async function triggerGSCSync(): Promise<{
     data: response.data,
   };
 }
+
+// ============= GSC DIAGNOSTIC =============
+
+export interface GSCDiagnosticResult {
+  status: 'OK' | 'NO_DATA' | 'ERROR';
+  property: string;
+  propertyType: string;
+  serviceAccountEmail: string;
+  connected: boolean;
+  rowsFetched?: number;
+  dateRange?: { start: string; end: string };
+  sampleRows?: Array<{ page: string; impressions: number; clicks: number; position: number }>;
+  issue?: string;
+  fix_recommendation?: string;
+  possible_causes?: string[];
+}
+
+/**
+ * Run GSC diagnostic test — validates connection, property, and returns sample data.
+ */
+export async function runGSCDiagnostic(): Promise<GSCDiagnosticResult> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    return {
+      status: 'ERROR',
+      property: 'sc-domain:getpawsy.pet',
+      propertyType: 'DOMAIN',
+      serviceAccountEmail: 'unknown',
+      connected: false,
+      issue: 'Not authenticated',
+      fix_recommendation: 'Log in as admin first.',
+    };
+  }
+
+  const response = await supabase.functions.invoke('fetch-keyword-rankings', {
+    body: { action: 'gsc_diagnostic' },
+  });
+
+  if (response.error) {
+    return {
+      status: 'ERROR',
+      property: 'sc-domain:getpawsy.pet',
+      propertyType: 'DOMAIN',
+      serviceAccountEmail: 'unknown',
+      connected: false,
+      issue: response.error.message,
+      fix_recommendation: 'Check edge function logs for details.',
+    };
+  }
+
+  return response.data as GSCDiagnosticResult;
+}

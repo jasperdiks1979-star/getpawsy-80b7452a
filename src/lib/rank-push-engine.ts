@@ -1,8 +1,11 @@
 /**
- * Rank Push Engine (Position 15–50)
+ * Adaptive Rank Boost Engine
  * 
- * Detects keywords/guides in position 15–50 and generates prioritized boost targets.
- * Uses dynamic thresholds and priority scoring.
+ * Detects growth mode (Early / Standard) and identifies boost targets.
+ * Early mode: position 10–60, impressions ≥ 10
+ * Standard mode: position 15–40, impressions ≥ 150
+ * 
+ * Priority formula: ((60 - position) * 0.7) + (log(impressions + 1) * 10) + (cluster_authority * 0.5)
  */
 
 import type { GSCGuideReport, GSCQueryMetrics } from './gsc';
@@ -10,6 +13,7 @@ import type { GSCGuideReport, GSCQueryMetrics } from './gsc';
 // ============= TYPES =============
 
 export type BoostStatus = 'pending' | 'boosted' | 'waiting-reevaluation' | 'graduated';
+export type GrowthMode = 'early' | 'standard';
 
 export interface RankBoostTarget {
   slug: string;
@@ -26,56 +30,73 @@ export interface RankBoostTarget {
 }
 
 export interface BoostAction {
-  type: 'internal-links' | 'faq-section' | 'content-expansion' | 'anchor-optimization';
+  type: 'internal-links' | 'faq-section' | 'content-expansion' | 'anchor-optimization' | 'title-optimization';
   description: string;
   completed: boolean;
 }
 
-// ============= DETECTION =============
-
-const POSITION_MIN = 15;
-const POSITION_MAX = 50;
-const IMPRESSION_THRESHOLD_HIGH = 150;
-const IMPRESSION_THRESHOLD_FALLBACK = 20;
-
-/**
- * Calculate priority score: (50 - position) * log(impressions + 1)
- */
-function calcPriorityScore(position: number, impressions: number): number {
-  return Math.round((50 - position) * Math.log(impressions + 1) * 100) / 100;
+export interface BoostEngineResult {
+  mode: GrowthMode;
+  totalImpressions: number;
+  targets: RankBoostTarget[];
 }
 
-/**
- * Determine impression threshold based on total data volume.
- */
-function getImpressionThreshold(reports: GSCGuideReport[]): number {
+// ============= MODE THRESHOLDS =============
+
+const STD_POSITION_MIN = 15;
+const STD_POSITION_MAX = 40;
+const STD_IMPRESSION_THRESHOLD = 150;
+
+const EARLY_POSITION_MIN = 10;
+const EARLY_POSITION_MAX = 60;
+const EARLY_IMPRESSION_THRESHOLD = 10;
+const EARLY_MODE_THRESHOLD = 1000;
+
+// ============= SCORING =============
+
+function calcPriorityScore(position: number, impressions: number, clusterAuthority = 50): number {
+  const positionScore = (60 - position) * 0.7;
+  const impressionScore = Math.log(impressions + 1) * 10;
+  const authorityBonus = clusterAuthority * 0.5;
+  return Math.round((positionScore + impressionScore + authorityBonus) * 100) / 100;
+}
+
+// ============= GROWTH MODE DETECTION =============
+
+export function detectGrowthMode(reports: GSCGuideReport[]): { mode: GrowthMode; totalImpressions: number } {
   const totalImpressions = reports.reduce((sum, r) => {
     const p28 = r.periods['28d'];
     return sum + (p28?.impressions || 0);
   }, 0);
 
-  // If total impressions across all guides < 150, use fallback threshold
-  return totalImpressions < IMPRESSION_THRESHOLD_HIGH
-    ? IMPRESSION_THRESHOLD_FALLBACK
-    : IMPRESSION_THRESHOLD_HIGH;
+  return {
+    mode: totalImpressions < EARLY_MODE_THRESHOLD ? 'early' : 'standard',
+    totalImpressions,
+  };
 }
 
-/**
- * Scan GSC data and identify boost targets in position 15–50.
- */
+// ============= DETECTION =============
+
+/** Backward-compatible wrapper */
 export function detectBoostTargets(reports: GSCGuideReport[]): RankBoostTarget[] {
+  return detectBoostTargetsAdaptive(reports).targets;
+}
+
+export function detectBoostTargetsAdaptive(reports: GSCGuideReport[]): BoostEngineResult {
+  const { mode, totalImpressions } = detectGrowthMode(reports);
+  const posMin = mode === 'early' ? EARLY_POSITION_MIN : STD_POSITION_MIN;
+  const posMax = mode === 'early' ? EARLY_POSITION_MAX : STD_POSITION_MAX;
+  const threshold = mode === 'early' ? EARLY_IMPRESSION_THRESHOLD : STD_IMPRESSION_THRESHOLD;
+
   const targets: RankBoostTarget[] = [];
-  const threshold = getImpressionThreshold(reports);
 
   for (const report of reports) {
-    // Check query-level data
     const queries = report.topQueries.filter(
-      q => q.position >= POSITION_MIN && q.position <= POSITION_MAX && q.impressions >= threshold
+      q => q.position >= posMin && q.position <= posMax && q.impressions >= threshold
     );
 
-    // Also check page-level 28d data
     const p28 = report.periods['28d'];
-    if (p28 && p28.avgPosition >= POSITION_MIN && p28.avgPosition <= POSITION_MAX && p28.impressions >= threshold) {
+    if (p28 && p28.avgPosition >= posMin && p28.avgPosition <= posMax && p28.impressions >= threshold) {
       const exists = queries.some(q => q.query === report.slug);
       if (!exists) {
         queries.push({
@@ -89,9 +110,8 @@ export function detectBoostTargets(reports: GSCGuideReport[]): RankBoostTarget[]
       }
     }
 
-    // Also check 7d data for emerging opportunities
     const p7 = report.periods['7d'];
-    if (p7 && p7.avgPosition >= POSITION_MIN && p7.avgPosition <= POSITION_MAX && p7.impressions >= Math.max(threshold / 4, 5)) {
+    if (p7 && p7.avgPosition >= posMin && p7.avgPosition <= posMax && p7.impressions >= Math.max(threshold / 4, 5)) {
       const exists = queries.some(q => q.query === report.slug || q.query === `[page] ${report.slug}`);
       if (!exists) {
         queries.push({
@@ -121,31 +141,41 @@ export function detectBoostTargets(reports: GSCGuideReport[]): RankBoostTarget[]
     }
   }
 
-  return targets.sort((a, b) => b.priorityScore - a.priorityScore);
+  return {
+    mode,
+    totalImpressions,
+    targets: targets.sort((a, b) => b.priorityScore - a.priorityScore).slice(0, 15),
+  };
 }
 
 // ============= BOOST ACTIONS =============
 
 function generateBoostActions(query: GSCQueryMetrics): BoostAction[] {
+  const q = query.query.replace(/^\[(page|7d)\] /, '');
   return [
     {
+      type: 'content-expansion',
+      description: `Add exact match H2 heading for "${q}"`,
+      completed: false,
+    },
+    {
       type: 'internal-links',
-      description: `Add 2 internal links using anchor: "${query.query}" (exact + partial variant)`,
+      description: `Insert 2 contextual internal links using anchor: "${q}"`,
       completed: false,
     },
     {
       type: 'faq-section',
-      description: `Add FAQ: "What is the best ${query.query}?" with 60–80 word answer`,
-      completed: false,
-    },
-    {
-      type: 'content-expansion',
-      description: `Add 150–300 words with H3 subheading around "${query.query}"`,
+      description: `Expand FAQ with search-intent question about "${q}"`,
       completed: false,
     },
     {
       type: 'anchor-optimization',
-      description: `Optimize anchors: 60% exact, 40% partial/natural for "${query.query}"`,
+      description: `Add comparison section for "${q}"`,
+      completed: false,
+    },
+    {
+      type: 'title-optimization',
+      description: `Improve title tag CTR for "${q}" (add modifier: Tested, 2026, Pros & Cons)`,
       completed: false,
     },
   ];
@@ -165,8 +195,8 @@ export function shouldReevaluate(target: RankBoostTarget): boolean {
 }
 
 export function reevaluateTarget(target: RankBoostTarget, newPosition: number): RankBoostTarget {
-  if (newPosition < POSITION_MIN) return { ...target, status: 'graduated' };
-  if (newPosition >= POSITION_MIN && newPosition <= POSITION_MAX) return { ...target, status: 'waiting-reevaluation' };
+  if (newPosition < STD_POSITION_MIN) return { ...target, status: 'graduated' };
+  if (newPosition <= STD_POSITION_MAX) return { ...target, status: 'waiting-reevaluation' };
   return target;
 }
 

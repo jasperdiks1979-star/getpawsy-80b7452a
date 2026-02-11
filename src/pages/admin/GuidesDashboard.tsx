@@ -1,22 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowUp, ArrowDown, Minus, AlertTriangle, CheckCircle, 
-  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug 
+  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug, Activity, Wifi, WifiOff 
 } from 'lucide-react';
 import { getExperimentsSummary } from '@/lib/guide-experiments';
-import { fetchGSCMetricsForGuides, triggerGSCSync, type GSCGuideReport, type GSCFetchResult } from '@/lib/gsc';
+import { fetchGSCMetricsForGuides, triggerGSCSync, runGSCDiagnostic, type GSCGuideReport, type GSCFetchResult, type GSCDiagnosticResult } from '@/lib/gsc';
 import { evaluateGuideAlerts, type GuideHealthStatus } from '@/lib/guide-monitoring';
 import { getScalingSummary, getWeeklySchedule, checkCannibalization, SCALING_GUIDES } from '@/lib/guide-scaling-150';
-import { detectBoostTargets, getBoostSummary, type RankBoostTarget } from '@/lib/rank-push-engine';
+import { detectBoostTargetsAdaptive, getBoostSummary, type RankBoostTarget, type BoostEngineResult } from '@/lib/rank-push-engine';
 import { getLinkMatrixSummary, analyzeInternalLinks, type LinkAnalysis } from '@/lib/internal-link-matrix';
-import { runOrphanRepair, generateOrphanReport, detectOrphans, type RepairResult } from '@/lib/orphan-repair-engine';
+import { runOrphanRepair, detectOrphans, type RepairResult } from '@/lib/orphan-repair-engine';
+import { runLinkMatrixOptimizer, type LinkMatrixOptimizerResult } from '@/lib/link-matrix-optimizer';
 
 export default function GuidesDashboard() {
   const [searchParams] = useSearchParams();
@@ -24,19 +25,23 @@ export default function GuidesDashboard() {
 
   const [gscResult, setGscResult] = useState<GSCFetchResult | null>(null);
   const [healthStatuses, setHealthStatuses] = useState<GuideHealthStatus[]>([]);
-  const [boostTargets, setBoostTargets] = useState<RankBoostTarget[]>([]);
+  const [boostResult, setBoostResult] = useState<BoostEngineResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [repairResult, setRepairResult] = useState<RepairResult | null>(null);
   const [repairRunning, setRepairRunning] = useState(false);
+  const [diagnostic, setDiagnostic] = useState<GSCDiagnosticResult | null>(null);
+  const [diagRunning, setDiagRunning] = useState(false);
+  const [optimizerResult, setOptimizerResult] = useState<LinkMatrixOptimizerResult | null>(null);
 
   const loadData = async () => {
     setLoading(true);
     const result = await fetchGSCMetricsForGuides();
     setGscResult(result);
     setHealthStatuses(evaluateGuideAlerts(result.reports));
-    setBoostTargets(detectBoostTargets(result.reports));
+    setBoostResult(detectBoostTargetsAdaptive(result.reports));
+    setOptimizerResult(runLinkMatrixOptimizer());
     setLoading(false);
   };
 
@@ -48,12 +53,17 @@ export default function GuidesDashboard() {
     const result = await triggerGSCSync();
     setSyncMessage(result.message);
     setSyncing(false);
-    if (result.success) {
-      // Reload data after sync
-      await loadData();
-    }
+    if (result.success) await loadData();
   };
 
+  const handleDiagnostic = async () => {
+    setDiagRunning(true);
+    const result = await runGSCDiagnostic();
+    setDiagnostic(result);
+    setDiagRunning(false);
+  };
+
+  const boostTargets = boostResult?.targets || [];
   const gscData = gscResult?.reports || [];
   const experiments = getExperimentsSummary();
   const scaling = getScalingSummary();
@@ -62,8 +72,6 @@ export default function GuidesDashboard() {
   const boostSummary = getBoostSummary(boostTargets);
   const linkSummary = getLinkMatrixSummary();
   const linkAnalyses = analyzeInternalLinks();
-
-  // Live orphan count (not cached)
   const liveOrphans = detectOrphans();
 
   return (
@@ -72,14 +80,19 @@ export default function GuidesDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Guides SEO Dashboard</h1>
-            <p className="text-muted-foreground">A/B experiments, GSC monitoring, alerts, rank boost, link matrix & 150 scaling plan</p>
+            <p className="text-muted-foreground">
+              Growth Mode: <Badge variant={boostResult?.mode === 'early' ? 'secondary' : 'default'} className="ml-1">{boostResult?.mode?.toUpperCase() || 'DETECTING'}</Badge>
+              {boostResult && <span className="ml-2 text-xs">({boostResult.totalImpressions} total impressions)</span>}
+            </p>
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={handleSync}
-              disabled={syncing}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
+            <button onClick={handleDiagnostic} disabled={diagRunning}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border hover:bg-muted disabled:opacity-50">
+              <Activity className={`h-3.5 w-3.5 ${diagRunning ? 'animate-pulse' : ''}`} />
+              {diagRunning ? 'Testing...' : 'GSC Diagnostic'}
+            </button>
+            <button onClick={handleSync} disabled={syncing}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
               <RefreshCw className={`h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
               {syncing ? 'Syncing...' : 'Force GSC Sync'}
             </button>
@@ -90,6 +103,52 @@ export default function GuidesDashboard() {
           <Alert variant={syncMessage.includes('failed') ? 'destructive' : 'default'}>
             <AlertDescription className="text-xs">{syncMessage}</AlertDescription>
           </Alert>
+        )}
+
+        {/* GSC Connection Health Widget */}
+        {diagnostic && (
+          <Card className={diagnostic.status === 'OK' ? 'border-green-500/50' : diagnostic.status === 'ERROR' ? 'border-destructive' : 'border-yellow-500/50'}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                {diagnostic.connected ? <Wifi className="h-4 w-4 text-green-600" /> : <WifiOff className="h-4 w-4 text-destructive" />}
+                GSC Connection Health
+                <Badge variant={diagnostic.status === 'OK' ? 'default' : diagnostic.status === 'ERROR' ? 'destructive' : 'secondary'}>
+                  {diagnostic.status}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div><span className="text-muted-foreground">Property:</span> <span className="font-mono">{diagnostic.property}</span></div>
+                <div><span className="text-muted-foreground">Type:</span> {diagnostic.propertyType}</div>
+                <div><span className="text-muted-foreground">Service Account:</span> <span className="font-mono truncate block max-w-[200px]">{diagnostic.serviceAccountEmail}</span></div>
+                <div><span className="text-muted-foreground">Rows:</span> {diagnostic.rowsFetched ?? '—'}</div>
+              </div>
+              {diagnostic.issue && (
+                <Alert variant="destructive" className="mt-2">
+                  <AlertTitle className="text-xs">Error</AlertTitle>
+                  <AlertDescription className="text-xs">{diagnostic.issue}</AlertDescription>
+                  {diagnostic.fix_recommendation && <p className="text-xs mt-1 font-medium">Fix: {diagnostic.fix_recommendation}</p>}
+                </Alert>
+              )}
+              {diagnostic.possible_causes && (
+                <div className="mt-2 p-2 rounded bg-muted">
+                  <p className="font-medium mb-1">Possible causes:</p>
+                  <ul className="list-disc list-inside space-y-0.5">
+                    {diagnostic.possible_causes.map((c, i) => <li key={i}>{c}</li>)}
+                  </ul>
+                </div>
+              )}
+              {diagnostic.sampleRows && diagnostic.sampleRows.length > 0 && (
+                <div className="mt-2">
+                  <p className="font-medium mb-1">Sample data:</p>
+                  {diagnostic.sampleRows.map((r, i) => (
+                    <div key={i} className="font-mono text-[10px] text-muted-foreground">{r.page} — impr:{r.impressions} clicks:{r.clicks} pos:{r.position}</div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Status bar */}
@@ -114,11 +173,15 @@ export default function GuidesDashboard() {
               <div>Last Sync: {gscResult?.lastSyncedAt || 'never'}</div>
               <div>Total DB Rows: {gscResult?.totalRows || 0}</div>
               <div>Guide Reports: {gscResult?.reports.length || 0}</div>
+              <div>Growth Mode: {boostResult?.mode || 'unknown'} (total impr: {boostResult?.totalImpressions || 0})</div>
               <div>Rank Boost Targets: {boostTargets.length}</div>
               <div>Live Orphan Count: {liveOrphans.length}</div>
               <div>Repair Result: {repairResult ? `${repairResult.orphansBefore}→${repairResult.orphansAfter}` : 'not run'}</div>
+              <div>Weak Guides: {optimizerResult?.summary.weakCount || 0}</div>
+              <div>Cornerstones At Risk: {optimizerResult?.summary.cornerstonesAtRisk || 0}</div>
+              <div>Avg Strength: {optimizerResult?.summary.avgStrength || 0}</div>
+              <div>Diag Status: {diagnostic?.status || 'not run'}</div>
               <div>Scaling Guides Total: {SCALING_GUIDES.length}</div>
-              <div>Impression Threshold: {boostTargets.length > 0 ? 'applied' : 'n/a'}</div>
             </CardContent>
           </Card>
         )}
@@ -157,21 +220,15 @@ export default function GuidesDashboard() {
                       <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">Variant A</p>
                         <p className="text-xs">{exp.variantA.title}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Impr: {exp.metrics.A.impressions} | CTR: {exp.metrics.A.ctr.toFixed(2)}%
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Impr: {exp.metrics.A.impressions} | CTR: {exp.metrics.A.ctr.toFixed(2)}%</p>
                       </div>
                       <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">Variant B</p>
                         <p className="text-xs">{exp.variantB.title}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Impr: {exp.metrics.B.impressions} | CTR: {exp.metrics.B.ctr.toFixed(2)}%
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Impr: {exp.metrics.B.impressions} | CTR: {exp.metrics.B.ctr.toFixed(2)}%</p>
                       </div>
                     </div>
-                    <div className="text-xs p-2 rounded bg-muted">
-                      <strong>Decision:</strong> {exp.decision.reason}
-                    </div>
+                    <div className="text-xs p-2 rounded bg-muted"><strong>Decision:</strong> {exp.decision.reason}</div>
                   </CardContent>
                 </Card>
               ))}
@@ -181,70 +238,36 @@ export default function GuidesDashboard() {
           {/* TAB 2: GSC MONITORING */}
           <TabsContent value="monitoring" className="space-y-4">
             {loading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map(i => (
-                  <Card key={i}><CardContent className="pt-4"><Skeleton className="h-24 w-full" /></CardContent></Card>
-                ))}
-              </div>
+              <div className="space-y-4">{[1, 2, 3].map(i => <Card key={i}><CardContent className="pt-4"><Skeleton className="h-24 w-full" /></CardContent></Card>)}</div>
             ) : gscResult?.status === 'no_sync' ? (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Waiting for GSC Sync</AlertTitle>
-                <AlertDescription className="text-xs">{gscResult.statusMessage}</AlertDescription>
-              </Alert>
+              <Alert><AlertTriangle className="h-4 w-4" /><AlertTitle>Waiting for GSC Sync</AlertTitle><AlertDescription className="text-xs">{gscResult.statusMessage}</AlertDescription></Alert>
             ) : gscResult?.status === 'no_data' ? (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>No Guide Data</AlertTitle>
-                <AlertDescription className="text-xs">{gscResult.statusMessage}</AlertDescription>
-              </Alert>
+              <Alert><AlertTriangle className="h-4 w-4" /><AlertTitle>No Guide Data</AlertTitle><AlertDescription className="text-xs">{gscResult.statusMessage}</AlertDescription></Alert>
             ) : (
               <div className="grid gap-4">
                 {gscData.map(report => {
                   const d7 = report.periods['7d'];
                   return (
                     <Card key={report.slug}>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base">{report.slug}</CardTitle>
-                      </CardHeader>
+                      <CardHeader className="pb-3"><CardTitle className="text-base">{report.slug}</CardTitle></CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-4 gap-4 text-center text-sm">
-                          <div>
-                            <p className="text-muted-foreground text-xs">Impressions</p>
-                            <p className="text-lg font-bold">{d7?.impressions ?? <EmptyMetric reason="Not indexed yet" />}</p>
-                            {report.delta7d && <DeltaBadge value={report.delta7d.impressions} suffix="" />}
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-xs">Clicks</p>
-                            <p className="text-lg font-bold">{d7?.clicks ?? <EmptyMetric reason="No impressions yet" />}</p>
-                            {report.delta7d && <DeltaBadge value={report.delta7d.clicks} suffix="" />}
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-xs">CTR</p>
-                            <p className="text-lg font-bold">{d7 ? `${d7.ctr.toFixed(2)}%` : <EmptyMetric reason="No impressions yet" />}</p>
-                            {report.delta7d && <DeltaBadge value={report.delta7d.ctr} suffix="%" />}
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-xs">Avg Position</p>
-                            <p className="text-lg font-bold">{d7?.avgPosition ?? <EmptyMetric reason="Not indexed yet" />}</p>
-                            {report.delta7d && <DeltaBadge value={report.delta7d.position} suffix="" inverted />}
-                          </div>
+                          <div><p className="text-muted-foreground text-xs">Impressions</p><p className="text-lg font-bold">{d7?.impressions ?? <EmptyMetric reason="Not indexed yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.impressions} suffix="" />}</div>
+                          <div><p className="text-muted-foreground text-xs">Clicks</p><p className="text-lg font-bold">{d7?.clicks ?? <EmptyMetric reason="No impressions yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.clicks} suffix="" />}</div>
+                          <div><p className="text-muted-foreground text-xs">CTR</p><p className="text-lg font-bold">{d7 ? `${d7.ctr.toFixed(2)}%` : <EmptyMetric reason="No impressions yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.ctr} suffix="%" />}</div>
+                          <div><p className="text-muted-foreground text-xs">Avg Position</p><p className="text-lg font-bold">{d7?.avgPosition ?? <EmptyMetric reason="Not indexed yet" />}</p>{report.delta7d && <DeltaBadge value={report.delta7d.position} suffix="" inverted />}</div>
                         </div>
                         {report.topQueries.length > 0 && (
                           <div className="mt-3">
                             <p className="text-xs font-medium text-muted-foreground mb-1">Top Queries</p>
                             <div className="flex flex-wrap gap-1">
                               {report.topQueries.slice(0, 5).map(q => (
-                                <Badge key={q.query} variant="outline" className="text-xs">
-                                  {q.query} (pos {q.position.toFixed(1)})
-                                </Badge>
+                                <Badge key={q.query} variant="outline" className="text-xs">{q.query} (pos {q.position.toFixed(1)})</Badge>
                               ))}
                             </div>
                           </div>
                         )}
-                        {report.topQueries.length === 0 && d7 && (
-                          <p className="text-xs text-muted-foreground mt-2">No query-level data yet. Will populate on next sync.</p>
-                        )}
+                        {report.topQueries.length === 0 && d7 && <p className="text-xs text-muted-foreground mt-2">No query-level data yet.</p>}
                       </CardContent>
                     </Card>
                   );
@@ -258,20 +281,14 @@ export default function GuidesDashboard() {
             {loading ? (
               <div className="space-y-4">{[1,2].map(i => <Card key={i}><CardContent className="pt-4"><Skeleton className="h-16 w-full" /></CardContent></Card>)}</div>
             ) : healthStatuses.length === 0 ? (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>No Data</AlertTitle>
-                <AlertDescription className="text-xs">Sync GSC data first to generate health alerts.</AlertDescription>
-              </Alert>
+              <Alert><AlertTriangle className="h-4 w-4" /><AlertTitle>No Data</AlertTitle><AlertDescription className="text-xs">Sync GSC data first to generate health alerts.</AlertDescription></Alert>
             ) : (
               healthStatuses.map(status => (
                 <Card key={status.slug}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">{status.slug}</CardTitle>
-                      <Badge variant={status.status === 'healthy' ? 'default' : status.status === 'attention' ? 'secondary' : 'destructive'}>
-                        {status.status}
-                      </Badge>
+                      <Badge variant={status.status === 'healthy' ? 'default' : status.status === 'attention' ? 'secondary' : 'destructive'}>{status.status}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
@@ -281,23 +298,32 @@ export default function GuidesDashboard() {
                         <AlertDescription className="text-xs">{alert.description}</AlertDescription>
                       </Alert>
                     ))}
-                    {status.alerts.length === 0 && (
-                      <p className="text-xs text-muted-foreground">No alerts — guide is healthy.</p>
-                    )}
+                    {status.alerts.length === 0 && <p className="text-xs text-muted-foreground">No alerts — guide is healthy.</p>}
                   </CardContent>
                 </Card>
               ))
             )}
           </TabsContent>
 
-          {/* TAB 4: RANK BOOST TARGETS */}
+          {/* TAB 4: RANK BOOST TARGETS (Adaptive) */}
           <TabsContent value="boost" className="space-y-4">
             {loading ? (
-              <div className="grid grid-cols-5 gap-4">
-                {[1,2,3,4,5].map(i => <Card key={i}><CardContent className="pt-4"><Skeleton className="h-16 w-full" /></CardContent></Card>)}
-              </div>
+              <div className="grid grid-cols-5 gap-4">{[1,2,3,4,5].map(i => <Card key={i}><CardContent className="pt-4"><Skeleton className="h-16 w-full" /></CardContent></Card>)}</div>
             ) : (
               <>
+                {/* Mode indicator */}
+                <Alert>
+                  <Zap className="h-4 w-4" />
+                  <AlertTitle className="flex items-center gap-2">
+                    {boostResult?.mode === 'early' ? '🚀 Early Growth Mode' : '📈 Standard Mode'}
+                  </AlertTitle>
+                  <AlertDescription className="text-xs">
+                    {boostResult?.mode === 'early'
+                      ? `Domain has ${boostResult.totalImpressions} impressions (<1000). Using aggressive thresholds: position 10–60, ≥10 impressions.`
+                      : `Domain has ${boostResult?.totalImpressions || 0} impressions. Using standard thresholds: position 15–40, ≥150 impressions.`}
+                  </AlertDescription>
+                </Alert>
+
                 <div className="grid grid-cols-5 gap-4">
                   <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.total}</p><p className="text-xs text-muted-foreground">Total Targets</p></CardContent></Card>
                   <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.pending}</p><p className="text-xs text-muted-foreground">Pending</p></CardContent></Card>
@@ -311,18 +337,14 @@ export default function GuidesDashboard() {
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>No boost targets</AlertTitle>
                     <AlertDescription className="text-xs">
-                      {gscResult?.status === 'no_sync'
-                        ? 'Waiting for GSC sync. Click "Force GSC Sync" to fetch data.'
-                        : gscResult?.status === 'no_data'
-                        ? 'GSC data synced but no guide pages matched positions 15–50.'
-                        : 'No queries found in position 15–50 with enough impressions. Data will populate as GSC metrics accumulate.'}
+                      {gscResult?.status === 'no_sync' ? 'Waiting for GSC sync.' : gscResult?.status === 'no_data' ? 'GSC data synced but no guide pages matched.' : 'No queries found matching current mode thresholds.'}
                     </AlertDescription>
                   </Alert>
                 )}
 
                 <ScrollArea className="h-[500px]">
                   <div className="space-y-3">
-                    {boostTargets.slice(0, 20).map((target, i) => (
+                    {boostTargets.map((target, i) => (
                       <Card key={i}>
                         <CardContent className="pt-4">
                           <div className="flex items-center justify-between mb-2">
@@ -331,9 +353,7 @@ export default function GuidesDashboard() {
                               <p className="text-xs text-muted-foreground">{target.slug}</p>
                             </div>
                             <div className="flex gap-2">
-                              <Badge variant={target.status === 'graduated' ? 'default' : target.status === 'boosted' ? 'secondary' : 'outline'}>
-                                {target.status}
-                              </Badge>
+                              <Badge variant={target.status === 'graduated' ? 'default' : target.status === 'boosted' ? 'secondary' : 'outline'}>{target.status}</Badge>
                               <Badge variant="outline">Pos {target.avgPosition}</Badge>
                               <Badge variant="outline" className="text-[10px]">Score: {target.priorityScore}</Badge>
                             </div>
@@ -360,15 +380,69 @@ export default function GuidesDashboard() {
             )}
           </TabsContent>
 
-          {/* TAB 5: LINK AUTHORITY FLOW + ORPHAN REPAIR */}
+          {/* TAB 5: LINK MATRIX + OPTIMIZER + ORPHAN REPAIR */}
           <TabsContent value="links" className="space-y-4">
-            {/* Summary cards - use live orphan count */}
-            <div className="grid grid-cols-4 gap-4">
+            {/* Summary cards */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{linkSummary.totalGuides}</p><p className="text-xs text-muted-foreground">Total Guides</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{linkSummary.avgLinkStrength}</p><p className="text-xs text-muted-foreground">Avg Strength</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold text-destructive">{liveOrphans.length}</p><p className="text-xs text-muted-foreground">Orphans (Live)</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{linkSummary.overusedAnchors.length}</p><p className="text-xs text-muted-foreground">Overused Anchors</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{optimizerResult?.summary.avgStrength || linkSummary.avgLinkStrength}</p><p className="text-xs text-muted-foreground">Avg Strength</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold text-destructive">{liveOrphans.length}</p><p className="text-xs text-muted-foreground">Orphans</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold text-yellow-600">{optimizerResult?.summary.weakCount || 0}</p><p className="text-xs text-muted-foreground">Weak Guides</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold text-destructive">{optimizerResult?.summary.cornerstonesAtRisk || 0}</p><p className="text-xs text-muted-foreground">CS at Risk</p></CardContent></Card>
             </div>
+
+            {/* Cornerstone Authority */}
+            {optimizerResult && optimizerResult.cornerstoneAuthority.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">🏛️ Cornerstone Authority</CardTitle></CardHeader>
+                <CardContent className="space-y-2">
+                  {optimizerResult.cornerstoneAuthority.map(cs => (
+                    <div key={cs.slug} className="flex items-center gap-3 text-xs p-2 rounded border">
+                      <span className="font-medium truncate flex-1">{cs.slug}</span>
+                      <Badge variant={cs.atRisk ? 'destructive' : 'default'} className="text-[10px]">{cs.atRisk ? 'AT RISK' : 'HEALTHY'}</Badge>
+                      <span className="text-muted-foreground">↓{cs.inboundTotal}</span>
+                      <span className="text-muted-foreground">Sub:{cs.subguidePercent}%</span>
+                      <span className="text-muted-foreground">Cross:{cs.crossClusterPercent}%</span>
+                      {cs.risks.length > 0 && <span className="text-destructive text-[10px]">{cs.risks[0]}</span>}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Weak Guides — Link Injection Plans */}
+            {optimizerResult && optimizerResult.weakGuides.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">⚠️ Weak Guides — Auto Link Plan ({optimizerResult.weakGuides.length})</CardTitle>
+                  <CardDescription className="text-xs">Guides with strength score &lt; 20. Each shows recommended link sources.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[300px]">
+                    <div className="space-y-3">
+                      {optimizerResult.weakGuides.slice(0, 15).map(plan => (
+                        <div key={plan.weakSlug} className="p-2 rounded border space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[10px]">{plan.role}</Badge>
+                            <span className="font-medium text-xs truncate flex-1">{plan.weakSlug}</span>
+                            <span className="text-xs text-muted-foreground">Score: {plan.strengthScore}</span>
+                          </div>
+                          <div className="pl-4 space-y-0.5">
+                            {plan.recommendedLinks.map((link, i) => (
+                              <div key={i} className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <Badge variant="outline" className="text-[8px] px-1">{link.anchorType}</Badge>
+                                <span>from <span className="font-mono">{link.fromSlug}</span></span>
+                                <span className="italic">"{link.anchorText}"</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Orphan Repair Panel */}
             <Card>
@@ -387,34 +461,10 @@ export default function GuidesDashboard() {
               {repairResult && (
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-4 gap-3">
-                    <div className="text-center p-3 rounded bg-muted">
-                      <p className="text-2xl font-bold text-destructive">{repairResult.orphansBefore}</p>
-                      <p className="text-[10px] text-muted-foreground">Orphans Before</p>
-                    </div>
-                    <div className="text-center p-3 rounded bg-muted">
-                      <p className={`text-2xl font-bold ${repairResult.orphansAfter < 20 ? 'text-green-600' : 'text-destructive'}`}>{repairResult.orphansAfter}</p>
-                      <p className="text-[10px] text-muted-foreground">Orphans After</p>
-                    </div>
-                    <div className="text-center p-3 rounded bg-muted">
-                      <p className="text-2xl font-bold">{repairResult.totalInjections}</p>
-                      <p className="text-[10px] text-muted-foreground">Links Injected</p>
-                    </div>
-                    <div className="text-center p-3 rounded bg-muted">
-                      <p className="text-2xl font-bold">{repairResult.avgInboundAfter}</p>
-                      <p className="text-[10px] text-muted-foreground">Avg Inbound (After)</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold mb-2">Cornerstone Inbound Links</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {Object.entries(repairResult.cornerstoneInbound).map(([slug, count]) => (
-                        <div key={slug} className="flex items-center justify-between text-xs p-2 rounded border">
-                          <span className="truncate font-medium">{slug}</span>
-                          <Badge variant={count >= 20 ? 'default' : 'destructive'} className="text-[10px] shrink-0 ml-2">↓{count}</Badge>
-                        </div>
-                      ))}
-                    </div>
+                    <div className="text-center p-3 rounded bg-muted"><p className="text-2xl font-bold text-destructive">{repairResult.orphansBefore}</p><p className="text-[10px] text-muted-foreground">Before</p></div>
+                    <div className="text-center p-3 rounded bg-muted"><p className={`text-2xl font-bold ${repairResult.orphansAfter < 20 ? 'text-green-600' : 'text-destructive'}`}>{repairResult.orphansAfter}</p><p className="text-[10px] text-muted-foreground">After</p></div>
+                    <div className="text-center p-3 rounded bg-muted"><p className="text-2xl font-bold">{repairResult.totalInjections}</p><p className="text-[10px] text-muted-foreground">Links Injected</p></div>
+                    <div className="text-center p-3 rounded bg-muted"><p className="text-2xl font-bold">{repairResult.avgInboundAfter}</p><p className="text-[10px] text-muted-foreground">Avg Inbound</p></div>
                   </div>
 
                   <div>
@@ -424,21 +474,6 @@ export default function GuidesDashboard() {
                         <div key={cluster} className="text-center p-2 rounded border">
                           <p className={`text-xl font-bold ${score >= 60 ? 'text-green-600' : score >= 40 ? 'text-yellow-600' : 'text-destructive'}`}>{score}</p>
                           <p className="text-[10px] text-muted-foreground">{cluster}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold mb-2">Top 10 Weakest Guides</p>
-                    <div className="space-y-1">
-                      {repairResult.weakestGuides.map((g, i) => (
-                        <div key={g.slug} className="flex items-center gap-2 text-xs p-2 rounded border">
-                          <span className="text-muted-foreground shrink-0 w-4">{i + 1}</span>
-                          <Badge variant={g.role === 'cornerstone' ? 'default' : g.role === 'hub' ? 'secondary' : 'outline'} className="text-[10px] shrink-0">{g.role}</Badge>
-                          <span className="font-medium truncate flex-1">{g.slug}</span>
-                          <span className="text-muted-foreground shrink-0">↓{g.inbound}</span>
-                          <span className={`font-bold shrink-0 ${g.strength >= 70 ? 'text-green-600' : g.strength >= 40 ? 'text-yellow-600' : 'text-destructive'}`}>{g.strength}</span>
                         </div>
                       ))}
                     </div>
@@ -469,31 +504,18 @@ export default function GuidesDashboard() {
               ))}
             </div>
 
-            {liveOrphans.length > 0 && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Orphan Pages ({liveOrphans.length})</AlertTitle>
-                <AlertDescription className="text-xs">
-                  {liveOrphans.slice(0, 10).map(o => o.slug).join(', ')}{liveOrphans.length > 10 && ` +${liveOrphans.length - 10} more`}
-                </AlertDescription>
-              </Alert>
-            )}
-
+            {/* Full guide list */}
             <ScrollArea className="h-[400px]">
               <div className="space-y-1">
-                {linkAnalyses
-                  .sort((a, b) => b.linkStrengthScore - a.linkStrengthScore)
-                  .map(a => (
-                    <div key={a.slug} className="flex items-center gap-2 text-xs p-2 rounded border">
-                      <Badge variant={a.role === 'cornerstone' ? 'default' : a.role === 'hub' ? 'secondary' : 'outline'} className="text-[10px] shrink-0">{a.role}</Badge>
-                      <span className="font-medium truncate flex-1">{a.slug}</span>
-                      <span className="text-muted-foreground shrink-0">↓{a.inboundCount}/{a.targetInbound}</span>
-                      <span className={`font-bold shrink-0 ${a.linkStrengthScore >= 70 ? 'text-green-600' : a.linkStrengthScore >= 40 ? 'text-yellow-600' : 'text-destructive'}`}>
-                        {a.linkStrengthScore}
-                      </span>
-                      {a.isOrphan && <Badge variant="destructive" className="text-[10px]">orphan</Badge>}
-                    </div>
-                  ))}
+                {linkAnalyses.sort((a, b) => b.linkStrengthScore - a.linkStrengthScore).map(a => (
+                  <div key={a.slug} className="flex items-center gap-2 text-xs p-2 rounded border">
+                    <Badge variant={a.role === 'cornerstone' ? 'default' : a.role === 'hub' ? 'secondary' : 'outline'} className="text-[10px] shrink-0">{a.role}</Badge>
+                    <span className="font-medium truncate flex-1">{a.slug}</span>
+                    <span className="text-muted-foreground shrink-0">↓{a.inboundCount}/{a.targetInbound}</span>
+                    <span className={`font-bold shrink-0 ${a.linkStrengthScore >= 70 ? 'text-green-600' : a.linkStrengthScore >= 40 ? 'text-yellow-600' : 'text-destructive'}`}>{a.linkStrengthScore}</span>
+                    {a.isOrphan && <Badge variant="destructive" className="text-[10px]">orphan</Badge>}
+                  </div>
+                ))}
               </div>
             </ScrollArea>
           </TabsContent>
@@ -514,31 +536,22 @@ export default function GuidesDashboard() {
               <Card><CardContent className="pt-4 text-center"><p className="text-xl font-bold text-red-600">{scaling.byDifficulty.high}</p><p className="text-xs text-muted-foreground">High</p></CardContent></Card>
             </div>
 
-            {cannibalization.length > 0 && (
+            {cannibalization.length > 0 ? (
               <Alert variant="destructive">
                 <Shield className="h-4 w-4" />
                 <AlertTitle>Cannibalization Issues ({cannibalization.length})</AlertTitle>
                 <AlertDescription>
-                  {cannibalization.map(c => (
-                    <div key={c.keyword} className="text-xs mt-1"><strong>"{c.keyword}"</strong> → {c.slugs.join(', ')}</div>
-                  ))}
+                  {cannibalization.map(c => <div key={c.keyword} className="text-xs mt-1"><strong>"{c.keyword}"</strong> → {c.slugs.join(', ')}</div>)}
                 </AlertDescription>
               </Alert>
-            )}
-            {cannibalization.length === 0 && (
-              <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertTitle>No Cannibalization Detected</AlertTitle>
-                <AlertDescription className="text-xs">All {scaling.total} guides have unique primary keywords.</AlertDescription>
-              </Alert>
+            ) : (
+              <Alert><CheckCircle className="h-4 w-4" /><AlertTitle>No Cannibalization Detected</AlertTitle><AlertDescription className="text-xs">All {scaling.total} guides have unique primary keywords.</AlertDescription></Alert>
             )}
 
             <ScrollArea className="h-[600px]">
               {schedule.map(week => (
                 <div key={week.week} className="mb-6">
-                  <h3 className="font-semibold text-sm mb-2">
-                    {week.label} <span className="text-muted-foreground font-normal">({week.guides.length} guides — {week.focus})</span>
-                  </h3>
+                  <h3 className="font-semibold text-sm mb-2">{week.label} <span className="text-muted-foreground font-normal">({week.guides.length} guides — {week.focus})</span></h3>
                   <div className="space-y-1">
                     {week.guides.map(g => (
                       <div key={g.slug} className="flex items-center gap-2 text-xs p-2 rounded border">
