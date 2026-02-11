@@ -100,6 +100,7 @@ const LiveMap = () => {
     <HelmetProvider>
       <Helmet>
         <title>Live Bezoekers Kaart - GetPawsy</title>
+        <meta name="robots" content="noindex, follow" />
         <meta name="description" content="Bekijk real-time waar bezoekers onze webshop bezoeken op de wereldkaart." />
       </Helmet>
       
