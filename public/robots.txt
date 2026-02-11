@@ -103,10 +103,10 @@ Crawl-delay: 2
 
 # =====================================================
 # SITEMAPS
-# Direct edge function serving valid XML (no cache)
+# Same-origin proxy endpoints for Google Search Console
 # =====================================================
 
-Sitemap: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap-v2?type=index
+Sitemap: https://getpawsy.pet/sitemap.xml
 
 # =====================================================
 # DISALLOWED PATHS (Private/Admin/Non-SEO pages)
