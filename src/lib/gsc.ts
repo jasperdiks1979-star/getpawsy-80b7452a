@@ -139,12 +139,16 @@ export async function fetchGSCMetricsForGuides(): Promise<GSCFetchResult> {
       if (lastSyncRun.status === 'error') {
         status = 'error';
         statusMessage = `Last sync failed: ${lastSyncRun.error_message || 'Unknown error'}`;
+      } else if (lastSyncRun.total_raw_rows > 0 && lastSyncRun.guide_count === 0) {
+        // GSC returned rows but none matched guides — guides aren't indexed yet
+        status = 'no_data';
+        statusMessage = `WAITING FOR INDEXING — GSC returned ${lastSyncRun.total_raw_rows} rows but 0 matched guide pages. Guide URLs (/guides/*) are not yet indexed by Google. Ensure sitemap is submitted and recheck in 24–72h.`;
       } else if (lastSyncRun.status === 'no_data') {
         status = 'no_data';
-        statusMessage = 'Sync ran but GSC returned no guide data. Pages may not be indexed yet.';
+        statusMessage = 'Sync ran but GSC returned no data at all. Domain may be too new.';
       } else if (lastSyncRun.status === 'success' && lastSyncRun.guide_count === 0) {
         status = 'no_data';
-        statusMessage = 'Sync succeeded but no /guides/ URLs found in GSC data.';
+        statusMessage = 'WAITING FOR INDEXING — Sync succeeded but no guide URLs found in GSC. Submit sitemap and recheck in 24–72h.';
       }
     }
 
@@ -305,9 +309,9 @@ export async function triggerGSCSync(): Promise<{
 
     const msg = guideCount > 0
       ? `✅ Synced ${guideCount} guide slugs, ${queryCount} queries (${totalImpressions} impressions, ${totalClicks} clicks)`
-      : debugWarning
-        ? `⚠️ ${debugWarning}`
-        : `⚠️ GSC returned ${totalRaw} rows but 0 matched any of ${knownGuides} guide slugs. Top URL patterns: ${topPrefixes}. Guide pages may not be indexed by Google yet.`;
+      : totalRaw > 0
+        ? `⏳ WAITING FOR INDEXING — GSC returned ${totalRaw} rows but 0 matched guide URLs. Top patterns: ${topPrefixes || 'N/A'}. Guide pages (/guides/*) are not yet indexed. Ensure sitemap is submitted in Google Search Console and recheck in 24–72h.`
+        : `⚠️ GSC returned 0 rows. Domain may be too new or service account lacks access.`;
 
     return {
       success: guideCount > 0,

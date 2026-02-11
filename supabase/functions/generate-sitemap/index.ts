@@ -47,8 +47,9 @@ async function loadGuides(): Promise<Array<{ slug: string; updatedAt: string; pr
 }
 
 const BASE_URL = "https://getpawsy.pet";
-// Use edge function URL for sitemap index references (Google can't follow SPA redirects)
-const SITEMAP_BASE_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap";
+// v3: Use direct edge function URLs for sitemap index (Google can't follow SPA redirects)
+const SITEMAP_FN_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap";
+console.log("[sitemap] v3 loaded, FN URL:", SITEMAP_FN_URL);
 
 interface Product {
   id: string;
@@ -203,35 +204,35 @@ Deno.serve(async (req) => {
 });
 
 function generateSitemapIndex(today: string): string {
-  // Use direct edge function URLs so Google doesn't need JS to resolve sub-sitemaps
+  // Use direct edge function URLs so Google doesn't need JS to resolve sub-sitemaps (v2)
   return `${xmlHeader()}
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=static</loc>
+    <loc>${SITEMAP_FN_URL}?type=static</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=products</loc>
+    <loc>${SITEMAP_FN_URL}?type=products</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=categories</loc>
+    <loc>${SITEMAP_FN_URL}?type=categories</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=bestsellers</loc>
+    <loc>${SITEMAP_FN_URL}?type=bestsellers</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=collections</loc>
+    <loc>${SITEMAP_FN_URL}?type=collections</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=blog</loc>
+    <loc>${SITEMAP_FN_URL}?type=blog</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${SITEMAP_BASE_URL}?type=guides</loc>
+    <loc>${SITEMAP_FN_URL}?type=guides</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
 </sitemapindex>`;
