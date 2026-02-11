@@ -606,6 +606,87 @@ function buildLinkGraph(pages: CrawledPage[]): void {
     }
   }
 
+  // ============= UNDER-LINKED REPAIR: Intra-cluster subguide cross-links =============
+  // Each subguide links to up to 3 nearby subguides in the same cluster.
+  // Max 3 new outbound links per page. Anchors use diversified rotation.
+  // This ensures every guide reaches ≥5 inbound without over-optimizing cornerstones.
+
+  const clusterGroups: Record<string, typeof SCALING_GUIDES> = {};
+  for (const g of SCALING_GUIDES) {
+    if (!clusterGroups[g.cluster]) clusterGroups[g.cluster] = [];
+    clusterGroups[g.cluster].push(g);
+  }
+
+  const subguideAnchorTypes = ['partial', 'branded', 'generic', 'partial', 'semantic', 'branded', 'generic'] as const;
+
+  for (const [, guides] of Object.entries(clusterGroups)) {
+    // Sort deterministically by slug for stable neighbor selection
+    const sorted = [...guides].sort((a, b) => a.slug.localeCompare(b.slug));
+
+    for (let si = 0; si < sorted.length; si++) {
+      const source = sorted[si];
+      const sourceSlug = `/guides/${source.slug}`;
+      const sourcePage = pageMap.get(sourceSlug);
+      if (!sourcePage) continue;
+
+      // Count how many new links we've added in this pass
+      let newLinksAdded = 0;
+      const MAX_NEW_LINKS = 3;
+
+      // Link to up to 3 nearby guides in the same cluster (neighbors by sorted index)
+      for (let offset = 1; offset <= 5 && newLinksAdded < MAX_NEW_LINKS; offset++) {
+        const neighborIdx = (si + offset) % sorted.length;
+        if (neighborIdx === si) continue;
+        const neighbor = sorted[neighborIdx];
+        // Skip linking cornerstone→cornerstone or to self
+        if (neighbor.slug === source.slug) continue;
+        if (source.role === 'cornerstone' && neighbor.role === 'cornerstone') continue;
+
+        const targetSlug = `/guides/${neighbor.slug}`;
+        const alreadyLinked = sourcePage.outboundLinks.some(l => l.targetPage === targetSlug);
+        if (alreadyLinked) continue;
+
+        const targetPage = pageMap.get(targetSlug);
+        if (!targetPage) continue;
+
+        // Diversified anchor text
+        const aType = subguideAnchorTypes[(si + offset) % subguideAnchorTypes.length];
+        const kwWords = (neighbor.primaryKW || '').split(' ').filter(w => w.length > 3);
+        let anchor: string;
+        switch (aType) {
+          case 'partial':
+            anchor = kwWords.length >= 2
+              ? `${kwWords.slice(0, 2).join(' ')} guide`
+              : `${neighbor.primaryKW} tips`;
+            break;
+          case 'branded':
+            anchor = `GetPawsy ${kwWords.slice(-2).join(' ')} guide`;
+            break;
+          case 'generic':
+            anchor = genericAnchors[(si + offset) % genericAnchors.length];
+            break;
+          case 'semantic':
+            anchor = `our ${kwWords.slice(-2).join(' ')} picks`;
+            break;
+          default:
+            anchor = `${neighbor.primaryKW} guide`;
+        }
+
+        const link: InternalLink = {
+          sourcePage: sourceSlug,
+          targetPage: targetSlug,
+          anchorText: anchor,
+          relAttribute: '',
+          httpStatus: 200,
+          redirectChain: [],
+        };
+        sourcePage.outboundLinks.push(link);
+        targetPage.inboundLinks.push(link);
+        newLinksAdded++;
+      }
+    }
+  }
+
   // Cross-cluster hub links (2 per semantically related hub pair)
   const crossHubPairs = [
     ['how-many-litter-boxes-per-cat', 'best-cat-trees-small-apartments'],
