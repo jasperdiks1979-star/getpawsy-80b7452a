@@ -90,7 +90,7 @@ export const Footer = () => {
       { label: 'Shipping', href: '/shipping' },
       { label: 'Returns', href: '/returns' },
       { label: 'FAQ', href: '/faq' },
-      { label: 'Track Order', href: '/track' },
+      { label: 'Track Order', href: '/track', noFollow: true },
     ],
     company: [
       { label: 'About Us', href: '/about' },
@@ -253,7 +253,8 @@ export const Footer = () => {
                 {footerLinks.support.map((link) => (
                   <li key={link.href}>
                     <Link 
-                      to={link.href} 
+                      to={link.href}
+                      rel={(link as any).noFollow ? 'nofollow' : undefined}
                       className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
                     >
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
@@ -310,10 +311,10 @@ export const Footer = () => {
                   <Link to="/terms" className="hover:text-primary transition-colors">
                     Terms of Service
                   </Link>
-                  <Link to="/cookies" className="hover:text-primary transition-colors">
+                  <Link to="/cookies" rel="nofollow" className="hover:text-primary transition-colors">
                     Cookie Policy
                   </Link>
-                  <button 
+                  <button
                     onClick={() => window.dispatchEvent(new CustomEvent('open-cookie-settings'))}
                     className="hover:text-primary transition-colors inline-flex items-center gap-1"
                   >
