@@ -1,536 +1,165 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "X-Robots-Tag": "all",
-  "X-Content-Served-Identically": "true",
+  "Content-Type": "application/xml; charset=utf-8",
+  "Cache-Control": "public, max-age=300, s-maxage=3600",
 };
 
-// Guide slugs loaded dynamically from the live guides index
-let _cachedGuides: Array<{ slug: string; updatedAt: string; priority?: string }> | null = null;
-
-async function loadGuides(): Promise<Array<{ slug: string; updatedAt: string; priority?: string }>> {
-  if (_cachedGuides) return _cachedGuides;
-  try {
-    const res = await fetch('https://getpawsy.pet/data/guides/index.json');
-    if (res.ok) {
-      const guides = await res.json();
-      _cachedGuides = guides.map((g: { slug: string; updatedAt: string; keywords?: string[] }) => ({
-        slug: g.slug,
-        updatedAt: g.updatedAt || new Date().toISOString().split('T')[0],
-        // Cornerstones get higher priority
-        priority: g.slug.startsWith('best-cat-litter-box-2026') ? '0.9' :
-                  g.slug.startsWith('best-') ? '0.8' : '0.7',
-      }));
-      console.log(`[sitemap] Loaded ${_cachedGuides.length} guides from index.json`);
-      return _cachedGuides;
-    }
-  } catch (e) {
-    console.warn('[sitemap] Failed to load guides index, using fallback:', e);
-  }
-  // Fallback hardcoded list
-  _cachedGuides = [
-    { slug: "best-cat-litter-box-2026", updatedAt: "2026-02-10", priority: "0.9" },
-    { slug: "how-many-litter-boxes-per-cat", updatedAt: "2026-02-10", priority: "0.8" },
-    { slug: "best-cat-litter-box-furniture-enclosures-2026", updatedAt: "2026-02-11", priority: "0.8" },
-    { slug: "best-litter-boxes-multi-cat", updatedAt: "2026-02-12", priority: "0.75" },
-    { slug: "best-extra-large-litter-boxes", updatedAt: "2026-02-13", priority: "0.75" },
-    { slug: "best-cat-trees-small-apartments", updatedAt: "2026-02-14", priority: "0.75" },
-    { slug: "how-to-choose-guinea-pig-cage", updatedAt: "2026-02-10" },
-    { slug: "guinea-pig-cage-vs-playpen", updatedAt: "2026-02-10" },
-    { slug: "cat-condo-vs-cat-tower", updatedAt: "2026-02-10" },
-    { slug: "choosing-safe-cat-tree-indoor", updatedAt: "2026-02-10" },
-    { slug: "outdoor-dog-games-enrichment", updatedAt: "2026-02-10" },
-  ];
-  return _cachedGuides;
-}
-
 const BASE_URL = "https://getpawsy.pet";
-// v3: Use direct edge function URLs for sitemap index (Google can't follow SPA redirects)
 const SITEMAP_FN_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/generate-sitemap";
-console.log("[sitemap] v3 loaded, FN URL:", SITEMAP_FN_URL);
 
-interface Product {
-  id: string;
-  name: string;
-  slug: string | null;
-  updated_at: string;
-  category: string | null;
-  image_url: string | null;
+interface GuideEntry { slug: string; updatedAt: string; priority: string }
+
+const FALLBACK_GUIDES: GuideEntry[] = [
+  { slug: "best-cat-litter-box-2026", updatedAt: "2026-02-10", priority: "0.9" },
+  { slug: "how-many-litter-boxes-per-cat", updatedAt: "2026-02-10", priority: "0.8" },
+  { slug: "best-cat-litter-box-furniture-enclosures-2026", updatedAt: "2026-02-11", priority: "0.8" },
+  { slug: "best-litter-boxes-multi-cat", updatedAt: "2026-02-12", priority: "0.75" },
+  { slug: "best-extra-large-litter-boxes", updatedAt: "2026-02-13", priority: "0.75" },
+  { slug: "best-cat-trees-small-apartments", updatedAt: "2026-02-14", priority: "0.75" },
+  { slug: "how-to-choose-guinea-pig-cage", updatedAt: "2026-02-10", priority: "0.7" },
+  { slug: "guinea-pig-cage-vs-playpen", updatedAt: "2026-02-10", priority: "0.7" },
+  { slug: "cat-condo-vs-cat-tower", updatedAt: "2026-02-10", priority: "0.7" },
+  { slug: "choosing-safe-cat-tree-indoor", updatedAt: "2026-02-10", priority: "0.7" },
+  { slug: "outdoor-dog-games-enrichment", updatedAt: "2026-02-10", priority: "0.7" },
+];
+
+let _guides: GuideEntry[] | null = null;
+async function getGuides(): Promise<GuideEntry[]> {
+  if (_guides) return _guides;
+  try {
+    const r = await fetch("https://getpawsy.pet/data/guides/index.json");
+    if (r.ok) {
+      const list = await r.json();
+      _guides = (list as Array<{ slug: string; updatedAt?: string }>).map(g => ({
+        slug: g.slug,
+        updatedAt: g.updatedAt || new Date().toISOString().split("T")[0],
+        priority: g.slug.startsWith("best-cat-litter-box-2026") ? "0.9" : g.slug.startsWith("best-") ? "0.8" : "0.7",
+      }));
+      return _guides;
+    }
+  } catch { /* fallback */ }
+  _guides = FALLBACK_GUIDES;
+  return _guides;
 }
 
-interface Category {
-  slug: string;
-  name: string;
-  created_at: string;
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-interface BlogPost {
-  slug: string;
-  title: string;
-  published_at: string;
-  featured_image: string | null;
+// Use Supabase REST API directly instead of JS client (avoids esm.sh boot crash)
+async function sbQuery(table: string, params: string): Promise<unknown[]> {
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const r = await fetch(`${url}/rest/v1/${table}?${params}`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  });
+  if (!r.ok) { console.error(`[sitemap] REST error ${table}:`, r.status); return []; }
+  return await r.json();
 }
 
-interface Bestseller {
-  slug: string;
-  updated_at: string;
-}
-
-interface SeoCollection {
-  slug: string;
-  name: string;
-  updated_at: string;
-}
-
-function xmlHeader(): string {
-  return `<?xml version="1.0" encoding="UTF-8"?>`;
-}
-
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const url = new URL(req.url);
-    const type = url.searchParams.get("type") || "index";
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
+    const type = new URL(req.url).searchParams.get("type") || "index";
     const today = new Date().toISOString().split("T")[0];
-    const headers = { ...corsHeaders, "Content-Type": "application/xml; charset=utf-8" };
+    let xml: string;
 
-    // Generate sitemap based on type
     switch (type) {
-      case "index":
-        return new Response(generateSitemapIndex(today), { headers, status: 200 });
-
-      case "guides":
-        return new Response(await generateGuidesSitemap(today), { headers, status: 200 });
-
-
-      case "static":
-        return new Response(generateStaticSitemap(today), { headers, status: 200 });
-
-      case "products": {
-        const { data: products } = await supabase
-          .from("products")
-          .select("id, name, slug, updated_at, category, image_url")
-          .eq("is_active", true)
-          .eq("is_duplicate", false)
-          .order("updated_at", { ascending: false });
-        return new Response(generateProductsSitemap(products || [], today), { headers, status: 200 });
-      }
-
-      case "categories": {
-        const { data: categories } = await supabase
-          .from("categories")
-          .select("slug, name, created_at");
-        
-        // Also get unique categories from products
-        const { data: products } = await supabase
-          .from("products")
-          .select("category")
-          .eq("is_active", true)
-          .eq("is_duplicate", false);
-        
-        const productCategories = new Set<string>();
-        (products || []).forEach((p) => {
-          if (p.category) productCategories.add(p.category);
-        });
-
-        return new Response(
-          generateCategoriesSitemap(categories || [], Array.from(productCategories), today),
-          { headers, status: 200 }
-        );
-      }
-
-      case "bestsellers": {
-        const { data: bestsellers } = await supabase
-          .from("bestsellers")
-          .select("slug, updated_at")
-          .eq("is_active", true);
-        return new Response(generateBestsellersSitemap(bestsellers || [], today), { headers, status: 200 });
-      }
-
-      case "collections": {
-        const { data: collections } = await supabase
-          .from("seo_collections")
-          .select("slug, name, updated_at")
-          .eq("is_active", true);
-        return new Response(generateCollectionsSitemap(collections || [], today), { headers, status: 200 });
-      }
-
-      case "blog": {
-        const { data: posts } = await supabase
-          .from("blog_posts")
-          .select("slug, title, published_at, featured_image")
-          .eq("is_published", true)
-          .order("published_at", { ascending: false });
-        return new Response(generateBlogSitemap(posts || [], today), { headers, status: 200 });
-      }
-
-      default:
-        return new Response(generateSitemapIndex(today), { headers, status: 200 });
+      case "index": xml = sitemapIndex(today); break;
+      case "guides": xml = await guidesSitemap(today); break;
+      case "static": xml = staticSitemap(today); break;
+      case "products": xml = await productsSitemap(today); break;
+      case "categories": xml = await categoriesSitemap(today); break;
+      case "bestsellers": xml = await bestsellersSitemap(today); break;
+      case "collections": xml = await collectionsSitemap(today); break;
+      case "blog": xml = await blogSitemap(today); break;
+      default: xml = sitemapIndex(today);
     }
-  } catch (error) {
-    console.error("Error generating sitemap:", error);
-    const headers = { ...corsHeaders, "Content-Type": "application/xml; charset=utf-8" };
-    return new Response(
-      `${xmlHeader()}
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>${BASE_URL}/sitemap-static.xml</loc>
-    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
-  </sitemap>
-</sitemapindex>`,
-      { headers, status: 200 }
-    );
+    return new Response(xml, { headers: corsHeaders, status: 200 });
+  } catch (e) {
+    console.error("[sitemap] error:", e);
+    return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>`, { headers: corsHeaders, status: 200 });
   }
 });
 
-function generateSitemapIndex(today: string): string {
-  // Use direct edge function URLs so Google doesn't need JS to resolve sub-sitemaps (v2)
-  return `${xmlHeader()}
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>${SITEMAP_FN_URL}?type=static</loc>
-    <lastmod>${today}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${SITEMAP_FN_URL}?type=products</loc>
-    <lastmod>${today}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${SITEMAP_FN_URL}?type=categories</loc>
-    <lastmod>${today}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${SITEMAP_FN_URL}?type=bestsellers</loc>
-    <lastmod>${today}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${SITEMAP_FN_URL}?type=collections</loc>
-    <lastmod>${today}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${SITEMAP_FN_URL}?type=blog</loc>
-    <lastmod>${today}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${SITEMAP_FN_URL}?type=guides</loc>
-    <lastmod>${today}</lastmod>
-  </sitemap>
-</sitemapindex>`;
+function sitemapIndex(today: string): string {
+  const types = ["static", "products", "categories", "bestsellers", "collections", "blog", "guides"];
+  const entries = types.map(t => `  <sitemap>\n    <loc>${SITEMAP_FN_URL}?type=${t}</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</sitemapindex>`;
 }
 
-function generateStaticSitemap(today: string): string {
-  // Calculate yesterday for more realistic lastmod on static pages
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-  
-  return `${xmlHeader()}
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Homepage - Highest priority, changes frequently -->
-  <url>
-    <loc>${BASE_URL}/</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>hourly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  
-  <!-- Main Product Listing - High priority, very fresh -->
-  <url>
-    <loc>${BASE_URL}/products</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>hourly</changefreq>
-    <priority>0.95</priority>
-  </url>
-  
-  <!-- Bestsellers - Popular content, changes often -->
-  <url>
-    <loc>${BASE_URL}/bestsellers</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>hourly</changefreq>
-    <priority>0.95</priority>
-  </url>
-  
-  <!-- Blog Index - Fresh content signal -->
-  <url>
-    <loc>${BASE_URL}/blog</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  
-  <!-- About Page - Trust signal -->
-  <url>
-    <loc>${BASE_URL}/about</loc>
-    <lastmod>${yesterday}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  
-  <!-- Contact Page - Trust signal -->
-  <url>
-    <loc>${BASE_URL}/contact</loc>
-    <lastmod>${yesterday}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  
-  <!-- FAQ Page - SEO valuable -->
-  <url>
-    <loc>${BASE_URL}/faq</loc>
-    <lastmod>${yesterday}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.65</priority>
-  </url>
-  
-  <!-- Shipping Info -->
-  <url>
-    <loc>${BASE_URL}/shipping</loc>
-    <lastmod>${yesterday}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <!-- Return Policy -->
-  <url>
-    <loc>${BASE_URL}/returns</loc>
-    <lastmod>${yesterday}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  
-  <!-- Privacy Policy -->
-  <url>
-    <loc>${BASE_URL}/privacy</loc>
-    <lastmod>${yesterday}</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  
-  <!-- Terms of Service -->
-  <url>
-    <loc>${BASE_URL}/terms</loc>
-    <lastmod>${yesterday}</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-</urlset>`;
+async function guidesSitemap(today: string): Promise<string> {
+  const guides = await getGuides();
+  let urls = `  <url>\n    <loc>${BASE_URL}/guides</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>`;
+  for (const g of guides) {
+    urls += `\n  <url>\n    <loc>${BASE_URL}/guides/${g.slug}</loc>\n    <lastmod>${g.updatedAt || today}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>${g.priority}</priority>\n  </url>`;
+  }
+  console.log(`GUIDES SITEMAP SERVED: ${guides.length} URLs`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
 }
 
-function generateProductsSitemap(products: Product[], today: string): string {
+function staticSitemap(today: string): string {
+  const y = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+  const pages: [string, string, string, string][] = [
+    ["/", today, "daily", "1.0"], ["/products", today, "daily", "0.95"], ["/bestsellers", today, "daily", "0.95"],
+    ["/blog", today, "daily", "0.85"], ["/about", y, "weekly", "0.7"], ["/contact", y, "weekly", "0.7"],
+    ["/faq", y, "weekly", "0.65"], ["/shipping", y, "weekly", "0.5"], ["/returns", y, "monthly", "0.4"],
+    ["/privacy", y, "yearly", "0.3"], ["/terms", y, "yearly", "0.3"],
+  ];
+  const urls = pages.map(([p, lm, cf, pr]) => `  <url>\n    <loc>${BASE_URL}${p}</loc>\n    <lastmod>${lm}</lastmod>\n    <changefreq>${cf}</changefreq>\n    <priority>${pr}</priority>\n  </url>`).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
+}
+
+async function productsSitemap(today: string): Promise<string> {
+  const products = await sbQuery("products", "select=id,name,slug,updated_at,category,image_url&is_active=eq.true&is_duplicate=eq.false&order=updated_at.desc") as Array<{id:string;name:string;slug:string|null;updated_at:string;image_url:string|null}>;
+  const now = Date.now();
   let urls = "";
-  
-  // Calculate priority based on recency - newer products get higher priority
-  const now = new Date();
-  
   for (let i = 0; i < products.length; i++) {
-    const product = products[i];
-    const lastmod = product.updated_at?.split("T")[0] || today;
-    const productName = escapeXml(product.name || "");
-    const productPath = product.slug || product.id;
-    
-    // Calculate priority: 0.9 for recently updated, decreasing by position
-    // Top 100 products get higher priority
-    const basePriority = i < 100 ? 0.9 : i < 500 ? 0.8 : 0.7;
-    
-    // Boost priority for products updated in last 7 days
-    const updateDate = new Date(product.updated_at || today);
-    const daysSinceUpdate = Math.floor((now.getTime() - updateDate.getTime()) / 86400000);
-    const recencyBoost = daysSinceUpdate <= 1 ? 0.05 : daysSinceUpdate <= 7 ? 0.02 : 0;
-    const priority = Math.min(0.95, basePriority + recencyBoost).toFixed(2);
-    
-    // Changefreq based on category - some categories change more often
-    const changefreq = daysSinceUpdate <= 7 ? "daily" : "weekly";
-    
-    urls += `
-  <url>
-    <loc>${BASE_URL}/product/${productPath}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>${changefreq}</changefreq>
-    <priority>${priority}</priority>${product.image_url ? `
-    <image:image>
-      <image:loc>${escapeXml(product.image_url)}</image:loc>
-      <image:title>${productName}</image:title>
-    </image:image>` : ""}
-  </url>`;
+    const p = products[i];
+    const lm = p.updated_at?.split("T")[0] || today;
+    const path = p.slug || p.id;
+    const days = Math.floor((now - new Date(p.updated_at || today).getTime()) / 86400000);
+    const pri = Math.min(0.95, (i < 100 ? 0.9 : i < 500 ? 0.8 : 0.7) + (days <= 1 ? 0.05 : days <= 7 ? 0.02 : 0)).toFixed(2);
+    urls += `\n  <url>\n    <loc>${BASE_URL}/product/${path}</loc>\n    <lastmod>${lm}</lastmod>\n    <changefreq>${days <= 7 ? "daily" : "weekly"}</changefreq>\n    <priority>${pri}</priority>${p.image_url ? `\n    <image:image>\n      <image:loc>${esc(p.image_url)}</image:loc>\n      <image:title>${esc(p.name || "")}</image:title>\n    </image:image>` : ""}\n  </url>`;
   }
-
-  console.log(`Products sitemap: ${products.length} products`);
-
-  return `${xmlHeader()}
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls}
-</urlset>`;
+  console.log(`[sitemap] Products: ${products.length}`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls}\n</urlset>`;
 }
 
-function generateCategoriesSitemap(
-  dbCategories: Category[],
-  productCategories: string[],
-  today: string
-): string {
+async function categoriesSitemap(today: string): Promise<string> {
+  const cats = await sbQuery("categories", "select=slug,name,created_at") as Array<{slug:string;name:string}>;
+  const prods = await sbQuery("products", "select=category&is_active=eq.true&is_duplicate=eq.false") as Array<{category:string|null}>;
+  const toSlug = (s: string) => s.toLowerCase().trim().replace(/&/g, "and").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
+  const seen = new Set<string>();
   let urls = "";
-  const addedSlugs = new Set<string>();
-
-  // Helper to convert name to slug
-  const toSlug = (str: string): string => {
-    return str
-      .toLowerCase()
-      .trim()
-      .replace(/&/g, 'and')
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-');
-  };
-
-  // Add categories from database - use slug from DB
-  for (const category of dbCategories) {
-    const categorySlug = category.slug || toSlug(category.name);
-    if (!addedSlugs.has(categorySlug)) {
-      addedSlugs.add(categorySlug);
-      urls += `
-  <url>
-    <loc>${BASE_URL}/products?category=${categorySlug}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-    }
-  }
-
-  // Add categories from products that aren't in DB - convert to slug
-  for (const category of productCategories) {
-    const categorySlug = toSlug(category);
-    if (!addedSlugs.has(categorySlug)) {
-      addedSlugs.add(categorySlug);
-      urls += `
-  <url>
-    <loc>${BASE_URL}/products?category=${categorySlug}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>`;
-    }
-  }
-
-  console.log(`Categories sitemap: ${addedSlugs.size} categories`);
-
-  return `${xmlHeader()}
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
-</urlset>`;
+  for (const c of cats) { const sl = c.slug || toSlug(c.name); if (seen.has(sl)) continue; seen.add(sl); urls += `\n  <url>\n    <loc>${BASE_URL}/products?category=${sl}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>`; }
+  for (const p of prods) { if (!p.category) continue; const sl = toSlug(p.category); if (seen.has(sl)) continue; seen.add(sl); urls += `\n  <url>\n    <loc>${BASE_URL}/products?category=${sl}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>`; }
+  console.log(`[sitemap] Categories: ${seen.size}`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}\n</urlset>`;
 }
 
-function generateBestsellersSitemap(bestsellers: Bestseller[], today: string): string {
+async function bestsellersSitemap(today: string): Promise<string> {
+  const data = await sbQuery("bestsellers", "select=slug,updated_at&is_active=eq.true") as Array<{slug:string;updated_at:string}>;
   let urls = "";
-  
-  for (const bestseller of bestsellers) {
-    const lastmod = bestseller.updated_at?.split("T")[0] || today;
-    urls += `
-  <url>
-    <loc>${BASE_URL}/bestseller/${bestseller.slug}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>`;
-  }
-
-  console.log(`Bestsellers sitemap: ${bestsellers.length} bestsellers`);
-
-  return `${xmlHeader()}
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
-</urlset>`;
+  for (const b of data) { urls += `\n  <url>\n    <loc>${BASE_URL}/bestseller/${b.slug}</loc>\n    <lastmod>${b.updated_at?.split("T")[0] || today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n  </url>`; }
+  console.log(`[sitemap] Bestsellers: ${data.length}`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}\n</urlset>`;
 }
 
-function generateCollectionsSitemap(collections: SeoCollection[], today: string): string {
+async function collectionsSitemap(today: string): Promise<string> {
+  const data = await sbQuery("seo_collections", "select=slug,name,updated_at&is_active=eq.true") as Array<{slug:string;updated_at:string}>;
   let urls = "";
-  
-  for (const collection of collections) {
-    const lastmod = collection.updated_at?.split("T")[0] || today;
-    urls += `
-  <url>
-    <loc>${BASE_URL}/collections/${collection.slug}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
-  </url>`;
-  }
-
-  console.log(`SEO Collections sitemap: ${collections.length} collections`);
-
-  return `${xmlHeader()}
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
-</urlset>`;
+  for (const c of data) { urls += `\n  <url>\n    <loc>${BASE_URL}/collections/${c.slug}</loc>\n    <lastmod>${c.updated_at?.split("T")[0] || today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.85</priority>\n  </url>`; }
+  console.log(`[sitemap] Collections: ${data.length}`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}\n</urlset>`;
 }
 
-function generateBlogSitemap(posts: BlogPost[], today: string): string {
+async function blogSitemap(today: string): Promise<string> {
+  const data = await sbQuery("blog_posts", "select=slug,title,published_at,featured_image&is_published=eq.true&order=published_at.desc") as Array<{slug:string;title:string;published_at:string;featured_image:string|null}>;
   let urls = "";
-  
-  for (const post of posts) {
-    const lastmod = post.published_at?.split("T")[0] || today;
-    const postTitle = escapeXml(post.title || "");
-    
-    urls += `
-  <url>
-    <loc>${BASE_URL}/blog/${post.slug}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>${post.featured_image ? `
-    <image:image>
-      <image:loc>${escapeXml(post.featured_image)}</image:loc>
-      <image:title>${postTitle}</image:title>
-    </image:image>` : ""}
-  </url>`;
-  }
-
-  console.log(`Blog sitemap: ${posts.length} posts`);
-
-  return `${xmlHeader()}
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls}
-</urlset>`;
-}
-
-async function generateGuidesSitemap(today: string): Promise<string> {
-  const GUIDES = await loadGuides();
-  let urls = `
-  <url>
-    <loc>${BASE_URL}/guides</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-
-  for (const guide of GUIDES) {
-    const lastmod = guide.updatedAt || today;
-    const priority = guide.priority || "0.7";
-    urls += `
-  <url>
-    <loc>${BASE_URL}/guides/${guide.slug}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>${priority}</priority>
-  </url>`;
-  }
-
-  console.log(`Guides sitemap: ${GUIDES.length} guides`);
-
-  return `${xmlHeader()}
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
-</urlset>`;
+  for (const p of data) { const lm = p.published_at?.split("T")[0] || today; urls += `\n  <url>\n    <loc>${BASE_URL}/blog/${p.slug}</loc>\n    <lastmod>${lm}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>${p.featured_image ? `\n    <image:image>\n      <image:loc>${esc(p.featured_image)}</image:loc>\n      <image:title>${esc(p.title || "")}</image:title>\n    </image:image>` : ""}\n  </url>`; }
+  console.log(`[sitemap] Blog: ${data.length}`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls}\n</urlset>`;
 }
