@@ -203,34 +203,35 @@ Deno.serve(async (req) => {
 });
 
 function generateSitemapIndex(today: string): string {
+  // Use direct edge function URLs so Google doesn't need JS to resolve sub-sitemaps
   return `${xmlHeader()}
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>${BASE_URL}/sitemap-static.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=static</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${BASE_URL}/sitemap-products.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=products</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${BASE_URL}/sitemap-categories.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=categories</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${BASE_URL}/sitemap-bestsellers.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=bestsellers</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${BASE_URL}/sitemap-collections.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=collections</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${BASE_URL}/sitemap-blog.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=blog</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${BASE_URL}/sitemap-guides.xml</loc>
+    <loc>${SITEMAP_BASE_URL}?type=guides</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
 </sitemapindex>`;
