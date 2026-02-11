@@ -24,6 +24,7 @@ import { WebsiteSchema, LocalBusinessSchema } from '@/components/seo';
 import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { initPageDebug, logDataSanitization, createSectionDebugger } from '@/lib/debug-logger';
 import { useCriticalImagePreload, prefetchImages } from '@/hooks/useCriticalImagePreload';
+import { getAnchorText } from '@/lib/anchor-text-helper';
 // FREE_SHIPPING_THRESHOLD and RETURN_WINDOW_DAYS are now used directly in AnimatedTrustBadges
 
 // Debug loggers for each section
@@ -515,9 +516,9 @@ const Index = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Popular Guides</h2>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Trusted Buying Guides</h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Expert-tested buying guides to help you choose the best products for your pet
+                Vet-backed & updated 2026 — expert-tested picks for your pet
               </p>
             </motion.div>
             <motion.div
@@ -554,7 +555,7 @@ const Index = () => {
                   >
                     <span className="text-3xl mb-3 block">{guide.icon}</span>
                     <h3 className="font-display font-semibold text-lg text-foreground group-hover:text-primary transition-colors mb-2">
-                      {guide.title}
+                      {getAnchorText(guide.slug, 'hero-insert')}
                     </h3>
                     <p className="text-sm text-muted-foreground leading-relaxed mb-3">{guide.desc}</p>
                     <span className="text-sm font-medium text-primary inline-flex items-center gap-1">
@@ -897,7 +898,7 @@ const Index = () => {
         </SectionErrorBoundary>
       )}
 
-      {/* New Expert Guides — Internal Authority Signal */}
+      {/* Explore Our Expert Pet Guides — Mid-Page Authority Grid (6 links) */}
       <SectionErrorBoundary sectionName="Expert Guides">
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
@@ -913,7 +914,7 @@ const Index = () => {
                   <BookOpen className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-display font-bold">New Expert Guides</h2>
+                  <h2 className="text-3xl md:text-4xl font-display font-bold">Explore Our Expert Pet Guides</h2>
                   <p className="text-muted-foreground text-lg">In-depth buying guides tested by real pet owners</p>
                 </div>
               </div>
@@ -923,48 +924,48 @@ const Index = () => {
             </motion.div>
 
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <Link
-                to="/guides/best-cat-litter-box-2026"
-                className="group bg-card rounded-2xl border border-border p-6 hover:border-primary/30 hover:shadow-soft transition-all"
-              >
-                <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">Cornerstone Guide</span>
-                <h3 className="font-display font-bold text-lg mt-3 mb-2 group-hover:text-primary transition-colors">
-                  Best Cat Litter Box (2026)
-                </h3>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  12 tested picks for odor control, large cats & multi-cat homes — with pros & cons.
-                </p>
-              </Link>
-              <Link
-                to="/guides/how-many-litter-boxes-per-cat"
-                className="group bg-card rounded-2xl border border-border p-6 hover:border-primary/30 hover:shadow-soft transition-all"
-              >
-                <span className="text-xs font-medium text-accent-foreground bg-accent/60 px-2.5 py-1 rounded-full">Expert Advice</span>
-                <h3 className="font-display font-bold text-lg mt-3 mb-2 group-hover:text-primary transition-colors">
-                  How Many Litter Boxes Per Cat?
-                </h3>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  The vet-backed n+1 rule explained with real placement tips.
-                </p>
-              </Link>
-              <Link
-                to="/guides/best-cat-trees-small-apartments"
-                className="group bg-card rounded-2xl border border-border p-6 hover:border-primary/30 hover:shadow-soft transition-all"
-              >
-                <span className="text-xs font-medium text-accent-foreground bg-accent/60 px-2.5 py-1 rounded-full">New</span>
-                <h3 className="font-display font-bold text-lg mt-3 mb-2 group-hover:text-primary transition-colors">
-                  Best Cat Trees for Small Apartments
-                </h3>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  7 compact cat trees tested in real apartments under 600 sq ft.
-                </p>
-              </Link>
+              {/* Cornerstones — semantic anchors */}
+              {[
+                { slug: 'best-cat-litter-box-2026', badge: 'Cornerstone Guide', desc: '12 tested picks for odor control, large cats & multi-cat homes — with pros & cons.' },
+                { slug: 'best-dog-bed-2026', badge: 'Cornerstone Guide', desc: 'Orthopedic, calming & durable beds tested with real dogs of all sizes.' },
+                { slug: 'best-cat-litter-box-furniture-enclosures-2026', badge: 'Cornerstone Guide', desc: '8 litter box enclosures tested for odor control, cat comfort, and home décor.' },
+              ].map((guide) => (
+                <Link
+                  key={guide.slug}
+                  to={`/guides/${guide.slug}`}
+                  className="group bg-card rounded-2xl border border-border p-6 hover:border-primary/30 hover:shadow-soft transition-all"
+                >
+                  <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">{guide.badge}</span>
+                  <h3 className="font-display font-bold text-lg mt-3 mb-2 group-hover:text-primary transition-colors">
+                    {getAnchorText(guide.slug, 'mid-page-cornerstone')}
+                  </h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{guide.desc}</p>
+                </Link>
+              ))}
+              {/* Hubs — partial anchors */}
+              {[
+                { slug: 'how-many-litter-boxes-per-cat', badge: 'Expert Advice', desc: 'The vet-backed n+1 rule explained with real placement tips.' },
+                { slug: 'best-orthopedic-dog-bed', badge: 'Buying Guide', desc: 'Joint-support beds tested for senior dogs and large breeds.' },
+                { slug: 'best-cat-trees-small-apartments', badge: 'Space-Saving', desc: '7 compact cat trees tested in real apartments under 600 sq ft.' },
+              ].map((guide) => (
+                <Link
+                  key={guide.slug}
+                  to={`/guides/${guide.slug}`}
+                  className="group bg-card rounded-2xl border border-border p-6 hover:border-primary/30 hover:shadow-soft transition-all"
+                >
+                  <span className="text-xs font-medium text-accent-foreground bg-accent/60 px-2.5 py-1 rounded-full">{guide.badge}</span>
+                  <h3 className="font-display font-bold text-lg mt-3 mb-2 group-hover:text-primary transition-colors">
+                    {getAnchorText(guide.slug, 'mid-page-hub')}
+                  </h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{guide.desc}</p>
+                </Link>
+              ))}
             </motion.div>
           </div>
         </section>
