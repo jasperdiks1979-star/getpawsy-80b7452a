@@ -44,7 +44,16 @@ export interface GSCGuideReport {
   } | null;
 }
 
-export type GSCDataStatus = 'loading' | 'no_sync' | 'no_data' | 'ready';
+export type GSCDataStatus = 'loading' | 'no_sync' | 'no_data' | 'ready' | 'active';
+
+export interface GSCOptimizationFlag {
+  slug: string;
+  flag: 'rank_boost_candidate' | 'ctr_optimization_required' | 'indexing_boost';
+  reason: string;
+  impressions: number;
+  position: number;
+  ctr: number;
+}
 
 export interface GSCFetchResult {
   reports: GSCGuideReport[];
@@ -52,6 +61,14 @@ export interface GSCFetchResult {
   statusMessage: string;
   lastSyncedAt: string | null;
   totalRows: number;
+  sitewide?: {
+    totalImpressions: number;
+    totalClicks: number;
+    avgPosition: number;
+    totalGuidesWithData: number;
+    totalQueries: number;
+  };
+  optimizationFlags?: GSCOptimizationFlag[];
 }
 
 // ============= DATA FETCHING =============
@@ -175,17 +192,54 @@ export async function fetchGSCMetricsForGuides(): Promise<GSCFetchResult> {
     });
   }
 
+  // Compute sitewide metrics
+  const totalImpressions = reports.reduce((s, r) => s + (r.periods['7d']?.impressions || 0), 0);
+  const totalClicks = reports.reduce((s, r) => s + (r.periods['7d']?.clicks || 0), 0);
+  const positionValues = reports.filter(r => r.periods['7d']?.avgPosition).map(r => r.periods['7d']!.avgPosition);
+  const avgPosition = positionValues.length > 0 ? Math.round((positionValues.reduce((s, p) => s + p, 0) / positionValues.length) * 10) / 10 : 0;
+  const totalQueries = reports.reduce((s, r) => s + r.topQueries.length, 0);
+
+  // Generate optimization flags
+  const optimizationFlags: GSCOptimizationFlag[] = [];
+  for (const report of reports) {
+    const d7 = report.periods['7d'];
+    if (!d7) {
+      optimizationFlags.push({ slug: report.slug, flag: 'indexing_boost', reason: 'No impressions — needs internal link boost or indexing', impressions: 0, position: 0, ctr: 0 });
+      continue;
+    }
+    if (d7.impressions > 100 && d7.avgPosition >= 8 && d7.avgPosition <= 20) {
+      optimizationFlags.push({ slug: report.slug, flag: 'rank_boost_candidate', reason: `Position ${d7.avgPosition} with ${d7.impressions} impressions — push to top 5`, impressions: d7.impressions, position: d7.avgPosition, ctr: d7.ctr });
+    }
+    if (d7.impressions > 300 && d7.ctr < 2) {
+      optimizationFlags.push({ slug: report.slug, flag: 'ctr_optimization_required', reason: `CTR ${d7.ctr.toFixed(2)}% with ${d7.impressions} impressions — title/meta optimization needed`, impressions: d7.impressions, position: d7.avgPosition, ctr: d7.ctr });
+    }
+    if (d7.impressions === 0) {
+      optimizationFlags.push({ slug: report.slug, flag: 'indexing_boost', reason: 'Zero impressions despite being indexed', impressions: 0, position: d7.avgPosition, ctr: 0 });
+    }
+  }
+
+  const isActive = reports.length > 0 && totalImpressions > 0;
+
   return {
     reports,
-    status: reports.length > 0 ? 'ready' : 'no_data',
-    statusMessage: reports.length > 0
+    status: isActive ? 'active' : reports.length > 0 ? 'ready' : 'no_data',
+    statusMessage: isActive
+      ? `ACTIVE — ${reports.length} guides synced, ${totalImpressions} impressions, avg position ${avgPosition}`
+      : reports.length > 0
       ? `${reports.length} guides with GSC data`
       : 'GSC data synced but no guide pages matched. Ensure guides are indexed.',
     lastSyncedAt,
     totalRows: allRankings.length,
+    sitewide: {
+      totalImpressions,
+      totalClicks,
+      avgPosition,
+      totalGuidesWithData: reports.length,
+      totalQueries,
+    },
+    optimizationFlags,
   };
 }
-
 /**
  * Trigger a manual GSC sync via the edge function.
  */
