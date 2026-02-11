@@ -18,14 +18,12 @@ interface GSCResponse {
   rows?: SearchAnalyticsRow[];
 }
 
+// ============= JWT / AUTH =============
+
 async function getAccessToken(serviceAccountJson: string): Promise<string> {
   const serviceAccount = JSON.parse(serviceAccountJson);
-  
-  const header = {
-    alg: "RS256",
-    typ: "JWT",
-  };
 
+  const header = { alg: "RS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: serviceAccount.client_email,
@@ -35,40 +33,33 @@ async function getAccessToken(serviceAccountJson: string): Promise<string> {
     exp: now + 3600,
   };
 
-  // Create JWT
   const encoder = new TextEncoder();
   const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
   const payloadB64 = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  
   const signatureInput = `${headerB64}.${payloadB64}`;
-  
-  // Import private key
+
   const privateKeyPem = serviceAccount.private_key;
-  const pemHeader = "-----BEGIN PRIVATE KEY-----";
-  const pemFooter = "-----END PRIVATE KEY-----";
-  const pemContents = privateKeyPem.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '');
-  const binaryDer = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
-  
+  const pemContents = privateKeyPem
+    .replace("-----BEGIN PRIVATE KEY-----", '')
+    .replace("-----END PRIVATE KEY-----", '')
+    .replace(/\s/g, '');
+  const binaryDer = Uint8Array.from(atob(pemContents), (c: string) => c.charCodeAt(0));
+
   const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryDer,
+    "pkcs8", binaryDer,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
+    false, ["sign"]
   );
-  
+
   const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    cryptoKey,
-    encoder.encode(signatureInput)
+    "RSASSA-PKCS1-v1_5", cryptoKey, encoder.encode(signatureInput)
   );
-  
+
   const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
     .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  
+
   const jwt = `${signatureInput}.${signatureB64}`;
-  
-  // Exchange JWT for access token
+
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -77,16 +68,24 @@ async function getAccessToken(serviceAccountJson: string): Promise<string> {
       assertion: jwt,
     }),
   });
-  
+
   const tokenData = await tokenResponse.json();
   if (!tokenResponse.ok) {
     throw new Error(`Token exchange failed: ${JSON.stringify(tokenData)}`);
   }
-  
   return tokenData.access_token;
 }
 
-async function fetchGSCData(accessToken: string, siteUrl: string, startDate: string, endDate: string, country: string): Promise<GSCResponse> {
+// ============= GSC FETCH =============
+
+async function fetchGSCData(
+  accessToken: string,
+  siteUrl: string,
+  startDate: string,
+  endDate: string,
+  dimensions: string[],
+  rowLimit = 1000,
+): Promise<GSCResponse> {
   const response = await fetch(
     `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
     {
@@ -98,27 +97,55 @@ async function fetchGSCData(accessToken: string, siteUrl: string, startDate: str
       body: JSON.stringify({
         startDate,
         endDate,
-        dimensions: ["query"],
-        dimensionFilterGroups: [{
-          filters: [{
-            dimension: "country",
-            operator: "equals",
-            expression: country,
-          }],
-        }],
-        rowLimit: 500,
+        dimensions,
+        rowLimit,
         startRow: 0,
       }),
     }
   );
-  
+
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`GSC API error: ${error}`);
+    throw new Error(`GSC API error (${response.status}): ${error}`);
   }
-  
+
   return await response.json();
 }
+
+// ============= GUIDE SLUG MAPPING =============
+
+const GUIDE_SLUG_PATTERNS = [
+  'best-cat-litter-box-2026',
+  'how-many-litter-boxes-per-cat',
+  'best-cat-litter-box-furniture-enclosures-2026',
+  'best-litter-boxes-multi-cat',
+  'best-extra-large-litter-boxes',
+  'best-cat-trees-small-apartments',
+  'best-high-sided-litter-box',
+  'best-litter-box-kittens',
+  'best-litter-box-odor-bathroom',
+  'best-litter-box-senior-cats',
+  'best-litter-box-small-apartments',
+  'best-litter-box-studio-apartment',
+  'best-litter-box-under-100',
+  'best-low-tracking-litter-box',
+  'cat-condo-vs-cat-tower',
+  'choosing-safe-cat-tree-indoor',
+  'guinea-pig-cage-vs-playpen',
+  'how-to-choose-guinea-pig-cage',
+  'outdoor-dog-games-enrichment',
+];
+
+function matchPageToSlug(pageUrl: string): string | null {
+  for (const slug of GUIDE_SLUG_PATTERNS) {
+    if (pageUrl.includes(`/guides/${slug}`)) {
+      return slug;
+    }
+  }
+  return null;
+}
+
+// ============= MAIN HANDLER =============
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -167,73 +194,191 @@ serve(async (req) => {
       );
     }
 
-    // Get request body
     const body = await req.json().catch(() => ({}));
-    const { action, keyword, competitors } = body;
+    const { action } = body;
 
     const serviceAccountJson = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_JSON');
     if (!serviceAccountJson) {
       return new Response(
-        JSON.stringify({ error: 'Google Service Account not configured' }),
+        JSON.stringify({ error: 'GOOGLE_SERVICE_ACCOUNT_JSON secret not configured', reason: 'missing_credentials' }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const siteUrl = 'https://getpawsy.pet';
-    const today = new Date();
-    const endDate = new Date(today);
-    endDate.setDate(endDate.getDate() - 3); // GSC data is delayed 3 days
-    const startDate = new Date(endDate);
-    startDate.setDate(startDate.getDate() - 7); // Last 7 days
-
-    const formatDate = (d: Date) => d.toISOString().split('T')[0];
-
+    // ============= ACTION: SYNC =============
     if (action === 'sync') {
-      // Sync all rankings from GSC
+      const SITE_URL = 'sc-domain:getpawsy.pet';
+
+      const today = new Date();
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() - 3); // GSC data delayed ~3 days
+      const startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - 28); // Last 28 days
+
+      const formatDate = (d: Date) => d.toISOString().split('T')[0];
+      const startStr = formatDate(startDate);
+      const endStr = formatDate(endDate);
+
+      console.log(`[GSC Sync] Fetching ${startStr} to ${endStr} for ${SITE_URL}`);
+
       const accessToken = await getAccessToken(serviceAccountJson);
+
+      // Fetch with page + query dimensions
       const gscData = await fetchGSCData(
-        accessToken,
-        siteUrl,
-        formatDate(startDate),
-        formatDate(endDate),
-        'usa'
+        accessToken, SITE_URL, startStr, endStr,
+        ['page', 'query'], 2000
       );
 
       if (!gscData.rows || gscData.rows.length === 0) {
         return new Response(
-          JSON.stringify({ success: true, message: 'No ranking data found for USA', count: 0 }),
+          JSON.stringify({
+            success: true,
+            count: 0,
+            reason: 'no_data',
+            message: `No rows returned from GSC for ${SITE_URL} (${startStr} to ${endStr}). Possible causes: (1) domain property not verified, (2) service account lacks access, (3) no indexed guide pages yet.`,
+            debug: { siteUrl: SITE_URL, startDate: startStr, endDate: endStr, dimensions: ['page', 'query'] },
+          }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Upsert rankings
-      const rankings = gscData.rows.map(row => ({
-        keyword: row.keys[0],
-        position: row.position,
-        clicks: row.clicks,
-        impressions: row.impressions,
-        ctr: row.ctr,
-        country: 'usa',
-        device: 'all',
-        tracked_date: formatDate(endDate),
-      }));
+      console.log(`[GSC Sync] Got ${gscData.rows.length} raw rows`);
 
+      // Aggregate per guide slug
+      const slugAggregates: Record<string, {
+        impressions: number; clicks: number; positions: number[]; queries: string[];
+      }> = {};
+
+      let unmatchedCount = 0;
+
+      for (const row of gscData.rows) {
+        const pageUrl = row.keys[0];
+        const query = row.keys[1];
+        const slug = matchPageToSlug(pageUrl);
+
+        if (!slug) {
+          unmatchedCount++;
+          continue;
+        }
+
+        if (!slugAggregates[slug]) {
+          slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [] };
+        }
+
+        slugAggregates[slug].impressions += row.impressions;
+        slugAggregates[slug].clicks += row.clicks;
+        slugAggregates[slug].positions.push(row.position);
+        if (!slugAggregates[slug].queries.includes(query)) {
+          slugAggregates[slug].queries.push(query);
+        }
+      }
+
+      const now = new Date().toISOString();
+      const rankings = Object.entries(slugAggregates).map(([slug, agg]) => {
+        const avgPos = agg.positions.reduce((s, p) => s + p, 0) / agg.positions.length;
+        const ctr = agg.impressions > 0 ? agg.clicks / agg.impressions : 0;
+        return {
+          keyword: slug, // use slug as keyword identifier
+          slug,
+          position: Math.round(avgPos * 10) / 10,
+          clicks: agg.clicks,
+          impressions: agg.impressions,
+          ctr: Math.round(ctr * 10000) / 10000,
+          country: 'all',
+          device: 'all',
+          tracked_date: endStr,
+          last_synced_at: now,
+        };
+      });
+
+      // Also store individual query-level data
+      const queryRankings = gscData.rows
+        .filter(row => matchPageToSlug(row.keys[0]) !== null)
+        .map(row => ({
+          keyword: row.keys[1],
+          slug: matchPageToSlug(row.keys[0]),
+          position: Math.round(row.position * 10) / 10,
+          clicks: row.clicks,
+          impressions: row.impressions,
+          ctr: Math.round(row.ctr * 10000) / 10000,
+          country: 'all',
+          device: 'all',
+          tracked_date: endStr,
+          last_synced_at: now,
+        }));
+
+      // Upsert slug-level aggregates
       const { error: upsertError } = await adminSupabase
         .from('keyword_rankings')
         .upsert(rankings, { onConflict: 'keyword,country,device,tracked_date' });
 
       if (upsertError) {
+        console.error('[GSC Sync] Slug upsert error:', upsertError);
         throw upsertError;
       }
 
+      // Upsert query-level data
+      const { error: queryError } = await adminSupabase
+        .from('keyword_rankings')
+        .upsert(queryRankings, { onConflict: 'keyword,country,device,tracked_date' });
+
+      if (queryError) {
+        console.error('[GSC Sync] Query upsert error:', queryError);
+        // Non-fatal, continue
+      }
+
       return new Response(
-        JSON.stringify({ success: true, count: rankings.length }),
+        JSON.stringify({
+          success: true,
+          count: rankings.length,
+          queryCount: queryRankings.length,
+          unmatchedRows: unmatchedCount,
+          totalRawRows: gscData.rows.length,
+          syncedAt: now,
+          dateRange: { start: startStr, end: endStr },
+          slugs: rankings.map(r => ({
+            slug: r.slug,
+            impressions: r.impressions,
+            clicks: r.clicks,
+            position: r.position,
+          })),
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // ============= ACTION: GET GUIDE METRICS =============
+    if (action === 'get_guide_metrics') {
+      const { data: metrics, error } = await adminSupabase
+        .from('keyword_rankings')
+        .select('*')
+        .not('slug', 'is', null)
+        .order('tracked_date', { ascending: false })
+        .limit(500);
+
+      if (error) throw error;
+
+      // Get last sync timestamp
+      const { data: lastSync } = await adminSupabase
+        .from('keyword_rankings')
+        .select('last_synced_at')
+        .not('last_synced_at', 'is', null)
+        .order('last_synced_at', { ascending: false })
+        .limit(1);
+
+      return new Response(
+        JSON.stringify({
+          metrics: metrics || [],
+          lastSyncedAt: lastSync?.[0]?.last_synced_at || null,
+          count: metrics?.length || 0,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ============= ACTION: ADD KEYWORD =============
     if (action === 'add_keyword') {
-      // Add keyword to watchlist
+      const { keyword } = body;
       if (!keyword || typeof keyword !== 'string') {
         return new Response(
           JSON.stringify({ error: 'Keyword is required' }),
@@ -261,63 +406,8 @@ serve(async (req) => {
       );
     }
 
-    if (action === 'get_top_keywords') {
-      // Get top 10 keywords by position
-      const { data: topKeywords, error } = await adminSupabase
-        .from('keyword_rankings')
-        .select('*')
-        .eq('country', 'usa')
-        .order('tracked_date', { ascending: false })
-        .order('position', { ascending: true })
-        .limit(50);
-
-      if (error) throw error;
-
-      // Group by keyword, get latest entry
-      const keywordMap = new Map<string, typeof topKeywords[0]>();
-      topKeywords?.forEach(kw => {
-        if (!keywordMap.has(kw.keyword)) {
-          keywordMap.set(kw.keyword, kw);
-        }
-      });
-
-      const uniqueKeywords = Array.from(keywordMap.values())
-        .sort((a, b) => (a.position || 100) - (b.position || 100))
-        .slice(0, 10);
-
-      return new Response(
-        JSON.stringify({ keywords: uniqueKeywords }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (action === 'get_history') {
-      // Get historical data for a specific keyword
-      if (!keyword) {
-        return new Response(
-          JSON.stringify({ error: 'Keyword is required' }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const { data: history, error } = await adminSupabase
-        .from('keyword_rankings')
-        .select('*')
-        .eq('keyword', keyword)
-        .eq('country', 'usa')
-        .order('tracked_date', { ascending: true })
-        .limit(30);
-
-      if (error) throw error;
-
-      return new Response(
-        JSON.stringify({ history }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     return new Response(
-      JSON.stringify({ error: 'Invalid action' }),
+      JSON.stringify({ error: 'Invalid action. Valid: sync, get_guide_metrics, add_keyword' }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 

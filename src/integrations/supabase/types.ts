@@ -1140,7 +1140,9 @@ export type Database = {
           id: string
           impressions: number | null
           keyword: string
+          last_synced_at: string | null
           position: number | null
+          slug: string | null
           tracked_date: string
         }
         Insert: {
@@ -1152,7 +1154,9 @@ export type Database = {
           id?: string
           impressions?: number | null
           keyword: string
+          last_synced_at?: string | null
           position?: number | null
+          slug?: string | null
           tracked_date?: string
         }
         Update: {
@@ -1164,7 +1168,9 @@ export type Database = {
           id?: string
           impressions?: number | null
           keyword?: string
+          last_synced_at?: string | null
           position?: number | null
+          slug?: string | null
           tracked_date?: string
         }
         Relationships: []
