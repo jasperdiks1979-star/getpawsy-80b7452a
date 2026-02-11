@@ -510,7 +510,7 @@ async function generateGuidesSitemap(today: string): Promise<string> {
   const GUIDES = await loadGuides();
   let urls = `
   <url>
-    <loc>${BASE_URL}/guides/</loc>
+    <loc>${BASE_URL}/guides</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -521,7 +521,7 @@ async function generateGuidesSitemap(today: string): Promise<string> {
     const priority = guide.priority || "0.7";
     urls += `
   <url>
-    <loc>${BASE_URL}/guides/${guide.slug}/</loc>
+    <loc>${BASE_URL}/guides/${guide.slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>${priority}</priority>
