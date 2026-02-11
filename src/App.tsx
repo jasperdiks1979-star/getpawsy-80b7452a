@@ -179,6 +179,9 @@ const ProductsSlugRedirect = () => {
   return <Navigate to={`/product/${slug}`} replace />;
 };
 
+// Redirect root-level guide slugs to /guides/{slug}
+import GuideSlugRedirect from '@/components/routing/GuideSlugRedirect';
+
 // Optimized React Query client with aggressive caching
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -305,6 +308,9 @@ const App = () => {
                         
                         {/* Fix duplicate page issue: redirect /products/:slug to /product/:slug */}
                         <Route path="/products/:slug" element={<ProductsSlugRedirect />} />
+                        
+                        {/* Root-level guide slug redirects → /guides/{slug}, else 404 */}
+                        <Route path="/:slug" element={<GuideSlugRedirect />} />
                         
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />

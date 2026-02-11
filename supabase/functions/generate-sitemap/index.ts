@@ -7,22 +7,44 @@ const corsHeaders = {
   "X-Content-Served-Identically": "true",
 };
 
-// Guide data with lastmod dates (synced from public/data/guides/index.json)
-const GUIDES: Array<{ slug: string; updatedAt: string; priority?: string }> = [
-  // Week 1 — Cat Litter cluster (cornerstone first)
-  { slug: "best-cat-litter-box-2026", updatedAt: "2026-02-10", priority: "0.9" },
-  { slug: "how-many-litter-boxes-per-cat", updatedAt: "2026-02-10", priority: "0.8" },
-  { slug: "best-cat-litter-box-furniture-enclosures-2026", updatedAt: "2026-02-11", priority: "0.8" },
-  { slug: "best-litter-boxes-multi-cat", updatedAt: "2026-02-12", priority: "0.75" },
-  { slug: "best-extra-large-litter-boxes", updatedAt: "2026-02-13", priority: "0.75" },
-  { slug: "best-cat-trees-small-apartments", updatedAt: "2026-02-14", priority: "0.75" },
-  // Original guides
-  { slug: "how-to-choose-guinea-pig-cage", updatedAt: "2026-02-10" },
-  { slug: "guinea-pig-cage-vs-playpen", updatedAt: "2026-02-10" },
-  { slug: "cat-condo-vs-cat-tower", updatedAt: "2026-02-10" },
-  { slug: "choosing-safe-cat-tree-indoor", updatedAt: "2026-02-10" },
-  { slug: "outdoor-dog-games-enrichment", updatedAt: "2026-02-10" },
-];
+// Guide slugs loaded dynamically from the live guides index
+let _cachedGuides: Array<{ slug: string; updatedAt: string; priority?: string }> | null = null;
+
+async function loadGuides(): Promise<Array<{ slug: string; updatedAt: string; priority?: string }>> {
+  if (_cachedGuides) return _cachedGuides;
+  try {
+    const res = await fetch('https://getpawsy.pet/data/guides/index.json');
+    if (res.ok) {
+      const guides = await res.json();
+      _cachedGuides = guides.map((g: { slug: string; updatedAt: string; keywords?: string[] }) => ({
+        slug: g.slug,
+        updatedAt: g.updatedAt || new Date().toISOString().split('T')[0],
+        // Cornerstones get higher priority
+        priority: g.slug.startsWith('best-cat-litter-box-2026') ? '0.9' :
+                  g.slug.startsWith('best-') ? '0.8' : '0.7',
+      }));
+      console.log(`[sitemap] Loaded ${_cachedGuides.length} guides from index.json`);
+      return _cachedGuides;
+    }
+  } catch (e) {
+    console.warn('[sitemap] Failed to load guides index, using fallback:', e);
+  }
+  // Fallback hardcoded list
+  _cachedGuides = [
+    { slug: "best-cat-litter-box-2026", updatedAt: "2026-02-10", priority: "0.9" },
+    { slug: "how-many-litter-boxes-per-cat", updatedAt: "2026-02-10", priority: "0.8" },
+    { slug: "best-cat-litter-box-furniture-enclosures-2026", updatedAt: "2026-02-11", priority: "0.8" },
+    { slug: "best-litter-boxes-multi-cat", updatedAt: "2026-02-12", priority: "0.75" },
+    { slug: "best-extra-large-litter-boxes", updatedAt: "2026-02-13", priority: "0.75" },
+    { slug: "best-cat-trees-small-apartments", updatedAt: "2026-02-14", priority: "0.75" },
+    { slug: "how-to-choose-guinea-pig-cage", updatedAt: "2026-02-10" },
+    { slug: "guinea-pig-cage-vs-playpen", updatedAt: "2026-02-10" },
+    { slug: "cat-condo-vs-cat-tower", updatedAt: "2026-02-10" },
+    { slug: "choosing-safe-cat-tree-indoor", updatedAt: "2026-02-10" },
+    { slug: "outdoor-dog-games-enrichment", updatedAt: "2026-02-10" },
+  ];
+  return _cachedGuides;
+}
 
 const BASE_URL = "https://getpawsy.pet";
 // Use edge function URL for sitemap index references (Google can't follow SPA redirects)
@@ -97,7 +119,7 @@ Deno.serve(async (req) => {
         return new Response(generateSitemapIndex(today), { headers, status: 200 });
 
       case "guides":
-        return new Response(generateGuidesSitemap(today), { headers, status: 200 });
+        return new Response(await generateGuidesSitemap(today), { headers, status: 200 });
 
 
       case "static":
@@ -482,7 +504,8 @@ function generateBlogSitemap(posts: BlogPost[], today: string): string {
 </urlset>`;
 }
 
-function generateGuidesSitemap(today: string): string {
+async function generateGuidesSitemap(today: string): Promise<string> {
+  const GUIDES = await loadGuides();
   let urls = `
   <url>
     <loc>${BASE_URL}/guides/</loc>
