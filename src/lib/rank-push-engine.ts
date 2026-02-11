@@ -1,8 +1,8 @@
 /**
- * Position 20–40 Push Protocol (Rank Boost Engine)
+ * Rank Push Engine (Position 15–50)
  * 
- * Detects keywords in position 20–40 with ≥150 impressions (28d),
- * then triggers internal link boosts, FAQ additions, and content expansion.
+ * Detects keywords/guides in position 15–50 and generates prioritized boost targets.
+ * Uses dynamic thresholds and priority scoring.
  */
 
 import type { GSCGuideReport, GSCQueryMetrics } from './gsc';
@@ -18,6 +18,7 @@ export interface RankBoostTarget {
   impressions28d: number;
   clicks28d: number;
   ctr: number;
+  priorityScore: number;
   boostActions: BoostAction[];
   status: BoostStatus;
   boostedAt?: string;
@@ -32,28 +33,53 @@ export interface BoostAction {
 
 // ============= DETECTION =============
 
-const POSITION_MIN = 20;
-const POSITION_MAX = 40;
-const MIN_IMPRESSIONS_28D = 150;
+const POSITION_MIN = 15;
+const POSITION_MAX = 50;
+const IMPRESSION_THRESHOLD_HIGH = 150;
+const IMPRESSION_THRESHOLD_FALLBACK = 20;
 
 /**
- * Scan GSC data and identify queries in position 20–40 with enough impressions.
+ * Calculate priority score: (50 - position) * log(impressions + 1)
+ */
+function calcPriorityScore(position: number, impressions: number): number {
+  return Math.round((50 - position) * Math.log(impressions + 1) * 100) / 100;
+}
+
+/**
+ * Determine impression threshold based on total data volume.
+ */
+function getImpressionThreshold(reports: GSCGuideReport[]): number {
+  const totalImpressions = reports.reduce((sum, r) => {
+    const p28 = r.periods['28d'];
+    return sum + (p28?.impressions || 0);
+  }, 0);
+
+  // If total impressions across all guides < 150, use fallback threshold
+  return totalImpressions < IMPRESSION_THRESHOLD_HIGH
+    ? IMPRESSION_THRESHOLD_FALLBACK
+    : IMPRESSION_THRESHOLD_HIGH;
+}
+
+/**
+ * Scan GSC data and identify boost targets in position 15–50.
  */
 export function detectBoostTargets(reports: GSCGuideReport[]): RankBoostTarget[] {
   const targets: RankBoostTarget[] = [];
+  const threshold = getImpressionThreshold(reports);
 
   for (const report of reports) {
+    // Check query-level data
     const queries = report.topQueries.filter(
-      q => q.position >= POSITION_MIN && q.position <= POSITION_MAX && q.impressions >= MIN_IMPRESSIONS_28D
+      q => q.position >= POSITION_MIN && q.position <= POSITION_MAX && q.impressions >= threshold
     );
 
     // Also check page-level 28d data
     const p28 = report.periods['28d'];
-    if (p28 && p28.avgPosition >= POSITION_MIN && p28.avgPosition <= POSITION_MAX && p28.impressions >= MIN_IMPRESSIONS_28D) {
+    if (p28 && p28.avgPosition >= POSITION_MIN && p28.avgPosition <= POSITION_MAX && p28.impressions >= threshold) {
       const exists = queries.some(q => q.query === report.slug);
       if (!exists) {
         queries.push({
-          query: `[page-level] ${report.slug}`,
+          query: `[page] ${report.slug}`,
           page: p28.page,
           impressions: p28.impressions,
           clicks: p28.clicks,
@@ -63,7 +89,24 @@ export function detectBoostTargets(reports: GSCGuideReport[]): RankBoostTarget[]
       }
     }
 
+    // Also check 7d data for emerging opportunities
+    const p7 = report.periods['7d'];
+    if (p7 && p7.avgPosition >= POSITION_MIN && p7.avgPosition <= POSITION_MAX && p7.impressions >= Math.max(threshold / 4, 5)) {
+      const exists = queries.some(q => q.query === report.slug || q.query === `[page] ${report.slug}`);
+      if (!exists) {
+        queries.push({
+          query: `[7d] ${report.slug}`,
+          page: p7.page,
+          impressions: p7.impressions,
+          clicks: p7.clicks,
+          ctr: p7.ctr,
+          position: p7.avgPosition,
+        });
+      }
+    }
+
     for (const q of queries) {
+      const priorityScore = calcPriorityScore(q.position, q.impressions);
       targets.push({
         slug: report.slug,
         query: q.query,
@@ -71,77 +114,59 @@ export function detectBoostTargets(reports: GSCGuideReport[]): RankBoostTarget[]
         impressions28d: q.impressions,
         clicks28d: q.clicks,
         ctr: q.ctr,
+        priorityScore,
         status: 'pending',
         boostActions: generateBoostActions(q),
       });
     }
   }
 
-  return targets.sort((a, b) => a.avgPosition - b.avgPosition);
+  return targets.sort((a, b) => b.priorityScore - a.priorityScore);
 }
 
 // ============= BOOST ACTIONS =============
 
 function generateBoostActions(query: GSCQueryMetrics): BoostAction[] {
-  const actions: BoostAction[] = [
+  return [
     {
       type: 'internal-links',
-      description: `Add 2 internal links from related guides using anchor text: "${query.query}" (exact) + partial match variant`,
+      description: `Add 2 internal links using anchor: "${query.query}" (exact + partial variant)`,
       completed: false,
     },
     {
       type: 'faq-section',
-      description: `Add FAQ: "What is the best ${query.query}?" with 60–80 word answer matching search intent`,
+      description: `Add FAQ: "What is the best ${query.query}?" with 60–80 word answer`,
       completed: false,
     },
     {
       type: 'content-expansion',
-      description: `Add 150–300 words of contextual content around "${query.query}" with H3 subheading`,
+      description: `Add 150–300 words with H3 subheading around "${query.query}"`,
       completed: false,
     },
     {
       type: 'anchor-optimization',
-      description: `Optimize existing anchors: 60% exact match, 40% partial/natural variations of "${query.query}"`,
+      description: `Optimize anchors: 60% exact, 40% partial/natural for "${query.query}"`,
       completed: false,
     },
   ];
-  return actions;
 }
 
 // ============= STATUS MANAGEMENT =============
 
-/**
- * Mark a target as boosted and set reevaluation date (14 days).
- */
 export function markAsBoosted(target: RankBoostTarget): RankBoostTarget {
   const now = new Date();
   const reevalDate = new Date(now.getTime() + 14 * 86400000);
-  return {
-    ...target,
-    status: 'boosted',
-    boostedAt: now.toISOString(),
-    reevaluateAt: reevalDate.toISOString(),
-  };
+  return { ...target, status: 'boosted', boostedAt: now.toISOString(), reevaluateAt: reevalDate.toISOString() };
 }
 
-/**
- * Check if a boosted target should be reevaluated.
- */
 export function shouldReevaluate(target: RankBoostTarget): boolean {
   if (target.status !== 'boosted' || !target.reevaluateAt) return false;
   return new Date() >= new Date(target.reevaluateAt);
 }
 
-/**
- * Reevaluate a target with new position data.
- */
 export function reevaluateTarget(target: RankBoostTarget, newPosition: number): RankBoostTarget {
-  if (newPosition < POSITION_MIN) {
-    return { ...target, status: 'graduated' };
-  }
-  if (newPosition >= POSITION_MIN && newPosition <= POSITION_MAX) {
-    return { ...target, status: 'waiting-reevaluation' };
-  }
+  if (newPosition < POSITION_MIN) return { ...target, status: 'graduated' };
+  if (newPosition >= POSITION_MIN && newPosition <= POSITION_MAX) return { ...target, status: 'waiting-reevaluation' };
   return target;
 }
 

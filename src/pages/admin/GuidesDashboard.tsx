@@ -1,40 +1,60 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowUp, ArrowDown, Minus, AlertTriangle, CheckCircle, 
-  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap 
+  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug 
 } from 'lucide-react';
 import { getExperimentsSummary } from '@/lib/guide-experiments';
-import { fetchGSCMetricsForGuides, type GSCGuideReport } from '@/lib/gsc';
+import { fetchGSCMetricsForGuides, triggerGSCSync, type GSCGuideReport, type GSCFetchResult } from '@/lib/gsc';
 import { evaluateGuideAlerts, type GuideHealthStatus } from '@/lib/guide-monitoring';
 import { getScalingSummary, getWeeklySchedule, checkCannibalization, SCALING_GUIDES } from '@/lib/guide-scaling-150';
 import { detectBoostTargets, getBoostSummary, type RankBoostTarget } from '@/lib/rank-push-engine';
 import { getLinkMatrixSummary, analyzeInternalLinks, type LinkAnalysis } from '@/lib/internal-link-matrix';
-import { runOrphanRepair, generateOrphanReport, type RepairResult } from '@/lib/orphan-repair-engine';
+import { runOrphanRepair, generateOrphanReport, detectOrphans, type RepairResult } from '@/lib/orphan-repair-engine';
 
 export default function GuidesDashboard() {
-  const [gscData, setGscData] = useState<GSCGuideReport[]>([]);
+  const [searchParams] = useSearchParams();
+  const isDebug = searchParams.get('debug') === 'true';
+
+  const [gscResult, setGscResult] = useState<GSCFetchResult | null>(null);
   const [healthStatuses, setHealthStatuses] = useState<GuideHealthStatus[]>([]);
   const [boostTargets, setBoostTargets] = useState<RankBoostTarget[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [repairResult, setRepairResult] = useState<RepairResult | null>(null);
   const [repairRunning, setRepairRunning] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      const data = await fetchGSCMetricsForGuides();
-      setGscData(data);
-      setHealthStatuses(evaluateGuideAlerts(data));
-      setBoostTargets(detectBoostTargets(data));
-      setLoading(false);
-    }
-    load();
-  }, []);
+  const loadData = async () => {
+    setLoading(true);
+    const result = await fetchGSCMetricsForGuides();
+    setGscResult(result);
+    setHealthStatuses(evaluateGuideAlerts(result.reports));
+    setBoostTargets(detectBoostTargets(result.reports));
+    setLoading(false);
+  };
 
+  useEffect(() => { loadData(); }, []);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setSyncMessage(null);
+    const result = await triggerGSCSync();
+    setSyncMessage(result.message);
+    setSyncing(false);
+    if (result.success) {
+      // Reload data after sync
+      await loadData();
+    }
+  };
+
+  const gscData = gscResult?.reports || [];
   const experiments = getExperimentsSummary();
   const scaling = getScalingSummary();
   const schedule = getWeeklySchedule();
@@ -43,13 +63,65 @@ export default function GuidesDashboard() {
   const linkSummary = getLinkMatrixSummary();
   const linkAnalyses = analyzeInternalLinks();
 
+  // Live orphan count (not cached)
+  const liveOrphans = detectOrphans();
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Guides SEO Dashboard</h1>
-          <p className="text-muted-foreground">A/B experiments, GSC monitoring, alerts, rank boost, link matrix & 150 scaling plan</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Guides SEO Dashboard</h1>
+            <p className="text-muted-foreground">A/B experiments, GSC monitoring, alerts, rank boost, link matrix & 150 scaling plan</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Force GSC Sync'}
+            </button>
+          </div>
         </div>
+
+        {syncMessage && (
+          <Alert variant={syncMessage.includes('failed') ? 'destructive' : 'default'}>
+            <AlertDescription className="text-xs">{syncMessage}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Status bar */}
+        {gscResult && (
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span>Status: <Badge variant={gscResult.status === 'ready' ? 'default' : 'secondary'} className="text-[10px]">{gscResult.status}</Badge></span>
+            {gscResult.lastSyncedAt && <span>Last sync: {new Date(gscResult.lastSyncedAt).toLocaleString()}</span>}
+            <span>Rows: {gscResult.totalRows}</span>
+            <span>Orphans: <span className={liveOrphans.length > 0 ? 'text-destructive font-medium' : ''}>{liveOrphans.length}</span></span>
+          </div>
+        )}
+
+        {/* Debug Panel */}
+        {isDebug && (
+          <Card className="border-dashed border-yellow-500">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-1.5"><Bug className="h-4 w-4" />Debug Panel</CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs space-y-1 font-mono">
+              <div>GSC Status: {gscResult?.status || 'loading'}</div>
+              <div>GSC Message: {gscResult?.statusMessage || '—'}</div>
+              <div>Last Sync: {gscResult?.lastSyncedAt || 'never'}</div>
+              <div>Total DB Rows: {gscResult?.totalRows || 0}</div>
+              <div>Guide Reports: {gscResult?.reports.length || 0}</div>
+              <div>Rank Boost Targets: {boostTargets.length}</div>
+              <div>Live Orphan Count: {liveOrphans.length}</div>
+              <div>Repair Result: {repairResult ? `${repairResult.orphansBefore}→${repairResult.orphansAfter}` : 'not run'}</div>
+              <div>Scaling Guides Total: {SCALING_GUIDES.length}</div>
+              <div>Impression Threshold: {boostTargets.length > 0 ? 'applied' : 'n/a'}</div>
+            </CardContent>
+          </Card>
+        )}
 
         <Tabs defaultValue="experiments" className="space-y-4">
           <TabsList className="flex flex-wrap gap-1 h-auto">
@@ -109,7 +181,23 @@ export default function GuidesDashboard() {
           {/* TAB 2: GSC MONITORING */}
           <TabsContent value="monitoring" className="space-y-4">
             {loading ? (
-              <p className="text-muted-foreground">Loading GSC data...</p>
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <Card key={i}><CardContent className="pt-4"><Skeleton className="h-24 w-full" /></CardContent></Card>
+                ))}
+              </div>
+            ) : gscResult?.status === 'no_sync' ? (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Waiting for GSC Sync</AlertTitle>
+                <AlertDescription className="text-xs">{gscResult.statusMessage}</AlertDescription>
+              </Alert>
+            ) : gscResult?.status === 'no_data' ? (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>No Guide Data</AlertTitle>
+                <AlertDescription className="text-xs">{gscResult.statusMessage}</AlertDescription>
+              </Alert>
             ) : (
               <div className="grid gap-4">
                 {gscData.map(report => {
@@ -122,23 +210,23 @@ export default function GuidesDashboard() {
                       <CardContent>
                         <div className="grid grid-cols-4 gap-4 text-center text-sm">
                           <div>
-                            <p className="text-muted-foreground text-xs">Impressions (7d)</p>
-                            <p className="text-lg font-bold">{d7?.impressions ?? '—'}</p>
+                            <p className="text-muted-foreground text-xs">Impressions</p>
+                            <p className="text-lg font-bold">{d7?.impressions ?? <EmptyMetric reason="Not indexed yet" />}</p>
                             {report.delta7d && <DeltaBadge value={report.delta7d.impressions} suffix="" />}
                           </div>
                           <div>
-                            <p className="text-muted-foreground text-xs">Clicks (7d)</p>
-                            <p className="text-lg font-bold">{d7?.clicks ?? '—'}</p>
+                            <p className="text-muted-foreground text-xs">Clicks</p>
+                            <p className="text-lg font-bold">{d7?.clicks ?? <EmptyMetric reason="No impressions yet" />}</p>
                             {report.delta7d && <DeltaBadge value={report.delta7d.clicks} suffix="" />}
                           </div>
                           <div>
-                            <p className="text-muted-foreground text-xs">CTR (7d)</p>
-                            <p className="text-lg font-bold">{d7 ? `${d7.ctr.toFixed(2)}%` : '—'}</p>
+                            <p className="text-muted-foreground text-xs">CTR</p>
+                            <p className="text-lg font-bold">{d7 ? `${d7.ctr.toFixed(2)}%` : <EmptyMetric reason="No impressions yet" />}</p>
                             {report.delta7d && <DeltaBadge value={report.delta7d.ctr} suffix="%" />}
                           </div>
                           <div>
                             <p className="text-muted-foreground text-xs">Avg Position</p>
-                            <p className="text-lg font-bold">{d7?.avgPosition ?? '—'}</p>
+                            <p className="text-lg font-bold">{d7?.avgPosition ?? <EmptyMetric reason="Not indexed yet" />}</p>
                             {report.delta7d && <DeltaBadge value={report.delta7d.position} suffix="" inverted />}
                           </div>
                         </div>
@@ -148,11 +236,14 @@ export default function GuidesDashboard() {
                             <div className="flex flex-wrap gap-1">
                               {report.topQueries.slice(0, 5).map(q => (
                                 <Badge key={q.query} variant="outline" className="text-xs">
-                                  {q.query} (pos {q.position})
+                                  {q.query} (pos {q.position.toFixed(1)})
                                 </Badge>
                               ))}
                             </div>
                           </div>
+                        )}
+                        {report.topQueries.length === 0 && d7 && (
+                          <p className="text-xs text-muted-foreground mt-2">No query-level data yet. Will populate on next sync.</p>
                         )}
                       </CardContent>
                     </Card>
@@ -164,92 +255,118 @@ export default function GuidesDashboard() {
 
           {/* TAB 3: ALERTS */}
           <TabsContent value="alerts" className="space-y-4">
-            {healthStatuses.map(status => (
-              <Card key={status.slug}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{status.slug}</CardTitle>
-                    <Badge variant={status.status === 'healthy' ? 'default' : status.status === 'attention' ? 'secondary' : 'destructive'}>
-                      {status.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {status.alerts.map((alert, i) => (
-                    <Alert key={i} variant={alert.severity === 'critical' ? 'destructive' : 'default'}>
-                      <AlertTitle className="text-sm">{alert.title}</AlertTitle>
-                      <AlertDescription className="text-xs">{alert.description}</AlertDescription>
-                    </Alert>
-                  ))}
-                  {status.alerts.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No alerts — guide is healthy.</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+            {loading ? (
+              <div className="space-y-4">{[1,2].map(i => <Card key={i}><CardContent className="pt-4"><Skeleton className="h-16 w-full" /></CardContent></Card>)}</div>
+            ) : healthStatuses.length === 0 ? (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>No Data</AlertTitle>
+                <AlertDescription className="text-xs">Sync GSC data first to generate health alerts.</AlertDescription>
+              </Alert>
+            ) : (
+              healthStatuses.map(status => (
+                <Card key={status.slug}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{status.slug}</CardTitle>
+                      <Badge variant={status.status === 'healthy' ? 'default' : status.status === 'attention' ? 'secondary' : 'destructive'}>
+                        {status.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {status.alerts.map((alert, i) => (
+                      <Alert key={i} variant={alert.severity === 'critical' ? 'destructive' : 'default'}>
+                        <AlertTitle className="text-sm">{alert.title}</AlertTitle>
+                        <AlertDescription className="text-xs">{alert.description}</AlertDescription>
+                      </Alert>
+                    ))}
+                    {status.alerts.length === 0 && (
+                      <p className="text-xs text-muted-foreground">No alerts — guide is healthy.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </TabsContent>
 
           {/* TAB 4: RANK BOOST TARGETS */}
           <TabsContent value="boost" className="space-y-4">
-            <div className="grid grid-cols-5 gap-4">
-              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.total}</p><p className="text-xs text-muted-foreground">Total Targets</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.pending}</p><p className="text-xs text-muted-foreground">Pending</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.boosted}</p><p className="text-xs text-muted-foreground">Boosted</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.graduated}</p><p className="text-xs text-muted-foreground">Graduated</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.avgPosition}</p><p className="text-xs text-muted-foreground">Avg Position</p></CardContent></Card>
-            </div>
-
-            {boostTargets.length === 0 && !loading && (
-              <Alert>
-                <AlertTitle>No boost targets detected</AlertTitle>
-                <AlertDescription className="text-xs">No queries found in position 20–40 with ≥150 impressions. Data will populate as GSC metrics accumulate.</AlertDescription>
-              </Alert>
-            )}
-
-            <ScrollArea className="h-[500px]">
-              <div className="space-y-3">
-                {boostTargets.map((target, i) => (
-                  <Card key={i}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="font-medium text-sm">{target.query}</p>
-                          <p className="text-xs text-muted-foreground">{target.slug}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Badge variant={target.status === 'graduated' ? 'default' : target.status === 'boosted' ? 'secondary' : 'outline'}>
-                            {target.status}
-                          </Badge>
-                          <Badge variant="outline">Pos {target.avgPosition}</Badge>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-xs text-center mb-2">
-                        <div><span className="text-muted-foreground">Impr:</span> {target.impressions28d}</div>
-                        <div><span className="text-muted-foreground">Clicks:</span> {target.clicks28d}</div>
-                        <div><span className="text-muted-foreground">CTR:</span> {target.ctr.toFixed(2)}%</div>
-                      </div>
-                      <div className="space-y-1">
-                        {target.boostActions.map((action, j) => (
-                          <div key={j} className="text-xs flex items-center gap-2">
-                            <Badge variant="outline" className="text-[10px] shrink-0">{action.type}</Badge>
-                            <span className="truncate text-muted-foreground">{action.description}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+            {loading ? (
+              <div className="grid grid-cols-5 gap-4">
+                {[1,2,3,4,5].map(i => <Card key={i}><CardContent className="pt-4"><Skeleton className="h-16 w-full" /></CardContent></Card>)}
               </div>
-            </ScrollArea>
+            ) : (
+              <>
+                <div className="grid grid-cols-5 gap-4">
+                  <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.total}</p><p className="text-xs text-muted-foreground">Total Targets</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.pending}</p><p className="text-xs text-muted-foreground">Pending</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.boosted}</p><p className="text-xs text-muted-foreground">Boosted</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.graduated}</p><p className="text-xs text-muted-foreground">Graduated</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{boostSummary.avgPosition || '—'}</p><p className="text-xs text-muted-foreground">Avg Position</p></CardContent></Card>
+                </div>
+
+                {boostTargets.length === 0 && (
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>No boost targets</AlertTitle>
+                    <AlertDescription className="text-xs">
+                      {gscResult?.status === 'no_sync'
+                        ? 'Waiting for GSC sync. Click "Force GSC Sync" to fetch data.'
+                        : gscResult?.status === 'no_data'
+                        ? 'GSC data synced but no guide pages matched positions 15–50.'
+                        : 'No queries found in position 15–50 with enough impressions. Data will populate as GSC metrics accumulate.'}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-3">
+                    {boostTargets.slice(0, 20).map((target, i) => (
+                      <Card key={i}>
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="font-medium text-sm">{target.query}</p>
+                              <p className="text-xs text-muted-foreground">{target.slug}</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Badge variant={target.status === 'graduated' ? 'default' : target.status === 'boosted' ? 'secondary' : 'outline'}>
+                                {target.status}
+                              </Badge>
+                              <Badge variant="outline">Pos {target.avgPosition}</Badge>
+                              <Badge variant="outline" className="text-[10px]">Score: {target.priorityScore}</Badge>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-xs text-center mb-2">
+                            <div><span className="text-muted-foreground">Impr:</span> {target.impressions28d}</div>
+                            <div><span className="text-muted-foreground">Clicks:</span> {target.clicks28d}</div>
+                            <div><span className="text-muted-foreground">CTR:</span> {target.ctr.toFixed(2)}%</div>
+                          </div>
+                          <div className="space-y-1">
+                            {target.boostActions.map((action, j) => (
+                              <div key={j} className="text-xs flex items-center gap-2">
+                                <Badge variant="outline" className="text-[10px] shrink-0">{action.type}</Badge>
+                                <span className="truncate text-muted-foreground">{action.description}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </>
+            )}
           </TabsContent>
 
           {/* TAB 5: LINK AUTHORITY FLOW + ORPHAN REPAIR */}
           <TabsContent value="links" className="space-y-4">
-            {/* Summary cards */}
+            {/* Summary cards - use live orphan count */}
             <div className="grid grid-cols-4 gap-4">
               <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{linkSummary.totalGuides}</p><p className="text-xs text-muted-foreground">Total Guides</p></CardContent></Card>
               <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{linkSummary.avgLinkStrength}</p><p className="text-xs text-muted-foreground">Avg Strength</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold text-destructive">{linkSummary.orphanCount}</p><p className="text-xs text-muted-foreground">Orphans (Before)</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold text-destructive">{liveOrphans.length}</p><p className="text-xs text-muted-foreground">Orphans (Live)</p></CardContent></Card>
               <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{linkSummary.overusedAnchors.length}</p><p className="text-xs text-muted-foreground">Overused Anchors</p></CardContent></Card>
             </div>
 
@@ -269,7 +386,6 @@ export default function GuidesDashboard() {
               </CardHeader>
               {repairResult && (
                 <CardContent className="space-y-4">
-                  {/* Before/After */}
                   <div className="grid grid-cols-4 gap-3">
                     <div className="text-center p-3 rounded bg-muted">
                       <p className="text-2xl font-bold text-destructive">{repairResult.orphansBefore}</p>
@@ -289,7 +405,6 @@ export default function GuidesDashboard() {
                     </div>
                   </div>
 
-                  {/* Cornerstone Inbound */}
                   <div>
                     <p className="text-xs font-semibold mb-2">Cornerstone Inbound Links</p>
                     <div className="grid grid-cols-3 gap-2">
@@ -302,7 +417,6 @@ export default function GuidesDashboard() {
                     </div>
                   </div>
 
-                  {/* Cluster Authority */}
                   <div>
                     <p className="text-xs font-semibold mb-2">Cluster Authority Scores</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -315,7 +429,6 @@ export default function GuidesDashboard() {
                     </div>
                   </div>
 
-                  {/* Top 10 Weakest */}
                   <div>
                     <p className="text-xs font-semibold mb-2">Top 10 Weakest Guides</p>
                     <div className="space-y-1">
@@ -331,7 +444,6 @@ export default function GuidesDashboard() {
                     </div>
                   </div>
 
-                  {/* Repair Log */}
                   <details className="text-xs">
                     <summary className="cursor-pointer font-semibold text-muted-foreground">View Repair Log ({repairResult.log.length} entries)</summary>
                     <ScrollArea className="h-[200px] mt-2">
@@ -357,18 +469,16 @@ export default function GuidesDashboard() {
               ))}
             </div>
 
-            {/* Orphan Alerts */}
-            {linkSummary.orphanCount > 0 && (
+            {liveOrphans.length > 0 && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Orphan Pages ({linkSummary.orphanCount})</AlertTitle>
+                <AlertTitle>Orphan Pages ({liveOrphans.length})</AlertTitle>
                 <AlertDescription className="text-xs">
-                  {linkSummary.orphans.slice(0, 10).join(', ')}{linkSummary.orphans.length > 10 && ` +${linkSummary.orphans.length - 10} more`}
+                  {liveOrphans.slice(0, 10).map(o => o.slug).join(', ')}{liveOrphans.length > 10 && ` +${liveOrphans.length - 10} more`}
                 </AlertDescription>
               </Alert>
             )}
 
-            {/* All guides by strength */}
             <ScrollArea className="h-[400px]">
               <div className="space-y-1">
                 {linkAnalyses
@@ -398,7 +508,6 @@ export default function GuidesDashboard() {
               <Card><CardContent className="pt-4 text-center"><p className="text-3xl font-bold">{scaling.byCluster['micro-intent']}</p><p className="text-xs text-muted-foreground">Micro-Intent</p></CardContent></Card>
             </div>
 
-            {/* Difficulty breakdown */}
             <div className="grid grid-cols-3 gap-4">
               <Card><CardContent className="pt-4 text-center"><p className="text-xl font-bold text-green-600">{scaling.byDifficulty.low}</p><p className="text-xs text-muted-foreground">Low Difficulty</p></CardContent></Card>
               <Card><CardContent className="pt-4 text-center"><p className="text-xl font-bold text-yellow-600">{scaling.byDifficulty.medium}</p><p className="text-xs text-muted-foreground">Medium</p></CardContent></Card>
@@ -449,6 +558,10 @@ export default function GuidesDashboard() {
       </div>
     </div>
   );
+}
+
+function EmptyMetric({ reason }: { reason: string }) {
+  return <span className="text-xs text-muted-foreground font-normal" title={reason}>—</span>;
 }
 
 function DeltaBadge({ value, suffix, inverted = false }: { value: number; suffix: string; inverted?: boolean }) {
