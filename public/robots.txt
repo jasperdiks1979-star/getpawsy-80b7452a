@@ -121,6 +121,7 @@ Disallow: /auth
 Disallow: /auth/
 Disallow: /track
 Disallow: /cart
+Disallow: /google-review
 
 # API endpoints (not meant to be indexed)
 Disallow: /api/

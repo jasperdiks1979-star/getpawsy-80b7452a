@@ -12,6 +12,7 @@
 
 import { SCALING_GUIDES, type ScalingGuide } from './guide-scaling-150';
 import { analyzeInternalLinks, type LinkAnalysis } from './internal-link-matrix';
+import { getAnchorText } from './anchor-text-helper';
 
 // ============= TYPES =============
 
@@ -136,7 +137,7 @@ const STATIC_PAGES = [
   { slug: '/security', type: 'static' as const, indexable: true },
   { slug: '/install', type: 'static' as const, indexable: true },
   { slug: '/live-map', type: 'static' as const, indexable: true },
-  { slug: '/google-review', type: 'static' as const, indexable: true },
+  { slug: '/google-review', type: 'utility' as const, indexable: false },
 ];
 
 const UTILITY_PAGES = [
@@ -290,6 +291,130 @@ function buildLinkGraph(pages: CrawledPage[]): void {
     };
     hp.outboundLinks.push(link);
     guidesPage.inboundLinks.push(link);
+  }
+
+  // Homepage → cornerstone guides (Popular Guides + mid-page sections)
+  const cornerstoneGuides = [
+    'best-cat-litter-box-2026',
+    'best-dog-bed-2026',
+    'best-cat-litter-box-furniture-enclosures-2026',
+  ];
+  if (hp) {
+    // Hero insert links (partial anchors)
+    for (const slug of cornerstoneGuides) {
+      const targetSlug = `/guides/${slug}`;
+      const targetPage = pageMap.get(targetSlug);
+      const link: InternalLink = {
+        sourcePage: '/',
+        targetPage: targetSlug,
+        anchorText: getAnchorText(slug, 'hero-insert'),
+        relAttribute: '',
+        httpStatus: targetPage ? 200 : 404,
+        redirectChain: [],
+      };
+      hp.outboundLinks.push(link);
+      if (targetPage) targetPage.inboundLinks.push(link);
+    }
+    // Mid-page cornerstone links (semantic anchors)
+    for (const slug of cornerstoneGuides) {
+      const targetSlug = `/guides/${slug}`;
+      const targetPage = pageMap.get(targetSlug);
+      const link: InternalLink = {
+        sourcePage: '/',
+        targetPage: targetSlug,
+        anchorText: getAnchorText(slug, 'mid-page-cornerstone'),
+        relAttribute: '',
+        httpStatus: targetPage ? 200 : 404,
+        redirectChain: [],
+      };
+      hp.outboundLinks.push(link);
+      if (targetPage) targetPage.inboundLinks.push(link);
+    }
+  }
+
+  // Homepage → hub guides (mid-page grid)
+  const hubGuides = [
+    'how-many-litter-boxes-per-cat',
+    'best-orthopedic-dog-bed',
+    'best-cat-trees-small-apartments',
+  ];
+  if (hp) {
+    for (const slug of hubGuides) {
+      const targetSlug = `/guides/${slug}`;
+      const targetPage = pageMap.get(targetSlug);
+      const link: InternalLink = {
+        sourcePage: '/',
+        targetPage: targetSlug,
+        anchorText: getAnchorText(slug, 'mid-page-hub'),
+        relAttribute: '',
+        httpStatus: targetPage ? 200 : 404,
+        redirectChain: [],
+      };
+      hp.outboundLinks.push(link);
+      if (targetPage) targetPage.inboundLinks.push(link);
+    }
+  }
+
+  // Footer → guide pages (branded/semantic anchors)
+  const footerGuides = [
+    { slug: 'best-cat-litter-box-2026', anchor: 'Litter Box Buying Guide' },
+    { slug: 'best-cat-litter-box-furniture-enclosures-2026', anchor: 'Litter Box Furniture Picks' },
+    { slug: 'best-litter-boxes-multi-cat', anchor: 'Multi-Cat Litter Solutions' },
+    { slug: 'best-extra-large-litter-boxes', anchor: 'Jumbo Litter Box Picks' },
+    { slug: 'how-many-litter-boxes-per-cat', anchor: 'The N+1 Litter Box Rule' },
+  ];
+  if (hp) {
+    for (const { slug, anchor } of footerGuides) {
+      const targetSlug = `/guides/${slug}`;
+      const targetPage = pageMap.get(targetSlug);
+      const link: InternalLink = {
+        sourcePage: '/',
+        targetPage: targetSlug,
+        anchorText: anchor,
+        relAttribute: '',
+        httpStatus: targetPage ? 200 : 404,
+        redirectChain: [],
+      };
+      hp.outboundLinks.push(link);
+      if (targetPage) targetPage.inboundLinks.push(link);
+    }
+  }
+
+  // Navbar/footer → static pages (global navigation, simulated from homepage)
+  const globalNavTargets = [
+    { target: '/products', anchor: 'Shop' },
+    { target: '/bestsellers', anchor: 'Bestsellers' },
+    { target: '/blog', anchor: 'Blog' },
+    { target: '/about', anchor: 'About Us' },
+    { target: '/contact', anchor: 'Contact' },
+    { target: '/shipping', anchor: 'Shipping' },
+    { target: '/returns', anchor: 'Returns' },
+    { target: '/faq', anchor: 'FAQ' },
+    { target: '/about-the-author', anchor: 'About the Author' },
+    { target: '/editorial-guidelines', anchor: 'Editorial Guidelines' },
+    { target: '/how-we-test-products', anchor: 'How We Test Products' },
+    { target: '/affiliate-disclosure', anchor: 'Affiliate Disclosure' },
+    { target: '/privacy', anchor: 'Privacy Policy' },
+    { target: '/terms', anchor: 'Terms of Service' },
+    { target: '/guides', anchor: 'Guides' },
+  ];
+  if (hp) {
+    for (const { target, anchor } of globalNavTargets) {
+      const targetPage = pageMap.get(target);
+      if (!targetPage) continue;
+      // Skip if already linked (e.g., /guides was added above)
+      if (hp.outboundLinks.some(l => l.targetPage === target)) continue;
+      const link: InternalLink = {
+        sourcePage: '/',
+        targetPage: target,
+        anchorText: anchor,
+        relAttribute: '',
+        httpStatus: 200,
+        redirectChain: [],
+      };
+      hp.outboundLinks.push(link);
+      targetPage.inboundLinks.push(link);
+    }
   }
 
   // Guides index links to all guide pages (simulated)
@@ -453,7 +578,7 @@ function analyzeAuthorityDistribution(pages: CrawledPage[]): AuthorityPage[] {
         exactAnchorPercent: exactPct,
         partialAnchorPercent: partialPct,
         semanticAnchorPercent: semanticPct,
-        overOptimized: exactPct > 45,
+        overOptimized: exactPct > 30,
         underLinked: page.inboundLinks.length < 3 && page.type === 'guide',
         utilityWithExcessiveInbound: isUtility && page.inboundLinks.length > 10,
       };
@@ -494,7 +619,7 @@ function validateCornerstones(pages: CrawledPage[]): CornerstoneStatus[] {
     if (!homepageLinkPresent) issues.push('Not linked from homepage');
     if (!hubLinksPresent) issues.push('No hub links in same cluster');
     if (inboundLinks.length < 8) issues.push(`Only ${inboundLinks.length} inbound links (target: 8+)`);
-    if (Math.round((exact / total) * 100) > 45) issues.push('Over-optimized anchor distribution (>45% exact)');
+    if (Math.round((exact / total) * 100) > 30) issues.push('Over-optimized anchor distribution (>30% exact)');
 
     return {
       slug: cs.slug,

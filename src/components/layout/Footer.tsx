@@ -80,6 +80,7 @@ export const Footer = () => {
   const footerLinks = {
     shop: [
       { label: 'All Products', href: '/products' },
+      { label: 'Bestsellers', href: '/bestsellers' },
       { label: 'Dogs', href: '/products?category=dogs' },
       { label: 'Cats', href: '/products?category=cats' },
       { label: 'Toys', href: '/products?category=toys' },
@@ -306,6 +307,28 @@ export const Footer = () => {
                   </li>
                 ))}
               </ul>
+            </div>
+          </div>
+          {/* Popular Buying Guides — SEO Internal Link Section */}
+          <div className="mt-12 pt-8 border-t border-background/10">
+            <h4 className="font-display font-semibold text-lg mb-4">Popular Buying Guides</h4>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              {[
+                { slug: 'best-cat-litter-box-2026', label: 'Litter Box Buying Guide' },
+                { slug: 'best-cat-litter-box-furniture-enclosures-2026', label: 'Litter Box Furniture Picks' },
+                { slug: 'best-litter-boxes-multi-cat', label: 'Multi-Cat Litter Solutions' },
+                { slug: 'best-extra-large-litter-boxes', label: 'Jumbo Litter Box Picks' },
+                { slug: 'how-many-litter-boxes-per-cat', label: 'The N+1 Litter Box Rule' },
+              ].map((guide) => (
+                <Link
+                  key={guide.slug}
+                  to={`/guides/${guide.slug}`}
+                  className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
+                >
+                  <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                  <span>{guide.label}</span>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
