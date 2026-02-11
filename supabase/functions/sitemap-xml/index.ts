@@ -5,7 +5,8 @@ const BASE_URL = "https://getpawsy.pet";
 
 const HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
   "Content-Type": "application/xml; charset=utf-8",
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
   "Pragma": "no-cache",
@@ -28,20 +29,34 @@ function xmlWrap(inner: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${inner}\n</urlset>`;
 }
 
-function urlTag(loc: string, lastmod: string, changefreq: string, priority: string): string {
+function urlTag(
+  loc: string,
+  lastmod: string,
+  changefreq: string,
+  priority: string,
+): string {
   return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
 }
 
-// --- Sitemap Index ---
 function sitemapIndex(today: string): string {
-  const subs = ["static", "products", "categories", "bestsellers", "collections", "blog", "guides"];
-  const entries = subs.map(s =>
-    `  <sitemap>\n    <loc>${BASE_URL}/sitemap-${s}.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`
-  ).join("\n");
+  const subs = [
+    "static",
+    "products",
+    "categories",
+    "bestsellers",
+    "collections",
+    "blog",
+    "guides",
+  ];
+  const entries = subs
+    .map(
+      (s) =>
+        `  <sitemap>\n    <loc>${BASE_URL}/sitemap-${s}.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`,
+    )
+    .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</sitemapindex>`;
 }
 
-// --- Static ---
 function staticSitemap(today: string): string {
   const y = new Date(Date.now() - 86400000).toISOString().split("T")[0];
   const pages: [string, string, string, string][] = [
@@ -57,14 +72,17 @@ function staticSitemap(today: string): string {
     ["/privacy", y, "yearly", "0.3"],
     ["/terms", y, "yearly", "0.3"],
   ];
-  return xmlWrap(pages.map(([p, lm, cf, pr]) => urlTag(`${BASE_URL}${p}`, lm, cf, pr)).join("\n"));
+  return xmlWrap(
+    pages
+      .map(([p, lm, cf, pr]) => urlTag(`${BASE_URL}${p}`, lm, cf, pr))
+      .join("\n"),
+  );
 }
 
-// --- Products ---
 async function productsSitemap(today: string): Promise<string> {
   const rows = (await dbQuery(
     "products",
-    "select=id,slug,updated_at&is_active=eq.true&is_duplicate=eq.false&order=updated_at.desc"
+    "select=id,slug,updated_at&is_active=eq.true&is_duplicate=eq.false&order=updated_at.desc",
   )) as Array<{ id: string; slug: string | null; updated_at: string }>;
 
   const urls = rows.map((p, i) => {
@@ -78,11 +96,19 @@ async function productsSitemap(today: string): Promise<string> {
   return xmlWrap(urls.join("\n"));
 }
 
-// --- Categories ---
 async function categoriesSitemap(today: string): Promise<string> {
-  const cats = (await dbQuery("categories", "select=slug,name")) as Array<{ slug: string; name: string }>;
+  const cats = (await dbQuery("categories", "select=slug,name")) as Array<{
+    slug: string;
+    name: string;
+  }>;
   const toSlug = (s: string) =>
-    s.toLowerCase().trim().replace(/&/g, "and").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
+    s
+      .toLowerCase()
+      .trim()
+      .replace(/&/g, "and")
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
 
   const seen = new Set<string>();
   const urls: string[] = [];
@@ -90,50 +116,71 @@ async function categoriesSitemap(today: string): Promise<string> {
     const sl = c.slug || toSlug(c.name);
     if (seen.has(sl)) continue;
     seen.add(sl);
-    urls.push(urlTag(`${BASE_URL}/products?category=${sl}`, today, "daily", "0.8"));
+    urls.push(
+      urlTag(`${BASE_URL}/products?category=${sl}`, today, "daily", "0.8"),
+    );
   }
   console.log(`Categories sitemap: ${seen.size} URLs`);
   return xmlWrap(urls.join("\n"));
 }
 
-// --- Bestsellers ---
 async function bestsellersSitemap(today: string): Promise<string> {
-  const rows = (await dbQuery("bestsellers", "select=slug,updated_at&is_active=eq.true")) as Array<{
-    slug: string; updated_at: string;
+  const rows = (await dbQuery(
+    "bestsellers",
+    "select=slug,updated_at&is_active=eq.true",
+  )) as Array<{
+    slug: string;
+    updated_at: string;
   }>;
-  const urls = rows.map(b =>
-    urlTag(`${BASE_URL}/bestseller/${b.slug}`, b.updated_at?.split("T")[0] || today, "weekly", "0.9")
+  const urls = rows.map((b) =>
+    urlTag(
+      `${BASE_URL}/bestseller/${b.slug}`,
+      b.updated_at?.split("T")[0] || today,
+      "weekly",
+      "0.9",
+    ),
   );
   console.log(`Bestsellers sitemap: ${rows.length} URLs`);
   return xmlWrap(urls.join("\n"));
 }
 
-// --- Collections ---
 async function collectionsSitemap(today: string): Promise<string> {
-  const rows = (await dbQuery("seo_collections", "select=slug,updated_at&is_active=eq.true")) as Array<{
-    slug: string; updated_at: string;
+  const rows = (await dbQuery(
+    "seo_collections",
+    "select=slug,updated_at&is_active=eq.true",
+  )) as Array<{
+    slug: string;
+    updated_at: string;
   }>;
-  const urls = rows.map(c =>
-    urlTag(`${BASE_URL}/collections/${c.slug}`, c.updated_at?.split("T")[0] || today, "weekly", "0.85")
+  const urls = rows.map((c) =>
+    urlTag(
+      `${BASE_URL}/collections/${c.slug}`,
+      c.updated_at?.split("T")[0] || today,
+      "weekly",
+      "0.85",
+    ),
   );
   console.log(`Collections sitemap: ${rows.length} URLs`);
   return xmlWrap(urls.join("\n"));
 }
 
-// --- Blog ---
 async function blogSitemap(today: string): Promise<string> {
   const rows = (await dbQuery(
     "blog_posts",
-    "select=slug,published_at&is_published=eq.true&order=published_at.desc"
+    "select=slug,published_at&is_published=eq.true&order=published_at.desc",
   )) as Array<{ slug: string; published_at: string }>;
-  const urls = rows.map(p =>
-    urlTag(`${BASE_URL}/blog/${p.slug}`, p.published_at?.split("T")[0] || today, "monthly", "0.6")
+  const urls = rows.map((p) =>
+    urlTag(
+      `${BASE_URL}/blog/${p.slug}`,
+      p.published_at?.split("T")[0] || today,
+      "monthly",
+      "0.6",
+    ),
   );
   console.log(`Blog sitemap: ${rows.length} URLs`);
   return xmlWrap(urls.join("\n"));
 }
 
-// --- Guides ---
 const FALLBACK_GUIDES = [
   { slug: "best-cat-litter-box-2026", updatedAt: "2026-02-10", priority: "0.9" },
   { slug: "how-many-litter-boxes-per-cat", updatedAt: "2026-02-10", priority: "0.8" },
@@ -152,14 +199,19 @@ async function getGuides(): Promise<typeof FALLBACK_GUIDES> {
   try {
     const r = await fetch(`${BASE_URL}/data/guides/index.json`);
     if (r.ok) {
-      const list = (await r.json()) as Array<{ slug: string; updatedAt?: string }>;
-      return list.map(g => ({
+      const list = (await r.json()) as Array<{
+        slug: string;
+        updatedAt?: string;
+      }>;
+      return list.map((g) => ({
         slug: g.slug,
         updatedAt: g.updatedAt || new Date().toISOString().split("T")[0],
         priority: g.slug.startsWith("best-") ? "0.8" : "0.7",
       }));
     }
-  } catch { /* use fallback */ }
+  } catch {
+    /* use fallback */
+  }
   return FALLBACK_GUIDES;
 }
 
@@ -167,13 +219,19 @@ async function guidesSitemap(today: string): Promise<string> {
   const guides = await getGuides();
   const urls = [
     urlTag(`${BASE_URL}/guides`, today, "weekly", "0.8"),
-    ...guides.map(g => urlTag(`${BASE_URL}/guides/${g.slug}`, g.updatedAt || today, "monthly", g.priority)),
+    ...guides.map((g) =>
+      urlTag(
+        `${BASE_URL}/guides/${g.slug}`,
+        g.updatedAt || today,
+        "monthly",
+        g.priority,
+      ),
+    ),
   ];
   console.log(`Guides sitemap: ${guides.length} URLs`);
   return xmlWrap(urls.join("\n"));
 }
 
-// --- Handler ---
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: HEADERS });
 
@@ -183,15 +241,32 @@ Deno.serve(async (req: Request) => {
     let xml: string;
 
     switch (type) {
-      case "index": xml = sitemapIndex(today); break;
-      case "static": xml = staticSitemap(today); break;
-      case "products": xml = await productsSitemap(today); break;
-      case "categories": xml = await categoriesSitemap(today); break;
-      case "bestsellers": xml = await bestsellersSitemap(today); break;
-      case "collections": xml = await collectionsSitemap(today); break;
-      case "blog": xml = await blogSitemap(today); break;
-      case "guides": xml = await guidesSitemap(today); break;
-      default: xml = sitemapIndex(today);
+      case "index":
+        xml = sitemapIndex(today);
+        break;
+      case "static":
+        xml = staticSitemap(today);
+        break;
+      case "products":
+        xml = await productsSitemap(today);
+        break;
+      case "categories":
+        xml = await categoriesSitemap(today);
+        break;
+      case "bestsellers":
+        xml = await bestsellersSitemap(today);
+        break;
+      case "collections":
+        xml = await collectionsSitemap(today);
+        break;
+      case "blog":
+        xml = await blogSitemap(today);
+        break;
+      case "guides":
+        xml = await guidesSitemap(today);
+        break;
+      default:
+        xml = sitemapIndex(today);
     }
 
     return new Response(xml, { headers: HEADERS, status: 200 });
@@ -199,7 +274,7 @@ Deno.serve(async (req: Request) => {
     console.error("Sitemap error:", e);
     return new Response(
       `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>`,
-      { headers: HEADERS, status: 200 }
+      { headers: HEADERS, status: 200 },
     );
   }
 });
