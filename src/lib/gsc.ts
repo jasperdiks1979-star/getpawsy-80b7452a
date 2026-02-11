@@ -250,25 +250,49 @@ export async function triggerGSCSync(): Promise<{
 }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
-    return { success: false, message: 'Not authenticated. Please log in first.' };
+    return { success: false, message: 'Not authenticated. Please log in first.', data: { ok: false, stage: 'auth', error: 'No session' } };
   }
 
-  const response = await supabase.functions.invoke('fetch-keyword-rankings', {
-    body: { action: 'sync' },
-  });
+  try {
+    console.log('[GSC Sync] Frontend: invoking fetch-keyword-rankings with action=sync');
+    const response = await supabase.functions.invoke('fetch-keyword-rankings', {
+      body: { action: 'sync' },
+    });
 
-  if (response.error) {
+    console.log('[GSC Sync] Frontend: response error=', response.error, 'data=', response.data);
+
+    if (response.error) {
+      return {
+        success: false,
+        message: `Sync failed: ${response.error.message}`,
+        data: { ok: false, stage: 'invoke', error: response.error.message },
+      };
+    }
+
+    const d = response.data || {};
+    const guideCount = d.count || 0;
+    const queryCount = d.queryCount || 0;
+    const totalRaw = d.totalRawRows || 0;
+    const unmatched = d.unmatchedRows || 0;
+
+    const msg = guideCount > 0
+      ? `✅ Synced ${guideCount} guide slugs, ${queryCount} queries (${totalRaw} raw GSC rows, ${unmatched} non-guide URLs)`
+      : `⚠️ GSC returned ${totalRaw} rows but 0 matched /guides/ URLs. Your guide pages may not be indexed yet. ${unmatched} URLs were non-guide pages (products, categories, etc).`;
+
+    return {
+      success: guideCount > 0,
+      message: msg,
+      data: d,
+    };
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error('[GSC Sync] Frontend exception:', errMsg);
     return {
       success: false,
-      message: `Sync failed: ${response.error.message}`,
+      message: `Sync exception: ${errMsg}`,
+      data: { ok: false, stage: 'exception', error: errMsg },
     };
   }
-
-  return {
-    success: true,
-    message: response.data?.message || `Synced ${response.data?.count || 0} guide slugs, ${response.data?.queryCount || 0} queries`,
-    data: response.data,
-  };
 }
 
 // ============= GSC DIAGNOSTIC =============

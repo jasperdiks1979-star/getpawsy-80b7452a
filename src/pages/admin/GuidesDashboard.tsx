@@ -33,6 +33,7 @@ export default function GuidesDashboard() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [syncDebugData, setSyncDebugData] = useState<Record<string, unknown> | null>(null);
   const [repairResult, setRepairResult] = useState<RepairResult | null>(null);
   const [repairRunning, setRepairRunning] = useState(false);
   const [diagnostic, setDiagnostic] = useState<GSCDiagnosticResult | null>(null);
@@ -64,10 +65,19 @@ export default function GuidesDashboard() {
   const handleSync = async () => {
     setSyncing(true);
     setSyncMessage(null);
-    const result = await triggerGSCSync();
-    setSyncMessage(result.message);
-    setSyncing(false);
-    if (result.success) await loadData();
+    setSyncDebugData(null);
+    try {
+      const result = await triggerGSCSync();
+      setSyncMessage(result.message);
+      setSyncDebugData(result.data || null);
+      if (result.success) await loadData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setSyncMessage(`Unexpected error: ${msg}`);
+      setSyncDebugData({ ok: false, error: msg });
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleDiagnostic = async () => {
@@ -114,9 +124,15 @@ export default function GuidesDashboard() {
         </div>
 
         {syncMessage && (
-          <Alert variant={syncMessage.includes('failed') ? 'destructive' : 'default'}>
-            <AlertDescription className="text-xs">{syncMessage}</AlertDescription>
+          <Alert variant={syncMessage.includes('failed') || syncMessage.includes('⚠️') || syncMessage.includes('error') ? 'destructive' : 'default'}>
+            <AlertDescription className="text-xs whitespace-pre-wrap">{syncMessage}</AlertDescription>
           </Alert>
+        )}
+        {syncDebugData && (
+          <details className="text-xs border rounded-md p-2 bg-muted/50">
+            <summary className="cursor-pointer font-medium text-muted-foreground">GSC Sync API Response (debug)</summary>
+            <pre className="mt-2 overflow-x-auto text-[10px] leading-tight">{JSON.stringify(syncDebugData, null, 2)}</pre>
+          </details>
         )}
 
         {/* GSC Connection Health Widget */}
