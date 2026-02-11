@@ -117,22 +117,79 @@ async function fetchGSCData(
 
 // ============= GUIDE SLUG MAPPING =============
 
-function matchPageToSlug(pageUrl: string): string | null {
+// Known guide slugs — loaded once per run from guides index
+let _knownSlugs: Set<string> | null = null;
+
+async function loadKnownSlugs(): Promise<Set<string>> {
+  if (_knownSlugs) return _knownSlugs;
+  try {
+    const res = await fetch('https://getpawsy.pet/data/guides/index.json');
+    if (res.ok) {
+      const guides = await res.json();
+      _knownSlugs = new Set(guides.map((g: { slug: string }) => g.slug.toLowerCase()));
+      console.log(`[GSC] Loaded ${_knownSlugs.size} known guide slugs from index.json`);
+    } else {
+      console.warn('[GSC] Failed to fetch guides index, using pattern matching only');
+      _knownSlugs = new Set();
+    }
+  } catch (e) {
+    console.warn('[GSC] Error loading guide slugs:', e);
+    _knownSlugs = new Set();
+  }
+  return _knownSlugs;
+}
+
+function extractSlugFromUrl(pageUrl: string): string | null {
   try {
     const url = new URL(pageUrl.startsWith('http') ? pageUrl : `https://example.com${pageUrl}`);
-    const pathname = url.pathname.replace(/\/+$/, '');
+    const pathname = url.pathname.replace(/\/+$/, '').replace(/^\/+/, '');
+    // Strip tracking params — just use pathname
+    if (!pathname || pathname.length === 0) return null;
+
+    // /guides/slug-here → slug-here
     const parts = pathname.split('/').filter(Boolean);
     if (parts[0] === 'guides' && parts[1]) {
-      const slug = parts[1].toLowerCase().trim();
-      if (slug.length > 0 && slug.length < 200) return slug;
+      return parts[1].toLowerCase().trim();
     }
+
+    // Root-level: /best-cat-litter-box-2026 → best-cat-litter-box-2026
+    if (parts.length === 1) {
+      return parts[0].toLowerCase().trim();
+    }
+
+    return null;
   } catch {
-    const match = pageUrl.match(/\/guides\/([^/?#]+)/i);
-    if (match) {
-      const slug = match[1].replace(/\/+$/, '').toLowerCase().trim();
-      if (slug.length > 0) return slug;
-    }
+    // Fallback regex
+    const match = pageUrl.match(/\/([a-z0-9-]+)\/?(?:\?.*)?$/i);
+    return match ? match[1].toLowerCase().trim() : null;
   }
+}
+
+function matchPageToSlug(pageUrl: string, knownSlugs: Set<string>): string | null {
+  const slug = extractSlugFromUrl(pageUrl);
+  if (!slug || slug.length < 5) return null;
+
+  // Skip known non-guide paths
+  const skipPaths = ['auth', 'track', 'cart', 'cookies', 'contact', 'about', 'shipping',
+    'blog', 'products', 'admin', 'login', 'sitemap', 'robots', 'favicon',
+    'bestseller', 'product', 'category', 'search', 'checkout', 'order',
+    'privacy', 'terms', 'security', 'install', 'live-map', 'google-review'];
+  if (skipPaths.includes(slug)) return null;
+
+  // Match 1: exact match against known guide slugs
+  if (knownSlugs.has(slug)) return slug;
+
+  // Match 2: pattern-based (best-*, *-2026, how-to-*, etc.)
+  if (/^best-/.test(slug) || /-202[4-9]$/.test(slug) || /^how-to-/.test(slug) ||
+      /^choosing-/.test(slug) || /-vs-/.test(slug) || /^guide-/.test(slug)) {
+    return slug;
+  }
+
+  // Match 3: endsWith any known slug (for nested URLs like /guides/slug or /category/slug)
+  for (const known of knownSlugs) {
+    if (slug.endsWith(known) || slug === known) return known;
+  }
+
   return null;
 }
 
@@ -231,7 +288,12 @@ async function runGSCSync(
   console.log(`[GSC Sync] Lock acquired: ${lockId}`);
 
   try {
-    // 2. Date range
+    // 2. Load known guide slugs
+    _knownSlugs = null; // reset cache for fresh load
+    const knownSlugs = await loadKnownSlugs();
+    console.log(`[GSC Sync] Known guide slugs: ${knownSlugs.size}`);
+
+    // 3. Date range
     const today = new Date();
     const endDate = new Date(today);
     endDate.setDate(endDate.getDate() - 3);
@@ -259,8 +321,11 @@ async function runGSCSync(
 
     // Debug: log sample URLs
     if (pageRows.length > 0) {
-      const samples = pageRows.slice(0, 5).map(r => `${r.keys[0]} → ${matchPageToSlug(r.keys[0]) || 'NO_MATCH'}`);
-      console.log(`[GSC Sync] Sample URL→slug mapping:\n  ${samples.join('\n  ')}`);
+      const matched = pageRows.filter(r => matchPageToSlug(r.keys[0], knownSlugs) !== null);
+      const unmatched = pageRows.filter(r => matchPageToSlug(r.keys[0], knownSlugs) === null);
+      console.log(`[GSC Sync] DEBUG: ${matched.length} matched, ${unmatched.length} unmatched out of ${pageRows.length} page rows`);
+      console.log(`[GSC Sync] First 10 MATCHED:\n  ${matched.slice(0, 10).map(r => `${r.keys[0]} → ${matchPageToSlug(r.keys[0], knownSlugs)}`).join('\n  ')}`);
+      console.log(`[GSC Sync] First 10 UNMATCHED:\n  ${unmatched.slice(0, 10).map(r => r.keys[0]).join('\n  ')}`);
     }
 
     if (pageRows.length === 0 && queryRows.length === 0) {
@@ -289,7 +354,7 @@ async function runGSCSync(
     let unmatchedCount = 0;
 
     for (const row of queryRows) {
-      const slug = matchPageToSlug(row.keys[0]);
+      const slug = matchPageToSlug(row.keys[0], knownSlugs);
       if (!slug) { unmatchedCount++; continue; }
       if (!slugAggregates[slug]) {
         slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [] };
@@ -305,7 +370,7 @@ async function runGSCSync(
 
     // Override with page-level totals (more accurate)
     for (const row of pageRows) {
-      const slug = matchPageToSlug(row.keys[0]);
+      const slug = matchPageToSlug(row.keys[0], knownSlugs);
       if (!slug) { unmatchedCount++; continue; }
       if (!slugAggregates[slug]) {
         slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [] };
@@ -336,9 +401,9 @@ async function runGSCSync(
 
     // 7. Query-level rows
     const queryRankings = queryRows
-      .filter(row => matchPageToSlug(row.keys[0]) !== null)
+      .filter(row => matchPageToSlug(row.keys[0], knownSlugs) !== null)
       .map(row => ({
-        keyword: row.keys[1], slug: matchPageToSlug(row.keys[0]),
+        keyword: row.keys[1], slug: matchPageToSlug(row.keys[0], knownSlugs),
         position: Math.round(row.position * 10) / 10,
         clicks: row.clicks, impressions: row.impressions,
         ctr: Math.round(row.ctr * 10000) / 10000,
