@@ -1130,6 +1130,93 @@ export type Database = {
         }
         Relationships: []
       }
+      gsc_sync_runs: {
+        Row: {
+          created_at: string
+          days: number | null
+          duration_ms: number | null
+          error_message: string | null
+          finished_at: string | null
+          guide_count: number | null
+          id: string
+          metadata: Json | null
+          pages_with_data: number | null
+          reason: string
+          rows_upserted: number | null
+          started_at: string
+          status: string
+          total_clicks: number | null
+          total_impressions: number | null
+          total_raw_rows: number | null
+          unmatched_rows: number | null
+        }
+        Insert: {
+          created_at?: string
+          days?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          guide_count?: number | null
+          id?: string
+          metadata?: Json | null
+          pages_with_data?: number | null
+          reason?: string
+          rows_upserted?: number | null
+          started_at?: string
+          status?: string
+          total_clicks?: number | null
+          total_impressions?: number | null
+          total_raw_rows?: number | null
+          unmatched_rows?: number | null
+        }
+        Update: {
+          created_at?: string
+          days?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          guide_count?: number | null
+          id?: string
+          metadata?: Json | null
+          pages_with_data?: number | null
+          reason?: string
+          rows_upserted?: number | null
+          started_at?: string
+          status?: string
+          total_clicks?: number | null
+          total_impressions?: number | null
+          total_raw_rows?: number | null
+          unmatched_rows?: number | null
+        }
+        Relationships: []
+      }
+      gsc_sync_settings: {
+        Row: {
+          auto_sync_enabled: boolean
+          id: string
+          sync_hour: number
+          sync_minute: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auto_sync_enabled?: boolean
+          id?: string
+          sync_hour?: number
+          sync_minute?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auto_sync_enabled?: boolean
+          id?: string
+          sync_hour?: number
+          sync_minute?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       keyword_rankings: {
         Row: {
           clicks: number | null
