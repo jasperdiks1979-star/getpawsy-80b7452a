@@ -18,6 +18,7 @@ import { detectBoostTargetsAdaptive, getBoostSummary, type RankBoostTarget, type
 import { getLinkMatrixSummary, analyzeInternalLinks, type LinkAnalysis } from '@/lib/internal-link-matrix';
 import { runOrphanRepair, detectOrphans, type RepairResult } from '@/lib/orphan-repair-engine';
 import { runLinkMatrixOptimizer, type LinkMatrixOptimizerResult } from '@/lib/link-matrix-optimizer';
+import { runAccelerationEngine, type AccelerationReport } from '@/lib/rank-acceleration-engine';
 
 export default function GuidesDashboard() {
   const [searchParams] = useSearchParams();
@@ -34,6 +35,7 @@ export default function GuidesDashboard() {
   const [diagnostic, setDiagnostic] = useState<GSCDiagnosticResult | null>(null);
   const [diagRunning, setDiagRunning] = useState(false);
   const [optimizerResult, setOptimizerResult] = useState<LinkMatrixOptimizerResult | null>(null);
+  const [accelReport, setAccelReport] = useState<AccelerationReport | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -42,6 +44,7 @@ export default function GuidesDashboard() {
     setHealthStatuses(evaluateGuideAlerts(result.reports));
     setBoostResult(detectBoostTargetsAdaptive(result.reports));
     setOptimizerResult(runLinkMatrixOptimizer());
+    setAccelReport(runAccelerationEngine(result.reports));
     setLoading(false);
   };
 
@@ -194,6 +197,7 @@ export default function GuidesDashboard() {
             <TabsTrigger value="boost"><Zap className="h-4 w-4 mr-1" />Rank Boost</TabsTrigger>
             <TabsTrigger value="links"><Link2 className="h-4 w-4 mr-1" />Link Matrix</TabsTrigger>
             <TabsTrigger value="scaling"><Map className="h-4 w-4 mr-1" />150-Plan</TabsTrigger>
+            <TabsTrigger value="acceleration"><TrendingUp className="h-4 w-4 mr-1" />Acceleration</TabsTrigger>
           </TabsList>
 
           {/* TAB 1: A/B EXPERIMENTS */}
@@ -586,6 +590,172 @@ export default function GuidesDashboard() {
                 </div>
               ))}
             </ScrollArea>
+          </TabsContent>
+
+          {/* TAB 7: ACCELERATION ENGINE */}
+          <TabsContent value="acceleration" className="space-y-4">
+            {!accelReport ? (
+              <Alert><AlertTriangle className="h-4 w-4" /><AlertTitle>Loading</AlertTitle><AlertDescription className="text-xs">Acceleration engine is computing...</AlertDescription></Alert>
+            ) : (
+              <>
+                {/* Mode + Summary */}
+                <Alert>
+                  <TrendingUp className="h-4 w-4" />
+                  <AlertTitle>{accelReport.mode === 'early' ? '🚀 Early Acceleration Mode' : '📈 Standard Acceleration Mode'}</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    {accelReport.totalImpressions} total impressions · {accelReport.summary.totalCandidates} boost candidates · {accelReport.summary.linksInjected} links planned · {accelReport.summary.titleTestsActive} title tests
+                  </AlertDescription>
+                </Alert>
+
+                {/* KPI Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{accelReport.summary.totalCandidates}</p><p className="text-[10px] text-muted-foreground">Boost Candidates</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{accelReport.summary.linksInjected}</p><p className="text-[10px] text-muted-foreground">Links Planned</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{accelReport.summary.titleTestsActive}</p><p className="text-[10px] text-muted-foreground">Title Tests</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{accelReport.summary.freshnessUpdatesQueued}</p><p className="text-[10px] text-muted-foreground">Freshness Queue</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{accelReport.summary.crawlsPinged}</p><p className="text-[10px] text-muted-foreground">Crawl Pings</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className={`text-2xl font-bold ${accelReport.summary.safetyViolations > 0 ? 'text-destructive' : ''}`}>{accelReport.summary.safetyViolations}</p><p className="text-[10px] text-muted-foreground">Safety Issues</p></CardContent></Card>
+                </div>
+
+                {/* Safety Status */}
+                <Card className={accelReport.safetyStatus.violations.length > 0 ? 'border-destructive' : 'border-green-500/50'}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Safety Status
+                      <Badge variant={accelReport.safetyStatus.violations.length > 0 ? 'destructive' : 'default'}>
+                        {accelReport.safetyStatus.violations.length > 0 ? 'VIOLATIONS' : 'SAFE'}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-xs space-y-1">
+                    <div className="grid grid-cols-4 gap-3">
+                      <div><span className="text-muted-foreground">Max links/page:</span> {accelReport.safetyStatus.maxLinksPerPage30d}/10</div>
+                      <div><span className="text-muted-foreground">Exact anchor %:</span> {accelReport.safetyStatus.exactAnchorPercent}%</div>
+                      <div><span className="text-muted-foreground">Canonicals modified:</span> {accelReport.safetyStatus.canonicalsModified ? 'YES ⚠️' : 'No ✓'}</div>
+                      <div><span className="text-muted-foreground">robots.txt modified:</span> {accelReport.safetyStatus.robotsTxtModified ? 'YES ⚠️' : 'No ✓'}</div>
+                    </div>
+                    {accelReport.safetyStatus.violations.map((v, i) => (
+                      <Alert key={i} variant="destructive" className="mt-1"><AlertDescription className="text-xs">{v}</AlertDescription></Alert>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* Boost Candidates */}
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">🎯 Boost Candidates ({accelReport.candidates.length})</CardTitle></CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[400px]">
+                      <div className="space-y-2">
+                        {accelReport.candidates.map((c, i) => (
+                          <div key={i} className="p-3 rounded border space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-sm">{c.query}</p>
+                                <p className="text-[10px] text-muted-foreground">{c.slug}</p>
+                              </div>
+                              <div className="flex gap-1.5">
+                                <Badge variant="outline" className="text-[10px]">Pos {c.position}</Badge>
+                                <Badge variant="outline" className="text-[10px]">{c.impressions} impr</Badge>
+                                <Badge variant="outline" className="text-[10px]">CTR {c.ctr.toFixed(2)}%</Badge>
+                                <Badge variant="secondary" className="text-[10px]">Score: {c.priorityScore}</Badge>
+                              </div>
+                            </div>
+                            <div className="space-y-0.5">
+                              {c.boostActions.map((a, j) => (
+                                <div key={j} className="text-[10px] flex items-center gap-2">
+                                  <Badge variant={a.status === 'applied' ? 'default' : 'outline'} className="text-[8px] px-1">{a.type}</Badge>
+                                  <span className="text-muted-foreground truncate">{a.description}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+
+                {/* Link Boost Plans */}
+                {accelReport.linkBoostPlans.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">🔗 Link Boost Plans ({accelReport.linkBoostPlans.length})</CardTitle></CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[250px]">
+                        <div className="space-y-2">
+                          {accelReport.linkBoostPlans.map((plan, i) => (
+                            <div key={i} className="p-2 rounded border">
+                              <p className="font-medium text-xs mb-1">→ {plan.targetSlug}</p>
+                              <div className="pl-3 space-y-0.5">
+                                {plan.links.map((l, j) => (
+                                  <div key={j} className="text-[10px] text-muted-foreground">
+                                    <Badge variant="outline" className="text-[8px] px-1 mr-1">{l.anchorType}</Badge>
+                                    from <span className="font-mono">{l.fromSlug}</span> — "{l.anchorText}"
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Title Tests */}
+                {accelReport.activeTitleTests.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">🧪 Title A/B Tests ({accelReport.activeTitleTests.length})</CardTitle></CardHeader>
+                    <CardContent className="space-y-3">
+                      {accelReport.activeTitleTests.map((test, i) => (
+                        <div key={i} className="p-2 rounded border space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-xs">{test.slug}</span>
+                            <Badge variant={test.status === 'running' ? 'default' : 'secondary'} className="text-[10px]">{test.status}</Badge>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">Original: {test.originalTitle}</p>
+                          {test.variants.map(v => (
+                            <div key={v.id} className="text-[10px] pl-3 flex items-center gap-2">
+                              <Badge variant="outline" className="text-[8px] px-1">{v.type}</Badge>
+                              <span className="truncate">{v.title}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Freshness Queue */}
+                {accelReport.freshnessQueue.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">🌿 Freshness Queue ({accelReport.freshnessQueue.length})</CardTitle></CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[200px]">
+                        <div className="space-y-2">
+                          {accelReport.freshnessQueue.map((f, i) => (
+                            <div key={i} className="p-2 rounded border">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium text-xs">{f.slug}</span>
+                                <span className="text-[10px] text-muted-foreground">Due: {f.nextUpdateDue}</span>
+                              </div>
+                              <div className="pl-3 space-y-0.5">
+                                {f.updates.map((u, j) => (
+                                  <div key={j} className="text-[10px] text-muted-foreground">
+                                    <Badge variant="outline" className="text-[8px] px-1 mr-1">{u.type}</Badge>
+                                    {u.description}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
           </TabsContent>
         </Tabs>
       </div>
