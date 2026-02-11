@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowUp, ArrowDown, Minus, AlertTriangle, CheckCircle, 
-  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug, Activity, Wifi, WifiOff, Search 
+  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug, Activity, Wifi, WifiOff, Search, Crown 
 } from 'lucide-react';
 import { getExperimentsSummary } from '@/lib/guide-experiments';
 import { fetchGSCMetricsForGuides, triggerGSCSync, runGSCDiagnostic, type GSCGuideReport, type GSCFetchResult, type GSCDiagnosticResult } from '@/lib/gsc';
@@ -20,6 +20,7 @@ import { runOrphanRepair, detectOrphans, type RepairResult } from '@/lib/orphan-
 import { runLinkMatrixOptimizer, type LinkMatrixOptimizerResult } from '@/lib/link-matrix-optimizer';
 import { runAccelerationEngine, type AccelerationReport } from '@/lib/rank-acceleration-engine';
 import { runGapHijackEngine, type GapHijackReport, type GapQuery } from '@/lib/gap-hijack-engine';
+import { runDominanceEngine, type DominanceReport } from '@/lib/dominance-engine';
 
 export default function GuidesDashboard() {
   const [searchParams] = useSearchParams();
@@ -38,6 +39,7 @@ export default function GuidesDashboard() {
   const [optimizerResult, setOptimizerResult] = useState<LinkMatrixOptimizerResult | null>(null);
   const [accelReport, setAccelReport] = useState<AccelerationReport | null>(null);
   const [gapReport, setGapReport] = useState<GapHijackReport | null>(null);
+  const [dominanceReport, setDominanceReport] = useState<DominanceReport | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -46,8 +48,11 @@ export default function GuidesDashboard() {
     setHealthStatuses(evaluateGuideAlerts(result.reports));
     setBoostResult(detectBoostTargetsAdaptive(result.reports));
     setOptimizerResult(runLinkMatrixOptimizer());
-    setAccelReport(runAccelerationEngine(result.reports));
-    setGapReport(runGapHijackEngine(result.reports));
+    const accelR = runAccelerationEngine(result.reports);
+    setAccelReport(accelR);
+    const gapR = runGapHijackEngine(result.reports);
+    setGapReport(gapR);
+    setDominanceReport(runDominanceEngine(gapR, accelR));
     setLoading(false);
   };
 
@@ -202,6 +207,7 @@ export default function GuidesDashboard() {
             <TabsTrigger value="scaling"><Map className="h-4 w-4 mr-1" />150-Plan</TabsTrigger>
             <TabsTrigger value="acceleration"><TrendingUp className="h-4 w-4 mr-1" />Acceleration</TabsTrigger>
             <TabsTrigger value="gap-hijack"><Search className="h-4 w-4 mr-1" />Gap Hijack</TabsTrigger>
+            <TabsTrigger value="dominance"><Crown className="h-4 w-4 mr-1" />Dominance</TabsTrigger>
           </TabsList>
 
           {/* TAB 1: A/B EXPERIMENTS */}
@@ -815,6 +821,124 @@ export default function GuidesDashboard() {
                           ))}
                         </div>
                       </ScrollArea>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+          </TabsContent>
+          {/* TAB 9: DOMINANCE MODE */}
+          <TabsContent value="dominance" className="space-y-4">
+            {!dominanceReport ? (
+              <Alert><AlertTriangle className="h-4 w-4" /><AlertTitle>Loading</AlertTitle><AlertDescription className="text-xs">Dominance engine computing...</AlertDescription></Alert>
+            ) : (
+              <>
+                {/* Phase & Metrics KPIs */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{dominanceReport.phase}</p><p className="text-[10px] text-muted-foreground">Current Phase</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600">{dominanceReport.metrics.guidesUnderPosition30}</p><p className="text-[10px] text-muted-foreground">Guides Under Pos 30</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{dominanceReport.metrics.cornerstonesUnderPosition20}</p><p className="text-[10px] text-muted-foreground">Cornerstones Under Pos 20</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{dominanceReport.metrics.backlinkAssetsCreated}</p><p className="text-[10px] text-muted-foreground">Backlink Assets</p></CardContent></Card>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{dominanceReport.hijackGuidesCreated.length}</p><p className="text-[10px] text-muted-foreground">Hijack Guides Ready</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{dominanceReport.boostInjections}</p><p className="text-[10px] text-muted-foreground">Boost Injections</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{dominanceReport.ctrTests.length}</p><p className="text-[10px] text-muted-foreground">CTR Tests Active</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{dominanceReport.freshnessUpdatesApplied}</p><p className="text-[10px] text-muted-foreground">Freshness Updates</p></CardContent></Card>
+                </div>
+
+                {/* Safety */}
+                {dominanceReport.safetyViolations.length > 0 && (
+                  <Alert variant="destructive">
+                    <Shield className="h-4 w-4" />
+                    <AlertTitle>Safety Violations ({dominanceReport.safetyViolations.length})</AlertTitle>
+                    <AlertDescription className="text-xs space-y-1">
+                      {dominanceReport.safetyViolations.map((v, i) => <div key={i}>{v}</div>)}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Hijack Guides */}
+                {dominanceReport.hijackGuidesCreated.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">🎯 Hijack Guides ({dominanceReport.hijackGuidesCreated.length})</CardTitle></CardHeader>
+                    <CardContent className="space-y-2">
+                      {dominanceReport.hijackGuidesCreated.map((g, i) => (
+                        <div key={i} className="p-3 rounded border flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm font-mono">{g.slug}</p>
+                            <p className="text-[10px] text-muted-foreground">Query: {g.query} · {g.impressions} impr · Score: {g.priorityScore}</p>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <Badge variant={g.status === 'published' ? 'default' : 'outline'} className="text-[10px]">{g.status}</Badge>
+                            {g.schemaAttached?.map(s => <Badge key={s} variant="outline" className="text-[8px]">{s}</Badge>)}
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Cluster Authority Scores */}
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">📊 Cluster Authority Scores</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {dominanceReport.clusterScores.map((c, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded border">
+                          <div>
+                            <p className="font-medium text-sm capitalize">{c.cluster.replace(/-/g, ' ')}</p>
+                            <p className="text-[10px] text-muted-foreground">{c.guidesCount} guides · Avg pos {c.avgPosition} · Avg impr {c.avgImpressions}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-lg font-bold ${c.score >= c.target ? 'text-green-600' : 'text-yellow-600'}`}>{c.score}</span>
+                            <span className="text-[10px] text-muted-foreground">/ {c.target}</span>
+                            <Badge variant={c.delta >= 0 ? 'default' : 'outline'} className="text-[10px]">
+                              {c.delta >= 0 ? '+' : ''}{c.delta}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Backlink Assets */}
+                {dominanceReport.backlinkAssets.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">🔗 Backlink Assets ({dominanceReport.backlinkAssets.length})</CardTitle></CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[300px]">
+                        <div className="space-y-2">
+                          {dominanceReport.backlinkAssets.map((a, i) => (
+                            <div key={i} className="p-2 rounded border">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="text-[8px]">{a.assetType}</Badge>
+                                <span className="text-[10px] text-muted-foreground">{a.slug} · Pos {a.position} · {a.impressions} impr</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground italic">{a.content.slice(0, 150)}...</p>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Micro-Guide Triggers */}
+                {dominanceReport.microGuidesTriggered.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">🌱 Cluster Expansion Targets</CardTitle></CardHeader>
+                    <CardContent className="space-y-2">
+                      {dominanceReport.microGuidesTriggered.map((m, i) => (
+                        <div key={i} className="p-2 rounded border">
+                          <p className="text-sm font-medium">{m.parentSlug}</p>
+                          <p className="text-[10px] text-muted-foreground mb-1">{m.reason}</p>
+                          <div className="flex gap-1 flex-wrap">
+                            {m.suggestedSlugs.map(s => <Badge key={s} variant="outline" className="text-[8px] font-mono">{s}</Badge>)}
+                          </div>
+                        </div>
+                      ))}
                     </CardContent>
                   </Card>
                 )}
