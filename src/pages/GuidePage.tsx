@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Clock, BookOpen, ChevronRight, ShoppingBag, CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Clock, BookOpen, ChevronRight, ShoppingBag, CheckCircle, XCircle, AlertTriangle, RefreshCw, User } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { useGuide, useGuidesList } from '@/hooks/useGuides';
 import { Loader2 } from 'lucide-react';
@@ -8,6 +8,7 @@ import NotFound from './NotFound';
 import { QuickRecommendation } from '@/components/guides/QuickRecommendation';
 import { ComparisonTable } from '@/components/guides/ComparisonTable';
 import { StickyCTA } from '@/components/guides/StickyCTA';
+import { AUTHOR, getAuthorSchema, getPublisherSchema } from '@/lib/author-entity';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -38,7 +39,7 @@ const GuidePage = () => {
     (g) => g.slug !== guide.slug && g.category === guide.category
   ).slice(0, 3);
 
-  // Article schema
+  // Article schema with Person author entity
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -46,13 +47,8 @@ const GuidePage = () => {
     description: guide.excerpt,
     datePublished: guide.publishedAt,
     dateModified: guide.updatedAt,
-    author: { '@type': 'Organization', name: 'GetPawsy', url: BASE_URL },
-    publisher: {
-      '@type': 'Organization',
-      name: 'GetPawsy',
-      logo: { '@type': 'ImageObject', url: `${BASE_URL}/favicon.png`, width: 512, height: 512 },
-      url: BASE_URL,
-    },
+    author: getAuthorSchema(),
+    publisher: getPublisherSchema(),
     mainEntityOfPage: { '@type': 'WebPage', '@id': guideUrl },
     keywords: guide.keywords.join(', '),
     articleSection: guide.category,
@@ -199,6 +195,20 @@ const GuidePage = () => {
             {guide.title}
           </h1>
           <p className="text-lg text-muted-foreground mt-4">{guide.excerpt}</p>
+          
+          {/* Author Byline */}
+          <div className="flex items-center gap-3 mt-5 pt-4 border-t border-border">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="w-4 h-4 text-primary" />
+            </div>
+            <div className="text-sm">
+              <span className="text-muted-foreground">Written by </span>
+              <Link to="/about-the-author" className="text-foreground font-medium hover:text-primary transition-colors">
+                {AUTHOR.name}
+              </Link>
+              <span className="text-muted-foreground"> · {AUTHOR.shortBio}</span>
+            </div>
+          </div>
         </header>
 
         {/* Quick Answer Snippet */}
@@ -372,6 +382,17 @@ const GuidePage = () => {
             </div>
           </section>
         )}
+
+        {/* How We Evaluated — Trust Section */}
+        <section className="mb-10 bg-muted/30 rounded-xl p-6 border border-border">
+          <h2 className="text-lg font-display font-bold text-foreground mb-3">How We Evaluated These Products</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+            Every product in this guide was evaluated by <Link to="/about-the-author" className="text-primary hover:underline">{AUTHOR.name}</Link> using our standardized research process. We compare materials, durability, real-world performance, and value for money across multiple price points.
+          </p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Our recommendations are independent and never influenced by affiliate commissions. Read our full <Link to="/how-we-test-products" className="text-primary hover:underline">testing methodology</Link> and <Link to="/editorial-guidelines" className="text-primary hover:underline">editorial guidelines</Link> for complete transparency.
+          </p>
+        </section>
 
         {/* Shop Category CTA */}
         {guide.relatedCategories.length > 0 && (
