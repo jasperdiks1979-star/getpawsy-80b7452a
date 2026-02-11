@@ -319,13 +319,31 @@ async function runGSCSync(
     const queryRows = queryData.rows || [];
     console.log(`[GSC Sync] Page+query rows: ${queryRows.length}`);
 
-    // Debug: log sample URLs
+    // Debug: detailed URL analysis
     if (pageRows.length > 0) {
       const matched = pageRows.filter(r => matchPageToSlug(r.keys[0], knownSlugs) !== null);
       const unmatched = pageRows.filter(r => matchPageToSlug(r.keys[0], knownSlugs) === null);
+      
+      // Path prefix analysis for unmatched URLs
+      const prefixCounts: Record<string, number> = {};
+      for (const r of unmatched) {
+        try {
+          const u = new URL(r.keys[0]);
+          const prefix = '/' + (u.pathname.split('/').filter(Boolean)[0] || '(root)');
+          prefixCounts[prefix] = (prefixCounts[prefix] || 0) + 1;
+        } catch { /* skip */ }
+      }
+      const topPrefixes = Object.entries(prefixCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
       console.log(`[GSC Sync] DEBUG: ${matched.length} matched, ${unmatched.length} unmatched out of ${pageRows.length} page rows`);
-      console.log(`[GSC Sync] First 10 MATCHED:\n  ${matched.slice(0, 10).map(r => `${r.keys[0]} → ${matchPageToSlug(r.keys[0], knownSlugs)}`).join('\n  ')}`);
-      console.log(`[GSC Sync] First 10 UNMATCHED:\n  ${unmatched.slice(0, 10).map(r => r.keys[0]).join('\n  ')}`);
+      console.log(`[GSC Sync] Known slugs (${knownSlugs.size}): ${[...knownSlugs].slice(0, 5).join(', ')}...`);
+      console.log(`[GSC Sync] First 10 MATCHED:\n  ${matched.length > 0 ? matched.slice(0, 10).map(r => `${r.keys[0]} → ${matchPageToSlug(r.keys[0], knownSlugs)}`).join('\n  ') : '(none)'}`);
+      console.log(`[GSC Sync] First 20 UNMATCHED:\n  ${unmatched.slice(0, 20).map(r => r.keys[0]).join('\n  ')}`);
+      console.log(`[GSC Sync] Unmatched path prefixes: ${topPrefixes.map(([p, c]) => `${p}(${c})`).join(', ')}`);
+      
+      if (matched.length === 0 && pageRows.length > 0) {
+        console.warn(`[GSC Sync] ⚠️ WARNING: ${pageRows.length} GSC rows but 0 matched guides. Guide pages (/guides/*) may not be indexed by Google yet. Top URL patterns: ${topPrefixes.slice(0, 5).map(([p]) => p).join(', ')}`);
+      }
     }
 
     if (pageRows.length === 0 && queryRows.length === 0) {
@@ -454,6 +472,14 @@ async function runGSCSync(
 
     console.log(`[GSC Sync] === DONE (${finalStatus}) ===`);
 
+    // Build debug info for frontend
+    const unmatchedUrls = pageRows.filter(r => matchPageToSlug(r.keys[0], knownSlugs) === null);
+    const prefixCounts: Record<string, number> = {};
+    for (const r of unmatchedUrls) {
+      try { const u = new URL(r.keys[0]); const p = '/' + (u.pathname.split('/').filter(Boolean)[0] || '(root)'); prefixCounts[p] = (prefixCounts[p] || 0) + 1; } catch { /* */ }
+    }
+    const topUnmatchedPrefixes = Object.entries(prefixCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([p, c]) => ({ prefix: p, count: c }));
+
     return new Response(
       JSON.stringify({
         ok: true, success: true, status: finalStatus,
@@ -463,9 +489,19 @@ async function runGSCSync(
         totalImpressions, totalClicks,
         syncedAt: now, runId: lockId,
         dateRange: { start: startStr, end: endStr },
+        knownGuideCount: knownSlugs.size,
         slugs: rankings.map(r => ({
           slug: r.slug, impressions: r.impressions, clicks: r.clicks, position: r.position,
         })),
+        debug: {
+          matchedGuides: rankings.length,
+          unmatchedPageRows: unmatchedUrls.length,
+          topUnmatchedPrefixes,
+          first20Unmatched: unmatchedUrls.slice(0, 20).map(r => r.keys[0]),
+          warning: rankings.length === 0 && pageRows.length > 0
+            ? `GSC returned ${pageRows.length} page rows but 0 matched any of ${knownSlugs.size} known guide slugs. Guide pages under /guides/ may not be indexed yet. Top URL patterns in GSC: ${topUnmatchedPrefixes.slice(0, 3).map(p => p.prefix).join(', ')}`
+            : null,
+        },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

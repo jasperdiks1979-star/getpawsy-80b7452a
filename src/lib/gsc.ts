@@ -299,9 +299,15 @@ export async function triggerGSCSync(): Promise<{
     const totalImpressions = d.totalImpressions || 0;
     const totalClicks = d.totalClicks || 0;
 
+    const debugWarning = d.debug?.warning || null;
+    const knownGuides = d.knownGuideCount || 0;
+    const topPrefixes = d.debug?.topUnmatchedPrefixes?.map((p: { prefix: string; count: number }) => `${p.prefix}(${p.count})`).join(', ') || '';
+
     const msg = guideCount > 0
       ? `✅ Synced ${guideCount} guide slugs, ${queryCount} queries (${totalImpressions} impressions, ${totalClicks} clicks)`
-      : `⚠️ GSC returned ${totalRaw} rows but 0 matched /guides/ URLs. ${unmatched} non-guide URLs found.`;
+      : debugWarning
+        ? `⚠️ ${debugWarning}`
+        : `⚠️ GSC returned ${totalRaw} rows but 0 matched any of ${knownGuides} guide slugs. Top URL patterns: ${topPrefixes}. Guide pages may not be indexed by Google yet.`;
 
     return {
       success: guideCount > 0,
