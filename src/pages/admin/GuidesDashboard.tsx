@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowUp, ArrowDown, Minus, AlertTriangle, CheckCircle, 
-  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug, Activity, Wifi, WifiOff 
+  TrendingUp, BarChart3, FlaskConical, Map, Shield, Link2, Zap, RefreshCw, Bug, Activity, Wifi, WifiOff, Search 
 } from 'lucide-react';
 import { getExperimentsSummary } from '@/lib/guide-experiments';
 import { fetchGSCMetricsForGuides, triggerGSCSync, runGSCDiagnostic, type GSCGuideReport, type GSCFetchResult, type GSCDiagnosticResult } from '@/lib/gsc';
@@ -19,6 +19,7 @@ import { getLinkMatrixSummary, analyzeInternalLinks, type LinkAnalysis } from '@
 import { runOrphanRepair, detectOrphans, type RepairResult } from '@/lib/orphan-repair-engine';
 import { runLinkMatrixOptimizer, type LinkMatrixOptimizerResult } from '@/lib/link-matrix-optimizer';
 import { runAccelerationEngine, type AccelerationReport } from '@/lib/rank-acceleration-engine';
+import { runGapHijackEngine, type GapHijackReport, type GapQuery } from '@/lib/gap-hijack-engine';
 
 export default function GuidesDashboard() {
   const [searchParams] = useSearchParams();
@@ -36,6 +37,7 @@ export default function GuidesDashboard() {
   const [diagRunning, setDiagRunning] = useState(false);
   const [optimizerResult, setOptimizerResult] = useState<LinkMatrixOptimizerResult | null>(null);
   const [accelReport, setAccelReport] = useState<AccelerationReport | null>(null);
+  const [gapReport, setGapReport] = useState<GapHijackReport | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -45,6 +47,7 @@ export default function GuidesDashboard() {
     setBoostResult(detectBoostTargetsAdaptive(result.reports));
     setOptimizerResult(runLinkMatrixOptimizer());
     setAccelReport(runAccelerationEngine(result.reports));
+    setGapReport(runGapHijackEngine(result.reports));
     setLoading(false);
   };
 
@@ -198,6 +201,7 @@ export default function GuidesDashboard() {
             <TabsTrigger value="links"><Link2 className="h-4 w-4 mr-1" />Link Matrix</TabsTrigger>
             <TabsTrigger value="scaling"><Map className="h-4 w-4 mr-1" />150-Plan</TabsTrigger>
             <TabsTrigger value="acceleration"><TrendingUp className="h-4 w-4 mr-1" />Acceleration</TabsTrigger>
+            <TabsTrigger value="gap-hijack"><Search className="h-4 w-4 mr-1" />Gap Hijack</TabsTrigger>
           </TabsList>
 
           {/* TAB 1: A/B EXPERIMENTS */}
@@ -757,6 +761,66 @@ export default function GuidesDashboard() {
               </>
             )}
           </TabsContent>
+          {/* TAB 8: GAP HIJACK */}
+          <TabsContent value="gap-hijack" className="space-y-4">
+            {!gapReport ? (
+              <Alert><AlertTriangle className="h-4 w-4" /><AlertTitle>Loading</AlertTitle><AlertDescription className="text-xs">Gap analysis computing...</AlertDescription></Alert>
+            ) : (
+              <>
+                {/* Summary KPIs */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{gapReport.totalGapQueries}</p><p className="text-[10px] text-muted-foreground">Total Gaps</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-destructive">{gapReport.criticalCount}</p><p className="text-[10px] text-muted-foreground">Critical (No Page)</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-yellow-600">{gapReport.weakCount}</p><p className="text-[10px] text-muted-foreground">Weak Coverage</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600">{gapReport.opportunityCount}</p><p className="text-[10px] text-muted-foreground">Opportunities</p></CardContent></Card>
+                  <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{gapReport.cannibalizationRisks.length}</p><p className="text-[10px] text-muted-foreground">Cannibal Risks</p></CardContent></Card>
+                </div>
+
+                {gapReport.totalGapQueries === 0 && (
+                  <Alert><AlertTriangle className="h-4 w-4" /><AlertTitle>No gaps detected</AlertTitle><AlertDescription className="text-xs">Either no GSC query data available or all queries are ranking well (position ≤ 20). Sync GSC data first.</AlertDescription></Alert>
+                )}
+
+                {/* Cannibalization Warnings */}
+                {gapReport.cannibalizationRisks.length > 0 && (
+                  <Alert variant="destructive">
+                    <Shield className="h-4 w-4" />
+                    <AlertTitle>Cannibalization Risks ({gapReport.cannibalizationRisks.length})</AlertTitle>
+                    <AlertDescription className="text-xs space-y-1">
+                      {gapReport.cannibalizationRisks.map((r, i) => <div key={i}>{r}</div>)}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Top 5 Hijack Targets */}
+                {gapReport.top5HijackTargets.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">🎯 Top 5 Hijack Targets</CardTitle></CardHeader>
+                    <CardContent className="space-y-3">
+                      {gapReport.top5HijackTargets.map((gap, i) => (
+                        <GapCard key={i} gap={gap} rank={i + 1} />
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Full Gap List */}
+                {gapReport.gaps.length > 5 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">📋 All Gap Queries ({gapReport.gaps.length})</CardTitle></CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[500px]">
+                        <div className="space-y-2">
+                          {gapReport.gaps.slice(5).map((gap, i) => (
+                            <GapCard key={i} gap={gap} />
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
     </div>
@@ -775,5 +839,68 @@ function DeltaBadge({ value, suffix, inverted = false }: { value: number; suffix
       {isPositive ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
       {Math.abs(value).toFixed(suffix === '%' ? 2 : 0)}{suffix}
     </span>
+  );
+}
+
+function GapCard({ gap, rank }: { gap: GapQuery; rank?: number }) {
+  const gapColor = gap.gapType === 'GAP_CRITICAL' ? 'text-destructive' : gap.gapType === 'GAP_WEAK' ? 'text-yellow-600' : 'text-green-600';
+  const gapLabel = gap.gapType === 'GAP_CRITICAL' ? 'CRITICAL' : gap.gapType === 'GAP_WEAK' ? 'WEAK' : 'OPPORTUNITY';
+
+  return (
+    <div className="p-3 rounded border space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {rank && <span className="text-lg font-bold text-muted-foreground">#{rank}</span>}
+          <div>
+            <p className="font-medium text-sm">{gap.query}</p>
+            <p className="text-[10px] text-muted-foreground">
+              Match: {gap.matchType} {gap.matchedSlug ? `→ ${gap.matchedSlug}` : '(no page)'}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-1.5">
+          <Badge variant="outline" className={`text-[10px] ${gapColor}`}>{gapLabel}</Badge>
+          <Badge variant="outline" className="text-[10px]">Pos {gap.avgPosition.toFixed(1)}</Badge>
+          <Badge variant="outline" className="text-[10px]">{gap.impressions} impr</Badge>
+          <Badge variant="secondary" className="text-[10px]">Score: {gap.priorityScore}</Badge>
+        </div>
+      </div>
+
+      {/* SERP Pattern */}
+      <div className="flex gap-1.5 flex-wrap">
+        <Badge variant="outline" className="text-[8px]">{gap.serpPattern.contentLengthEstimate}</Badge>
+        {gap.serpPattern.hasComparisonTable && <Badge variant="outline" className="text-[8px]">📊 Table</Badge>}
+        {gap.serpPattern.hasReviewSchema && <Badge variant="outline" className="text-[8px]">⭐ Review</Badge>}
+        {gap.serpPattern.titleStyle.map(s => <Badge key={s} variant="outline" className="text-[8px]">{s}</Badge>)}
+        <Badge variant="outline" className="text-[8px]">FAQ×{gap.serpPattern.faqCountEstimate}</Badge>
+      </div>
+
+      {/* Actions */}
+      <div className="text-[10px] space-y-0.5 pl-2 border-l-2 border-muted">
+        {gap.gapType === 'GAP_CRITICAL' && gap.hijackPlan.recommendedSlug && (
+          <>
+            <p><strong>Slug:</strong> <span className="font-mono">{gap.hijackPlan.recommendedSlug}</span></p>
+            <p><strong>H1:</strong> {gap.hijackPlan.suggestedH1}</p>
+            {gap.hijackPlan.suggestedH2s && <p><strong>H2s:</strong> {gap.hijackPlan.suggestedH2s.join(' · ')}</p>}
+            {gap.hijackPlan.internalLinkTargets && gap.hijackPlan.internalLinkTargets.length > 0 && (
+              <p><strong>Link to:</strong> {gap.hijackPlan.internalLinkTargets.join(', ')}</p>
+            )}
+          </>
+        )}
+        {gap.gapType === 'GAP_WEAK' && (
+          <>
+            {gap.hijackPlan.contentExpansion && <p>{gap.hijackPlan.contentExpansion}</p>}
+            {gap.hijackPlan.titleOptimization && <p><strong>Title:</strong> {gap.hijackPlan.titleOptimization}</p>}
+            {gap.hijackPlan.linkBoostPlan && <p><strong>Links:</strong> {gap.hijackPlan.linkBoostPlan}</p>}
+          </>
+        )}
+        {gap.gapType === 'GAP_OPPORTUNITY' && gap.hijackPlan.quickWins && (
+          <>
+            {gap.hijackPlan.quickWins.map((w, i) => <p key={i}>• {w}</p>)}
+            {gap.hijackPlan.ctrOptimization && <p><strong>CTR:</strong> {gap.hijackPlan.ctrOptimization}</p>}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
