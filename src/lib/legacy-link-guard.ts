@@ -1,23 +1,23 @@
 /**
- * Safety guard to block external Shopify admin links.
- * Redirects all Shopify admin attempts to internal /admin/guides-seo route.
+ * Safety guard to block deprecated external admin links.
+ * Redirects all legacy admin attempts to internal /admin/guides-seo route.
  */
 
 const BLOCKED_PATTERNS = [
   /admin\.shopify\.com/i,
-  /shopify.*admin/i,
+  /myshopify\.com/i,
   /skidzo-store/i,
 ];
 
 /**
- * Check if a URL is a blocked external Shopify admin link.
+ * Check if a URL is a blocked legacy external admin link.
  * If so, log a warning and return the internal replacement URL.
  */
-export function checkAndBlockShopifyLink(url: string): string | null {
+export function checkAndBlockLegacyLink(url: string): string | null {
   for (const pattern of BLOCKED_PATTERNS) {
     if (pattern.test(url)) {
       console.warn(
-        `🚫 Blocked external Shopify admin link – use /admin/guides-seo instead\n` +
+        `🚫 Blocked legacy admin link (deprecated). Use /admin/guides-seo instead.\n` +
         `Attempted: ${url}`
       );
       return '/admin/guides-seo';
@@ -27,16 +27,15 @@ export function checkAndBlockShopifyLink(url: string): string | null {
 }
 
 /**
- * Wrap window.open to intercept Shopify admin attempts.
+ * Wrap window.open to intercept legacy admin attempts.
  */
-export function initShopifyBlocker() {
+export function initLegacyLinkGuard() {
   const originalOpen = window.open;
   
   window.open = function(url?: string | URL, ...args: any[]) {
     if (typeof url === 'string') {
-      const blockedUrl = checkAndBlockShopifyLink(url);
+      const blockedUrl = checkAndBlockLegacyLink(url);
       if (blockedUrl) {
-        // Navigate internally instead of opening external link
         window.location.href = blockedUrl;
         return null;
       }
@@ -46,20 +45,19 @@ export function initShopifyBlocker() {
 }
 
 /**
- * Intercept fetch requests to Shopify admin and redirect to internal dashboard.
+ * Intercept fetch requests to legacy admin endpoints.
  */
-export function initShopifyFetchBlocker() {
+export function initLegacyFetchGuard() {
   const originalFetch = window.fetch;
   
   window.fetch = function(input: RequestInfo | URL, ...args: any[]) {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     
-    if (checkAndBlockShopifyLink(url)) {
-      // Return a mock error response for blocked Shopify requests
+    if (checkAndBlockLegacyLink(url)) {
       return Promise.resolve(
         new Response(
           JSON.stringify({
-            error: 'External Shopify admin links are blocked. Use /admin/guides-seo instead.',
+            error: 'Legacy admin links are blocked. Use /admin/guides-seo instead.',
           }),
           {
             status: 403,

@@ -18,7 +18,7 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { setupGlobalErrorHandler } from "@/lib/error-reporter";
 import { initDataHealer } from "@/lib/data-healer";
-import { initShopifyBlocker, initShopifyFetchBlocker } from "@/lib/shopify-blocker";
+import { initLegacyLinkGuard, initLegacyFetchGuard } from "@/lib/legacy-link-guard";
 
 // Setup global error handler for automatic error reporting
 setupGlobalErrorHandler();
@@ -26,9 +26,9 @@ setupGlobalErrorHandler();
 // Initialize self-healing data sanitization
 initDataHealer();
 
-// Block external Shopify admin links
-initShopifyBlocker();
-initShopifyFetchBlocker();
+// Block deprecated external admin links
+initLegacyLinkGuard();
+initLegacyFetchGuard();
 
 // Critical routes - loaded immediately
 import Index from "./pages/Index";

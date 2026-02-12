@@ -300,7 +300,7 @@ function extractPetDropshipperProduct(markdown: string, html: string, url: strin
     }
   }
 
-  // Try to get product title from Shopify-specific patterns in HTML
+  // Try to get product title from e-commerce platform patterns in HTML
   if (!data.name) {
     const productTitlePatterns = [
       /<h1[^>]*class=["'][^"']*product[^"']*title[^"']*["'][^>]*>([^<]+)<\/h1>/i,
@@ -335,7 +335,7 @@ function extractPetDropshipperProduct(markdown: string, html: string, url: strin
     }
   }
 
-  // Extract SKU from HTML (Shopify pattern)
+  // Extract SKU from HTML (e-commerce pattern)
   const skuPatterns = [
     /SKU[:\s]*([A-Z0-9-]+)/i,
     /"sku"\s*:\s*"([^"]+)"/i,
@@ -351,7 +351,7 @@ function extractPetDropshipperProduct(markdown: string, html: string, url: strin
     }
   }
 
-  // Extract price from HTML (Shopify patterns)
+  // Extract price from HTML (e-commerce patterns)
   const pricePatterns = [
     /"price"\s*:\s*(\d+(?:\.\d{2})?)/i,
     /data-product-price=["'](\d+(?:\.\d{2})?)["']/i,
@@ -364,7 +364,7 @@ function extractPetDropshipperProduct(markdown: string, html: string, url: strin
   for (const pattern of pricePatterns) {
     const match = html.match(pattern) || markdown.match(pattern);
     if (match) {
-      // Shopify sometimes stores price in cents
+      // Some platforms store price in cents
       let price = parseFloat(match[1]);
       if (price > 1000 && !match[0].includes('$')) {
         price = price / 100; // Convert from cents
@@ -412,10 +412,10 @@ function extractPetDropshipperProduct(markdown: string, html: string, url: strin
     }
   }
 
-  // Extract images from Shopify-specific patterns
+  // Extract images from e-commerce CDN patterns
   const imagePatterns = [
-    /data-src=["'](https:\/\/cdn\.shopify\.com\/[^"']+)["']/gi,
-    /src=["'](https:\/\/cdn\.shopify\.com\/s\/files\/[^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi,
+    /data-src=["'](https:\/\/cdn\.[^"']+)["']/gi,
+    /src=["'](https:\/\/[^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi,
     /"featured_image"\s*:\s*"(https:\/\/[^"]+)"/gi,
   ];
 
