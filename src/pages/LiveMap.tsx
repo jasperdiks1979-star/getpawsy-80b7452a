@@ -110,7 +110,7 @@ const LiveMap = () => {
           <div className="container flex h-14 items-center justify-between">
             <div className="flex items-center gap-4">
               <Button asChild variant="ghost" size="sm">
-                <Link to="/admin">
+                <Link to="/dashboard">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Terug naar Admin
                 </Link>

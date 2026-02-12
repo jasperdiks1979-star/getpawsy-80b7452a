@@ -190,7 +190,7 @@ export default function AnalyticsHub() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link to="/admin">
+            <Link to="/dashboard">
               <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
             </Link>
             <div>
@@ -199,7 +199,7 @@ export default function AnalyticsHub() {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Link to="/admin/guides-seo">
+            <Link to="/dashboard/guides-seo">
               <Button variant="outline" size="sm"><FileText className="h-4 w-4 mr-1" />Guides SEO</Button>
             </Link>
           </div>

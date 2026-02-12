@@ -156,9 +156,9 @@ const UTILITY_PAGES = [
 ];
 
 const ADMIN_PAGES = [
-  { slug: '/admin', type: 'admin' as const, indexable: false },
-  { slug: '/admin/guides-seo', type: 'admin' as const, indexable: false },
-  { slug: '/admin/crawler-analytics', type: 'admin' as const, indexable: false },
+  { slug: '/dashboard', type: 'admin' as const, indexable: false },
+  { slug: '/dashboard/guides-seo', type: 'admin' as const, indexable: false },
+  { slug: '/dashboard/crawler-analytics', type: 'admin' as const, indexable: false },
 ];
 
 // Sitemap-included page patterns

@@ -736,7 +736,7 @@ const Index = () => {
                 <p className="text-muted-foreground mb-4">
                   No products available yet. Import products via the admin page.
                 </p>
-                <Link to="/admin">
+                <Link to="/dashboard">
                   <Button className="rounded-full">Go to Admin</Button>
                 </Link>
               </div>
