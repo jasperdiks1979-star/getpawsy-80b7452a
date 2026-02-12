@@ -185,17 +185,25 @@ async function blogSitemap(today: string): Promise<string> {
 }
 
 const FALLBACK_GUIDES = [
-  { slug: "best-cat-litter-box-2026", updatedAt: "2026-02-10", priority: "0.9" },
-  { slug: "how-many-litter-boxes-per-cat", updatedAt: "2026-02-10", priority: "0.8" },
-  { slug: "best-cat-litter-box-furniture-enclosures-2026", updatedAt: "2026-02-11", priority: "0.8" },
-  { slug: "best-litter-boxes-multi-cat", updatedAt: "2026-02-12", priority: "0.75" },
-  { slug: "best-extra-large-litter-boxes", updatedAt: "2026-02-13", priority: "0.75" },
-  { slug: "best-cat-trees-small-apartments", updatedAt: "2026-02-14", priority: "0.75" },
-  { slug: "how-to-choose-guinea-pig-cage", updatedAt: "2026-02-10", priority: "0.7" },
-  { slug: "guinea-pig-cage-vs-playpen", updatedAt: "2026-02-10", priority: "0.7" },
-  { slug: "cat-condo-vs-cat-tower", updatedAt: "2026-02-10", priority: "0.7" },
-  { slug: "choosing-safe-cat-tree-indoor", updatedAt: "2026-02-10", priority: "0.7" },
-  { slug: "outdoor-dog-games-enrichment", updatedAt: "2026-02-10", priority: "0.7" },
+  { slug: "best-cat-litter-box-2026", updatedAt: "2026-02-12", priority: "0.95" },
+  { slug: "how-many-litter-boxes-per-cat", updatedAt: "2026-02-12", priority: "0.8" },
+  { slug: "best-cat-litter-box-furniture-enclosures-2026", updatedAt: "2026-02-12", priority: "0.85" },
+  { slug: "best-litter-boxes-multi-cat", updatedAt: "2026-02-12", priority: "0.8" },
+  { slug: "best-extra-large-litter-boxes", updatedAt: "2026-02-12", priority: "0.8" },
+  { slug: "best-cat-trees-small-apartments", updatedAt: "2026-02-12", priority: "0.8" },
+  { slug: "best-litter-box-small-apartments", updatedAt: "2026-02-12", priority: "0.8" },
+  { slug: "best-litter-box-odor-bathroom", updatedAt: "2026-02-12", priority: "0.8" },
+  { slug: "best-low-tracking-litter-box", updatedAt: "2026-02-12", priority: "0.8" },
+  { slug: "best-litter-box-kittens", updatedAt: "2026-02-12", priority: "0.8" },
+  { slug: "best-litter-box-senior-cats", updatedAt: "2026-02-12", priority: "0.8" },
+  { slug: "best-litter-box-under-100", updatedAt: "2026-02-12", priority: "0.75" },
+  { slug: "best-litter-box-studio-apartment", updatedAt: "2026-02-12", priority: "0.75" },
+  { slug: "best-high-sided-litter-box", updatedAt: "2026-02-12", priority: "0.8" },
+  { slug: "how-to-choose-guinea-pig-cage", updatedAt: "2026-02-12", priority: "0.7" },
+  { slug: "guinea-pig-cage-vs-playpen", updatedAt: "2026-02-12", priority: "0.7" },
+  { slug: "cat-condo-vs-cat-tower", updatedAt: "2026-02-12", priority: "0.7" },
+  { slug: "choosing-safe-cat-tree-indoor", updatedAt: "2026-02-12", priority: "0.7" },
+  { slug: "outdoor-dog-games-enrichment", updatedAt: "2026-02-12", priority: "0.7" },
 ];
 
 async function getGuides(): Promise<typeof FALLBACK_GUIDES> {

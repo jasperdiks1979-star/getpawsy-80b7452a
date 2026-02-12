@@ -34,10 +34,22 @@ const GuidePage = () => {
   // Canonical WITHOUT trailing slash (canonical standard)
   const guideUrl = `${BASE_URL}/guides/${guide.slug}`;
 
-  // Related guides from same category
-  const relatedGuides = allGuides?.filter(
+  // Related guides: same category first, then other guides for cross-cluster linking
+  const sameCategoryGuides = allGuides?.filter(
     (g) => g.slug !== guide.slug && g.category === guide.category
-  ).slice(0, 3);
+  ) || [];
+  const otherGuides = allGuides?.filter(
+    (g) => g.slug !== guide.slug && g.category !== guide.category
+  ) || [];
+  // Ensure minimum 4 related guides: fill from same category, then cross-cluster
+  const relatedGuides = [...sameCategoryGuides, ...otherGuides].slice(0, 5);
+
+  // Find cornerstone for this cluster (first guide with "best-" prefix in same category)
+  const clusterCornerstone = sameCategoryGuides.find(g => g.slug.startsWith('best-'));
+  // Ensure cornerstone is in related guides if it exists and isn't already there
+  if (clusterCornerstone && !relatedGuides.find(g => g.slug === clusterCornerstone.slug)) {
+    relatedGuides.unshift(clusterCornerstone);
+  }
 
   // Article schema with Person author entity
   const articleSchema = {
@@ -416,12 +428,12 @@ const GuidePage = () => {
           </div>
         )}
 
-        {/* Related Guides */}
+        {/* Related Guides — Internal Link Authority Block */}
         {relatedGuides && relatedGuides.length > 0 && (
           <section className="mt-12 pt-8 border-t border-border">
             <h2 className="text-xl font-display font-bold text-foreground mb-6 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-primary" />
-              More in {guide.category}
+              Related Buying Guides
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {relatedGuides.map((rg) => (
@@ -434,6 +446,9 @@ const GuidePage = () => {
                     {rg.title}
                   </h3>
                   <p className="text-sm text-muted-foreground line-clamp-2">{rg.excerpt}</p>
+                  <span className="flex items-center gap-1 text-xs font-medium text-primary mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Read Guide <ChevronRight className="w-3 h-3" />
+                  </span>
                 </Link>
               ))}
             </div>
