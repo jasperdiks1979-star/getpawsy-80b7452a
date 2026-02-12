@@ -49,21 +49,21 @@ export interface RepairResult {
 // ============= CONSTANTS =============
 
 const MIN_INBOUND: Record<string, number> = {
-  cornerstone: 60,
-  hub: 15,
+  cornerstone: 80,
+  hub: 20,
   subguide: 5,
 };
 
-const MAX_NEW_LINKS_PER_PAGE = 10;
-const MAX_CROSS_CLUSTER_PERCENT = 15;
+const MAX_NEW_LINKS_PER_PAGE = 12;
+const MAX_CROSS_CLUSTER_PERCENT = 25;
 const BRAND_NAME = 'Pawsy';
 
 // ============= ANCHOR STRATEGY =============
 
 const ANCHOR_DISTRIBUTION: { type: AnchorType; weight: number }[] = [
-  { type: 'exact', weight: 40 },
-  { type: 'partial', weight: 30 },
-  { type: 'semantic', weight: 20 },
+  { type: 'exact', weight: 20 },
+  { type: 'partial', weight: 40 },
+  { type: 'semantic', weight: 30 },
   { type: 'branded', weight: 10 },
 ];
 
