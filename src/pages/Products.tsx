@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { Filter, SlidersHorizontal, Loader2, X, Eye, Clock, Home } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
+import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
 import { ProductCard, Product } from '@/components/products/ProductCard';
 import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
@@ -988,6 +989,11 @@ const Products = () => {
         </section>
       )}
       
+      {/* Popular Buying Guides — cornerstone authority block */}
+      <div className="container px-4 md:px-6">
+        <PopularGuidesBlock />
+      </div>
+
       {/* Quick View Modal */}
       <QuickViewModal
         product={quickViewProduct}

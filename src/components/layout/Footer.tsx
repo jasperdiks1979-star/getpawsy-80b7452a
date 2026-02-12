@@ -309,16 +309,21 @@ export const Footer = () => {
               </ul>
             </div>
           </div>
-          {/* Popular Buying Guides — SEO Internal Link Section */}
+          {/* Expert Pet Buying Guides — SEO Cornerstone Link Section */}
           <div className="mt-12 pt-8 border-t border-background/10">
-            <h4 className="font-display font-semibold text-lg mb-4">Popular Buying Guides</h4>
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <h4 className="font-display font-semibold text-lg mb-4">Expert Pet Buying Guides</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
               {[
-                { slug: 'best-cat-litter-box-2026', label: 'Litter Box Buying Guide' },
-                { slug: 'best-cat-litter-box-furniture-enclosures-2026', label: 'Litter Box Furniture Picks' },
-                { slug: 'best-litter-boxes-multi-cat', label: 'Multi-Cat Litter Solutions' },
-                { slug: 'best-extra-large-litter-boxes', label: 'Jumbo Litter Box Picks' },
-                { slug: 'how-many-litter-boxes-per-cat', label: 'The N+1 Litter Box Rule' },
+                { slug: 'best-cat-litter-box-2026', label: 'Best Cat Litter Box 2026 – Complete Guide' },
+                { slug: 'best-cat-litter-box-furniture-enclosures-2026', label: 'Best Litter Box Furniture & Enclosures' },
+                { slug: 'best-extra-large-litter-boxes', label: 'Best Extra Large Litter Boxes for Big Cats' },
+                { slug: 'best-litter-boxes-multi-cat', label: 'Best Litter Boxes for Multi-Cat Homes' },
+                { slug: 'best-cat-trees-small-apartments', label: 'Best Cat Trees for Small Apartments' },
+                { slug: 'how-many-litter-boxes-per-cat', label: 'How Many Litter Boxes Per Cat? N+1 Rule' },
+                { slug: 'best-litter-box-small-apartments', label: 'Best Litter Box for Small Apartments' },
+                { slug: 'best-litter-box-kittens', label: 'Best Litter Box for Kittens – Starter Picks' },
+                { slug: 'best-litter-box-senior-cats', label: 'Best Litter Box for Senior Cats' },
+                { slug: 'best-low-tracking-litter-box', label: 'Best Low-Tracking Litter Box 2026' },
               ].map((guide) => (
                 <Link
                   key={guide.slug}
