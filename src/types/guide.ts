@@ -68,4 +68,10 @@ export interface GuideData extends GuideMeta {
   quickRecommendation?: QuickRecommendation;
   comparisonProducts?: ComparisonProduct[];
   quickAnswer?: string;
+  whoThisIsFor?: string[];
+  jumpNav?: { label: string; anchor: string }[];
+  seoTitle?: string;
+  seoDescription?: string;
+  h1Override?: string;
+  trustLines?: string[];
 }

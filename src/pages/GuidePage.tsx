@@ -150,12 +150,12 @@ const GuidePage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>{guide.title} | GetPawsy</title>
-        <meta name="description" content={guide.excerpt} />
+        <title>{guide.seoTitle || `${guide.title} | GetPawsy`}</title>
+        <meta name="description" content={guide.seoDescription || guide.excerpt} />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <link rel="canonical" href={guideUrl} />
-        <meta property="og:title" content={guide.title} />
-        <meta property="og:description" content={guide.excerpt} />
+        <meta property="og:title" content={guide.seoTitle || guide.title} />
+        <meta property="og:description" content={guide.seoDescription || guide.excerpt} />
         <meta property="og:url" content={guideUrl} />
         <meta property="og:type" content="article" />
         <meta property="article:published_time" content={guide.publishedAt} />
@@ -204,10 +204,21 @@ const GuidePage = () => {
               Updated for {updatedYear}
             </span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground leading-tight">
-            {guide.title}
+         <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground leading-tight">
+            {guide.h1Override || guide.title}
           </h1>
           <p className="text-lg text-muted-foreground mt-4">{guide.excerpt}</p>
+          
+          {/* Trust Lines */}
+          {guide.trustLines && guide.trustLines.length > 0 && (
+            <ul className="mt-4 space-y-1.5">
+              {guide.trustLines.map((line, i) => (
+                <li key={i} className="text-sm text-muted-foreground flex items-center gap-2">
+                  <span className="text-primary">✓</span> {line}
+                </li>
+              ))}
+            </ul>
+          )}
           
           {/* Author Byline */}
           <div className="flex items-center gap-3 mt-5 pt-4 border-t border-border">
