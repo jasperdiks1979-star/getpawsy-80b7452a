@@ -146,9 +146,20 @@ function extractSlugFromUrl(pageUrl: string): string | null {
     // Strip tracking params — just use pathname
     if (!pathname || pathname.length === 0) return null;
 
-    // /guides/slug-here → slug-here
     const parts = pathname.split('/').filter(Boolean);
+
+    // /guides/slug-here → slug-here (HIGHEST PRIORITY)
     if (parts[0] === 'guides' && parts[1]) {
+      return parts[1].toLowerCase().trim();
+    }
+
+    // /collections/slug → slug (for collection pages)
+    if (parts[0] === 'collections' && parts[1]) {
+      return parts[1].toLowerCase().trim();
+    }
+
+    // /blog/slug → slug (for blog posts)
+    if (parts[0] === 'blog' && parts[1]) {
       return parts[1].toLowerCase().trim();
     }
 
@@ -173,7 +184,8 @@ function matchPageToSlug(pageUrl: string, knownSlugs: Set<string>): string | nul
   const skipPaths = ['auth', 'track', 'cart', 'cookies', 'contact', 'about', 'shipping',
     'blog', 'products', 'admin', 'login', 'sitemap', 'robots', 'favicon',
     'bestseller', 'product', 'category', 'search', 'checkout', 'order',
-    'privacy', 'terms', 'security', 'install', 'live-map', 'google-review'];
+    'privacy', 'terms', 'security', 'install', 'live-map', 'google-review',
+    'dashboard', 'profile', 'orders', 'payment-success', 'faq', 'returns'];
   if (skipPaths.includes(slug)) return null;
 
   // Match 1: exact match against known guide slugs
@@ -181,7 +193,9 @@ function matchPageToSlug(pageUrl: string, knownSlugs: Set<string>): string | nul
 
   // Match 2: pattern-based (best-*, *-2026, how-to-*, etc.)
   if (/^best-/.test(slug) || /-202[4-9]$/.test(slug) || /^how-to-/.test(slug) ||
-      /^choosing-/.test(slug) || /-vs-/.test(slug) || /^guide-/.test(slug)) {
+      /^choosing-/.test(slug) || /-vs-/.test(slug) || /^guide-/.test(slug) ||
+      /^top-/.test(slug) || /^safest-/.test(slug) || /-guide$/.test(slug) ||
+      /^outdoor-/.test(slug) || /^guinea-pig-/.test(slug) || /^cat-/.test(slug)) {
     return slug;
   }
 
