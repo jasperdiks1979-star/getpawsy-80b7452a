@@ -3,12 +3,7 @@ import { useEffect, useCallback } from 'react';
 // Pinterest Tag ID
 const PINTEREST_TAG_ID = '2612897117846';
 
-// Production domains where tracking should be active
-const PRODUCTION_DOMAINS = [
-  'getpawsy.pet',
-  'www.getpawsy.pet',
-  'getpawsy.lovable.app',
-];
+import { PRODUCTION_DOMAINS } from '@/lib/constants';
 
 // Check if we're on a production domain
 const isProductionDomain = (): boolean => {

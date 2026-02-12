@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 import { trackGoogleAdsAddToCart } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
+import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { toast } from 'sonner';
 import { trackPinterestEvent } from '@/hooks/usePinterestTracking';
 import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
@@ -134,8 +135,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [items, syncAbandonedCart]);
 
-  // Production domains where tracking should be active
-  const PRODUCTION_DOMAINS = ['getpawsy.pet', 'www.getpawsy.pet', 'getpawsy.lovable.app'];
+  // Import shared production domains constant
   
   // Track cart activity for visitor map
   const trackCartActivity = useCallback(async () => {

@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from 'react';
+import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { Link } from 'react-router-dom';
 import { CreditCard, Lock, Loader2, ShieldCheck, FileText, Home, ShoppingCart, Tag, CheckCircle, X, Truck, RotateCcw, Package } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
@@ -231,8 +232,7 @@ const Checkout = () => {
     }
   };
 
-  // Production domains where tracking should be active
-  const PRODUCTION_DOMAINS = ['getpawsy.pet', 'www.getpawsy.pet', 'getpawsy.lovable.app'];
+  // Import shared production domains constant
 
   // Track checkout activity for visitor map
   const trackCheckoutActivity = async () => {
