@@ -1,12 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-// Production domains where heartbeat should be active
-const PRODUCTION_DOMAINS = [
-  'getpawsy.pet',
-  'www.getpawsy.pet',
-  'getpawsy.lovable.app',
-];
+import { PRODUCTION_DOMAINS } from '@/lib/constants';
 
 // Check if we're on a production domain
 const isProductionDomain = (): boolean => {

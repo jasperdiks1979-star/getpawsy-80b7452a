@@ -27,12 +27,7 @@ interface DeviceInfo {
 
 type ReferrerCategory = "google" | "social" | "direct" | "email" | "paid" | "organic" | "other";
 
-// Production domains where tracking should be active
-const PRODUCTION_DOMAINS = [
-  'getpawsy.pet',
-  'www.getpawsy.pet',
-  'getpawsy.lovable.app',
-];
+import { PRODUCTION_DOMAINS } from '@/lib/constants';
 
 // Countries to mark as internal traffic
 const INTERNAL_COUNTRIES = ['Netherlands', 'The Netherlands', 'NL'];

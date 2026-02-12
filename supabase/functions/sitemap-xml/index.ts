@@ -43,6 +43,7 @@ function sitemapIndex(today: string): string {
     "static",
     "products",
     "categories",
+    "bestsellers",
     "collections",
     "blog",
     "guides",
