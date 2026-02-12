@@ -18,12 +18,17 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { setupGlobalErrorHandler } from "@/lib/error-reporter";
 import { initDataHealer } from "@/lib/data-healer";
+import { initShopifyBlocker, initShopifyFetchBlocker } from "@/lib/shopify-blocker";
 
 // Setup global error handler for automatic error reporting
 setupGlobalErrorHandler();
 
 // Initialize self-healing data sanitization
 initDataHealer();
+
+// Block external Shopify admin links
+initShopifyBlocker();
+initShopifyFetchBlocker();
 
 // Critical routes - loaded immediately
 import Index from "./pages/Index";
@@ -278,9 +283,8 @@ const App = () => {
                         <Route path="/security" element={<Security />} />
                         <Route path="/google-review" element={<GoogleReview />} />
                         <Route path="/admin/crawler-analytics" element={<CrawlerAnalytics />} />
-                        <Route path="/admin/user-agent-comparison" element={<UserAgentComparison />} />
-                        <Route path="/admin/guides-dashboard" element={<GuidesDashboard />} />
-                        <Route path="/admin/guides-seo" element={<GuidesDashboard />} />
+                         <Route path="/admin/user-agent-comparison" element={<UserAgentComparison />} />
+                         <Route path="/admin/guides-seo" element={<GuidesDashboard />} />
                         
                         {/* SEO Collection Pages */}
                         <Route path="/collections/:slug" element={<SeoCollection />} />
