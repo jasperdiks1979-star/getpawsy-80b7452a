@@ -1,74 +1,71 @@
 # GetPawsy Pet Products - Robots.txt
 # Premium pet supplies, dog beds, cat trees, pet toys & accessories
-# Last updated: 2026-01-30
+# Last updated: 2026-02-12
 
 # =====================================================
-# GOOGLE CRAWLERS - All explicitly allowed
-# Reference: https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers
+# GOOGLE CRAWLERS
 # =====================================================
 
-# Main Googlebot (Search, Discover, Images, Video, News)
 User-agent: Googlebot
-Allow: /
+Allow: /guides/
+Allow: /blog/
+Allow: /products
+Allow: /bestsellers
+Allow: /collections/
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /profile
+Disallow: /orders
+Disallow: /checkout
+Disallow: /payment-success
+Disallow: /auth
+Disallow: /auth/
+Disallow: /track
+Disallow: /cart
+Disallow: /google-review
+Disallow: /security
+Disallow: /install
+Disallow: /live-map
+Disallow: /api/
 Crawl-delay: 1
 
-# Googlebot Image (Google Images, Discover, favicons)
 User-agent: Googlebot-Image
 Allow: /
 
-# Googlebot Video (Video search features)
 User-agent: Googlebot-Video
 Allow: /
 
-# Googlebot News (news.google.com, Google News app)
 User-agent: Googlebot-News
 Allow: /
 
-# Google StoreBot (Google Shopping, Shopping tab)
 User-agent: Storebot-Google
 Allow: /
 
-# Google Ads Bot (Ad quality checks)
 User-agent: AdsBot-Google
 Allow: /
 
 User-agent: AdsBot-Google-Mobile
 Allow: /
 
-# Google Media Partners (AdSense)
 User-agent: Mediapartners-Google
 Allow: /
 
-# Google Inspection Tool (Search Console, Rich Results Test)
 User-agent: Google-InspectionTool
 Allow: /
 
-# GoogleOther (Internal R&D, generic crawler)
-User-agent: GoogleOther
-Allow: /
-
-# GoogleOther-Image (Image fetching)
-User-agent: GoogleOther-Image
-Allow: /
-
-# GoogleOther-Video (Video fetching)
-User-agent: GoogleOther-Video
-Allow: /
-
-# Google Cloud Vertex Bot (Vertex AI Agents)
-User-agent: Google-CloudVertexBot
-Allow: /
-
-# Google Extended (Gemini AI training - we allow this)
-User-agent: Google-Extended
-Allow: /
-
 # =====================================================
-# OTHER MAJOR SEARCH ENGINES
+# OTHER SEARCH ENGINES
 # =====================================================
 
 User-agent: Bingbot
-Allow: /
+Allow: /guides/
+Allow: /blog/
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /admin
+Disallow: /admin/
 Crawl-delay: 1
 
 User-agent: Slurp
@@ -94,26 +91,17 @@ User-agent: Pinterest
 Allow: /
 
 # =====================================================
-# DEFAULT RULE FOR ALL OTHER BOTS
+# DEFAULT RULE
 # =====================================================
 
 User-agent: *
-Allow: /
-Crawl-delay: 2
-
-# =====================================================
-# SITEMAPS
-# Same-origin proxy endpoints for Google Search Console
-# =====================================================
-
-Sitemap: https://getpawsy.pet/sitemap.xml
-
-# =====================================================
-# DISALLOWED PATHS (Private/Admin/Non-SEO pages)
-# =====================================================
-
-# Admin and private pages
+Allow: /guides/
+Allow: /blog/
+Allow: /products
+Disallow: /dashboard
+Disallow: /dashboard/
 Disallow: /admin
+Disallow: /admin/
 Disallow: /profile
 Disallow: /orders
 Disallow: /checkout
@@ -126,7 +114,11 @@ Disallow: /google-review
 Disallow: /security
 Disallow: /install
 Disallow: /live-map
-
-# API endpoints (not meant to be indexed)
 Disallow: /api/
-Disallow: /api/*
+Crawl-delay: 2
+
+# =====================================================
+# SITEMAPS
+# =====================================================
+
+Sitemap: https://getpawsy.pet/sitemap.xml

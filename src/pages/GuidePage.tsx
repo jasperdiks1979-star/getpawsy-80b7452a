@@ -31,8 +31,8 @@ const GuidePage = () => {
     return <NotFound />;
   }
 
-  // Canonical with trailing slash
-  const guideUrl = `${BASE_URL}/guides/${guide.slug}/`;
+  // Canonical WITHOUT trailing slash (canonical standard)
+  const guideUrl = `${BASE_URL}/guides/${guide.slug}`;
 
   // Related guides from same category
   const relatedGuides = allGuides?.filter(
@@ -72,7 +72,7 @@ const GuidePage = () => {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: BASE_URL },
-      { '@type': 'ListItem', position: 2, name: 'Guides', item: `${BASE_URL}/guides/` },
+      { '@type': 'ListItem', position: 2, name: 'Guides', item: `${BASE_URL}/guides` },
       { '@type': 'ListItem', position: 3, name: guide.title, item: guideUrl },
     ],
   };
