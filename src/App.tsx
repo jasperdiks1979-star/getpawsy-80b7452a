@@ -288,6 +288,7 @@ const App = () => {
                         <Route path="/admin/crawler-analytics" element={<CrawlerAnalytics />} />
                         <Route path="/admin/user-agent-comparison" element={<UserAgentComparison />} />
                         <Route path="/admin/guides-dashboard" element={<GuidesDashboard />} />
+                        <Route path="/admin/guides-seo" element={<GuidesDashboard />} />
                         
                         {/* SEO Collection Pages */}
                         <Route path="/collections/:slug" element={<SeoCollection />} />
