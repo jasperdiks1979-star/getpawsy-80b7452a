@@ -1426,10 +1426,10 @@ const Admin = () => {
 
               {/* Guides SEO Dashboard Link */}
               <TouchTooltip content="Guides SEO Dashboard & Rankings">
-                <Link to="/dashboard/guides-seo" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors">
+                <button onClick={() => navigate('/dashboard/guides-seo')} className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors">
                   <LineChart className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">SEO</span>
-                </Link>
+                </button>
               </TouchTooltip>
               <TouchTooltip content="Review moderatie">
                 <TabsTrigger value="reviews" className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap">
