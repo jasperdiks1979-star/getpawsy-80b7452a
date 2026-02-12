@@ -254,7 +254,7 @@ const App = () => {
                         <Route path="/cart" element={<Cart />} />
                         <Route path="/checkout" element={<Checkout />} />
                         <Route path="/payment-success" element={<PaymentSuccess />} />
-                        <Route path="/admin" element={<Admin />} />
+                        <Route path="/dashboard" element={<Admin />} />
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/wishlist" element={<Wishlist />} />
                         <Route path="/profile" element={<Profile />} />
@@ -283,10 +283,17 @@ const App = () => {
                         <Route path="/appeal-response" element={<AppealResponse />} />
                         <Route path="/security" element={<Security />} />
                         <Route path="/google-review" element={<GoogleReview />} />
-                        <Route path="/admin/crawler-analytics" element={<CrawlerAnalytics />} />
-                         <Route path="/admin/user-agent-comparison" element={<UserAgentComparison />} />
-                         <Route path="/admin/guides-seo" element={<GuidesDashboard />} />
-                         <Route path="/admin/analytics" element={<AnalyticsHub />} />
+                        <Route path="/dashboard/crawler-analytics" element={<CrawlerAnalytics />} />
+                         <Route path="/dashboard/user-agent-comparison" element={<UserAgentComparison />} />
+                         <Route path="/dashboard/guides-seo" element={<GuidesDashboard />} />
+                         <Route path="/dashboard/analytics" element={<AnalyticsHub />} />
+                         
+                         {/* Legacy /admin redirects to /dashboard */}
+                         <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
+                         <Route path="/admin/guides-seo" element={<Navigate to="/dashboard/guides-seo" replace />} />
+                         <Route path="/admin/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
+                         <Route path="/admin/crawler-analytics" element={<Navigate to="/dashboard/crawler-analytics" replace />} />
+                         <Route path="/admin/user-agent-comparison" element={<Navigate to="/dashboard/user-agent-comparison" replace />} />
                         
                         {/* SEO Collection Pages */}
                         <Route path="/collections/:slug" element={<SeoCollection />} />

@@ -284,7 +284,7 @@ export const CrawlerVisitsWidget = () => {
           </div>
           <div className="flex items-center gap-2">
             <NotificationToggle mode={notificationMode} onToggle={toggleNotificationMode} vibrateSupported={haptic.isSupported} />
-            <Link to="/admin/crawler-analytics">
+            <Link to="/dashboard/crawler-analytics">
               <Button variant="outline" size="sm">
                 <BarChart3 className="h-4 w-4 mr-1" />
                 Analytics

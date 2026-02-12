@@ -605,7 +605,7 @@ export const Navbar = () => {
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem asChild>
-                      <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
+                      <Link to="/dashboard" className="flex items-center gap-2 cursor-pointer">
                         <Shield className="h-4 w-4" />
                         Admin Dashboard
                       </Link>
@@ -675,9 +675,9 @@ export const Navbar = () => {
                         {user && (
                           <SheetClose asChild>
                             <Link
-                              to="/admin"
+                              to="/dashboard"
                               className={`px-4 py-3 text-lg font-medium rounded-xl transition-colors flex items-center gap-3 ${
-                                isActive('/admin')
+                                isActive('/dashboard')
                                   ? 'text-primary bg-primary/10'
                                   : 'hover:bg-muted'
                               }`}
@@ -732,7 +732,7 @@ export const Navbar = () => {
                         </SheetClose>
                         {isAdmin && (
                           <SheetClose asChild>
-                            <Link to="/admin" className="block">
+                            <Link to="/dashboard" className="block">
                               <Button variant="outline" className="w-full justify-start gap-2 rounded-xl">
                                 <Shield className="h-4 w-4" />
                                 Admin Dashboard

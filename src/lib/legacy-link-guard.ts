@@ -17,10 +17,10 @@ export function checkAndBlockLegacyLink(url: string): string | null {
   for (const pattern of BLOCKED_PATTERNS) {
     if (pattern.test(url)) {
       console.warn(
-        `🚫 Blocked legacy admin link (deprecated). Use /admin/guides-seo instead.\n` +
+        `🚫 Blocked legacy admin link (deprecated). Use /dashboard/guides-seo instead.\n` +
         `Attempted: ${url}`
       );
-      return '/admin/guides-seo';
+      return '/dashboard/guides-seo';
     }
   }
   return null;
@@ -57,7 +57,7 @@ export function initLegacyFetchGuard() {
       return Promise.resolve(
         new Response(
           JSON.stringify({
-            error: 'Legacy admin links are blocked. Use /admin/guides-seo instead.',
+            error: 'Legacy admin links are blocked. Use /dashboard/guides-seo instead.',
           }),
           {
             status: 403,

@@ -218,7 +218,7 @@ const SecurityPage = () => {
               <RefreshCw className={`h-4 w-4 mr-2 ${triggerScan.isPending ? 'animate-spin' : ''}`} />
               {triggerScan.isPending ? 'Scannen...' : 'Scan uitvoeren'}
             </Button>
-            <Button variant="outline" onClick={() => navigate("/admin")}>
+            <Button variant="outline" onClick={() => navigate("/dashboard")}>
               ← Terug
             </Button>
           </div>
