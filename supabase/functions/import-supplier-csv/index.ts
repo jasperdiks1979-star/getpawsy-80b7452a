@@ -509,7 +509,7 @@ serve(async (req) => {
     }
 
     if (action === "import-discontinued") {
-      // Import discontinued products list (Shopify format from PetDropshipper)
+      // Import discontinued products list (CSV format from PetDropshipper)
       const { csvContent: discCsvContent } = await req.json();
       
       if (!discCsvContent) {
