@@ -48,6 +48,8 @@ import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
 import { CustomersAlsoBought } from '@/components/products/CustomersAlsoBought';
 import { RelatedGuides } from '@/components/guides/RelatedGuides';
+import { BuyingGuideBlock } from '@/components/seo/BuyingGuideBlock';
+import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
   DELIVERY_TIME_STANDARD,
@@ -1340,10 +1342,18 @@ const ProductDetail = () => {
           </div>
         </motion.section>
 
+        {/* Contextual Buying Guide — category-matched cornerstone link */}
+        {product?.category && (
+          <BuyingGuideBlock category={product.category} />
+        )}
+
         {/* Related Guides */}
         {relatedGuides.length > 0 && (
           <RelatedGuides guides={relatedGuides} />
         )}
+
+        {/* Popular Buying Guides — cornerstone authority block */}
+        <PopularGuidesBlock compact />
 
         {/* Frequently Bought Together */}
         {(relatedLoading || (relatedProducts && relatedProducts.length >= 2)) && (

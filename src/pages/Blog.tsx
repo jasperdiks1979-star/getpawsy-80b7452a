@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
 import { Helmet } from 'react-helmet-async';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -461,6 +462,8 @@ const Blog = () => {
             <p className="text-muted-foreground">No articles in this category yet.</p>
           </div>
         )}
+        {/* Popular Buying Guides — cornerstone authority block */}
+        <PopularGuidesBlock />
       </div>
     </Layout>
   );
