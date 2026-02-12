@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -130,6 +131,7 @@ export default function GuidesDashboard() {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
+      <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
