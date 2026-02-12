@@ -313,7 +313,7 @@ async function sendTrendingAlert(trendingProducts: TrendingProduct[]): Promise<v
                 </table>
                 
                 <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
-                  <a href="https://getpawsy.lovable.app/admin" style="display: inline-block; background: #f97316; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                  <a href="https://getpawsy.pet/admin" style="display: inline-block; background: #f97316; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                     View Full Analysis →
                   </a>
                 </div>

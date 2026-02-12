@@ -141,7 +141,7 @@ serve(async (req) => {
               <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">
                 Questions about your order? Contact us!
               </p>
-              <a href="https://getpawsy.lovable.app/contact" style="color: #f97316; text-decoration: none; font-weight: 500;">
+              <a href="https://getpawsy.pet/contact" style="color: #f97316; text-decoration: none; font-weight: 500;">
                 Get in touch
               </a>
               <p style="margin: 20px 0 0; color: #9ca3af; font-size: 12px;">

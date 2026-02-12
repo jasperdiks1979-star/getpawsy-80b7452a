@@ -129,7 +129,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </table>
                 
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="https://getpawsy.lovable.app/cart" 
+                  <a href="https://getpawsy.pet/cart" 
                      style="display: inline-block; background: linear-gradient(135deg, #FF6B9D 0%, #C44569 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 30px; font-weight: bold; font-size: 16px;">
                     Complete Your Order →
                   </a>

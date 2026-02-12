@@ -286,7 +286,7 @@ serve(async (req: Request) => {
           </div>
 
           <div style="margin-top: 24px; text-align: center;">
-            <a href="https://getpawsy.lovable.app/admin" 
+            <a href="https://getpawsy.pet/admin" 
                style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
               Bekijk Admin Dashboard
             </a>

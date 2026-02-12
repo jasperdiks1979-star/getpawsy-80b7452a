@@ -224,7 +224,7 @@ const generateOrderEmailHtml = (
         <p style="margin: 0 0 16px 0; color: #065f46; font-size: 14px;">
           ${t.trackOrderDescription}
         </p>
-        <a href="https://getpawsy.lovable.app/track-order?order=${encodeURIComponent(orderId)}&email=${encodeURIComponent(shippingAddress?.name ? '' : customerName)}&token=${encodeURIComponent(orderAccessToken)}" 
+        <a href="https://getpawsy.pet/track-order?order=${encodeURIComponent(orderId)}&email=${encodeURIComponent(shippingAddress?.name ? '' : customerName)}&token=${encodeURIComponent(orderAccessToken)}" 
            style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
           📦 ${t.trackOrder}
         </a>
@@ -244,7 +244,7 @@ const generateOrderEmailHtml = (
           © ${new Date().getFullYear()} GetPawsy. ${t.rights}
         </p>
         <p style="margin: 8px 0 0 0;">
-          <a href="https://getpawsy.lovable.app" style="color: #10b981; text-decoration: none; font-size: 14px;">
+          <a href="https://getpawsy.pet" style="color: #10b981; text-decoration: none; font-size: 14px;">
             ${t.visitShop}
           </a>
         </p>
