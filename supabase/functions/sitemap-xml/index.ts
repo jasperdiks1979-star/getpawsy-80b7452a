@@ -1,7 +1,10 @@
 // Sitemap generator — all URLs use https://getpawsy.pet only
 // No external domains, no image tags, no plain text
+// Fallback to lovable.app only if deployed there, but prefer custom domain
 
-const BASE_URL = "https://getpawsy.pet";
+const BASE_URL = typeof Deno.env.get("SITE_URL") === "string"
+  ? Deno.env.get("SITE_URL")!
+  : "https://getpawsy.pet";
 
 const HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",

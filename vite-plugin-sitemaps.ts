@@ -33,7 +33,9 @@ export default function sitemapPlugin(): Plugin {
     name: 'generate-sitemaps',
     apply: 'build',
     async closeBundle() {
-      const outDir = 'dist';
+      // Write to public/ directory so files are available at root
+      // Vite copies public/ contents to dist/ during build
+      const outDir = 'public';
       mkdirSync(outDir, { recursive: true });
 
       console.log('[sitemap-plugin] Generating sitemap XML files...');
