@@ -152,7 +152,7 @@ const Bestsellers = lazyWithRetry(() => import("./pages/Bestsellers"));
 const LiveMap = lazyWithRetry(() => import("./pages/LiveMap"));
 const Blog = lazyWithRetry(() => import("./pages/Blog"));
 const BlogPost = lazyWithRetry(() => import("./pages/BlogPost"));
-const Sitemap = lazyWithRetry(() => import("./pages/Sitemap"));
+
 const Unsubscribe = lazyWithRetry(() => import("./pages/Unsubscribe"));
 const NewsletterPreferences = lazyWithRetry(() => import("./pages/NewsletterPreferences"));
 const SlowFeederOffer = lazyWithRetry(() => import("./pages/SlowFeederOffer"));
@@ -269,14 +269,6 @@ const App = () => {
                         <Route path="/live-map" element={<LiveMap />} />
                         <Route path="/blog" element={<Blog />} />
                         <Route path="/blog/:slug" element={<BlogPost />} />
-                        <Route path="/sitemap.xml" element={<Sitemap />} />
-                        <Route path="/sitemap-static.xml" element={<Sitemap />} />
-                        <Route path="/sitemap-products.xml" element={<Sitemap />} />
-                        <Route path="/sitemap-categories.xml" element={<Sitemap />} />
-                        <Route path="/sitemap-bestsellers.xml" element={<Sitemap />} />
-                        <Route path="/sitemap-collections.xml" element={<Sitemap />} />
-                        <Route path="/sitemap-blog.xml" element={<Sitemap />} />
-                        <Route path="/sitemap-guides.xml" element={<Sitemap />} />
                         <Route path="/unsubscribe" element={<Unsubscribe />} />
                         <Route path="/newsletter-preferences" element={<NewsletterPreferences />} />
                         <Route path="/slow-feeder-offer" element={<SlowFeederOffer />} />
