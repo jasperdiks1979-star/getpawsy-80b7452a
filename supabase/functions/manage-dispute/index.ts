@@ -238,12 +238,12 @@ function generateStatusUpdateEmail(disputeId: string, newStatus: string, message
           
           <p style="color: #666; line-height: 1.6;">
             If you have any questions, simply reply to this email or visit our 
-            <a href="https://getpawsy.lovable.app/my-claims" style="color: #6B4E3D; font-weight: bold;">claims page</a> 
+            <a href="https://getpawsy.pet/my-claims" style="color: #6B4E3D; font-weight: bold;">claims page</a> 
             to view your claim details.
           </p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://getpawsy.lovable.app/my-claims" 
+            <a href="https://getpawsy.pet/my-claims" 
                style="display: inline-block; background: #6B4E3D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;">
               View My Claims
             </a>
@@ -331,7 +331,7 @@ function generateResolutionEmail(
           </p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://getpawsy.lovable.app" 
+            <a href="https://getpawsy.pet" 
                style="display: inline-block; background: #6B4E3D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;">
               Continue Shopping
             </a>

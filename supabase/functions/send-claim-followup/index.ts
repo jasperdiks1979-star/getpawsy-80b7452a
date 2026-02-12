@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
               <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
                 <tr>
                   <td style="border-radius: 8px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);">
-                    <a href="https://getpawsy.lovable.app/my-claims" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600;">
+                    <a href="https://getpawsy.pet/my-claims" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600;">
                       View My Claim
                     </a>
                   </td>

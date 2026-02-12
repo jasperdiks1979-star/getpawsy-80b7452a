@@ -158,7 +158,7 @@ serve(async (req: Request): Promise<Response> => {
               </div>
               
               <!-- CTA Button -->
-              <a href="https://getpawsy.lovable.app/admin" style="display: block; background: linear-gradient(135deg, #f97316, #ea580c); color: white; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px; text-align: center;">
+              <a href="https://getpawsy.pet/admin" style="display: block; background: linear-gradient(135deg, #f97316, #ea580c); color: white; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px; text-align: center;">
                 Bekijk Voorraad in Admin →
               </a>
             </div>
