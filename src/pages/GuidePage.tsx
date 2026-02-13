@@ -10,6 +10,7 @@ import { ComparisonTable } from '@/components/guides/ComparisonTable';
 import { StickyCTA } from '@/components/guides/StickyCTA';
 import { AUTHOR, getAuthorSchema, getPublisherSchema } from '@/lib/author-entity';
 import { getClusterRelatedGuides, injectGuideLinks } from '@/lib/guide-link-injector';
+import { getSeoTitle } from '@/lib/seo-title-ab';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -52,6 +53,9 @@ const GuidePage = () => {
     relatedGuides.push(...sameCat);
   }
 
+  // Active SEO title from A/B test or fallback
+  const activeSeoTitle = getSeoTitle(guide.slug, guide.seoTitle, guide.title);
+
   // Article schema with Person author entity
   const articleSchema = {
     '@context': 'https://schema.org',
@@ -89,6 +93,22 @@ const GuidePage = () => {
       { '@type': 'ListItem', position: 3, name: guide.title, item: guideUrl },
     ],
   };
+
+  // ItemList schema for ranked game lists (difficultyOverview)
+  const itemListSchema = guide.difficultyOverview && guide.difficultyOverview.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: guide.title,
+    description: guide.seoDescription || guide.excerpt,
+    numberOfItems: guide.difficultyOverview.length,
+    itemListOrder: 'https://schema.org/ItemListOrderDescending',
+    itemListElement: guide.difficultyOverview.map((item, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      name: item.game,
+      description: `${item.energy} energy, ${item.difficulty} difficulty. Best for: ${item.bestFor}. ${item.type === 'Both' ? 'Indoor & Outdoor' : item.type}.`,
+    })),
+  } : null;
 
   // Product schema for comparison products
   const productSchemas = guide.comparisonProducts?.map((product) => ({
@@ -162,11 +182,11 @@ const GuidePage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>{guide.seoTitle || `${guide.title} | GetPawsy`}</title>
+        <title>{activeSeoTitle || `${guide.title} | GetPawsy`}</title>
         <meta name="description" content={guide.seoDescription || guide.excerpt} />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <link rel="canonical" href={guideUrl} />
-        <meta property="og:title" content={guide.seoTitle || guide.title} />
+        <meta property="og:title" content={activeSeoTitle || guide.title} />
         <meta property="og:description" content={guide.seoDescription || guide.excerpt} />
         <meta property="og:url" content={guideUrl} />
         <meta property="og:type" content="article" />
@@ -174,7 +194,7 @@ const GuidePage = () => {
         <meta property="article:modified_time" content={guide.updatedAt} />
         <meta property="article:section" content={guide.category} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={guide.title} />
+        <meta name="twitter:title" content={activeSeoTitle || guide.title} />
         <meta name="twitter:description" content={guide.excerpt} />
         {guide.featuredImage && <meta property="og:image" content={`${BASE_URL}${guide.featuredImage}`} />}
         {guide.featuredImage && <meta name="twitter:image" content={`${BASE_URL}${guide.featuredImage}`} />}
@@ -209,6 +229,9 @@ const GuidePage = () => {
               ...(step.image && { image: step.image }),
             })),
           })}</script>
+        )}
+        {itemListSchema && (
+          <script type="application/ld+json">{JSON.stringify(itemListSchema)}</script>
         )}
       </Helmet>
 
@@ -283,6 +306,58 @@ const GuidePage = () => {
           <QuickRecommendation data={guide.quickRecommendation} />
         )}
 
+        {/* Above-the-Fold Difficulty Overview Table */}
+        {guide.difficultyOverview && guide.difficultyOverview.length > 0 && (
+          <div className="mb-8 border border-border rounded-xl overflow-hidden" id="comparison">
+            <div className="bg-muted/50 px-4 py-3 border-b border-border">
+              <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                📊 Quick Comparison — All {guide.difficultyOverview.length} Games
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/30">
+                    <th className="text-left px-3 py-2.5 font-semibold text-foreground text-xs">#</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-foreground text-xs">Game</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-foreground text-xs">Energy</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-foreground text-xs">Difficulty</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-foreground text-xs hidden sm:table-cell">Best For</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-foreground text-xs hidden md:table-cell">Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {guide.difficultyOverview.map((item, i) => (
+                    <tr key={i} className="border-t border-border hover:bg-muted/20 transition-colors">
+                      <td className="px-3 py-2 text-muted-foreground font-medium">{i + 1}</td>
+                      <td className="px-3 py-2 font-medium text-foreground">{item.game}</td>
+                      <td className="px-3 py-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          item.energy === 'High' ? 'bg-destructive/10 text-destructive' :
+                          item.energy === 'Medium' ? 'bg-accent text-accent-foreground' :
+                          'bg-secondary text-secondary-foreground'
+                        }`}>
+                          {item.energy}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          item.difficulty === 'Advanced' ? 'bg-destructive/10 text-destructive' :
+                          item.difficulty === 'Medium' ? 'bg-accent text-accent-foreground' :
+                          'bg-primary/10 text-primary'
+                        }`}>
+                          {item.difficulty}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground text-xs hidden sm:table-cell">{item.bestFor}</td>
+                      <td className="px-3 py-2 text-muted-foreground text-xs hidden md:table-cell">{item.type}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Jump Navigation Bar (sticky on scroll) */}
         {guide.jumpNav && guide.jumpNav.length > 0 && (

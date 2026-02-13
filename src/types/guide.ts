@@ -76,6 +76,14 @@ export interface GuideHowTo {
   steps: GuideHowToStep[];
 }
 
+export interface GuideDifficultyItem {
+  game: string;
+  energy: 'High' | 'Medium' | 'Low';
+  difficulty: 'Easy' | 'Medium' | 'Advanced';
+  bestFor: string;
+  type: 'Outdoor' | 'Both' | 'Indoor';
+}
+
 export interface GuideData extends GuideMeta {
   sections: GuideSection[];
   faq: GuideFAQ[];
@@ -94,4 +102,5 @@ export interface GuideData extends GuideMeta {
   howTo?: GuideHowTo;
   suggestedImageAlts?: string[];
   featuredSnippet?: string;
+  difficultyOverview?: GuideDifficultyItem[];
 }
