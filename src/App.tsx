@@ -179,6 +179,7 @@ const InternalLinkLog = lazyWithRetry(() => import("./pages/admin/InternalLinkLo
 const SnippetMonitor = lazyWithRetry(() => import("./pages/admin/SnippetMonitor"));
 const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDominance"));
 const DogBedsClusterDashboard = lazyWithRetry(() => import("./pages/admin/DogBedsClusterDashboard"));
+const CatLitterClusterDashboard = lazyWithRetry(() => import("./pages/admin/CatLitterClusterDashboard"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
@@ -306,6 +307,7 @@ const App = () => {
                            <Route path="/admin/snippet-monitor" element={<SnippetMonitor />} />
                             <Route path="/admin/cluster-dominance" element={<ClusterDominance />} />
                             <Route path="/admin/dog-beds-cluster" element={<DogBedsClusterDashboard />} />
+                            <Route path="/admin/cat-litter-cluster" element={<CatLitterClusterDashboard />} />
                           <Route path="/admin/guides-seo" element={<Navigate to="/dashboard/guides-seo" replace />} />
                          <Route path="/admin/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
                          <Route path="/admin/crawler-analytics" element={<Navigate to="/dashboard/crawler-analytics" replace />} />
