@@ -172,6 +172,7 @@ const UserAgentComparison = lazyWithRetry(() => import("./pages/UserAgentCompari
 const GuidesDashboard = lazyWithRetry(() => import("./pages/admin/GuidesDashboard"));
 const AnalyticsHub = lazyWithRetry(() => import("./pages/admin/AnalyticsHub"));
 const ClusterMapPage = lazyWithRetry(() => import("./pages/dashboard/ClusterMapPage"));
+const SeoMonitorDashboard = lazyWithRetry(() => import("./pages/dashboard/SeoMonitorDashboard"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
@@ -289,6 +290,7 @@ const App = () => {
                          <Route path="/dashboard/guides-seo" element={<GuidesDashboard />} />
                          <Route path="/dashboard/analytics" element={<AnalyticsHub />} />
                          <Route path="/dashboard/cluster-map" element={<ClusterMapPage />} />
+                         <Route path="/dashboard/seo-monitor" element={<SeoMonitorDashboard />} />
                          
                          {/* Legacy /admin redirects to /dashboard */}
                          <Route path="/admin" element={<Navigate to="/dashboard" replace />} />

@@ -3377,6 +3377,48 @@ export type Database = {
         }
         Relationships: []
       }
+      seo_optimization_log: {
+        Row: {
+          action_details: Json
+          action_type: string
+          applied_at: string | null
+          applied_by: string | null
+          created_at: string
+          id: string
+          metrics_snapshot: Json
+          slug: string
+          status: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          action_details?: Json
+          action_type: string
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          metrics_snapshot?: Json
+          slug: string
+          status?: string
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          action_details?: Json
+          action_type?: string
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          metrics_snapshot?: Json
+          slug?: string
+          status?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           created_at: string
