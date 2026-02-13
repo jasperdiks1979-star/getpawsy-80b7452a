@@ -95,7 +95,7 @@ serve(async (req) => {
       // Validate URL
       try {
         const parsedUrl = new URL(url);
-        const allowedDomains = ['getpawsy.pet', 'www.getpawsy.pet', 'getpawsy.lovable.app'];
+        const allowedDomains = ['getpawsy.pet', 'www.getpawsy.pet'];
         if (!allowedDomains.some(domain => parsedUrl.hostname.includes(domain))) {
           console.log(`Skipping non-GetPawsy URL: ${url}`);
           continue;
