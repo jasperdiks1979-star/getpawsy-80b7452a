@@ -8,6 +8,7 @@ import NotFound from './NotFound';
 import { QuickRecommendation } from '@/components/guides/QuickRecommendation';
 import { ComparisonTable } from '@/components/guides/ComparisonTable';
 import { StickyCTA } from '@/components/guides/StickyCTA';
+import { ConversionBadges } from '@/components/guides/ConversionBadges';
 import { AUTHOR, getAuthorSchema, getPublisherSchema } from '@/lib/author-entity';
 import { getClusterRelatedGuides, injectGuideLinks } from '@/lib/guide-link-injector';
 import { getSeoTitle } from '@/lib/seo-title-ab';
@@ -304,6 +305,18 @@ const GuidePage = () => {
         {/* Quick Recommendation Box */}
         {guide.quickRecommendation && (
           <QuickRecommendation data={guide.quickRecommendation} />
+        )}
+
+        {/* Conversion Badges — Top Picks with shipping/trust signals */}
+        {guide.comparisonProducts && guide.comparisonProducts.length >= 3 && (
+          <ConversionBadges
+            picks={guide.comparisonProducts.slice(0, 3).map(p => ({
+              label: p.badge || 'Top Pick',
+              name: p.name,
+              price: p.price,
+              link: p.link,
+            }))}
+          />
         )}
 
         {/* Above-the-Fold Difficulty Overview Table */}

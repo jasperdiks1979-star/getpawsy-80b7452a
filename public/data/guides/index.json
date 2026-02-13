@@ -574,5 +574,29 @@
     "featuredImage": "/images/guides/best-cat-trees-2026.jpg",
     "readingTime": 16,
     "relatedCategories": ["cat-trees-and-condos", "cat-furniture"]
+  },
+  {
+    "slug": "best-cat-condo-small-apartments",
+    "title": "Best Cat Condos for Small Apartments (2026) — Compact Picks Tested & Ranked",
+    "excerpt": "Compact cat condos tested in real apartments. Space-saving picks with honest pros & cons for small living spaces. Updated for 2026.",
+    "category": "Cat Furniture",
+    "keywords": ["cat condo small apartment", "compact cat condo", "apartment cat furniture", "space saving cat condo"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/cat-tree-apartment.jpg",
+    "readingTime": 8,
+    "relatedCategories": ["cat-trees-and-condos", "cat-furniture"]
+  },
+  {
+    "slug": "modern-cat-trees-home-design",
+    "title": "Modern Cat Trees That Match Your Home Décor (2026) — Stylish Picks Tested & Ranked",
+    "excerpt": "Cat trees that look like furniture, not eyesores. Modern, minimalist picks tested for style and function. Updated for 2026.",
+    "category": "Cat Furniture",
+    "keywords": ["modern cat tree", "stylish cat tree", "designer cat furniture", "aesthetic cat tree"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/cat-tree-apartment.jpg",
+    "readingTime": 9,
+    "relatedCategories": ["cat-trees-and-condos", "cat-furniture"]
   }
 ]
