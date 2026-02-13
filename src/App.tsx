@@ -338,6 +338,9 @@ const App = () => {
                         <Route path="/terms-of-service" element={<Navigate to="/terms" replace />} />
                         <Route path="/cookie-policy" element={<Navigate to="/cookies" replace />} />
                         
+                        {/* Clean category URL redirects */}
+                        <Route path="/cat-trees-condos" element={<Navigate to="/products?category=cat-trees-and-condos" replace />} />
+                        
                         {/* Fix duplicate page issue: redirect /products/:slug to /product/:slug */}
                         <Route path="/products/:slug" element={<ProductsSlugRedirect />} />
                         

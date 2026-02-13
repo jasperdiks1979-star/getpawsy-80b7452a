@@ -23,6 +23,7 @@ import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useProductRatings } from '@/hooks/useProductRatings';
 import { CategorySchema } from '@/components/seo/CategorySchema';
+import { CategorySeoContent } from '@/components/seo/CategorySeoContent';
 import { generateCategoryMetaDescription, getKeywordsForCategory } from '@/lib/seo-keywords';
 import { trackViewItemList } from '@/lib/analytics';
 import { dedupeProducts } from '@/lib/dedupe-products';
@@ -582,7 +583,7 @@ const Products = () => {
   // SEO-optimized H1 titles for target keyword categories
   const seoH1Overrides: Record<string, string> = {
     'guinea-pig-cages': 'Guinea Pig Cages & Playpens',
-    'cat-trees-and-condos': 'Cat Trees, Condos & Towers',
+    'cat-trees-and-condos': 'Cat Trees & Cat Condos for Sale',
     'dog-toys': 'Dog Toys & Enrichment Games',
     'cat-carriers': 'Cat Carriers & Travel Crates',
     'dog-carriers': 'Dog Carriers & Portable Travel Crates',
@@ -688,6 +689,8 @@ const Products = () => {
               {categoryDescription}
             </p>
           )}
+          {/* Enhanced SEO content block for key categories */}
+          {categoryParam && <CategorySeoContent categorySlug={categoryParam} />}
           <p className="text-sm text-muted-foreground">
             Showing {displayCount > totalCount ? totalCount : displayCount} of {totalCount} product{totalCount !== 1 ? 's' : ''}
           </p>
