@@ -9,6 +9,11 @@ import { BookOpen, ArrowRight } from 'lucide-react';
 
 const CORNERSTONE_GUIDES = [
   {
+    slug: 'outdoor-dog-games-2026',
+    anchor: 'Outdoor Dog Games (2026) – 15 Vet-Approved Ideas',
+    description: '15 outdoor games ranked by energy burn. Vet-informed picks for all breeds & ages.',
+  },
+  {
     slug: 'best-cat-litter-box-2026',
     anchor: 'Best Cat Litter Box 2026 – Complete Buying Guide',
     description: 'Tested & reviewed picks for odor control, large cats, and multi-cat homes.',
