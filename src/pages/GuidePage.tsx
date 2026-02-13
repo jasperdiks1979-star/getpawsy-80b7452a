@@ -177,6 +177,27 @@ const GuidePage = () => {
         {productSchemas.length > 0 && productSchemas.map((schema, i) => (
           <script key={`product-${i}`} type="application/ld+json">{JSON.stringify(schema)}</script>
         ))}
+        {guide.howTo && (
+          <script type="application/ld+json">{JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'HowTo',
+            name: guide.howTo.name,
+            description: guide.howTo.description,
+            ...(guide.howTo.totalTime && { totalTime: guide.howTo.totalTime }),
+            ...(guide.howTo.estimatedCost && {
+              estimatedCost: { '@type': 'MonetaryAmount', currency: guide.howTo.estimatedCost.currency, value: guide.howTo.estimatedCost.value },
+            }),
+            ...(guide.howTo.supply && { supply: guide.howTo.supply.map(s => ({ '@type': 'HowToSupply', name: s })) }),
+            ...(guide.howTo.tool && { tool: guide.howTo.tool.map(t => ({ '@type': 'HowToTool', name: t })) }),
+            step: guide.howTo.steps.map((step, idx) => ({
+              '@type': 'HowToStep',
+              position: idx + 1,
+              name: step.name,
+              text: step.text,
+              ...(step.image && { image: step.image }),
+            })),
+          })}</script>
+        )}
       </Helmet>
 
       <article className="container mx-auto px-4 py-12 max-w-3xl">
