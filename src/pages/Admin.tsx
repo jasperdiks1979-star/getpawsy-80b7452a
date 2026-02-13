@@ -1425,7 +1425,14 @@ const Admin = () => {
               </TouchTooltip>
 
 
-               {/* SEO Decision Engine */}
+               {/* Internal Link Log */}
+               <TouchTooltip content="Internal Link Injection Log & Health">
+                 <button onClick={() => navigate('/admin/internal-link-log')} className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors">
+                   <Link className="w-3.5 h-3.5 shrink-0" />
+                   <span className="hidden xs:inline">Links</span>
+                 </button>
+               </TouchTooltip>
+
                <TouchTooltip content="SEO Decision Engine - Monitoring & Alerts">
                  <button onClick={() => navigate('/admin/seo-dashboard')} className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors">
                    <Zap className="w-3.5 h-3.5 shrink-0" />

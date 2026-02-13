@@ -1217,6 +1217,57 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_link_injections: {
+        Row: {
+          anchor_text: string
+          anchor_type: string
+          approved_at: string | null
+          approved_by: string | null
+          cluster: string | null
+          created_at: string
+          id: string
+          injected_at: string | null
+          injection_type: string
+          reverted_at: string | null
+          source_slug: string
+          status: string
+          target_slug: string
+          updated_at: string
+        }
+        Insert: {
+          anchor_text: string
+          anchor_type: string
+          approved_at?: string | null
+          approved_by?: string | null
+          cluster?: string | null
+          created_at?: string
+          id?: string
+          injected_at?: string | null
+          injection_type: string
+          reverted_at?: string | null
+          source_slug: string
+          status?: string
+          target_slug: string
+          updated_at?: string
+        }
+        Update: {
+          anchor_text?: string
+          anchor_type?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          cluster?: string | null
+          created_at?: string
+          id?: string
+          injected_at?: string | null
+          injection_type?: string
+          reverted_at?: string | null
+          source_slug?: string
+          status?: string
+          target_slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       keyword_rankings: {
         Row: {
           clicks: number | null
