@@ -633,6 +633,47 @@ export type Database = {
         }
         Relationships: []
       }
+      credential_health_checks: {
+        Row: {
+          check_type: string
+          created_at: string
+          details: Json | null
+          error_message: string | null
+          id: string
+          response_time_ms: number | null
+          service_account_key_id: string | null
+          status: string
+        }
+        Insert: {
+          check_type: string
+          created_at?: string
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          response_time_ms?: number | null
+          service_account_key_id?: string | null
+          status: string
+        }
+        Update: {
+          check_type?: string
+          created_at?: string
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          response_time_ms?: number | null
+          service_account_key_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credential_health_checks_service_account_key_id_fkey"
+            columns: ["service_account_key_id"]
+            isOneToOne: false
+            referencedRelation: "service_account_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cron_job_logs: {
         Row: {
           completed_at: string | null
@@ -3367,6 +3408,50 @@ export type Database = {
         }
         Relationships: []
       }
+      security_anomaly_events: {
+        Row: {
+          created_at: string
+          description: string
+          details: Json | null
+          event_type: string
+          id: string
+          resolved: boolean
+          resolved_at: string | null
+          service_account_key_id: string | null
+          severity: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          service_account_key_id?: string | null
+          severity?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          service_account_key_id?: string | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_anomaly_events_service_account_key_id_fkey"
+            columns: ["service_account_key_id"]
+            isOneToOne: false
+            referencedRelation: "service_account_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seo_collections: {
         Row: {
           created_at: string
@@ -3518,15 +3603,27 @@ export type Database = {
         Row: {
           account_email: string
           account_name: string
+          anomaly_flags: Json | null
+          api_usage_baseline: Json | null
+          billing_alert_active: boolean | null
+          budget_alert_configured: boolean | null
+          consecutive_failures: number
           created_at: string
+          essential_contacts_configured: boolean | null
+          health_check_status: string | null
           iam_roles: string[] | null
           id: string
           is_active: boolean
           key_created_at: string
           key_id: string | null
+          last_anomaly_check_at: string | null
+          last_health_check_at: string | null
           last_rotated_at: string | null
           last_used_at: string | null
           notes: string | null
+          recovery_mode: boolean
+          recovery_started_at: string | null
+          risk_score: number
           rotation_status: string
           service_description: string | null
           updated_at: string
@@ -3534,15 +3631,27 @@ export type Database = {
         Insert: {
           account_email: string
           account_name: string
+          anomaly_flags?: Json | null
+          api_usage_baseline?: Json | null
+          billing_alert_active?: boolean | null
+          budget_alert_configured?: boolean | null
+          consecutive_failures?: number
           created_at?: string
+          essential_contacts_configured?: boolean | null
+          health_check_status?: string | null
           iam_roles?: string[] | null
           id?: string
           is_active?: boolean
           key_created_at?: string
           key_id?: string | null
+          last_anomaly_check_at?: string | null
+          last_health_check_at?: string | null
           last_rotated_at?: string | null
           last_used_at?: string | null
           notes?: string | null
+          recovery_mode?: boolean
+          recovery_started_at?: string | null
+          risk_score?: number
           rotation_status?: string
           service_description?: string | null
           updated_at?: string
@@ -3550,15 +3659,27 @@ export type Database = {
         Update: {
           account_email?: string
           account_name?: string
+          anomaly_flags?: Json | null
+          api_usage_baseline?: Json | null
+          billing_alert_active?: boolean | null
+          budget_alert_configured?: boolean | null
+          consecutive_failures?: number
           created_at?: string
+          essential_contacts_configured?: boolean | null
+          health_check_status?: string | null
           iam_roles?: string[] | null
           id?: string
           is_active?: boolean
           key_created_at?: string
           key_id?: string | null
+          last_anomaly_check_at?: string | null
+          last_health_check_at?: string | null
           last_rotated_at?: string | null
           last_used_at?: string | null
           notes?: string | null
+          recovery_mode?: boolean
+          recovery_started_at?: string | null
+          risk_score?: number
           rotation_status?: string
           service_description?: string | null
           updated_at?: string
