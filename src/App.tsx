@@ -175,6 +175,7 @@ const ClusterMapPage = lazyWithRetry(() => import("./pages/dashboard/ClusterMapP
 const SeoMonitorDashboard = lazyWithRetry(() => import("./pages/dashboard/SeoMonitorDashboard"));
 const SeoMonitoringDashboard = lazyWithRetry(() => import("./pages/dashboard/SeoMonitoringDashboard"));
 const AdminSeoDashboard = lazyWithRetry(() => import("./pages/admin/AdminSeoDashboard"));
+const InternalLinkLog = lazyWithRetry(() => import("./pages/admin/InternalLinkLog"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
@@ -297,8 +298,9 @@ const App = () => {
                          
                          {/* Legacy /admin redirects to /dashboard */}
                          <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
-                         <Route path="/admin/seo-dashboard" element={<AdminSeoDashboard />} />
-                         <Route path="/admin/guides-seo" element={<Navigate to="/dashboard/guides-seo" replace />} />
+                          <Route path="/admin/seo-dashboard" element={<AdminSeoDashboard />} />
+                          <Route path="/admin/internal-link-log" element={<InternalLinkLog />} />
+                          <Route path="/admin/guides-seo" element={<Navigate to="/dashboard/guides-seo" replace />} />
                          <Route path="/admin/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
                          <Route path="/admin/crawler-analytics" element={<Navigate to="/dashboard/crawler-analytics" replace />} />
                          <Route path="/admin/user-agent-comparison" element={<Navigate to="/dashboard/user-agent-comparison" replace />} />
