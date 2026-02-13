@@ -9,9 +9,9 @@ import { BookOpen, ArrowRight } from 'lucide-react';
 
 const CORNERSTONE_GUIDES = [
   {
-    slug: 'outdoor-dog-games-2026',
-    anchor: 'Outdoor Dog Games (2026) – 15 Vet-Approved Ideas',
-    description: '15 outdoor games ranked by energy burn. Vet-informed picks for all breeds & ages.',
+    slug: 'best-cat-trees-2026',
+    anchor: 'Best Cat Trees (2026) — Complete Buyer\'s Guide',
+    description: '9 cat trees tested for stability, enrichment & value. Large cats, budget picks & more.',
   },
   {
     slug: 'best-cat-litter-box-2026',
@@ -19,9 +19,9 @@ const CORNERSTONE_GUIDES = [
     description: 'Tested & reviewed picks for odor control, large cats, and multi-cat homes.',
   },
   {
-    slug: 'best-cat-litter-box-furniture-enclosures-2026',
-    anchor: 'Best Litter Box Furniture & Enclosures 2026',
-    description: 'Hidden litter box solutions tested for odor control and home décor.',
+    slug: 'outdoor-dog-games-2026',
+    anchor: 'Outdoor Dog Games (2026) – 15 Vet-Approved Ideas',
+    description: '15 outdoor games ranked by energy burn. Vet-informed picks for all breeds & ages.',
   },
   {
     slug: 'best-cat-trees-small-apartments',

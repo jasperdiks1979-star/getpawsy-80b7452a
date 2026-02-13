@@ -935,7 +935,7 @@ const Index = () => {
               {[
                 { slug: 'best-cat-litter-box-2026', badge: 'Cornerstone Guide', desc: '12 tested picks for odor control, large cats & multi-cat homes — with pros & cons.' },
                 { slug: 'best-dog-bed-2026', badge: 'Cornerstone Guide', desc: 'Orthopedic, calming & durable beds tested with real dogs of all sizes.' },
-                { slug: 'best-cat-litter-box-furniture-enclosures-2026', badge: 'Cornerstone Guide', desc: '8 litter box enclosures tested for odor control, cat comfort, and home décor.' },
+                { slug: 'best-cat-trees-2026', badge: 'Cornerstone Guide', desc: '9 cat trees tested for stability, enrichment & value. Large cats, budget picks & condos vs trees.' },
               ].map((guide) => (
                 <Link
                   key={guide.slug}
@@ -954,6 +954,7 @@ const Index = () => {
                 { slug: 'how-many-litter-boxes-per-cat', badge: 'Expert Advice', desc: 'The vet-backed n+1 rule explained with real placement tips.' },
                 { slug: 'best-orthopedic-dog-bed', badge: 'Buying Guide', desc: 'Joint-support beds tested for senior dogs and large breeds.' },
                 { slug: 'best-cat-trees-small-apartments', badge: 'Space-Saving', desc: '7 compact cat trees tested in real apartments under 600 sq ft.' },
+                { slug: 'best-cat-litter-box-furniture-enclosures-2026', badge: 'Buying Guide', desc: '8 litter box enclosures tested for odor control and home décor.' },
               ].map((guide) => (
                 <Link
                   key={guide.slug}

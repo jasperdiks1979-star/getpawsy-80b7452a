@@ -29,21 +29,21 @@ const CATEGORY_GUIDE_MAP: Record<string, GuideMapping> = {
     slug: 'best-cat-litter-box-furniture-enclosures-2026',
     description: 'Hidden litter box enclosures tested for odor control and décor.',
   },
-  // Cat Furniture cluster
+  // Cat Furniture cluster — cornerstone: best-cat-trees-2026
   'cat-trees-and-condos': {
-    anchor: 'Best Cat Trees for Small Apartments 2026',
-    slug: 'best-cat-trees-small-apartments',
-    description: 'Compact cat trees tested in real homes for indoor cats.',
+    anchor: 'Best Cat Trees (2026) — Complete Buyer\'s Guide',
+    slug: 'best-cat-trees-2026',
+    description: '9 cat trees tested for stability, enrichment & value. Large cats, budget picks & more.',
   },
   'cat-furniture': {
-    anchor: 'Cat Condo vs Cat Tower – What\'s the Difference?',
-    slug: 'cat-condo-vs-cat-tower',
-    description: 'Learn the key differences to choose the right cat furniture.',
+    anchor: 'Best Cat Trees (2026) — Complete Buyer\'s Guide',
+    slug: 'best-cat-trees-2026',
+    description: '9 cat trees tested for stability, enrichment & value. Expert-reviewed picks.',
   },
   'cat furniture': {
-    anchor: 'Best Cat Trees for Small Apartments 2026',
-    slug: 'best-cat-trees-small-apartments',
-    description: 'Compact cat trees tested in real homes for indoor cats.',
+    anchor: 'Best Cat Trees (2026) — Complete Buyer\'s Guide',
+    slug: 'best-cat-trees-2026',
+    description: '9 cat trees tested for stability, enrichment & value. Expert-reviewed picks.',
   },
   // Small Pets
   'small-pet-habitats': {
