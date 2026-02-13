@@ -15,7 +15,7 @@ import {
   generateClusterDominance, runHealthChecks, getRecoveryStatus, getSafetyMetrics, getActionLog,
   type AICoreAnalysis, type AutonomousAction, type VelocityTarget,
   type ClusterDominanceData, type HealthCheck, type RecoveryStatus,
-  type SafetyMetrics, type ActionLogEntry,
+  type SafetyMetrics, type ActionLogEntry, type EmergencyRecoveryConfig,
 } from '@/lib/seo-autonomous-engine';
 
 // ============= SCORE RING =============
@@ -98,13 +98,18 @@ export function AutonomousSeoSystem() {
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
             <Brain className="h-7 w-7 text-primary" /> Autonomous SEO AI
           </h1>
-          <p className="text-sm text-muted-foreground">Enterprise Semi-Autonomous Growth Engine — Safe Mode Active</p>
+          <p className="text-sm text-muted-foreground">
+            {core.emergencyRecovery.active 
+              ? '🚨 Emergency Recovery Mode — Stabilization Priority' 
+              : 'Enterprise Semi-Autonomous Growth Engine — Safe Mode Active'}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Badge className={core.status === 'optimal' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : core.status === 'healthy' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'}>
             {core.status.toUpperCase()} — Score {core.unifiedScore}
           </Badge>
-          {recovery.active && <Badge variant="destructive">RECOVERY MODE</Badge>}
+          {core.emergencyRecovery.active && <Badge variant="destructive" className="animate-pulse">🚨 EMERGENCY</Badge>}
+          {recovery.active && !core.emergencyRecovery.active && <Badge variant="destructive">RECOVERY MODE</Badge>}
           <Badge variant="outline" className="text-[10px]">
             {safety.actionsThisWeek}/{safety.maxActionsPerWeek} actions/wk
           </Badge>
@@ -112,8 +117,32 @@ export function AutonomousSeoSystem() {
         </div>
       </div>
 
-      {/* Recovery Alert */}
-      {recovery.active && (
+      {/* Emergency Recovery Alert */}
+      {core.emergencyRecovery.active && (
+        <Alert variant="destructive" className="border-2 border-destructive">
+          <HeartPulse className="h-4 w-4" />
+          <AlertTitle className="text-base font-bold">🚨 Emergency Recovery Mode Active</AlertTitle>
+          <AlertDescription className="text-xs space-y-2">
+            <p>
+              <strong>Triggers:</strong> {core.emergencyRecovery.triggers.map(t => t.replace(/_/g, ' ')).join(' • ')}
+            </p>
+            <p>
+              <strong>Budget:</strong> {core.emergencyRecovery.weeklyActionBudget} actions/week • 
+              <strong> Priority:</strong> Stabilization only • 
+              <strong> Monitoring:</strong> {core.emergencyRecovery.monitoringWindowDays}-day window
+            </p>
+            <div className="flex flex-wrap gap-1 mt-1">
+              <span className="text-[10px] font-medium">Frozen:</span>
+              {core.emergencyRecovery.frozenActions.slice(0, 5).map(a => (
+                <Badge key={a} variant="outline" className="text-[9px] border-destructive/30">{a.replace(/_/g, ' ')}</Badge>
+              ))}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Recovery Alert (non-emergency) */}
+      {recovery.active && !core.emergencyRecovery.active && (
         <Alert variant="destructive">
           <HeartPulse className="h-4 w-4" />
           <AlertTitle>Recovery Mode Active</AlertTitle>
@@ -334,8 +363,91 @@ export function AutonomousSeoSystem() {
           ))}
         </TabsContent>
 
-        {/* ========== SELF-HEALING ========== */}
         <TabsContent value="healing" className="space-y-4 mt-4">
+          {/* Diagnostic Sweep Results */}
+          {core.emergencyRecovery.active && core.emergencyRecovery.diagnosticSweep && (
+            <Card className="border-destructive/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2 text-destructive">
+                  <Activity className="h-4 w-4" /> Diagnostic Sweep — Top 5 Affected URLs
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Index coverage: {core.emergencyRecovery.diagnosticSweep.indexCoverageChange14d}% (14d) • 
+                  Canonical mismatches: {core.emergencyRecovery.diagnosticSweep.canonicalMismatches} • 
+                  Crawl waste: {core.emergencyRecovery.diagnosticSweep.crawlWastePct}%
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead><tr className="border-b">
+                      <th className="text-left py-2 px-2">URL</th>
+                      <th className="text-left py-2 px-2">Keyword</th>
+                      <th className="text-center py-2 px-2">Imp Δ</th>
+                      <th className="text-center py-2 px-2">CTR Δ</th>
+                      <th className="text-center py-2 px-2">Pos Δ</th>
+                      <th className="text-left py-2 px-2">Repair Actions</th>
+                    </tr></thead>
+                    <tbody>
+                      {core.emergencyRecovery.diagnosticSweep.affectedPages.map(p => (
+                        <tr key={p.url} className="border-b">
+                          <td className="py-2 px-2 font-mono text-[11px] max-w-[140px] truncate">{p.url}</td>
+                          <td className="py-2 px-2 text-muted-foreground">{p.primaryKeyword}</td>
+                          <td className="text-center py-2 px-2 text-destructive font-bold">{p.impressionDelta}%</td>
+                          <td className="text-center py-2 px-2 text-destructive font-bold">{p.ctrDelta}%</td>
+                          <td className="text-center py-2 px-2 text-destructive font-bold">+{p.avgPositionDelta}</td>
+                          <td className="py-2 px-2">
+                            <div className="flex flex-wrap gap-1">
+                              {p.repairActions.map(a => (
+                                <span key={a} className="text-[9px] bg-muted px-1.5 py-0.5 rounded">{a}</span>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Exit Conditions */}
+          {core.emergencyRecovery.active && (
+            <Card className="border-amber-200 dark:border-amber-800">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-amber-500" /> Exit Conditions — Return to Focus Mode
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  All conditions must be met to exit Emergency Recovery Mode
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {[
+                  { label: 'Rankings stable for 7 consecutive days', met: core.emergencyRecovery.exitConditions.rankingsStable7Days },
+                  { label: 'No further >5% drop', met: core.emergencyRecovery.exitConditions.noFurtherDrop5Pct },
+                  { label: 'Index/Crawl ratio >60%', met: core.emergencyRecovery.exitConditions.indexCrawlRatioAbove60 },
+                  { label: 'Crawl waste <8%', met: core.emergencyRecovery.exitConditions.crawlWasteBelow8 },
+                ].map(c => (
+                  <div key={c.label} className="flex items-center gap-2 text-xs">
+                    {c.met ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                    <span className={c.met ? 'text-foreground' : 'text-muted-foreground'}>{c.label}</span>
+                    <Badge variant={c.met ? 'default' : 'secondary'} className="text-[9px] ml-auto">{c.met ? 'MET' : 'PENDING'}</Badge>
+                  </div>
+                ))}
+                <div className="pt-2 border-t mt-3">
+                  <p className="text-[10px] text-muted-foreground">
+                    Day {core.emergencyRecovery.exitConditions.daysSinceActivation} of monitoring • 
+                    {core.emergencyRecovery.exitConditions.canExit 
+                      ? ' ✅ All conditions met — ready to exit'
+                      : ' ⏳ Conditions not yet met — staying in Emergency Mode'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2"><HeartPulse className="h-4 w-4" /> Health Checks</CardTitle>
@@ -355,8 +467,8 @@ export function AutonomousSeoSystem() {
                     <p className="text-xs text-muted-foreground">{h.description}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold">{h.value}{h.metric.includes('Ratio') || h.metric.includes('Waste') ? '%' : ''}</p>
-                    <p className="text-[10px] text-muted-foreground">threshold: {h.threshold}{h.metric.includes('Ratio') || h.metric.includes('Waste') ? '%' : ''}</p>
+                    <p className="text-sm font-bold">{h.value}{h.metric.includes('Ratio') || h.metric.includes('Waste') || h.metric.includes('WoW') || h.metric.includes('URLs') ? '%' : ''}</p>
+                    <p className="text-[10px] text-muted-foreground">threshold: {h.threshold}{h.metric.includes('Ratio') || h.metric.includes('Waste') || h.metric.includes('WoW') || h.metric.includes('URLs') ? '%' : ''}</p>
                   </div>
                 </div>
               ))}
@@ -493,11 +605,12 @@ export function AutonomousSeoSystem() {
                     <li>• URL structure changes</li>
                   </ul>
                   <div className="mt-3 p-2 bg-muted rounded text-[10px]">
-                    <p className="font-medium">Hard Limits:</p>
-                    <p>• Max 5 auto-actions per week</p>
+                    <p className="font-medium">Hard Limits {core.emergencyRecovery.active ? '(Emergency Mode)' : ''}:</p>
+                    <p>• Max {safety.maxActionsPerWeek} auto-actions per week {core.emergencyRecovery.active ? '(reduced)' : ''}</p>
                     <p>• 30-day rollback memory</p>
                     <p>• No mass updates</p>
-                    <p>• Stability &gt; Speed</p>
+                    <p>• {core.emergencyRecovery.active ? 'Stabilization > Everything' : 'Stability > Speed'}</p>
+                    {core.emergencyRecovery.active && <p className="text-destructive font-medium mt-1">🚨 Emergency: Focus Mode suspended until exit conditions met</p>}
                   </div>
                 </div>
               </div>
