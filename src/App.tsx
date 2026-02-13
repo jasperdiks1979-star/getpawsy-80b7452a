@@ -185,6 +185,7 @@ const MomentumAccelerationDashboard = lazyWithRetry(() => import("./pages/admin/
 const SecurityCredentialsDashboard = lazyWithRetry(() => import("./pages/admin/SecurityCredentialsDashboard"));
 const CrawlHealthDashboard = lazyWithRetry(() => import("./pages/admin/CrawlHealthDashboard"));
 const CrawlDiagnosticsDashboard = lazyWithRetry(() => import("./pages/admin/CrawlDiagnosticsDashboard"));
+const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
@@ -318,6 +319,7 @@ const App = () => {
                             <Route path="/admin/security-credentials" element={<SecurityCredentialsDashboard />} />
                             <Route path="/admin/crawl-health" element={<CrawlHealthDashboard />} />
                             <Route path="/admin/crawl-diagnostics" element={<CrawlDiagnosticsDashboard />} />
+                            <Route path="/admin/seo-command-center" element={<SeoCommandCenterPage />} />
                           <Route path="/admin/guides-seo" element={<Navigate to="/dashboard/guides-seo" replace />} />
                          <Route path="/admin/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
                          <Route path="/admin/crawler-analytics" element={<Navigate to="/dashboard/crawler-analytics" replace />} />
