@@ -9,6 +9,7 @@ import { QuickRecommendation } from '@/components/guides/QuickRecommendation';
 import { ComparisonTable } from '@/components/guides/ComparisonTable';
 import { StickyCTA } from '@/components/guides/StickyCTA';
 import { AUTHOR, getAuthorSchema, getPublisherSchema } from '@/lib/author-entity';
+import { getClusterRelatedGuides, injectGuideLinks } from '@/lib/guide-link-injector';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -34,21 +35,21 @@ const GuidePage = () => {
   // Canonical WITHOUT trailing slash (canonical standard)
   const guideUrl = `${BASE_URL}/guides/${guide.slug}`;
 
-  // Related guides: same category first, then other guides for cross-cluster linking
-  const sameCategoryGuides = allGuides?.filter(
-    (g) => g.slug !== guide.slug && g.category === guide.category
-  ) || [];
-  const otherGuides = allGuides?.filter(
-    (g) => g.slug !== guide.slug && g.category !== guide.category
-  ) || [];
-  // Ensure minimum 4 related guides: fill from same category, then cross-cluster
-  const relatedGuides = [...sameCategoryGuides, ...otherGuides].slice(0, 5);
-
-  // Find cornerstone for this cluster (first guide with "best-" prefix in same category)
-  const clusterCornerstone = sameCategoryGuides.find(g => g.slug.startsWith('best-'));
-  // Ensure cornerstone is in related guides if it exists and isn't already there
-  if (clusterCornerstone && !relatedGuides.find(g => g.slug === clusterCornerstone.slug)) {
-    relatedGuides.unshift(clusterCornerstone);
+  // Cluster-aware related guides from SCALING_GUIDES
+  const clusterRelated = getClusterRelatedGuides(guide.slug, guide.category);
+  
+  // Map cluster guides to full guide data from allGuides
+  const relatedGuides = clusterRelated
+    .map(cr => {
+      const fullGuide = allGuides?.find(g => g.slug === cr.slug);
+      return fullGuide || { slug: cr.slug, title: cr.title, excerpt: '', category: cr.cluster, keywords: [], publishedAt: '', updatedAt: '', featuredImage: '', readingTime: 0, relatedCategories: [] };
+    })
+    .filter(g => g.slug !== guide.slug);
+  
+  // Fallback: if no cluster matches, use same-category guides
+  if (relatedGuides.length === 0 && allGuides) {
+    const sameCat = allGuides.filter(g => g.slug !== guide.slug && g.category === guide.category).slice(0, 5);
+    relatedGuides.push(...sameCat);
   }
 
   // Article schema with Person author entity
@@ -113,9 +114,15 @@ const GuidePage = () => {
     },
   })) || [];
 
-  // Render markdown-like content (bold, paragraphs, lists)
-  const renderContent = (content: string) => {
-    const paragraphs = content.split('\n\n');
+  // Render markdown-like content (bold, paragraphs, lists, internal guide links)
+  const renderContent = (content: string, sectionIndex?: number) => {
+    // Inject guide links for sections after the first 2
+    let processedContent = content;
+    if (sectionIndex !== undefined && sectionIndex >= 2) {
+      processedContent = injectGuideLinks(content, guide.slug);
+    }
+    
+    const paragraphs = processedContent.split('\n\n');
     return paragraphs.map((para, i) => {
       const lines = para.split('\n');
       const isList = lines.every((l) => l.startsWith('- ') || l.startsWith('**') || l.trim() === '');
@@ -141,7 +148,12 @@ const GuidePage = () => {
   };
 
   const formatInline = (text: string) => {
-    return text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
+    // Bold
+    let result = text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
+    // Markdown links [text](/guides/slug) → <a> tags
+    result = result.replace(/\[([^\]]+)\]\(\/guides\/([a-z0-9-]+)\)/g, 
+      '<a href="/guides/$2" class="text-primary hover:underline font-medium" data-internal-guide="true">$1</a>');
+    return result;
   };
 
   // Updated year badge
@@ -330,7 +342,7 @@ const GuidePage = () => {
             <h2 className="text-2xl font-display font-bold text-foreground mb-4">
               {section.heading}
             </h2>
-            {renderContent(section.content)}
+            {renderContent(section.content, i)}
           </section>
         ))}
 
