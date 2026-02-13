@@ -5,5 +5,4 @@ export const SITE_URL = 'https://getpawsy.pet';
 export const PRODUCTION_DOMAINS = [
   'getpawsy.pet',
   'www.getpawsy.pet',
-  'getpawsy.lovable.app',
 ];

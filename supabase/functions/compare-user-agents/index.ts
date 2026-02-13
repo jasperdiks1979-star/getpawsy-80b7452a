@@ -103,7 +103,7 @@ serve(async (req) => {
     }
 
     // Only allow testing getpawsy.pet domains for security
-    const allowedDomains = ['getpawsy.pet', 'www.getpawsy.pet', 'getpawsy.lovable.app'];
+    const allowedDomains = ['getpawsy.pet', 'www.getpawsy.pet'];
     if (!allowedDomains.some(domain => parsedUrl.hostname.includes(domain))) {
       return new Response(
         JSON.stringify({ error: 'Only GetPawsy domains can be tested' }),
