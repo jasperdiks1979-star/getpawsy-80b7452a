@@ -1,17 +1,39 @@
 # GetPawsy Pet Products - Robots.txt
 # Premium pet supplies, dog beds, cat trees, pet toys & accessories
-# Last updated: 2026-02-12
+# Last updated: 2026-02-13
+
+# =====================================================
+# CRAWL BUDGET OPTIMIZATION
+# =====================================================
+# Priority: Concentrate crawl on money pages
+# Suppress: All parameter-based, filtered, and duplicate URLs
 
 # =====================================================
 # GOOGLE CRAWLERS
 # =====================================================
 
 User-agent: Googlebot
+# Money pages — crawl these
+Allow: /product/
 Allow: /guides/
 Allow: /blog/
-Allow: /products
-Allow: /bestsellers
+Allow: /products$
+Allow: /bestsellers$
 Allow: /collections/
+Allow: /cat-trees-condos$
+Allow: /
+
+# Parameter suppression — eliminate crawl waste
+Disallow: /*?category=
+Disallow: /*?lang=
+Disallow: /*?sort=
+Disallow: /*?filter=
+Disallow: /*?search=
+Disallow: /*?page=
+Disallow: /*&
+Disallow: /*?*
+
+# Internal/private pages
 Disallow: /dashboard
 Disallow: /dashboard/
 Disallow: /admin
@@ -29,6 +51,15 @@ Disallow: /security
 Disallow: /install
 Disallow: /live-map
 Disallow: /api/
+Disallow: /my-claims
+Disallow: /wishlist
+Disallow: /unsubscribe
+Disallow: /newsletter-preferences
+Disallow: /slow-feeder-offer
+Disallow: /download-ads
+Disallow: /technical-declaration
+Disallow: /appeal-response
+
 Crawl-delay: 1
 
 User-agent: Googlebot-Image
@@ -41,7 +72,9 @@ User-agent: Googlebot-News
 Allow: /
 
 User-agent: Storebot-Google
-Allow: /
+Allow: /product/
+Allow: /bestsellers
+Disallow: /*?*
 
 User-agent: AdsBot-Google
 Allow: /
@@ -60,19 +93,29 @@ Allow: /
 # =====================================================
 
 User-agent: Bingbot
+Allow: /product/
 Allow: /guides/
 Allow: /blog/
+Disallow: /*?*
+Disallow: /*&
 Disallow: /dashboard
 Disallow: /dashboard/
 Disallow: /admin
 Disallow: /admin/
+Disallow: /profile
+Disallow: /orders
+Disallow: /checkout
+Disallow: /auth
+Disallow: /cart
 Crawl-delay: 1
 
 User-agent: Slurp
 Allow: /
+Disallow: /*?*
 
 User-agent: DuckDuckBot
 Allow: /
+Disallow: /*?*
 
 # =====================================================
 # SOCIAL MEDIA CRAWLERS
@@ -95,9 +138,25 @@ Allow: /
 # =====================================================
 
 User-agent: *
+# Money pages
+Allow: /product/
 Allow: /guides/
 Allow: /blog/
-Allow: /products
+Allow: /products$
+Allow: /bestsellers$
+Allow: /collections/
+
+# Parameter suppression
+Disallow: /*?category=
+Disallow: /*?lang=
+Disallow: /*?sort=
+Disallow: /*?filter=
+Disallow: /*?search=
+Disallow: /*?page=
+Disallow: /*&
+Disallow: /*?*
+
+# Internal pages
 Disallow: /dashboard
 Disallow: /dashboard/
 Disallow: /admin
@@ -115,6 +174,15 @@ Disallow: /security
 Disallow: /install
 Disallow: /live-map
 Disallow: /api/
+Disallow: /my-claims
+Disallow: /wishlist
+Disallow: /unsubscribe
+Disallow: /newsletter-preferences
+Disallow: /slow-feeder-offer
+Disallow: /download-ads
+Disallow: /technical-declaration
+Disallow: /appeal-response
+
 Crawl-delay: 2
 
 # =====================================================
