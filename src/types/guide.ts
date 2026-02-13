@@ -59,6 +59,23 @@ export interface ComparisonProduct {
   sku?: string;
 }
 
+export interface GuideHowToStep {
+  name: string;
+  text: string;
+  image?: string;
+  url?: string;
+}
+
+export interface GuideHowTo {
+  name: string;
+  description: string;
+  totalTime?: string;
+  estimatedCost?: { currency: string; value: string };
+  supply?: string[];
+  tool?: string[];
+  steps: GuideHowToStep[];
+}
+
 export interface GuideData extends GuideMeta {
   sections: GuideSection[];
   faq: GuideFAQ[];
@@ -74,4 +91,7 @@ export interface GuideData extends GuideMeta {
   seoDescription?: string;
   h1Override?: string;
   trustLines?: string[];
+  howTo?: GuideHowTo;
+  suggestedImageAlts?: string[];
+  featuredSnippet?: string;
 }
