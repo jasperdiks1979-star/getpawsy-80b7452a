@@ -1453,28 +1453,28 @@ const Admin = () => {
                   <span className="hidden xs:inline">Reviews</span>
                 </TabsTrigger>
               </TouchTooltip>
-              <div className="ml-2 border-l border-muted-foreground/20 pl-2 flex gap-1">
-                <TouchTooltip content="SEO Command Center - Top 10 Assault & Gap Hunter">
-                  <button onClick={() => navigate('/admin/seo-command-center')} className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors">
-                    <Target className="w-3.5 h-3.5 shrink-0" />
-                    <span className="hidden sm:inline">SEO Command</span>
-                  </button>
-                </TouchTooltip>
-                <TouchTooltip content="12-Month Revenue Scaling Blueprint">
-                  <button onClick={() => navigate('/admin/revenue-scaling')} className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors">
-                    <TrendingUp className="w-3.5 h-3.5 shrink-0" />
-                    <span className="hidden sm:inline">Revenue</span>
-                  </button>
-                </TouchTooltip>
-                <TouchTooltip content="Enterprise Autonomous SEO AI System">
-                  <button onClick={() => navigate('/admin/autonomous-seo')} className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors">
-                    <Brain className="w-3.5 h-3.5 shrink-0" />
-                    <span className="hidden sm:inline">Autonomous</span>
-                  </button>
-                </TouchTooltip>
-              </div>
             </TabsList>
           </TooltipProvider>
+          <div className="flex gap-1 overflow-x-auto pb-1 -mt-4 scrollbar-none">
+            <TouchTooltip content="SEO Command Center - Top 10 Assault & Gap Hunter">
+              <button onClick={() => navigate('/admin/seo-command-center')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
+                <Target className="w-3.5 h-3.5 shrink-0" />
+                <span>SEO Command</span>
+              </button>
+            </TouchTooltip>
+            <TouchTooltip content="12-Month Revenue Scaling Blueprint">
+              <button onClick={() => navigate('/admin/revenue-scaling')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
+                <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                <span>Revenue</span>
+              </button>
+            </TouchTooltip>
+            <TouchTooltip content="Enterprise Autonomous SEO AI System">
+              <button onClick={() => navigate('/admin/autonomous-seo')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
+                <Brain className="w-3.5 h-3.5 shrink-0" />
+                <span>Autonomous</span>
+              </button>
+            </TouchTooltip>
+          </div>
 
           {/* Sales Dashboard Tab */}
           <TabsContent value="sales" className="space-y-6">
