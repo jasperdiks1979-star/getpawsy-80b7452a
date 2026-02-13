@@ -13,6 +13,43 @@
  * Layer 6: Enterprise Safety (rate limits, rollback, logging)
  */
 
+// ============= FOCUS MODE CONFIG =============
+
+export interface FocusModeConfig {
+  active: boolean;
+  cluster: string;
+  primaryUrl: string;
+  durationDays: number;
+  startedAt: string;
+  weeklyActionBudget: number;
+  disabled: string[];
+  enabled: string[];
+}
+
+export function getFocusModeConfig(): FocusModeConfig {
+  return {
+    active: true,
+    cluster: 'Cat Trees & Condos',
+    primaryUrl: '/guides/best-cat-trees-2026',
+    durationDays: 30,
+    startedAt: new Date().toISOString(),
+    weeklyActionBudget: 3,
+    disabled: [
+      'new_cluster_expansion',
+      'backlink_automation',
+      'autonomous_longform_generation',
+      'dog_beds_optimization',
+      'cat_litter_optimization',
+    ],
+    enabled: [
+      'ctr_meta_optimization',
+      'faq_schema_additions',
+      'duplicate_crawl_monitoring',
+      'canonical_integrity_checks',
+    ],
+  };
+}
+
 // ============= LAYER 1 — CENTRAL AI CORE =============
 
 export interface AICoreAnalysis {
@@ -29,10 +66,10 @@ export interface AICoreAnalysis {
   unifiedScore: number; // 0-100
   status: 'optimal' | 'healthy' | 'attention' | 'critical';
   lastAnalyzedAt: string;
+  focusMode: FocusModeConfig;
 }
 
 export function calculateUnifiedScore(): AICoreAnalysis {
-  // Simulated real-time analysis from all data sources
   const metrics = {
     gscHealth: 72,
     crawlHealth: 68,
@@ -59,7 +96,7 @@ export function calculateUnifiedScore(): AICoreAnalysis {
 
   const status = unified >= 75 ? 'optimal' : unified >= 60 ? 'healthy' : unified >= 40 ? 'attention' : 'critical';
 
-  return { ...metrics, unifiedScore: unified, status, lastAnalyzedAt: new Date().toISOString() };
+  return { ...metrics, unifiedScore: unified, status, lastAnalyzedAt: new Date().toISOString(), focusMode: getFocusModeConfig() };
 }
 
 // ============= LAYER 2 — AUTONOMOUS ACTION ENGINE =============
@@ -210,8 +247,8 @@ export function getRecoveryStatus(): RecoveryStatus {
 
 export interface SafetyMetrics {
   actionsThisWeek: number;
-  maxActionsPerWeek: 5;
-  rollbackMemoryDays: 30;
+  maxActionsPerWeek: number;
+  rollbackMemoryDays: number;
   changesLoggedTotal: number;
   rollbacksAvailable: number;
   lastActionAt: string | null;
@@ -232,8 +269,8 @@ export interface ActionLogEntry {
 
 export function getSafetyMetrics(): SafetyMetrics {
   return {
-    actionsThisWeek: 3,
-    maxActionsPerWeek: 5,
+    actionsThisWeek: 1,
+    maxActionsPerWeek: 3, // Focus Mode: reduced from 5
     rollbackMemoryDays: 30,
     changesLoggedTotal: 47,
     rollbacksAvailable: 12,
