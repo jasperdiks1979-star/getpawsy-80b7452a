@@ -16,6 +16,7 @@ import {
   type AICoreAnalysis, type AutonomousAction, type VelocityTarget,
   type ClusterDominanceData, type HealthCheck, type RecoveryStatus,
   type SafetyMetrics, type ActionLogEntry, type EmergencyRecoveryConfig,
+  type RecoveryPhase,
 } from '@/lib/seo-autonomous-engine';
 
 // ============= SCORE RING =============
@@ -364,12 +365,45 @@ export function AutonomousSeoSystem() {
         </TabsContent>
 
         <TabsContent value="healing" className="space-y-4 mt-4">
-          {/* Diagnostic Sweep Results */}
+          {/* Phase Indicator */}
+          {core.emergencyRecovery.active && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Gauge className="h-4 w-4" /> Recovery Phase Tracker
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { phase: 'stabilize' as RecoveryPhase, label: 'Phase 1 — Stabilize', desc: 'Stop decline, repair affected URLs' },
+                    { phase: 'trust_rebuild' as RecoveryPhase, label: 'Phase 2 — Trust Rebuild', desc: 'Conservative improvements, crawl cleanup' },
+                    { phase: 'top10_push' as RecoveryPhase, label: 'Phase 3 — Top 10 Push', desc: 'Aggressive ranking recovery (after 14d)' },
+                  ]).map(p => {
+                    const isCurrent = core.emergencyRecovery.currentPhase === p.phase;
+                    const isCompleted = (p.phase === 'stabilize' && core.emergencyRecovery.currentPhase !== 'stabilize') ||
+                      (p.phase === 'trust_rebuild' && core.emergencyRecovery.currentPhase === 'top10_push');
+                    return (
+                      <div key={p.phase} className={`border rounded-lg p-3 text-center ${isCurrent ? 'border-primary bg-primary/5' : isCompleted ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950' : 'opacity-50'}`}>
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          {isCompleted ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : isCurrent ? <Activity className="h-3.5 w-3.5 text-primary animate-pulse" /> : <Clock className="h-3.5 w-3.5 text-muted-foreground" />}
+                          <span className="text-xs font-bold">{p.label}</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">{p.desc}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Diagnostic Sweep Results (Phase 1) */}
           {core.emergencyRecovery.active && core.emergencyRecovery.diagnosticSweep && (
             <Card className="border-destructive/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2 text-destructive">
-                  <Activity className="h-4 w-4" /> Diagnostic Sweep — Top 5 Affected URLs
+                  <Activity className="h-4 w-4" /> Phase 1 — Diagnostic Sweep (Top Affected URLs)
                 </CardTitle>
                 <CardDescription className="text-xs">
                   Index coverage: {core.emergencyRecovery.diagnosticSweep.indexCoverageChange14d}% (14d) • 
@@ -412,15 +446,127 @@ export function AutonomousSeoSystem() {
             </Card>
           )}
 
+          {/* Phase 2 — Trust Rebuild */}
+          {core.emergencyRecovery.active && (
+            <Card className={core.emergencyRecovery.trustRebuild.active ? 'border-blue-200 dark:border-blue-800' : 'opacity-60'}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-blue-500" /> Phase 2 — Google Trust Rebuild
+                  </CardTitle>
+                  <Badge variant={core.emergencyRecovery.trustRebuild.active ? 'default' : 'secondary'} className="text-[9px]">
+                    {core.emergencyRecovery.trustRebuild.active ? 'ACTIVE' : 'WAITING'}
+                  </Badge>
+                </div>
+                <CardDescription className="text-xs">
+                  Pace: {core.emergencyRecovery.trustRebuild.paceLimit} • Max +{core.emergencyRecovery.trustRebuild.maxLinksPerPage} links/page • Anchors: natural only
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <p className="text-[10px] font-medium text-muted-foreground">Scheduled Improvements:</p>
+                  {core.emergencyRecovery.trustRebuild.improvements.map(imp => (
+                    <div key={imp.url} className="border rounded-lg p-2 flex items-start gap-2">
+                      {imp.status === 'completed' ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5" /> : <Clock className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-mono text-[11px] truncate">{imp.url}</p>
+                        <p className="text-[10px] text-muted-foreground">"{imp.keyword}" — {imp.scheduledDate}</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {imp.plannedImprovements.map(i => <span key={i} className="text-[9px] bg-muted px-1.5 py-0.5 rounded">{i}</span>)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2 border-t">
+                  {[
+                    { label: 'CTR Stable', met: core.emergencyRecovery.trustRebuild.kpiTargets.ctrStable },
+                    { label: 'Impression ↑', met: core.emergencyRecovery.trustRebuild.kpiTargets.impressionTrendPositive },
+                    { label: 'Index Ratio >60%', met: core.emergencyRecovery.trustRebuild.kpiTargets.indexCrawlRatioAbove60 },
+                    { label: 'Duplicates <5%', met: core.emergencyRecovery.trustRebuild.kpiTargets.duplicateUrlsBelow5 },
+                  ].map(k => (
+                    <div key={k.label} className="flex items-center gap-1 text-[10px]">
+                      {k.met ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <AlertTriangle className="h-3 w-3 text-amber-500" />}
+                      <span>{k.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Phase 3 — Top 10 Push */}
+          {core.emergencyRecovery.active && (
+            <Card className={core.emergencyRecovery.top10Push.active ? 'border-emerald-200 dark:border-emerald-800' : 'opacity-60'}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-emerald-500" /> Phase 3 — Aggressive Top 10 Recovery Push
+                  </CardTitle>
+                  <Badge variant={core.emergencyRecovery.top10Push.active ? 'default' : 'secondary'} className="text-[9px]">
+                    {core.emergencyRecovery.top10Push.active ? 'ACTIVE' : `REQUIRES ${core.emergencyRecovery.top10Push.requiresStabilityDays}d STABILITY`}
+                  </Badge>
+                </div>
+                <CardDescription className="text-xs">
+                  Target: Pos 5–20, &gt;200 impressions • Max {core.emergencyRecovery.top10Push.maxPagesPerWeek} pages/week • 
+                  KPI: {core.emergencyRecovery.top10Push.kpiTargets.targetPosition}, CTR {core.emergencyRecovery.top10Push.kpiTargets.targetCtr}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {core.emergencyRecovery.top10Push.targets.map(t => (
+                  <div key={t.url} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-mono text-xs truncate">{t.url}</p>
+                        <p className="text-[10px] text-muted-foreground">"{t.keyword}" — Pos {t.currentPosition} • {t.impressions} imp • {t.ctr}% CTR</p>
+                      </div>
+                      <Badge variant={t.status === 'completed' ? 'default' : 'secondary'} className="text-[9px] flex-shrink-0">{t.status}</Badge>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-2 text-[10px]">
+                      <div>
+                        <p className="font-medium text-muted-foreground mb-1">Content Actions:</p>
+                        {t.actions.map(a => <p key={a} className="text-foreground">• {a}</p>)}
+                      </div>
+                      <div>
+                        <p className="font-medium text-muted-foreground mb-1">Snippet:</p>
+                        <p className="text-foreground">{t.snippetOptimization}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium text-muted-foreground mb-1">Authority:</p>
+                        {t.authorityBoost.map(a => <p key={a} className="text-foreground">• {a}</p>)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Algorithm Update Variant */}
+          {core.emergencyRecovery.active && core.emergencyRecovery.algorithmVariant.volatilityDetected && (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle className="text-sm">Algorithm Update Detected — Conservative Mode</AlertTitle>
+              <AlertDescription className="text-xs space-y-1">
+                <p>Broad SERP volatility detected. Aggressive changes paused.</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {core.emergencyRecovery.algorithmVariant.actions.map(a => (
+                    <span key={a} className="text-[9px] bg-muted px-1.5 py-0.5 rounded">{a}</span>
+                  ))}
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Exit Conditions */}
           {core.emergencyRecovery.active && (
             <Card className="border-amber-200 dark:border-amber-800">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-amber-500" /> Exit Conditions — Return to Focus Mode
+                  <Shield className="h-4 w-4 text-amber-500" /> Exit Conditions — Return to Growth Mode
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  All conditions must be met to exit Emergency Recovery Mode
+                  All conditions must be met for 14 consecutive stable days
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -429,6 +575,7 @@ export function AutonomousSeoSystem() {
                   { label: 'No further >5% drop', met: core.emergencyRecovery.exitConditions.noFurtherDrop5Pct },
                   { label: 'Index/Crawl ratio >60%', met: core.emergencyRecovery.exitConditions.indexCrawlRatioAbove60 },
                   { label: 'Crawl waste <8%', met: core.emergencyRecovery.exitConditions.crawlWasteBelow8 },
+                  { label: 'Canonical integrity >95%', met: core.emergencyRecovery.exitConditions.canonicalIntegrityAbove95 },
                 ].map(c => (
                   <div key={c.label} className="flex items-center gap-2 text-xs">
                     {c.met ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
@@ -439,9 +586,10 @@ export function AutonomousSeoSystem() {
                 <div className="pt-2 border-t mt-3">
                   <p className="text-[10px] text-muted-foreground">
                     Day {core.emergencyRecovery.exitConditions.daysSinceActivation} of monitoring • 
+                    Stable days: {core.emergencyRecovery.exitConditions.consecutiveStableDays}/14 •
                     {core.emergencyRecovery.exitConditions.canExit 
-                      ? ' ✅ All conditions met — ready to exit'
-                      : ' ⏳ Conditions not yet met — staying in Emergency Mode'}
+                      ? ' ✅ All conditions met — ready to return to Growth Mode'
+                      : ' ⏳ Conditions not yet met — staying in Recovery Mode'}
                   </p>
                 </div>
               </CardContent>
