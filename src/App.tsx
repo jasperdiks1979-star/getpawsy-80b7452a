@@ -182,6 +182,7 @@ const DogBedsClusterDashboard = lazyWithRetry(() => import("./pages/admin/DogBed
 const CatLitterClusterDashboard = lazyWithRetry(() => import("./pages/admin/CatLitterClusterDashboard"));
 const ClusterWarDashboard = lazyWithRetry(() => import("./pages/admin/ClusterWarDashboard"));
 const MomentumAccelerationDashboard = lazyWithRetry(() => import("./pages/admin/MomentumAccelerationDashboard"));
+const SecurityCredentialsDashboard = lazyWithRetry(() => import("./pages/admin/SecurityCredentialsDashboard"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
@@ -312,6 +313,7 @@ const App = () => {
                             <Route path="/admin/cat-litter-cluster" element={<CatLitterClusterDashboard />} />
                             <Route path="/admin/cluster-war-dashboard" element={<ClusterWarDashboard />} />
                             <Route path="/admin/momentum-acceleration" element={<MomentumAccelerationDashboard />} />
+                            <Route path="/admin/security-credentials" element={<SecurityCredentialsDashboard />} />
                           <Route path="/admin/guides-seo" element={<Navigate to="/dashboard/guides-seo" replace />} />
                          <Route path="/admin/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
                          <Route path="/admin/crawler-analytics" element={<Navigate to="/dashboard/crawler-analytics" replace />} />

@@ -1268,6 +1268,50 @@ export type Database = {
         }
         Relationships: []
       }
+      key_rotation_logs: {
+        Row: {
+          account_name: string
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          new_key_id: string | null
+          old_key_id: string | null
+          performed_by: string | null
+          service_account_key_id: string | null
+        }
+        Insert: {
+          account_name: string
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          new_key_id?: string | null
+          old_key_id?: string | null
+          performed_by?: string | null
+          service_account_key_id?: string | null
+        }
+        Update: {
+          account_name?: string
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          new_key_id?: string | null
+          old_key_id?: string | null
+          performed_by?: string | null
+          service_account_key_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_rotation_logs_service_account_key_id_fkey"
+            columns: ["service_account_key_id"]
+            isOneToOne: false
+            referencedRelation: "service_account_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       keyword_rankings: {
         Row: {
           clicks: number | null
@@ -3466,6 +3510,57 @@ export type Database = {
           slug?: string
           status?: string
           trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      service_account_keys: {
+        Row: {
+          account_email: string
+          account_name: string
+          created_at: string
+          iam_roles: string[] | null
+          id: string
+          is_active: boolean
+          key_created_at: string
+          key_id: string | null
+          last_rotated_at: string | null
+          last_used_at: string | null
+          notes: string | null
+          rotation_status: string
+          service_description: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_email: string
+          account_name: string
+          created_at?: string
+          iam_roles?: string[] | null
+          id?: string
+          is_active?: boolean
+          key_created_at?: string
+          key_id?: string | null
+          last_rotated_at?: string | null
+          last_used_at?: string | null
+          notes?: string | null
+          rotation_status?: string
+          service_description?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_email?: string
+          account_name?: string
+          created_at?: string
+          iam_roles?: string[] | null
+          id?: string
+          is_active?: boolean
+          key_created_at?: string
+          key_id?: string | null
+          last_rotated_at?: string | null
+          last_used_at?: string | null
+          notes?: string | null
+          rotation_status?: string
+          service_description?: string | null
           updated_at?: string
         }
         Relationships: []
