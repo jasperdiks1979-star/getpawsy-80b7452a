@@ -15,7 +15,9 @@
 
 // ============= EMERGENCY RECOVERY MODE =============
 
-export type EmergencyTriggerType = 'ranking_drop_10pct' | 'traffic_drop_15pct' | 'index_ratio_below_55';
+export type EmergencyTriggerType = 'ranking_drop_10pct' | 'traffic_drop_15pct' | 'index_ratio_below_55' | 'ctr_collapse_priority';
+
+export type RecoveryPhase = 'stabilize' | 'trust_rebuild' | 'top10_push';
 
 export interface EmergencyRecoveryConfig {
   active: boolean;
@@ -23,11 +25,15 @@ export interface EmergencyRecoveryConfig {
   triggers: EmergencyTriggerType[];
   weeklyActionBudget: number;
   priority: 'stabilization';
+  currentPhase: RecoveryPhase;
   frozenActions: string[];
   enabledActions: string[];
   diagnosticSweep: DiagnosticSweepResult | null;
   exitConditions: EmergencyExitConditions;
   monitoringWindowDays: number;
+  trustRebuild: TrustRebuildConfig;
+  top10Push: Top10PushConfig;
+  algorithmVariant: AlgorithmUpdateVariant;
 }
 
 export interface DiagnosticSweepResult {
@@ -52,17 +58,93 @@ export interface EmergencyExitConditions {
   noFurtherDrop5Pct: boolean;
   indexCrawlRatioAbove60: boolean;
   crawlWasteBelow8: boolean;
+  canonicalIntegrityAbove95: boolean;
+  consecutiveStableDays: number;
   canExit: boolean;
   daysSinceActivation: number;
+}
+
+// ============= PHASE 2 — TRUST REBUILD =============
+
+export interface TrustRebuildConfig {
+  active: boolean;
+  activatedAt: string | null;
+  paceLimit: string; // e.g. '1 page per 3 days'
+  maxLinksPerPage: number;
+  anchorStrategy: 'natural_only';
+  improvements: TrustRebuildPage[];
+  crawlCleanup: CrawlCleanupStatus;
+  kpiTargets: TrustKPITargets;
+}
+
+export interface TrustRebuildPage {
+  url: string;
+  keyword: string;
+  plannedImprovements: string[];
+  status: 'pending' | 'in_progress' | 'completed';
+  scheduledDate: string;
+}
+
+export interface CrawlCleanupStatus {
+  parameterNormalization: boolean;
+  thinDuplicatesRemoved: number;
+  consolidatedProductUrls: number;
+  sitemapCanonicalOnly: boolean;
+}
+
+export interface TrustKPITargets {
+  ctrStable: boolean;
+  impressionTrendPositive: boolean;
+  indexCrawlRatioAbove60: boolean;
+  duplicateUrlsBelow5: boolean;
+}
+
+// ============= PHASE 3 — TOP 10 PUSH =============
+
+export interface Top10PushConfig {
+  active: boolean;
+  activatedAt: string | null;
+  requiresStabilityDays: number; // 14
+  maxPagesPerWeek: number;       // 2
+  targets: Top10PushTarget[];
+  kpiTargets: Top10KPITargets;
+}
+
+export interface Top10PushTarget {
+  url: string;
+  keyword: string;
+  currentPosition: number;
+  impressions: number;
+  ctr: number;
+  actions: string[];
+  snippetOptimization: string;
+  authorityBoost: string[];
+  status: 'queued' | 'in_progress' | 'completed';
+}
+
+export interface Top10KPITargets {
+  targetPosition: string; // 'Top 5'
+  targetCtr: string;      // '>5%'
+  featuredSnippetEligible: boolean;
+  impressionGrowth30d: string; // '25%'
+}
+
+// ============= ALGORITHM UPDATE VARIANT =============
+
+export interface AlgorithmUpdateVariant {
+  volatilityDetected: boolean;
+  actions: string[];
+  monitoring: string[];
 }
 
 export function getEmergencyRecoveryConfig(): EmergencyRecoveryConfig {
   return {
     active: true,
     activatedAt: new Date().toISOString(),
-    triggers: ['ranking_drop_10pct', 'traffic_drop_15pct'],
+    triggers: ['ranking_drop_10pct', 'traffic_drop_15pct', 'ctr_collapse_priority'],
     weeklyActionBudget: 2,
     priority: 'stabilization',
+    currentPhase: 'stabilize',
     frozenActions: [
       'new_content_creation',
       'cluster_expansion',
@@ -80,10 +162,84 @@ export function getEmergencyRecoveryConfig(): EmergencyRecoveryConfig {
       'schema_validation',
       'meta_revert',
       'controlled_ctr_ab_test',
+      'anchor_density_reduction',
+      'noindex_conflict_check',
     ],
     diagnosticSweep: generateDiagnosticSweep(),
     exitConditions: evaluateExitConditions(),
     monitoringWindowDays: 7,
+    trustRebuild: getTrustRebuildConfig(),
+    top10Push: getTop10PushConfig(),
+    algorithmVariant: getAlgorithmUpdateVariant(),
+  };
+}
+
+function getTrustRebuildConfig(): TrustRebuildConfig {
+  return {
+    active: false, // Activates after Phase 1 stabilization
+    activatedAt: null,
+    paceLimit: '1 page per 3 days',
+    maxLinksPerPage: 2,
+    anchorStrategy: 'natural_only',
+    improvements: [
+      { url: '/guides/best-cat-trees-2026', keyword: 'best cat trees 2026', plannedImprovements: ['Add statistics section', 'Expand pros/cons', 'Add expert use-case block'], status: 'pending', scheduledDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0] },
+      { url: '/guides/best-dog-bed-2026', keyword: 'best dog bed 2026', plannedImprovements: ['Add comparison data points', 'Expand material analysis', 'Add vet-reviewed badge'], status: 'pending', scheduledDate: new Date(Date.now() + 10 * 86400000).toISOString().split('T')[0] },
+      { url: '/cat-trees-condos', keyword: 'cat trees for sale', plannedImprovements: ['Add buying guide section', 'Expand size comparison table'], status: 'pending', scheduledDate: new Date(Date.now() + 13 * 86400000).toISOString().split('T')[0] },
+      { url: '/guides/best-cat-litter-box-2026', keyword: 'best cat litter box', plannedImprovements: ['Add odor control comparison', 'Expert cleaning tips section'], status: 'pending', scheduledDate: new Date(Date.now() + 16 * 86400000).toISOString().split('T')[0] },
+    ],
+    crawlCleanup: {
+      parameterNormalization: false,
+      thinDuplicatesRemoved: 0,
+      consolidatedProductUrls: 0,
+      sitemapCanonicalOnly: true,
+    },
+    kpiTargets: {
+      ctrStable: false,
+      impressionTrendPositive: false,
+      indexCrawlRatioAbove60: true,
+      duplicateUrlsBelow5: false,
+    },
+  };
+}
+
+function getTop10PushConfig(): Top10PushConfig {
+  return {
+    active: false, // Activates only after 14 days stability
+    activatedAt: null,
+    requiresStabilityDays: 14,
+    maxPagesPerWeek: 2,
+    targets: [
+      { url: '/guides/best-cat-trees-2026', keyword: 'best cat trees 2026', currentPosition: 12.3, impressions: 487, ctr: 4.9, actions: ['+5 contextual internal links', '+2 semantic sub-sections', 'Comparison decision matrix', 'FAQ block (5 entries)'], snippetOptimization: '"Tested & Ranked 2026" — proof elements + main keyword', authorityBoost: ['Link from Cat Trees hub', 'Breadcrumb reinforcement', 'Add micro-guide: apartment cat trees'], status: 'queued' },
+      { url: '/cat-trees-condos', keyword: 'cat trees for sale', currentPosition: 9.8, impressions: 612, ctr: 6.9, actions: ['+3 contextual internal links', 'Add buyer decision matrix', 'FAQ block (3 entries)'], snippetOptimization: '"Shop Cat Trees — Free US Shipping" + urgency trigger', authorityBoost: ['Homepage feature rotation', 'Breadcrumb reinforcement'], status: 'queued' },
+      { url: '/guides/best-dog-bed-2026', keyword: 'best dog bed 2026', currentPosition: 15.7, impressions: 318, ctr: 2.5, actions: ['+4 contextual internal links', '+2 long-tail sub-sections', 'Comparison table', 'FAQ block (4 entries)'], snippetOptimization: '"Vet-Approved Dog Beds 2026" + updated badge', authorityBoost: ['Link from Dog Beds hub', 'Add micro-guide: cooling dog beds'], status: 'queued' },
+      { url: '/product/luxury-cat-tree-xl', keyword: 'large cat tree', currentPosition: 14.6, impressions: 278, ctr: 4.0, actions: ['+3 internal links', 'Expand product description', 'FAQ block (3 entries)'], snippetOptimization: '"Best Large Cat Tree — Tested for Stability"', authorityBoost: ['Link from cornerstone guide', 'Bestseller badge'], status: 'queued' },
+    ],
+    kpiTargets: {
+      targetPosition: 'Top 5',
+      targetCtr: '>5%',
+      featuredSnippetEligible: true,
+      impressionGrowth30d: '25%',
+    },
+  };
+}
+
+function getAlgorithmUpdateVariant(): AlgorithmUpdateVariant {
+  return {
+    volatilityDetected: false,
+    actions: [
+      'Pause aggressive changes',
+      'Increase content depth over density',
+      'Reduce anchor optimization intensity',
+      'Improve topical authority breadth',
+      'Add unique value (original insights, structured comparisons)',
+      'Avoid rapid backlink acquisition spikes',
+    ],
+    monitoring: [
+      'Position volatility (daily)',
+      'Impression slope (daily)',
+      'CTR stability (daily)',
+      'Index ratio (daily)',
+    ],
   };
 }
 
@@ -144,8 +300,10 @@ function evaluateExitConditions(): EmergencyExitConditions {
     noFurtherDrop5Pct: true,
     indexCrawlRatioAbove60: true,
     crawlWasteBelow8: false,
+    canonicalIntegrityAbove95: false,
+    consecutiveStableDays: 3,
     canExit: false,
-    daysSinceActivation: 0,
+    daysSinceActivation: 3,
   };
 }
 
