@@ -394,5 +394,89 @@
     "featuredImage": "/images/guides/best-cat-litter-box-2026.jpg",
     "readingTime": 5,
     "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "best-dog-bed-under-100",
+    "title": "Best Dog Bed Under $100 (2026) – Budget Picks That Don't Flatten",
+    "excerpt": "Dog beds under $100 tested for foam quality and durability. Budget-friendly picks for small, medium and large dogs that actually last.",
+    "category": "Dog Beds",
+    "keywords": ["best dog bed under 100", "cheap dog bed", "budget dog bed"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 7,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "dog-bed-for-anxiety",
+    "title": "Best Dog Beds for Anxiety (2026) – Calming Designs That Actually Help",
+    "excerpt": "Dog beds for anxiety tested and compared. Donut beds, weighted blankets, and bolstered designs reviewed for calming effectiveness.",
+    "category": "Dog Beds",
+    "keywords": ["dog bed for anxiety", "calming dog bed", "anti anxiety dog bed"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 8,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "machine-washable-dog-bed-guide",
+    "title": "Best Machine Washable Dog Beds (2026) – Easy-Clean Picks Tested",
+    "excerpt": "Machine washable dog beds tested for durability after repeated washing. Best picks that don't shrink, pill, or lose shape.",
+    "category": "Dog Beds",
+    "keywords": ["machine washable dog bed", "washable dog bed", "easy clean dog bed"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 7,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "dog-bed-size-chart-guide",
+    "title": "Dog Bed Size Chart (2026) – Exact Measurements by Breed & Weight",
+    "excerpt": "Dog bed size chart with exact dimensions by breed and weight. How to measure your dog for the perfect fit.",
+    "category": "Dog Beds",
+    "keywords": ["dog bed size chart", "what size dog bed", "dog bed dimensions"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 6,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "best-outdoor-dog-bed",
+    "title": "Best Outdoor Dog Beds (2026) – Weather-Resistant Picks Tested & Ranked",
+    "excerpt": "Outdoor dog beds tested for UV resistance, waterproofing, and cooling. Best weather-proof picks for patios, camping, and backyards.",
+    "category": "Dog Beds",
+    "keywords": ["outdoor dog bed", "waterproof dog bed", "dog bed for patio"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 8,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "best-dog-bed-for-small-dogs",
+    "title": "Best Dog Beds for Small Dogs (2026) – Cozy Picks for Toy & Small Breeds",
+    "excerpt": "Dog beds for small and toy breeds tested for warmth, security, and comfort. Best picks for Chihuahuas, Yorkies, Pomeranians and more.",
+    "category": "Dog Beds",
+    "keywords": ["dog bed for small dogs", "small dog bed", "toy breed dog bed"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 7,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "dog-bed-buying-guide",
+    "title": "Dog Bed Buying Guide (2026) – How to Choose the Right Bed for Your Dog",
+    "excerpt": "Complete dog bed buying guide covering foam types, sizing, essential features, and common mistakes.",
+    "category": "Dog Beds",
+    "keywords": ["dog bed buying guide", "how to choose dog bed"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 9,
+    "relatedCategories": ["pet-beds"]
   }
 ]

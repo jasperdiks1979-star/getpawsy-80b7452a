@@ -118,6 +118,63 @@
       "whyItMatters": "Dog beds collect hair, dander, dirt, and bacteria. Without a removable, washable cover, the bed becomes unhygienic within weeks."
     }
   ],
+  "comparisonProducts": [
+    {
+      "name": "Orthopedic Memory Foam Dog Bed",
+      "image": "/images/guides/best-orthopedic-dog-bed.jpg",
+      "price": "$149.99",
+      "advantages": ["4\" high-density memory foam (2.0 lb/ft³)", "Waterproof liner + washable cover", "Non-slip rubber base"],
+      "link": "/guides/best-orthopedic-dog-bed",
+      "badge": "Best Overall",
+      "availability": "InStock",
+      "description": "Premium orthopedic bed with therapeutic foam for senior dogs and large breeds with joint issues.",
+      "sku": "PAWSY-ORTHO-001"
+    },
+    {
+      "name": "Calming Donut Dog Bed",
+      "image": "/images/guides/best-dog-bed-2026.jpg",
+      "price": "$59.99",
+      "advantages": ["Deep pressure stimulation design", "Faux-fur fabric for warmth", "Machine-washable cover"],
+      "link": "/guides/calming-dog-bed-anxiety",
+      "badge": "Best for Anxiety",
+      "availability": "InStock",
+      "description": "Bolstered donut bed that reduces anxiety behaviors through gentle enclosure pressure.",
+      "sku": "PAWSY-CALM-001"
+    },
+    {
+      "name": "Elevated Cooling Dog Cot",
+      "image": "/images/guides/best-dog-bed-2026.jpg",
+      "price": "$79.99",
+      "advantages": ["Airflow cooling underneath", "Chew-resistant steel frame", "Indoor & outdoor use"],
+      "link": "/guides/best-dog-bed-2026",
+      "badge": "Best for Hot Climate",
+      "availability": "InStock",
+      "description": "Elevated cot-style bed for dogs that overheat, with breathable mesh and steel frame.",
+      "sku": "PAWSY-COOL-001"
+    },
+    {
+      "name": "Bolster Bed with Washable Cover",
+      "image": "/images/guides/best-dog-bed-2026.jpg",
+      "price": "$89.99",
+      "advantages": ["Raised edges for head support", "Removable machine-washable cover", "Available in 4 sizes"],
+      "link": "/guides/best-dog-bed-2026",
+      "badge": "Best Everyday",
+      "availability": "InStock",
+      "description": "Versatile bolster bed with raised edges and easy-clean cover for everyday comfort.",
+      "sku": "PAWSY-BOLST-001"
+    },
+    {
+      "name": "Chew-Proof Ballistic Dog Bed",
+      "image": "/images/guides/best-dog-bed-2026.jpg",
+      "price": "$119.99",
+      "advantages": ["Ripstop ballistic nylon fabric", "Reinforced double-stitched seams", "Heavy-duty YKK zipper"],
+      "link": "/guides/best-dog-bed-2026",
+      "badge": "Best for Chewers",
+      "availability": "InStock",
+      "description": "Durable bed built with military-grade ballistic fabric for destructive chewers.",
+      "sku": "PAWSY-CHEW-001"
+    }
+  ],
   "faq": [
     {
       "question": "What is the best dog bed for arthritis?",
