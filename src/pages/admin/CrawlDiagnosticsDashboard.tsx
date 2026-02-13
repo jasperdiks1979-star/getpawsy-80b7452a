@@ -1,0 +1,15 @@
+import { CrawlDiagnosticsDashboard } from "@/components/admin/CrawlDiagnosticsDashboard";
+import { Layout } from "@/components/layout/Layout";
+import { Helmet } from "react-helmet-async";
+
+export default function CrawlDiagnosticsDashboardPage() {
+  return (
+    <Layout>
+      <Helmet>
+        <title>Crawl Diagnostics | GetPawsy Admin</title>
+        <meta name="description" content="Monitor crawl efficiency, indexation health, and duplicate suppression" />
+      </Helmet>
+      <CrawlDiagnosticsDashboard />
+    </Layout>
+  );
+}
