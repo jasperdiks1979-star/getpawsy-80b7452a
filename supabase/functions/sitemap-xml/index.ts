@@ -62,18 +62,15 @@ function sitemapIndex(today: string): string {
 
 function staticSitemap(today: string): string {
   const y = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+  // Only include money pages and essential indexable pages
+  // Excluded: /about, /contact, /faq, /shipping, /returns, /privacy, /terms (low-value for crawl budget)
   const pages: [string, string, string, string][] = [
     ["/", today, "daily", "1.0"],
     ["/products", today, "daily", "0.95"],
-    ["/bestsellers", today, "daily", "0.95"],
-    ["/blog", today, "daily", "0.85"],
-    ["/about", y, "weekly", "0.7"],
-    ["/contact", y, "weekly", "0.7"],
-    ["/faq", y, "weekly", "0.65"],
-    ["/shipping", y, "weekly", "0.5"],
-    ["/returns", y, "monthly", "0.4"],
-    ["/privacy", y, "yearly", "0.3"],
-    ["/terms", y, "yearly", "0.3"],
+    ["/bestsellers", today, "daily", "0.90"],
+    ["/cat-trees-condos", today, "daily", "0.90"],
+    ["/blog", today, "daily", "0.80"],
+    ["/guides", today, "daily", "0.85"],
   ];
   return xmlWrap(
     pages
@@ -100,6 +97,21 @@ async function productsSitemap(today: string): Promise<string> {
 }
 
 async function categoriesSitemap(today: string): Promise<string> {
+  // Use clean category slug URLs instead of parameter-based URLs
+  // Only include categories that have a clean URL mapping
+  const CLEAN_CATEGORY_SLUGS: Record<string, string> = {
+    'cat-trees-and-condos': 'cat-trees-condos',
+    'dog-beds': 'dog-beds',
+    'cat-litter-boxes': 'cat-litter-boxes',
+    'dog-toys': 'dog-toys',
+    'cat-toys': 'cat-toys',
+    'dog-collars-leashes': 'dog-collars-leashes',
+    'dog-carriers': 'dog-carriers',
+    'cat-carriers': 'cat-carriers',
+    'dog-grooming': 'dog-grooming',
+    'guinea-pig-cages': 'guinea-pig-cages',
+  };
+
   const cats = (await dbQuery("categories", "select=slug,name")) as Array<{
     slug: string;
     name: string;
@@ -119,11 +131,15 @@ async function categoriesSitemap(today: string): Promise<string> {
     const sl = c.slug || toSlug(c.name);
     if (seen.has(sl)) continue;
     seen.add(sl);
-    urls.push(
-      urlTag(`${BASE_URL}/products?category=${sl}`, today, "daily", "0.8"),
-    );
+    // Only include categories with clean URL mappings — skip parameter-based URLs
+    const cleanSlug = CLEAN_CATEGORY_SLUGS[sl];
+    if (cleanSlug) {
+      urls.push(
+        urlTag(`${BASE_URL}/${cleanSlug}`, today, "weekly", "0.85"),
+      );
+    }
   }
-  console.log(`Categories sitemap: ${seen.size} URLs`);
+  console.log(`Categories sitemap: ${urls.length} clean URLs (${seen.size} total categories)`);
   return xmlWrap(urls.join("\n"));
 }
 
