@@ -286,5 +286,113 @@
     "featuredImage": "/images/guides/outdoor-dog-games.jpg",
     "readingTime": 14,
     "relatedCategories": ["dog-toys", "dog-outdoor"]
+  },
+  {
+    "slug": "summer-dog-activities",
+    "title": "Summer Dog Activities (2026) – 10 Safe Ways to Keep Dogs Cool & Active",
+    "excerpt": "10 summer dog activities that keep dogs active without overheating. Vet-informed heat safety rules for every breed type.",
+    "category": "Dog Activities",
+    "keywords": ["summer dog activities", "summer games for dogs", "hot weather dog exercise"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/outdoor-dog-games.jpg",
+    "readingTime": 7,
+    "relatedCategories": ["dog-toys", "dog-outdoor"]
+  },
+  {
+    "slug": "backyard-enrichment-for-dogs",
+    "title": "Backyard Enrichment for Dogs (2026) – Simple DIY Ideas That Actually Work",
+    "excerpt": "Simple backyard enrichment ideas for dogs that reduce boredom and destructive behavior. DIY setups using household items.",
+    "category": "Dog Activities",
+    "keywords": ["backyard enrichment for dogs", "backyard dog activities", "DIY dog enrichment"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/outdoor-dog-games.jpg",
+    "readingTime": 6,
+    "relatedCategories": ["dog-toys", "dog-outdoor"]
+  },
+  {
+    "slug": "how-to-tire-out-a-dog-fast",
+    "title": "How to Tire Out a Dog Fast (2026) – 8 Methods That Actually Work",
+    "excerpt": "8 proven ways to tire out a high-energy dog in under 30 minutes. Physical and mental exhaustion strategies for lasting calm.",
+    "category": "Dog Activities",
+    "keywords": ["how to tire out a dog", "tire out dog fast", "exhaust high energy dog"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/outdoor-dog-games.jpg",
+    "readingTime": 6,
+    "relatedCategories": ["dog-toys", "dog-outdoor"]
+  },
+  {
+    "slug": "dog-bed-for-large-breeds",
+    "title": "Best Dog Beds for Large Breeds (2026) – Sized for Labs, Shepherds & Great Danes",
+    "excerpt": "Dog beds tested and sized for Labs, German Shepherds, Great Danes and other large breeds. Foam thickness recommendations by weight class.",
+    "category": "Dog Beds",
+    "keywords": ["dog bed for large breeds", "large dog bed", "XL dog bed"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 6,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "calming-dog-bed-anxiety",
+    "title": "Best Calming Dog Beds for Anxiety (2026) – Do They Actually Work?",
+    "excerpt": "Do calming dog beds reduce anxiety? We tested donut beds, bolstered designs, and weighted options. Honest findings for anxious dogs.",
+    "category": "Dog Beds",
+    "keywords": ["calming dog bed", "dog bed for anxiety", "anti anxiety dog bed"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 6,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "memory-foam-vs-standard-dog-bed",
+    "title": "Memory Foam vs Standard Dog Bed (2026) – Is the Upgrade Worth It?",
+    "excerpt": "Memory foam vs standard polyester dog beds compared by support, durability, and total cost. Find out which type actually lasts longer.",
+    "category": "Dog Beds",
+    "keywords": ["memory foam vs standard dog bed", "memory foam dog bed worth it"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-orthopedic-dog-bed.jpg",
+    "readingTime": 5,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "litter-box-placement-guide",
+    "title": "Litter Box Placement Guide (2026) – Where to Put It for Zero Odor Issues",
+    "excerpt": "Where to place your cat's litter box for minimal odor and maximum cat comfort. Room-by-room placement analysis.",
+    "category": "Cat Litter",
+    "keywords": ["litter box placement", "where to put litter box", "litter box location"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-cat-litter-box-2026.jpg",
+    "readingTime": 6,
+    "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "automatic-vs-manual-litter-box",
+    "title": "Automatic vs Manual Litter Box (2026) – Which Is Actually Worth It?",
+    "excerpt": "Automatic vs manual litter boxes compared by real cost, convenience, and reliability.",
+    "category": "Cat Litter",
+    "keywords": ["automatic vs manual litter box", "self cleaning litter box worth it"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/self-cleaning-litter-box.jpg",
+    "readingTime": 6,
+    "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "cat-litter-box-odor-solutions",
+    "title": "Cat Litter Box Odor Solutions (2026) – What Actually Eliminates Smell",
+    "excerpt": "Tested odor control methods for cat litter boxes ranked by effectiveness.",
+    "category": "Cat Litter",
+    "keywords": ["cat litter box odor", "litter box smell", "eliminate litter box odor"],
+    "publishedAt": "2026-02-13",
+    "updatedAt": "2026-02-13",
+    "featuredImage": "/images/guides/best-cat-litter-box-2026.jpg",
+    "readingTime": 5,
+    "relatedCategories": ["cat-litter-boxes"]
   }
 ]

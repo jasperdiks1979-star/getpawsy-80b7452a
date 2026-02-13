@@ -284,6 +284,23 @@ const GuidePage = () => {
         )}
 
 
+        {/* Jump Navigation Bar (sticky on scroll) */}
+        {guide.jumpNav && guide.jumpNav.length > 0 && (
+          <nav className="sticky top-16 z-30 -mx-4 px-4 py-2 mb-6 bg-background/95 backdrop-blur-sm border-b border-border overflow-x-auto">
+            <div className="flex items-center gap-1 min-w-max">
+              {guide.jumpNav.map((item, i) => (
+                <a
+                  key={i}
+                  href={`#${item.anchor}`}
+                  className="text-xs font-medium px-3 py-1.5 rounded-full border border-border bg-card text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors whitespace-nowrap"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          </nav>
+        )}
+
         {/* Table of Contents */}
         <nav className="bg-muted/50 rounded-xl p-6 mb-10 border border-border">
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
@@ -423,18 +440,23 @@ const GuidePage = () => {
           </section>
         )}
 
-        {/* FAQ */}
+        {/* FAQ Accordion */}
         {guide.faq.length > 0 && (
           <section id="faq" className="mb-12 scroll-mt-24">
             <h2 className="text-2xl font-display font-bold text-foreground mb-6">
               Frequently Asked Questions
             </h2>
-            <div className="space-y-6">
+            <div className="space-y-0 border border-border rounded-xl overflow-hidden">
               {guide.faq.map((item, i) => (
-                <div key={i} className="border-b border-border pb-5 last:border-0">
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{item.question}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{item.answer}</p>
-                </div>
+                <details key={i} className="group border-b border-border last:border-0">
+                  <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer hover:bg-muted/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                    <h3 className="text-[15px] font-semibold text-foreground text-left">{item.question}</h3>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform group-open:rotate-90" />
+                  </summary>
+                  <div className="px-5 pb-5 pt-0">
+                    <p className="text-muted-foreground leading-relaxed text-sm">{item.answer}</p>
+                  </div>
+                </details>
               ))}
             </div>
           </section>
