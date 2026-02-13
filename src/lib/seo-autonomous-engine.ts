@@ -13,6 +13,142 @@
  * Layer 6: Enterprise Safety (rate limits, rollback, logging)
  */
 
+// ============= EMERGENCY RECOVERY MODE =============
+
+export type EmergencyTriggerType = 'ranking_drop_10pct' | 'traffic_drop_15pct' | 'index_ratio_below_55';
+
+export interface EmergencyRecoveryConfig {
+  active: boolean;
+  activatedAt: string;
+  triggers: EmergencyTriggerType[];
+  weeklyActionBudget: number;
+  priority: 'stabilization';
+  frozenActions: string[];
+  enabledActions: string[];
+  diagnosticSweep: DiagnosticSweepResult | null;
+  exitConditions: EmergencyExitConditions;
+  monitoringWindowDays: number;
+}
+
+export interface DiagnosticSweepResult {
+  runAt: string;
+  indexCoverageChange14d: number; // % change
+  canonicalMismatches: number;
+  crawlWastePct: number;
+  affectedPages: AffectedPageDiagnostic[];
+}
+
+export interface AffectedPageDiagnostic {
+  url: string;
+  primaryKeyword: string;
+  impressionDelta: number;   // % change
+  ctrDelta: number;          // % change
+  avgPositionDelta: number;  // absolute change (positive = worse)
+  repairActions: string[];
+}
+
+export interface EmergencyExitConditions {
+  rankingsStable7Days: boolean;
+  noFurtherDrop5Pct: boolean;
+  indexCrawlRatioAbove60: boolean;
+  crawlWasteBelow8: boolean;
+  canExit: boolean;
+  daysSinceActivation: number;
+}
+
+export function getEmergencyRecoveryConfig(): EmergencyRecoveryConfig {
+  return {
+    active: true,
+    activatedAt: new Date().toISOString(),
+    triggers: ['ranking_drop_10pct', 'traffic_drop_15pct'],
+    weeklyActionBudget: 2,
+    priority: 'stabilization',
+    frozenActions: [
+      'new_content_creation',
+      'cluster_expansion',
+      'backlink_automation',
+      'structural_url_changes',
+      'bulk_internal_link_injections',
+      'new_cluster_expansion',
+      'autonomous_longform_generation',
+      'dog_beds_optimization',
+      'cat_litter_optimization',
+    ],
+    enabledActions: [
+      'canonical_integrity_checks',
+      'duplicate_crawl_monitoring',
+      'schema_validation',
+      'meta_revert',
+      'controlled_ctr_ab_test',
+    ],
+    diagnosticSweep: generateDiagnosticSweep(),
+    exitConditions: evaluateExitConditions(),
+    monitoringWindowDays: 7,
+  };
+}
+
+function generateDiagnosticSweep(): DiagnosticSweepResult {
+  return {
+    runAt: new Date().toISOString(),
+    indexCoverageChange14d: -6.2,
+    canonicalMismatches: 4,
+    crawlWastePct: 9.1,
+    affectedPages: [
+      {
+        url: '/guides/best-cat-trees-2026',
+        primaryKeyword: 'best cat trees 2026',
+        impressionDelta: -22.4,
+        ctrDelta: -1.8,
+        avgPositionDelta: 3.2,
+        repairActions: ['Revert meta to previous version', 'Verify canonical = self-referencing', 'Check anchor distribution'],
+      },
+      {
+        url: '/guides/best-dog-bed-2026',
+        primaryKeyword: 'best dog bed 2026',
+        impressionDelta: -31.1,
+        ctrDelta: -2.3,
+        avgPositionDelta: 5.7,
+        repairActions: ['Revert title A/B test', 'Remove 2 recent internal links', 'Validate schema integrity'],
+      },
+      {
+        url: '/guides/best-cat-litter-box-2026',
+        primaryKeyword: 'best cat litter box',
+        impressionDelta: -18.5,
+        ctrDelta: -0.9,
+        avgPositionDelta: 2.1,
+        repairActions: ['Verify canonical tag', 'Check noindex conflicts', 'Reduce anchor density'],
+      },
+      {
+        url: '/cat-trees-condos',
+        primaryKeyword: 'cat trees for sale',
+        impressionDelta: -14.2,
+        ctrDelta: -1.1,
+        avgPositionDelta: 1.8,
+        repairActions: ['Verify canonical = self-referencing', 'Check crawl depth', 'Validate schema'],
+      },
+      {
+        url: '/guides/best-orthopedic-dog-bed',
+        primaryKeyword: 'orthopedic dog bed',
+        impressionDelta: -25.3,
+        ctrDelta: -1.5,
+        avgPositionDelta: 4.3,
+        repairActions: ['Revert meta changes', 'Remove excessive exact anchors', 'Check robots.txt'],
+      },
+    ],
+  };
+}
+
+function evaluateExitConditions(): EmergencyExitConditions {
+  return {
+    rankingsStable7Days: false,
+    noFurtherDrop5Pct: true,
+    indexCrawlRatioAbove60: true,
+    crawlWasteBelow8: false,
+    canExit: false,
+    daysSinceActivation: 0,
+  };
+}
+
 // ============= FOCUS MODE CONFIG =============
 
 export interface FocusModeConfig {
@@ -28,7 +164,7 @@ export interface FocusModeConfig {
 
 export function getFocusModeConfig(): FocusModeConfig {
   return {
-    active: true,
+    active: false, // Suspended during Emergency Recovery
     cluster: 'Cat Trees & Condos',
     primaryUrl: '/guides/best-cat-trees-2026',
     durationDays: 30,
@@ -67,6 +203,7 @@ export interface AICoreAnalysis {
   status: 'optimal' | 'healthy' | 'attention' | 'critical';
   lastAnalyzedAt: string;
   focusMode: FocusModeConfig;
+  emergencyRecovery: EmergencyRecoveryConfig;
 }
 
 export function calculateUnifiedScore(): AICoreAnalysis {
@@ -96,7 +233,7 @@ export function calculateUnifiedScore(): AICoreAnalysis {
 
   const status = unified >= 75 ? 'optimal' : unified >= 60 ? 'healthy' : unified >= 40 ? 'attention' : 'critical';
 
-  return { ...metrics, unifiedScore: unified, status, lastAnalyzedAt: new Date().toISOString(), focusMode: getFocusModeConfig() };
+  return { ...metrics, unifiedScore: unified, status, lastAnalyzedAt: new Date().toISOString(), focusMode: getFocusModeConfig(), emergencyRecovery: getEmergencyRecoveryConfig() };
 }
 
 // ============= LAYER 2 — AUTONOMOUS ACTION ENGINE =============
@@ -222,10 +359,12 @@ export interface HealthCheck {
 
 export function runHealthChecks(): HealthCheck[] {
   return [
-    { metric: 'Ranking Stability', value: 94, threshold: 90, status: 'pass', trigger: 'ranking_drop', description: 'No ranking drops >10% detected in last 7 days' },
-    { metric: 'Crawl Waste', value: 7.2, threshold: 10, status: 'pass', trigger: 'crawl_waste', description: 'Crawl waste at 7.2% — within acceptable range' },
-    { metric: 'Index/Crawl Ratio', value: 64, threshold: 60, status: 'warning', trigger: 'index_ratio', description: 'Index ratio at 64% — approaching 60% threshold' },
-    { metric: 'Canonical Integrity', value: 96, threshold: 95, status: 'pass', trigger: 'canonical_conflict', description: 'Only 4 canonical mismatches detected — within tolerance' },
+    { metric: 'Ranking Stability', value: 82, threshold: 90, status: 'fail', trigger: 'ranking_drop', description: '⚠️ >10% ranking drop detected in last 7 days — Emergency trigger activated' },
+    { metric: 'Organic Traffic WoW', value: -16.3, threshold: -15, status: 'fail', trigger: 'ranking_drop', description: '⚠️ 16.3% organic traffic drop week-over-week — Emergency trigger activated' },
+    { metric: 'Crawl Waste', value: 9.1, threshold: 8, status: 'warning', trigger: 'crawl_waste', description: 'Crawl waste at 9.1% — above 8% target, stabilization needed' },
+    { metric: 'Index/Crawl Ratio', value: 58, threshold: 60, status: 'fail', trigger: 'index_ratio', description: '⚠️ Index ratio at 58% — below 60% threshold, approaching emergency trigger at 55%' },
+    { metric: 'Canonical Integrity', value: 92, threshold: 95, status: 'warning', trigger: 'canonical_conflict', description: '8 canonical mismatches detected — above 5% tolerance' },
+    { metric: 'Duplicate URLs', value: 6.8, threshold: 5, status: 'warning', trigger: 'crawl_waste', description: 'Duplicate crawling at 6.8% — above 5% target' },
   ];
 }
 
@@ -234,12 +373,26 @@ export function getRecoveryStatus(): RecoveryStatus {
   const fails = checks.filter(c => c.status === 'fail');
 
   return {
-    active: fails.length > 0,
-    triggers: fails.map(f => f.trigger),
-    activeSince: fails.length > 0 ? new Date(Date.now() - 3600000).toISOString() : null,
-    actionsInProgress: fails.length > 0 ? ['Reinforce internal linking', 'Rebalance sitemap priorities'] : [],
-    pausedActions: fails.length > 0 ? ['Title A/B tests', 'New content expansion', 'Link injections'] : [],
-    recoveryProgress: fails.length > 0 ? 35 : 100,
+    active: true, // Emergency Recovery Mode is active
+    triggers: ['ranking_drop', 'index_ratio'],
+    activeSince: new Date().toISOString(),
+    actionsInProgress: [
+      'Revert last 7-day meta changes on affected pages',
+      'Verify canonical = self-referencing on all guides',
+      'Reduce anchor density on over-optimized pages',
+      'Validate schema integrity (no errors)',
+      'Normalize parameter URLs',
+    ],
+    pausedActions: [
+      'New content creation',
+      'Cluster expansion',
+      'Backlink automation',
+      'Structural URL changes',
+      'Bulk internal link injections',
+      'Title A/B tests',
+      'FAQ schema additions',
+    ],
+    recoveryProgress: 15,
   };
 }
 
@@ -269,8 +422,8 @@ export interface ActionLogEntry {
 
 export function getSafetyMetrics(): SafetyMetrics {
   return {
-    actionsThisWeek: 1,
-    maxActionsPerWeek: 3, // Focus Mode: reduced from 5
+    actionsThisWeek: 0,
+    maxActionsPerWeek: 2, // Emergency Recovery Mode: reduced from 3
     rollbackMemoryDays: 30,
     changesLoggedTotal: 47,
     rollbacksAvailable: 12,
