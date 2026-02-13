@@ -50,6 +50,78 @@ const TITLE_AB_TESTS: Record<string, TitleABConfig> = {
       },
     ],
   },
+  'best-dog-bed-2026': {
+    slug: 'best-dog-bed-2026',
+    activeVariantId: 'A',
+    rotationIntervalDays: 7,
+    rotationStartDate: '2026-02-13',
+    winner: null,
+    variants: [
+      {
+        id: 'A',
+        title: 'Best Dog Beds (2026) – 10 Tested Picks by Foam & Breed',
+        description: 'Number + method + specificity. Expert credibility.',
+      },
+      {
+        id: 'B',
+        title: '10 Best Dog Beds (2026) – Orthopedic & Calming Tested',
+        description: 'List-first + category callout. Commercial intent match.',
+      },
+      {
+        id: 'C',
+        title: 'Best Dog Beds That Actually Last (2026 Review)',
+        description: 'Durability hook. Addresses #1 buyer concern.',
+      },
+    ],
+  },
+  'best-cat-litter-box-2026': {
+    slug: 'best-cat-litter-box-2026',
+    activeVariantId: 'A',
+    rotationIntervalDays: 7,
+    rotationStartDate: '2026-02-13',
+    winner: null,
+    variants: [
+      {
+        id: 'A',
+        title: 'Best Cat Litter Box (2026) – 12 Tested for Odor & Size',
+        description: 'Number + testing method + top pain points.',
+      },
+      {
+        id: 'B',
+        title: '12 Best Cat Litter Boxes (2026) – Odor Control Ranked',
+        description: 'List-first + specific benefit. Commercial hook.',
+      },
+      {
+        id: 'C',
+        title: 'Best Cat Litter Box That Controls Odor (2026)',
+        description: 'Benefit-first. Addresses primary search intent.',
+      },
+    ],
+  },
+  'best-orthopedic-dog-bed': {
+    slug: 'best-orthopedic-dog-bed',
+    activeVariantId: 'A',
+    rotationIntervalDays: 7,
+    rotationStartDate: '2026-02-13',
+    winner: null,
+    variants: [
+      {
+        id: 'A',
+        title: 'Best Orthopedic Dog Bed (2026) – Vet-Approved Picks',
+        description: 'Authority trigger + year. Trust-driven format.',
+      },
+      {
+        id: 'B',
+        title: 'Orthopedic Dog Beds (2026) – Foam Density Tested',
+        description: 'Method-driven. Differentiates from generic reviews.',
+      },
+      {
+        id: 'C',
+        title: 'Best Orthopedic Dog Bed for Joint Pain (2026)',
+        description: 'Problem-specific. High intent match for arthritis queries.',
+      },
+    ],
+  },
 };
 
 /**
