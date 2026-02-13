@@ -173,6 +173,7 @@ const GuidesDashboard = lazyWithRetry(() => import("./pages/admin/GuidesDashboar
 const AnalyticsHub = lazyWithRetry(() => import("./pages/admin/AnalyticsHub"));
 const ClusterMapPage = lazyWithRetry(() => import("./pages/dashboard/ClusterMapPage"));
 const SeoMonitorDashboard = lazyWithRetry(() => import("./pages/dashboard/SeoMonitorDashboard"));
+const SeoMonitoringDashboard = lazyWithRetry(() => import("./pages/dashboard/SeoMonitoringDashboard"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
@@ -290,7 +291,8 @@ const App = () => {
                          <Route path="/dashboard/guides-seo" element={<GuidesDashboard />} />
                          <Route path="/dashboard/analytics" element={<AnalyticsHub />} />
                          <Route path="/dashboard/cluster-map" element={<ClusterMapPage />} />
-                         <Route path="/dashboard/seo-monitor" element={<SeoMonitorDashboard />} />
+                          <Route path="/dashboard/seo-monitor" element={<SeoMonitorDashboard />} />
+                          <Route path="/dashboard/seo-monitoring" element={<SeoMonitoringDashboard />} />
                          
                          {/* Legacy /admin redirects to /dashboard */}
                          <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
