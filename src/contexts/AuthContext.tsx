@@ -45,15 +45,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshSession = useCallback(async (): Promise<Session | null> => {
-    console.log('Manually refreshing session...');
-    const { data, error } = await supabase.auth.refreshSession();
-    
-    if (error) {
-      console.error('Failed to refresh session:', error);
+    try {
+      console.log('Manually refreshing session...');
+      const { data, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.error('[ProdSafe] Failed to refresh session:', error);
+        return null;
+      }
+      
+      return data.session;
+    } catch (e) {
+      console.error('[ProdSafe] refreshSession crashed (non-fatal):', e);
       return null;
     }
-    
-    return data.session;
   }, []);
 
   const scheduleTokenRefresh = useCallback((expiresAt: number) => {
