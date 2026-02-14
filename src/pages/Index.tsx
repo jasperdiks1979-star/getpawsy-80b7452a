@@ -427,7 +427,7 @@ const Index = () => {
       <Helmet>
         <title>GetPawsy | Trusted Pet Products with Fast US Shipping</title>
         <meta name="description" content="Shop thoughtfully selected pet products for dogs and cats. Fast US shipping, free over $35, and 30-day hassle-free returns." />
-        <link rel="canonical" href="https://getpawsy.pet/" />
+        <link rel="canonical" href="https://getpawsy.pet" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <meta property="og:title" content="GetPawsy | Trusted Pet Products with Fast US Shipping" />
         <meta property="og:description" content="Shop thoughtfully selected pet products for dogs and cats. Fast US shipping, free over $35, and 30-day hassle-free returns." />
