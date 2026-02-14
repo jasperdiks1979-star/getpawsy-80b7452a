@@ -8,6 +8,7 @@ import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
 const EDGE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/sitemap-xml';
+const MERCHANT_FEED_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-merchant-feed';
 const SITEMAP_TYPES = ['index', 'static', 'products', 'categories', 'bestsellers', 'collections', 'blog', 'guides'];
 
 const FALLBACK_INDEX = `<?xml version="1.0" encoding="UTF-8"?>
@@ -63,6 +64,21 @@ export default function sitemapPlugin(): Plugin {
           writeFileSync(filePath, xml, 'utf-8');
           console.log(`[sitemap-plugin] ✓ ${fileName(type)} (${xml.length} bytes)`);
         }
+      }
+
+      // Generate merchant-feed.xml
+      try {
+        const res = await fetch(MERCHANT_FEED_URL);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const xml = await res.text();
+        if (!xml.trim().startsWith('<?xml')) throw new Error('Invalid XML response');
+        writeFileSync(join(outDir, 'merchant-feed.xml'), xml, 'utf-8');
+        console.log(`[sitemap-plugin] ✓ merchant-feed.xml (${xml.length} bytes)`);
+      } catch (err) {
+        console.warn('[sitemap-plugin] Failed to fetch merchant feed:', err);
+        const fallback = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel><title>GetPawsy Product Feed</title><link>https://getpawsy.pet/</link><description>Google Merchant Center feed for GetPawsy.</description></channel></rss>`;
+        writeFileSync(join(outDir, 'merchant-feed.xml'), fallback, 'utf-8');
+        console.log('[sitemap-plugin] ✓ merchant-feed.xml (fallback)');
       }
 
       console.log('[sitemap-plugin] Done.');
