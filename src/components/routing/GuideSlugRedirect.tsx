@@ -21,7 +21,13 @@ export function isGuideSlug(slug: string): boolean {
 const GuideSlugRedirect = () => {
   const { slug } = useParams<{ slug: string }>();
 
-  
+  // Never handle .xml paths — they are static assets served by the server
+  if (slug && slug.endsWith('.xml')) {
+    // If we got here, the static file wasn't served (shouldn't happen).
+    // Return null to avoid rendering SPA content for XML URLs.
+    return null;
+  }
+
   if (slug && GUIDE_SLUGS.has(slug)) {
     return <Navigate to={`/guides/${slug}`} replace />;
   }
