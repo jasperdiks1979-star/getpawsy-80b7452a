@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,26 +41,53 @@ interface PinterestAdsData {
 }
 
 export const PinterestAdsWidget = () => {
+  
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ["pinterest-ads-data"],
     queryFn: async (): Promise<PinterestAdsData> => {
-      const { data, error } = await supabase.functions.invoke('pinterest-ads');
-      
-      if (error) {
-        console.error('Pinterest Ads API error:', error);
-        throw new Error(error.message || 'Failed to fetch Pinterest data');
+      try {
+        const { data, error } = await supabase.functions.invoke('pinterest-ads');
+        
+        if (error) {
+          console.error('[Pinterest] Edge function error (non-fatal):', error);
+          // Return empty data instead of throwing — never break the UI
+          return {
+            adAccounts: [], campaigns: [],
+            summary: { totalImpressions: 0, totalClicks: 0, totalSpend: 0, averageCtr: 0, totalConversions: 0 },
+            dateRange: { startDate: '', endDate: '' },
+            error: error.message,
+          };
+        }
+        
+        if (data?.ok === false) {
+          console.warn('[Pinterest] Degraded:', data.reason);
+          return {
+            adAccounts: [], campaigns: [],
+            summary: { totalImpressions: 0, totalClicks: 0, totalSpend: 0, averageCtr: 0, totalConversions: 0 },
+            dateRange: { startDate: '', endDate: '' },
+            error: data.reason,
+          };
+        }
+        
+        return data;
+      } catch (err) {
+        console.error('[Pinterest] Unexpected error (non-fatal):', err);
+        return {
+          adAccounts: [], campaigns: [],
+          summary: { totalImpressions: 0, totalClicks: 0, totalSpend: 0, averageCtr: 0, totalConversions: 0 },
+          dateRange: { startDate: '', endDate: '' },
+          error: 'unexpected_error',
+        };
       }
-      
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-      
-      return data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes
-    retry: 1,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
+    retry: false, // Never retry — Pinterest issues should not hammer the backend
+    enabled: false, // Do NOT fetch on mount — only on user action
   });
+
+  // Lazy-load: fetch after widget mounts, not during app boot
+  useEffect(() => { refetch(); }, [refetch]);
 
   const handleRefresh = async () => {
     try {

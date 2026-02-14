@@ -45,8 +45,12 @@ serve(async (req) => {
     if (!PINTEREST_ACCESS_TOKEN) {
       console.error('PINTEREST_ACCESS_TOKEN is not configured');
       return new Response(
-        JSON.stringify({ error: 'Pinterest API not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          ok: false, reason: 'NOT_CONFIGURED',
+          adAccounts: [], campaigns: [],
+          summary: { totalImpressions: 0, totalClicks: 0, totalSpend: 0, averageCtr: 0, totalConversions: 0 },
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -69,16 +73,15 @@ serve(async (req) => {
       const errorText = await adAccountsResponse.text();
       console.error('Pinterest API error (ad_accounts):', adAccountsResponse.status, errorText);
       
-      if (adAccountsResponse.status === 401) {
-        return new Response(
-          JSON.stringify({ error: 'Pinterest token expired or invalid. Please refresh your access token.' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
+      // NEVER return non-200 to frontend — always graceful
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch Pinterest data', details: errorText }),
-        { status: adAccountsResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          ok: false, 
+          reason: adAccountsResponse.status === 401 ? 'TOKEN_EXPIRED' : 'API_ERROR',
+          adAccounts: [], campaigns: [], 
+          summary: { totalImpressions: 0, totalClicks: 0, totalSpend: 0, averageCtr: 0, totalConversions: 0 },
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -199,9 +202,15 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Pinterest Ads function error:', error);
+    // NEVER return 500 — always 200 with error info
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        ok: false, 
+        reason: 'INTERNAL_ERROR',
+        adAccounts: [], campaigns: [],
+        summary: { totalImpressions: 0, totalClicks: 0, totalSpend: 0, averageCtr: 0, totalConversions: 0 },
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
