@@ -343,11 +343,15 @@ const FALLBACK_EMPTY = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="h
 const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel><title>GetPawsy Product Feed</title><link>https://getpawsy.pet/</link><description>Google Merchant Center feed for GetPawsy.</description></channel></rss>`;
 
 export default function sitemapPlugin(): Plugin {
+  let resolvedOutDir = 'dist';
   return {
     name: 'generate-static-xml',
     apply: 'build',
+    configResolved(config) {
+      resolvedOutDir = config.build.outDir || 'dist';
+    },
     async closeBundle() {
-      const outDir = 'public';
+      const outDir = resolvedOutDir;
       mkdirSync(outDir, { recursive: true });
       console.log('[xml-plugin] Generating static XML files from Supabase REST API...');
 
