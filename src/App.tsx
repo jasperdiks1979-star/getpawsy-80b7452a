@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { setupGlobalErrorHandler } from "@/lib/error-reporter";
 import { initDataHealer } from "@/lib/data-healer";
 import { initLegacyLinkGuard, initLegacyFetchGuard } from "@/lib/legacy-link-guard";
+import { AppErrorBoundary } from "@/components/error/AppErrorBoundary";
 
 // Setup global error handler for automatic error reporting
 setupGlobalErrorHandler();
@@ -247,6 +248,7 @@ const App = () => {
   }, []);
 
   return (
+    <AppErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
@@ -372,6 +374,7 @@ const App = () => {
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
+    </AppErrorBoundary>
   );
 };
 
