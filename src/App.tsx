@@ -12,8 +12,9 @@ import { WishlistProvider } from "@/contexts/WishlistContext";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { LiveCheckoutWidget } from "@/components/admin/LiveCheckoutWidget";
-import { PinterestTag } from "@/components/tracking/PinterestTag";
-import { GlobalVisitorTracker } from "@/components/tracking/GlobalVisitorTracker";
+import { SafePinterestTag } from "@/components/tracking/SafePinterestTag";
+import { SafeGlobalVisitorTracker } from "@/components/tracking/SafeGlobalVisitorTracker";
+import { MarketingErrorBoundary } from "@/components/error/MarketingErrorBoundary";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { setupGlobalErrorHandler } from "@/lib/error-reporter";
@@ -260,8 +261,10 @@ const App = () => {
                 <BrowserRouter>
                   <LiveCheckoutWidget />
                   <ScrollToTop />
-                  <PinterestTag />
-                  <GlobalVisitorTracker />
+                  <MarketingErrorBoundary>
+                    <SafePinterestTag />
+                    <SafeGlobalVisitorTracker />
+                  </MarketingErrorBoundary>
                   <RouteErrorBoundary>
                     <Suspense fallback={<RouteLoader />}>
                       <Routes>
