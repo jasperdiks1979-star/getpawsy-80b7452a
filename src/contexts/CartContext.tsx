@@ -4,7 +4,7 @@ import { trackGoogleAdsAddToCart } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { toast } from 'sonner';
-import { trackPinterestEvent } from '@/hooks/usePinterestTracking';
+import { fireMarketingAsync } from '@/lib/marketingClient';
 import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
 
 export interface CartItem {
@@ -249,21 +249,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Legacy cart activity (for map visualization)
     trackCartActivity();
     
-    // Pinterest AddToCart tracking
-    trackPinterestEvent('addtocart', {
-      value: newItem.price,
-      currency: 'USD',
-      order_quantity: 1,
-      product_name: newItem.name,
-      product_id: newItem.id,
-      product_price: newItem.price,
-      line_items: [{
+    // Pinterest AddToCart tracking — deferred, non-blocking
+    fireMarketingAsync('pinterest-addtocart', async () => {
+      const { trackPinterestEvent } = await import('@/hooks/usePinterestTracking');
+      trackPinterestEvent('addtocart', {
+        value: newItem.price,
+        currency: 'USD',
+        order_quantity: 1,
         product_name: newItem.name,
         product_id: newItem.id,
         product_price: newItem.price,
-        product_quantity: 1,
-      }],
-    });
+        line_items: [{
+          product_name: newItem.name,
+          product_id: newItem.id,
+          product_price: newItem.price,
+          product_quantity: 1,
+        }],
+      });
+    }, 'pinterest');
   };
 
   const removeItem = (id: string) => {

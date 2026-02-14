@@ -1470,6 +1470,75 @@ export type Database = {
           },
         ]
       }
+      marketing_events: {
+        Row: {
+          context: Json | null
+          created_at: string
+          event_type: string
+          id: string
+          message: string
+          provider: string
+          severity: string
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          event_type: string
+          id?: string
+          message: string
+          provider: string
+          severity?: string
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string
+          provider?: string
+          severity?: string
+        }
+        Relationships: []
+      }
+      marketing_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          job_type: string
+          last_error: string | null
+          next_run_at: string
+          payload: Json | null
+          provider: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          job_type: string
+          last_error?: string | null
+          next_run_at?: string
+          payload?: Json | null
+          provider: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          job_type?: string
+          last_error?: string | null
+          next_run_at?: string
+          payload?: Json | null
+          provider?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       monitoring_ad_actions: {
         Row: {
           action_type: string

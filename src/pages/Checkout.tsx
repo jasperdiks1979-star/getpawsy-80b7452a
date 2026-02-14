@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { CartUpsell } from '@/components/cart/CartUpsell';
-import { trackPinterestEvent } from '@/hooks/usePinterestTracking';
+import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import {
   FREE_SHIPPING_THRESHOLD,
@@ -299,18 +299,21 @@ const Checkout = () => {
       // A/B Test: Track checkout started with variant
       abTest.trackCheckoutStarted(totalPrice);
       
-      // Pinterest Checkout tracking
-      trackPinterestEvent('checkout', {
-        value: totalPrice,
-        currency: 'USD',
-        order_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
-        line_items: items.map(item => ({
-          product_name: item.name,
-          product_id: item.id,
-          product_price: item.price,
-          product_quantity: item.quantity,
-        })),
-      });
+      // Pinterest Checkout tracking — deferred, non-blocking
+      fireMarketingAsync('pinterest-checkout', async () => {
+        const { trackPinterestEvent } = await import('@/hooks/usePinterestTracking');
+        trackPinterestEvent('checkout', {
+          value: totalPrice,
+          currency: 'USD',
+          order_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
+          line_items: items.map(item => ({
+            product_name: item.name,
+            product_id: item.id,
+            product_price: item.price,
+            product_quantity: item.quantity,
+          })),
+        });
+      }, 'pinterest');
     }
   }, []);
 

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { trackPurchase, trackGoogleAdsConversion, trackGoogleAdsPageView } from '@/lib/analytics';
 import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
-import { trackPinterestEvent } from '@/hooks/usePinterestTracking';
+import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 
 const PaymentSuccess = () => {
@@ -58,19 +58,22 @@ const PaymentSuccess = () => {
         orderValue: totalPrice,
       });
 
-      // Pinterest purchase tracking
-      trackPinterestEvent('checkout', {
-        event_id: sessionId,
-        value: totalPrice,
-        currency: 'USD',
-        order_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
-        line_items: items.map(item => ({
-          product_name: item.name,
-          product_id: item.id,
-          product_price: item.price,
-          product_quantity: item.quantity,
-        })),
-      });
+      // Pinterest purchase tracking — deferred, non-blocking
+      fireMarketingAsync('pinterest-purchase', async () => {
+        const { trackPinterestEvent } = await import('@/hooks/usePinterestTracking');
+        trackPinterestEvent('checkout', {
+          event_id: sessionId,
+          value: totalPrice,
+          currency: 'USD',
+          order_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
+          line_items: items.map(item => ({
+            product_name: item.name,
+            product_id: item.id,
+            product_price: item.price,
+            product_quantity: item.quantity,
+          })),
+        });
+      }, 'pinterest');
 
       // A/B Test: Track purchase completed with variant
       abTest.trackPurchaseCompleted({
