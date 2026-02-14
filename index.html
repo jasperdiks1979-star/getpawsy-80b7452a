@@ -121,16 +121,6 @@
   </head>
 
   <body>
-    <script>
-      // Server-level 301 redirect fallback: force canonical domain
-      // This runs before React hydration to catch any lovable.app or www traffic
-      (function() {
-        var host = window.location.hostname;
-        if (host === 'getpawsy.lovable.app' || host === 'www.getpawsy.pet') {
-          window.location.replace('https://getpawsy.pet' + window.location.pathname + window.location.search + window.location.hash);
-        }
-      })();
-    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
