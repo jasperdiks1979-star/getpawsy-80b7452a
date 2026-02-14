@@ -22,15 +22,11 @@ import { initDataHealer } from "@/lib/data-healer";
 import { initLegacyLinkGuard, initLegacyFetchGuard } from "@/lib/legacy-link-guard";
 import { AppErrorBoundary } from "@/components/error/AppErrorBoundary";
 
-// Setup global error handler for automatic error reporting
-setupGlobalErrorHandler();
-
-// Initialize self-healing data sanitization
-initDataHealer();
-
-// Block deprecated external admin links
-initLegacyLinkGuard();
-initLegacyFetchGuard();
+// Production-safe mode: module-level inits NEVER block rendering
+try { setupGlobalErrorHandler(); } catch (e) { console.error('[ProdSafe] setupGlobalErrorHandler failed:', e); }
+try { initDataHealer(); } catch (e) { console.error('[ProdSafe] initDataHealer failed:', e); }
+try { initLegacyLinkGuard(); } catch (e) { console.error('[ProdSafe] initLegacyLinkGuard failed:', e); }
+try { initLegacyFetchGuard(); } catch (e) { console.error('[ProdSafe] initLegacyFetchGuard failed:', e); }
 
 // Critical routes - loaded immediately
 import Index from "./pages/Index";
