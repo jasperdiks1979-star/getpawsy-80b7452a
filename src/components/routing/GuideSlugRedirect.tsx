@@ -21,12 +21,6 @@ export function isGuideSlug(slug: string): boolean {
 const GuideSlugRedirect = () => {
   const { slug } = useParams<{ slug: string }>();
 
-  // Static file extensions must bypass the SPA — force a hard navigation
-  // so the server returns the actual file (e.g. merchant-feed.xml, sitemap.xml)
-  if (slug && /\.(xml|txt|json|ico|png|jpg|svg|webp|woff2?)$/i.test(slug)) {
-    window.location.replace(`/${slug}`);
-    return null;
-  }
   
   if (slug && GUIDE_SLUGS.has(slug)) {
     return <Navigate to={`/guides/${slug}`} replace />;
