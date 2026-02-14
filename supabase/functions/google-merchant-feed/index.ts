@@ -369,15 +369,20 @@ function generateProductXml(product: Product): string {
   return xml;
 }
 
+// In-memory cache (15 minutes)
+let feedCache: { xml: string; ts: number } | null = null;
+const CACHE_TTL_MS = 15 * 60 * 1000;
+
 function generateFeed(products: Product[]): string {
   const now = new Date().toISOString();
   
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
-    <title>GetPawsy - Premium Pet Products for Dogs, Cats &amp; Small Pets</title>
-    <link>${BASE_URL}</link>
-    <description>Shop premium pet products at GetPawsy. Quality dog beds, cat toys, pet accessories with free US shipping on orders over $35. Fast 3-7 day delivery, 30-day returns.</description>
+    <title>GetPawsy Product Feed</title>
+    <link>${BASE_URL}/</link>
+    <description>Google Merchant Center feed for GetPawsy.</description>
+    <language>en-US</language>
     <lastBuildDate>${now}</lastBuildDate>
 `;
 
@@ -396,10 +401,21 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const xmlHeaders = {
+    ...corsHeaders,
+    'Content-Type': 'application/xml; charset=utf-8',
+    'Cache-Control': 'public, max-age=900, s-maxage=1800',
+  };
+
   try {
+    // Return cached feed if still fresh
+    if (feedCache && Date.now() - feedCache.ts < CACHE_TTL_MS) {
+      console.log('Serving cached merchant feed');
+      return new Response(feedCache.xml, { headers: xmlHeaders });
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch all active canonical products (exclude duplicates)
@@ -415,33 +431,18 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to fetch products: ${error.message}`);
     }
 
-    if (!products || products.length === 0) {
-      console.log('No active products found');
-    }
+    console.log(`Generating merchant feed for ${products?.length || 0} products`);
 
-    console.log(`Generating optimized feed for ${products?.length || 0} products (Performance Max ready)`);
+    const xml = generateFeed(products || []);
 
-    const feed = generateFeed(products || []);
+    // Update cache
+    feedCache = { xml, ts: Date.now() };
 
-    return new Response(feed, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-      },
-    });
+    return new Response(xml, { headers: xmlHeaders });
   } catch (error: unknown) {
     console.error('Error generating merchant feed:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    const errorXml = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>Error</title><description>${escapeXml(msg)}</description></channel></rss>`;
+    return new Response(errorXml, { status: 500, headers: xmlHeaders });
   }
 });
