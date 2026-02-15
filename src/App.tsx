@@ -235,10 +235,10 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Reduced loading time for faster perceived performance
+    // Minimal loading time — just enough for critical resources to settle
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 800);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, []);
