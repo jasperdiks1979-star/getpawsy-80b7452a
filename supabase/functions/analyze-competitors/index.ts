@@ -239,7 +239,40 @@ function calculatePrice(costPrice: number): { price: number; compareAtPrice: num
 function isPetProduct(productName: string): boolean {
   const nameLower = productName.toLowerCase();
   
-  // Strong indicators - these always indicate pet products
+  // FIRST: Reject known non-pet patterns to prevent false positives
+  // e.g. "cat-eye sunglasses", "nail art pen", "AirTag case"
+  const nonPetPatterns = [
+    'women', 'mens', "men's", 'women\'s', 'ladies', 'girls', 'boys',
+    'bracelet', 'necklace', 'pendant', 'earring', 'ring ',
+    'faucet', 'cabinet', 'kitchen', 'bathroom', 'shower',
+    'shoe', 'boot', 'sandal', 'mule', 'heel', 'pumps', 'stiletto',
+    'dress', 'shirt', 'pants', 'jacket', 'sweater', 'blouse', 'skirt',
+    'beehive', 'bee hive', 'beekeeping',
+    'phone case', 'laptop', 'computer', 'tablet',
+    'car ', 'vehicle', 'motorcycle',
+    'human', 'baby', 'toddler', 'infant',
+    'nail art', 'nail polish', 'nail gel', 'manicure', 'pedicure',
+    'sunglasses', 'cat-eye', 'cat eye', 'eyewear', 'spectacles',
+    'airtag', 'air tag', 'anti-loss device', 'tracker case',
+    'handbag', 'purse', 'crossbody bag', 'tote bag', 'clutch',
+    'makeup', 'cosmetic', 'lipstick', 'mascara', 'foundation',
+    'hair extension', 'hair wig', 'hair clip', 'hair band',
+    'sticker', 'wall decal', 'candle holder', 'candelabrum',
+    'teacup', 'glass cup', 'wine glass', 'mug ',
+    'curtain', 'pillow case', 'bed sheet', 'duvet',
+    'fishing', 'camping tent', 'hiking',
+    'yoga', 'gym', 'fitness',
+    'tattoo', 'body art',
+    'sewing', 'embroidery', 'knitting',
+    'plus-size', 'plus size', 'long-sleeve', 'long sleeve',
+    't-shirt', 'tshirt', 'hoodie', 'cardigan',
+  ];
+  
+  if (nonPetPatterns.some(pattern => nameLower.includes(pattern))) {
+    return false;
+  }
+
+  // THEN: Strong pet indicators
   const strongPetKeywords = [
     'dog ', ' dog', 'dogs', 'puppy', 'puppies',
     'cat ', ' cat', 'cats', 'kitten', 'kittens', 'kitty',
@@ -273,26 +306,8 @@ function isPetProduct(productName: string): boolean {
     'pet dental', 'dog dental', 'cat dental',
   ];
   
-  // Check for strong pet indicators
   if (strongPetKeywords.some(keyword => nameLower.includes(keyword))) {
     return true;
-  }
-  
-  // Reject common non-pet product patterns
-  const nonPetPatterns = [
-    'women', 'mens', "men's", 'women\'s', 'ladies', 'girls', 'boys',
-    'bracelet', 'necklace', 'pendant', 'earring', 'ring ',
-    'faucet', 'cabinet', 'kitchen', 'bathroom', 'shower',
-    'shoe', 'boot', 'sandal', 'mule', 'heel',
-    'dress', 'shirt', 'pants', 'jacket', 'sweater',
-    'beehive', 'bee hive', 'beekeeping',
-    'phone case', 'laptop', 'computer', 'tablet',
-    'car ', 'vehicle', 'motorcycle',
-    'human', 'baby', 'toddler', 'infant',
-  ];
-  
-  if (nonPetPatterns.some(pattern => nameLower.includes(pattern))) {
-    return false;
   }
   
   // Weak indicators - need at least 2 to count
