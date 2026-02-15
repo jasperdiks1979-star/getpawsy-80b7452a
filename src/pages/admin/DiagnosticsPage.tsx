@@ -5,8 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Loader2, ArrowLeft } from 'lucide-react';
+import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Loader2, ArrowLeft, Download, FileArchive } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface HealthCheck {
   url: string;
@@ -36,13 +37,15 @@ const CHECKS = [
 ];
 
 export default function DiagnosticsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, session } = useAuth();
   const [checks, setChecks] = useState<HealthCheck[]>(
     CHECKS.map(c => ({ ...c, status: null, contentType: null, bodyPreview: null, ok: false, loading: false, error: null }))
   );
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
   const [runningAll, setRunningAll] = useState(false);
+  const [exportState, setExportState] = useState<'idle' | 'generating' | 'done' | 'error'>('idle');
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const runCheck = async (index: number) => {
     const check = checks[index];
@@ -92,6 +95,56 @@ export default function DiagnosticsPage() {
     setLoadingErrors(false);
   };
 
+  const downloadBundle = async () => {
+    setExportState('generating');
+    setExportError(null);
+
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession?.access_token) {
+        throw new Error('Not authenticated');
+      }
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(`${supabaseUrl}/functions/v1/export-diagnostics`, {
+        headers: {
+          Authorization: `Bearer ${currentSession.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.status === 429) {
+        throw new Error('Rate limited — wacht 60 seconden en probeer opnieuw.');
+      }
+      if (res.status === 401 || res.status === 403) {
+        throw new Error('Geen toegang. Ben je ingelogd als admin?');
+      }
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `HTTP ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const disposition = res.headers.get('Content-Disposition');
+      const filenameMatch = disposition?.match(/filename="(.+)"/);
+      a.download = filenameMatch?.[1] || 'getpawsy-diagnostics.zip';
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setExportState('done');
+      toast.success('Diagnostics bundle gedownload!');
+    } catch (err: any) {
+      setExportState('error');
+      setExportError(err.message);
+      toast.error(`Export mislukt: ${err.message}`);
+    }
+  };
+
   useEffect(() => {
     runAllChecks();
     loadErrors();
@@ -113,6 +166,57 @@ export default function DiagnosticsPage() {
         </Badge>
       </div>
 
+      {/* Diagnostics Export */}
+      <Card className="mb-6 border-primary/20">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileArchive className="h-5 w-5" />
+            Diagnostics Export
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Download een complete diagnostics bundle (.zip) met logs, config, routes, sitemap/feed checks. 
+            <br />
+            <span className="text-xs">Bevat geen secrets, API keys of klantdata. Veilig om te delen met ChatGPT.</span>
+          </p>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={downloadBundle}
+              disabled={exportState === 'generating'}
+              size="lg"
+              className="gap-2"
+            >
+              {exportState === 'generating' ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating…
+                </>
+              ) : exportState === 'done' ? (
+                <>
+                  <CheckCircle className="h-4 w-4" />
+                  Download ready — klik opnieuw
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Download diagnostics bundle (.zip)
+                </>
+              )}
+            </Button>
+            {exportState === 'error' && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-destructive">{exportError}</span>
+                <Button size="sm" variant="outline" onClick={downloadBundle}>
+                  Retry
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Health Checks */}
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Health Checks</CardTitle>
@@ -160,6 +264,7 @@ export default function DiagnosticsPage() {
         </CardContent>
       </Card>
 
+      {/* Recent Errors */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Recent Errors (last 50)</CardTitle>
