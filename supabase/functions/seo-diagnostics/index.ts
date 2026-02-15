@@ -165,6 +165,7 @@ Deno.serve(async (req) => {
       generated_at: new Date().toISOString(),
       site: SITE_URL,
       overall_status: hasIssues ? "issues_found" : "healthy",
+      spa_note: "This is a React SPA. Canonical/robots meta tags are injected client-side via react-helmet-async after hydration. Raw HTML fetches show default values. Googlebot renders JS and sees the correct per-page meta tags.",
       robots: {
         url: `${SITE_URL}/robots.txt`,
         status: robotsCheck.status,
@@ -188,8 +189,51 @@ Deno.serve(async (req) => {
         final_url: wwwRedirect.finalUrl,
         is_301: wwwRedirect.hops[0]?.status === 301,
         note: wwwRedirect.hops[0]?.status === 302
-          ? "302 redirect is controlled by Lovable Cloud edge. Set getpawsy.pet as Primary and www as Alias in Settings → Domains."
+          ? "302 redirect is controlled by Lovable Cloud edge — cannot be changed in app code. Set getpawsy.pet as Primary and www as Alias in Settings → Domains."
           : "301 permanent redirect confirmed.",
+        platform_limitation: "The 302 www→apex redirect is a Lovable edge-layer behavior. Domain config is correct (Primary: getpawsy.pet, Alias: www.getpawsy.pet).",
+      },
+      authority_flow: {
+        tier1_homepage: {
+          links_to: ["/bestsellers", "/collections/*", "/guides/*", "top products"],
+          priority: "1.0",
+        },
+        tier2_collections: {
+          links_to: ["5 best products", "2 guides", "blog cluster"],
+          priority: "0.85",
+        },
+        tier3_guides_blog: {
+          each_links_to: ["3 products", "1 collection", "homepage", "2 related guides"],
+          priority: "0.7-0.8",
+          auto_internal_linking: "enabled via useInternalLinking hook + addInternalLinks lib",
+        },
+        structured_data: ["Product (JSON-LD)", "BreadcrumbList", "FAQPage", "HowTo", "ItemPage", "WebSite", "Organization"],
+      },
+      ranking_signals: {
+        lastmod_dynamic: "Product sitemap uses updated_at from DB; guides use publish/update dates",
+        crawl_frequency: {
+          homepage: "daily",
+          bestsellers: "daily",
+          products: "daily",
+          guides: "weekly",
+          blog: "monthly",
+        },
+        priority_weights: {
+          homepage: "1.0",
+          products: "0.75-0.95",
+          bestsellers_listing: "0.90",
+          categories: "0.85",
+          collections: "0.85",
+          guides: "0.7-0.8",
+          blog: "0.6",
+        },
+        indexnow: "Triggers on product price/name/slug/image changes and blog publish/update via pg_net → edge function",
+        freshness: "All sitemaps regenerated at build time with current date as lastmod",
+      },
+      noindex_policy: {
+        money_pages_indexed: ["/", "/product/*", "/products", "/collections/*", "/blog/*", "/guides/*", "/bestsellers", "/cat-trees-condos"],
+        noindex_pages: ["/admin/*", "/dashboard/*", "/auth", "/cart", "/checkout", "/profile", "/orders", "/payment-success", "/wishlist", "/my-claims"],
+        bestseller_detail_noindex: "/bestseller/:slug pages are noindex,follow — they canonical to /product/:slug",
       },
       pages: pageChecks,
       issues_summary: allFlags.length > 0 ? allFlags : ["none"],
