@@ -48,6 +48,40 @@ async function checkEndpoint(path: string): Promise<EndpointResult> {
   }
 }
 
+interface RobotsIntegrityResult {
+  ok: boolean;
+  missingDirectives: string[];
+  bodySnippet: string;
+}
+
+async function checkRobotsIntegrity(): Promise<RobotsIntegrityResult> {
+  const requiredDirectives = [
+    "Sitemap: https://getpawsy.pet/sitemap.xml",
+    "Disallow: /admin",
+    "Disallow: /cart",
+    "Disallow: /*?gclid=",
+  ];
+  try {
+    const res = await fetch(`${SITE_URL}/robots.txt`, {
+      signal: AbortSignal.timeout(10000),
+      headers: { "User-Agent": "GetPawsy-Monitor/1.0" },
+    });
+    const body = await res.text();
+    const missing = requiredDirectives.filter(d => !body.includes(d));
+    return {
+      ok: missing.length === 0,
+      missingDirectives: missing,
+      bodySnippet: body.substring(0, 500),
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      missingDirectives: requiredDirectives,
+      bodySnippet: `Error fetching: ${e.message}`,
+    };
+  }
+}
+
 interface RedirectChainResult {
   hops: { url: string; status: number | null; location: string | null }[];
   finalStatus: number | null;
@@ -111,7 +145,7 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, serviceKey);
 
     // Run all checks in parallel
-    const [homepage, robots, sitemap, sitemapStatic, merchantFeed, wwwRedirect, redirectChain] = await Promise.all([
+    const [homepage, robots, sitemap, sitemapStatic, merchantFeed, wwwRedirect, redirectChain, robotsIntegrity] = await Promise.all([
       checkEndpoint("/"),
       checkEndpoint("/robots.txt"),
       checkEndpoint("/sitemap.xml"),
@@ -119,10 +153,16 @@ Deno.serve(async (req) => {
       checkEndpoint("/merchant-feed.xml"),
       checkWwwRedirect(),
       checkRedirectChain(),
+      checkRobotsIntegrity(),
     ]);
 
     const warnings: string[] = [];
     const resolvedIssues: string[] = [];
+
+    // Robots integrity check
+    if (!robotsIntegrity.ok) {
+      warnings.push(`ROBOTS INTEGRITY FAIL: Missing directives: ${robotsIntegrity.missingDirectives.join(", ")}`);
+    }
 
     // Check for SPA fallback issues (XML endpoint returning HTML)
     if (sitemap.ok && sitemap.isHtml) {
@@ -166,6 +206,7 @@ Deno.serve(async (req) => {
       merchantFeed: { status: merchantFeed.status, contentType: merchantFeed.contentType, sizeBytes: merchantFeed.sizeBytes, isXml: merchantFeed.isXml, ok: merchantFeed.ok },
       wwwRedirect: { status: wwwRedirect.status, location: wwwRedirect.location, ok: wwwRedirect.status === 301 },
       redirectChain: { hops: redirectChain.hops, finalStatus: redirectChain.finalStatus, finalUrl: redirectChain.finalUrl, hopCount: redirectChain.hopCount, error: redirectChain.error },
+      robotsIntegrity: { ok: robotsIntegrity.ok, missingDirectives: robotsIntegrity.missingDirectives, bodySnippet: robotsIntegrity.bodySnippet },
     };
 
     // Store result

@@ -222,6 +222,12 @@ export default function DiagnosticsPage() {
       {/* Automated Monitoring Status */}
       <MonitoringStatusCard />
 
+      {/* Robots Integrity Status */}
+      <RobotsIntegrityCard />
+
+      {/* WWW Redirect Advisory */}
+      <WwwRedirectAdvisory />
+
       {/* Full System Diagnostics JSON */}
       <Card className="mb-6 border-primary/30 bg-primary/5">
         <CardHeader>
@@ -738,6 +744,147 @@ function MonitoringStatusCard() {
             )}
           </>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---- Robots Integrity Card Sub-component ---- */
+function RobotsIntegrityCard() {
+  const [data, setData] = useState<{ ok: boolean; missingDirectives: string[]; bodySnippet: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data: checks } = await supabase
+        .from('site_health_checks')
+        .select('results')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const ri = (checks?.[0]?.results as any)?.robotsIntegrity;
+      if (ri) setData(ri);
+    } catch { /* silent */ }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  if (loading) return null;
+  if (!data) return null;
+
+  return (
+    <Card className={`mb-6 ${data.ok ? 'border-primary/20' : 'border-destructive/50 bg-destructive/5'}`}>
+      <CardContent className="pt-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {data.ok ? (
+              <CheckCircle className="h-4 w-4 text-primary" />
+            ) : (
+              <XCircle className="h-4 w-4 text-destructive" />
+            )}
+            <span className="text-sm font-medium">
+              Robots.txt Integrity: {data.ok ? 'Valid ✅' : 'FAILED ❌'}
+            </span>
+          </div>
+          <Button size="sm" variant="ghost" onClick={load} disabled={loading}>
+            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+        {!data.ok && (
+          <div className="mt-2 space-y-1">
+            <p className="text-xs text-destructive font-medium">Missing required directives:</p>
+            {data.missingDirectives.map((d, i) => (
+              <p key={i} className="text-xs text-destructive font-mono">• {d}</p>
+            ))}
+            <details className="mt-2">
+              <summary className="text-xs text-muted-foreground cursor-pointer">Fetched body snippet</summary>
+              <pre className="mt-1 p-2 bg-muted rounded text-[10px] overflow-x-auto whitespace-pre-wrap">{data.bodySnippet}</pre>
+            </details>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---- WWW Redirect Advisory Sub-component ---- */
+function WwwRedirectAdvisory() {
+  const [chain, setChain] = useState<{ hops: any[]; finalStatus: number | null; finalUrl: string; hopCount: number; error?: string } | null>(null);
+  const [wwwStatus, setWwwStatus] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data: checks } = await supabase
+        .from('site_health_checks')
+        .select('results')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const r = checks?.[0]?.results as any;
+      if (r?.redirectChain) setChain(r.redirectChain);
+      if (r?.wwwRedirect) setWwwStatus(r.wwwRedirect.status);
+    } catch { /* silent */ }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  if (loading || !chain) return null;
+
+  const is301 = wwwStatus === 301;
+
+  return (
+    <Card className={`mb-6 ${is301 ? 'border-primary/20' : 'border-amber-500/50 bg-amber-500/5'}`}>
+      <CardContent className="pt-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {is301 ? (
+              <CheckCircle className="h-4 w-4 text-primary" />
+            ) : (
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+            )}
+            <span className="text-sm font-medium">
+              WWW → Apex Redirect: {is301 ? '301 ✅' : `${wwwStatus ?? 'unknown'} ⚠️`}
+            </span>
+          </div>
+          <Button size="sm" variant="ghost" onClick={load} disabled={loading}>
+            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+
+        {!is301 && (
+          <div className="bg-amber-500/10 rounded-lg p-3 text-xs space-y-1">
+            <p className="font-medium text-amber-700 dark:text-amber-400">
+              www → apex returns {wwwStatus ?? '?'} due to Lovable edge/CDN layer.
+            </p>
+            <p className="text-muted-foreground">
+              Ensure <code className="bg-muted px-1 rounded">getpawsy.pet</code> is <strong>Primary</strong> and <code className="bg-muted px-1 rounded">www.getpawsy.pet</code> is <strong>Alias</strong> in Lovable Domains. In Cloudflare set records to <strong>DNS-only (grey cloud)</strong>.
+            </p>
+          </div>
+        )}
+
+        {/* Redirect chain log */}
+        <details>
+          <summary className="text-xs text-muted-foreground cursor-pointer">
+            Redirect chain ({chain.hopCount} hop{chain.hopCount !== 1 ? 's' : ''}) → {chain.finalUrl}
+          </summary>
+          <div className="mt-2 space-y-1">
+            {chain.hops.map((hop: any, i: number) => (
+              <div key={i} className="text-xs flex items-center gap-2 border-b pb-1">
+                <Badge variant={hop.status >= 300 && hop.status < 400 ? 'secondary' : hop.status === 200 ? 'default' : 'destructive'} className="font-mono text-[10px]">
+                  {hop.status}
+                </Badge>
+                <code className="truncate max-w-[300px]">{hop.url}</code>
+                {hop.location && (
+                  <span className="text-muted-foreground">→ <code className="truncate max-w-[200px]">{hop.location}</code></span>
+                )}
+              </div>
+            ))}
+            {chain.error && <p className="text-xs text-destructive">{chain.error}</p>}
+          </div>
+        </details>
       </CardContent>
     </Card>
   );

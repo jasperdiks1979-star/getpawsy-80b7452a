@@ -1,5 +1,6 @@
 # GetPawsy Pet Products - Robots.txt
-# https://getpawsy.pet
+# Premium pet supplies, dog beds, cat trees, pet toys & accessories
+# Last updated: 2026-02-13
 
 User-agent: *
 Allow: /
@@ -28,8 +29,8 @@ Disallow: /download-ads
 Disallow: /technical-declaration
 Disallow: /appeal-response
 
-# Block tracking parameters only
-Disallow: /*?utm_
+# Block tracking/query parameters only
+Disallow: /*?utm
 Disallow: /*?gclid=
 Disallow: /*?fbclid=
 
