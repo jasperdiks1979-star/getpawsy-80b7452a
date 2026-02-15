@@ -1181,9 +1181,9 @@ const BestsellerDetail = () => {
                       className="w-full h-14 text-lg font-semibold gap-3 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300"
                       onClick={handleAddToCart}
                       disabled={!inStock}
-                    >
+                     >
                       <ShoppingCart className="w-5 h-5" />
-                      Add to Cart
+                      Get This for My Pet
                       {quantity > 1 && <span className="text-primary-foreground/80">({quantity})</span>}
                     </Button>
                   </motion.div>

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import smallPetsImage from '@/assets/categories/small-pets.jpg';
 import { Helmet } from 'react-helmet-async';
-import { ArrowRight, Loader2, Star, Quote, Clock, BookOpen } from 'lucide-react';
+import { ArrowRight, Loader2, Star, Quote, Clock, BookOpen, Truck, ShieldCheck, RotateCcw, Heart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { motion, useScroll, useTransform } from 'framer-motion';
@@ -846,7 +846,72 @@ const Index = () => {
         </section>
       </SectionErrorBoundary>
 
-      {/* Recently Viewed Products */}
+      {/* Why Choose GetPawsy — Trust & Value Props */}
+      <SectionErrorBoundary sectionName="Why Choose">
+        <section className="py-20 bg-sand/30">
+          <div className="container px-4 md:px-6">
+            <motion.div 
+              className="text-center mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Why Pet Parents Choose GetPawsy</h2>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                We believe every pet deserves quality — without the premium markup
+              </p>
+            </motion.div>
+
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              {[
+                {
+                  icon: ShieldCheck,
+                  title: 'Tested & Vetted',
+                  desc: 'Every product is researched and evaluated before it hits our shelves. No filler, no junk.',
+                },
+                {
+                  icon: Truck,
+                  title: 'Free US Shipping Over $35',
+                  desc: 'Fast, reliable delivery across the US. Most orders ship within 1–2 business days.',
+                },
+                {
+                  icon: RotateCcw,
+                  title: '30-Day Easy Returns',
+                  desc: 'Not the right fit? Send it back hassle-free. We make returns simple and painless.',
+                },
+                {
+                  icon: Heart,
+                  title: 'Built for Pet Parents',
+                  desc: 'Our buying guides, expert reviews, and hand-picked products help you choose with confidence.',
+                },
+              ].map((item, i) => (
+                <motion.div
+                  key={item.title}
+                  className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-soft-lg transition-shadow duration-300 border border-border/50 text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: i * 0.1 }}
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <item.icon className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="font-display font-semibold text-lg mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+      </SectionErrorBoundary>
+
       {safeRecentlyViewedProducts.length > 0 && (
         <SectionErrorBoundary sectionName="Recently Viewed">
           <section className="py-20 bg-sand/40">

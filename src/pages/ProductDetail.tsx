@@ -974,9 +974,9 @@ const ProductDetail = () => {
                 className="flex-1 h-12 gap-2 btn-organic text-base font-semibold"
                 onClick={handleAddToCart}
                 disabled={!inStock}
-              >
+               >
                 <ShoppingCart className="w-5 h-5" />
-              Add to Cart
+                Get This for My Pet
               </Button>
 
               {/* Wishlist */}
@@ -1518,9 +1518,9 @@ const ProductDetail = () => {
                 size="lg"
                 onClick={handleAddToCart}
                 disabled={!inStock}
-              >
+               >
                 <ShoppingCart className="w-4 h-4" />
-                Add to Cart
+                Get This for My Pet
               </Button>
 
               {/* Wishlist Button */}
