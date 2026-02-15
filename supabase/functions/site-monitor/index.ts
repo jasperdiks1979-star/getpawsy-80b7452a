@@ -1,0 +1,156 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const SITE_URL = "https://getpawsy.pet";
+
+interface EndpointResult {
+  status: number | null;
+  contentType: string | null;
+  ttfb_ms: number;
+  sizeBytes: number;
+  ok: boolean;
+  error?: string;
+  isXml?: boolean;
+  isHtml?: boolean;
+}
+
+async function checkEndpoint(path: string): Promise<EndpointResult> {
+  const start = Date.now();
+  try {
+    const res = await fetch(`${SITE_URL}${path}`, {
+      signal: AbortSignal.timeout(10000),
+      headers: { "User-Agent": "GetPawsy-Monitor/1.0" },
+    });
+    const body = await res.text();
+    const ct = res.headers.get("content-type") || "";
+    return {
+      status: res.status,
+      contentType: ct,
+      ttfb_ms: Date.now() - start,
+      sizeBytes: body.length,
+      ok: res.status === 200,
+      isXml: ct.includes("xml") || body.trimStart().startsWith("<?xml"),
+      isHtml: ct.includes("html") || body.trimStart().startsWith("<!DOCTYPE") || body.trimStart().startsWith("<html"),
+    };
+  } catch (e) {
+    return {
+      status: null,
+      contentType: null,
+      ttfb_ms: Date.now() - start,
+      sizeBytes: 0,
+      ok: false,
+      error: e.message,
+    };
+  }
+}
+
+async function checkWwwRedirect(): Promise<{ status: number | null; location: string | null; error?: string }> {
+  try {
+    const res = await fetch("https://www.getpawsy.pet/sitemap.xml", {
+      redirect: "manual",
+      signal: AbortSignal.timeout(5000),
+    });
+    // Consume body to prevent leak
+    await res.text();
+    return {
+      status: res.status,
+      location: res.headers.get("location"),
+    };
+  } catch (e) {
+    return { status: null, location: null, error: e.message };
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // Run all checks in parallel
+    const [homepage, robots, sitemap, sitemapStatic, merchantFeed, wwwRedirect] = await Promise.all([
+      checkEndpoint("/"),
+      checkEndpoint("/robots.txt"),
+      checkEndpoint("/sitemap.xml"),
+      checkEndpoint("/sitemap-static.xml"),
+      checkEndpoint("/merchant-feed.xml"),
+      checkWwwRedirect(),
+    ]);
+
+    const warnings: string[] = [];
+    const resolvedIssues: string[] = [];
+
+    // Check for SPA fallback issues (XML endpoint returning HTML)
+    if (sitemap.ok && sitemap.isHtml) {
+      warnings.push("CRITICAL: /sitemap.xml is returning HTML (SPA fallback leak)");
+    }
+    if (merchantFeed.ok && merchantFeed.isHtml) {
+      warnings.push("CRITICAL: /merchant-feed.xml is returning HTML (SPA fallback leak)");
+    }
+    if (sitemapStatic.ok && sitemapStatic.isHtml) {
+      warnings.push("CRITICAL: /sitemap-static.xml is returning HTML (SPA fallback leak)");
+    }
+
+    // Check status codes
+    if (!homepage.ok) warnings.push(`Homepage returned ${homepage.status || 'error'}: ${homepage.error || ''}`);
+    if (!robots.ok) warnings.push(`robots.txt returned ${robots.status || 'error'}`);
+    if (!sitemap.ok) warnings.push(`sitemap.xml returned ${sitemap.status || 'error'}`);
+    if (!merchantFeed.ok) warnings.push(`merchant-feed.xml returned ${merchantFeed.status || 'error'}`);
+
+    // Check www redirect
+    if (wwwRedirect.status !== 301) {
+      warnings.push(`www redirect returned ${wwwRedirect.status} instead of 301`);
+    } else if (!wwwRedirect.location?.includes("getpawsy.pet/sitemap.xml")) {
+      warnings.push(`www redirect location unexpected: ${wwwRedirect.location}`);
+    }
+
+    // Check content types
+    if (sitemap.ok && !sitemap.contentType?.includes("xml")) {
+      warnings.push(`sitemap.xml has wrong content-type: ${sitemap.contentType}`);
+    }
+    if (merchantFeed.ok && !merchantFeed.contentType?.includes("xml")) {
+      warnings.push(`merchant-feed.xml has wrong content-type: ${merchantFeed.contentType}`);
+    }
+
+    const allHealthy = warnings.length === 0;
+
+    const results = {
+      homepage: { status: homepage.status, ttfb_ms: homepage.ttfb_ms, ok: homepage.ok },
+      robots: { status: robots.status, contentType: robots.contentType, sizeBytes: robots.sizeBytes, ok: robots.ok },
+      sitemap: { status: sitemap.status, contentType: sitemap.contentType, sizeBytes: sitemap.sizeBytes, isXml: sitemap.isXml, ok: sitemap.ok },
+      sitemapStatic: { status: sitemapStatic.status, contentType: sitemapStatic.contentType, sizeBytes: sitemapStatic.sizeBytes, ok: sitemapStatic.ok },
+      merchantFeed: { status: merchantFeed.status, contentType: merchantFeed.contentType, sizeBytes: merchantFeed.sizeBytes, isXml: merchantFeed.isXml, ok: merchantFeed.ok },
+      wwwRedirect: { status: wwwRedirect.status, location: wwwRedirect.location, ok: wwwRedirect.status === 301 },
+    };
+
+    // Store result
+    await adminClient.from("site_health_checks").insert({
+      check_type: "scheduled",
+      results,
+      warnings,
+      all_healthy: allHealthy,
+      resolved_issues: resolvedIssues,
+    });
+
+    // Cleanup old records
+    await adminClient.rpc("cleanup_old_health_checks");
+
+    return new Response(JSON.stringify({ ok: allHealthy, warnings, results }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("[site-monitor] Error:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

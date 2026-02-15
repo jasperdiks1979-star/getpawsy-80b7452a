@@ -4108,6 +4108,36 @@ export type Database = {
         }
         Relationships: []
       }
+      site_health_checks: {
+        Row: {
+          all_healthy: boolean
+          check_type: string
+          created_at: string
+          id: string
+          resolved_issues: string[] | null
+          results: Json
+          warnings: string[] | null
+        }
+        Insert: {
+          all_healthy?: boolean
+          check_type: string
+          created_at?: string
+          id?: string
+          resolved_issues?: string[] | null
+          results?: Json
+          warnings?: string[] | null
+        }
+        Update: {
+          all_healthy?: boolean
+          check_type?: string
+          created_at?: string
+          id?: string
+          resolved_issues?: string[] | null
+          results?: Json
+          warnings?: string[] | null
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           created_at: string
@@ -4712,6 +4742,7 @@ export type Database = {
           reset_at: string
         }[]
       }
+      cleanup_old_health_checks: { Args: never; Returns: undefined }
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
       cleanup_preview_visitor_activity: { Args: never; Returns: number }
       generate_product_slug: { Args: { product_name: string }; Returns: string }
