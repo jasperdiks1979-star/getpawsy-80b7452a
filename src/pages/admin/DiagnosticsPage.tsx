@@ -48,6 +48,8 @@ export default function DiagnosticsPage() {
   const [runningAll, setRunningAll] = useState(false);
   const [exportState, setExportState] = useState<'idle' | 'generating' | 'done' | 'error'>('idle');
   const [exportError, setExportError] = useState<string | null>(null);
+  const [jsonExportState, setJsonExportState] = useState<'idle' | 'generating' | 'done' | 'error'>('idle');
+  const [jsonExportError, setJsonExportError] = useState<string | null>(null);
 
   const runCheck = async (index: number) => {
     const check = checks[index];
@@ -147,6 +149,51 @@ export default function DiagnosticsPage() {
     }
   };
 
+  const downloadFullJson = async () => {
+    setJsonExportState('generating');
+    setJsonExportError(null);
+
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession?.access_token) {
+        throw new Error('Not authenticated');
+      }
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(`${supabaseUrl}/functions/v1/full-diagnostics`, {
+        headers: {
+          Authorization: `Bearer ${currentSession.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        throw new Error('Geen toegang. Ben je ingelogd als admin?');
+      }
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `HTTP ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.download = 'getpawsy-system-diagnostics.json';
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setJsonExportState('done');
+      toast.success('Full System Diagnostics JSON gedownload!');
+    } catch (err: any) {
+      setJsonExportState('error');
+      setJsonExportError(err.message);
+      toast.error(`Export mislukt: ${err.message}`);
+    }
+  };
+
   useEffect(() => {
     runAllChecks();
     loadErrors();
@@ -168,7 +215,55 @@ export default function DiagnosticsPage() {
         </Badge>
       </div>
 
-      {/* Diagnostics Export */}
+      {/* Full System Diagnostics JSON */}
+      <Card className="mb-6 border-primary/30 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Full System Diagnostics (JSON)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Download 1 compleet JSON bestand met alle statuschecks, headers, sitemap info, merchant feed analyse, en performance data.
+          </p>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={downloadFullJson}
+              disabled={jsonExportState === 'generating'}
+              size="lg"
+              className="gap-2"
+            >
+              {jsonExportState === 'generating' ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating…
+                </>
+              ) : jsonExportState === 'done' ? (
+                <>
+                  <CheckCircle className="h-4 w-4" />
+                  Gedownload — klik opnieuw
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Download Full Diagnostics (JSON)
+                </>
+              )}
+            </Button>
+            {jsonExportState === 'error' && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-destructive">{jsonExportError}</span>
+                <Button size="sm" variant="outline" onClick={downloadFullJson}>
+                  Retry
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Diagnostics Export (ZIP) */}
       <Card className="mb-6 border-primary/20">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
