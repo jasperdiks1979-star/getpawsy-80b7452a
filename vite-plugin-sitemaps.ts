@@ -193,6 +193,23 @@ interface MerchantProduct {
   is_active: boolean;
 }
 
+// ── Title optimization helpers ────────────────────────────────────────
+
+/** Remove filler words and CJ junk from product names */
+function cleanProductName(name: string): string {
+  return name
+    .replace(/,?\s*premium quality/gi, '')
+    .replace(/,?\s*high quality/gi, '')
+    .replace(/,?\s*best quality/gi, '')
+    .replace(/,?\s*top quality/gi, '')
+    .replace(/,?\s*new arrival/gi, '')
+    .replace(/,?\s*hot sale/gi, '')
+    .replace(/,?\s*free shipping/gi, '')
+    .replace(/,?\s*fast delivery/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function getPetType(category: string | null): string {
   if (!category) return 'Pets';
   const c = category.toLowerCase();
@@ -206,36 +223,154 @@ function getPetType(category: string | null): string {
 
 function extractBenefit(name: string, desc: string | null): string {
   const n = name.toLowerCase(); const d = (desc||'').toLowerCase();
-  if (n.includes('comfort')||d.includes('comfort')) return 'Comfort & Support';
-  if (n.includes('interactive')||d.includes('interactive')) return 'Interactive Play';
-  if (n.includes('durable')||d.includes('durable')) return 'Long-Lasting Durability';
-  if (n.includes('training')||d.includes('training')) return 'Easy Training';
-  if (n.includes('calming')||d.includes('calming')||d.includes('anxiety')) return 'Stress Relief';
-  if (n.includes('orthopedic')||d.includes('orthopedic')||d.includes('joint')) return 'Joint Support';
-  if (n.includes('slow')&&n.includes('feed')) return 'Healthy Eating';
+  if (n.includes('orthopedic')||d.includes('orthopedic')||d.includes('joint')) return 'Joint & Hip Support';
+  if (n.includes('calming')||d.includes('calming')||d.includes('anxiety')) return 'Anxiety Relief';
+  if (n.includes('interactive')||d.includes('interactive')) return 'Interactive Enrichment';
+  if (n.includes('slow')&&(n.includes('feed')||n.includes('bowl'))) return 'Healthy Slow Feeding';
+  if (n.includes('waterproof')||d.includes('waterproof')) return 'Waterproof Protection';
+  if (n.includes('scratch')||d.includes('scratch')) return 'Natural Scratching';
   if (n.includes('grooming')||d.includes('grooming')) return 'Easy Grooming';
-  if (n.includes('travel')||d.includes('travel')||d.includes('portable')) return 'Travel-Friendly';
-  if (n.includes('waterproof')||d.includes('waterproof')) return 'Waterproof Design';
-  if (n.includes('adjustable')||d.includes('adjustable')) return 'Perfect Fit';
+  if (n.includes('training')||d.includes('training')) return 'Effective Training';
+  if (n.includes('travel')||d.includes('travel')||d.includes('portable')) return 'Travel Ready';
+  if (n.includes('adjustable')||d.includes('adjustable')) return 'Adjustable Fit';
   if (n.includes('chew')||d.includes('chew')) return 'Safe Chewing';
-  if (n.includes('scratch')||d.includes('scratch')) return 'Scratch-Friendly';
-  return 'Premium Quality';
+  if (n.includes('comfort')||d.includes('comfort')) return 'Maximum Comfort';
+  if (n.includes('durable')||d.includes('durable')) return 'Built to Last';
+  if (n.includes('memory foam')||d.includes('memory foam')) return 'Memory Foam Support';
+  if (n.includes('elevated')||d.includes('elevated')) return 'Elevated Design';
+  if (n.includes('enclosed')||d.includes('enclosed')||n.includes('covered')) return 'Enclosed Privacy';
+  if (n.includes('collapsible')||d.includes('collapsible')||n.includes('foldable')) return 'Space-Saving Design';
+  return 'Everyday Comfort';
 }
+
+/** Extract a size/variant hint from the product name */
+function extractVariant(name: string): string | null {
+  // Look for size patterns like S/M/L/XL, dimensions, or color keywords
+  const sizeMatch = name.match(/\b(X{0,2}[SML]|XXL|Small|Medium|Large|Extra Large)\b/i);
+  if (sizeMatch) return sizeMatch[0];
+  const dimMatch = name.match(/\b(\d+["'']?\s*[xX×]\s*\d+)/);
+  if (dimMatch) return dimMatch[0];
+  return null;
+}
+
+/** Build optimized title: [Primary Keyword] – [Benefit] | [Variant] */
+function buildOptimizedTitle(p: MerchantProduct): string {
+  const cleanName = cleanProductName(p.name);
+  const pet = getPetType(p.category);
+  const benefit = extractBenefit(p.name, p.description);
+  const variant = extractVariant(p.name);
+
+  // Core: "Clean Name for Dogs – Benefit"
+  let title = `${cleanName} for ${pet} – ${benefit}`;
+  // Append variant if it fits
+  if (variant && title.length + variant.length + 3 <= 150) {
+    title += ` | ${variant}`;
+  }
+  return truncate(title, 150);
+}
+
+// ── Description optimization ──────────────────────────────────────────
+
+/** Strip HTML, CJ image URLs, supplier references, and formatting junk */
+function cleanDescription(html: string | null): string {
+  if (!html) return '';
+  return html
+    // Remove img tags (CJ product images in descriptions)
+    .replace(/<img[^>]*>/gi, '')
+    // Remove CJ/supplier URLs
+    .replace(/https?:\/\/[^\s<"']*cj(dropshipping|\.com)[^\s<"']*/gi, '')
+    .replace(/https?:\/\/oss-cf\.[^\s<"']*/gi, '')
+    // Remove common CJ formatting headers
+    .replace(/<b>\s*Product Image:?\s*<\/b>/gi, '')
+    .replace(/<b>\s*Packing list:?\s*<\/b>/gi, '')
+    .replace(/<b>\s*Product information:?\s*<\/b>/gi, '')
+    // Strip remaining HTML
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    // Clean up whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Extract meaningful specs from the cleaned description */
+function extractSpecs(cleaned: string): string[] {
+  const specs: string[] = [];
+  // Look for "Material: X" patterns
+  const materialMatch = cleaned.match(/Material:\s*([^,.\n]+)/i);
+  if (materialMatch) specs.push(`Made with ${materialMatch[1].trim()}`);
+  // Look for "Size: X" patterns
+  const sizeMatch = cleaned.match(/Size[s]?:\s*([^.\n]+)/i);
+  if (sizeMatch) specs.push(`Available sizes: ${sizeMatch[1].trim()}`);
+  return specs;
+}
+
+/** Build a problem → benefit → bullets → shipping description */
+function buildOptimizedDescription(p: MerchantProduct): string {
+  const pet = getPetType(p.category).toLowerCase();
+  const benefit = extractBenefit(p.name, p.description);
+  const cleaned = cleanDescription(p.description);
+  const specs = extractSpecs(cleaned);
+
+  // Problem statement based on category
+  const problems: Record<string, string> = {
+    'dogs': 'Finding the right product for your dog can be overwhelming.',
+    'cats': 'Your cat deserves products designed for their unique needs.',
+    'birds': 'Keep your feathered friend happy with the right supplies.',
+    'small pets': 'Small pets need specialized care products.',
+    'fish': 'Create the perfect aquatic environment.',
+    'pets': 'Every pet deserves quality products that last.',
+  };
+  const problem = problems[pet] || problems['pets'];
+
+  // Build benefit bullets
+  const bullets: string[] = [
+    `✓ ${benefit} for your ${pet}`,
+  ];
+  if (cleaned.length > 30) {
+    // Extract first meaningful sentence from cleaned description
+    const firstSentence = cleaned.split(/[.!?]/).filter(s => s.trim().length > 15)[0];
+    if (firstSentence) bullets.push(`✓ ${truncate(firstSentence.trim(), 80)}`);
+  }
+  specs.forEach(s => bullets.push(`✓ ${truncate(s, 80)}`));
+  bullets.push('✓ Durable, pet-safe materials');
+  if (p.price >= FREE_SHIPPING_THRESHOLD) {
+    bullets.push('✓ FREE US shipping included');
+  }
+  // Cap at 6 bullets
+  const finalBullets = bullets.slice(0, 6);
+
+  let desc = `${problem} The ${cleanProductName(p.name)} delivers ${benefit.toLowerCase()} that ${pet} love. `;
+  desc += finalBullets.join('. ') + '. ';
+  desc += `Ships from US warehouses in 3-7 business days. Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}. 30-day hassle-free returns. Shop GetPawsy – Trusted by US pet parents.`;
+
+  return truncate(desc, 5000);
+}
+
+// ── Google taxonomy & product type ────────────────────────────────────
 
 function getGoogleProductCategory(cat: string | null): string {
   if (!cat) return 'Animals & Pet Supplies > Pet Supplies';
   const c = cat.toLowerCase();
   if (c.includes('dog') && c.includes('bed')) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Beds';
   if (c.includes('dog') && c.includes('toy')) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Toys';
-  if (c.includes('dog') && c.includes('collar')) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Collars & Leads';
-  if (c.includes('dog') && c.includes('leash')) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Collars & Leads';
+  if (c.includes('dog') && (c.includes('collar')||c.includes('leash'))) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Collars & Leads';
   if (c.includes('dog') && c.includes('groom')) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Grooming Supplies';
+  if (c.includes('dog') && c.includes('carrier')) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Carriers & Travel';
+  if (c.includes('dog') && c.includes('bowl')) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Bowls & Feeders';
+  if (c.includes('dog') && c.includes('house')) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Houses';
+  if (c.includes('dog') && c.includes('train')) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Training Aids';
+  if (c.includes('dog') && c.includes('food')) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Food';
   if (c.includes('dog')) return 'Animals & Pet Supplies > Pet Supplies > Dog Supplies';
-  if (c.includes('cat') && c.includes('tree')) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture';
-  if (c.includes('cat') && c.includes('tower')) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture';
-  if (c.includes('cat') && c.includes('litter')) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Litter & Accessories';
+  if (c.includes('cat') && (c.includes('tree')||c.includes('tower')||c.includes('condo'))) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture';
+  if (c.includes('cat') && c.includes('litter')) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Litter Box Supplies';
   if (c.includes('cat') && c.includes('toy')) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Toys';
-  if (c.includes('cat') && c.includes('scratch')) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Scratching Posts';
+  if (c.includes('cat') && c.includes('scratch')) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture';
+  if (c.includes('cat') && c.includes('bed')) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Beds';
+  if (c.includes('cat') && c.includes('carrier')) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Carriers & Travel';
+  if (c.includes('cat') && c.includes('house')) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Houses & Condos';
   if (c.includes('cat')) return 'Animals & Pet Supplies > Pet Supplies > Cat Supplies';
   if (c.includes('bird')) return 'Animals & Pet Supplies > Pet Supplies > Bird Supplies';
   if (c.includes('hamster')||c.includes('guinea')||c.includes('rabbit')||c.includes('small pet')) return 'Animals & Pet Supplies > Pet Supplies > Small Animal Supplies';
@@ -256,12 +391,15 @@ function getProductType(cat: string | null): string {
   if (c.includes('bed')) t += ' > Beds';
   else if (c.includes('toy')) t += ' > Toys';
   else if (c.includes('collar')||c.includes('leash')) t += ' > Collars & Leashes';
-  else if (c.includes('tree')||c.includes('tower')||c.includes('furniture')) t += ' > Furniture';
+  else if (c.includes('tree')||c.includes('tower')||c.includes('furniture')||c.includes('condo')) t += ' > Furniture';
   else if (c.includes('litter')) t += ' > Litter & Accessories';
   else if (c.includes('cage')||c.includes('crate')) t += ' > Cages & Crates';
   else if (c.includes('groom')) t += ' > Grooming';
   else if (c.includes('carrier')||c.includes('travel')) t += ' > Travel';
   else if (c.includes('scratch')) t += ' > Scratchers';
+  else if (c.includes('bowl')||c.includes('feed')) t += ' > Bowls & Feeders';
+  else if (c.includes('house')) t += ' > Houses';
+  else if (c.includes('train')) t += ' > Training';
   return t;
 }
 
@@ -270,20 +408,20 @@ function getAvailability(stock: number | null, isActive: boolean | null): string
   return (stock !== null && stock !== undefined && stock > 0) ? 'in stock' : 'out of stock';
 }
 
-function productItemXml(p: MerchantProduct): string {
+/** Determine current season for custom_label_2 */
+function getCurrentSeason(): string {
+  const month = new Date().getMonth() + 1;
+  if (month >= 3 && month <= 5) return 'Spring';
+  if (month >= 6 && month <= 8) return 'Summer';
+  if (month >= 9 && month <= 11) return 'Fall';
+  return 'Winter';
+}
+
+function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): string {
   const url = `${BASE_URL}/product/${p.slug || p.id}`;
   const img = p.image_url || (p.images && p.images[0]) || '';
-  const pet = getPetType(p.category);
-  const benefit = extractBenefit(p.name, p.description);
-  const title = truncate(`${p.name} for ${pet} - ${benefit}`, 150);
-  let desc = `${benefit} for your ${pet.toLowerCase()}. `;
-  if (p.description && stripHtml(p.description).length > 20) {
-    desc += truncate(stripHtml(p.description), 4500) + ' ';
-  } else {
-    desc += `Premium quality ${p.name} designed for comfort and durability. `;
-  }
-  desc += `Free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Fast delivery in 3-7 business days. 30-day hassle-free returns. Shop with confidence at GetPawsy.`;
-  desc = truncate(desc, 5000);
+  const title = buildOptimizedTitle(p);
+  const desc = buildOptimizedDescription(p);
 
   const priceStr = (v: number) => `${v.toFixed(2)} USD`;
   let priceXml: string;
@@ -302,8 +440,22 @@ function productItemXml(p: MerchantProduct): string {
     }
   }
   if (p.weight) { extra += `      <g:shipping_weight>${(p.weight * 2.20462).toFixed(2)} lb</g:shipping_weight>\n`; }
+
   const avail = getAvailability(p.stock, p.is_active);
-  const priceTier = p.price >= 50 ? 'Premium' : p.price >= 25 ? 'Mid-Range' : 'Value';
+  const season = getCurrentSeason();
+
+  // Custom labels per spec
+  // custom_label_0: margin tier (based on price vs compare_at_price)
+  const margin = p.compare_at_price && p.compare_at_price > 0
+    ? ((p.compare_at_price - p.price) / p.compare_at_price * 100)
+    : 0;
+  const marginTier = margin >= 40 ? 'High-Margin' : margin >= 20 ? 'Mid-Margin' : 'Low-Margin';
+
+  // custom_label_1: bestseller flag
+  const isBestseller = bestsellersSet.has(p.id);
+
+  // Shipping element (US, 3-7 business days)
+  const shippingCost = p.price >= FREE_SHIPPING_THRESHOLD ? '0.00' : '5.99';
 
   return `    <item>
       <g:id>${esc(p.id)}</g:id>
@@ -317,34 +469,112 @@ ${priceXml}
       <g:brand>GetPawsy</g:brand>
 ${extra}      <g:product_type>${esc(getProductType(p.category))}</g:product_type>
       <g:google_product_category>${esc(getGoogleProductCategory(p.category))}</g:google_product_category>
-      <g:custom_label_0>${esc(pet)}</g:custom_label_0>
-      <g:custom_label_1>${priceTier}</g:custom_label_1>
-      <g:custom_label_2>${avail === 'in stock' ? 'Available' : 'Out-of-Stock'}</g:custom_label_2>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>${shippingCost} USD</g:price>
+      </g:shipping>
+      <g:custom_label_0>${marginTier}</g:custom_label_0>
+      <g:custom_label_1>${isBestseller ? 'Bestseller' : 'Standard'}</g:custom_label_1>
+      <g:custom_label_2>${season}</g:custom_label_2>
       <g:custom_label_3>${p.price >= FREE_SHIPPING_THRESHOLD ? 'Free-Shipping' : 'Paid-Shipping'}</g:custom_label_3>
     </item>`;
 }
 
 async function buildMerchantFeed(): Promise<string> {
-  // Query products_public view (accessible via anon key, no RLS issues)
-  const products = await supaRest<MerchantProduct>(
-    'products_public',
-    'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false&order=created_at.desc&limit=5000'
-  );
-  console.log(`[xml-plugin] Merchant feed: ${products.length} products`);
+  // Fetch products + bestsellers in parallel
+  const [products, bestsellers] = await Promise.all([
+    supaRest<MerchantProduct>(
+      'products_public',
+      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false&order=created_at.desc&limit=5000'
+    ),
+    supaRest<{ product_id: string }>('bestsellers', 'select=product_id&is_active=eq.true'),
+  ]);
+
+  const bestsellersSet = new Set(bestsellers.map(b => b.product_id));
+  console.log(`[xml-plugin] Merchant feed: ${products.length} products, ${bestsellersSet.size} bestsellers`);
 
   const now = new Date().toISOString();
-  const items = products.map(p => productItemXml(p)).join('\n');
+  const items = products.map(p => productItemXml(p, bestsellersSet)).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
     <title>GetPawsy Product Feed</title>
     <link>${BASE_URL}/</link>
-    <description>Google Merchant Center feed for GetPawsy.</description>
+    <description>Google Merchant Center US Shopping feed – GetPawsy pet supplies.</description>
     <language>en-US</language>
     <lastBuildDate>${now}</lastBuildDate>
 ${items}
   </channel>
 </rss>`;
+}
+
+// ── Merchant Diagnostics ──────────────────────────────────────────────
+
+async function buildMerchantDiagnostics(): Promise<string> {
+  const products = await supaRest<MerchantProduct>(
+    'products_public',
+    'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false&order=created_at.desc&limit=5000'
+  );
+
+  const issues: string[] = [];
+  const titlesSeen = new Map<string, string[]>();
+
+  for (const p of products) {
+    const pid = p.id;
+    const name = p.name || '(unnamed)';
+
+    // Missing GTIN / SKU
+    if (!p.sku) {
+      issues.push(`    <issue type="missing_gtin" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" />`);
+    }
+    // Missing image
+    if (!p.image_url && (!p.images || p.images.length === 0)) {
+      issues.push(`    <issue type="missing_image" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" />`);
+    }
+    // Overlength title (raw name > 150 chars)
+    if (name.length > 150) {
+      issues.push(`    <issue type="overlength_title" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" length="${name.length}" />`);
+    }
+    // Out of stock
+    if (!p.stock || p.stock <= 0) {
+      issues.push(`    <issue type="out_of_stock" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" stock="${p.stock ?? 'null'}" />`);
+    }
+    // Track duplicate titles
+    const normTitle = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!titlesSeen.has(normTitle)) titlesSeen.set(normTitle, []);
+    titlesSeen.get(normTitle)!.push(pid);
+  }
+
+  // Add duplicate title issues
+  for (const [, ids] of titlesSeen) {
+    if (ids.length > 1) {
+      issues.push(`    <issue type="duplicate_title" product_ids="${ids.join(',')}" count="${ids.length}" />`);
+    }
+  }
+
+  const counts = {
+    total: products.length,
+    missing_gtin: issues.filter(i => i.includes('missing_gtin')).length,
+    missing_image: issues.filter(i => i.includes('missing_image')).length,
+    overlength: issues.filter(i => i.includes('overlength_title')).length,
+    oos: issues.filter(i => i.includes('out_of_stock')).length,
+    duplicates: issues.filter(i => i.includes('duplicate_title')).length,
+  };
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<merchant_diagnostics generated="${new Date().toISOString()}" total_products="${counts.total}">
+  <summary>
+    <missing_gtin>${counts.missing_gtin}</missing_gtin>
+    <missing_image>${counts.missing_image}</missing_image>
+    <overlength_title>${counts.overlength}</overlength_title>
+    <out_of_stock>${counts.oos}</out_of_stock>
+    <duplicate_titles>${counts.duplicates}</duplicate_titles>
+  </summary>
+  <issues>
+${issues.join('\n')}
+  </issues>
+</merchant_diagnostics>`;
 }
 
 // ── Vite Plugin ───────────────────────────────────────────────────────
@@ -368,7 +598,7 @@ export default function sitemapPlugin(): Plugin {
       const today = new Date().toISOString().split('T')[0];
 
       // Generate all sitemaps + merchant feed in parallel
-      const [index, stat, products, categories, bestsellers, collections, blog, guides, feed] =
+      const [index, stat, products, categories, bestsellers, collections, blog, guides, feed, diagnostics] =
         await Promise.all([
           buildSitemapIndex(today).catch(() => FALLBACK_EMPTY),
           Promise.resolve(buildStaticSitemap(today)),
@@ -379,6 +609,7 @@ export default function sitemapPlugin(): Plugin {
           buildBlogSitemap(today).catch(() => FALLBACK_EMPTY),
           buildGuidesSitemap(today).catch(() => FALLBACK_EMPTY),
           buildMerchantFeed().catch(() => FALLBACK_FEED),
+          buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
         ]);
 
       const files: [string, string][] = [
@@ -391,6 +622,7 @@ export default function sitemapPlugin(): Plugin {
         ['sitemap-blog.xml', blog],
         ['sitemap-guides.xml', guides],
         ['merchant-feed.xml', feed],
+        ['merchant-diagnostics.xml', diagnostics],
       ];
 
       for (const [name, xml] of files) {
