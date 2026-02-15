@@ -1,5 +1,6 @@
 import { useState, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Heart, ShoppingCart, Trash2, ArrowLeft, ArrowUpDown, Filter } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -164,6 +165,7 @@ const Wishlist = () => {
   if (wishlist.length === 0) {
     return (
       <Layout>
+        <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
         <div className="container px-4 md:px-6 py-16 text-center">
           <div className="max-w-md mx-auto">
             <Heart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
@@ -185,6 +187,7 @@ const Wishlist = () => {
 
   return (
     <Layout>
+      <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="container px-4 md:px-6 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
