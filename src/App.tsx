@@ -196,6 +196,7 @@ const RedirectCheckPage = lazyWithRetry(() => import("./pages/admin/RedirectChec
 const FeedGapReportPage = lazyWithRetry(() => import("./pages/admin/FeedGapReportPage"));
 const SeoMonitorPage = lazyWithRetry(() => import("./pages/admin/SeoMonitorPage"));
 const SeoIntelligencePage = lazyWithRetry(() => import("./pages/admin/SeoIntelligencePage"));
+const CompetitiveIntelligencePage = lazyWithRetry(() => import("./pages/admin/CompetitiveIntelligencePage"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
@@ -345,6 +346,7 @@ const App = () => {
                                <Route path="/admin/feed-gap-report" element={<FeedGapReportPage />} />
                                 <Route path="/admin/seo-monitor" element={<SeoMonitorPage />} />
                                 <Route path="/admin/seo-intelligence" element={<SeoIntelligencePage />} />
+                                <Route path="/admin/competitive-intelligence" element={<CompetitiveIntelligencePage />} />
                           <Route path="/admin/guides-seo" element={<Navigate to="/dashboard/guides-seo" replace />} />
                          <Route path="/admin/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
                          <Route path="/admin/crawler-analytics" element={<Navigate to="/dashboard/crawler-analytics" replace />} />
