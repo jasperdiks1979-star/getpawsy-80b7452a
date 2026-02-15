@@ -306,11 +306,31 @@ async function advancedPetSearch(accessToken: string, keyword: string, pageNum =
     const allSubcategoryKeywords = Object.values(PET_SUBCATEGORIES).flat();
     const combinedPetKeywords = [...new Set([...petKeywords, ...allSubcategoryKeywords])];
     
+    // Non-pet exclusion patterns — reject before checking pet keywords
+    const nonPetPatterns = [
+      'nail art', 'nail polish', 'manicure', 'pedicure',
+      'sunglasses', 'cat-eye', 'cat eye', 'eyewear',
+      'airtag case', 'anti-loss device', 'tracker case',
+      'handbag', 'crossbody bag', 'tote bag', 'clutch', 'purse',
+      'makeup', 'cosmetic', 'lipstick', 'mascara',
+      'hair extension', 'hair wig',
+      't-shirt', 'tshirt', 'hoodie', 'cardigan', 'sweater',
+      'dress', 'skirt', 'blouse', 'pumps', 'stiletto', 'high-heel',
+      'candle holder', 'candelabrum', 'teacup', 'glass cup', 'wine glass',
+      'yoga', 'gym', 'fitness', 'tattoo',
+      'plus-size', 'plus size', 'long-sleeve',
+    ];
+
     const petRelatedProducts = globalResult.data.list.filter((p: CJProductDetail) => {
       const lowerName = p.productNameEn.toLowerCase();
       const lowerCategory = (p.categoryName || '').toLowerCase();
       
-      // Check if product name or category contains pet-related keywords
+      // First reject non-pet items
+      if (nonPetPatterns.some(pattern => lowerName.includes(pattern))) {
+        return false;
+      }
+      
+      // Then check if product name or category contains pet-related keywords
       return combinedPetKeywords.some(kw => 
         lowerName.includes(kw.toLowerCase()) || lowerCategory.includes(kw.toLowerCase())
       );
