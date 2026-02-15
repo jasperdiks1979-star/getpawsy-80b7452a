@@ -1,138 +1,70 @@
-import { useState, useEffect, forwardRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Cookie, X, Settings } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-
-// Banner component with forwardRef for AnimatePresence compatibility
-const CookieBanner = forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<typeof motion.div>>(
-  (props, ref) => <motion.div ref={ref} {...props} />
-);
-
-CookieBanner.displayName = 'CookieBanner';
-
-type ConsentPreferences = {
-  necessary: boolean;
-  functional: boolean;
-  analytics: boolean;
-  marketing: boolean;
-};
-
-const CONSENT_KEY = 'cookie-consent';
-const CONSENT_PREFERENCES_KEY = 'cookie-preferences';
+import { getConsent, setConsent, type ConsentValue } from '@/lib/cookieConsent';
 
 export const CookieConsent = () => {
   const [showBanner, setShowBanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [preferences, setPreferences] = useState<ConsentPreferences>({
-    necessary: true,
-    functional: true,
-    analytics: true,
-    marketing: true,
-  });
+  const [prefs, setPrefs] = useState({ functional: true, analytics: true, marketing: true });
+  const mountedRef = useRef(false);
   const location = useLocation();
   const isMobile = useIsMobile();
 
-  // Check if we're on checkout/cart pages - disable banner on mobile for these routes
   const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
   const shouldDisable = isMobile && isCheckoutRoute;
 
+  // Show banner only if no consent stored — once
   useEffect(() => {
-    const consent = localStorage.getItem(CONSENT_KEY);
-    if (!consent) {
-      // Small delay to not show immediately on page load
-      const timer = setTimeout(() => setShowBanner(true), 1500);
-      return () => clearTimeout(timer);
-    } else {
-      // Load saved preferences and apply them
-      const savedPreferences = localStorage.getItem(CONSENT_PREFERENCES_KEY);
-      if (savedPreferences) {
-        const parsed = JSON.parse(savedPreferences);
-        setPreferences(parsed);
-        applyConsent(parsed);
-      }
+    if (mountedRef.current) return;
+    mountedRef.current = true;
+    const existing = getConsent();
+    if (!existing) {
+      const t = setTimeout(() => setShowBanner(true), 1500);
+      return () => clearTimeout(t);
     }
   }, []);
 
-  // Listen for custom event to reopen cookie settings
+  // Allow reopening via custom event
   useEffect(() => {
-    const handleOpenCookieSettings = () => {
-      const savedPreferences = localStorage.getItem(CONSENT_PREFERENCES_KEY);
-      if (savedPreferences) {
-        setPreferences(JSON.parse(savedPreferences));
+    const handler = () => {
+      const existing = getConsent();
+      if (existing === 'all') {
+        setPrefs({ functional: true, analytics: true, marketing: true });
+      } else {
+        setPrefs({ functional: false, analytics: false, marketing: false });
       }
       setShowSettings(true);
       setShowBanner(true);
     };
-
-    window.addEventListener('open-cookie-settings', handleOpenCookieSettings);
-    return () => window.removeEventListener('open-cookie-settings', handleOpenCookieSettings);
+    window.addEventListener('open-cookie-settings', handler);
+    return () => window.removeEventListener('open-cookie-settings', handler);
   }, []);
 
-  const applyConsent = (prefs: ConsentPreferences) => {
-    // Enable/disable Google Analytics based on consent
-    // We use dataLayer.push for consent updates to avoid type conflicts
-    if (typeof window !== 'undefined' && window.dataLayer) {
-      window.dataLayer.push('consent', 'update', {
-        'analytics_storage': prefs.analytics ? 'granted' : 'denied',
-        'ad_storage': prefs.marketing ? 'granted' : 'denied',
-        'ad_user_data': prefs.marketing ? 'granted' : 'denied',
-        'ad_personalization': prefs.marketing ? 'granted' : 'denied',
-      });
-    }
-  };
-
-  const saveConsent = (prefs: ConsentPreferences, message?: string) => {
-    localStorage.setItem(CONSENT_KEY, 'true');
-    localStorage.setItem(CONSENT_PREFERENCES_KEY, JSON.stringify(prefs));
-    applyConsent(prefs);
+  const save = (value: ConsentValue, msg?: string) => {
+    setConsent(value);
     setShowBanner(false);
     setShowSettings(false);
-    if (message) {
-      toast.success(message);
-    }
+    if (msg) toast.success(msg);
   };
 
-  const acceptAll = () => {
-    const allAccepted = {
-      necessary: true,
-      functional: true,
-      analytics: true,
-      marketing: true,
-    };
-    setPreferences(allAccepted);
-    saveConsent(allAccepted, 'All cookies accepted! 🍪');
+  const acceptAll = () => save('all', 'All cookies accepted! 🍪');
+  const acceptNecessary = () => save('necessary', 'Only necessary cookies enabled 🍪');
+  const saveCustom = () => {
+    const anyMarketing = prefs.functional || prefs.analytics || prefs.marketing;
+    save(anyMarketing ? 'all' : 'necessary', 'Cookie preferences saved! 🍪');
   };
 
-  const acceptNecessary = () => {
-    const onlyNecessary = {
-      necessary: true,
-      functional: false,
-      analytics: false,
-      marketing: false,
-    };
-    setPreferences(onlyNecessary);
-    saveConsent(onlyNecessary, 'Only necessary cookies enabled 🍪');
-  };
-
-  const savePreferences = () => {
-    saveConsent(preferences, 'Cookie preferences saved! 🍪');
-  };
-
-  const togglePreference = (key: keyof ConsentPreferences) => {
-    if (key === 'necessary') return; // Necessary cookies cannot be disabled
-    setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  // Don't render on mobile checkout pages
   if (shouldDisable) return null;
 
   return (
     <AnimatePresence>
       {showBanner && (
-        <CookieBanner
+        <motion.div
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
@@ -145,97 +77,48 @@ export const CookieConsent = () => {
                 <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 flex-shrink-0">
                   <Cookie className="w-6 h-6 text-primary" />
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground mb-2">
-                    🍪 We use cookies
-                  </h3>
-                  
+                  <h3 className="font-semibold text-foreground mb-2">🍪 We use cookies</h3>
+
                   {!showSettings ? (
                     <>
                       <p className="text-sm text-muted-foreground mb-4">
-                        We use cookies to improve your experience, analyze site traffic, and personalize content. 
-                        By clicking "Accept All", you consent to our use of cookies. You can customize your preferences 
-                        or reject non-essential cookies.{' '}
-                        <Link to="/cookies" className="text-primary hover:underline">
-                          Learn more
-                        </Link>
+                        We use cookies to improve your experience, analyze site traffic, and personalize content.
+                        By clicking "Accept All", you consent to our use of cookies.{' '}
+                        <Link to="/cookies" className="text-primary hover:underline">Learn more</Link>
                       </p>
-                      
                       <div className="flex flex-wrap gap-2">
-                        <Button onClick={acceptAll} size="sm">
-                          Accept All
-                        </Button>
-                        <Button onClick={acceptNecessary} variant="outline" size="sm">
-                          Necessary Only
-                        </Button>
-                        <Button 
-                          onClick={() => setShowSettings(true)} 
-                          variant="ghost" 
-                          size="sm"
-                          className="gap-1"
-                        >
-                          <Settings className="w-4 h-4" />
-                          Customize
+                        <Button onClick={acceptAll} size="sm">Accept All</Button>
+                        <Button onClick={acceptNecessary} variant="outline" size="sm">Necessary Only</Button>
+                        <Button onClick={() => setShowSettings(true)} variant="ghost" size="sm" className="gap-1">
+                          <Settings className="w-4 h-4" /> Customize
                         </Button>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="space-y-3 mb-4">
-                        <CookieToggle
-                          label="Necessary Cookies"
-                          description="Required for the website to function properly"
-                          checked={preferences.necessary}
-                          disabled
-                        />
-                        <CookieToggle
-                          label="Functional Cookies"
-                          description="Remember your preferences and settings"
-                          checked={preferences.functional}
-                          onChange={() => togglePreference('functional')}
-                        />
-                        <CookieToggle
-                          label="Analytics Cookies"
-                          description="Help us understand how visitors use our site"
-                          checked={preferences.analytics}
-                          onChange={() => togglePreference('analytics')}
-                        />
-                        <CookieToggle
-                          label="Marketing Cookies"
-                          description="Used for personalized ads and remarketing"
-                          checked={preferences.marketing}
-                          onChange={() => togglePreference('marketing')}
-                        />
+                        <CookieToggle label="Necessary Cookies" description="Required for the website to function" checked disabled />
+                        <CookieToggle label="Functional" description="Remember your preferences" checked={prefs.functional} onChange={() => setPrefs(p => ({ ...p, functional: !p.functional }))} />
+                        <CookieToggle label="Analytics" description="Help us understand usage" checked={prefs.analytics} onChange={() => setPrefs(p => ({ ...p, analytics: !p.analytics }))} />
+                        <CookieToggle label="Marketing" description="Personalized ads" checked={prefs.marketing} onChange={() => setPrefs(p => ({ ...p, marketing: !p.marketing }))} />
                       </div>
-                      
                       <div className="flex flex-wrap gap-2">
-                        <Button onClick={savePreferences} size="sm">
-                          Save Preferences
-                        </Button>
-                        <Button 
-                          onClick={() => setShowSettings(false)} 
-                          variant="ghost" 
-                          size="sm"
-                        >
-                          Back
-                        </Button>
+                        <Button onClick={saveCustom} size="sm">Save Preferences</Button>
+                        <Button onClick={() => setShowSettings(false)} variant="ghost" size="sm">Back</Button>
                       </div>
                     </>
                   )}
                 </div>
-                
-                <button
-                  onClick={acceptNecessary}
-                  className="p-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-                  aria-label="Close cookie banner"
-                >
+
+                <button onClick={acceptNecessary} className="p-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0" aria-label="Close cookie banner">
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
           </div>
-        </CookieBanner>
+        </motion.div>
       )}
     </AnimatePresence>
   );
@@ -250,7 +133,7 @@ interface CookieToggleProps {
 }
 
 const CookieToggle = ({ label, description, checked, disabled, onChange }: CookieToggleProps) => (
-  <div 
+  <div
     className={`flex items-center justify-between gap-4 p-3 rounded-lg ${disabled ? 'bg-muted/50' : 'bg-muted/30 hover:bg-muted/50'} transition-colors`}
     onClick={!disabled ? onChange : undefined}
     role={!disabled ? 'button' : undefined}
@@ -260,16 +143,8 @@ const CookieToggle = ({ label, description, checked, disabled, onChange }: Cooki
       <p className="text-sm font-medium text-foreground">{label}</p>
       <p className="text-xs text-muted-foreground">{description}</p>
     </div>
-    <div 
-      className={`w-10 h-6 rounded-full flex items-center transition-colors flex-shrink-0 ${
-        checked ? 'bg-primary' : 'bg-muted-foreground/30'
-      } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-    >
-      <div 
-        className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-          checked ? 'translate-x-5' : 'translate-x-1'
-        }`}
-      />
+    <div className={`w-10 h-6 rounded-full flex items-center transition-colors flex-shrink-0 ${checked ? 'bg-primary' : 'bg-muted-foreground/30'} ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
+      <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-5' : 'translate-x-1'}`} />
     </div>
   </div>
 );

@@ -1,15 +1,14 @@
 import { useEffect, useCallback } from 'react';
+import { PRODUCTION_DOMAINS } from '@/lib/constants';
+import { getConsent, isMarketingAllowed } from '@/lib/cookieConsent';
 
 // Pinterest Tag ID
 const PINTEREST_TAG_ID = '2612897117846';
 
-import { PRODUCTION_DOMAINS } from '@/lib/constants';
-
 // Check if we're on a production domain
 const isProductionDomain = (): boolean => {
   if (typeof window === 'undefined') return false;
-  const hostname = window.location.hostname;
-  return PRODUCTION_DOMAINS.includes(hostname);
+  return PRODUCTION_DOMAINS.includes(window.location.hostname);
 };
 
 // Declare Pinterest tag on window
@@ -24,10 +23,14 @@ declare global {
   }
 }
 
+let pinterestInitialized = false;
+
 // Initialize Pinterest Tag
 const initPinterestTag = () => {
-  if (typeof window === 'undefined') return;
-  if (window.pintrk) return; // Already initialized
+  if (typeof window === 'undefined' || pinterestInitialized || window.pintrk) return;
+  if (!isMarketingAllowed(getConsent())) return; // consent gate
+
+  pinterestInitialized = true;
 
   // Create pintrk function
   window.pintrk = function (...args: unknown[]) {
@@ -44,7 +47,6 @@ const initPinterestTag = () => {
   // Initialize with tag ID
   window.pintrk('load', PINTEREST_TAG_ID);
   window.pintrk('page');
-
   console.log('[Pinterest] Tag initialized:', PINTEREST_TAG_ID);
 };
 
@@ -80,15 +82,8 @@ interface PinterestEventData {
 
 // Track Pinterest event
 const trackPinterestEvent = (event: PinterestEventType, data?: PinterestEventData) => {
-  if (!isProductionDomain()) {
-    console.log('[Pinterest] Tracking skipped - not production domain:', event, data);
-    return;
-  }
-
-  if (typeof window === 'undefined' || !window.pintrk) {
-    console.warn('[Pinterest] Tag not initialized');
-    return;
-  }
+  if (!isProductionDomain() || !isMarketingAllowed(getConsent())) return;
+  if (typeof window === 'undefined' || !window.pintrk) return;
 
   // Generate unique event ID for deduplication
   const eventData = {
@@ -185,7 +180,7 @@ export const usePinterestTracking = () => {
   }, []);
 
   // Track newsletter signup
-  const trackSignup = useCallback((email?: string) => {
+  const trackSignup = useCallback(() => {
     trackPinterestEvent('signup');
   }, []);
 
