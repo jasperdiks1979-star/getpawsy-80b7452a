@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { CheckCircle, Package, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
@@ -102,6 +103,7 @@ const PaymentSuccess = () => {
   if (!sessionId) {
     return (
       <Layout>
+        <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
         <div className="container px-4 md:px-6 py-16 text-center">
           <h1 className="text-2xl font-bold mb-4">Invalid Session</h1>
           <p className="text-muted-foreground mb-8">
@@ -117,6 +119,7 @@ const PaymentSuccess = () => {
 
   return (
     <Layout>
+      <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="container px-4 md:px-6 py-16">
         <motion.div 
           className="max-w-2xl mx-auto text-center"

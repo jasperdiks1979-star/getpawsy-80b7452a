@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Home, Truck, ShieldCheck, Gift, Star } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ const Cart = () => {
   if (items.length === 0) {
     return (
       <Layout>
+        <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
         <div className="container px-4 md:px-6 py-16">
           <div className="text-center max-w-md mx-auto">
             <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
@@ -63,6 +65,7 @@ const Cart = () => {
 
   return (
     <Layout>
+      <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="container px-4 md:px-6 py-8">
         {/* Breadcrumbs */}
         <Breadcrumb className="mb-6">

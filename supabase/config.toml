@@ -167,3 +167,6 @@ verify_jwt = false
 
 [functions.export-diagnostics]
 verify_jwt = false
+
+[functions.seo-diagnostics]
+verify_jwt = false
