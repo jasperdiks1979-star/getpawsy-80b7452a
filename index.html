@@ -125,7 +125,17 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Hydration guard: visible only if React fails to mount -->
+      <div id="hydration-fallback" style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafafa">
+        <div style="text-align:center;max-width:400px;padding:24px">
+          <div style="font-size:48px;margin-bottom:16px">🐾</div>
+          <h1 style="font-size:20px;font-weight:600;margin-bottom:8px;color:#1a1a1a">Loading GetPawsy…</h1>
+          <p style="font-size:14px;color:#666;margin-bottom:16px">If this screen stays, please reload.</p>
+          <button onclick="location.reload()" style="padding:10px 24px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;font-size:14px;cursor:pointer">Reload</button>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
