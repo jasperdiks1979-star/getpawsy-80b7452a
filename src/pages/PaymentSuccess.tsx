@@ -9,6 +9,7 @@ import { trackPurchase, trackGoogleAdsConversion, trackGoogleAdsPageView } from 
 import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
+import { ReferralShareWidget } from '@/components/referral/ReferralShareWidget';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -160,6 +161,11 @@ const PaymentSuccess = () => {
                 You'll receive a tracking code once your package is on its way
               </li>
             </ul>
+          </div>
+
+          {/* Referral program widget */}
+          <div className="max-w-md mx-auto mb-8">
+            <ReferralShareWidget customerEmail="" />
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
