@@ -3336,6 +3336,93 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          owner_email: string
+          owner_name: string | null
+          owner_reward_value: number
+          reward_type: string
+          reward_value: number
+          updated_at: string
+          uses_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          owner_email: string
+          owner_name?: string | null
+          owner_reward_value?: number
+          reward_type?: string
+          reward_value?: number
+          updated_at?: string
+          uses_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          owner_email?: string
+          owner_name?: string | null
+          owner_reward_value?: number
+          reward_type?: string
+          reward_value?: number
+          updated_at?: string
+          uses_count?: number
+        }
+        Relationships: []
+      }
+      referral_uses: {
+        Row: {
+          created_at: string
+          id: string
+          referral_code_id: string
+          referred_email: string
+          referred_order_id: string | null
+          reward_credited: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_code_id: string
+          referred_email: string
+          referred_order_id?: string | null
+          reward_credited?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_code_id?: string
+          referred_email?: string
+          referred_order_id?: string | null
+          reward_credited?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_uses_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_uses_referred_order_id_fkey"
+            columns: ["referred_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       remarketing_emails: {
         Row: {
           clicked_at: string | null
@@ -3374,6 +3461,109 @@ export type Database = {
           sent_at?: string
         }
         Relationships: []
+      }
+      replenishment_reminders: {
+        Row: {
+          created_at: string
+          customer_email: string
+          estimated_reorder_date: string
+          id: string
+          order_id: string
+          product_id: string
+          product_image: string | null
+          product_name: string
+          product_slug: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          estimated_reorder_date: string
+          id?: string
+          order_id: string
+          product_id: string
+          product_image?: string | null
+          product_name: string
+          product_slug?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          estimated_reorder_date?: string
+          id?: string
+          order_id?: string
+          product_id?: string
+          product_image?: string | null
+          product_name?: string
+          product_slug?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replenishment_reminders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          customer_email: string
+          customer_name: string | null
+          id: string
+          order_id: string
+          product_ids: string[]
+          reminder_count: number
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          customer_email: string
+          customer_name?: string | null
+          id?: string
+          order_id: string
+          product_ids?: string[]
+          reminder_count?: number
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          customer_email?: string
+          customer_name?: string | null
+          id?: string
+          order_id?: string
+          product_ids?: string[]
+          reminder_count?: number
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       saved_google_ads: {
         Row: {
