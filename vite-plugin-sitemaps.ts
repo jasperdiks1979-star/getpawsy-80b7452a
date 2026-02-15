@@ -94,11 +94,12 @@ async function buildSitemapIndex(today: string): Promise<string> {
 }
 
 function buildStaticSitemap(today: string): string {
+  // NOTE: /cat-trees-condos removed — already in sitemap-categories.xml (duplicate)
+  // NOTE: /bestsellers kept here as index-worthy listing page (individual /bestseller/:slug are noindex)
   const pages: [string,string,string][] = [
     ['/',   'daily','1.0'],
     ['/products','daily','0.95'],
     ['/bestsellers','daily','0.90'],
-    ['/cat-trees-condos','daily','0.90'],
     ['/blog','daily','0.80'],
     ['/guides','daily','0.85'],
   ];
