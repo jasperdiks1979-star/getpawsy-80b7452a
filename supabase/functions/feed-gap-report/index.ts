@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     // Fetch all products from DB
     const { data: allProducts, error: prodError } = await adminClient
       .from("products")
-      .select("id, name, slug, price, compare_at_price, image_url, images, stock, is_active, supplier");
+      .select("id, name, slug, price, compare_at_price, image_url, images, stock, is_active");
 
     if (prodError) throw new Error(`DB error: ${prodError.message}`);
 
