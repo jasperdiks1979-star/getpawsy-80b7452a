@@ -1453,6 +1453,12 @@ const Admin = () => {
                   <span className="hidden xs:inline">Reviews</span>
                 </TabsTrigger>
               </TouchTooltip>
+              <TouchTooltip content="Site Diagnostics & Export Bundle">
+                <button onClick={() => navigate('/admin/diagnostics')} className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors">
+                  <Stethoscope className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden xs:inline">Diagnostics</span>
+                </button>
+              </TouchTooltip>
             </TabsList>
           </TooltipProvider>
           <div className="flex flex-wrap gap-1 pb-1 -mt-4">
