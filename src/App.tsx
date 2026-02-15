@@ -186,6 +186,7 @@ const CrawlDiagnosticsDashboard = lazyWithRetry(() => import("./pages/admin/Craw
 const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
 const RevenueScalingPage = lazyWithRetry(() => import("./pages/admin/RevenueScalingPage"));
 const AutonomousSeoPage = lazyWithRetry(() => import("./pages/admin/AutonomousSeoPage"));
+const AuthorityEnginePage = lazyWithRetry(() => import("./pages/admin/AuthorityEnginePage"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
@@ -325,6 +326,7 @@ const App = () => {
                              <Route path="/admin/seo-command-center" element={<SeoCommandCenterPage />} />
                              <Route path="/admin/revenue-scaling" element={<RevenueScalingPage />} />
                              <Route path="/admin/autonomous-seo" element={<AutonomousSeoPage />} />
+                             <Route path="/admin/authority-engine" element={<AuthorityEnginePage />} />
                           <Route path="/admin/guides-seo" element={<Navigate to="/dashboard/guides-seo" replace />} />
                          <Route path="/admin/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
                          <Route path="/admin/crawler-analytics" element={<Navigate to="/dashboard/crawler-analytics" replace />} />

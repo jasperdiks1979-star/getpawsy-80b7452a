@@ -53,6 +53,45 @@ export type Database = {
         }
         Relationships: []
       }
+      authority_clusters: {
+        Row: {
+          config: Json | null
+          cornerstone_slug: string
+          cornerstone_title: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          niche: string
+          status: string
+          topical_map: Json | null
+          updated_at: string
+        }
+        Insert: {
+          config?: Json | null
+          cornerstone_slug: string
+          cornerstone_title?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          niche: string
+          status?: string
+          topical_map?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          config?: Json | null
+          cornerstone_slug?: string
+          cornerstone_title?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          niche?: string
+          status?: string
+          topical_map?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bestsellers: {
         Row: {
           created_at: string
@@ -351,6 +390,130 @@ export type Database = {
           webhook_type?: string
         }
         Relationships: []
+      }
+      cluster_articles: {
+        Row: {
+          approved: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          article_role: string | null
+          canonical_url: string | null
+          cluster_id: string
+          content: string | null
+          created_at: string
+          faq: Json | null
+          id: string
+          internal_links: Json | null
+          key_takeaways: string[] | null
+          meta_description: string | null
+          outline: Json | null
+          primary_keyword: string | null
+          publish_date: string | null
+          search_intent: string | null
+          secondary_keywords: string[] | null
+          seo_title: string | null
+          slug: string
+          status: string
+          title: string | null
+          updated_at: string
+          word_count: number | null
+        }
+        Insert: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          article_role?: string | null
+          canonical_url?: string | null
+          cluster_id: string
+          content?: string | null
+          created_at?: string
+          faq?: Json | null
+          id?: string
+          internal_links?: Json | null
+          key_takeaways?: string[] | null
+          meta_description?: string | null
+          outline?: Json | null
+          primary_keyword?: string | null
+          publish_date?: string | null
+          search_intent?: string | null
+          secondary_keywords?: string[] | null
+          seo_title?: string | null
+          slug: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          word_count?: number | null
+        }
+        Update: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          article_role?: string | null
+          canonical_url?: string | null
+          cluster_id?: string
+          content?: string | null
+          created_at?: string
+          faq?: Json | null
+          id?: string
+          internal_links?: Json | null
+          key_takeaways?: string[] | null
+          meta_description?: string | null
+          outline?: Json | null
+          primary_keyword?: string | null
+          publish_date?: string | null
+          search_intent?: string | null
+          secondary_keywords?: string[] | null
+          seo_title?: string | null
+          slug?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cluster_articles_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "authority_clusters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cluster_publish_queue: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          published: boolean | null
+          published_at: string | null
+          scheduled_date: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          published?: boolean | null
+          published_at?: string | null
+          scheduled_date: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          published?: boolean | null
+          published_at?: string | null
+          scheduled_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cluster_publish_queue_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "cluster_articles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       competitor_alerts: {
         Row: {
