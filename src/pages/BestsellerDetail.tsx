@@ -69,6 +69,7 @@ import { PostAddUpsellModal } from '@/components/products/PostAddUpsellModal';
 import { VolumeDiscountSelector } from '@/components/products/VolumeDiscountSelector';
 import { OrderBump } from '@/components/products/OrderBump';
 import { TrustMicrocopy } from '@/components/products/TrustMicrocopy';
+import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { useRecentlyViewedProducts } from '@/hooks/useRecentlyViewedProducts';
@@ -1121,6 +1122,11 @@ const BestsellerDetail = () => {
                       <li>• device: {abTest.deviceType}</li>
                     </ul>
                   </div>
+                )}
+
+                {/* Low Stock Badge */}
+                {inStock && stockValue != null && stockValue > 0 && stockValue <= 10 && (
+                  <LowStockBadge stock={stockValue} />
                 )}
 
                 {/* Stock Status */}

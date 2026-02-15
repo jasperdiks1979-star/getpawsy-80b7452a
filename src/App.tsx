@@ -15,6 +15,7 @@ import { LiveCheckoutWidget } from "@/components/admin/LiveCheckoutWidget";
 import { SafePinterestTag } from "@/components/tracking/SafePinterestTag";
 import { SafeGlobalVisitorTracker } from "@/components/tracking/SafeGlobalVisitorTracker";
 import { MarketingErrorBoundary } from "@/components/error/MarketingErrorBoundary";
+import { RecentPurchaseNotification } from "@/components/social-proof/RecentPurchaseNotification";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { setupGlobalErrorHandler } from "@/lib/error-reporter";
@@ -190,6 +191,7 @@ const AuthorityEnginePage = lazyWithRetry(() => import("./pages/admin/AuthorityE
 const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPage"));
 const FeedInsightsPage = lazyWithRetry(() => import("./pages/admin/FeedInsightsPage"));
 const ContentOpportunitiesPage = lazyWithRetry(() => import("./pages/admin/ContentOpportunitiesPage"));
+const BundlesPage = lazyWithRetry(() => import("./pages/admin/BundlesPage"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
@@ -266,6 +268,7 @@ const App = () => {
                   <MarketingErrorBoundary>
                     <SafePinterestTag />
                     <SafeGlobalVisitorTracker />
+                    <RecentPurchaseNotification />
                   </MarketingErrorBoundary>
                   <RouteErrorBoundary>
                     <Suspense fallback={<RouteLoader />}>
@@ -333,6 +336,7 @@ const App = () => {
                              <Route path="/admin/diagnostics" element={<DiagnosticsPage />} />
                              <Route path="/admin/feed-insights" element={<FeedInsightsPage />} />
                              <Route path="/admin/content-opportunities" element={<ContentOpportunitiesPage />} />
+                             <Route path="/admin/bundles" element={<BundlesPage />} />
                           <Route path="/admin/guides-seo" element={<Navigate to="/dashboard/guides-seo" replace />} />
                          <Route path="/admin/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
                          <Route path="/admin/crawler-analytics" element={<Navigate to="/dashboard/crawler-analytics" replace />} />
