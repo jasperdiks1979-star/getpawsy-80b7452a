@@ -237,6 +237,101 @@ Deno.serve(async (req) => {
       orders: orders.count ?? 0,
     }, null, 2));
 
+    // --- F) Redirect status ---
+    let wwwRedirectStatus: number | string = "unknown";
+    try {
+      const wwwRes = await fetch("https://www.getpawsy.pet/sitemap.xml", {
+        redirect: "manual",
+        signal: AbortSignal.timeout(5000),
+      });
+      wwwRedirectStatus = wwwRes.status;
+    } catch (e) {
+      wwwRedirectStatus = `error: ${e.message}`;
+    }
+
+    zip.file("diagnostics/redirect-status.json", JSON.stringify({
+      generated_at: new Date().toISOString(),
+      test_url: "https://www.getpawsy.pet/sitemap.xml",
+      status: wwwRedirectStatus,
+      is301: wwwRedirectStatus === 301,
+      expected: 301,
+      note: wwwRedirectStatus === 301
+        ? "WWW correctly 301-redirects to apex"
+        : "CRITICAL: www redirect is NOT 301 — SEO consolidation risk",
+    }, null, 2));
+
+    // --- G) Cache header report ---
+    const cacheEndpoints = [
+      { path: "/robots.txt", expectedType: "text/plain" },
+      { path: "/sitemap.xml", expectedType: "text/xml" },
+      { path: "/sitemap-static.xml", expectedType: "text/xml" },
+      { path: "/merchant-feed.xml", expectedType: "text/xml" },
+      { path: "/merchant-diagnostics.xml", expectedType: "text/xml" },
+    ];
+    const cacheReport: Record<string, unknown>[] = [];
+    for (const ep of cacheEndpoints) {
+      try {
+        const r = await fetch(`${siteUrl}${ep.path}`, {
+          method: "HEAD",
+          signal: AbortSignal.timeout(5000),
+        });
+        cacheReport.push({
+          path: ep.path,
+          status: r.status,
+          content_type: r.headers.get("content-type"),
+          cache_control: r.headers.get("cache-control"),
+          x_content_type_options: r.headers.get("x-content-type-options"),
+          expected_content_type: ep.expectedType,
+          ok: r.status === 200,
+        });
+      } catch (e) {
+        cacheReport.push({ path: ep.path, error: e.message, ok: false });
+      }
+    }
+    zip.file("diagnostics/cache-header-report.json", JSON.stringify(cacheReport, null, 2));
+
+    // --- H) Feed gap report ---
+    const { data: allProductsForGap } = await adminClient
+      .from("products")
+      .select("id, name, slug, price, image_url, stock, is_active");
+
+    let feedBodyForGap = "";
+    try {
+      const fr = await fetch(`${siteUrl}/merchant-feed.xml`, {
+        signal: AbortSignal.timeout(15000),
+      });
+      feedBodyForGap = await fr.text();
+    } catch { /* ignore */ }
+
+    const feedIdSet = new Set<string>();
+    const feedSlugSet = new Set<string>();
+    let m2;
+    const idRe = /<g:id>([^<]+)<\/g:id>/g;
+    while ((m2 = idRe.exec(feedBodyForGap)) !== null) feedIdSet.add(m2[1].trim());
+    const linkRe = /<link>([^<]+)<\/link>/g;
+    while ((m2 = linkRe.exec(feedBodyForGap)) !== null) {
+      const sm = m2[1].match(/\/product\/([^/?#]+)/);
+      if (sm) feedSlugSet.add(sm[1]);
+    }
+
+    const gapProducts = (allProductsForGap || []).filter(p =>
+      !feedIdSet.has(p.id) && !feedIdSet.has(p.slug) && !feedSlugSet.has(p.slug)
+    ).map(p => ({
+      id: p.id,
+      title: p.name,
+      reason: !p.is_active ? "inactive" : (p.stock !== null && p.stock <= 0) ? "out_of_stock" : !p.price ? "missing_price" : !p.image_url ? "missing_image" : "other",
+      in_stock: p.stock === null || p.stock > 0,
+      price: p.price,
+    }));
+
+    zip.file("diagnostics/feed-gap-report.json", JSON.stringify({
+      generated_at: new Date().toISOString(),
+      totalProducts: (allProductsForGap || []).length,
+      inFeed: feedIdSet.size,
+      missingFromFeed: gapProducts.length,
+      missingProducts: gapProducts,
+    }, null, 2));
+
     // Generate ZIP
     const zipBlob = await zip.generateAsync({ type: "uint8array" });
     const dateStr = new Date().toISOString().replace(/[:.]/g, "-").substring(0, 19);

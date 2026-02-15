@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Loader2, ArrowLeft, Download, FileArchive, ShieldCheck, Globe, Activity } from 'lucide-react';
+import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Loader2, ArrowLeft, Download, FileArchive, ShieldCheck, Globe, Activity, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getConsent } from '@/lib/cookieConsent';
@@ -315,6 +315,33 @@ export default function DiagnosticsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Quick Links to Sub-Reports */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-lg">Diagnostic Sub-Reports</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          <Link to="/admin/redirect-check">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Globe className="h-4 w-4" /> Redirect &amp; Cache Check
+            </Button>
+          </Link>
+          <Link to="/admin/feed-gap-report">
+            <Button variant="outline" size="sm" className="gap-2">
+              <AlertTriangle className="h-4 w-4" /> Feed Gap Report
+            </Button>
+          </Link>
+          <Link to="/admin/feed-insights">
+            <Button variant="outline" size="sm" className="gap-2">
+              <ExternalLink className="h-4 w-4" /> Feed Insights
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      {/* WWW Redirect Warning */}
+      <WwwRedirectWarning />
 
       {/* Domain & DNS Info */}
       <DomainDnsCard />
@@ -694,6 +721,67 @@ function MonitoringStatusCard() {
               </details>
             )}
           </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---- WWW Redirect Warning Sub-component ---- */
+function WwwRedirectWarning() {
+  const [status, setStatus] = useState<number | string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [checked, setChecked] = useState(false);
+
+  const check = async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Not authenticated");
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(`${supabaseUrl}/functions/v1/full-diagnostics`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const diag = await res.json();
+      setStatus(diag.crawlConfig?.wwwRedirectStatus ?? "unknown");
+    } catch (err: any) {
+      setStatus(`error: ${err.message}`);
+    }
+    setChecked(true);
+    setLoading(false);
+  };
+
+  useEffect(() => { check(); }, []);
+
+  const is301 = status === 301;
+
+  if (!checked && !loading) return null;
+
+  return (
+    <Card className={`mb-6 ${is301 ? 'border-primary/20' : 'border-destructive/50 bg-destructive/5'}`}>
+      <CardContent className="pt-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : is301 ? (
+              <CheckCircle className="h-4 w-4 text-primary" />
+            ) : (
+              <XCircle className="h-4 w-4 text-destructive" />
+            )}
+            <span className="text-sm font-medium">
+              WWW → Apex Redirect: {loading ? 'Checking…' : is301 ? '301 ✅' : `${status} ❌`}
+            </span>
+          </div>
+          <Button size="sm" variant="ghost" onClick={check} disabled={loading}>
+            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+        {checked && !is301 && !loading && (
+          <p className="text-xs text-destructive mt-2">
+            CRITICAL: www redirect is not 301 (SEO consolidation risk). Check domain settings.
+          </p>
         )}
       </CardContent>
     </Card>

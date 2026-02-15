@@ -192,6 +192,8 @@ const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPag
 const FeedInsightsPage = lazyWithRetry(() => import("./pages/admin/FeedInsightsPage"));
 const ContentOpportunitiesPage = lazyWithRetry(() => import("./pages/admin/ContentOpportunitiesPage"));
 const BundlesPage = lazyWithRetry(() => import("./pages/admin/BundlesPage"));
+const RedirectCheckPage = lazyWithRetry(() => import("./pages/admin/RedirectCheckPage"));
+const FeedGapReportPage = lazyWithRetry(() => import("./pages/admin/FeedGapReportPage"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
@@ -336,7 +338,9 @@ const App = () => {
                              <Route path="/admin/diagnostics" element={<DiagnosticsPage />} />
                              <Route path="/admin/feed-insights" element={<FeedInsightsPage />} />
                              <Route path="/admin/content-opportunities" element={<ContentOpportunitiesPage />} />
-                             <Route path="/admin/bundles" element={<BundlesPage />} />
+                              <Route path="/admin/bundles" element={<BundlesPage />} />
+                              <Route path="/admin/redirect-check" element={<RedirectCheckPage />} />
+                              <Route path="/admin/feed-gap-report" element={<FeedGapReportPage />} />
                           <Route path="/admin/guides-seo" element={<Navigate to="/dashboard/guides-seo" replace />} />
                          <Route path="/admin/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
                          <Route path="/admin/crawler-analytics" element={<Navigate to="/dashboard/crawler-analytics" replace />} />
