@@ -4623,6 +4623,57 @@ export type Database = {
           },
         ]
       }
+      web_vitals: {
+        Row: {
+          cls_value: number | null
+          created_at: string
+          device_hint: string | null
+          fcp_value: number | null
+          id: string
+          inp_event: string | null
+          inp_value: number | null
+          lcp_element: string | null
+          lcp_value: number | null
+          path: string
+          session_id: string | null
+          ts: string
+          ttfb_value: number | null
+          ua: string | null
+        }
+        Insert: {
+          cls_value?: number | null
+          created_at?: string
+          device_hint?: string | null
+          fcp_value?: number | null
+          id?: string
+          inp_event?: string | null
+          inp_value?: number | null
+          lcp_element?: string | null
+          lcp_value?: number | null
+          path: string
+          session_id?: string | null
+          ts?: string
+          ttfb_value?: number | null
+          ua?: string | null
+        }
+        Update: {
+          cls_value?: number | null
+          created_at?: string
+          device_hint?: string | null
+          fcp_value?: number | null
+          id?: string
+          inp_event?: string | null
+          inp_value?: number | null
+          lcp_element?: string | null
+          lcp_value?: number | null
+          path?: string
+          session_id?: string | null
+          ts?: string
+          ttfb_value?: number | null
+          ua?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       products_public: {
@@ -4744,6 +4795,7 @@ export type Database = {
       }
       cleanup_old_health_checks: { Args: never; Returns: undefined }
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
+      cleanup_old_web_vitals: { Args: never; Returns: undefined }
       cleanup_preview_visitor_activity: { Args: never; Returns: number }
       generate_product_slug: { Args: { product_name: string }; Returns: string }
       has_role: {

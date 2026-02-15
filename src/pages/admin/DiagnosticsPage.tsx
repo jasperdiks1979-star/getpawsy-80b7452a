@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,8 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getConsent } from '@/lib/cookieConsent';
 import { SITE_URL } from '@/lib/constants';
+
+const WebVitalsDashboard = lazy(() => import('@/components/admin/WebVitalsDashboard'));
 
 interface HealthCheck {
   url: string;
@@ -339,6 +341,11 @@ export default function DiagnosticsPage() {
           </Link>
         </CardContent>
       </Card>
+
+      {/* Web Vitals Field Data */}
+      <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>}>
+        <WebVitalsDashboard />
+      </Suspense>
 
       {/* WWW Redirect Warning */}
       <WwwRedirectWarning />

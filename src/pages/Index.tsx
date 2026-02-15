@@ -447,13 +447,17 @@ const Index = () => {
         {/* Lifestyle Background - Calm home setting with pet */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1920&q=85"
+            src="https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1200&q=80&auto=format"
+            srcSet="https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=640&q=75&auto=format 640w, https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1024&q=80&auto=format 1024w, https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1920&q=85&auto=format 1920w"
+            sizes="100vw"
             alt="Happy dog relaxing at home with premium pet products"
             width={1920}
             height={1080}
             className="w-full h-full object-cover object-center"
             loading="eager"
             fetchPriority="high"
+            decoding="async"
+            style={{ aspectRatio: '16/9' }}
           />
           {/* Warm, soft gradient overlay - not harsh */}
           <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30" />
