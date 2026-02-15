@@ -413,16 +413,16 @@ const Index = () => {
   };
 
   const categoryImages: Record<string, string> = {
-    'Dogs': 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&q=80',
-    'Cats': 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&q=80',
-    'Birds': 'https://images.unsplash.com/photo-1522926193341-e9ffd686c60f?w=400&q=80',
-    'Fish & Aquarium': 'https://images.unsplash.com/photo-1520301255226-bf5f144451c1?w=400&q=80',
-    'Small Pets': smallPetsImage || 'https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=400&q=80',
-    'Reptiles': 'https://images.unsplash.com/photo-1504450874802-0ba2bcd659e3?w=400&q=80',
-    'Toys': 'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?w=400&q=80',
-    'Food': 'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?w=400&q=80',
-    'Grooming': 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=400&q=80',
-    'Accessories': 'https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?w=400&q=80',
+    'Dogs': '/categories/dogs.jpg',
+    'Cats': '/categories/cats.jpg',
+    'Birds': '/categories/bird-supplies.jpg',
+    'Fish & Aquarium': '/categories/fish-tank.jpg',
+    'Small Pets': smallPetsImage || '/categories/small-pets.jpg',
+    'Reptiles': '/categories/reptiles.jpg',
+    'Toys': '/categories/toys.jpg',
+    'Food': '/categories/food.jpg',
+    'Grooming': '/categories/grooming.jpg',
+    'Accessories': '/categories/accessories.jpg',
   };
 
   return (
@@ -636,14 +636,14 @@ const Index = () => {
                     >
                       {/* Image with zoom effect - use categoryImages map as primary source */}
                       <img 
-                        src={categoryImages[category.name] || category.image_url || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'}
+                        src={categoryImages[category.name] || category.image_url || '/categories/dogs.jpg'}
                         alt={`${category.name} - Shop premium ${category.name.toLowerCase()} products for pets`}
                         width={400}
                         height={400}
                         loading="lazy"
                         decoding="async"
                         className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-115"
-                        onError={(e) => { e.currentTarget.src = categoryImages[category.name] || 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80'; }}
+                        onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
                       />
                       
                       {/* Gradient overlay with enhanced hover */}
