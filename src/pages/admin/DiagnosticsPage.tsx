@@ -5,10 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Loader2, ArrowLeft, Download, FileArchive, ShieldCheck } from 'lucide-react';
+import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Loader2, ArrowLeft, Download, FileArchive, ShieldCheck, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getConsent } from '@/lib/cookieConsent';
+import { SITE_URL } from '@/lib/constants';
 
 interface HealthCheck {
   url: string;
@@ -217,6 +218,9 @@ export default function DiagnosticsPage() {
         </CardContent>
       </Card>
 
+      {/* Domain & DNS Info */}
+      <DomainDnsCard />
+
       {/* Consent & Tracking Diagnostics */}
       <ConsentDiagnosticsCard />
 
@@ -389,6 +393,61 @@ function ConsentDiagnosticsCard() {
               );
             })}
           </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---- Domain & DNS Info Sub-component ---- */
+function DomainDnsCard() {
+  const DNS_RECORDS = [
+    { type: 'A', name: '@', value: '185.158.133.1', note: 'Root domain' },
+    { type: 'A', name: 'www', value: '185.158.133.1', note: 'WWW subdomain (301 → apex)' },
+    { type: 'TXT', name: '_lovable', value: 'lovable_verify=...', note: 'Domain verification' },
+    { type: 'TXT', name: '_lovable.www', value: 'lovable_verify=...', note: 'WWW verification' },
+  ];
+
+  return (
+    <Card className="mb-6 border-primary/20">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Globe className="h-5 w-5" />
+          Domain &amp; DNS Configuration
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div className="border rounded-lg p-3">
+            <p className="text-muted-foreground text-xs mb-1">Canonical Domain (SITE_URL)</p>
+            <code className="text-sm font-medium">{SITE_URL}</code>
+          </div>
+          <div className="border rounded-lg p-3">
+            <p className="text-muted-foreground text-xs mb-1">Current Host</p>
+            <code className="text-sm font-medium">{window.location.hostname}</code>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-sm font-medium mb-2">Expected DNS Records (Cloudflare — DNS Only / Grey Cloud)</p>
+          <div className="space-y-1">
+            {DNS_RECORDS.map((r, i) => (
+              <div key={i} className="border rounded p-2 text-xs flex items-center gap-3">
+                <Badge variant="secondary" className="font-mono">{r.type}</Badge>
+                <code className="font-medium min-w-[80px]">{r.name}</code>
+                <span className="text-muted-foreground">→</span>
+                <code className="text-primary">{r.value}</code>
+                <span className="text-muted-foreground ml-auto">{r.note}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+          <p><strong>Lovable Settings:</strong> Set <code>getpawsy.pet</code> as Primary domain, <code>www.getpawsy.pet</code> as alias.</p>
+          <p><strong>GSC Sitemap:</strong> Submit only <code>https://getpawsy.pet/sitemap.xml</code> (sitemap index). No www variant needed.</p>
+          <p><strong>MX/TXT mail records:</strong> Keep untouched. Only modify A and TXT _lovable records.</p>
+          <p><strong>No client-side redirects:</strong> Domain normalization is handled server-side (nginx 301).</p>
         </div>
       </CardContent>
     </Card>

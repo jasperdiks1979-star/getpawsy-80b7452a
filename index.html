@@ -137,5 +137,26 @@
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Boot timeout: if React hasn't mounted in 5s, show recovery UI
+      (function(){
+        var t = setTimeout(function(){
+          var root = document.getElementById('root');
+          var fb = document.getElementById('hydration-fallback');
+          // Only show if fallback is still the only child (React didn't mount)
+          if (root && fb && root.children.length <= 1) {
+            fb.style.display = 'flex';
+            var p = fb.querySelector('p');
+            if (p) p.textContent = 'The app failed to load. Try clearing your cache or reloading.';
+          }
+        }, 5000);
+        // Cancel timeout once React mounts (it removes the fallback)
+        var obs = new MutationObserver(function(){
+          var fb = document.getElementById('hydration-fallback');
+          if (!fb) { clearTimeout(t); obs.disconnect(); }
+        });
+        obs.observe(document.getElementById('root'), { childList: true });
+      })();
+    </script>
   </body>
 </html>

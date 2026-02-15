@@ -110,12 +110,28 @@ export default defineConfig(({ mode }) => ({
         categories: ["shopping", "lifestyle"],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg,woff2}"],
+        // CRITICAL: exclude HTML from precache to prevent stale white screens
+        globPatterns: ["**/*.{js,css,ico,png,svg,webp,jpg,jpeg,woff2}"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // Exclude XML endpoints from SW entirely
+        navigateFallbackDenylist: [/\.xml$/, /\/robots\.txt$/],
         // Skip waiting for faster updates
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
+          {
+            // Navigation requests: NetworkFirst to prevent stale HTML
+            urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "pages-cache",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60,
+              },
+              networkTimeoutSeconds: 3,
+            },
+          },
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
@@ -155,7 +171,6 @@ export default defineConfig(({ mode }) => ({
               },
             },
           },
-          // Cache API responses with stale-while-revalidate
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
             handler: "StaleWhileRevalidate",
@@ -163,7 +178,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "api-cache",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 5, // 5 minutes
+                maxAgeSeconds: 60 * 5,
               },
               cacheableResponse: {
                 statuses: [0, 200],
