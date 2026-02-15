@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText, Bell, Send, Target, Magnet, Wrench, History, Copy, Truck, Upload, Star, LineChart, Zap, TrendingUp, Brain } from "lucide-react";
+import { Search, Plus, Package, RefreshCw, Check, Loader2, ShieldAlert, PawPrint, ChevronLeft, ChevronRight, CloudDownload, Clock, Pencil, AlertTriangle, Mail, FolderTree, Trash2, Ban, ShoppingCart, BarChart3, MessageSquare, Euro, Sparkles, Globe, Eye, CheckSquare, Square, Power, PowerOff, Bookmark, BookmarkCheck, GitCompare, ChevronDown, Link, FileText, Bell, Send, Target, Magnet, Wrench, History, Copy, Truck, Upload, Star, LineChart, Zap, TrendingUp, Brain, Stethoscope } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductEditDialog } from "@/components/admin/ProductEditDialog";
@@ -1472,6 +1472,12 @@ const Admin = () => {
               <button onClick={() => navigate('/admin/autonomous-seo')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
                 <Brain className="w-3.5 h-3.5 shrink-0" />
                 <span>Autonomous</span>
+              </button>
+            </TouchTooltip>
+            <TouchTooltip content="Site Diagnostics & Export Bundle">
+              <button onClick={() => navigate('/admin/diagnostics')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
+                <Stethoscope className="w-3.5 h-3.5 shrink-0" />
+                <span>Diagnostics</span>
               </button>
             </TouchTooltip>
           </div>
