@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Loader2, ArrowLeft, Download, FileArchive, ShieldCheck, Globe } from 'lucide-react';
+import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Loader2, ArrowLeft, Download, FileArchive, ShieldCheck, Globe, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getConsent } from '@/lib/cookieConsent';
@@ -214,6 +214,9 @@ export default function DiagnosticsPage() {
           {allGreen ? '✅ All Healthy' : '⚠️ Issues Detected'}
         </Badge>
       </div>
+
+      {/* Automated Monitoring Status */}
+      <MonitoringStatusCard />
 
       {/* Full System Diagnostics JSON */}
       <Card className="mb-6 border-primary/30 bg-primary/5">
@@ -544,6 +547,154 @@ function DomainDnsCard() {
           <p><strong>MX/TXT mail records:</strong> Keep untouched. Only modify A and TXT _lovable records.</p>
           <p><strong>No client-side redirects:</strong> Domain normalization is handled server-side (nginx 301).</p>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---- Automated Monitoring Status Sub-component ---- */
+function MonitoringStatusCard() {
+  const [latestCheck, setLatestCheck] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [runningManual, setRunningManual] = useState(false);
+
+  const loadChecks = async () => {
+    setLoading(true);
+    try {
+      const { data } = await supabase
+        .from('site_health_checks')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (data && data.length > 0) {
+        setLatestCheck(data[0]);
+        setHistory(data);
+      }
+    } catch {
+      // silent
+    }
+    setLoading(false);
+  };
+
+  const runManualCheck = async () => {
+    setRunningManual(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(`${supabaseUrl}/functions/v1/site-monitor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'manual' }),
+      });
+      if (res.ok) {
+        toast.success('Monitoring check voltooid!');
+        await loadChecks();
+      } else {
+        toast.error('Check mislukt');
+      }
+    } catch {
+      toast.error('Check mislukt');
+    }
+    setRunningManual(false);
+  };
+
+  useEffect(() => { loadChecks(); }, []);
+
+  const results = latestCheck?.results as Record<string, any> | undefined;
+  const warnings = (latestCheck?.warnings as string[]) || [];
+
+  return (
+    <Card className="mb-6 border-primary/20">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          Automated Monitoring
+          {latestCheck && (
+            <Badge variant={latestCheck.all_healthy ? 'default' : 'destructive'} className="ml-2">
+              {latestCheck.all_healthy ? '✅ All Healthy' : `⚠️ ${warnings.length} Warning(s)`}
+            </Badge>
+          )}
+        </CardTitle>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={loadChecks} disabled={loading}>
+            <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+          <Button size="sm" onClick={runManualCheck} disabled={runningManual}>
+            {runningManual ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Activity className="h-3 w-3 mr-1" />}
+            Run Now
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {loading && !latestCheck ? (
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        ) : !latestCheck ? (
+          <p className="text-sm text-muted-foreground">Geen monitoring data. Klik "Run Now" om te starten.</p>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground">
+              Laatste check: {new Date(latestCheck.created_at).toLocaleString()} · Type: {latestCheck.check_type} · Elke 10 min automatisch
+            </p>
+
+            {/* Endpoint results grid */}
+            {results && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {Object.entries(results).map(([key, val]: [string, any]) => (
+                  <div key={key} className="border rounded-lg p-2 text-xs">
+                    <p className="font-medium mb-1">{key}</p>
+                    <div className="flex items-center gap-1">
+                      {val.ok ? (
+                        <CheckCircle className="h-3 w-3 text-primary" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-destructive" />
+                      )}
+                      <span>{val.status || 'err'}</span>
+                      {val.ttfb_ms && <span className="text-muted-foreground">· {val.ttfb_ms}ms</span>}
+                    </div>
+                    {val.contentType && (
+                      <p className="text-muted-foreground truncate mt-0.5">{val.contentType}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Warnings */}
+            {warnings.length > 0 && (
+              <div className="bg-destructive/10 rounded-lg p-3 space-y-1">
+                <p className="text-sm font-medium text-destructive flex items-center gap-1">
+                  <AlertTriangle className="h-4 w-4" /> Warnings
+                </p>
+                {warnings.map((w, i) => (
+                  <p key={i} className="text-xs text-destructive">{w}</p>
+                ))}
+              </div>
+            )}
+
+            {/* History */}
+            {history.length > 1 && (
+              <details>
+                <summary className="text-xs text-muted-foreground cursor-pointer">Laatste {history.length} checks</summary>
+                <div className="mt-2 space-y-1">
+                  {history.map((h, i) => (
+                    <div key={h.id} className="text-xs flex items-center gap-2 border-b pb-1">
+                      {h.all_healthy ? (
+                        <CheckCircle className="h-3 w-3 text-primary" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-destructive" />
+                      )}
+                      <span>{new Date(h.created_at).toLocaleString()}</span>
+                      <span className="text-muted-foreground">{h.check_type}</span>
+                      {(h.warnings as string[])?.length > 0 && (
+                        <span className="text-destructive">{(h.warnings as string[]).length} warning(s)</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );
