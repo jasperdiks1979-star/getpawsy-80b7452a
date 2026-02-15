@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,11 +82,8 @@ export const PinterestAdsWidget = () => {
     staleTime: 5 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
     retry: false, // Never retry — Pinterest issues should not hammer the backend
-    enabled: false, // Do NOT fetch on mount — only on user action
+    enabled: false, // Disabled — pinterest-ads edge function was removed
   });
-
-  // Lazy-load: fetch after widget mounts, not during app boot
-  useEffect(() => { refetch(); }, [refetch]);
 
   const handleRefresh = async () => {
     try {
