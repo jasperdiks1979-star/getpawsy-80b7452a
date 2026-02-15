@@ -156,12 +156,22 @@ async function buildBlogSitemap(today: string): Promise<string> {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
 }
 
-function buildGuidesSitemap(today: string): string {
+async function buildGuidesSitemap(today: string): Promise<string> {
+  // Combine static fallback guides + published cluster articles from DB
+  const dbArticles = await supaRest<{ slug: string; updated_at: string }>(
+    'cluster_articles',
+    'select=slug,updated_at&status=eq.published&order=updated_at.desc&limit=500'
+  );
+  const dbSlugs = new Set(dbArticles.map(a => a.slug));
+  
   const urls = [
     urlTag(`${BASE_URL}/guides`, today, 'weekly', '0.8'),
-    ...FALLBACK_GUIDES.map(slug => urlTag(`${BASE_URL}/guides/${slug}`, today, 'monthly', slug.startsWith('best-') ? '0.8' : '0.7')),
+    ...FALLBACK_GUIDES
+      .filter(slug => !dbSlugs.has(slug))
+      .map(slug => urlTag(`${BASE_URL}/guides/${slug}`, today, 'monthly', slug.startsWith('best-') ? '0.8' : '0.7')),
+    ...dbArticles.map(a => urlTag(`${BASE_URL}/guides/${a.slug}`, a.updated_at?.split('T')[0] || today, 'weekly', '0.8')),
   ];
-  console.log(`[xml-plugin] Guides sitemap: ${FALLBACK_GUIDES.length} URLs`);
+  console.log(`[xml-plugin] Guides sitemap: ${urls.length - 1} URLs (${FALLBACK_GUIDES.length} static + ${dbArticles.length} from DB)`);
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
 }
 
@@ -367,7 +377,7 @@ export default function sitemapPlugin(): Plugin {
           buildBestsellersSitemap(today).catch(() => FALLBACK_EMPTY),
           buildCollectionsSitemap(today).catch(() => FALLBACK_EMPTY),
           buildBlogSitemap(today).catch(() => FALLBACK_EMPTY),
-          Promise.resolve(buildGuidesSitemap(today)),
+          buildGuidesSitemap(today).catch(() => FALLBACK_EMPTY),
           buildMerchantFeed().catch(() => FALLBACK_FEED),
         ]);
 
