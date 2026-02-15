@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
 import { CartUpsell } from '@/components/cart/CartUpsell';
+import { FreeShippingNudge } from '@/components/cart/FreeShippingNudge';
 import { safeString, safeNumber } from '@/lib/safe-render';
 import {
   FREE_SHIPPING_THRESHOLD,
@@ -171,6 +172,10 @@ const Cart = () => {
                     </span>
                   </div>
                   <Progress value={shippingProgress} className="h-2" />
+                  <FreeShippingNudge 
+                    amountNeeded={amountToFreeShipping} 
+                    currentItemIds={items.map(item => item.id)} 
+                  />
                 </div>
               ) : (
                 <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
@@ -244,6 +249,15 @@ const Cart = () => {
                   <Star className="w-4 h-4 text-amber-500" />
                   <span>{RETURNS_POLICY_SHORT}</span>
                 </div>
+              </div>
+
+              {/* Compact sidebar cross-sell */}
+              <div className="mt-6 pt-4 border-t">
+                <CartUpsell 
+                  currentItemIds={items.map(item => item.id)} 
+                  variant="compact" 
+                  maxItems={3} 
+                />
               </div>
             </div>
           </div>
