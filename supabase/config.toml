@@ -164,3 +164,6 @@ verify_jwt = false
 
 [functions.authority-engine]
 verify_jwt = false
+
+[functions.export-diagnostics]
+verify_jwt = false
