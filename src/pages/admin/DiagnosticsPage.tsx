@@ -12,6 +12,7 @@ import { getConsent } from '@/lib/cookieConsent';
 import { SITE_URL } from '@/lib/constants';
 
 const WebVitalsDashboard = lazy(() => import('@/components/admin/WebVitalsDashboard'));
+const CwvValidationModule = lazy(() => import('@/components/admin/CwvValidationModule'));
 
 interface HealthCheck {
   url: string;
@@ -341,6 +342,11 @@ export default function DiagnosticsPage() {
           </Link>
         </CardContent>
       </Card>
+
+      {/* CWV Validation Module */}
+      <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>}>
+        <CwvValidationModule />
+      </Suspense>
 
       {/* Web Vitals Field Data */}
       <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>}>

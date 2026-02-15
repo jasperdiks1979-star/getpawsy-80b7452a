@@ -879,6 +879,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cwv_validation_events: {
+        Row: {
+          created_by: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          ts: string
+        }
+        Insert: {
+          created_by?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          ts?: string
+        }
+        Update: {
+          created_by?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          ts?: string
+        }
+        Relationships: []
+      }
       dedupe_conflicts: {
         Row: {
           canonical_price: number | null
