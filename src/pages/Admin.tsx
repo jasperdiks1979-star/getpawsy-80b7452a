@@ -1455,7 +1455,7 @@ const Admin = () => {
               </TouchTooltip>
             </TabsList>
           </TooltipProvider>
-          <div className="flex gap-1 overflow-x-auto pb-1 -mt-4 scrollbar-none">
+          <div className="flex flex-wrap gap-1 pb-1 -mt-4">
             <TouchTooltip content="SEO Command Center - Top 10 Assault & Gap Hunter">
               <button onClick={() => navigate('/admin/seo-command-center')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
                 <Target className="w-3.5 h-3.5 shrink-0" />
