@@ -312,7 +312,7 @@ function ConsentDiagnosticsCard() {
   const pinterestLoaded = typeof window !== 'undefined' && typeof (window as any).pintrk === 'function';
   const swRegistered = 'serviceWorker' in navigator && navigator.serviceWorker.controller !== null;
 
-  const XML_ENDPOINTS = ['/sitemap.xml', '/merchant-feed.xml', '/sitemap_index.xml'];
+  const XML_ENDPOINTS = ['/sitemap.xml', '/merchant-feed.xml', '/merchant-diagnostics.xml', '/sitemap_index.xml'];
   const [xmlResults, setXmlResults] = useState<Record<string, { status: number; contentType: string; cacheControl: string } | null>>({});
   const [checking, setChecking] = useState(false);
 
