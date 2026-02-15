@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Loader2, ArrowLeft, Download, FileArchive } from 'lucide-react';
+import { CheckCircle, XCircle, RefreshCw, AlertTriangle, Loader2, ArrowLeft, Download, FileArchive, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { getConsent } from '@/lib/cookieConsent';
 
 interface HealthCheck {
   url: string;
@@ -216,6 +217,9 @@ export default function DiagnosticsPage() {
         </CardContent>
       </Card>
 
+      {/* Consent & Tracking Diagnostics */}
+      <ConsentDiagnosticsCard />
+
       {/* Health Checks */}
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between">
@@ -294,5 +298,99 @@ export default function DiagnosticsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/* ---- Consent & Tracking Diagnostics Sub-component ---- */
+function ConsentDiagnosticsCard() {
+  const consent = getConsent();
+  const gtagLoaded = typeof window !== 'undefined' && typeof window.gtag === 'function';
+  const pinterestLoaded = typeof window !== 'undefined' && typeof (window as any).pintrk === 'function';
+  const swRegistered = 'serviceWorker' in navigator && navigator.serviceWorker.controller !== null;
+
+  const XML_ENDPOINTS = ['/sitemap.xml', '/merchant-feed.xml', '/sitemap_index.xml'];
+  const [xmlResults, setXmlResults] = useState<Record<string, { status: number; contentType: string; cacheControl: string } | null>>({});
+  const [checking, setChecking] = useState(false);
+
+  const checkXml = async () => {
+    setChecking(true);
+    const results: typeof xmlResults = {};
+    await Promise.all(XML_ENDPOINTS.map(async (ep) => {
+      try {
+        const res = await fetch(ep, { method: 'HEAD', cache: 'no-store' });
+        results[ep] = {
+          status: res.status,
+          contentType: res.headers.get('content-type') || '—',
+          cacheControl: res.headers.get('cache-control') || '—',
+        };
+      } catch {
+        results[ep] = null;
+      }
+    }));
+    setXmlResults(results);
+    setChecking(false);
+  };
+
+  useEffect(() => { checkXml(); }, []);
+
+  return (
+    <Card className="mb-6 border-primary/20">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5" />
+          Consent &amp; Tracking Diagnostics
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+          <div className="border rounded-lg p-3">
+            <p className="text-muted-foreground text-xs mb-1">Consent</p>
+            <Badge variant={consent === 'all' ? 'default' : 'secondary'}>{consent ?? 'none'}</Badge>
+          </div>
+          <div className="border rounded-lg p-3">
+            <p className="text-muted-foreground text-xs mb-1">gtag loaded</p>
+            <Badge variant={gtagLoaded ? 'default' : 'destructive'}>{gtagLoaded ? 'yes' : 'no'}</Badge>
+          </div>
+          <div className="border rounded-lg p-3">
+            <p className="text-muted-foreground text-xs mb-1">Pinterest loaded</p>
+            <Badge variant={pinterestLoaded ? 'default' : 'secondary'}>{pinterestLoaded ? 'yes' : 'no'}</Badge>
+          </div>
+          <div className="border rounded-lg p-3">
+            <p className="text-muted-foreground text-xs mb-1">Service Worker</p>
+            <Badge variant={swRegistered ? 'default' : 'secondary'}>{swRegistered ? 'active' : 'none'}</Badge>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium">XML Endpoint Checks</p>
+            <Button size="sm" variant="outline" onClick={checkXml} disabled={checking}>
+              <RefreshCw className={`h-3 w-3 mr-1 ${checking ? 'animate-spin' : ''}`} /> Refresh
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {XML_ENDPOINTS.map(ep => {
+              const r = xmlResults[ep];
+              return (
+                <div key={ep} className="border rounded p-2 text-xs flex items-center justify-between gap-2">
+                  <code>{ep}</code>
+                  {r ? (
+                    <span className="flex items-center gap-2">
+                      <Badge variant={r.status === 200 ? 'default' : 'destructive'}>{r.status}</Badge>
+                      <span className="text-muted-foreground truncate max-w-[180px]">{r.contentType}</span>
+                      <span className="text-muted-foreground truncate max-w-[180px]">{r.cacheControl}</span>
+                    </span>
+                  ) : r === null ? (
+                    <span className="text-destructive">failed</span>
+                  ) : (
+                    <span className="text-muted-foreground">…</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
