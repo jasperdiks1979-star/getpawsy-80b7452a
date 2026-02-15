@@ -13,6 +13,7 @@ import { SITE_URL } from '@/lib/constants';
 
 const WebVitalsDashboard = lazy(() => import('@/components/admin/WebVitalsDashboard'));
 const CwvValidationModule = lazy(() => import('@/components/admin/CwvValidationModule'));
+const RedirectChainDiagnostics = lazy(() => import('@/components/admin/RedirectChainDiagnostics'));
 
 interface HealthCheck {
   url: string;
@@ -353,8 +354,10 @@ export default function DiagnosticsPage() {
         <WebVitalsDashboard />
       </Suspense>
 
-      {/* WWW Redirect Warning */}
-      <WwwRedirectWarning />
+      {/* Redirect Chain Diagnostics */}
+      <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>}>
+        <RedirectChainDiagnostics />
+      </Suspense>
 
       {/* Domain & DNS Info */}
       <DomainDnsCard />

@@ -48,13 +48,20 @@ async function checkEndpoint(path: string): Promise<EndpointResult> {
   }
 }
 
+interface RedirectChainResult {
+  hops: { url: string; status: number | null; location: string | null }[];
+  finalStatus: number | null;
+  finalUrl: string;
+  hopCount: number;
+  error?: string;
+}
+
 async function checkWwwRedirect(): Promise<{ status: number | null; location: string | null; error?: string }> {
   try {
-    const res = await fetch("https://www.getpawsy.pet/sitemap.xml", {
+    const res = await fetch("https://www.getpawsy.pet/", {
       redirect: "manual",
       signal: AbortSignal.timeout(5000),
     });
-    // Consume body to prevent leak
     await res.text();
     return {
       status: res.status,
@@ -62,6 +69,34 @@ async function checkWwwRedirect(): Promise<{ status: number | null; location: st
     };
   } catch (e) {
     return { status: null, location: null, error: e.message };
+  }
+}
+
+async function checkRedirectChain(): Promise<RedirectChainResult> {
+  const hops: RedirectChainResult["hops"] = [];
+  let currentUrl = "https://www.getpawsy.pet/";
+  const maxHops = 5;
+
+  try {
+    for (let i = 0; i < maxHops; i++) {
+      const res = await fetch(currentUrl, {
+        redirect: "manual",
+        signal: AbortSignal.timeout(5000),
+      });
+      await res.text();
+      const status = res.status;
+      const location = res.headers.get("location");
+      hops.push({ url: currentUrl, status, location });
+
+      if (status >= 300 && status < 400 && location) {
+        currentUrl = location.startsWith("http") ? location : new URL(location, currentUrl).href;
+      } else {
+        return { hops, finalStatus: status, finalUrl: currentUrl, hopCount: hops.length };
+      }
+    }
+    return { hops, finalStatus: null, finalUrl: currentUrl, hopCount: hops.length, error: "Too many redirects" };
+  } catch (e) {
+    return { hops, finalStatus: null, finalUrl: currentUrl, hopCount: hops.length, error: e.message };
   }
 }
 
@@ -76,13 +111,14 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, serviceKey);
 
     // Run all checks in parallel
-    const [homepage, robots, sitemap, sitemapStatic, merchantFeed, wwwRedirect] = await Promise.all([
+    const [homepage, robots, sitemap, sitemapStatic, merchantFeed, wwwRedirect, redirectChain] = await Promise.all([
       checkEndpoint("/"),
       checkEndpoint("/robots.txt"),
       checkEndpoint("/sitemap.xml"),
       checkEndpoint("/sitemap-static.xml"),
       checkEndpoint("/merchant-feed.xml"),
       checkWwwRedirect(),
+      checkRedirectChain(),
     ]);
 
     const warnings: string[] = [];
@@ -129,6 +165,7 @@ Deno.serve(async (req) => {
       sitemapStatic: { status: sitemapStatic.status, contentType: sitemapStatic.contentType, sizeBytes: sitemapStatic.sizeBytes, ok: sitemapStatic.ok },
       merchantFeed: { status: merchantFeed.status, contentType: merchantFeed.contentType, sizeBytes: merchantFeed.sizeBytes, isXml: merchantFeed.isXml, ok: merchantFeed.ok },
       wwwRedirect: { status: wwwRedirect.status, location: wwwRedirect.location, ok: wwwRedirect.status === 301 },
+      redirectChain: { hops: redirectChain.hops, finalStatus: redirectChain.finalStatus, finalUrl: redirectChain.finalUrl, hopCount: redirectChain.hopCount, error: redirectChain.error },
     };
 
     // Store result
