@@ -253,15 +253,76 @@ function extractVariant(name: string): string | null {
   return null;
 }
 
+/** Category-to-primary-keyword map for feed title optimization */
+const CATEGORY_PRIMARY_KEYWORDS: Record<string, string> = {
+  'dog-toys': 'Dog Toy',
+  'dog-bowls-feeders': 'Dog Bowl',
+  'dog-beds': 'Dog Bed',
+  'dog-houses': 'Dog House',
+  'dog-carriers': 'Dog Carrier',
+  'dog-collars-leashes': 'Dog Collar',
+  'dog-grooming': 'Dog Grooming',
+  'dog-clothing': 'Dog Clothing',
+  'dog-food-treats': 'Dog Treats',
+  'cat-toys': 'Cat Toy',
+  'cat-litter-boxes': 'Cat Litter Box',
+  'cat-scratching-posts': 'Cat Scratching Post',
+  'cat-trees-and-condos': 'Cat Tree',
+  'cat-furniture': 'Cat Furniture',
+  'cat-beds': 'Cat Bed',
+  'cat-bowls-feeders': 'Cat Feeder',
+  'cat-carriers': 'Cat Carrier',
+  'cat-hammocks': 'Cat Hammock',
+  'cat-houses': 'Cat House',
+  'cat-exercise-wheels': 'Cat Exercise Wheel',
+  'bird-toys': 'Bird Toy',
+  'bird-cages': 'Bird Cage',
+  'bird-perches': 'Bird Perch',
+  'bird-bowls-feeders': 'Bird Feeder',
+};
+
+/** Detect high-intent keyword qualifiers from name/description */
+function getKeywordQualifier(name: string, desc: string | null): string | null {
+  const n = name.toLowerCase(); const d = (desc||'').toLowerCase();
+  if (n.includes('interactive') || d.includes('interactive')) return 'Interactive';
+  if (n.includes('indestructible') || d.includes('indestructible')) return 'Indestructible';
+  if ((n.includes('aggressive') && n.includes('chew')) || d.includes('aggressive chewer')) return 'Aggressive Chewer';
+  if (n.includes('automatic') || d.includes('automatic')) return 'Automatic';
+  if (n.includes('slow feed') || n.includes('slow feeder')) return 'Slow Feeder';
+  if (n.includes('no spill') || n.includes('no-spill') || d.includes('no spill')) return 'No-Spill';
+  if (n.includes('self clean') || n.includes('self-clean') || d.includes('self cleaning')) return 'Self-Cleaning';
+  if (n.includes('enclosed') || d.includes('enclosed')) return 'Enclosed';
+  if (n.includes('odor') || d.includes('odor control')) return 'Odor Control';
+  if (n.includes('wall mount') || d.includes('wall mount')) return 'Wall-Mounted';
+  if (n.includes('window perch') || d.includes('window perch')) return 'Window Perch';
+  if (n.includes('enrichment') || d.includes('enrichment')) return 'Enrichment';
+  return null;
+}
+
 /** Build optimized title: [Primary Keyword] – [Benefit] | [Variant] */
 function buildOptimizedTitle(p: MerchantProduct): string {
   const cleanName = cleanProductName(p.name);
   const pet = getPetType(p.category);
   const benefit = extractBenefit(p.name, p.description);
   const variant = extractVariant(p.name);
+  const catSlug = (p.category || '').toLowerCase().replace(/\s+/g, '-');
 
-  // Core: "Clean Name for Dogs – Benefit"
-  let title = `${cleanName} for ${pet} – ${benefit}`;
+  // Get primary keyword from category map
+  const primaryKw = CATEGORY_PRIMARY_KEYWORDS[catSlug];
+  const qualifier = getKeywordQualifier(p.name, p.description);
+
+  let title: string;
+  if (primaryKw && qualifier) {
+    // "Interactive Dog Toy – Clean Name – Benefit"
+    title = `${qualifier} ${primaryKw} – ${cleanName} – ${benefit}`;
+  } else if (primaryKw) {
+    // "Dog Toy – Clean Name – Benefit"
+    title = `${primaryKw} – ${cleanName} – ${benefit}`;
+  } else {
+    // Fallback: "Clean Name for Dogs – Benefit"
+    title = `${cleanName} for ${pet} – ${benefit}`;
+  }
+
   // Append variant if it fits
   if (variant && title.length + variant.length + 3 <= 150) {
     title += ` | ${variant}`;

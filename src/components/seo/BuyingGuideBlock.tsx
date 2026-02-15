@@ -13,23 +13,23 @@ interface GuideMapping {
 }
 
 const CATEGORY_GUIDE_MAP: Record<string, GuideMapping> = {
-  // Cat Litter cluster
+  // ── Cat Litter cluster ──
   'cat-litter-boxes': {
-    anchor: 'Best Cat Litter Box 2026 – Buying Guide',
-    slug: 'best-cat-litter-box-2026',
-    description: 'See our tested top picks for odor control, large breeds & multi-cat homes.',
+    anchor: 'Best Cat Litter Boxes 2026 – Expert Picks',
+    slug: 'best-cat-litter-boxes',
+    description: 'Self-cleaning, enclosed & odor control litter boxes compared. Expert-reviewed.',
   },
   'cat litter': {
-    anchor: 'Best Cat Litter Box 2026 – Buying Guide',
-    slug: 'best-cat-litter-box-2026',
-    description: 'See our tested top picks for odor control, large breeds & multi-cat homes.',
+    anchor: 'Best Cat Litter Boxes 2026 – Expert Picks',
+    slug: 'best-cat-litter-boxes',
+    description: 'Self-cleaning, enclosed & odor control litter boxes compared. Expert-reviewed.',
   },
   'litter': {
     anchor: 'Best Cat Litter Box Furniture 2026',
     slug: 'best-cat-litter-box-furniture-enclosures-2026',
     description: 'Hidden litter box enclosures tested for odor control and décor.',
   },
-  // Cat Furniture cluster — cornerstone: best-cat-trees-2026
+  // ── Cat Furniture cluster ──
   'cat-trees-and-condos': {
     anchor: 'Best Cat Trees (2026) — Complete Buyer\'s Guide',
     slug: 'best-cat-trees-2026',
@@ -45,7 +45,55 @@ const CATEGORY_GUIDE_MAP: Record<string, GuideMapping> = {
     slug: 'best-cat-trees-2026',
     description: '9 cat trees tested for stability, enrichment & value. Expert-reviewed picks.',
   },
-  // Small Pets
+  'cat-scratching-posts': {
+    anchor: 'Best Cat Scratching Posts for Large Cats',
+    slug: 'best-cat-trees-2026',
+    description: 'Heavy-duty scratching posts tested for stability and durability.',
+  },
+  'cat-hammocks': {
+    anchor: 'Wall-Mounted Cat Shelves & Perches Guide',
+    slug: 'best-cat-toys-for-indoor-cats',
+    description: 'Create vertical territory for your indoor cat with shelves and perches.',
+  },
+  // ── Cat Toys / Indoor Enrichment cluster ──
+  'cat-toys': {
+    anchor: 'Best Cat Toys for Indoor Cats 2026',
+    slug: 'best-cat-toys-for-indoor-cats',
+    description: 'Interactive toys tested to beat boredom and keep indoor cats active.',
+  },
+  'cat toys': {
+    anchor: 'Best Cat Toys for Indoor Cats 2026',
+    slug: 'best-cat-toys-for-indoor-cats',
+    description: 'Interactive toys tested to beat boredom and keep indoor cats active.',
+  },
+  // ── Dog Enrichment cluster ──
+  'dog-toys': {
+    anchor: 'Dog Enrichment Toys – Complete Guide 2026',
+    slug: 'dog-enrichment-toys',
+    description: 'Interactive, puzzle & indestructible toys ranked for bored dogs and aggressive chewers.',
+  },
+  'dog toys': {
+    anchor: 'Dog Enrichment Toys – Complete Guide 2026',
+    slug: 'dog-enrichment-toys',
+    description: 'Interactive, puzzle & indestructible toys ranked for bored dogs and aggressive chewers.',
+  },
+  // ── Feeding Solutions cluster ──
+  'dog-bowls-feeders': {
+    anchor: 'Best Slow Feeder Dog Bowls 2026',
+    slug: 'best-slow-feeder-dog-bowls',
+    description: 'Slow feeders, no-spill bowls & automatic feeders compared for healthier eating.',
+  },
+  'dog bowls': {
+    anchor: 'Best Slow Feeder Dog Bowls 2026',
+    slug: 'best-slow-feeder-dog-bowls',
+    description: 'Slow feeders, no-spill bowls & automatic feeders compared for healthier eating.',
+  },
+  'cat-bowls-feeders': {
+    anchor: 'Best Automatic Cat Feeders 2026',
+    slug: 'best-slow-feeder-dog-bowls',
+    description: 'Timed feeders and slow bowls for portion control and healthier eating.',
+  },
+  // ── Small Pets ──
   'small-pet-habitats': {
     anchor: 'How to Choose the Right Guinea Pig Cage',
     slug: 'how-to-choose-guinea-pig-cage',
@@ -56,16 +104,16 @@ const CATEGORY_GUIDE_MAP: Record<string, GuideMapping> = {
     slug: 'guinea-pig-cage-vs-playpen',
     description: 'Key differences to give your guinea pig the ideal home.',
   },
-  // Dog cluster
-  'dog-toys': {
-    anchor: 'Outdoor Dog Games & Safe Enrichment Ideas',
-    slug: 'outdoor-dog-games-enrichment',
-    description: 'Fun outdoor activities to keep your dog stimulated.',
+  // ── Dog General ──
+  'dog-beds': {
+    anchor: 'Best Dog Beds for Large Breeds 2026',
+    slug: 'dog-enrichment-toys',
+    description: 'Orthopedic, calming & durable beds ranked for comfort and joint support.',
   },
-  'dog toys': {
-    anchor: 'Outdoor Dog Games & Safe Enrichment Ideas',
-    slug: 'outdoor-dog-games-enrichment',
-    description: 'Fun outdoor activities to keep your dog stimulated.',
+  'dog-carriers': {
+    anchor: 'Dog Travel Accessories – Complete Guide',
+    slug: 'dog-travel-accessories',
+    description: 'Car seats, carriers & travel bowls compared for safe, stress-free travel.',
   },
 };
 
