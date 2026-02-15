@@ -520,6 +520,8 @@ async function buildMerchantDiagnostics(): Promise<string> {
   const issues: string[] = [];
   const titlesSeen = new Map<string, string[]>();
 
+  const imagesSeen = new Map<string, string[]>();
+
   for (const p of products) {
     const pid = p.id;
     const name = p.name || '(unnamed)';
@@ -536,14 +538,28 @@ async function buildMerchantDiagnostics(): Promise<string> {
     if (name.length > 150) {
       issues.push(`    <issue type="overlength_title" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" length="${name.length}" />`);
     }
+    // Short title (under 40 chars)
+    if (name.length < 40) {
+      issues.push(`    <issue type="short_title" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" length="${name.length}" />`);
+    }
     // Out of stock
     if (!p.stock || p.stock <= 0) {
       issues.push(`    <issue type="out_of_stock" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" stock="${p.stock ?? 'null'}" />`);
+    }
+    // Missing compare_at_price (no margin data)
+    if (!p.compare_at_price || p.compare_at_price <= 0) {
+      issues.push(`    <issue type="missing_compare_at_price" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" />`);
     }
     // Track duplicate titles
     const normTitle = name.toLowerCase().replace(/[^a-z0-9]/g, '');
     if (!titlesSeen.has(normTitle)) titlesSeen.set(normTitle, []);
     titlesSeen.get(normTitle)!.push(pid);
+    // Track duplicate images
+    const primaryImg = p.image_url || '';
+    if (primaryImg) {
+      if (!imagesSeen.has(primaryImg)) imagesSeen.set(primaryImg, []);
+      imagesSeen.get(primaryImg)!.push(pid);
+    }
   }
 
   // Add duplicate title issues
@@ -552,14 +568,23 @@ async function buildMerchantDiagnostics(): Promise<string> {
       issues.push(`    <issue type="duplicate_title" product_ids="${ids.join(',')}" count="${ids.length}" />`);
     }
   }
+  // Add duplicate image issues
+  for (const [imgUrl, ids] of imagesSeen) {
+    if (ids.length > 1) {
+      issues.push(`    <issue type="duplicate_image" image_url="${esc(truncate(imgUrl, 120))}" product_ids="${ids.join(',')}" count="${ids.length}" />`);
+    }
+  }
 
   const counts = {
     total: products.length,
     missing_gtin: issues.filter(i => i.includes('missing_gtin')).length,
     missing_image: issues.filter(i => i.includes('missing_image')).length,
     overlength: issues.filter(i => i.includes('overlength_title')).length,
+    short_title: issues.filter(i => i.includes('short_title')).length,
     oos: issues.filter(i => i.includes('out_of_stock')).length,
     duplicates: issues.filter(i => i.includes('duplicate_title')).length,
+    duplicate_images: issues.filter(i => i.includes('duplicate_image')).length,
+    missing_compare_at_price: issues.filter(i => i.includes('missing_compare_at_price')).length,
   };
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -568,8 +593,11 @@ async function buildMerchantDiagnostics(): Promise<string> {
     <missing_gtin>${counts.missing_gtin}</missing_gtin>
     <missing_image>${counts.missing_image}</missing_image>
     <overlength_title>${counts.overlength}</overlength_title>
+    <short_title>${counts.short_title}</short_title>
     <out_of_stock>${counts.oos}</out_of_stock>
     <duplicate_titles>${counts.duplicates}</duplicate_titles>
+    <duplicate_images>${counts.duplicate_images}</duplicate_images>
+    <missing_compare_at_price>${counts.missing_compare_at_price}</missing_compare_at_price>
   </summary>
   <issues>
 ${issues.join('\n')}
