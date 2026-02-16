@@ -244,13 +244,27 @@ describe('Smoke tests – key routes render', () => {
     expect(typeof mod.trackFirstGridImage).toBe('function');
     expect(typeof mod.getGridTiming).toBe('function');
     expect(typeof mod.markSPANavigation).toBe('function');
+    expect(typeof mod.markProductsFetchInitiated).toBe('function');
+    expect(typeof mod.markComponentMounted).toBe('function');
   });
 
-  it('Grid timing tracks gridFirstItemVisibleAt field', async () => {
+  it('Grid timing tracks new fetch instrumentation fields', async () => {
     const mod = await import('@/lib/grid-timing');
     const timing = mod.getGridTiming();
     expect('gridFirstItemVisibleAt' in timing).toBe(true);
     expect('navigationType' in timing).toBe(true);
+    expect('productsFetchInitiatedAt' in timing).toBe(true);
+    expect('productsFetchGateReason' in timing).toBe(true);
+    expect('componentMountedAt' in timing).toBe(true);
+  });
+
+  it('Products page is NOT lazy-loaded (must be eager for LCP)', async () => {
+    const fs = await import('fs');
+    const appCode = fs.readFileSync('src/App.tsx', 'utf-8');
+    // Products should NOT appear in a lazyWithRetry or React.lazy call
+    expect(appCode).not.toMatch(/lazy.*import.*Products['"]/);
+    // Should be eagerly imported
+    expect(appCode).toContain('import Products from');
   });
 
   // ─── Category fast-path: no artificial delay ─────────────────────

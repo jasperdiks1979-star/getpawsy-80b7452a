@@ -33,6 +33,8 @@ import { useCategoryProducts } from '@/hooks/useCategoryProducts';
 import {
   markProductsLoadStart,
   markProductsLoadEnd,
+  markProductsFetchInitiated,
+  markComponentMounted,
   markCategoryFilterStart,
   markCategoryFilterEnd,
   markGridSkeletonMounted,
@@ -122,8 +124,11 @@ const Products = () => {
     }
   }, [categoryParam, navigate, searchParams]);
 
-  // Start long task tracking on mount
-  useEffect(() => { startLongTaskTracking(); }, []);
+  // Mark component mount time and start long task tracking
+  useEffect(() => {
+    markComponentMounted();
+    startLongTaskTracking();
+  }, []);
 
   // Fast category-specific query: fetches only matching products (24 items)
   // This resolves much faster than the full catalog on category routes
@@ -133,6 +138,7 @@ const Products = () => {
   const { data: fullProducts, isLoading: fullProductsLoading } = useQuery({
     queryKey: ['products'],
     queryFn: async () => {
+      markProductsFetchInitiated();
       markProductsLoadStart();
       const { data, error } = await supabase
         .from('products_public')

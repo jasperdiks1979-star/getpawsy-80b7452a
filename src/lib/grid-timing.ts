@@ -18,6 +18,9 @@ export interface GridTimingData {
   productsDataSource: 'cache' | 'remote' | 'category-fast' | 'idb-cache' | 'unknown';
   productsLoadStartAt: number | null;
   productsLoadEndAt: number | null;
+  productsFetchInitiatedAt: number | null;
+  productsFetchGateReason: 'none' | 'idle_callback' | 'suspense_lazy_mount' | 'consent_wait' | 'debounce' | 'other';
+  componentMountedAt: number | null;
   categoryFilterStartAt: number | null;
   categoryFilterEndAt: number | null;
   gridSkeletonMountedAt: number | null;
@@ -49,6 +52,9 @@ function createFreshTiming(): GridTimingData {
     productsDataSource: 'unknown',
     productsLoadStartAt: null,
     productsLoadEndAt: null,
+    productsFetchInitiatedAt: null,
+    productsFetchGateReason: 'none',
+    componentMountedAt: null,
     categoryFilterStartAt: null,
     categoryFilterEndAt: null,
     gridSkeletonMountedAt: null,
@@ -71,6 +77,18 @@ function now(): number {
 export function resetGridTiming() {
   timingData = createFreshTiming();
   startFontTracking();
+}
+
+export function markProductsFetchInitiated() {
+  if (timingData.productsFetchInitiatedAt === null) {
+    timingData.productsFetchInitiatedAt = now();
+  }
+}
+
+export function markComponentMounted() {
+  if (timingData.componentMountedAt === null) {
+    timingData.componentMountedAt = now();
+  }
 }
 
 export function markProductsLoadStart() {
