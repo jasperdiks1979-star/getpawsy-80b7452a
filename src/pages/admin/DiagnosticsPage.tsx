@@ -13,6 +13,7 @@ import { SITE_URL } from '@/lib/constants';
 
 const WebVitalsDashboard = lazy(() => import('@/components/admin/WebVitalsDashboard'));
 const CwvValidationModule = lazy(() => import('@/components/admin/CwvValidationModule'));
+const CwvTrendDashboard = lazy(() => import('@/components/admin/CwvTrendDashboard'));
 const RedirectChainDiagnostics = lazy(() => import('@/components/admin/RedirectChainDiagnostics'));
 
 interface HealthCheck {
@@ -357,6 +358,11 @@ export default function DiagnosticsPage() {
 
       {/* LCP Investigation Events */}
       <LCPEventsCard />
+
+      {/* CWV Field Data Trends (30 days) */}
+      <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>}>
+        <CwvTrendDashboard />
+      </Suspense>
 
       {/* Web Vitals Field Data */}
       <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>}>

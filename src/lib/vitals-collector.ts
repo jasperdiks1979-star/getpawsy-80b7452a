@@ -9,6 +9,7 @@ import { onLCP, onCLS, onINP, onFCP, onTTFB } from 'web-vitals/attribution';
 import type { LCPMetricWithAttribution, CLSMetricWithAttribution, INPMetricWithAttribution, FCPMetricWithAttribution, TTFBMetricWithAttribution } from 'web-vitals/attribution';
 import { getGridTiming } from './grid-timing';
 import { computeProxyLcp, isIOSSafari } from './pseudo-lcp';
+import { PRODUCTION_DOMAINS } from './constants';
 
 interface VitalsPayload {
   path: string;
@@ -20,6 +21,7 @@ interface VitalsPayload {
   fcp?: { value: number };
   ttfb?: { value: number };
   proxyLcp?: { value: number; candidate: string; reason: string };
+  connectionType?: string;
   sessionId: string;
 }
 
@@ -39,6 +41,20 @@ function getSessionId(): string {
     sessionStorage.setItem('perf-session-id', id);
   }
   return id;
+}
+
+function getConnectionType(): string | undefined {
+  try {
+    const nav = navigator as any;
+    const conn = nav.connection || nav.mozConnection || nav.webkitConnection;
+    if (conn?.effectiveType) return conn.effectiveType;
+  } catch {}
+  return undefined;
+}
+
+function isProductionDomain(): boolean {
+  if (typeof window === 'undefined') return false;
+  return PRODUCTION_DOMAINS.some(d => window.location.hostname === d || window.location.hostname.endsWith('.' + d));
 }
 
 function computeAndStoreProxyLcp() {
@@ -66,6 +82,9 @@ function computeAndStoreProxyLcp() {
 function sendVitals() {
   if (hasSent) return;
   
+  // Only send from production domains
+  if (!isProductionDomain()) return;
+  
   // Compute proxy LCP before sending
   computeAndStoreProxyLcp();
   
@@ -79,6 +98,7 @@ function sendVitals() {
     ua: navigator.userAgent,
     deviceHint: getDeviceHint(),
     sessionId: getSessionId(),
+    connectionType: getConnectionType(),
     ...collectedMetrics,
   };
 

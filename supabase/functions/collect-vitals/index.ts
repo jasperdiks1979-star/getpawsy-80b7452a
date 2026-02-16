@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { path, ua, deviceHint, lcp, cls, inp, fcp, ttfb, sessionId } = body;
+    const { path, ua, deviceHint, lcp, cls, inp, fcp, ttfb, sessionId, proxyLcp, connectionType } = body;
 
     if (!path) {
       return new Response(JSON.stringify({ error: "path required" }), {
@@ -38,6 +38,9 @@ Deno.serve(async (req) => {
       ttfb_value: ttfb?.value ?? null,
       ua: ua ? ua.substring(0, 500) : null,
       session_id: sessionId || null,
+      proxy_lcp_value: proxyLcp?.value ?? null,
+      proxy_lcp_candidate: proxyLcp?.candidate ?? null,
+      connection_type: connectionType || null,
     });
 
     if (error) throw error;
