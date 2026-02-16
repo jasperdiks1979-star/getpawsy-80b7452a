@@ -67,11 +67,25 @@ function updateOverlay() {
   ];
   
   overlayEl.innerHTML = `
-    <div style="font-family:monospace;font-size:11px;line-height:1.6;padding:12px;background:rgba(0,0,0,0.88);color:#0f0;position:fixed;bottom:8px;right:8px;z-index:99999;border-radius:8px;max-width:340px;pointer-events:none;backdrop-filter:blur(4px)">
-      <div style="font-weight:bold;margin-bottom:4px;color:#fff">🔬 CWV Debug</div>
+    <div style="font-family:monospace;font-size:11px;line-height:1.6;padding:12px;background:rgba(0,0,0,0.88);color:#0f0;position:fixed;bottom:8px;right:8px;z-index:99999;border-radius:8px;max-width:340px;backdrop-filter:blur(4px)">
+      <div style="font-weight:bold;margin-bottom:4px;color:#fff;display:flex;justify-content:space-between;align-items:center">
+        <span>🔬 CWV Debug</span>
+        <button id="cwv-copy-btn" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #0f0;background:transparent;color:#0f0;cursor:pointer;pointer-events:auto">Copy JSON</button>
+      </div>
       ${lines.map(l => `<div>${l}</div>`).join('')}
     </div>
   `;
+  // Attach copy handler
+  const copyBtn = document.getElementById('cwv-copy-btn');
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      const json = JSON.stringify(debugData, null, 2);
+      navigator.clipboard.writeText(json).then(() => {
+        copyBtn.textContent = '✓ Copied';
+        setTimeout(() => { copyBtn.textContent = 'Copy JSON'; }, 1500);
+      }).catch(() => {});
+    };
+  }
 }
 
 function createOverlay() {
