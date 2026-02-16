@@ -113,6 +113,22 @@ Append `?debugVitals=1` to any URL:
 
 ---
 
+## 6. Analytics Clean Data Verification
+
+| Check | Expected | Pass/Fail |
+|-------|----------|-----------|
+| Re-run `node scripts/impact-model.mjs` | Outputs "US-ONLY CLEAN DATA MODEL" | |
+| US sessions > NL sessions | US is primary traffic source | |
+| No NL purchases in GA4 conversions | Purchase guard active | |
+| NL test purchase appears in `visitor_activity` with `is_internal=true` | Internal audit trail works | |
+| Conversion rate changed after filtering | Reflects US-only data | |
+| Clean data start date recorded | In `docs/analytics-data-policy.md` | |
+| Impact model sample size warning | Shows if US sessions < 50 | |
+
+**Reference**: `docs/analytics-data-policy.md` for full filtering rules.
+
+---
+
 ## Quick Commands
 
 ```bash
@@ -124,7 +140,7 @@ npx lighthouse https://getpawsy.pet/products?category=small-pets \
   --chrome-flags="--headless --no-sandbox" \
   --only-categories=performance,seo,best-practices,accessibility
 
-# Run impact model
+# Run impact model (US-only clean data)
 node scripts/impact-model.mjs
 
 # Full post-deploy verification
