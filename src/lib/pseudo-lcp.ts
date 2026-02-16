@@ -157,7 +157,7 @@ export function getCookieBannerMetrics(): CookieBannerMetrics {
 
 // ─── Pseudo-LCP computation ──────────────────────────────────────────────
 
-export type PseudoLcpCandidate = 'hero' | 'grid' | 'cookieBanner' | 'unknown';
+export type PseudoLcpCandidate = 'hero' | 'grid' | 'grid-first-item' | 'cookieBanner' | 'unknown';
 
 export interface PseudoLcpResult {
   pseudoLcpMs: number | null;
@@ -177,6 +177,7 @@ export function computePseudoLcp(
   heroPaintedAt: number | null,
   cookieBannerMountedAt: number | null,
   gridProbe: GridProbeResult,
+  gridFirstItemRenderedAt?: number | null,
 ): PseudoLcpResult {
   const bannerMetrics = getCookieBannerMetrics();
   const candidates: Array<{ time: number; label: PseudoLcpCandidate }> = [];
@@ -184,7 +185,10 @@ export function computePseudoLcp(
   if (heroPaintedAt !== null) {
     candidates.push({ time: heroPaintedAt, label: 'hero' });
   }
-  if (gridProbe.gridFirstMeaningfulPaintAt !== null) {
+  // Prefer gridFirstItemRenderedAt (from React commit) over probe-based gridRenderTime
+  if (gridFirstItemRenderedAt != null && gridFirstItemRenderedAt > 0) {
+    candidates.push({ time: gridFirstItemRenderedAt, label: 'grid-first-item' });
+  } else if (gridProbe.gridFirstMeaningfulPaintAt !== null) {
     candidates.push({ time: gridProbe.gridFirstMeaningfulPaintAt, label: 'grid' });
   }
   // Only consider cookie banner if it visually covers content AND is not excluded via data-cwvnolcp

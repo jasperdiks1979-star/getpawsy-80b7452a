@@ -6,9 +6,10 @@
  * ROOT-CAUSE ANALYSIS for /products (mobile):
  * - LCP element: The H1 heading (#plp-hero-heading) should be LCP on mobile.
  *   Previously the first ProductCard image or the cookie banner could win LCP.
- * - Cookie banner is now deferred 2.5s so it never competes.
+ * - Cookie banner is now deferred 2s+ so it never competes.
  * - First 2 product card images use priority={true} (eager load + fetchpriority=high)
  * - Products query uses initial page cache (sessionStorage) for instant first paint
+ * - Category routes now use a fast category-specific query as placeholderData
  * 
  * iOS Safari SPA navigations:
  * - PerformanceObserver('largest-contentful-paint') does NOT fire on soft navigations.
@@ -29,6 +30,7 @@ import {
   type PseudoLcpResult,
   type GridProbeResult,
 } from './pseudo-lcp';
+import { getGridTiming, type GridTimingData } from './grid-timing';
 
 interface LCPDebugData {
   route: string;
@@ -153,6 +155,7 @@ function runPseudoLcpFallback() {
       debugData.heroPaintedAt,
       debugData.cookieBannerMountedAt,
       gridProbe,
+      getGridTiming().gridFirstItemRenderedAt,
     );
 
     debugData.pseudoLcpMs = result.pseudoLcpMs;
@@ -206,6 +209,9 @@ function updateOverlay() {
 
   const bannerVhWarning = debugData.bannerVhPercent !== null && debugData.bannerVhPercent > 25 ? ' ⚠️ >25%!' : '';
 
+  // Fetch grid timing data
+  const gt = getGridTiming();
+
   const lines = [
     `Route: ${debugData.route}`,
     `<span style="color:${lcpColor}">LCP: ${lcpDisplay}</span>`,
@@ -214,9 +220,17 @@ function updateOverlay() {
     `LCP ID: ${debugData.lcpElementId || 'n/a'}`,
     `LCP Resource: ${debugData.lcpUrl || 'n/a'}`,
     `LCP Text: ${debugData.lcpElementText || 'n/a'}`,
+    `<span style="color:#0ff">── Grid Timing ──</span>`,
+    `Data source: ${gt.productsDataSource}`,
+    `Products load: ${formatMs(gt.productsLoadStartAt)} → ${formatMs(gt.productsLoadEndAt)}${gt.productsLoadStartAt && gt.productsLoadEndAt ? ` (${Math.round(gt.productsLoadEndAt - gt.productsLoadStartAt)}ms)` : ''}`,
+    `Category filter: ${gt.categoryFilterStartAt && gt.categoryFilterEndAt ? `${Math.round(gt.categoryFilterEndAt - gt.categoryFilterStartAt)}ms` : 'n/a'}`,
+    `Skeleton mounted: ${formatMs(gt.gridSkeletonMountedAt)}`,
+    `Grid 1st item: ${formatMs(gt.gridFirstItemRenderedAt)}`,
     `Grid 1st paint: ${formatMs(debugData.gridFirstMeaningfulPaintAt)}`,
     `Grid render: ${formatMs(debugData.gridRenderTime)}`,
     `Grid before LCP: ${gridBeforeLcp}`,
+    `Long tasks: ${gt.mainThreadLongTasks.length > 0 ? gt.mainThreadLongTasks.map(t => `${t.duration}ms@${t.startTime}`).join(', ') : 'none'}`,
+    `<span style="color:#0ff">── Cookie ──</span>`,
     `Cookie mounted: ${debugData.cookieBannerMountedAt ? `${Math.round(debugData.cookieBannerMountedAt)}ms` : 'not yet'}`,
     `Cookie interactive: ${debugData.cookieBannerInteractiveAt ? `${Math.round(debugData.cookieBannerInteractiveAt)}ms` : 'n/a'}`,
     `Banner covers content: ${debugData.cookieBannerCoversContent !== null ? (debugData.cookieBannerCoversContent ? '⚠️ yes' : '✅ no') : 'n/a'}`,
@@ -245,6 +259,7 @@ function updateOverlay() {
     copyBtn.onclick = () => {
       const json = JSON.stringify({
         ...debugData,
+        gridTiming: getGridTiming(),
         suspectedLCPBlockers: {
           cookieBannerMountedAt: debugData.cookieBannerMountedAt,
           cookieBannerInteractiveAt: debugData.cookieBannerInteractiveAt,
@@ -392,7 +407,7 @@ export function initLCPDebug() {
     setTimeout(() => {
       if (debugData.lcpMs === null) {
         probeGridPaint().then((gridProbe) => {
-          const result = computePseudoLcp(debugData.heroPaintedAt, debugData.cookieBannerMountedAt, gridProbe);
+          const result = computePseudoLcp(debugData.heroPaintedAt, debugData.cookieBannerMountedAt, gridProbe, getGridTiming().gridFirstItemRenderedAt);
           debugData.pseudoLcpMs = result.pseudoLcpMs;
           debugData.pseudoLcpCandidate = result.pseudoLcpCandidate;
           debugData.pseudoLcpReason = result.pseudoLcpReason;

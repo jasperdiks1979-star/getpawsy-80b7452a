@@ -29,6 +29,16 @@ import { trackViewItemList } from '@/lib/analytics';
 import { dedupeProducts } from '@/lib/dedupe-products';
 import { markGridRendered } from '@/lib/lcp-debug';
 import { getCachedProducts, setCachedProducts } from '@/hooks/useProductsCache';
+import { useCategoryProducts } from '@/hooks/useCategoryProducts';
+import {
+  markProductsLoadStart,
+  markProductsLoadEnd,
+  markCategoryFilterStart,
+  markCategoryFilterEnd,
+  markGridSkeletonMounted,
+  markGridFirstItemRendered,
+  startLongTaskTracking,
+} from '@/lib/grid-timing';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -112,10 +122,18 @@ const Products = () => {
     }
   }, [categoryParam, navigate, searchParams]);
 
-  // Fetch products from database with initial-page cache for instant first paint
-  const { data: products, isLoading: productsLoading } = useQuery({
+  // Start long task tracking on mount
+  useEffect(() => { startLongTaskTracking(); }, []);
+
+  // Fast category-specific query: fetches only matching products (24 items)
+  // This resolves much faster than the full catalog on category routes
+  const { data: categoryFastData, isLoading: categoryFastLoading } = useCategoryProducts(categoryParam);
+
+  // Fetch full products from database with initial-page cache for instant first paint
+  const { data: fullProducts, isLoading: fullProductsLoading } = useQuery({
     queryKey: ['products'],
     queryFn: async () => {
+      markProductsLoadStart();
       const { data, error } = await supabase
         .from('products_public')
         .select('*')
@@ -124,6 +142,7 @@ const Products = () => {
       
       if (error) throw error;
       const deduped = dedupeProducts(data || []);
+      markProductsLoadEnd('remote');
       // Cache first page for instant paint on subsequent visits
       setCachedProducts(categoryParam, sortBy, deduped, deduped.length);
       return deduped;
@@ -131,9 +150,19 @@ const Products = () => {
     // Use cached data as placeholder while fetching fresh
     placeholderData: () => {
       const cached = getCachedProducts(categoryParam, sortBy);
-      return cached?.products as any[] | undefined;
+      if (cached?.products) {
+        markProductsLoadEnd('cache');
+        return cached.products as any[];
+      }
+      return undefined;
     },
   });
+
+  // Use full products when available, otherwise fast category data for early paint
+  const products = fullProducts ?? (categoryParam && categoryFastData ? categoryFastData as any[] : undefined);
+  const productsLoading = categoryParam
+    ? (fullProductsLoading && categoryFastLoading) // On category pages, show data as soon as fast query resolves
+    : fullProductsLoading;
 
   // Get all product IDs for ratings query
   const productIds = useMemo(() => products?.map(p => p.id).filter((id): id is string => !!id) || [], [products]);
@@ -317,6 +346,7 @@ const Products = () => {
   }, [categories]);
 
   const filteredProducts = useMemo(() => {
+    markCategoryFilterStart();
     if (!products) return [];
     let result = [...products];
 
@@ -452,6 +482,7 @@ const Products = () => {
         );
     }
 
+    markCategoryFilterEnd();
     return result;
   }, [products, searchQuery, selectedCategories, sortBy, priceRange, categoryToDescendants]);
 
@@ -570,7 +601,9 @@ const Products = () => {
     </div>
   );
 
-  const isLoading = productsLoading || categoriesLoading;
+  // On category routes, show grid as soon as fast category data OR full data is available
+  // Don't block on categoriesLoading for grid paint — categories are only needed for filters
+  const isLoading = productsLoading;
 
   // Convert slug to display name (e.g., "dog-beds" -> "Dog Beds")
   const getCategoryDisplayName = (slug: string): string => {
@@ -866,8 +899,8 @@ const Products = () => {
               </Select>
             </div>
 
-            {/* Loading State */}
-            {isLoading && <ProductGridSkeleton count={12} />}
+            {/* Loading State — mark skeleton mount for diagnostics */}
+            {isLoading && <SkeletonWithTiming count={12} />}
 
             {/* Products */}
             {!isLoading && visibleItems.length > 0 && (
@@ -988,13 +1021,21 @@ const Products = () => {
   );
 };
 
+import { memo } from 'react';
+
+/** Skeleton wrapper that marks mount time for diagnostics */
+const SkeletonWithTiming = memo(({ count }: { count: number }) => {
+  useEffect(() => { markGridSkeletonMounted(); }, []);
+  return <ProductGridSkeleton count={count} />;
+});
+SkeletonWithTiming.displayName = 'SkeletonWithTiming';
+
 /**
  * LCP-OPTIMIZED Product Grid
  * - First 2 items get priority={true} on their images (eager + fetchpriority=high)
  * - Marks grid render time for LCP debug overlay
  * - Memoized to avoid unnecessary re-renders
  */
-import { memo } from 'react';
 
 interface ProductGridProps {
   visibleItems: any[];
@@ -1012,6 +1053,7 @@ const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap
     if (!hasMarkedRef.current && visibleItems.length > 0) {
       hasMarkedRef.current = true;
       markGridRendered();
+      markGridFirstItemRendered();
     }
   }, [visibleItems.length]);
 

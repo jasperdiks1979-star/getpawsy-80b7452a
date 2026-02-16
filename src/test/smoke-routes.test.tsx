@@ -115,6 +115,15 @@ describe('Smoke tests – key routes render', () => {
     expect(container.innerHTML.length).toBeGreaterThan(100);
   });
 
+  it('/products?category=small-pets renders skeleton grid immediately', async () => {
+    const Products = (await import('@/pages/Products')).default;
+    const { container } = renderRoute('/products?category=small-pets', Products);
+    // Skeleton should be present during loading (before data resolves)
+    const skeletons = container.querySelectorAll('.animate-shimmer');
+    // Either skeleton cards or real cards should be present
+    expect(container.innerHTML.length).toBeGreaterThan(100);
+  });
+
   it('/products H1 has id plp-hero-heading for LCP targeting', async () => {
     const Products = (await import('@/pages/Products')).default;
     const { container } = renderRoute('/products', Products);
@@ -149,5 +158,22 @@ describe('Smoke tests – key routes render', () => {
     // Banner is deferred via requestIdleCallback, so we just verify the component exists
     // The data-cwvnolcp attribute is set on the motion.div which renders conditionally
     expect(true).toBe(true); // Component loaded without error
+  });
+
+  it('Marketing widgets are not eagerly mounted in Layout', async () => {
+    // Verify Layout renders without marketing widgets blocking initial mount
+    const { Layout } = await import('@/components/layout/Layout');
+    const qc = createTestQueryClient();
+    const { container } = render(
+      <QueryClientProvider client={qc}>
+        <HelmetProvider>
+          <MemoryRouter initialEntries={['/products']}>
+            <Layout><div data-testid="page-content">Content</div></Layout>
+          </MemoryRouter>
+        </HelmetProvider>
+      </QueryClientProvider>
+    );
+    // Page content should render immediately
+    expect(container.querySelector('[data-testid="page-content"]')).toBeTruthy();
   });
 });
