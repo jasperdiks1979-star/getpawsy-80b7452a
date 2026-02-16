@@ -26,6 +26,7 @@ try { setupGlobalErrorHandler(); } catch (e) { console.error('[ProdSafe] setupGl
 try { initDataHealer(); } catch (e) { console.error('[ProdSafe] initDataHealer failed:', e); }
 try { initLegacyLinkGuard(); } catch (e) { console.error('[ProdSafe] initLegacyLinkGuard failed:', e); }
 try { initLegacyFetchGuard(); } catch (e) { console.error('[ProdSafe] initLegacyFetchGuard failed:', e); }
+try { import('@/lib/analytics').then(m => m.initAnalyticsUserProperties()); } catch (e) { console.error('[ProdSafe] initAnalyticsUserProperties failed:', e); }
 
 // Critical routes - loaded immediately
 import Index from "./pages/Index";
@@ -106,6 +107,7 @@ const Bestsellers = lazyWithRetry(() => import("./pages/Bestsellers"));
 const LiveMap = lazyWithRetry(() => import("./pages/LiveMap"));
 const Blog = lazyWithRetry(() => import("./pages/Blog"));
 const BlogPost = lazyWithRetry(() => import("./pages/BlogPost"));
+const FounderMode = lazyWithRetry(() => import("./pages/FounderMode"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -173,6 +175,7 @@ const App = () => {
                       <Route path="/live-map" element={<Suspense fallback={<RouteLoader />}><LiveMap /></Suspense>} />
                       <Route path="/blog" element={<Suspense fallback={<RouteLoader />}><Blog /></Suspense>} />
                       <Route path="/blog/:slug" element={<Suspense fallback={<RouteLoader />}><BlogPost /></Suspense>} />
+                      <Route path="/founder-mode" element={<Suspense fallback={<RouteLoader />}><FounderMode /></Suspense>} />
                       
                       <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
                       <Route path="*" element={<NotFound />} />

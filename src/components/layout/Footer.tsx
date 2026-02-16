@@ -20,6 +20,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { DebugPanel } from './DebugPanel';
+import { getFounderModeStatus } from '@/lib/founder-mode';
+
+const FounderBadge = () => {
+  if (!getFounderModeStatus()) return null;
+  return (
+    <div className="fixed bottom-2 left-2 z-40 bg-foreground/90 text-background text-[10px] px-2 py-1 rounded-full opacity-60 pointer-events-none select-none">
+      🛡️ Founder Mode ON
+    </div>
+  );
+};
 import {
   SUPPORT_EMAIL,
   RESPONSE_TIME,
@@ -423,6 +433,7 @@ export const Footer = () => {
       
       {/* Debug Panel - only visible with ?debug=true */}
       <DebugPanel />
+      <FounderBadge />
     </footer>
   );
 };
