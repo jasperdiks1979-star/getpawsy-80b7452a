@@ -1,9 +1,14 @@
 /**
  * Lightweight Web Vitals field-data collector using the official web-vitals library.
  * Sends attribution data to the collect-vitals edge function.
+ * 
+ * Also captures proxy LCP for iOS Safari SPA navigations where real LCP
+ * is not emitted by PerformanceObserver.
  */
 import { onLCP, onCLS, onINP, onFCP, onTTFB } from 'web-vitals/attribution';
 import type { LCPMetricWithAttribution, CLSMetricWithAttribution, INPMetricWithAttribution, FCPMetricWithAttribution, TTFBMetricWithAttribution } from 'web-vitals/attribution';
+import { getGridTiming } from './grid-timing';
+import { computeProxyLcp, isIOSSafari } from './pseudo-lcp';
 
 interface VitalsPayload {
   path: string;
@@ -14,6 +19,7 @@ interface VitalsPayload {
   inp?: { value: number; event?: string };
   fcp?: { value: number };
   ttfb?: { value: number };
+  proxyLcp?: { value: number; candidate: string; reason: string };
   sessionId: string;
 }
 
@@ -35,10 +41,35 @@ function getSessionId(): string {
   return id;
 }
 
+function computeAndStoreProxyLcp() {
+  // Only compute if real LCP was not observed
+  if (collectedMetrics.lcp) return;
+  
+  const gt = getGridTiming();
+  const result = computeProxyLcp(
+    null, // heroPaintedAt not easily accessible here
+    gt.firstCardTextPaintAt,
+    gt.gridFirstItemRenderedAt,
+    gt.firstGridImageDecodedAt,
+    null, // cookieBannerMountedAt
+  );
+  
+  if (result.proxyLcpMs !== null) {
+    collectedMetrics.proxyLcp = {
+      value: result.proxyLcpMs,
+      candidate: result.proxyLcpCandidate,
+      reason: result.proxyLcpReason,
+    };
+  }
+}
+
 function sendVitals() {
   if (hasSent) return;
-  // Only send if we have at least one metric
-  const hasData = collectedMetrics.lcp || collectedMetrics.cls || collectedMetrics.inp || collectedMetrics.fcp || collectedMetrics.ttfb;
+  
+  // Compute proxy LCP before sending
+  computeAndStoreProxyLcp();
+  
+  const hasData = collectedMetrics.lcp || collectedMetrics.cls || collectedMetrics.inp || collectedMetrics.fcp || collectedMetrics.ttfb || collectedMetrics.proxyLcp;
   if (!hasData) return;
 
   hasSent = true;
@@ -56,7 +87,6 @@ function sendVitals() {
 
   const url = `${supabaseUrl}/functions/v1/collect-vitals`;
   
-  // Use sendBeacon for reliability on page unload
   if (navigator.sendBeacon) {
     const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
     navigator.sendBeacon(url, blob);
@@ -107,6 +137,5 @@ export function initVitalsCollector() {
     }
   });
 
-  // Fallback for pagehide
   window.addEventListener('pagehide', sendVitals);
 }

@@ -5,16 +5,15 @@
  * 
  * ROOT-CAUSE ANALYSIS for /products (mobile):
  * - LCP element: The H1 heading (#plp-hero-heading) should be LCP on mobile.
- *   Previously the first ProductCard image or the cookie banner could win LCP.
- * - Cookie banner is now deferred 2s+ so it never competes.
- * - First 2 product card images use priority={true} (eager load + fetchpriority=high)
- * - Products query uses initial page cache (sessionStorage) for instant first paint
- * - Category routes now use a fast category-specific query as placeholderData
+ * - Cookie banner is deferred and excluded via data-cwvnolcp.
+ * - First 2 product card images use priority={true} (eager + fetchpriority=high)
+ * - Products query uses cache for instant first paint
+ * - Category routes use fast category-specific query as placeholderData
  * 
  * iOS Safari SPA navigations:
  * - PerformanceObserver('largest-contentful-paint') does NOT fire on soft navigations.
- * - We use a pseudo-LCP fallback (see src/lib/pseudo-lcp.ts) based on DOM paint signals.
- * - The overlay shows "not observed (iOS Safari SPA) — pseudoLCP: Xms [candidate]".
+ * - We compute a "proxy LCP" from grid-timing paint signals (firstCardTextPaintAt).
+ * - The overlay shows proxyLCP when real LCP is not observed.
  */
 
 import type { LCPMetricWithAttribution, CLSMetricWithAttribution, INPMetricWithAttribution } from 'web-vitals/attribution';
@@ -24,13 +23,11 @@ import {
   getIsSPANavigation,
   initRouteTracking,
   onRouteChange,
-  probeGridPaint,
-  computePseudoLcp,
+  computeProxyLcp,
   getCookieBannerMetrics,
-  type PseudoLcpResult,
-  type GridProbeResult,
+  type ProxyLcpResult,
 } from './pseudo-lcp';
-import { getGridTiming, type GridTimingData } from './grid-timing';
+import { getGridTiming, resetGridTiming, type GridTimingData } from './grid-timing';
 
 interface LCPDebugData {
   route: string;
@@ -53,10 +50,11 @@ interface LCPDebugData {
   cookiePlaceholderMountedAt: number | null;
   cookieBannerInteractiveAt: number | null;
   heroPaintedAt: number | null;
-  pseudoLcpMs: number | null;
-  pseudoLcpCandidate: string | null;
-  pseudoLcpReason: string | null;
+  // Proxy LCP fields (replaces pseudo-LCP)
   realLcpObserved: boolean;
+  proxyLcpMs: number | null;
+  proxyLcpCandidate: string | null;
+  proxyLcpReason: string | null;
   bannerVhPercent: number | null;
   timeBetweenHeroAndBannerMount: number | null;
   candidateElementSelector: string | null;
@@ -88,10 +86,10 @@ function freshDebugData(): LCPDebugData {
     cookiePlaceholderMountedAt: null,
     cookieBannerInteractiveAt: null,
     heroPaintedAt: null,
-    pseudoLcpMs: null,
-    pseudoLcpCandidate: null,
-    pseudoLcpReason: null,
     realLcpObserved: false,
+    proxyLcpMs: null,
+    proxyLcpCandidate: null,
+    proxyLcpReason: null,
     bannerVhPercent: null,
     timeBetweenHeroAndBannerMount: null,
     candidateElementSelector: null,
@@ -139,44 +137,69 @@ function formatMs(v: number | null): string {
   return `${Math.round(v)}ms`;
 }
 
-// ─── Pseudo-LCP fallback orchestration ───────────────────────────────────
+// ─── Proxy LCP fallback orchestration ────────────────────────────────────
 
-function runPseudoLcpFallback() {
-  if (!isIOSSafari() || !getIsSPANavigation()) return;
+let proxyLcpPollTimer: ReturnType<typeof setInterval> | null = null;
 
-  // Wait 3s after route start; if real LCP still null, compute pseudo
-  setTimeout(async () => {
-    if (debugData.lcpMs !== null) return; // real LCP arrived, no need
+/**
+ * Poll grid-timing data every 200ms until we have firstCardTextPaintAt
+ * or 6s deadline. This replaces the old approach of waiting 3-4s then
+ * running a rAF probe (which reported "when the probe ran" not "when
+ * content appeared").
+ */
+function startProxyLcpPolling() {
+  if (proxyLcpPollTimer) clearInterval(proxyLcpPollTimer);
+  
+  const startedAt = performance.now();
+  const deadline = 6000; // 6s max wait
 
-    // Probe grid
-    const gridProbe: GridProbeResult = await probeGridPaint();
+  proxyLcpPollTimer = setInterval(() => {
+    // If real LCP arrived, stop polling
+    if (debugData.lcpMs !== null) {
+      if (proxyLcpPollTimer) clearInterval(proxyLcpPollTimer);
+      proxyLcpPollTimer = null;
+      return;
+    }
 
-    const result: PseudoLcpResult = computePseudoLcp(
+    const gt = getGridTiming();
+    const elapsed = performance.now() - startedAt;
+    
+    // Wait until we have meaningful data OR deadline
+    const hasTextPaint = gt.firstCardTextPaintAt !== null;
+    const hasItemRendered = gt.gridFirstItemRenderedAt !== null;
+    const pastDeadline = elapsed > deadline;
+
+    if (!hasTextPaint && !hasItemRendered && !pastDeadline) return;
+
+    // Compute proxy LCP from paint signals
+    const result = computeProxyLcp(
       debugData.heroPaintedAt,
+      gt.firstCardTextPaintAt,
+      gt.gridFirstItemRenderedAt,
+      gt.firstGridImageDecodedAt,
       debugData.cookieBannerMountedAt,
-      gridProbe,
-      getGridTiming().gridFirstItemRenderedAt,
     );
 
-    debugData.pseudoLcpMs = result.pseudoLcpMs;
-    debugData.pseudoLcpCandidate = result.pseudoLcpCandidate;
-    debugData.pseudoLcpReason = result.pseudoLcpReason;
+    debugData.proxyLcpMs = result.proxyLcpMs;
+    debugData.proxyLcpCandidate = result.proxyLcpCandidate;
+    debugData.proxyLcpReason = result.proxyLcpReason;
     debugData.cookieBannerCoversContent = result.cookieBannerCoversContent;
     debugData.bannerVhPercent = result.bannerVhPercent;
-    debugData.gridFirstMeaningfulPaintAt = result.gridFirstMeaningfulPaintAt;
-    if (result.gridRenderTime !== null) {
-      debugData.gridRenderTime = result.gridRenderTime;
-    }
+    // Set gridFirstMeaningfulPaintAt from firstCardTextPaintAt (not the old probe)
+    debugData.gridFirstMeaningfulPaintAt = gt.firstCardTextPaintAt ?? gt.gridFirstItemRenderedAt;
     debugData.lcpStatus = 'not_observed';
     debugData.timeBetweenHeroAndBannerMount = (debugData.heroPaintedAt !== null && debugData.cookieBannerMountedAt !== null)
       ? Math.round(debugData.cookieBannerMountedAt - debugData.heroPaintedAt) : null;
     lcpSettled = true;
 
+    if (proxyLcpPollTimer) clearInterval(proxyLcpPollTimer);
+    proxyLcpPollTimer = null;
+
     if (isDebug) {
-      console.log('[Pseudo-LCP]', result);
+      console.log('[Proxy-LCP]', result, 'gridTiming:', gt);
       updateOverlay();
     }
-  }, 3000);
+  }, 200);
 }
 
 // ─── Overlay rendering ───────────────────────────────────────────────────
@@ -190,9 +213,9 @@ function updateOverlay() {
   if (debugData.lcpMs !== null) {
     lcpDisplay = `${Math.round(debugData.lcpMs)}ms`;
     lcpColor = debugData.lcpMs <= 2500 ? '#0f0' : debugData.lcpMs <= 4000 ? '#ff0' : '#f44';
-  } else if (debugData.lcpStatus === 'not_observed' && debugData.pseudoLcpMs !== null) {
-    lcpDisplay = `not observed (iOS Safari SPA) — pseudoLCP: ${debugData.pseudoLcpMs}ms [${debugData.pseudoLcpCandidate}]`;
-    lcpColor = debugData.pseudoLcpMs <= 2500 ? '#0f0' : debugData.pseudoLcpMs <= 4000 ? '#ff0' : '#f44';
+  } else if (debugData.lcpStatus === 'not_observed' && debugData.proxyLcpMs !== null) {
+    lcpDisplay = `not observed — proxyLCP: ${debugData.proxyLcpMs}ms [${debugData.proxyLcpCandidate}]`;
+    lcpColor = debugData.proxyLcpMs <= 2500 ? '#0f0' : debugData.proxyLcpMs <= 4000 ? '#ff0' : '#f44';
   } else if (debugData.lcpStatus === 'not_observed') {
     lcpDisplay = 'not observed';
     lcpColor = '#888';
@@ -203,13 +226,12 @@ function updateOverlay() {
 
   const gridBeforeLcp = debugData.gridRenderedBeforeLCP !== null
     ? (debugData.gridRenderedBeforeLCP ? '✅ yes' : '❌ no')
-    : (debugData.gridRenderTime !== null && debugData.pseudoLcpMs !== null
-      ? (debugData.gridRenderTime < debugData.pseudoLcpMs ? '✅ yes (pseudo)' : '❌ no (pseudo)')
+    : (debugData.gridRenderTime !== null && debugData.proxyLcpMs !== null
+      ? (debugData.gridRenderTime < debugData.proxyLcpMs ? '✅ yes (proxy)' : '❌ no (proxy)')
       : 'pending...');
 
   const bannerVhWarning = debugData.bannerVhPercent !== null && debugData.bannerVhPercent > 25 ? ' ⚠️ >25%!' : '';
 
-  // Fetch grid timing data
   const gt = getGridTiming();
 
   const lines = [
@@ -225,9 +247,9 @@ function updateOverlay() {
     `Products load: ${formatMs(gt.productsLoadStartAt)} → ${formatMs(gt.productsLoadEndAt)}${gt.productsLoadStartAt && gt.productsLoadEndAt ? ` (${Math.round(gt.productsLoadEndAt - gt.productsLoadStartAt)}ms)` : ''}`,
     `Category filter: ${gt.categoryFilterStartAt && gt.categoryFilterEndAt ? `${Math.round(gt.categoryFilterEndAt - gt.categoryFilterStartAt)}ms` : 'n/a'}`,
     `Skeleton mounted: ${formatMs(gt.gridSkeletonMountedAt)}`,
-    `Grid 1st item: ${formatMs(gt.gridFirstItemRenderedAt)}`,
+    `Grid 1st item rendered: ${formatMs(gt.gridFirstItemRenderedAt)}`,
     `1st card text paint: ${formatMs(gt.firstCardTextPaintAt)}`,
-    `Grid 1st paint: ${formatMs(debugData.gridFirstMeaningfulPaintAt)}`,
+    `Grid meaningful paint: ${formatMs(debugData.gridFirstMeaningfulPaintAt)}`,
     `Grid render: ${formatMs(debugData.gridRenderTime)}`,
     `Grid before LCP: ${gridBeforeLcp}`,
     `<span style="color:#0ff">── Image/Font ──</span>`,
@@ -310,13 +332,15 @@ export function initLCPDebug() {
     debugData = freshDebugData();
     debugData.route = window.location.pathname + window.location.search;
     lcpSettled = false;
+    resetGridTiming();
 
-    // Re-check debug flag for new route
     const p = new URLSearchParams(window.location.search);
     isDebug = p.get('debugVitals') === '1';
 
     setTimeout(detectHeroPaint, 100);
-    runPseudoLcpFallback();
+    
+    // Start polling for proxy LCP data (replaces old 3-4s delay approach)
+    startProxyLcpPolling();
 
     if (isDebug) {
       createOverlay();
@@ -367,6 +391,12 @@ export function initLCPDebug() {
       debugData.gridRenderedBeforeLCP = debugData.gridRenderTime !== null && debugData.gridRenderTime < metric.value;
       lcpSettled = true;
 
+      // Stop proxy LCP polling since real LCP arrived
+      if (proxyLcpPollTimer) {
+        clearInterval(proxyLcpPollTimer);
+        proxyLcpPollTimer = null;
+      }
+
       storeLCPEvent({
         route: debugData.route,
         lcpMs: metric.value,
@@ -399,6 +429,21 @@ export function initLCPDebug() {
       lcpSettled = true;
       if (debugData.lcpMs === null) {
         debugData.lcpStatus = 'not_observed';
+        // Final proxy LCP computation with whatever data we have
+        const gt = getGridTiming();
+        const result = computeProxyLcp(
+          debugData.heroPaintedAt,
+          gt.firstCardTextPaintAt,
+          gt.gridFirstItemRenderedAt,
+          gt.firstGridImageDecodedAt,
+          debugData.cookieBannerMountedAt,
+        );
+        debugData.proxyLcpMs = result.proxyLcpMs;
+        debugData.proxyLcpCandidate = result.proxyLcpCandidate;
+        debugData.proxyLcpReason = result.proxyLcpReason;
+        debugData.cookieBannerCoversContent = result.cookieBannerCoversContent;
+        debugData.bannerVhPercent = result.bannerVhPercent;
+        debugData.gridFirstMeaningfulPaintAt = gt.firstCardTextPaintAt ?? gt.gridFirstItemRenderedAt;
       }
       if (isDebug) {
         console.warn('[LCP Debug] LCP not observed after 6s.');
@@ -407,28 +452,10 @@ export function initLCPDebug() {
     }
   }, 6000);
 
-  // Start pseudo-LCP fallback for initial load too (in case of iOS Safari)
-  if (isIOSSafari()) {
-    // For initial page load, give real LCP a chance first
-    setTimeout(() => {
-      if (debugData.lcpMs === null) {
-        probeGridPaint().then((gridProbe) => {
-          const result = computePseudoLcp(debugData.heroPaintedAt, debugData.cookieBannerMountedAt, gridProbe, getGridTiming().gridFirstItemRenderedAt);
-          debugData.pseudoLcpMs = result.pseudoLcpMs;
-          debugData.pseudoLcpCandidate = result.pseudoLcpCandidate;
-          debugData.pseudoLcpReason = result.pseudoLcpReason;
-          debugData.cookieBannerCoversContent = result.cookieBannerCoversContent;
-          debugData.bannerVhPercent = result.bannerVhPercent;
-          debugData.gridFirstMeaningfulPaintAt = result.gridFirstMeaningfulPaintAt;
-          if (result.gridRenderTime !== null) debugData.gridRenderTime = result.gridRenderTime;
-          debugData.lcpStatus = 'not_observed';
-          debugData.timeBetweenHeroAndBannerMount = (debugData.heroPaintedAt !== null && debugData.cookieBannerMountedAt !== null)
-            ? Math.round(debugData.cookieBannerMountedAt - debugData.heroPaintedAt) : null;
-          lcpSettled = true;
-          if (isDebug) updateOverlay();
-        });
-      }
-    }, 4000);
+  // Start proxy LCP polling for initial load too (iOS Safari)
+  if (isIOSSafari() || true) {
+    // Always poll — on non-iOS browsers, real LCP will cancel the poll
+    startProxyLcpPolling();
   }
 
   if (isDebug) {
