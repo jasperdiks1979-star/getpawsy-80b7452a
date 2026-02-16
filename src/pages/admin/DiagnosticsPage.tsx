@@ -374,6 +374,34 @@ export default function DiagnosticsPage() {
         <RedirectChainDiagnostics />
       </Suspense>
 
+      {/* SEO Redirect Advisory */}
+      <Card className="mb-6 border-amber-500/30">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Globe className="h-5 w-5 text-amber-500" />
+            SEO Redirect Note: www → apex 302
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p className="text-muted-foreground">
+            The <code className="text-xs bg-muted px-1 rounded">www.getpawsy.pet → getpawsy.pet</code> redirect returns <strong>302</strong> instead of 301.
+            This is a <strong>platform-level</strong> behavior from the hosting edge and <strong>cannot be changed</strong> per-project.
+          </p>
+          <div className="bg-muted rounded-lg p-3 space-y-1">
+            <p className="font-medium">Why this is acceptable:</p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1">
+              <li>Google treats 302 = 301 when canonical signals are consistent</li>
+              <li>All canonical tags → <code className="text-xs">https://getpawsy.pet</code> ✅</li>
+              <li>All sitemap URLs use apex domain only ✅</li>
+              <li>All internal links use apex domain ✅</li>
+            </ul>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            No action required. GSC "Page with redirect" for www URLs is expected and benign.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Domain & DNS Info */}
       <DomainDnsCard />
 

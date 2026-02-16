@@ -9,9 +9,12 @@
  * can paint within ~1-1.5s instead of waiting ~3-4s for the full catalog.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { dedupeProducts } from '@/lib/dedupe-products';
+import { getCachedCategoryProducts, setCachedCategoryProducts } from '@/lib/category-cache-idb';
+import { markProductsLoadEnd } from '@/lib/grid-timing';
 
 /**
  * Resolves a category slug to matching category names (including subcategories).
@@ -62,6 +65,25 @@ function collectCategoryNames(
 }
 
 export function useCategoryProducts(categorySlug: string | null) {
+  const queryClient = useQueryClient();
+  const idbChecked = useRef(false);
+
+  // Seed React Query cache from IDB on mount (instant first paint)
+  useEffect(() => {
+    if (!categorySlug || idbChecked.current) return;
+    idbChecked.current = true;
+    getCachedCategoryProducts(categorySlug).then(cached => {
+      if (cached && cached.products.length > 0) {
+        // Only seed if React Query doesn't already have data
+        const existing = queryClient.getQueryData(['category-products-fast', categorySlug]);
+        if (!existing) {
+          queryClient.setQueryData(['category-products-fast', categorySlug], cached.products);
+          markProductsLoadEnd('idb-cache');
+        }
+      }
+    });
+  }, [categorySlug, queryClient]);
+
   return useQuery({
     queryKey: ['category-products-fast', categorySlug],
     queryFn: async () => {
@@ -82,7 +104,12 @@ export function useCategoryProducts(categorySlug: string | null) {
         .limit(24);
 
       if (error) throw error;
-      return dedupeProducts(data || []);
+      const products = dedupeProducts(data || []);
+
+      // Persist to IDB for instant paint on next visit
+      void setCachedCategoryProducts(categorySlug, products, products.length);
+
+      return products;
     },
     enabled: !!categorySlug,
     staleTime: 2 * 60 * 1000, // 2 minutes
