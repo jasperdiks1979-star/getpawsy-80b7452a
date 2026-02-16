@@ -689,9 +689,19 @@ const Products = () => {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">
+        {/* Header — must be first meaningful paint & LCP winner on mobile */}
+        <div className="mb-8 min-h-[72px] md:min-h-[80px]">
+          {/*
+           * LCP ROOT CAUSE (mobile /products routes):
+           * The H1 heading must be the largest contentful element above the fold.
+           * We use text-4xl on mobile (larger than cookie banner text) and
+           * a stable min-height container to prevent CLS.
+           * The cookie banner is deferred 2s+ so it never competes for LCP.
+           */}
+          <h1
+            id="plp-hero-heading"
+            className="text-4xl sm:text-3xl md:text-4xl font-bold mb-2 leading-tight"
+          >
             {categoryH1 || (searchQuery ? `Search: "${searchQuery}"` : 'All Products')}
           </h1>
           {categoryDescription && (

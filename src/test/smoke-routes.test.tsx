@@ -1,6 +1,7 @@
 /**
  * Smoke tests for critical routes.
  * Validates that key pages render non-empty DOM without fatal errors.
+ * Also checks canonical integrity and cookie banner CLS safety.
  *
  * VALIDATION CHECKLIST:
  * - How to test: Run `bun run test` or use Lovable's test runner
@@ -99,7 +100,6 @@ describe('Smoke tests – key routes render', () => {
   it('/products renders without fatal errors', async () => {
     const Products = (await import('@/pages/Products')).default;
     const { container } = renderRoute('/products', Products);
-    // Should render something (header, skeleton, or grid)
     expect(container.innerHTML.length).toBeGreaterThan(100);
   });
 
@@ -107,5 +107,27 @@ describe('Smoke tests – key routes render', () => {
     const Products = (await import('@/pages/Products')).default;
     const { container } = renderRoute('/products?category=dog-beds', Products);
     expect(container.innerHTML.length).toBeGreaterThan(100);
+  });
+
+  it('/products?category=Small%20Pets renders without fatal errors', async () => {
+    const Products = (await import('@/pages/Products')).default;
+    const { container } = renderRoute('/products?category=Small%20Pets', Products);
+    expect(container.innerHTML.length).toBeGreaterThan(100);
+  });
+
+  it('/products H1 has id plp-hero-heading for LCP targeting', async () => {
+    const Products = (await import('@/pages/Products')).default;
+    const { container } = renderRoute('/products', Products);
+    const h1 = container.querySelector('#plp-hero-heading');
+    expect(h1).toBeTruthy();
+    expect(h1?.tagName).toBe('H1');
+  });
+
+  it('/products H1 container has stable min-height to prevent CLS', async () => {
+    const Products = (await import('@/pages/Products')).default;
+    const { container } = renderRoute('/products', Products);
+    const h1 = container.querySelector('#plp-hero-heading');
+    const wrapper = h1?.parentElement;
+    expect(wrapper?.className).toContain('min-h-');
   });
 });

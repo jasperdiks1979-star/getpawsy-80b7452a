@@ -6,6 +6,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getConsent, setConsent, type ConsentValue } from '@/lib/cookieConsent';
+import { markCookieBannerMounted } from '@/lib/lcp-debug';
 
 export const CookieConsent = () => {
   const [showBanner, setShowBanner] = useState(false);
@@ -18,13 +19,19 @@ export const CookieConsent = () => {
   const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
   const shouldDisable = isMobile && isCheckoutRoute;
 
-  // Show banner only if no consent stored — once
+  // Show banner only if no consent stored — once, DEFERRED to avoid becoming LCP.
+  // Delay 2500ms so the H1/hero always wins the LCP race.
   useEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
     const existing = getConsent();
     if (!existing) {
-      const t = setTimeout(() => setShowBanner(true), 1500);
+      const t = setTimeout(() => {
+        requestAnimationFrame(() => {
+          markCookieBannerMounted();
+          setShowBanner(true);
+        });
+      }, 2500);
       return () => clearTimeout(t);
     }
   }, []);
@@ -71,7 +78,8 @@ export const CookieConsent = () => {
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           className="fixed bottom-0 left-0 right-0 z-[100] p-4 pb-safe"
         >
-          <div className="max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+          {/* max-w-md on mobile keeps visual area smaller than H1 so banner can't win LCP */}
+          <div className="max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-xl overflow-hidden">
             <div className="p-4 md:p-6">
               <div className="flex items-start gap-4">
                 <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 flex-shrink-0">
@@ -79,7 +87,7 @@ export const CookieConsent = () => {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground mb-2">🍪 We use cookies</h3>
+                  <h3 className="font-semibold text-foreground mb-2 text-sm sm:text-base">🍪 We use cookies</h3>
 
                   {!showSettings ? (
                     <>
