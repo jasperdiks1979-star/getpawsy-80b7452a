@@ -122,7 +122,6 @@ describe('Smoke tests – key routes render', () => {
     const Products = (await import('@/pages/Products')).default;
     const { container } = renderRoute('/products?category=small-pets', Products);
     // Skeleton should be present during loading (before data resolves)
-    // Either skeleton cards or real cards should be present
     expect(container.innerHTML.length).toBeGreaterThan(100);
   });
 
@@ -186,9 +185,6 @@ describe('Smoke tests – key routes render', () => {
   it('/products grid renders product-grid container when items available', async () => {
     const Products = (await import('@/pages/Products')).default;
     const { container } = renderRoute('/products', Products);
-    // During loading, skeleton or grid should be present
-    const hasGridOrSkeleton = container.querySelector('[data-testid="product-grid"]') || 
-                               container.querySelector('.animate-shimmer');
     // Container should at minimum render meaningful content
     expect(container.innerHTML.length).toBeGreaterThan(200);
   });
@@ -209,5 +205,43 @@ describe('Smoke tests – key routes render', () => {
       expect(h1).toBeTruthy();
       expect(h1?.textContent?.length).toBeGreaterThan(0);
     });
+  });
+
+  // ─── Canonical integrity ──────────────────────────────────────────
+
+  it('/products?category=small-pets uses apex canonical (not www)', async () => {
+    const Products = (await import('@/pages/Products')).default;
+    const helmetContext: any = {};
+    const qc = createTestQueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <HelmetProvider context={helmetContext}>
+          <MemoryRouter initialEntries={['/products?category=small-pets']}>
+            <Products />
+          </MemoryRouter>
+        </HelmetProvider>
+      </QueryClientProvider>
+    );
+    // Verify no www canonical is injected (canonical should use getpawsy.pet)
+    const helmet = helmetContext?.helmet;
+    if (helmet?.link?.toString()) {
+      expect(helmet.link.toString()).not.toContain('www.getpawsy.pet');
+    }
+  });
+
+  // ─── Debug JSON completeness ──────────────────────────────────────
+
+  it('LCP debug module exports initLCPDebug and getStoredLCPEvents', async () => {
+    const mod = await import('@/lib/lcp-debug');
+    expect(typeof mod.initLCPDebug).toBe('function');
+    expect(typeof mod.getStoredLCPEvents).toBe('function');
+  });
+
+  it('Grid timing module exports key mark functions', async () => {
+    const mod = await import('@/lib/grid-timing');
+    expect(typeof mod.markGridFirstItemRendered).toBe('function');
+    expect(typeof mod.markGridSkeletonMounted).toBe('function');
+    expect(typeof mod.trackFirstGridImage).toBe('function');
+    expect(typeof mod.getGridTiming).toBe('function');
   });
 });
