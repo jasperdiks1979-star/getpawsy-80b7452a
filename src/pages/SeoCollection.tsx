@@ -14,7 +14,10 @@ import {
   BookOpen,
   HelpCircle,
   ArrowRight,
-  Package
+  Package,
+  Truck,
+  ShieldCheck,
+  RotateCcw
 } from 'lucide-react';
 import {
   Breadcrumb,
@@ -409,6 +412,35 @@ const SeoCollection = () => {
               </Button>
             </div>
           )}
+        </section>
+
+        {/* Featured Snippet Block */}
+        <section className="mb-12 max-w-4xl">
+          <h2 className="text-2xl font-semibold mb-3">
+            What Is the Best {collection.name.replace(/^Best\s+/i, '')} in 2026?
+          </h2>
+          <p className="text-muted-foreground leading-relaxed">
+            The best {collection.primary_keyword} in 2026 combines durability, pet safety, and excellent value. Our top picks are selected by analyzing verified customer reviews, return rates, and real sales data from US pet owners. Browse our curated selection above to find the perfect match for your pet's needs and your budget.
+          </p>
+        </section>
+
+        {/* Trust Reinforcement */}
+        <section className="mb-12 grid sm:grid-cols-3 gap-4">
+          <div className="bg-card border rounded-xl p-5 text-center">
+            <Truck className="w-6 h-6 text-primary mx-auto mb-2" />
+            <h3 className="font-semibold text-sm mb-1">Free US Shipping</h3>
+            <p className="text-xs text-muted-foreground">On orders over $35</p>
+          </div>
+          <div className="bg-card border rounded-xl p-5 text-center">
+            <RotateCcw className="w-6 h-6 text-primary mx-auto mb-2" />
+            <h3 className="font-semibold text-sm mb-1">30-Day Returns</h3>
+            <p className="text-xs text-muted-foreground">Hassle-free, no questions asked</p>
+          </div>
+          <div className="bg-card border rounded-xl p-5 text-center">
+            <ShieldCheck className="w-6 h-6 text-primary mx-auto mb-2" />
+            <h3 className="font-semibold text-sm mb-1">Pet-Safe Guarantee</h3>
+            <p className="text-xs text-muted-foreground">Quality tested for safety</p>
+          </div>
         </section>
 
         {/* Section C: Mini FAQ */}
