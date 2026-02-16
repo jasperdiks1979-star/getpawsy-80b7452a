@@ -1048,6 +1048,8 @@ interface ProductGridProps {
 const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap, onQuickView }: ProductGridProps) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const hasMarkedRef = useRef(false);
+  // Progressive rendering: show first 4 cards immediately, defer the rest
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     if (!hasMarkedRef.current && visibleItems.length > 0) {
@@ -1057,22 +1059,34 @@ const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap
     }
   }, [visibleItems.length]);
 
+  // After first paint of above-the-fold cards, show the rest on next idle/rAF
+  useEffect(() => {
+    if (visibleItems.length > 0 && !showAll) {
+      if ('requestIdleCallback' in window) {
+        const id = (window as any).requestIdleCallback(() => setShowAll(true), { timeout: 300 });
+        return () => (window as any).cancelIdleCallback(id);
+      } else {
+        const t = requestAnimationFrame(() => setShowAll(true));
+        return () => cancelAnimationFrame(t);
+      }
+    }
+  }, [visibleItems.length, showAll]);
+
+  const aboveFold = visibleItems.slice(0, 4);
+  const belowFold = showAll ? visibleItems.slice(4) : [];
+
+  const listId = categoryParam
+    ? `products_${categoryParam.toLowerCase().replace(/\s+/g, '_')}`
+    : searchQuery ? `products_search` : 'all_products';
+  const listName = categoryParam
+    ? `Products - ${categoryParam}`
+    : searchQuery ? `Products - Search: ${searchQuery}` : 'All Products';
+
   return (
     <div ref={gridRef} data-testid="product-grid" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-      {visibleItems.map((product, index) => {
-        const listId = categoryParam
-          ? `products_${categoryParam.toLowerCase().replace(/\s+/g, '_')}`
-          : searchQuery
-            ? `products_search`
-            : 'all_products';
-        const listName = categoryParam
-          ? `Products - ${categoryParam}`
-          : searchQuery
-            ? `Products - Search: ${searchQuery}`
-            : 'All Products';
-
+      {/* Above-the-fold cards — rendered immediately, priority images */}
+      {aboveFold.map((product, index) => {
         const productRating = product.id ? ratingsMap?.[product.id] : undefined;
-
         return (
           <div key={product.id} className="relative group" data-testid="product-card">
             <ProductCard
@@ -1088,11 +1102,39 @@ const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap
               variant="secondary"
               size="sm"
               className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity rounded-full gap-1.5 z-10 shadow-lg"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onQuickView(product as Product);
-              }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onQuickView(product as Product); }}
+            >
+              <Eye className="w-4 h-4" />
+              Quick View
+            </Button>
+          </div>
+        );
+      })}
+      {/* Below-the-fold cards — deferred rendering + content-visibility:auto */}
+      {belowFold.map((product, index) => {
+        const realIndex = index + 4;
+        const productRating = product.id ? ratingsMap?.[product.id] : undefined;
+        return (
+          <div
+            key={product.id}
+            className="relative group"
+            data-testid="product-card"
+            style={{ contentVisibility: 'auto', containIntrinsicSize: '0 480px' }}
+          >
+            <ProductCard
+              product={product as Product}
+              listId={listId}
+              listName={listName}
+              position={realIndex}
+              rating={productRating?.averageRating}
+              reviewCount={productRating?.reviewCount}
+              priority={false}
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity rounded-full gap-1.5 z-10 shadow-lg"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onQuickView(product as Product); }}
             >
               <Eye className="w-4 h-4" />
               Quick View

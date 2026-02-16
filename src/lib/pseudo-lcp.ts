@@ -5,9 +5,8 @@
  * on soft (SPA) navigations. This module provides:
  * - iOS Safari detection
  * - SPA route-start tracking (routeStartTs)
- * - DOM probe for grid "first meaningful paint"
+ * - Proxy LCP computation from grid-timing paint signals
  * - Cookie banner visual-coverage heuristic
- * - Pseudo-LCP computation from DOM paint signals
  *
  * DIAGNOSTICS ONLY — no visible UI changes, no SEO/routing side-effects.
  */
@@ -21,7 +20,6 @@ export function isIOSSafari(): boolean {
   if (typeof navigator === 'undefined') { _isIOSSafari = false; return false; }
   const ua = navigator.userAgent;
   const isIOS = /iPhone|iPad|iPod/.test(ua);
-  // Exclude Chrome/Firefox/Edge on iOS (they use WebKit but report CriOS etc.)
   const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
   _isIOSSafari = isIOS && isSafari;
   return _isIOSSafari;
@@ -49,7 +47,6 @@ function handleRouteChange() {
 export function initRouteTracking() {
   if (typeof window === 'undefined') return;
 
-  // Patch pushState / replaceState
   const origPush = history.pushState.bind(history);
   const origReplace = history.replaceState.bind(history);
 
@@ -63,54 +60,6 @@ export function initRouteTracking() {
   };
 
   window.addEventListener('popstate', handleRouteChange);
-}
-
-// ─── Grid "first meaningful paint" DOM probe ─────────────────────────────
-
-export interface GridProbeResult {
-  gridFirstMeaningfulPaintAt: number | null;   // ms since routeStartTs
-  gridRenderTime: number | null;               // same, authoritative
-}
-
-/**
- * Starts a rAF loop that checks for product-card presence.
- * Resolves when >= 1 card has text content (title/price) rendered.
- * Text is "meaningful" — we do NOT wait for images to load.
- * Fallback: >= 6 cards total, or 6s timeout.
- */
-export function probeGridPaint(): Promise<GridProbeResult> {
-  return new Promise((resolve) => {
-    const start = routeStartTs;
-    const deadline = start + 6000;
-    let resolved = false;
-
-    function check() {
-      if (resolved) return;
-      const now = performance.now();
-      if (now > deadline) {
-        resolved = true;
-        resolve({ gridFirstMeaningfulPaintAt: null, gridRenderTime: null });
-        return;
-      }
-
-      const cards = document.querySelectorAll('[data-testid="product-card"]');
-      if (cards.length >= 1) {
-        // A card with any text content (h3 title or price) counts as meaningful
-        for (const card of cards) {
-          const hasText = card.querySelector('h3')?.textContent?.trim();
-          if (hasText) {
-            resolved = true;
-            const t = now - start;
-            resolve({ gridFirstMeaningfulPaintAt: t, gridRenderTime: t });
-            return;
-          }
-        }
-      }
-      requestAnimationFrame(check);
-    }
-
-    requestAnimationFrame(check);
-  });
 }
 
 // ─── Cookie banner coverage heuristic ────────────────────────────────────
@@ -151,43 +100,58 @@ export function getCookieBannerMetrics(): CookieBannerMetrics {
   }
 }
 
-// ─── Pseudo-LCP computation ──────────────────────────────────────────────
+// ─── Proxy LCP computation ───────────────────────────────────────────────
 
-export type PseudoLcpCandidate = 'hero' | 'grid' | 'grid-first-item' | 'cookieBanner' | 'unknown';
+export type ProxyLcpCandidate = 'hero' | 'grid-first-item' | 'grid-text-paint' | 'grid-image-decoded' | 'cookieBanner' | 'unknown';
 
-export interface PseudoLcpResult {
-  pseudoLcpMs: number | null;
-  pseudoLcpCandidate: PseudoLcpCandidate;
-  pseudoLcpReason: string | null;
+export interface ProxyLcpResult {
+  proxyLcpMs: number | null;
+  proxyLcpCandidate: ProxyLcpCandidate;
+  proxyLcpReason: string;
   cookieBannerCoversContent: boolean;
   bannerVhPercent: number;
-  gridFirstMeaningfulPaintAt: number | null;
-  gridRenderTime: number | null;
 }
 
 /**
- * Compute pseudo-LCP from DOM paint signals.
- * Only called on iOS Safari when real LCP is not observed.
+ * Compute proxy LCP from grid-timing paint signals.
+ * 
+ * proxyLCP = earliest of:
+ *   a) firstCardTextPaintAt (text painted after React commit — most meaningful)
+ *   b) firstGridImageDecodedAt (image fully decoded for first visible card)
+ *   c) heroPaintedAt (H1 heading)
+ * 
+ * We pick the EARLIEST usable signal as proxy LCP, since that represents
+ * when the user first sees meaningful above-the-fold content.
+ * 
+ * Cookie banner is excluded (data-cwvnolcp).
  */
-export function computePseudoLcp(
+export function computeProxyLcp(
   heroPaintedAt: number | null,
+  firstCardTextPaintAt: number | null,
+  gridFirstItemRenderedAt: number | null,
+  firstGridImageDecodedAt: number | null,
   cookieBannerMountedAt: number | null,
-  gridProbe: GridProbeResult,
-  gridFirstItemRenderedAt?: number | null,
-): PseudoLcpResult {
+): ProxyLcpResult {
   const bannerMetrics = getCookieBannerMetrics();
-  const candidates: Array<{ time: number; label: PseudoLcpCandidate }> = [];
+  const candidates: Array<{ time: number; label: ProxyLcpCandidate }> = [];
 
-  if (heroPaintedAt !== null) {
+  // Prefer text paint (most meaningful — title/price visible)
+  if (firstCardTextPaintAt != null && firstCardTextPaintAt > 0) {
+    candidates.push({ time: firstCardTextPaintAt, label: 'grid-text-paint' });
+  } else if (gridFirstItemRenderedAt != null && gridFirstItemRenderedAt > 0) {
+    // Fallback: React commit time (DOM updated but not necessarily painted)
+    candidates.push({ time: gridFirstItemRenderedAt, label: 'grid-first-item' });
+  }
+
+  if (firstGridImageDecodedAt != null && firstGridImageDecodedAt > 0) {
+    candidates.push({ time: firstGridImageDecodedAt, label: 'grid-image-decoded' });
+  }
+
+  if (heroPaintedAt !== null && heroPaintedAt > 0) {
     candidates.push({ time: heroPaintedAt, label: 'hero' });
   }
-  // Prefer gridFirstItemRenderedAt (from React commit) over probe-based gridRenderTime
-  if (gridFirstItemRenderedAt != null && gridFirstItemRenderedAt > 0) {
-    candidates.push({ time: gridFirstItemRenderedAt, label: 'grid-first-item' });
-  } else if (gridProbe.gridFirstMeaningfulPaintAt !== null) {
-    candidates.push({ time: gridProbe.gridFirstMeaningfulPaintAt, label: 'grid' });
-  }
-  // Only consider cookie banner if it visually covers content AND is not excluded via data-cwvnolcp
+
+  // Cookie banner excluded via data-cwvnolcp — only include if it covers content AND is not excluded
   if (cookieBannerMountedAt !== null && bannerMetrics.coversContent) {
     const bannerRelative = cookieBannerMountedAt - getRouteStartTs();
     if (bannerRelative > 0) {
@@ -197,27 +161,23 @@ export function computePseudoLcp(
 
   if (candidates.length === 0) {
     return {
-      pseudoLcpMs: null,
-      pseudoLcpCandidate: 'unknown',
-      pseudoLcpReason: 'IOS_SAFARI_SPA_LCP_NOT_OBSERVED',
+      proxyLcpMs: null,
+      proxyLcpCandidate: 'unknown',
+      proxyLcpReason: 'IOS_SAFARI_SPA_LCP_NOT_OBSERVED',
       cookieBannerCoversContent: bannerMetrics.coversContent,
       bannerVhPercent: bannerMetrics.bannerVhPercent,
-      gridFirstMeaningfulPaintAt: gridProbe.gridFirstMeaningfulPaintAt,
-      gridRenderTime: gridProbe.gridRenderTime,
     };
   }
 
-  // Pseudo-LCP = the latest (largest-time) candidate
-  candidates.sort((a, b) => b.time - a.time);
+  // Proxy LCP = earliest meaningful paint (not latest!)
+  candidates.sort((a, b) => a.time - b.time);
   const winner = candidates[0];
 
   return {
-    pseudoLcpMs: Math.round(winner.time),
-    pseudoLcpCandidate: winner.label,
-    pseudoLcpReason: 'IOS_SAFARI_SPA_LCP_NOT_OBSERVED',
+    proxyLcpMs: Math.round(winner.time),
+    proxyLcpCandidate: winner.label,
+    proxyLcpReason: 'IOS_SAFARI_SPA_LCP_NOT_OBSERVED',
     cookieBannerCoversContent: bannerMetrics.coversContent,
     bannerVhPercent: bannerMetrics.bannerVhPercent,
-    gridFirstMeaningfulPaintAt: gridProbe.gridFirstMeaningfulPaintAt,
-    gridRenderTime: gridProbe.gridRenderTime,
   };
 }
