@@ -159,6 +159,7 @@ const Products = () => {
   });
 
   // Use full products when available, otherwise fast category data for early paint
+  const usingFastCategoryData = categoryParam && !fullProducts && !!categoryFastData;
   const products = fullProducts ?? (categoryParam && categoryFastData ? categoryFastData as any[] : undefined);
   const productsLoading = categoryParam
     ? (fullProductsLoading && categoryFastLoading) // On category pages, show data as soon as fast query resolves
@@ -399,7 +400,10 @@ const Products = () => {
     // Filter by category - match against both name and slug formats
     // Also include products from subcategories when a parent category is selected
     // Uses flexible matching: case-insensitive, hyphen/space normalized
-    if (selectedCategories.length > 0) {
+    // SKIP category filter when using fast-path data (already server-filtered)
+    // This prevents the ~4s paint delay caused by waiting for categories to load
+    // for the categoryToDescendants map which is needed for subcategory matching.
+    if (selectedCategories.length > 0 && !usingFastCategoryData) {
       const matchedProductIds: string[] = []; // For logging
       
       result = result.filter(p => {
@@ -484,7 +488,7 @@ const Products = () => {
 
     markCategoryFilterEnd();
     return result;
-  }, [products, searchQuery, selectedCategories, sortBy, priceRange, categoryToDescendants]);
+  }, [products, searchQuery, selectedCategories, sortBy, priceRange, categoryToDescendants, usingFastCategoryData]);
 
   // Infinite scroll
   const {

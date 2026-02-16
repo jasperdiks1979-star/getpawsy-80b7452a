@@ -354,8 +354,12 @@ function updateOverlay() {
 
   const gt = getGridTiming();
 
+  const isSPA = getIsSPANavigation();
+  const navTypeLabel = isSPA ? '🔄 SPA (soft)' : '🌐 Hard navigation';
+
   const lines = [
     `Route: ${debugData.route}`,
+    `<span style="color:#ff0">Nav type: ${navTypeLabel}</span>`,
     `<span style="color:${lcpColor}">LCP: ${lcpDisplay}</span>`,
     `Real LCP observed: ${debugData.realLcpObserved ? '✅ yes' : '❌ no'}`,
     `Manual observer entries: ${debugData.manualLcpEntries}`,
@@ -408,7 +412,9 @@ function updateOverlay() {
     `<span style="color:#0ff">── WWW Redirect ──</span>`,
     `Status: platform 302 (cannot change)`,
     `Mitigation: canonical+sitemap+links=apex ✅`,
-  ];
+    isSPA ? `<span style="color:#ff0">⚠️ SPA soft nav: browser LCP does NOT fire. Use hard nav for GSC-equivalent measurement.</span>` : '',
+    isSPA ? `<span style="color:#888">💡 Hard reload: paste URL directly in address bar or open in new tab.</span>` : '',
+  ].filter(Boolean);
 
   overlayEl.innerHTML = `
     <div style="font-family:monospace;font-size:11px;line-height:1.6;padding:12px;background:rgba(0,0,0,0.92);color:#0f0;position:fixed;bottom:8px;right:8px;z-index:99999;border-radius:8px;max-width:400px;backdrop-filter:blur(4px);pointer-events:auto;max-height:80vh;overflow-y:auto">
@@ -426,6 +432,7 @@ function updateOverlay() {
     copyBtn.onclick = () => {
       const json = JSON.stringify({
         ...debugData,
+        navigationType: getIsSPANavigation() ? 'spa-soft' : 'hard',
         gridTiming: getGridTiming(),
         suspectedLCPBlockers: {
           cookieBannerMountedAt: debugData.cookieBannerMountedAt,
