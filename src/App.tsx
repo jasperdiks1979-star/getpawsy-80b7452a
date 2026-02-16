@@ -78,7 +78,33 @@ const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>
     try {
       return await importFn();
     } catch (error) {
-      console.error('[LazyLoad] Import failed:', error);
+      console.error('[LazyLoad] Import failed, attempting recovery:', error);
+      
+      // Chunk load failure = likely stale SW cache after deployment
+      // Unregister SW, clear caches, and force reload ONCE
+      const reloadKey = 'chunk-reload-' + window.location.pathname;
+      if (!sessionStorage.getItem(reloadKey)) {
+        sessionStorage.setItem(reloadKey, '1');
+        try {
+          // Unregister all service workers
+          if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map(r => r.unregister()));
+          }
+          // Clear all caches
+          if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+          }
+        } catch (swErr) {
+          console.error('[LazyLoad] SW cleanup failed:', swErr);
+        }
+        // Force hard reload to get fresh assets
+        window.location.reload();
+        // Return a never-resolving promise to prevent React from rendering an error
+        return new Promise(() => {});
+      }
+      
       throw error;
     }
   });
