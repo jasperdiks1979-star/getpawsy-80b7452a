@@ -119,19 +119,39 @@ export function probeGridPaint(): Promise<GridProbeResult> {
 
 // ─── Cookie banner coverage heuristic ────────────────────────────────────
 
+export interface CookieBannerMetrics {
+  coversContent: boolean;
+  bannerVhPercent: number;
+  heightPx: number;
+}
+
 export function cookieBannerCoversContent(): boolean {
+  return getCookieBannerMetrics().coversContent;
+}
+
+export function getCookieBannerMetrics(): CookieBannerMetrics {
   try {
-    // The banner is the fixed container at bottom
     const banner = document.querySelector('[data-testid="cookie-banner"]');
-    if (!banner) return false;
+    if (!banner) return { coversContent: false, bannerVhPercent: 0, heightPx: 0 };
+    
+    // Elements marked data-cwvnolcp are explicitly excluded from LCP candidacy
+    if ((banner as HTMLElement).dataset.cwvnolcp === 'true') {
+      const rect = (banner as HTMLElement).getBoundingClientRect();
+      const vh = window.innerHeight;
+      return {
+        coversContent: false, // Forced: not eligible
+        bannerVhPercent: Math.round((rect.height / vh) * 100),
+        heightPx: Math.round(rect.height),
+      };
+    }
+    
     const rect = (banner as HTMLElement).getBoundingClientRect();
     const vh = window.innerHeight;
-    // Covers content if >= 25% viewport height or overlaps top 50% of screen
-    if (rect.height >= 0.25 * vh) return true;
-    if (rect.top < vh * 0.5) return true;
-    return false;
+    const vhPercent = Math.round((rect.height / vh) * 100);
+    const covers = rect.height >= 0.25 * vh || rect.top < vh * 0.5;
+    return { coversContent: covers, bannerVhPercent: vhPercent, heightPx: Math.round(rect.height) };
   } catch {
-    return false;
+    return { coversContent: false, bannerVhPercent: 0, heightPx: 0 };
   }
 }
 
@@ -144,6 +164,7 @@ export interface PseudoLcpResult {
   pseudoLcpCandidate: PseudoLcpCandidate;
   pseudoLcpReason: string | null;
   cookieBannerCoversContent: boolean;
+  bannerVhPercent: number;
   gridFirstMeaningfulPaintAt: number | null;
   gridRenderTime: number | null;
 }
@@ -157,7 +178,7 @@ export function computePseudoLcp(
   cookieBannerMountedAt: number | null,
   gridProbe: GridProbeResult,
 ): PseudoLcpResult {
-  const bannerCovers = cookieBannerCoversContent();
+  const bannerMetrics = getCookieBannerMetrics();
   const candidates: Array<{ time: number; label: PseudoLcpCandidate }> = [];
 
   if (heroPaintedAt !== null) {
@@ -166,8 +187,8 @@ export function computePseudoLcp(
   if (gridProbe.gridFirstMeaningfulPaintAt !== null) {
     candidates.push({ time: gridProbe.gridFirstMeaningfulPaintAt, label: 'grid' });
   }
-  // Only consider cookie banner if it visually covers content
-  if (cookieBannerMountedAt !== null && bannerCovers) {
+  // Only consider cookie banner if it visually covers content AND is not excluded via data-cwvnolcp
+  if (cookieBannerMountedAt !== null && bannerMetrics.coversContent) {
     const bannerRelative = cookieBannerMountedAt - getRouteStartTs();
     if (bannerRelative > 0) {
       candidates.push({ time: bannerRelative, label: 'cookieBanner' });
@@ -179,7 +200,8 @@ export function computePseudoLcp(
       pseudoLcpMs: null,
       pseudoLcpCandidate: 'unknown',
       pseudoLcpReason: 'IOS_SAFARI_SPA_LCP_NOT_OBSERVED',
-      cookieBannerCoversContent: bannerCovers,
+      cookieBannerCoversContent: bannerMetrics.coversContent,
+      bannerVhPercent: bannerMetrics.bannerVhPercent,
       gridFirstMeaningfulPaintAt: gridProbe.gridFirstMeaningfulPaintAt,
       gridRenderTime: gridProbe.gridRenderTime,
     };
@@ -193,7 +215,8 @@ export function computePseudoLcp(
     pseudoLcpMs: Math.round(winner.time),
     pseudoLcpCandidate: winner.label,
     pseudoLcpReason: 'IOS_SAFARI_SPA_LCP_NOT_OBSERVED',
-    cookieBannerCoversContent: bannerCovers,
+    cookieBannerCoversContent: bannerMetrics.coversContent,
+    bannerVhPercent: bannerMetrics.bannerVhPercent,
     gridFirstMeaningfulPaintAt: gridProbe.gridFirstMeaningfulPaintAt,
     gridRenderTime: gridProbe.gridRenderTime,
   };
