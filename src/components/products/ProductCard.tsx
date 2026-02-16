@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
 import { safeString, safePrice } from '@/lib/safe-render';
 import { computeAvailability } from '@/lib/availability';
+import { trackFirstGridImage } from '@/lib/grid-timing';
 
 export interface Product {
   id: string;
@@ -159,7 +160,7 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
         onComplete={handlePawComplete}
       />
       
-      <Link ref={ref} to={productUrl} className="group block" onClick={handleCardClick} onMouseEnter={handleMouseEnter}>
+      <Link ref={ref} to={productUrl} className="group block" onClick={handleCardClick} onMouseEnter={handleMouseEnter} data-testid="product-card">
         <div 
           className="relative glass-card rounded-2xl overflow-hidden"
         >
@@ -171,6 +172,7 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
             aspectRatio="square"
             className="group-hover:scale-105"
             priority={priority}
+            onImgRef={priority ? (img) => { if (img) trackFirstGridImage(img); } : undefined}
           />
           
           {/* Gradient overlay on hover */}
