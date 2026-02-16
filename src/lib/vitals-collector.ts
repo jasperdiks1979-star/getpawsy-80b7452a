@@ -67,6 +67,7 @@ function computeAndStoreProxyLcp() {
     gt.firstCardTextPaintAt,
     gt.gridFirstItemRenderedAt,
     gt.firstGridImageDecodedAt,
+    gt.firstGridImageLoadAt,
     null, // cookieBannerMountedAt
   );
   

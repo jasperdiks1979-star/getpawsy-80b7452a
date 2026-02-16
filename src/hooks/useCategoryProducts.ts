@@ -115,6 +115,8 @@ export function useCategoryProducts(categorySlug: string | null) {
       return products;
     },
     enabled: !!categorySlug,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 60 * 1000, // 60 seconds
+    gcTime: 300 * 1000, // 300 seconds
+    refetchOnMount: false,
   });
 }

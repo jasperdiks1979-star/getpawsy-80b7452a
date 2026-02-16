@@ -4,12 +4,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
-// AnimatePresence removed — LoadingScreen was causing ~800ms LCP delay
 import { CartProvider } from "@/contexts/CartContext";
 import { CartAnimationProvider } from "@/contexts/CartAnimationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
-// LoadingScreen removed — it blocked all content painting for 300ms+500ms exit animation
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { LiveCheckoutWidget } from "@/components/admin/LiveCheckoutWidget";
 import { SafePinterestTag } from "@/components/tracking/SafePinterestTag";
@@ -23,18 +21,17 @@ import { initDataHealer } from "@/lib/data-healer";
 import { initLegacyLinkGuard, initLegacyFetchGuard } from "@/lib/legacy-link-guard";
 import { AppErrorBoundary } from "@/components/error/AppErrorBoundary";
 
-// Production-safe mode: module-level inits NEVER block rendering
+// Production-safe initialization
 try { setupGlobalErrorHandler(); } catch (e) { console.error('[ProdSafe] setupGlobalErrorHandler failed:', e); }
 try { initDataHealer(); } catch (e) { console.error('[ProdSafe] initDataHealer failed:', e); }
 try { initLegacyLinkGuard(); } catch (e) { console.error('[ProdSafe] initLegacyLinkGuard failed:', e); }
 try { initLegacyFetchGuard(); } catch (e) { console.error('[ProdSafe] initLegacyFetchGuard failed:', e); }
 
-// Critical routes - loaded immediately (SEO-critical pages must NOT be lazy)
+// Critical routes - loaded immediately
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import NotFound from "./pages/NotFound";
 
-// Error boundary for lazy loaded routes
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
@@ -45,86 +42,39 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
     super(props);
     this.state = { hasError: false, error: null };
   }
-
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
-
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('[RouteErrorBoundary] Caught error:', error);
-    console.error('[RouteErrorBoundary] Error info:', errorInfo);
-    
-    // Report error to database via error reporter
     import('@/lib/error-reporter').then(({ reportError, isReact310Error, reportReact310Error }) => {
       if (isReact310Error(error)) {
-        reportReact310Error(error, 'RouteErrorBoundary', {
-          componentStack: errorInfo.componentStack?.substring(0, 1000),
-        });
+        reportReact310Error(error, 'RouteErrorBoundary', { componentStack: errorInfo.componentStack?.substring(0, 1000) });
       } else {
-        reportError(error, 'RouteErrorBoundary', {
-          componentStack: errorInfo.componentStack?.substring(0, 1000),
-        });
+        reportError(error, 'RouteErrorBoundary', { componentStack: errorInfo.componentStack?.substring(0, 1000) });
       }
     });
   }
-
   render() {
     if (this.state.hasError) {
-      // Safely extract error message - ensure it's a string to prevent React error #310
-      let errorMessage = 'An error occurred while loading the page.';
-      try {
-        const msg = this.state.error?.message;
-        if (msg && typeof msg === 'string') {
-          errorMessage = msg.length > 150 ? msg.substring(0, 150) + '...' : msg;
-        } else if (msg && typeof msg === 'object') {
-          errorMessage = 'A rendering error occurred.';
-        }
-      } catch {
-        errorMessage = 'An unexpected error occurred.';
-      }
-
       return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
-          <div className="text-center max-w-md">
+        <div className="min-h-screen flex items-center justify-center bg-background p-4 text-center">
+          <div className="max-w-md">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Oops, something went wrong</h2>
-            <p className="text-muted-foreground mb-4">
-              {errorMessage}
-            </p>
-            <div className="flex gap-2 justify-center">
-              <Button 
-                onClick={() => window.location.reload()}
-                variant="default"
-              >
-                Refresh
-              </Button>
-              <Button 
-                onClick={() => {
-                  this.setState({ hasError: false, error: null });
-                  window.history.back();
-                }}
-                variant="outline"
-              >
-                Go Back
-              </Button>
-            </div>
+            <Button onClick={() => window.location.reload()}>Refresh</Button>
           </div>
         </div>
       );
     }
-
     return this.props.children;
   }
 }
 
-// Lazy load heavy route components with error handling
 const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>) => {
   return lazy(async () => {
     try {
-      console.log('[LazyLoad] Starting import...');
-      const module = await importFn();
-      console.log('[LazyLoad] Import successful');
-      return module;
+      return await importFn();
     } catch (error) {
       console.error('[LazyLoad] Import failed:', error);
       throw error;
@@ -132,7 +82,6 @@ const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>
   });
 };
 
-// Products is eagerly imported above (SEO-critical, eliminates ~2s chunk download delay)
 const ProductDetail = lazyWithRetry(() => import("./pages/ProductDetail"));
 const Cart = lazyWithRetry(() => import("./pages/Cart"));
 const Checkout = lazyWithRetry(() => import("./pages/Checkout"));
@@ -158,98 +107,25 @@ const LiveMap = lazyWithRetry(() => import("./pages/LiveMap"));
 const Blog = lazyWithRetry(() => import("./pages/Blog"));
 const BlogPost = lazyWithRetry(() => import("./pages/BlogPost"));
 
-const Unsubscribe = lazyWithRetry(() => import("./pages/Unsubscribe"));
-const NewsletterPreferences = lazyWithRetry(() => import("./pages/NewsletterPreferences"));
-const SlowFeederOffer = lazyWithRetry(() => import("./pages/SlowFeederOffer"));
-const DownloadAds = lazyWithRetry(() => import("./pages/DownloadAds"));
-const TechnicalDeclaration = lazyWithRetry(() => import("./pages/TechnicalDeclaration"));
-const AppealResponse = lazyWithRetry(() => import("./pages/AppealResponse"));
-const MyClaims = lazyWithRetry(() => import("./pages/MyClaims"));
-const Security = lazyWithRetry(() => import("./pages/Security"));
-const GoogleReview = lazyWithRetry(() => import("./pages/GoogleReview"));
-const CrawlerAnalytics = lazyWithRetry(() => import("./pages/CrawlerAnalytics"));
-const UserAgentComparison = lazyWithRetry(() => import("./pages/UserAgentComparison"));
-const GuidesDashboard = lazyWithRetry(() => import("./pages/admin/GuidesDashboard"));
-const AnalyticsHub = lazyWithRetry(() => import("./pages/admin/AnalyticsHub"));
-const ClusterMapPage = lazyWithRetry(() => import("./pages/dashboard/ClusterMapPage"));
-const SeoMonitorDashboard = lazyWithRetry(() => import("./pages/dashboard/SeoMonitorDashboard"));
-const SeoMonitoringDashboard = lazyWithRetry(() => import("./pages/dashboard/SeoMonitoringDashboard"));
-const AdminSeoDashboard = lazyWithRetry(() => import("./pages/admin/AdminSeoDashboard"));
-const InternalLinkLog = lazyWithRetry(() => import("./pages/admin/InternalLinkLog"));
-const SnippetMonitor = lazyWithRetry(() => import("./pages/admin/SnippetMonitor"));
-const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDominance"));
-const DogBedsClusterDashboard = lazyWithRetry(() => import("./pages/admin/DogBedsClusterDashboard"));
-const CatLitterClusterDashboard = lazyWithRetry(() => import("./pages/admin/CatLitterClusterDashboard"));
-const ClusterWarDashboard = lazyWithRetry(() => import("./pages/admin/ClusterWarDashboard"));
-const MomentumAccelerationDashboard = lazyWithRetry(() => import("./pages/admin/MomentumAccelerationDashboard"));
-const SecurityCredentialsDashboard = lazyWithRetry(() => import("./pages/admin/SecurityCredentialsDashboard"));
-const CrawlHealthDashboard = lazyWithRetry(() => import("./pages/admin/CrawlHealthDashboard"));
-const CrawlDiagnosticsDashboard = lazyWithRetry(() => import("./pages/admin/CrawlDiagnosticsDashboard"));
-const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
-const RevenueScalingPage = lazyWithRetry(() => import("./pages/admin/RevenueScalingPage"));
-const AutonomousSeoPage = lazyWithRetry(() => import("./pages/admin/AutonomousSeoPage"));
-const AuthorityEnginePage = lazyWithRetry(() => import("./pages/admin/AuthorityEnginePage"));
-const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPage"));
-const FeedInsightsPage = lazyWithRetry(() => import("./pages/admin/FeedInsightsPage"));
-const ContentOpportunitiesPage = lazyWithRetry(() => import("./pages/admin/ContentOpportunitiesPage"));
-const BundlesPage = lazyWithRetry(() => import("./pages/admin/BundlesPage"));
-const RedirectCheckPage = lazyWithRetry(() => import("./pages/admin/RedirectCheckPage"));
-const FeedGapReportPage = lazyWithRetry(() => import("./pages/admin/FeedGapReportPage"));
-const SeoMonitorPage = lazyWithRetry(() => import("./pages/admin/SeoMonitorPage"));
-const SeoIntelligencePage = lazyWithRetry(() => import("./pages/admin/SeoIntelligencePage"));
-const CompetitiveIntelligencePage = lazyWithRetry(() => import("./pages/admin/CompetitiveIntelligencePage"));
-const ScalingEnginePage = lazyWithRetry(() => import("./pages/admin/ScalingEnginePage"));
-const SeoWarRoomPage = lazyWithRetry(() => import("./pages/admin/SeoWarRoomPage"));
-const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
-const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
-const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
-const AboutTheAuthor = lazyWithRetry(() => import("./pages/AboutTheAuthor"));
-const EditorialGuidelines = lazyWithRetry(() => import("./pages/EditorialGuidelines"));
-const HowWeTestProducts = lazyWithRetry(() => import("./pages/HowWeTestProducts"));
-const AffiliateDisclosure = lazyWithRetry(() => import("./pages/AffiliateDisclosure"));
-
-// Redirect component for /products/:slug -> /product/:slug (fixes duplicate page SEO issue)
-const ProductsSlugRedirect = () => {
-  const { slug } = useParams<{ slug: string }>();
-  return <Navigate to={`/product/${slug}`} replace />;
-};
-
-// Redirect root-level guide slugs to /guides/{slug}
-import GuideSlugRedirect from '@/components/routing/GuideSlugRedirect';
-
-// Optimized React Query client with aggressive caching
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Keep data fresh for 5 minutes
       staleTime: 5 * 60 * 1000,
-      // Cache data for 30 minutes
       gcTime: 30 * 60 * 1000,
-      // Don't refetch on window focus for most queries
       refetchOnWindowFocus: false,
-      // Retry failed requests once
       retry: 1,
-      // Don't refetch on mount if data is fresh
       refetchOnMount: false,
     },
   },
 });
 
-// Route loading fallback component
 const RouteLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="flex items-center gap-3 text-muted-foreground">
-      <Loader2 className="h-6 w-6 animate-spin" />
-      <span>Loading...</span>
-    </div>
+    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
   </div>
 );
 
 const App = () => {
-  // No artificial loading delay — content paints immediately for best LCP.
-  // The LoadingScreen was adding ~800ms (300ms timer + 500ms exit animation)
-  // that blocked all content visibility, directly causing LCP > 4s on mobile.
-
   return (
     <AppErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -269,116 +145,38 @@ const App = () => {
                     <RecentPurchaseNotification />
                   </MarketingErrorBoundary>
                   <RouteErrorBoundary>
-                    <Suspense fallback={<RouteLoader />}>
-                      <Routes>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/products" element={<Products />} />
-                        <Route path="/product/:id" element={<ProductDetail />} />
-                        <Route path="/cart" element={<Cart />} />
-                        <Route path="/checkout" element={<Checkout />} />
-                        <Route path="/payment-success" element={<PaymentSuccess />} />
-                        <Route path="/dashboard" element={<Admin />} />
-                        <Route path="/auth" element={<Auth />} />
-                        <Route path="/wishlist" element={<Wishlist />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/orders" element={<Orders />} />
-                        <Route path="/my-claims" element={<MyClaims />} />
-                        <Route path="/install" element={<Install />} />
-                        <Route path="/about" element={<About />} />
-                        <Route path="/privacy" element={<PrivacyPolicy />} />
-                        <Route path="/terms" element={<TermsOfService />} />
-                        <Route path="/returns" element={<ReturnPolicy />} />
-                        <Route path="/cookies" element={<CookiePolicy />} />
-                        <Route path="/contact" element={<Contact />} />
-                        <Route path="/shipping" element={<Shipping />} />
-                        <Route path="/faq" element={<FAQ />} />
-                        <Route path="/track" element={<TrackOrder />} />
-                        <Route path="/bestsellers" element={<Bestsellers />} />
-                        <Route path="/bestseller/:slug" element={<BestsellerDetail />} />
-                        <Route path="/live-map" element={<LiveMap />} />
-                        <Route path="/blog" element={<Blog />} />
-                        <Route path="/blog/:slug" element={<BlogPost />} />
-                        <Route path="/unsubscribe" element={<Unsubscribe />} />
-                        <Route path="/newsletter-preferences" element={<NewsletterPreferences />} />
-                        <Route path="/slow-feeder-offer" element={<SlowFeederOffer />} />
-                        <Route path="/download-ads" element={<DownloadAds />} />
-                        <Route path="/technical-declaration" element={<TechnicalDeclaration />} />
-                        <Route path="/appeal-response" element={<AppealResponse />} />
-                        <Route path="/security" element={<Security />} />
-                        <Route path="/google-review" element={<GoogleReview />} />
-                        <Route path="/dashboard/crawler-analytics" element={<CrawlerAnalytics />} />
-                         <Route path="/dashboard/user-agent-comparison" element={<UserAgentComparison />} />
-                         <Route path="/dashboard/guides-seo" element={<GuidesDashboard />} />
-                         <Route path="/dashboard/analytics" element={<AnalyticsHub />} />
-                         <Route path="/dashboard/cluster-map" element={<ClusterMapPage />} />
-                          <Route path="/dashboard/seo-monitor" element={<SeoMonitorDashboard />} />
-                          <Route path="/dashboard/seo-monitoring" element={<SeoMonitoringDashboard />} />
-                         
-                         {/* Legacy /admin redirects to /dashboard */}
-                         <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
-                          <Route path="/admin/seo-dashboard" element={<AdminSeoDashboard />} />
-                          <Route path="/admin/internal-link-log" element={<InternalLinkLog />} />
-                           <Route path="/admin/snippet-monitor" element={<SnippetMonitor />} />
-                            <Route path="/admin/cluster-dominance" element={<ClusterDominance />} />
-                            <Route path="/admin/dog-beds-cluster" element={<DogBedsClusterDashboard />} />
-                            <Route path="/admin/cat-litter-cluster" element={<CatLitterClusterDashboard />} />
-                            <Route path="/admin/cluster-war-dashboard" element={<ClusterWarDashboard />} />
-                            <Route path="/admin/momentum-acceleration" element={<MomentumAccelerationDashboard />} />
-                            <Route path="/admin/security-credentials" element={<SecurityCredentialsDashboard />} />
-                            <Route path="/admin/crawl-health" element={<CrawlHealthDashboard />} />
-                            <Route path="/admin/crawl-diagnostics" element={<CrawlDiagnosticsDashboard />} />
-                             <Route path="/admin/seo-command-center" element={<SeoCommandCenterPage />} />
-                             <Route path="/admin/revenue-scaling" element={<RevenueScalingPage />} />
-                             <Route path="/admin/autonomous-seo" element={<AutonomousSeoPage />} />
-                             <Route path="/admin/authority-engine" element={<AuthorityEnginePage />} />
-                             <Route path="/admin/diagnostics" element={<DiagnosticsPage />} />
-                             <Route path="/admin/feed-insights" element={<FeedInsightsPage />} />
-                             <Route path="/admin/content-opportunities" element={<ContentOpportunitiesPage />} />
-                              <Route path="/admin/bundles" element={<BundlesPage />} />
-                              <Route path="/admin/redirect-check" element={<RedirectCheckPage />} />
-                               <Route path="/admin/feed-gap-report" element={<FeedGapReportPage />} />
-                                <Route path="/admin/seo-monitor" element={<SeoMonitorPage />} />
-                                <Route path="/admin/seo-intelligence" element={<SeoIntelligencePage />} />
-                                <Route path="/admin/competitive-intelligence" element={<CompetitiveIntelligencePage />} />
-                                <Route path="/admin/scaling-engine" element={<ScalingEnginePage />} />
-                                <Route path="/admin/seo-war-room" element={<SeoWarRoomPage />} />
-                          <Route path="/admin/guides-seo" element={<Navigate to="/dashboard/guides-seo" replace />} />
-                         <Route path="/admin/analytics" element={<Navigate to="/dashboard/analytics" replace />} />
-                         <Route path="/admin/crawler-analytics" element={<Navigate to="/dashboard/crawler-analytics" replace />} />
-                         <Route path="/admin/user-agent-comparison" element={<Navigate to="/dashboard/user-agent-comparison" replace />} />
-                        
-                        {/* SEO Collection Pages */}
-                        <Route path="/collections/:slug" element={<SeoCollection />} />
-                        
-                        {/* Guides */}
-                        <Route path="/guides" element={<GuidesIndex />} />
-                        <Route path="/guides/:slug" element={<GuidePage />} />
-                        
-                        {/* Trust & Transparency Pages */}
-                        <Route path="/about-the-author" element={<AboutTheAuthor />} />
-                        <Route path="/editorial-guidelines" element={<EditorialGuidelines />} />
-                        <Route path="/how-we-test-products" element={<HowWeTestProducts />} />
-                        <Route path="/affiliate-disclosure" element={<AffiliateDisclosure />} />
-                        
-                        {/* Legacy URL redirects for SEO */}
-                        <Route path="/return-policy" element={<Navigate to="/returns" replace />} />
-                        <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />
-                        <Route path="/terms-of-service" element={<Navigate to="/terms" replace />} />
-                        <Route path="/cookie-policy" element={<Navigate to="/cookies" replace />} />
-                        
-                        {/* Clean category URL redirects */}
-                        <Route path="/cat-trees-condos" element={<Navigate to="/products?category=cat-trees-and-condos" replace />} />
-                        
-                        {/* Fix duplicate page issue: redirect /products/:slug to /product/:slug */}
-                        <Route path="/products/:slug" element={<ProductsSlugRedirect />} />
-                        
-                        {/* Root-level guide slug redirects → /guides/{slug}, else 404 */}
-                        <Route path="/:slug" element={<GuideSlugRedirect />} />
-                        
-                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </Suspense>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/products" element={<Products />} />
+                      
+                      <Route path="/product/:id" element={<Suspense fallback={<RouteLoader />}><ProductDetail /></Suspense>} />
+                      <Route path="/cart" element={<Suspense fallback={<RouteLoader />}><Cart /></Suspense>} />
+                      <Route path="/checkout" element={<Suspense fallback={<RouteLoader />}><Checkout /></Suspense>} />
+                      <Route path="/payment-success" element={<Suspense fallback={<RouteLoader />}><PaymentSuccess /></Suspense>} />
+                      <Route path="/dashboard" element={<Suspense fallback={<RouteLoader />}><Admin /></Suspense>} />
+                      <Route path="/auth" element={<Suspense fallback={<RouteLoader />}><Auth /></Suspense>} />
+                      <Route path="/wishlist" element={<Suspense fallback={<RouteLoader />}><Wishlist /></Suspense>} />
+                      <Route path="/profile" element={<Suspense fallback={<RouteLoader />}><Profile /></Suspense>} />
+                      <Route path="/orders" element={<Suspense fallback={<RouteLoader />}><Orders /></Suspense>} />
+                      <Route path="/install" element={<Suspense fallback={<RouteLoader />}><Install /></Suspense>} />
+                      <Route path="/about" element={<Suspense fallback={<RouteLoader />}><About /></Suspense>} />
+                      <Route path="/privacy" element={<Suspense fallback={<RouteLoader />}><PrivacyPolicy /></Suspense>} />
+                      <Route path="/terms" element={<Suspense fallback={<RouteLoader />}><TermsOfService /></Suspense>} />
+                      <Route path="/returns" element={<Suspense fallback={<RouteLoader />}><ReturnPolicy /></Suspense>} />
+                      <Route path="/cookies" element={<Suspense fallback={<RouteLoader />}><CookiePolicy /></Suspense>} />
+                      <Route path="/contact" element={<Suspense fallback={<RouteLoader />}><Contact /></Suspense>} />
+                      <Route path="/shipping" element={<Suspense fallback={<RouteLoader />}><Shipping /></Suspense>} />
+                      <Route path="/faq" element={<Suspense fallback={<RouteLoader />}><FAQ /></Suspense>} />
+                      <Route path="/track" element={<Suspense fallback={<RouteLoader />}><TrackOrder /></Suspense>} />
+                      <Route path="/bestsellers" element={<Suspense fallback={<RouteLoader />}><Bestsellers /></Suspense>} />
+                      <Route path="/bestseller/:slug" element={<Suspense fallback={<RouteLoader />}><BestsellerDetail /></Suspense>} />
+                      <Route path="/live-map" element={<Suspense fallback={<RouteLoader />}><LiveMap /></Suspense>} />
+                      <Route path="/blog" element={<Suspense fallback={<RouteLoader />}><Blog /></Suspense>} />
+                      <Route path="/blog/:slug" element={<Suspense fallback={<RouteLoader />}><BlogPost /></Suspense>} />
+                      
+                      <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
                   </RouteErrorBoundary>
                 </BrowserRouter>
               </WishlistProvider>
