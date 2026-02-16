@@ -1,0 +1,37 @@
+name: Lighthouse CI Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1' # Weekly on Monday at 06:00 UTC
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Run Lighthouse (Mobile)
+        run: node scripts/lighthouse-audit.mjs mobile
+        continue-on-error: true
+
+      - name: Run Lighthouse (Desktop)
+        run: node scripts/lighthouse-audit.mjs desktop
+        continue-on-error: true
+
+      - name: Upload Audit Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports-${{ github.run_number }}
+          path: audits/
+          retention-days: 30
