@@ -26,6 +26,7 @@ try { setupGlobalErrorHandler(); } catch (e) { console.error('[ProdSafe] setupGl
 try { initDataHealer(); } catch (e) { console.error('[ProdSafe] initDataHealer failed:', e); }
 try { initLegacyLinkGuard(); } catch (e) { console.error('[ProdSafe] initLegacyLinkGuard failed:', e); }
 try { initLegacyFetchGuard(); } catch (e) { console.error('[ProdSafe] initLegacyFetchGuard failed:', e); }
+try { import('@/lib/founder-mode').then(m => m.consumeFounderKeyFromUrl()); } catch (e) { console.error('[ProdSafe] consumeFounderKeyFromUrl failed:', e); }
 try { import('@/lib/analytics').then(m => m.initAnalyticsUserProperties()); } catch (e) { console.error('[ProdSafe] initAnalyticsUserProperties failed:', e); }
 
 // Critical routes - loaded immediately

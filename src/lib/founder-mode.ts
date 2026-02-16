@@ -3,11 +3,14 @@
  * 
  * Ensures founder/test traffic NEVER pollutes GA4 conversion data.
  * Persists across sessions via localStorage + cookie.
- * Activation: ?gp_founder=1 | localStorage | cookie | founder email match
+ * Activation: ?gp_key=<secret> | localStorage | cookie | founder email match
+ * 
+ * NEVER exposes the secret key in UI or logs.
  */
 
 const LS_KEY = 'gp_founder';
 const COOKIE_KEY = 'gp_founder';
+const KEY_PARAM = 'gp_key';
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // 1 year in seconds
 
 // ─── Cookie helpers ───────────────────────────────────────────────
@@ -24,11 +27,17 @@ const deleteCookie = (name: string) => {
   document.cookie = `${name}=;path=/;max-age=0`;
 };
 
-// ─── Founder email allowlist (from env, never exposed to client bundle in prod) ──
+// ─── Founder email allowlist ──────────────────────────────────────
 const getFounderEmails = (): string[] => {
   const raw = import.meta.env.VITE_FOUNDER_EMAILS;
   if (!raw || typeof raw !== 'string') return [];
   return raw.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+};
+
+// ─── Secret key from env ──────────────────────────────────────────
+const getFounderKey = (): string | null => {
+  const key = import.meta.env.VITE_FOUNDER_KEY;
+  return key && typeof key === 'string' && key.length >= 8 ? key : null;
 };
 
 // ─── Core detection ───────────────────────────────────────────────
@@ -41,8 +50,8 @@ let _cachedStatus: boolean | null = null;
 export const getFounderModeStatus = (): boolean => {
   if (_cachedStatus !== null) return _cachedStatus;
 
-  // Check localStorage
   if (typeof window !== 'undefined') {
+    // Check localStorage
     if (localStorage.getItem(LS_KEY) === '1') {
       _cachedStatus = true;
       return true;
@@ -51,22 +60,7 @@ export const getFounderModeStatus = (): boolean => {
     // Check cookie
     if (getCookie(COOKIE_KEY) === '1') {
       _cachedStatus = true;
-      // Sync to localStorage if missing
       localStorage.setItem(LS_KEY, '1');
-      return true;
-    }
-
-    // Check URL query param (one-time activation)
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('gp_founder') === '1') {
-      enableFounderMode();
-      // Clean URL
-      params.delete('gp_founder');
-      const cleanUrl = params.toString()
-        ? `${window.location.pathname}?${params.toString()}${window.location.hash}`
-        : `${window.location.pathname}${window.location.hash}`;
-      window.history.replaceState({}, '', cleanUrl);
-      _cachedStatus = true;
       return true;
     }
   }
@@ -76,12 +70,48 @@ export const getFounderModeStatus = (): boolean => {
 };
 
 /**
+ * Check URL for ?gp_key=<secret>, activate if valid, clean URL.
+ * Call ONCE on app boot, BEFORE analytics init.
+ * Returns true if founder mode was just activated via key.
+ */
+export const consumeFounderKeyFromUrl = (): boolean => {
+  if (typeof window === 'undefined') return false;
+
+  const params = new URLSearchParams(window.location.search);
+  const urlKey = params.get(KEY_PARAM);
+
+  if (!urlKey) return false;
+
+  const expectedKey = getFounderKey();
+
+  // Always clean the key from URL immediately (never leave secret in address bar)
+  params.delete(KEY_PARAM);
+  const cleanUrl = params.toString()
+    ? `${window.location.pathname}?${params.toString()}${window.location.hash}`
+    : `${window.location.pathname}${window.location.hash}`;
+  window.history.replaceState({}, '', cleanUrl);
+
+  if (expectedKey && urlKey === expectedKey) {
+    enableFounderMode();
+    return true;
+  }
+
+  console.warn('[FounderMode] Invalid key provided — ignored');
+  return false;
+};
+
+/**
  * Check if a given email matches the founder allowlist.
+ * If matched, auto-enables founder mode.
  */
 export const isFounderEmail = (email: string): boolean => {
   const allowlist = getFounderEmails();
   if (allowlist.length === 0) return false;
-  return allowlist.includes(email.trim().toLowerCase());
+  const match = allowlist.includes(email.trim().toLowerCase());
+  if (match && !getFounderModeStatus()) {
+    enableFounderMode();
+  }
+  return match;
 };
 
 // ─── Activation / Deactivation ────────────────────────────────────
