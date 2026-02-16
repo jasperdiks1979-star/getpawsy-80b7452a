@@ -40,7 +40,7 @@ export const LoadingScreen = () => {
           <h1 className="font-display text-3xl font-bold text-foreground">
             Get<span className="text-primary">Pawsy</span>
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">Premium Pet Products</p>
+          <p className="text-muted-foreground text-sm mt-1">Premium Pet Products </p>
         </motion.div>
 
         {/* Loading dots */}
