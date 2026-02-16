@@ -121,7 +121,7 @@ const FounderModePage = () => {
         )}
 
         <p className="text-xs text-muted-foreground text-center mt-6">
-          Activation URL: <code>?gp_founder=1</code> on any page
+          Activate via secret key URL: <code>?gp_key=&lt;your-secret&gt;</code> on any page
         </p>
       </div>
     </Layout>
