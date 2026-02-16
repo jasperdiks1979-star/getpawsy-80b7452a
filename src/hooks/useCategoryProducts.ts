@@ -14,7 +14,7 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { dedupeProducts } from '@/lib/dedupe-products';
 import { getCachedCategoryProducts, setCachedCategoryProducts } from '@/lib/category-cache-idb';
-import { markProductsLoadEnd } from '@/lib/grid-timing';
+import { markProductsLoadEnd, markProductsLoadStart, markProductsFetchInitiated } from '@/lib/grid-timing';
 
 /**
  * Resolves a category slug to matching category names (including subcategories).
@@ -88,6 +88,8 @@ export function useCategoryProducts(categorySlug: string | null) {
     queryKey: ['category-products-fast', categorySlug],
     queryFn: async () => {
       if (!categorySlug) return null;
+      markProductsFetchInitiated();
+      markProductsLoadStart();
 
       // Step 1: Resolve slug to actual category names (including children)
       const categoryNames = await resolveCategoryNames(categorySlug);
@@ -105,6 +107,7 @@ export function useCategoryProducts(categorySlug: string | null) {
 
       if (error) throw error;
       const products = dedupeProducts(data || []);
+      markProductsLoadEnd('category-fast');
 
       // Persist to IDB for instant paint on next visit
       void setCachedCategoryProducts(categorySlug, products, products.length);
