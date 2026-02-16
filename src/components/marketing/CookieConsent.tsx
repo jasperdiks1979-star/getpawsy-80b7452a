@@ -77,6 +77,7 @@ export const CookieConsent = () => {
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           className="fixed bottom-0 left-0 right-0 z-[100] p-4 pb-safe"
+          data-testid="cookie-banner"
         >
           {/* max-w-md on mobile keeps visual area smaller than H1 so banner can't win LCP */}
           <div className="max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-xl overflow-hidden">

@@ -1016,7 +1016,7 @@ const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap
   }, [visibleItems.length]);
 
   return (
-    <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div ref={gridRef} data-testid="product-grid" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
       {visibleItems.map((product, index) => {
         const listId = categoryParam
           ? `products_${categoryParam.toLowerCase().replace(/\s+/g, '_')}`
@@ -1032,7 +1032,7 @@ const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap
         const productRating = product.id ? ratingsMap?.[product.id] : undefined;
 
         return (
-          <div key={product.id} className="relative group">
+          <div key={product.id} className="relative group" data-testid="product-card">
             <ProductCard
               product={product as Product}
               listId={listId}
