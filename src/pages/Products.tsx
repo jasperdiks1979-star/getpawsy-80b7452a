@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
@@ -27,6 +27,8 @@ import { CategorySeoContent } from '@/components/seo/CategorySeoContent';
 import { generateCategoryMetaDescription, getKeywordsForCategory } from '@/lib/seo-keywords';
 import { trackViewItemList } from '@/lib/analytics';
 import { dedupeProducts } from '@/lib/dedupe-products';
+import { markGridRendered } from '@/lib/lcp-debug';
+import { getCachedProducts, setCachedProducts } from '@/hooks/useProductsCache';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -110,7 +112,7 @@ const Products = () => {
     }
   }, [categoryParam, navigate, searchParams]);
 
-  // Fetch products from database
+  // Fetch products from database with initial-page cache for instant first paint
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['products'],
     queryFn: async () => {
@@ -121,7 +123,15 @@ const Products = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return dedupeProducts(data || []);
+      const deduped = dedupeProducts(data || []);
+      // Cache first page for instant paint on subsequent visits
+      setCachedProducts(categoryParam, sortBy, deduped, deduped.length);
+      return deduped;
+    },
+    // Use cached data as placeholder while fetching fresh
+    placeholderData: () => {
+      const cached = getCachedProducts(categoryParam, sortBy);
+      return cached?.products as any[] | undefined;
     },
   });
 
@@ -852,52 +862,13 @@ const Products = () => {
             {/* Products */}
             {!isLoading && visibleItems.length > 0 && (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {visibleItems.map((product, index) => {
-                    const listId = categoryParam 
-                      ? `products_${categoryParam.toLowerCase().replace(/\s+/g, '_')}` 
-                      : searchQuery 
-                        ? `products_search` 
-                        : 'all_products';
-                    const listName = categoryParam 
-                      ? `Products - ${categoryParam}` 
-                      : searchQuery 
-                        ? `Products - Search: ${searchQuery}` 
-                        : 'All Products';
-                    
-                    const productRating = product.id ? ratingsMap?.[product.id] : undefined;
-                    
-                    return (
-                      <div
-                        key={product.id}
-                        className="relative group"
-                      >
-                        <ProductCard 
-                          product={product as Product} 
-                          listId={listId}
-                          listName={listName}
-                          position={index}
-                          rating={productRating?.averageRating}
-                          reviewCount={productRating?.reviewCount}
-                        />
-                      {/* Quick View Button */}
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity rounded-full gap-1.5 z-10 shadow-lg"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setQuickViewProduct(product as Product);
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                        Quick View
-                      </Button>
-                      </div>
-                    );
-                  })}
-                </div>
+                <ProductGrid 
+                  visibleItems={visibleItems}
+                  categoryParam={categoryParam}
+                  searchQuery={searchQuery}
+                  ratingsMap={ratingsMap}
+                  onQuickView={setQuickViewProduct}
+                />
                 
                 {/* Infinite Scroll Loader */}
                 <div ref={loaderRef} className="flex justify-center py-8 min-h-[1px]">
@@ -1006,5 +977,81 @@ const Products = () => {
     </Layout>
   );
 };
+
+/**
+ * LCP-OPTIMIZED Product Grid
+ * - First 2 items get priority={true} on their images (eager + fetchpriority=high)
+ * - Marks grid render time for LCP debug overlay
+ * - Memoized to avoid unnecessary re-renders
+ */
+import { memo } from 'react';
+
+interface ProductGridProps {
+  visibleItems: any[];
+  categoryParam: string | null;
+  searchQuery: string;
+  ratingsMap: Record<string, { averageRating: number; reviewCount: number }> | undefined;
+  onQuickView: (product: Product) => void;
+}
+
+const ProductGrid = memo(({ visibleItems, categoryParam, searchQuery, ratingsMap, onQuickView }: ProductGridProps) => {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const hasMarkedRef = useRef(false);
+
+  useEffect(() => {
+    if (!hasMarkedRef.current && visibleItems.length > 0) {
+      hasMarkedRef.current = true;
+      markGridRendered();
+    }
+  }, [visibleItems.length]);
+
+  return (
+    <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+      {visibleItems.map((product, index) => {
+        const listId = categoryParam
+          ? `products_${categoryParam.toLowerCase().replace(/\s+/g, '_')}`
+          : searchQuery
+            ? `products_search`
+            : 'all_products';
+        const listName = categoryParam
+          ? `Products - ${categoryParam}`
+          : searchQuery
+            ? `Products - Search: ${searchQuery}`
+            : 'All Products';
+
+        const productRating = product.id ? ratingsMap?.[product.id] : undefined;
+
+        return (
+          <div key={product.id} className="relative group">
+            <ProductCard
+              product={product as Product}
+              listId={listId}
+              listName={listName}
+              position={index}
+              rating={productRating?.averageRating}
+              reviewCount={productRating?.reviewCount}
+              priority={index < 2}
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity rounded-full gap-1.5 z-10 shadow-lg"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onQuickView(product as Product);
+              }}
+            >
+              <Eye className="w-4 h-4" />
+              Quick View
+            </Button>
+          </div>
+        );
+      })}
+    </div>
+  );
+});
+
+ProductGrid.displayName = 'ProductGrid';
 
 export default Products;
