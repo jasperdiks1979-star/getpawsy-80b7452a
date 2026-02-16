@@ -11,6 +11,8 @@ interface OptimizedImageProps {
   width?: number;
   height?: number;
   onLoad?: () => void;
+  /** Callback to get a ref to the underlying <img> element (e.g. for perf tracking) */
+  onImgRef?: (img: HTMLImageElement | null) => void;
 }
 
 /**
@@ -24,11 +26,12 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
   alt,
   className,
   containerClassName,
-  aspectRatio = 'square', // Changed default from 'auto' to 'square' to prevent CLS
+  aspectRatio = 'square',
   priority = false,
   width = 400,
   height = 400,
   onLoad,
+  onImgRef,
 }, forwardedRef) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
@@ -109,6 +112,7 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
       {/* Actual image - hardware accelerated */}
       {isInView && (
         <img
+          ref={(el) => onImgRef?.(el)}
           src={hasError ? '/placeholder.svg' : src}
           alt={alt}
           width={width}

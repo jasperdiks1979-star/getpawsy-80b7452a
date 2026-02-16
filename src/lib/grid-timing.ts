@@ -5,6 +5,9 @@
  * - Skeleton mount
  * - Data fetch start/end
  * - First product card rendered
+ * - First card text painted (rAF+rAF after React commit)
+ * - First grid image request/load/decode
+ * - Font readiness
  * - Long tasks during boot
  * 
  * All timestamps are relative to navigationStart for consistency.
@@ -19,6 +22,11 @@ export interface GridTimingData {
   categoryFilterEndAt: number | null;
   gridSkeletonMountedAt: number | null;
   gridFirstItemRenderedAt: number | null;
+  firstCardTextPaintAt: number | null;
+  firstGridImageRequestStartAt: number | null;
+  firstGridImageLoadAt: number | null;
+  firstGridImageDecodedAt: number | null;
+  fontsReadyAt: number | null;
   mainThreadLongTasks: Array<{ startTime: number; duration: number }>;
 }
 
@@ -34,6 +42,11 @@ function createFreshTiming(): GridTimingData {
     categoryFilterEndAt: null,
     gridSkeletonMountedAt: null,
     gridFirstItemRenderedAt: null,
+    firstCardTextPaintAt: null,
+    firstGridImageRequestStartAt: null,
+    firstGridImageLoadAt: null,
+    firstGridImageDecodedAt: null,
+    fontsReadyAt: null,
     mainThreadLongTasks: [],
   };
 }
@@ -44,6 +57,7 @@ function now(): number {
 
 export function resetGridTiming() {
   timingData = createFreshTiming();
+  startFontTracking();
 }
 
 export function markProductsLoadStart() {
@@ -72,8 +86,74 @@ export function markGridSkeletonMounted() {
 export function markGridFirstItemRendered() {
   if (timingData.gridFirstItemRenderedAt === null) {
     timingData.gridFirstItemRenderedAt = now();
+    // Schedule double-rAF to mark text paint (after browser actually paints)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (timingData.firstCardTextPaintAt === null) {
+          timingData.firstCardTextPaintAt = now();
+        }
+      });
+    });
   }
 }
+
+/**
+ * Track the first visible product card image lifecycle.
+ * Call this with the <img> element of the first above-the-fold card.
+ */
+export function trackFirstGridImage(img: HTMLImageElement) {
+  if (timingData.firstGridImageRequestStartAt !== null) return; // already tracking
+  timingData.firstGridImageRequestStartAt = now();
+
+  const onLoad = () => {
+    if (timingData.firstGridImageLoadAt === null) {
+      timingData.firstGridImageLoadAt = now();
+    }
+    // Try decode() API for precise decode timing
+    if (typeof img.decode === 'function') {
+      img.decode().then(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (timingData.firstGridImageDecodedAt === null) {
+              timingData.firstGridImageDecodedAt = now();
+            }
+          });
+        });
+      }).catch(() => {
+        // decode failed, use load time as fallback
+        if (timingData.firstGridImageDecodedAt === null) {
+          timingData.firstGridImageDecodedAt = timingData.firstGridImageLoadAt;
+        }
+      });
+    } else {
+      timingData.firstGridImageDecodedAt = timingData.firstGridImageLoadAt;
+    }
+    img.removeEventListener('load', onLoad);
+  };
+
+  if (img.complete && img.naturalWidth > 0) {
+    onLoad();
+  } else {
+    img.addEventListener('load', onLoad, { once: true });
+  }
+}
+
+/** Track document.fonts.ready */
+function startFontTracking() {
+  if (typeof document === 'undefined' || !document.fonts?.ready) return;
+  document.fonts.ready.then(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (timingData.fontsReadyAt === null) {
+          timingData.fontsReadyAt = now();
+        }
+      });
+    });
+  });
+}
+
+// Start font tracking on module load
+startFontTracking();
 
 export function getGridTiming(): GridTimingData {
   return { ...timingData };

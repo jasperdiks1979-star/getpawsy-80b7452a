@@ -74,7 +74,9 @@ export interface GridProbeResult {
 
 /**
  * Starts a rAF loop that checks for product-card presence.
- * Resolves when >= 1 card with an image src, or >= 6 cards total, or 6s timeout.
+ * Resolves when >= 1 card has text content (title/price) rendered.
+ * Text is "meaningful" — we do NOT wait for images to load.
+ * Fallback: >= 6 cards total, or 6s timeout.
  */
 export function probeGridPaint(): Promise<GridProbeResult> {
   return new Promise((resolve) => {
@@ -92,17 +94,11 @@ export function probeGridPaint(): Promise<GridProbeResult> {
       }
 
       const cards = document.querySelectorAll('[data-testid="product-card"]');
-      if (cards.length >= 6) {
-        resolved = true;
-        const t = now - start;
-        resolve({ gridFirstMeaningfulPaintAt: t, gridRenderTime: t });
-        return;
-      }
       if (cards.length >= 1) {
-        // Check if at least one card has an image with src
+        // A card with any text content (h3 title or price) counts as meaningful
         for (const card of cards) {
-          const img = card.querySelector('img');
-          if (img && (img.currentSrc || img.src)) {
+          const hasText = card.querySelector('h3')?.textContent?.trim();
+          if (hasText) {
             resolved = true;
             const t = now - start;
             resolve({ gridFirstMeaningfulPaintAt: t, gridRenderTime: t });
