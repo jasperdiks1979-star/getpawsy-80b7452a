@@ -1,15 +1,15 @@
-import { useState, useEffect, lazy, Suspense, Component, ReactNode } from "react";
+import { lazy, Suspense, Component, ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+// AnimatePresence removed — LoadingScreen was causing ~800ms LCP delay
 import { CartProvider } from "@/contexts/CartContext";
 import { CartAnimationProvider } from "@/contexts/CartAnimationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
-import { LoadingScreen } from "@/components/ui/loading-screen";
+// LoadingScreen removed — it blocked all content painting for 300ms+500ms exit animation
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { LiveCheckoutWidget } from "@/components/admin/LiveCheckoutWidget";
 import { SafePinterestTag } from "@/components/tracking/SafePinterestTag";
@@ -246,16 +246,9 @@ const RouteLoader = () => (
 );
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Minimal loading time — just enough for critical resources to settle
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, []);
+  // No artificial loading delay — content paints immediately for best LCP.
+  // The LoadingScreen was adding ~800ms (300ms timer + 500ms exit animation)
+  // that blocked all content visibility, directly causing LCP > 4s on mobile.
 
   return (
     <AppErrorBoundary>
@@ -265,9 +258,6 @@ const App = () => {
           <CartProvider>
             <CartAnimationProvider>
               <WishlistProvider>
-                <AnimatePresence mode="wait">
-                  {isLoading && <LoadingScreen key="loading" />}
-                </AnimatePresence>
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
