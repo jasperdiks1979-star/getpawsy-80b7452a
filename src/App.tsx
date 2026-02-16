@@ -29,8 +29,9 @@ try { initDataHealer(); } catch (e) { console.error('[ProdSafe] initDataHealer f
 try { initLegacyLinkGuard(); } catch (e) { console.error('[ProdSafe] initLegacyLinkGuard failed:', e); }
 try { initLegacyFetchGuard(); } catch (e) { console.error('[ProdSafe] initLegacyFetchGuard failed:', e); }
 
-// Critical routes - loaded immediately
+// Critical routes - loaded immediately (SEO-critical pages must NOT be lazy)
 import Index from "./pages/Index";
+import Products from "./pages/Products";
 import NotFound from "./pages/NotFound";
 
 // Error boundary for lazy loaded routes
@@ -131,7 +132,7 @@ const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>
   });
 };
 
-const Products = lazyWithRetry(() => import("./pages/Products"));
+// Products is eagerly imported above (SEO-critical, eliminates ~2s chunk download delay)
 const ProductDetail = lazyWithRetry(() => import("./pages/ProductDetail"));
 const Cart = lazyWithRetry(() => import("./pages/Cart"));
 const Checkout = lazyWithRetry(() => import("./pages/Checkout"));
