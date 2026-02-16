@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import logo from '@/assets/logo-getpawsy-full.png';
 import { useCrawlerTracking } from '@/hooks/useCrawlerTracking';
 
@@ -12,6 +13,8 @@ const TechnicalDeclaration = () => {
   }, []);
 
   return (
+    <>
+    <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
     <div className="min-h-screen bg-white text-black p-6 max-w-4xl mx-auto print:p-2 print:max-w-none">
       <style>{`
         @media print {
@@ -278,6 +281,7 @@ const TechnicalDeclaration = () => {
         </p>
       </footer>
     </div>
+    </>
   );
 };
 

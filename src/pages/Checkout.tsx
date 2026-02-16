@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { Link } from 'react-router-dom';
 import { CreditCard, Lock, Loader2, ShieldCheck, FileText, Home, ShoppingCart, Tag, CheckCircle, X, Truck, RotateCcw, Package } from 'lucide-react';
@@ -365,6 +366,7 @@ const Checkout = () => {
   if (items.length === 0) {
     return (
       <Layout>
+        <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
         <div className="container px-4 md:px-6 py-16 text-center">
           <h1 className="text-2xl font-bold mb-4">Your cart is empty</h1>
           <Link to="/products">
@@ -377,6 +379,7 @@ const Checkout = () => {
 
   return (
     <Layout>
+      <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="container px-4 md:px-6 py-8 max-w-4xl w-full overflow-x-hidden box-border" style={{ maxWidth: '100%' }}>
         {/* Breadcrumbs */}
         <Breadcrumb className="mb-6">

@@ -29,9 +29,9 @@ Disallow: /download-ads
 Disallow: /technical-declaration
 Disallow: /appeal-response
 
-# Block tracking/query parameters only
-Disallow: /*?utm
-Disallow: /*?gclid=
-Disallow: /*?fbclid=
+# Block tracking/query parameters (including mid-querystring)
+Disallow: /*?*utm_
+Disallow: /*?*gclid=
+Disallow: /*?*fbclid=
 
 Sitemap: https://getpawsy.pet/sitemap.xml
