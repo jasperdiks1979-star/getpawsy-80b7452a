@@ -59,7 +59,7 @@ async function checkRobotsIntegrity(): Promise<RobotsIntegrityResult> {
     "Sitemap: https://getpawsy.pet/sitemap.xml",
     "Disallow: /admin",
     "Disallow: /cart",
-    "Disallow: /*?gclid=",
+    "Disallow: /*?*gclid=",
   ];
   try {
     const res = await fetch(`${SITE_URL}/robots.txt`, {

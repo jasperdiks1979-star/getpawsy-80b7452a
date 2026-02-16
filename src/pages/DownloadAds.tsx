@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Download, FileSpreadsheet, Check, Archive, Loader2, Eye, Mail, Send, Copy, ClipboardCheck, Sheet, ExternalLink, Search, X, History, Trash2, ArrowUpDown, ArrowUp, ArrowDown, FileX, Palette, ChevronDown, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -488,6 +489,7 @@ const DownloadAds = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
+      <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-2xl md:text-3xl font-bold">Google Ads CSV Export</h1>

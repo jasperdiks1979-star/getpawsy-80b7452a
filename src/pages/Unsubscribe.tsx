@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
@@ -272,6 +273,7 @@ const Unsubscribe = () => {
 
   return (
     <Layout>
+      <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="min-h-screen py-20 lg:py-32">
         <div className="container px-4 md:px-6 max-w-2xl mx-auto">
           {renderContent()}
