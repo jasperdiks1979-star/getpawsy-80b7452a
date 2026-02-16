@@ -139,74 +139,37 @@
     </div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Boot timeout: if React hasn't mounted in 8s, auto-recover
+      // CRITICAL: Unregister ALL service workers and clear caches on every page load
+      // This prevents stale SW caches from breaking the app after deployments
       (function(){
-        var hasRecovered = false;
-        
-        function autoRecover() {
-          if (hasRecovered) return;
-          hasRecovered = true;
-          
-          var reloadKey = 'hydration-recovery-ts';
-          var lastReload = parseInt(sessionStorage.getItem(reloadKey) || '0', 10);
-          var now = Date.now();
-          
-          // Only auto-recover once per 30 seconds to prevent reload loops
-          if (now - lastReload > 30000) {
-            sessionStorage.setItem(reloadKey, String(now));
-            
-            // Unregister service workers and clear caches before reload
-            var p1 = Promise.resolve();
-            var p2 = Promise.resolve();
-            
-            if ('serviceWorker' in navigator) {
-              p1 = navigator.serviceWorker.getRegistrations().then(function(regs) {
-                return Promise.all(regs.map(function(r) { return r.unregister(); }));
-              }).catch(function(){});
-            }
-            if ('caches' in window) {
-              p2 = caches.keys().then(function(keys) {
-                return Promise.all(keys.map(function(k) { return caches.delete(k); }));
-              }).catch(function(){});
-            }
-            
-            Promise.all([p1, p2]).then(function() {
-              window.location.reload();
-            });
-          } else {
-            // Already tried recovery recently — show manual instructions
-            var fb = document.getElementById('hydration-fallback');
-            if (fb) {
-              fb.style.display = 'flex';
-              var p = fb.querySelector('p');
-              if (p) p.textContent = 'The app failed to load after recovery. Please clear your browser cache (Ctrl+Shift+Delete) and reload.';
-            }
-          }
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(r) { r.unregister(); });
+          }).catch(function(){});
         }
-        
+        if ('caches' in window) {
+          caches.keys().then(function(keys) {
+            keys.forEach(function(k) { caches.delete(k); });
+          }).catch(function(){});
+        }
+      })();
+
+      // Boot timeout: if React hasn't mounted in 10s, show reload button
+      (function(){
         var t = setTimeout(function(){
           var root = document.getElementById('root');
           var fb = document.getElementById('hydration-fallback');
           if (root && fb && root.children.length <= 1) {
-            autoRecover();
+            fb.style.display = 'flex';
           }
-        }, 8000);
+        }, 10000);
         
-        // Cancel timeout once React mounts
+        // Cancel timeout once React mounts (hydration-fallback gets removed)
         var obs = new MutationObserver(function(){
           var fb = document.getElementById('hydration-fallback');
           if (!fb) { clearTimeout(t); obs.disconnect(); }
         });
         obs.observe(document.getElementById('root'), { childList: true });
-        
-        // Also catch module load errors (stale chunks)
-        window.addEventListener('error', function(e) {
-          if (e.message && (e.message.indexOf('Failed to fetch') !== -1 || 
-              e.message.indexOf('Loading chunk') !== -1 ||
-              e.message.indexOf('Importing a module script failed') !== -1)) {
-            autoRecover();
-          }
-        });
       })();
     </script>
   </body>
