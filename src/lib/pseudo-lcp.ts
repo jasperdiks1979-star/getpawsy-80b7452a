@@ -130,6 +130,7 @@ export function computeProxyLcp(
   firstCardTextPaintAt: number | null,
   gridFirstItemRenderedAt: number | null,
   firstGridImageDecodedAt: number | null,
+  firstGridImageLoadAt: number | null,
   cookieBannerMountedAt: number | null,
 ): ProxyLcpResult {
   const bannerMetrics = getCookieBannerMetrics();
@@ -145,6 +146,8 @@ export function computeProxyLcp(
 
   if (firstGridImageDecodedAt != null && firstGridImageDecodedAt > 0) {
     candidates.push({ time: firstGridImageDecodedAt, label: 'grid-image-decoded' });
+  } else if (firstGridImageLoadAt != null && firstGridImageLoadAt > 0) {
+    candidates.push({ time: firstGridImageLoadAt, label: 'grid-image-decoded' }); // Use load as fallback label
   }
 
   if (heroPaintedAt !== null && heroPaintedAt > 0) {
