@@ -5,9 +5,7 @@ import { AppErrorBoundary } from "./components/error/AppErrorBoundary";
 import App from "./App.tsx";
 import "./index.css";
 
-// Ensure fresh service worker on every app load (prevents stale chunk caching)
-import { ensureFreshServiceWorker } from "./lib/sw-recovery";
-try { ensureFreshServiceWorker(); } catch (e) { console.warn('[ProdSafe] SW recovery check failed:', e); }
+// Service worker cleanup is now handled in index.html (inline script)
 
 // Initialize Web Vitals field-data collector (lightweight, non-blocking)
 import { initVitalsCollector } from "./lib/vitals-collector";
