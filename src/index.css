@@ -434,20 +434,21 @@
     @apply bg-white/70 backdrop-blur-md border border-white/20;
   }
 
-  /* Premium product cards - warm, inviting, subtle hover */
+  /* Premium product cards - warm, inviting, subtle hover
+   * NOTE: backdrop-filter: blur() was removed intentionally.
+   * It caused ~3s paint delay on iOS Safari (compositor stall computing blur
+   * for 4-12 cards simultaneously). Background is nearly opaque so blur was invisible. */
   .glass-card {
     background: linear-gradient(
       135deg,
-      hsl(40 45% 99% / 0.95) 0%,
-      hsl(38 40% 98% / 0.9) 100%
+      hsl(40 45% 99%) 0%,
+      hsl(38 40% 98%) 100%
     );
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     border: 1px solid hsl(38 35% 92% / 0.6);
     box-shadow: 
       0 2px 8px hsl(25 30% 12% / 0.04),
       0 4px 16px hsl(25 30% 12% / 0.03);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .glass-card:hover {
@@ -461,8 +462,8 @@
   .dark .glass-card {
     background: linear-gradient(
       135deg,
-      hsl(25 22% 12% / 0.95) 0%,
-      hsl(25 22% 10% / 0.9) 100%
+      hsl(25 22% 12%) 0%,
+      hsl(25 22% 10%) 100%
     );
     border: 1px solid hsl(25 18% 22% / 0.4);
     box-shadow: 

@@ -22,15 +22,26 @@ export interface GridTimingData {
   categoryFilterEndAt: number | null;
   gridSkeletonMountedAt: number | null;
   gridFirstItemRenderedAt: number | null;
+  gridFirstItemVisibleAt: number | null;
   firstCardTextPaintAt: number | null;
   firstGridImageRequestStartAt: number | null;
   firstGridImageLoadAt: number | null;
   firstGridImageDecodedAt: number | null;
   fontsReadyAt: number | null;
   mainThreadLongTasks: Array<{ startTime: number; duration: number }>;
+  navigationType: 'hard' | 'spa-soft' | 'unknown';
 }
 
 let timingData: GridTimingData = createFreshTiming();
+
+function detectNavigationType(): GridTimingData['navigationType'] {
+  if (typeof performance === 'undefined') return 'unknown';
+  try {
+    const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+    if (navEntries.length > 0) return 'hard';
+  } catch {}
+  return 'unknown';
+}
 
 function createFreshTiming(): GridTimingData {
   return {
@@ -42,12 +53,14 @@ function createFreshTiming(): GridTimingData {
     categoryFilterEndAt: null,
     gridSkeletonMountedAt: null,
     gridFirstItemRenderedAt: null,
+    gridFirstItemVisibleAt: null,
     firstCardTextPaintAt: null,
     firstGridImageRequestStartAt: null,
     firstGridImageLoadAt: null,
     firstGridImageDecodedAt: null,
     fontsReadyAt: null,
     mainThreadLongTasks: [],
+    navigationType: detectNavigationType(),
   };
 }
 
@@ -94,7 +107,36 @@ export function markGridFirstItemRendered() {
         }
       });
     });
+    // Track actual visibility: check computedStyle + bounding box
+    trackFirstItemVisibility();
   }
+}
+
+/** Polls until first product card is actually visible (opacity>0, in viewport, non-zero box) */
+function trackFirstItemVisibility() {
+  if (timingData.gridFirstItemVisibleAt !== null) return;
+  const check = () => {
+    const card = document.querySelector('[data-testid="product-card"]');
+    if (!card) { requestAnimationFrame(check); return; }
+    const style = getComputedStyle(card);
+    const rect = card.getBoundingClientRect();
+    const isVisible = style.opacity !== '0' &&
+      style.visibility !== 'hidden' &&
+      style.display !== 'none' &&
+      rect.width > 0 && rect.height > 0 &&
+      rect.top < window.innerHeight;
+    if (isVisible && timingData.gridFirstItemVisibleAt === null) {
+      timingData.gridFirstItemVisibleAt = now();
+    } else if (!isVisible) {
+      requestAnimationFrame(check);
+    }
+  };
+  requestAnimationFrame(check);
+}
+
+/** Mark as SPA navigation (call on client-side route changes) */
+export function markSPANavigation() {
+  timingData.navigationType = 'spa-soft';
 }
 
 /**
