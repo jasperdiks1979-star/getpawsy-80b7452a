@@ -219,6 +219,8 @@ export const useVisitorTracking = () => {
           country: data.country_name,
           city: data.city,
         };
+        // Persist for cross-module access (e.g. GA4 purchase guard)
+        sessionStorage.setItem("visitor_location", JSON.stringify(locationRef.current));
         return locationRef.current;
       }
     } catch (error) {

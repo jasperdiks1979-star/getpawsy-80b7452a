@@ -139,12 +139,26 @@ export const trackBeginCheckout = (
 };
 
 
-// Purchase complete
+// Purchase complete — with US-only guard for GA4
 export const trackPurchase = (
   transactionId: string,
   items: Array<{ id: string; name: string; price: number; quantity: number }>,
   totalValue: number
 ): void => {
+  // Country guard: only send purchase to GA4 for US traffic
+  const cachedLocation = sessionStorage.getItem('visitor_location');
+  if (cachedLocation) {
+    try {
+      const loc = JSON.parse(cachedLocation);
+      if (loc.country && loc.country !== 'United States') {
+        console.debug('[Analytics] Purchase event blocked for GA4: non-US country', loc.country);
+        return;
+      }
+    } catch {
+      // Parse error — allow event through
+    }
+  }
+
   trackEvent('purchase', {
     transaction_id: transactionId,
     currency: 'USD',
