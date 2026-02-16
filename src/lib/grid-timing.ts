@@ -15,7 +15,7 @@
 
 export interface GridTimingData {
   navStart: number;
-  productsDataSource: 'cache' | 'remote' | 'category-fast' | 'unknown';
+  productsDataSource: 'cache' | 'remote' | 'category-fast' | 'idb-cache' | 'unknown';
   productsLoadStartAt: number | null;
   productsLoadEndAt: number | null;
   categoryFilterStartAt: number | null;

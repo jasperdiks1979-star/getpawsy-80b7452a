@@ -366,7 +366,7 @@ function updateOverlay() {
     `Best candidate selector: ${debugData.candidateElementSelector || 'n/a'}`,
     `<span style="color:#0ff">── Grid Timing ──</span>`,
     `Data source: ${gt.productsDataSource}`,
-    `Products load: ${formatMs(gt.productsLoadStartAt)} → ${formatMs(gt.productsLoadEndAt)}${gt.productsLoadStartAt && gt.productsLoadEndAt ? ` (${Math.round(gt.productsLoadEndAt - gt.productsLoadStartAt)}ms)` : ''}`,
+    `Products load: ${formatMs(gt.productsLoadStartAt)} → ${formatMs(gt.productsLoadEndAt)}${gt.productsLoadStartAt && gt.productsLoadEndAt ? ` (${Math.round(gt.productsLoadEndAt - gt.productsLoadStartAt)}ms)` : ''} [${gt.productsDataSource}]`,
     `Category filter: ${gt.categoryFilterStartAt && gt.categoryFilterEndAt ? `${Math.round(gt.categoryFilterEndAt - gt.categoryFilterStartAt)}ms` : 'n/a'}`,
     `Skeleton mounted: ${formatMs(gt.gridSkeletonMountedAt)}`,
     `Grid 1st item rendered: ${formatMs(gt.gridFirstItemRenderedAt)}`,
