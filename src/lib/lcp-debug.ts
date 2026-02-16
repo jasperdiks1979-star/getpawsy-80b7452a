@@ -74,8 +74,17 @@ interface LCPDebugData {
   viewportWidth: number;
   viewportHeight: number;
   timestamp: number;
+  connectionType: string | null;
   // WWW redirect documentation
   wwwRedirectNote: string;
+}
+
+function getConnectionType(): string | null {
+  try {
+    const nav = navigator as any;
+    const conn = nav.connection || nav.mozConnection || nav.webkitConnection;
+    return conn?.effectiveType ?? null;
+  } catch { return null; }
 }
 
 function freshDebugData(): LCPDebugData {
@@ -115,6 +124,7 @@ function freshDebugData(): LCPDebugData {
     viewportWidth: typeof window !== 'undefined' ? window.innerWidth : 0,
     viewportHeight: typeof window !== 'undefined' ? window.innerHeight : 0,
     timestamp: Date.now(),
+    connectionType: typeof navigator !== 'undefined' ? getConnectionType() : null,
     wwwRedirectNote: 'www→apex 302 is platform-level (Lovable edge). Cannot change to 301. Mitigated via consistent canonical/sitemap/internal-links pointing to apex.',
   };
 }
@@ -378,6 +388,7 @@ function updateOverlay() {
     `Hero→Banner gap: ${debugData.timeBetweenHeroAndBannerMount !== null ? `${debugData.timeBetweenHeroAndBannerMount}ms` : 'n/a'}`,
     `Hero painted: ${formatMs(debugData.heroPaintedAt)}`,
     `<span style="color:#0ff">── Environment ──</span>`,
+    `Connection: ${debugData.connectionType || 'unknown'}`,
     `Visibility: ${debugData.visibilityTimeline.map(v => `${v.state}@${v.at}`).join(' → ') || 'n/a'}`,
     `Prerendered: ${debugData.wasPrerendered ? 'yes' : 'no'}`,
     `BFCache restored: ${debugData.wasBFCacheRestored ? 'yes' : 'no'}`,
@@ -385,6 +396,15 @@ function updateOverlay() {
     `INP: ${formatMs(debugData.inpMs)}`,
     `Viewport: ${debugData.viewportWidth}×${debugData.viewportHeight}`,
     `iOS Safari: ${isIOSSafari() ? 'yes' : 'no'}`,
+    `<span style="color:#0ff">── Timeline ──</span>`,
+    `navStart → hero: ${formatMs(debugData.heroPaintedAt)}`,
+    `navStart → data fetch: ${formatMs(gt.productsLoadStartAt)} → ${formatMs(gt.productsLoadEndAt)}`,
+    `navStart → skeleton: ${formatMs(gt.gridSkeletonMountedAt)}`,
+    `navStart → 1st item: ${formatMs(gt.gridFirstItemRenderedAt)}`,
+    `navStart → text paint: ${formatMs(gt.firstCardTextPaintAt)}`,
+    `navStart → img decoded: ${formatMs(gt.firstGridImageDecodedAt)}`,
+    `navStart → meaningful: ${formatMs(debugData.gridFirstMeaningfulPaintAt)}`,
+    `navStart → fonts: ${formatMs(gt.fontsReadyAt)}`,
     `<span style="color:#0ff">── WWW Redirect ──</span>`,
     `Status: platform 302 (cannot change)`,
     `Mitigation: canonical+sitemap+links=apex ✅`,

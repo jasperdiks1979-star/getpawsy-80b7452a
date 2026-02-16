@@ -4653,6 +4653,7 @@ export type Database = {
       web_vitals: {
         Row: {
           cls_value: number | null
+          connection_type: string | null
           created_at: string
           device_hint: string | null
           fcp_value: number | null
@@ -4662,6 +4663,8 @@ export type Database = {
           lcp_element: string | null
           lcp_value: number | null
           path: string
+          proxy_lcp_candidate: string | null
+          proxy_lcp_value: number | null
           session_id: string | null
           ts: string
           ttfb_value: number | null
@@ -4669,6 +4672,7 @@ export type Database = {
         }
         Insert: {
           cls_value?: number | null
+          connection_type?: string | null
           created_at?: string
           device_hint?: string | null
           fcp_value?: number | null
@@ -4678,6 +4682,8 @@ export type Database = {
           lcp_element?: string | null
           lcp_value?: number | null
           path: string
+          proxy_lcp_candidate?: string | null
+          proxy_lcp_value?: number | null
           session_id?: string | null
           ts?: string
           ttfb_value?: number | null
@@ -4685,6 +4691,7 @@ export type Database = {
         }
         Update: {
           cls_value?: number | null
+          connection_type?: string | null
           created_at?: string
           device_hint?: string | null
           fcp_value?: number | null
@@ -4694,6 +4701,8 @@ export type Database = {
           lcp_element?: string | null
           lcp_value?: number | null
           path?: string
+          proxy_lcp_candidate?: string | null
+          proxy_lcp_value?: number | null
           session_id?: string | null
           ts?: string
           ttfb_value?: number | null
