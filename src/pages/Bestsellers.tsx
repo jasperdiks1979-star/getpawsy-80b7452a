@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { Award, Star, TrendingUp, Sparkles, ArrowRight, ShoppingCart, Heart, Home } from 'lucide-react';
+import { Award, Star, TrendingUp, Sparkles, ArrowRight, ShoppingCart, Heart, Home, Truck, ShieldCheck, RotateCcw, HelpCircle, CheckCircle } from 'lucide-react';
 import { useEffect, useRef, useMemo } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,13 @@ import { useWishlist } from '@/contexts/WishlistContext';
 import { useProductRatings } from '@/hooks/useProductRatings';
 import { toast } from 'sonner';
 import { trackViewItemList, trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -344,6 +351,18 @@ const Bestsellers = () => {
     });
   };
 
+  // Bestseller FAQ data
+  const bestsellerFaqs = [
+    { question: 'How are GetPawsy bestsellers selected?', answer: 'Our bestsellers are ranked by a combination of verified customer reviews, repeat purchase rate, and overall sales volume. Every product on this page has been purchased and loved by real pet owners across the United States.' },
+    { question: 'Are bestseller prices guaranteed?', answer: 'Yes — the price you see is the price you pay. We never inflate prices before applying discounts. All bestseller prices include free US shipping on orders over $35.' },
+    { question: 'What is the return policy for bestseller products?', answer: 'All bestseller products are covered by our 30-day hassle-free return policy. If you or your pet are not satisfied, contact us for a full refund or exchange — no questions asked.' },
+    { question: 'Do you offer bundles with bestseller items?', answer: 'Yes! Many bestseller product pages feature a "Frequently Bought Together" section where you can save by bundling complementary items. Bundle discounts are applied automatically at checkout.' },
+    { question: 'How fast is shipping on bestseller items?', answer: 'Bestseller items ship within 1–3 business days. Standard US delivery takes 7–15 business days depending on your location. Free shipping is available on orders over $35.' },
+    { question: 'Are these products safe for puppies and kittens?', answer: 'Product safety varies by item. Each product page includes age and size recommendations. For puppies under 6 months or kittens, always check the specific product details or contact our support team.' },
+    { question: 'Can I see real customer reviews?', answer: 'Absolutely. Every bestseller product page features verified customer reviews with photos. We never filter or remove honest feedback — positive or negative.' },
+    { question: 'Do you ship internationally?', answer: 'Currently we ship to the United States only. We are working on expanding to Canada and the UK. Sign up for our newsletter to be notified when international shipping becomes available.' },
+  ];
+
   // Generate JSON-LD structured data
   const generateJsonLd = () => {
     if (!bestsellers?.length) return null;
@@ -351,8 +370,8 @@ const Bestsellers = () => {
     return {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
-      name: 'GetPawsy Bestsellers',
-      description: 'Our most popular pet products, loved by thousands of pet owners.',
+      name: 'Best Pet Products 2026 – Top Rated by Pet Owners',
+      description: 'Curated bestselling pet products ranked by verified reviews and sales. Shop top-rated dog beds, cat toys, feeders, and accessories with free US shipping over $35.',
       numberOfItems: bestsellers.length,
       itemListElement: bestsellers.map((item, index) => ({
         '@type': 'ListItem',
@@ -363,27 +382,37 @@ const Bestsellers = () => {
     };
   };
 
+  const generateFAQJsonLd = () => ({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: bestsellerFaqs.map(faq => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+    })),
+  });
+
   return (
     <Layout>
       <Helmet>
-        <title>Bestsellers - Top Pet Products | GetPawsy</title>
+        <title>Best Pet Products 2026 – Top Rated Bestsellers | GetPawsy</title>
         <meta 
           name="description" 
-          content="Discover our most popular pet products! Shop bestselling pet beds, toys, accessories, and more. Trusted by thousands of happy pet owners." 
+          content="Shop the #1 bestselling pet products in 2026. Top-rated dog beds, cat toys, slow feeders & more — ranked by verified reviews. Free US shipping over $35." 
         />
-        <meta name="keywords" content="bestseller pet products, popular pet supplies, top rated pet accessories, best pet toys, trending pet items" />
+        <meta name="keywords" content="best pet products 2026, bestselling pet supplies, top rated dog toys, popular cat accessories, best pet beds" />
         <link rel="canonical" href="https://getpawsy.pet/bestsellers" />
         
         {/* Open Graph */}
-        <meta property="og:title" content="Bestsellers - Top Pet Products | GetPawsy" />
-        <meta property="og:description" content="Discover our most popular pet products! Shop bestselling pet beds, toys, accessories, and more." />
+        <meta property="og:title" content="Best Pet Products 2026 – Top Rated Bestsellers | GetPawsy" />
+        <meta property="og:description" content="Shop the #1 bestselling pet products in 2026. Top-rated & verified by real pet owners. Free US shipping over $35." />
         <meta property="og:url" content="https://getpawsy.pet/bestsellers" />
         <meta property="og:type" content="website" />
         
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Bestsellers - Top Pet Products | GetPawsy" />
-        <meta name="twitter:description" content="Discover our most popular pet products! Shop bestselling pet beds, toys, accessories, and more." />
+        <meta name="twitter:title" content="Best Pet Products 2026 – Top Rated Bestsellers | GetPawsy" />
+        <meta name="twitter:description" content="Shop the #1 bestselling pet products in 2026. Top-rated & verified by real pet owners." />
 
         {/* JSON-LD */}
         {bestsellers && (
@@ -391,6 +420,9 @@ const Bestsellers = () => {
             {JSON.stringify(generateJsonLd())}
           </script>
         )}
+        <script type="application/ld+json">
+          {JSON.stringify(generateFAQJsonLd())}
+        </script>
       </Helmet>
 
       {/* Breadcrumbs */}
@@ -535,45 +567,133 @@ const Bestsellers = () => {
         </div>
       </section>
 
-      {/* Why Choose Bestsellers CTA */}
-      <section className="py-12 md:py-16 bg-muted/30">
-        <div className="container px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-4xl mx-auto"
-          >
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Star className="w-7 h-7 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">Top Rated</h3>
-                <p className="text-sm text-muted-foreground">
-                  All bestsellers have 4+ star ratings from verified buyers
-                </p>
+      {/* Featured Snippet Block */}
+      <section className="py-12 md:py-16 bg-muted/20">
+        <div className="container px-4 md:px-6 max-w-4xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold mb-4">What Are the Best Pet Products in 2026?</h2>
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            The best pet products in 2026 include ergonomic dog beds with memory foam, interactive puzzle feeders for mental stimulation, self-cleaning litter boxes, durable chew toys, and slow feeder bowls that prevent bloat. These top-rated items are chosen by thousands of US pet owners based on verified reviews, durability, and value for money.
+          </p>
+        </div>
+      </section>
+
+      {/* How We Select Our Bestsellers */}
+      <section className="py-12 md:py-16">
+        <div className="container px-4 md:px-6 max-w-4xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6">How We Select Our Bestsellers</h2>
+          <p className="text-muted-foreground mb-6 leading-relaxed">
+            Our bestseller ranking is not based on marketing spend or paid placements. Every product earns its position through a transparent, data-driven process that prioritizes real customer satisfaction.
+          </p>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-card border rounded-xl p-6">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                <Star className="w-5 h-5 text-primary" />
               </div>
-              <div className="text-center">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <TrendingUp className="w-7 h-7 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">Most Popular</h3>
-                <p className="text-sm text-muted-foreground">
-                  Based on real sales data and customer preferences
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Award className="w-7 h-7 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">Quality Guaranteed</h3>
-                <p className="text-sm text-muted-foreground">
-                  Curated selection with satisfaction guarantee
-                </p>
-              </div>
+              <h3 className="font-semibold mb-2">Verified Reviews</h3>
+              <p className="text-sm text-muted-foreground">Products must maintain a 4+ star average from verified buyers to remain on this page.</p>
             </div>
-          </motion.div>
+            <div className="bg-card border rounded-xl p-6">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                <TrendingUp className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-semibold mb-2">Sales Performance</h3>
+              <p className="text-sm text-muted-foreground">Rankings reflect real purchase volume and repeat order rates across the past 90 days.</p>
+            </div>
+            <div className="bg-card border rounded-xl p-6">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                <Award className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-semibold mb-2">Quality Assurance</h3>
+              <p className="text-sm text-muted-foreground">Each item is evaluated for durability, pet safety, and material quality before inclusion.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Top Categories Among Bestsellers */}
+      <section className="py-12 md:py-16 bg-muted/20">
+        <div className="container px-4 md:px-6 max-w-4xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6">Top Categories Among Our Bestsellers</h2>
+          <p className="text-muted-foreground mb-6 leading-relaxed">
+            Our bestsellers span the most important pet care categories. Whether you're outfitting a new puppy, upgrading your cat's play area, or solving mealtime challenges, these categories consistently deliver the highest satisfaction scores.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {[
+              { name: 'Dog Beds & Furniture', desc: 'Orthopedic and calming beds rated for comfort and durability.', link: '/products?category=dog-beds' },
+              { name: 'Cat Trees & Condos', desc: 'Multi-level play structures built for active indoor cats.', link: '/cat-trees-condos' },
+              { name: 'Interactive Dog Toys', desc: 'Puzzle feeders and enrichment toys for mental stimulation.', link: '/collections/best-interactive-dog-toys' },
+              { name: 'Slow Feeder Bowls', desc: 'Anti-bloat bowls that slow eating by 5–10x.', link: '/collections/best-slow-feeder-dog-bowls' },
+            ].map((cat) => (
+              <Link key={cat.name} to={cat.link} className="flex items-start gap-3 bg-card border rounded-xl p-4 hover:shadow-md transition-shadow group">
+                <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="font-semibold group-hover:text-primary transition-colors">{cat.name}</h3>
+                  <p className="text-sm text-muted-foreground">{cat.desc}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Reinforcement Section */}
+      <section className="py-12 md:py-16">
+        <div className="container px-4 md:px-6 max-w-4xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">Shop With Confidence</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Truck className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="font-semibold mb-2">Free US Shipping</h3>
+              <p className="text-sm text-muted-foreground">
+                Free shipping on all orders over $35. Standard delivery 7–15 business days.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <RotateCcw className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="font-semibold mb-2">30-Day Returns</h3>
+              <p className="text-sm text-muted-foreground">
+                Not happy? Return any product within 30 days for a full refund — no questions asked.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <ShieldCheck className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="font-semibold mb-2">Pet-Safe Guarantee</h3>
+              <p className="text-sm text-muted-foreground">
+                Every product is tested for safety and quality. Your pet's wellbeing is our top priority.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-12 md:py-16 bg-muted/20">
+        <div className="container px-4 md:px-6 max-w-4xl mx-auto">
+          <div className="flex items-center gap-2 mb-6">
+            <HelpCircle className="w-5 h-5 text-primary" />
+            <h2 className="text-2xl md:text-3xl font-bold">Frequently Asked Questions</h2>
+          </div>
+          <Accordion type="single" collapsible className="w-full">
+            {bestsellerFaqs.map((faq, index) => (
+              <AccordionItem key={index} value={`faq-${index}`}>
+                <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">{faq.answer}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
+      {/* Email Capture */}
+      <section className="py-12 md:py-16">
+        <div className="container px-4 md:px-6 max-w-4xl mx-auto">
+          <SoftEmailCapture variant="collection" />
         </div>
       </section>
     </Layout>
