@@ -72,6 +72,10 @@ export function useCategoryProducts(categorySlug: string | null) {
   useEffect(() => {
     if (!categorySlug || idbChecked.current) return;
     idbChecked.current = true;
+
+    // Track injected preload links for cleanup on unmount/route change
+    const injectedLinks: HTMLLinkElement[] = [];
+
     getCachedCategoryProducts(categorySlug).then(cached => {
       if (cached && cached.products.length > 0) {
         const existing = queryClient.getQueryData(['category-products-fast', categorySlug]);
@@ -85,13 +89,21 @@ export function useCategoryProducts(categorySlug: string | null) {
               link.rel = 'preload';
               link.as = 'image';
               link.href = p.image_url;
-              link.fetchPriority = 'high';
+              (link as any).fetchPriority = 'high';
               document.head.appendChild(link);
+              injectedLinks.push(link);
             }
           });
         }
       }
     });
+
+    // Cleanup preload links on route change / unmount
+    return () => {
+      injectedLinks.forEach(link => {
+        try { link.remove(); } catch {}
+      });
+    };
   }, [categorySlug, queryClient]);
 
   return useQuery({
@@ -126,8 +138,9 @@ export function useCategoryProducts(categorySlug: string | null) {
       return products;
     },
     enabled: !!categorySlug,
-    staleTime: 60 * 1000, // 60 seconds
-    gcTime: 300 * 1000, // 300 seconds
+    staleTime: 5 * 60 * 1000, // 5 minutes — match global default
+    gcTime: 30 * 60 * 1000,   // 30 minutes
     refetchOnMount: false,
+    placeholderData: (prev: any) => prev, // keepPreviousData equivalent
   });
 }
