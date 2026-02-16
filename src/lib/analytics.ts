@@ -1,9 +1,10 @@
 // Google Analytics 4 Event Tracking Utility
+import { getFounderModeStatus, getTrafficType, logFounderEvent } from '@/lib/founder-mode';
 
 declare global {
   interface Window {
     gtag: (
-      command: 'event' | 'config' | 'js',
+      command: 'event' | 'config' | 'js' | 'set',
       action: string,
       params?: Record<string, unknown>
     ) => void;
@@ -16,7 +17,23 @@ const isGtagAvailable = (): boolean => {
   return typeof window !== 'undefined' && typeof window.gtag === 'function';
 };
 
-// Generic event tracking
+// Initialize founder user properties on gtag (call once on app init)
+export const initAnalyticsUserProperties = (): void => {
+  if (!isGtagAvailable()) return;
+  const trafficType = getTrafficType();
+  window.gtag('set', 'user_properties', { traffic_type: trafficType });
+  if (getFounderModeStatus()) {
+    console.debug('[Analytics] Founder Mode active — traffic_type=internal, events will be suppressed');
+  }
+};
+
+// Conversion-critical events that MUST be suppressed for founder
+const SUPPRESSED_EVENTS = new Set([
+  'purchase', 'begin_checkout', 'add_to_cart', 'remove_from_cart',
+  'add_to_wishlist', 'sign_up',
+]);
+
+// Generic event tracking — with founder guard
 export const trackEvent = (
   eventName: string,
   params?: Record<string, unknown>
@@ -25,9 +42,26 @@ export const trackEvent = (
     console.debug('[Analytics] gtag not available, skipping event:', eventName);
     return;
   }
-  
-  window.gtag('event', eventName, params);
-  console.debug('[Analytics] Event tracked:', eventName, params);
+
+  const isFounder = getFounderModeStatus();
+
+  // Hard suppress conversion events for founder
+  if (isFounder && SUPPRESSED_EVENTS.has(eventName)) {
+    logFounderEvent(eventName, true);
+    console.debug(`[Analytics] ${eventName} suppressed (Founder Mode)`);
+    return;
+  }
+
+  // Tag all events with traffic_type
+  const enrichedParams = {
+    ...params,
+    traffic_type: getTrafficType(),
+    ...(isFounder ? { gp_client: 'founder' } : {}),
+  };
+
+  logFounderEvent(eventName, false);
+  window.gtag('event', eventName, enrichedParams);
+  console.debug('[Analytics] Event tracked:', eventName, enrichedParams);
 };
 
 // Newsletter subscription
