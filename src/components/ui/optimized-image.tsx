@@ -120,6 +120,7 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           fetchPriority={priority ? 'high' : 'auto'}
+          sizes={priority ? '(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw' : undefined}
           onLoad={handleLoad}
           onError={handleError}
           className={cn(

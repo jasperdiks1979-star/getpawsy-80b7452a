@@ -68,17 +68,27 @@ export function useCategoryProducts(categorySlug: string | null) {
   const queryClient = useQueryClient();
   const idbChecked = useRef(false);
 
-  // Seed React Query cache from IDB on mount (instant first paint)
+  // Seed React Query cache from IDB on mount + preload first product images for LCP
   useEffect(() => {
     if (!categorySlug || idbChecked.current) return;
     idbChecked.current = true;
     getCachedCategoryProducts(categorySlug).then(cached => {
       if (cached && cached.products.length > 0) {
-        // Only seed if React Query doesn't already have data
         const existing = queryClient.getQueryData(['category-products-fast', categorySlug]);
         if (!existing) {
           queryClient.setQueryData(['category-products-fast', categorySlug], cached.products);
           markProductsLoadEnd('idb-cache');
+          // Preload first 2 product images for faster LCP
+          cached.products.slice(0, 2).forEach((p: any) => {
+            if (p.image_url && !document.querySelector(`link[href="${p.image_url}"]`)) {
+              const link = document.createElement('link');
+              link.rel = 'preload';
+              link.as = 'image';
+              link.href = p.image_url;
+              link.fetchPriority = 'high';
+              document.head.appendChild(link);
+            }
+          });
         }
       }
     });
@@ -88,6 +98,7 @@ export function useCategoryProducts(categorySlug: string | null) {
     queryKey: ['category-products-fast', categorySlug],
     queryFn: async () => {
       if (!categorySlug) return null;
+      // Mark fetch timing immediately — no gates, no delays
       markProductsFetchInitiated();
       markProductsLoadStart();
 

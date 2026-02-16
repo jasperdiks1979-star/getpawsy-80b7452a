@@ -46,9 +46,10 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('@tanstack/react-query')) {
               return 'query';
             }
-            // Keep recharts in the main bundle to avoid star export issues
+            // Recharts + d3 only used in admin/dashboard (lazy-loaded)
+            // Separate chunk so it doesn't bloat the critical path
             if (id.includes('recharts') || id.includes('d3-')) {
-              return undefined; // Don't chunk - include in main bundle
+              return 'recharts-vendor';
             }
           }
         },
