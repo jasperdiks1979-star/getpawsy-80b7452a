@@ -25,6 +25,7 @@ import {
   onRouteChange,
   probeGridPaint,
   computePseudoLcp,
+  getCookieBannerMetrics,
   type PseudoLcpResult,
   type GridProbeResult,
 } from './pseudo-lcp';
@@ -53,6 +54,10 @@ interface LCPDebugData {
   pseudoLcpMs: number | null;
   pseudoLcpCandidate: string | null;
   pseudoLcpReason: string | null;
+  realLcpObserved: boolean;
+  bannerVhPercent: number | null;
+  timeBetweenHeroAndBannerMount: number | null;
+  candidateElementSelector: string | null;
   userAgent: string;
   viewportWidth: number;
   viewportHeight: number;
@@ -84,6 +89,10 @@ function freshDebugData(): LCPDebugData {
     pseudoLcpMs: null,
     pseudoLcpCandidate: null,
     pseudoLcpReason: null,
+    realLcpObserved: false,
+    bannerVhPercent: null,
+    timeBetweenHeroAndBannerMount: null,
+    candidateElementSelector: null,
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
     viewportWidth: typeof window !== 'undefined' ? window.innerWidth : 0,
     viewportHeight: typeof window !== 'undefined' ? window.innerHeight : 0,
@@ -150,11 +159,14 @@ function runPseudoLcpFallback() {
     debugData.pseudoLcpCandidate = result.pseudoLcpCandidate;
     debugData.pseudoLcpReason = result.pseudoLcpReason;
     debugData.cookieBannerCoversContent = result.cookieBannerCoversContent;
+    debugData.bannerVhPercent = result.bannerVhPercent;
     debugData.gridFirstMeaningfulPaintAt = result.gridFirstMeaningfulPaintAt;
     if (result.gridRenderTime !== null) {
       debugData.gridRenderTime = result.gridRenderTime;
     }
     debugData.lcpStatus = 'not_observed';
+    debugData.timeBetweenHeroAndBannerMount = (debugData.heroPaintedAt !== null && debugData.cookieBannerMountedAt !== null)
+      ? Math.round(debugData.cookieBannerMountedAt - debugData.heroPaintedAt) : null;
     lcpSettled = true;
 
     if (isDebug) {
@@ -192,9 +204,12 @@ function updateOverlay() {
       ? (debugData.gridRenderTime < debugData.pseudoLcpMs ? '✅ yes (pseudo)' : '❌ no (pseudo)')
       : 'pending...');
 
+  const bannerVhWarning = debugData.bannerVhPercent !== null && debugData.bannerVhPercent > 25 ? ' ⚠️ >25%!' : '';
+
   const lines = [
     `Route: ${debugData.route}`,
     `<span style="color:${lcpColor}">LCP: ${lcpDisplay}</span>`,
+    `Real LCP observed: ${debugData.realLcpObserved ? '✅ yes' : '❌ no'}`,
     `LCP Element: ${debugData.lcpElement || (lcpSettled ? 'none' : 'pending...')}`,
     `LCP ID: ${debugData.lcpElementId || 'n/a'}`,
     `LCP Resource: ${debugData.lcpUrl || 'n/a'}`,
@@ -205,6 +220,8 @@ function updateOverlay() {
     `Cookie mounted: ${debugData.cookieBannerMountedAt ? `${Math.round(debugData.cookieBannerMountedAt)}ms` : 'not yet'}`,
     `Cookie interactive: ${debugData.cookieBannerInteractiveAt ? `${Math.round(debugData.cookieBannerInteractiveAt)}ms` : 'n/a'}`,
     `Banner covers content: ${debugData.cookieBannerCoversContent !== null ? (debugData.cookieBannerCoversContent ? '⚠️ yes' : '✅ no') : 'n/a'}`,
+    `Banner vh%: ${debugData.bannerVhPercent !== null ? `${debugData.bannerVhPercent}%${bannerVhWarning}` : 'n/a'}`,
+    `Hero→Banner gap: ${debugData.timeBetweenHeroAndBannerMount !== null ? `${debugData.timeBetweenHeroAndBannerMount}ms` : 'n/a'}`,
     `Hero painted: ${formatMs(debugData.heroPaintedAt)}`,
     `CLS: ${debugData.clsValue !== null ? debugData.clsValue.toFixed(4) : 'pending...'}`,
     `INP: ${formatMs(debugData.inpMs)}`,
@@ -324,6 +341,8 @@ export function initLCPDebug() {
       debugData.lcpRenderTime = (metric.entries?.[0] as any)?.renderTime ?? null;
       debugData.lcpLoadTime = (metric.entries?.[0] as any)?.loadTime ?? null;
       debugData.lcpStatus = 'observed';
+      debugData.realLcpObserved = true;
+      debugData.candidateElementSelector = element || null;
       debugData.gridRenderedBeforeLCP = debugData.gridRenderTime !== null && debugData.gridRenderTime < metric.value;
       lcpSettled = true;
 
@@ -378,9 +397,12 @@ export function initLCPDebug() {
           debugData.pseudoLcpCandidate = result.pseudoLcpCandidate;
           debugData.pseudoLcpReason = result.pseudoLcpReason;
           debugData.cookieBannerCoversContent = result.cookieBannerCoversContent;
+          debugData.bannerVhPercent = result.bannerVhPercent;
           debugData.gridFirstMeaningfulPaintAt = result.gridFirstMeaningfulPaintAt;
           if (result.gridRenderTime !== null) debugData.gridRenderTime = result.gridRenderTime;
           debugData.lcpStatus = 'not_observed';
+          debugData.timeBetweenHeroAndBannerMount = (debugData.heroPaintedAt !== null && debugData.cookieBannerMountedAt !== null)
+            ? Math.round(debugData.cookieBannerMountedAt - debugData.heroPaintedAt) : null;
           lcpSettled = true;
           if (isDebug) updateOverlay();
         });

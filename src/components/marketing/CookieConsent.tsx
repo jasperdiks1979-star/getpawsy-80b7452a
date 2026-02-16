@@ -11,11 +11,19 @@ import { markCookieBannerMounted, markCookieBannerInteractive } from '@/lib/lcp-
 export const CookieConsent = () => {
   const [showBanner, setShowBanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showFullText, setShowFullText] = useState(false);
   const [prefs, setPrefs] = useState({ functional: true, analytics: true, marketing: true });
   const mountedRef = useRef(false);
   const interactiveMarkedRef = useRef(false);
+  const isInitialLoad = useRef(true);
   const location = useLocation();
   const isMobile = useIsMobile();
+
+  // After 4s, allow full expansion (prevent large banner during LCP window)
+  useEffect(() => {
+    const t = setTimeout(() => { isInitialLoad.current = false; }, 4000);
+    return () => clearTimeout(t);
+  }, []);
 
   const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
   const shouldDisable = isMobile && isCheckoutRoute;
@@ -110,9 +118,10 @@ export const CookieConsent = () => {
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           className="fixed bottom-0 left-0 right-0 z-[100] p-4 pb-safe"
           data-testid="cookie-banner"
+          data-cwvnolcp="true"
         >
-          {/* max-w-md on mobile keeps visual area smaller than H1 so banner can't win LCP */}
-          <div className="max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+          {/* max-w-md + max-h-[18vh] on mobile keeps visual area smaller than H1 so banner can't win LCP */}
+          <div className="max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-xl overflow-hidden max-h-[18vh] sm:max-h-none overflow-y-auto">
             <div className="p-4 md:p-6">
               <div className="flex items-start gap-4">
                 <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 flex-shrink-0">
@@ -125,9 +134,14 @@ export const CookieConsent = () => {
                   {!showSettings ? (
                     <>
                       <p className="text-sm text-muted-foreground mb-4">
-                        We use cookies to improve your experience, analyze site traffic, and personalize content.
-                        By clicking "Accept All", you consent to our use of cookies.{' '}
-                        <Link to="/cookies" className="text-primary hover:underline">Learn more</Link>
+                        We use cookies to improve your experience.{' '}
+                        {showFullText ? (
+                          <>Analyze site traffic and personalize content. By clicking "Accept All", you consent to our use of cookies.{' '}</>
+                        ) : null}
+                        <button onClick={() => setShowFullText(v => !v)} className="text-primary hover:underline text-sm inline">
+                          {showFullText ? 'Less' : 'Read more'}
+                        </button>{' '}
+                        <Link to="/cookies" className="text-primary hover:underline">Cookie policy</Link>
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <Button onClick={acceptAll} size="sm">Accept All</Button>
