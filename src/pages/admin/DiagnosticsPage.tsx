@@ -355,6 +355,9 @@ export default function DiagnosticsPage() {
         <CwvValidationModule />
       </Suspense>
 
+      {/* LCP Investigation Events */}
+      <LCPEventsCard />
+
       {/* Web Vitals Field Data */}
       <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>}>
         <WebVitalsDashboard />
@@ -945,6 +948,90 @@ function WwwRedirectWarning() {
           <p className="text-xs text-destructive mt-2">
             CRITICAL: www redirect is not 301 (SEO consolidation risk). Check domain settings.
           </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---- LCP Events Diagnostics Card ---- */
+function LCPEventsCard() {
+  const [events, setEvents] = useState<any[]>([]);
+  
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('getpawsy_lcp_events');
+      if (raw) setEvents(JSON.parse(raw));
+    } catch { /* silent */ }
+  }, []);
+
+  const slowEvents = events.filter(e => e.lcpMs > 4000);
+  const productVariants = events
+    .filter(e => e.route.startsWith('/products'))
+    .sort((a, b) => b.lcpMs - a.lcpMs)
+    .slice(0, 5);
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          LCP Investigation Events (Session)
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {events.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No LCP events captured yet. Navigate to pages with <code>?debugVitals=1</code> to start collecting.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {/* Summary */}
+            <div className="flex gap-4 text-sm">
+              <span>Total: <strong>{events.length}</strong></span>
+              <span className={slowEvents.length > 0 ? 'text-destructive' : 'text-primary'}>
+                Slow (&gt;4s): <strong>{slowEvents.length}</strong>
+              </span>
+            </div>
+
+            {/* Worst /products variants */}
+            {productVariants.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Top 5 Worst /products Variants</h4>
+                <div className="space-y-1">
+                  {productVariants.map((ev, i) => (
+                    <div key={i} className="flex justify-between text-xs border rounded p-2">
+                      <code className="truncate max-w-[200px]">{ev.route}</code>
+                      <span className={ev.lcpMs > 4000 ? 'text-destructive font-bold' : ev.lcpMs > 2500 ? 'text-yellow-600' : 'text-primary'}>
+                        {Math.round(ev.lcpMs)}ms
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent events table */}
+            <details>
+              <summary className="text-sm cursor-pointer font-medium">All events ({events.length})</summary>
+              <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
+                {events.map((ev, i) => (
+                  <div key={i} className="text-xs border rounded p-2 flex justify-between items-start gap-2">
+                    <div className="min-w-0">
+                      <code className="block truncate">{ev.route}</code>
+                      <span className="text-muted-foreground">{ev.element || 'n/a'}</span>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span className={ev.lcpMs > 4000 ? 'text-destructive font-bold' : ev.lcpMs > 2500 ? 'text-yellow-600' : 'text-primary'}>
+                        {Math.round(ev.lcpMs)}ms
+                      </span>
+                      <div className="text-muted-foreground">{ev.deviceHint}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </div>
         )}
       </CardContent>
     </Card>

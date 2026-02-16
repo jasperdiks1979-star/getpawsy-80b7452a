@@ -7,12 +7,19 @@ import "./index.css";
 
 // Initialize Web Vitals field-data collector (lightweight, non-blocking)
 import { initVitalsCollector } from "./lib/vitals-collector";
+import { initLCPDebug } from "./lib/lcp-debug";
 if (typeof window !== 'undefined') {
   // Defer to avoid blocking initial render
   if ('requestIdleCallback' in window) {
-    (window as any).requestIdleCallback(() => initVitalsCollector());
+    (window as any).requestIdleCallback(() => {
+      initVitalsCollector();
+      initLCPDebug();
+    });
   } else {
-    setTimeout(() => initVitalsCollector(), 0);
+    setTimeout(() => {
+      initVitalsCollector();
+      initLCPDebug();
+    }, 0);
   }
 }
 

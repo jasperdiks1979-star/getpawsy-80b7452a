@@ -46,6 +46,8 @@ interface ProductCardProps {
   position?: number;
   rating?: number;
   reviewCount?: number;
+  /** Mark first above-the-fold cards as priority for eager image loading (LCP optimization) */
+  priority?: boolean;
 }
 
 export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(({ 
@@ -55,6 +57,7 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   position = 0,
   rating,
   reviewCount,
+  priority = false,
 }, ref) => {
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
@@ -167,6 +170,7 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
             alt={`${product.name}${product.category ? ` - ${product.category}` : ''} | GetPawsy`}
             aspectRatio="square"
             className="group-hover:scale-105"
+            priority={priority}
           />
           
           {/* Gradient overlay on hover */}
