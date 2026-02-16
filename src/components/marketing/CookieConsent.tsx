@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Cookie, X, Settings } from 'lucide-react';
@@ -6,35 +6,67 @@ import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getConsent, setConsent, type ConsentValue } from '@/lib/cookieConsent';
-import { markCookieBannerMounted } from '@/lib/lcp-debug';
+import { markCookieBannerMounted, markCookieBannerInteractive } from '@/lib/lcp-debug';
 
 export const CookieConsent = () => {
   const [showBanner, setShowBanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [prefs, setPrefs] = useState({ functional: true, analytics: true, marketing: true });
   const mountedRef = useRef(false);
+  const interactiveMarkedRef = useRef(false);
   const location = useLocation();
   const isMobile = useIsMobile();
 
   const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
   const shouldDisable = isMobile && isCheckoutRoute;
 
-  // Show banner only if no consent stored — once, DEFERRED to avoid becoming LCP.
-  // Delay 2500ms so the H1/hero always wins the LCP race.
+  // Show banner only if no consent stored — DEFERRED via requestIdleCallback
+  // to avoid blocking hero/grid paint. Falls back to rAF+setTimeout for Safari.
   useEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
     const existing = getConsent();
     if (!existing) {
-      const t = setTimeout(() => {
+      // Use requestIdleCallback so banner mounts after main content paints,
+      // but within ~1-2s instead of the previous hard 2500ms delay.
+      // Fallback: double-rAF + 200ms setTimeout ensures post-first-paint mount.
+      const mount = () => {
         requestAnimationFrame(() => {
           markCookieBannerMounted();
           setShowBanner(true);
         });
-      }, 2500);
-      return () => clearTimeout(t);
+      };
+
+      let handle: number | ReturnType<typeof setTimeout>;
+      if ('requestIdleCallback' in window) {
+        handle = (window as any).requestIdleCallback(mount, { timeout: 2000 });
+      } else {
+        // Double-rAF ensures we're past the first paint frame
+        handle = setTimeout(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(mount);
+          });
+        }, 200);
+      }
+      return () => {
+        if ('requestIdleCallback' in window) {
+          (window as any).cancelIdleCallback(handle as number);
+        } else {
+          clearTimeout(handle as ReturnType<typeof setTimeout>);
+        }
+      };
     }
   }, []);
+
+  // Mark interactive once banner is visible and buttons are rendered
+  useEffect(() => {
+    if (showBanner && !interactiveMarkedRef.current) {
+      interactiveMarkedRef.current = true;
+      requestAnimationFrame(() => {
+        markCookieBannerInteractive();
+      });
+    }
+  }, [showBanner]);
 
   // Allow reopening via custom event
   useEffect(() => {
@@ -52,19 +84,19 @@ export const CookieConsent = () => {
     return () => window.removeEventListener('open-cookie-settings', handler);
   }, []);
 
-  const save = (value: ConsentValue, msg?: string) => {
+  const save = useCallback((value: ConsentValue, msg?: string) => {
     setConsent(value);
     setShowBanner(false);
     setShowSettings(false);
     if (msg) toast.success(msg);
-  };
+  }, []);
 
-  const acceptAll = () => save('all', 'All cookies accepted! 🍪');
-  const acceptNecessary = () => save('necessary', 'Only necessary cookies enabled 🍪');
-  const saveCustom = () => {
+  const acceptAll = useCallback(() => save('all', 'All cookies accepted! 🍪'), [save]);
+  const acceptNecessary = useCallback(() => save('necessary', 'Only necessary cookies enabled 🍪'), [save]);
+  const saveCustom = useCallback(() => {
     const anyMarketing = prefs.functional || prefs.analytics || prefs.marketing;
     save(anyMarketing ? 'all' : 'necessary', 'Cookie preferences saved! 🍪');
-  };
+  }, [prefs, save]);
 
   if (shouldDisable) return null;
 

@@ -47,6 +47,8 @@ interface LCPDebugData {
   gridRenderTime: number | null;
   cookieBannerMountedAt: number | null;
   cookieBannerCoversContent: boolean | null;
+  cookiePlaceholderMountedAt: number | null;
+  cookieBannerInteractiveAt: number | null;
   heroPaintedAt: number | null;
   pseudoLcpMs: number | null;
   pseudoLcpCandidate: string | null;
@@ -76,6 +78,8 @@ function freshDebugData(): LCPDebugData {
     gridRenderTime: null,
     cookieBannerMountedAt: null,
     cookieBannerCoversContent: null,
+    cookiePlaceholderMountedAt: null,
+    cookieBannerInteractiveAt: null,
     heroPaintedAt: null,
     pseudoLcpMs: null,
     pseudoLcpCandidate: null,
@@ -102,6 +106,11 @@ export function markGridRendered() {
 /** Call from cookie banner when it mounts */
 export function markCookieBannerMounted() {
   debugData.cookieBannerMountedAt = performance.now();
+}
+
+/** Call from cookie banner when buttons become interactive */
+export function markCookieBannerInteractive() {
+  debugData.cookieBannerInteractiveAt = performance.now();
 }
 
 /** Mark when the hero H1 first paints */
@@ -193,7 +202,8 @@ function updateOverlay() {
     `Grid 1st paint: ${formatMs(debugData.gridFirstMeaningfulPaintAt)}`,
     `Grid render: ${formatMs(debugData.gridRenderTime)}`,
     `Grid before LCP: ${gridBeforeLcp}`,
-    `Cookie banner: ${debugData.cookieBannerMountedAt ? `${Math.round(debugData.cookieBannerMountedAt)}ms` : 'not yet'}`,
+    `Cookie mounted: ${debugData.cookieBannerMountedAt ? `${Math.round(debugData.cookieBannerMountedAt)}ms` : 'not yet'}`,
+    `Cookie interactive: ${debugData.cookieBannerInteractiveAt ? `${Math.round(debugData.cookieBannerInteractiveAt)}ms` : 'n/a'}`,
     `Banner covers content: ${debugData.cookieBannerCoversContent !== null ? (debugData.cookieBannerCoversContent ? '⚠️ yes' : '✅ no') : 'n/a'}`,
     `Hero painted: ${formatMs(debugData.heroPaintedAt)}`,
     `CLS: ${debugData.clsValue !== null ? debugData.clsValue.toFixed(4) : 'pending...'}`,
@@ -220,6 +230,7 @@ function updateOverlay() {
         ...debugData,
         suspectedLCPBlockers: {
           cookieBannerMountedAt: debugData.cookieBannerMountedAt,
+          cookieBannerInteractiveAt: debugData.cookieBannerInteractiveAt,
           cookieBannerCoversContent: debugData.cookieBannerCoversContent,
           heroPaintedAt: debugData.heroPaintedAt,
           gridRenderTime: debugData.gridRenderTime,
