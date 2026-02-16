@@ -14,18 +14,28 @@ const FREE_SHIPPING_THRESHOLD = 35;
 // ── Supabase REST helper ──────────────────────────────────────────────
 
 async function supaRest<T>(table: string, params: string): Promise<T[]> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      Prefer: 'count=exact',
-    },
-  });
-  if (!res.ok) {
-    console.warn(`[xml-plugin] REST error ${table}: ${res.status}`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout per request
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Prefer: 'count=exact',
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) {
+      console.warn(`[xml-plugin] REST error ${table}: ${res.status}`);
+      return [];
+    }
+    return (await res.json()) as T[];
+  } catch (err) {
+    clearTimeout(timeout);
+    console.warn(`[xml-plugin] REST fetch failed for ${table}:`, err);
     return [];
   }
-  return (await res.json()) as T[];
 }
 
 // ── XML helpers ───────────────────────────────────────────────────────
@@ -685,42 +695,54 @@ export default function sitemapPlugin(): Plugin {
       mkdirSync(outDir, { recursive: true });
       console.log('[xml-plugin] Generating static XML files from Supabase REST API...');
 
-      const today = new Date().toISOString().split('T')[0];
+      // Global timeout: if all XML generation takes > 60s, bail out with fallbacks
+      const GLOBAL_TIMEOUT = 60000;
+      try {
+        await Promise.race([
+          (async () => {
+            const today = new Date().toISOString().split('T')[0];
 
-      // Generate all sitemaps + merchant feed in parallel
-      const [index, stat, products, categories, bestsellers, collections, blog, guides, feed, diagnostics] =
-        await Promise.all([
-          buildSitemapIndex(today).catch(() => FALLBACK_EMPTY),
-          Promise.resolve(buildStaticSitemap(today)),
-          buildProductsSitemap(today).catch(() => FALLBACK_EMPTY),
-          buildCategoriesSitemap(today).catch(() => FALLBACK_EMPTY),
-          buildBestsellersSitemap(today).catch(() => FALLBACK_EMPTY),
-          buildCollectionsSitemap(today).catch(() => FALLBACK_EMPTY),
-          buildBlogSitemap(today).catch(() => FALLBACK_EMPTY),
-          buildGuidesSitemap(today).catch(() => FALLBACK_EMPTY),
-          buildMerchantFeed().catch(() => FALLBACK_FEED),
-          buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
+            const [index, stat, products, categories, bestsellers, collections, blog, guides, feed, diagnostics] =
+              await Promise.all([
+                buildSitemapIndex(today).catch(() => FALLBACK_EMPTY),
+                Promise.resolve(buildStaticSitemap(today)),
+                buildProductsSitemap(today).catch(() => FALLBACK_EMPTY),
+                buildCategoriesSitemap(today).catch(() => FALLBACK_EMPTY),
+                buildBestsellersSitemap(today).catch(() => FALLBACK_EMPTY),
+                buildCollectionsSitemap(today).catch(() => FALLBACK_EMPTY),
+                buildBlogSitemap(today).catch(() => FALLBACK_EMPTY),
+                buildGuidesSitemap(today).catch(() => FALLBACK_EMPTY),
+                buildMerchantFeed().catch(() => FALLBACK_FEED),
+                buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
+              ]);
+
+            const files: [string, string][] = [
+              ['sitemap.xml', index],
+              ['sitemap-static.xml', stat],
+              ['sitemap-products.xml', products],
+              ['sitemap-categories.xml', categories],
+              ['sitemap-bestsellers.xml', bestsellers],
+              ['sitemap-collections.xml', collections],
+              ['sitemap-blog.xml', blog],
+              ['sitemap-guides.xml', guides],
+              ['merchant-feed.xml', feed],
+              ['merchant-diagnostics.xml', diagnostics],
+            ];
+
+            for (const [name, xml] of files) {
+              writeFileSync(join(outDir, name), xml, 'utf-8');
+              console.log(`[xml-plugin] ✓ ${name} (${xml.length} bytes)`);
+            }
+
+            console.log('[xml-plugin] Done — all XML files generated at build time.');
+          })(),
+          new Promise<void>((_, reject) =>
+            setTimeout(() => reject(new Error('XML generation timed out after 60s')), GLOBAL_TIMEOUT)
+          ),
         ]);
-
-      const files: [string, string][] = [
-        ['sitemap.xml', index],
-        ['sitemap-static.xml', stat],
-        ['sitemap-products.xml', products],
-        ['sitemap-categories.xml', categories],
-        ['sitemap-bestsellers.xml', bestsellers],
-        ['sitemap-collections.xml', collections],
-        ['sitemap-blog.xml', blog],
-        ['sitemap-guides.xml', guides],
-        ['merchant-feed.xml', feed],
-        ['merchant-diagnostics.xml', diagnostics],
-      ];
-
-      for (const [name, xml] of files) {
-        writeFileSync(join(outDir, name), xml, 'utf-8');
-        console.log(`[xml-plugin] ✓ ${name} (${xml.length} bytes)`);
+      } catch (err) {
+        console.warn('[xml-plugin] ⚠️ XML generation failed or timed out, build continues:', err);
       }
-
-      console.log('[xml-plugin] Done — all XML files generated at build time.');
     },
   };
 }
