@@ -493,15 +493,19 @@ const Index = () => {
                 Free US shipping over $35. 30-day hassle-free returns.
               </p>
               
-              {/* Single prominent CTA */}
+              {/* Primary CTAs — authority flow to cornerstones */}
               <div className="flex flex-wrap items-center gap-4 pt-2">
-                <Link to="/products">
+                <Link to="/bestsellers">
                   <Button size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                    Shop Now
+                    Shop Bestsellers
                     <ArrowRight className="w-5 h-5" />
                   </Button>
                 </Link>
-                
+                <Link to="/products">
+                  <Button size="lg" variant="outline" className="gap-2 rounded-full px-8 py-6 text-base font-semibold">
+                    Browse All
+                  </Button>
+                </Link>
               </div>
             </motion.div>
           </div>

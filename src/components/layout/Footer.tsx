@@ -89,12 +89,12 @@ export const Footer = () => {
 
   const footerLinks = {
     shop: [
-      { label: 'All Products', href: '/products' },
       { label: 'Bestsellers', href: '/bestsellers' },
+      { label: 'Best Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
+      { label: 'Best Dog Toys', href: '/collections/best-interactive-dog-toys' },
+      { label: 'All Products', href: '/products' },
       { label: 'Dogs', href: '/products?category=dogs' },
       { label: 'Cats', href: '/products?category=cats' },
-      { label: 'Toys', href: '/products?category=toys' },
-      { label: 'Grooming', href: '/products?category=care' },
     ],
     support: [
       { label: 'Contact', href: '/contact' },
