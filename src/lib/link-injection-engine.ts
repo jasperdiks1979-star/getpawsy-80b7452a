@@ -34,14 +34,16 @@ export interface DASWeights {
   conversion: number;
   revenue: number;
   backlinks: number;
+  ctr: number;
 }
 
 const DEFAULT_DAS_WEIGHTS: DASWeights = {
-  traffic: 0.30,
+  traffic: 0.25,
   impressions: 0.20,
   conversion: 0.15,
   revenue: 0.20,
-  backlinks: 0.15,
+  backlinks: 0.10,
+  ctr: 0.10,
 };
 
 /**
@@ -58,6 +60,7 @@ export function calculateDAS(
   const impressionScore = maxImpressions > 0 ? Math.min(guide.impressions30d / maxImpressions, 1) : 0;
   const ctr = guide.impressions30d > 0 ? guide.clicks30d / guide.impressions30d : 0;
   const conversionScore = Math.min(ctr / 0.10, 1);
+  const ctrScore = Math.min(ctr / 0.08, 1); // 8% CTR = max CTR score
   const positionBonus = guide.avgPosition > 0 ? Math.max(0, 1 - (guide.avgPosition - 1) / 50) : 0;
   const revenueScore = trafficScore * positionBonus;
   const backlinkScore = Math.min(guide.inboundInternalLinks / 10, 1);
@@ -67,7 +70,8 @@ export function calculateDAS(
     impressionScore * weights.impressions +
     conversionScore * weights.conversion +
     revenueScore * weights.revenue +
-    backlinkScore * weights.backlinks;
+    backlinkScore * weights.backlinks +
+    ctrScore * weights.ctr;
 
   const typeBonus = guide.pageType === 'cornerstone' ? 0.15 : guide.pageType === 'hub' ? 0.08 : 0;
   return Math.min(100, Math.round((raw + typeBonus) * 100));
