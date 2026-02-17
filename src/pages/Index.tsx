@@ -12,7 +12,7 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Loader2, Star, Clock, BookOpen, Truck, ShieldCheck, RotateCcw, Heart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,7 @@ import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { WebsiteSchema, LocalBusinessSchema } from '@/components/seo';
 import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { initPageDebug, logDataSanitization, createSectionDebugger } from '@/lib/debug-logger';
-import { useCriticalImagePreload, prefetchImages } from '@/hooks/useCriticalImagePreload';
+import { prefetchImages } from '@/hooks/useCriticalImagePreload';
 import { getAnchorText } from '@/lib/anchor-text-helper';
 // FREE_SHIPPING_THRESHOLD and RETURN_WINDOW_DAYS are now used directly in AnimatedTrustBadges
 
@@ -79,31 +79,10 @@ const featureVariants = {
 };
 
 const Index = () => {
-  // Preload critical hero images for faster LCP
-  useCriticalImagePreload([
-    '/categories/dogs.jpg',
-    '/categories/cats.jpg',
-  ]);
-  
   // Initialize debug mode on mount
   useEffect(() => {
     initPageDebug('Index/Homepage');
   }, []);
-  
-  
-  // Parallax scroll
-  const heroRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"]
-  });
-  
-  // Parallax transforms - simplified for better mobile performance
-  const heroImageY = useTransform(scrollYProgress, [0, 1], [0, 100]);
-  const heroContentY = useTransform(scrollYProgress, [0, 1], [0, 30]);
-  const floatingCard1Y = useTransform(scrollYProgress, [0, 1], [0, 50]);
-  const floatingCard2Y = useTransform(scrollYProgress, [0, 1], [0, 70]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0.5]);
   
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -380,44 +359,29 @@ const Index = () => {
       </Helmet>
       <WebsiteSchema />
       <LocalBusinessSchema />
-      {/* Hero Section - Clean, Premium, Trust-Building */}
-      <section ref={heroRef} className="relative overflow-hidden min-h-[85vh] flex items-center">
-        {/* Lifestyle Background - Calm home setting with pet */}
+      {/* Hero Section - Static render for fastest LCP */}
+      <section className="relative overflow-hidden min-h-[85vh] flex items-center">
+        {/* Lifestyle Background — local optimized image */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1200&q=80&auto=format"
-            srcSet="https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=640&q=75&auto=format 640w, https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1024&q=80&auto=format 1024w, https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1920&q=85&auto=format 1920w"
-            sizes="100vw"
+            src="/hero-dog.webp"
             alt="Happy dog relaxing at home with premium pet products"
-            width={1920}
-            height={1080}
+            width={1200}
+            height={675}
             className="w-full h-full object-cover object-center"
             loading="eager"
             fetchPriority="high"
-            decoding="async"
+            decoding="sync"
             style={{ aspectRatio: '16/9' }}
           />
-          {/* Warm, soft gradient overlay - not harsh */}
+          {/* Warm, soft gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30" />
           <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
         </div>
         
-        {/* Subtle warm blur accents */}
-        <div className="absolute top-1/4 right-1/4 w-72 h-72 bg-sand/40 rounded-full blur-3xl z-0" />
-        <div className="absolute bottom-1/3 left-1/6 w-96 h-96 bg-secondary/20 rounded-full blur-3xl z-0" />
-        
-        <motion.div 
-          className="container relative z-10 px-4 md:px-6 py-16 md:py-24"
-          style={{ opacity: heroOpacity }}
-        >
+        <div className="container relative z-10 px-4 md:px-6 py-16 md:py-24">
           <div className="max-w-2xl">
-            <motion.div 
-              className="space-y-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              style={{ y: heroContentY }}
-            >
+            <div className="space-y-6">
               {/* Simple, warm headline */}
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
                 Trusted Pet Products,
@@ -431,7 +395,7 @@ const Index = () => {
                 Free US shipping over $35. 30-day hassle-free returns.
               </p>
               
-              {/* Primary CTAs — authority flow to cornerstones */}
+              {/* Primary CTAs */}
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <Link to="/bestsellers">
                   <Button size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
@@ -445,9 +409,9 @@ const Index = () => {
                   </Button>
                 </Link>
               </div>
-            </motion.div>
+            </div>
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* Animated Trust Badges */}
