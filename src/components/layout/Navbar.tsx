@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, User, LogOut, Shield, Heart, X, ChevronDown, ChevronRight, Gift, Truck, ArrowRight, Award } from 'lucide-react';
+import { ShoppingCart, Search, User, LogOut, Shield, Heart, X, ChevronDown, ChevronRight, Gift, Truck, ArrowRight, Award, Trophy, Star } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -487,6 +487,50 @@ export const Navbar = () => {
                 </Link>
               );
             })}
+
+            {/* Top Rated Dropdown — authority flow to cornerstones */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors rounded-full text-amber-600 dark:text-amber-400 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/20"
+                >
+                  <Trophy className="w-4 h-4" />
+                  Top Rated
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-64">
+                <DropdownMenuItem asChild>
+                  <Link to="/bestsellers" className="flex items-center gap-3 py-2">
+                    <Star className="w-4 h-4 text-amber-500" />
+                    <div>
+                      <p className="font-medium">Bestsellers</p>
+                      <p className="text-xs text-muted-foreground">Our most popular picks</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/collections/best-cat-litter-boxes" className="flex items-center gap-3 py-2">
+                    <span className="text-lg">🐱</span>
+                    <div>
+                      <p className="font-medium">Best Cat Litter Boxes</p>
+                      <p className="text-xs text-muted-foreground">Expert-tested 2026 picks</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/collections/best-interactive-dog-toys" className="flex items-center gap-3 py-2">
+                    <span className="text-lg">🐶</span>
+                    <div>
+                      <p className="font-medium">Best Interactive Dog Toys</p>
+                      <p className="text-xs text-muted-foreground">Enrichment & puzzle toys</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             {/* Categories Mega Menu Trigger */}
             <button
@@ -688,6 +732,33 @@ export const Navbar = () => {
                             </Link>
                           </SheetClose>
                         )}
+                      </div>
+
+                      {/* Top Rated — Mobile */}
+                      <div className="mb-2">
+                        <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                          Top Rated
+                        </p>
+                      </div>
+                      <div className="rounded-xl border bg-card overflow-hidden mb-4">
+                        <SheetClose asChild>
+                          <Link to="/bestsellers" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
+                            <Star className="w-4 h-4 text-amber-500" />
+                            <span className="font-medium">Bestsellers</span>
+                          </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link to="/collections/best-cat-litter-boxes" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
+                            <span>🐱</span>
+                            <span className="font-medium">Best Cat Litter Boxes</span>
+                          </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link to="/collections/best-interactive-dog-toys" className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors">
+                            <span>🐶</span>
+                            <span className="font-medium">Best Dog Toys</span>
+                          </Link>
+                        </SheetClose>
                       </div>
                       
                       {/* Mobile Categories */}

@@ -90,9 +90,9 @@ export const PRODUCT_CORNERSTONE_MAP: Record<string, string> = {
 
 // ── Anchor Distribution Targets ──
 export const ANCHOR_DISTRIBUTION = {
-  exact: { target: 0.25, max: 0.30 },   // ≤25% exact match
-  partial: { target: 0.50, min: 0.40 },  // ~50% partial match
-  branded: { target: 0.25, min: 0.15 },  // ~25% branded/generic
+  exact: { target: 0.35, max: 0.35 },   // ≤35% exact match
+  partial: { target: 0.45, min: 0.35 },  // ~45% partial match
+  branded: { target: 0.20, min: 0.15 },  // ~20% branded/generic
 } as const;
 
 // ── Footer Priority Links ──

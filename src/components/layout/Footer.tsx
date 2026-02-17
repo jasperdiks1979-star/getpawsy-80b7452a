@@ -101,20 +101,12 @@ export const Footer = () => {
       { label: 'Shipping', href: '/shipping', noFollow: true },
       { label: 'Returns', href: '/returns' },
       { label: 'FAQ', href: '/faq' },
-      { label: 'Track Order', href: '/track', noFollow: true },
     ],
     company: [
       { label: 'About Us', href: '/about' },
       { label: 'Blog', href: '/blog' },
-      { label: 'Guides', href: '/guides' },
       { label: 'Privacy Policy', href: '/privacy' },
       { label: 'Terms of Service', href: '/terms' },
-    ],
-    transparency: [
-      { label: 'About the Author', href: '/about-the-author' },
-      { label: 'Editorial Guidelines', href: '/editorial-guidelines' },
-      { label: 'How We Test Products', href: '/how-we-test-products' },
-      { label: 'Affiliate Disclosure', href: '/affiliate-disclosure' },
     ],
   };
 
@@ -188,7 +180,7 @@ export const Footer = () => {
       {/* Main Footer */}
       <div className="bg-foreground text-background w-full">
         <div className="container px-4 md:px-6 py-16 max-w-full">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
             {/* Brand Column */}
             <div className="col-span-2 md:col-span-2 space-y-6">
               <Link to="/" className="inline-flex items-center gap-3 group">
@@ -301,23 +293,6 @@ export const Footer = () => {
               </ul>
             </div>
 
-            {/* Editorial & Transparency Links */}
-            <div>
-              <h4 className="font-display font-semibold text-lg mb-5">Editorial & Transparency</h4>
-              <ul className="space-y-3">
-                {footerLinks.transparency.map((link) => (
-                  <li key={link.href}>
-                    <Link 
-                      to={link.href} 
-                      className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
-                    >
-                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                      <span>{link.label}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
           </div>
           {/* Expert Pet Buying Guides — SEO Cornerstone Link Section */}
           <div className="mt-12 pt-8 border-t border-background/10">
