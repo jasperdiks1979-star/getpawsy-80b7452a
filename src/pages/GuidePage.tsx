@@ -135,7 +135,52 @@ const GuidePage = () => {
     },
   })) || [];
 
-  // Render markdown-like content (bold, paragraphs, lists, internal guide links)
+  // Parse a markdown table block into header + rows
+  const parseMarkdownTable = (lines: string[]): { headers: string[]; rows: string[][] } | null => {
+    if (lines.length < 3) return null;
+    const parseRow = (line: string) =>
+      line.split('|').map(c => c.trim()).filter(c => c.length > 0);
+    const headers = parseRow(lines[0]);
+    if (headers.length < 2) return null;
+    // Line 1 should be separator like |---|---|
+    if (!/^\|?[\s-|]+\|?$/.test(lines[1])) return null;
+    const rows = lines.slice(2).map(parseRow).filter(r => r.length === headers.length);
+    return rows.length > 0 ? { headers, rows } : null;
+  };
+
+  // Render a premium styled table
+  const renderPremiumTable = (table: { headers: string[]; rows: string[][] }, key: number) => (
+    <div key={key} className="mb-8 rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-muted/60 border-b border-border">
+              {table.headers.map((h, j) => (
+                <th key={j} className="px-5 py-3.5 text-left font-display font-bold text-foreground text-xs uppercase tracking-wider whitespace-nowrap">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {table.rows.map((row, ri) => (
+              <tr key={ri} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+                {row.map((cell, ci) => (
+                  <td
+                    key={ci}
+                    className={`px-5 py-3.5 ${ci === 0 ? 'font-semibold text-primary' : 'text-muted-foreground'}`}
+                    dangerouslySetInnerHTML={{ __html: formatInline(cell) }}
+                  />
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Render markdown-like content (bold, paragraphs, lists, tables, internal guide links)
   const renderContent = (content: string, sectionIndex?: number) => {
     // Inject guide links for sections after the first 2
     let processedContent = content;
@@ -145,7 +190,14 @@ const GuidePage = () => {
     
     const paragraphs = processedContent.split('\n\n');
     return paragraphs.map((para, i) => {
-      const lines = para.split('\n');
+      const lines = para.split('\n').filter(l => l.trim() !== '');
+
+      // Check if this block is a markdown table
+      if (lines.length >= 3 && lines[0].includes('|') && lines[1].includes('---')) {
+        const table = parseMarkdownTable(lines);
+        if (table) return renderPremiumTable(table, i);
+      }
+
       const isList = lines.every((l) => l.startsWith('- ') || l.startsWith('**') || l.trim() === '');
 
       if (isList && lines.some((l) => l.startsWith('- '))) {
