@@ -9,32 +9,37 @@ import { CartAnimationProvider } from "@/contexts/CartAnimationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
-import { LiveCheckoutWidget } from "@/components/admin/LiveCheckoutWidget";
-import { SafePinterestTag } from "@/components/tracking/SafePinterestTag";
-import { SafeGlobalVisitorTracker } from "@/components/tracking/SafeGlobalVisitorTracker";
+// Marketing/tracking components — lazy-loaded, not needed for first paint
+const LiveCheckoutWidget = lazy(() => import("@/components/admin/LiveCheckoutWidget").then(m => ({ default: m.LiveCheckoutWidget })));
+const SafePinterestTag = lazy(() => import("@/components/tracking/SafePinterestTag").then(m => ({ default: m.SafePinterestTag })));
+const SafeGlobalVisitorTracker = lazy(() => import("@/components/tracking/SafeGlobalVisitorTracker").then(m => ({ default: m.SafeGlobalVisitorTracker })));
+const RecentPurchaseNotification = lazy(() => import("@/components/social-proof/RecentPurchaseNotification").then(m => ({ default: m.RecentPurchaseNotification })));
+const InternalTrafficChip = lazy(() => import("@/components/tracking/InternalTrafficChip").then(m => ({ default: m.InternalTrafficChip })));
 import { MarketingErrorBoundary } from "@/components/error/MarketingErrorBoundary";
-import { RecentPurchaseNotification } from "@/components/social-proof/RecentPurchaseNotification";
-import { InternalTrafficChip } from "@/components/tracking/InternalTrafficChip";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { setupGlobalErrorHandler } from "@/lib/error-reporter";
-import { initDataHealer } from "@/lib/data-healer";
-import { initLegacyLinkGuard, initLegacyFetchGuard } from "@/lib/legacy-link-guard";
+// Defer non-critical initializers — don't block first paint
+const setupGlobalErrorHandler = () => import("@/lib/error-reporter").then(m => m.setupGlobalErrorHandler());
+const initDataHealer = () => import("@/lib/data-healer").then(m => m.initDataHealer());
+const initLegacyLinkGuard = () => import("@/lib/legacy-link-guard").then(m => m.initLegacyLinkGuard());
+const initLegacyFetchGuard = () => import("@/lib/legacy-link-guard").then(m => m.initLegacyFetchGuard());
 import { AppErrorBoundary } from "@/components/error/AppErrorBoundary";
 
-// Production-safe initialization
-try { setupGlobalErrorHandler(); } catch (e) { console.error('[ProdSafe] setupGlobalErrorHandler failed:', e); }
-try { initDataHealer(); } catch (e) { console.error('[ProdSafe] initDataHealer failed:', e); }
-try { initLegacyLinkGuard(); } catch (e) { console.error('[ProdSafe] initLegacyLinkGuard failed:', e); }
-try { initLegacyFetchGuard(); } catch (e) { console.error('[ProdSafe] initLegacyFetchGuard failed:', e); }
-try { import('@/lib/founder-mode').then(m => m.consumeFounderKeyFromUrl()); } catch (e) { console.error('[ProdSafe] consumeFounderKeyFromUrl failed:', e); }
-try { import('@/lib/traffic').then(m => m.consumeInternalParamFromUrl()); } catch (e) { console.error('[ProdSafe] consumeInternalParamFromUrl failed:', e); }
-try { import('@/lib/analytics').then(m => m.initAnalyticsUserProperties()); } catch (e) { console.error('[ProdSafe] initAnalyticsUserProperties failed:', e); }
+// Production-safe initialization — deferred to not block first paint
+if (typeof window !== 'undefined') {
+  requestAnimationFrame(() => {
+    setupGlobalErrorHandler().catch(() => {});
+    initDataHealer().catch(() => {});
+    initLegacyLinkGuard().catch(() => {});
+    initLegacyFetchGuard().catch(() => {});
+    import('@/lib/founder-mode').then(m => m.consumeFounderKeyFromUrl()).catch(() => {});
+    import('@/lib/traffic').then(m => m.consumeInternalParamFromUrl()).catch(() => {});
+    import('@/lib/analytics').then(m => m.initAnalyticsUserProperties()).catch(() => {});
+  });
+}
 
-// Critical routes - loaded immediately
+// Critical routes - only Index is eagerly loaded for homepage LCP
 import Index from "./pages/Index";
-import Products from "./pages/Products";
-import NotFound from "./pages/NotFound";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -116,6 +121,9 @@ const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>
   });
 };
 
+// Products & NotFound — lazy for homepage LCP (not needed on first paint)
+const Products = lazyWithRetry(() => import("./pages/Products"));
+const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 const ProductDetail = lazyWithRetry(() => import("./pages/ProductDetail"));
 const Cart = lazyWithRetry(() => import("./pages/Cart"));
 const Checkout = lazyWithRetry(() => import("./pages/Checkout"));
@@ -232,19 +240,20 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
-                  <LiveCheckoutWidget />
+                  <Suspense fallback={null}><LiveCheckoutWidget /></Suspense>
                   <ScrollToTop />
                   <MarketingErrorBoundary>
-                    <SafePinterestTag />
-                    <SafeGlobalVisitorTracker />
-                    <RecentPurchaseNotification />
+                    <Suspense fallback={null}>
+                      <SafePinterestTag />
+                      <SafeGlobalVisitorTracker />
+                      <RecentPurchaseNotification />
+                    </Suspense>
                   </MarketingErrorBoundary>
-                  <InternalTrafficChip />
+                  <Suspense fallback={null}><InternalTrafficChip /></Suspense>
                   <RouteErrorBoundary>
                     <Routes>
                       <Route path="/" element={<Index />} />
-                      <Route path="/products" element={<Products />} />
-                      
+                      <Route path="/products" element={<Suspense fallback={<RouteLoader />}><Products /></Suspense>} />
                       <Route path="/product/:id" element={<Suspense fallback={<RouteLoader />}><ProductDetail /></Suspense>} />
                       <Route path="/cart" element={<Suspense fallback={<RouteLoader />}><Cart /></Suspense>} />
                       <Route path="/checkout" element={<Suspense fallback={<RouteLoader />}><Checkout /></Suspense>} />
@@ -336,7 +345,7 @@ const App = () => {
                       <Route path="/admin/cluster-dominance" element={<Suspense fallback={<RouteLoader />}><ClusterDominance /></Suspense>} />
                       <Route path="/admin/analytics-traffic" element={<Suspense fallback={<RouteLoader />}><AnalyticsTrafficDocs /></Suspense>} />
                       
-                      <Route path="*" element={<NotFound />} />
+                      <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
                     </Routes>
                   </RouteErrorBoundary>
                 </BrowserRouter>

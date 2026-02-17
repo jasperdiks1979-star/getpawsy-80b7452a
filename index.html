@@ -59,19 +59,12 @@
       to prevent "Cannot access uninitialized variable" TDZ errors on iOS Safari.
     -->
 
-    <!-- Preload LCP hero image for fastest paint -->
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1200&q=80&auto=format" imagesrcset="https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=640&q=75&auto=format 640w, https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1024&q=80&auto=format 1024w, https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1920&q=85&auto=format 1920w" imagesizes="100vw" fetchpriority="high">
+    <!-- Preload LCP hero image — local optimized WebP -->
+    <link rel="preload" as="image" href="/hero-dog.webp" fetchpriority="high">
 
-    <!-- DNS Prefetch for external resources -->
-    <link rel="dns-prefetch" href="https://nojvgfbcjgipjxpfatmm.supabase.co">
-    <link rel="dns-prefetch" href="https://cf.cjdropshipping.com">
-    <link rel="preconnect" href="https://cf.cjdropshipping.com" crossorigin>
-    
-    <!-- Preconnect to critical origins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- DNS Prefetch / preconnect — only critical origins -->
     <link rel="preconnect" href="https://nojvgfbcjgipjxpfatmm.supabase.co" crossorigin>
-    <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cf.cjdropshipping.com">
     
     <!-- Fonts with display=swap for faster text rendering -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
