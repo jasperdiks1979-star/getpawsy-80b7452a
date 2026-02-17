@@ -5,7 +5,7 @@ import { AppErrorBoundary } from "./components/error/AppErrorBoundary";
 import App from "./App.tsx";
 import "./index.css";
 
-// v2 - Service worker cleanup is now handled in index.html (inline script)
+// v3 - Build fix: sitemap plugin writes fallback XML first to prevent build hangs
 
 // Initialize Web Vitals field-data collector (lightweight, non-blocking)
 import { initVitalsCollector } from "./lib/vitals-collector";
