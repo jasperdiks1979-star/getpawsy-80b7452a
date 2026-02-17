@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Clock, BookOpen, ChevronRight, ShoppingBag, CheckCircle, XCircle, AlertTriangle, RefreshCw, User } from 'lucide-react';
+import { Clock, BookOpen, ChevronRight, ShoppingBag, CheckCircle, XCircle, AlertTriangle, RefreshCw, User, Award } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { useGuide, useGuidesList } from '@/hooks/useGuides';
 import { Loader2 } from 'lucide-react';
@@ -180,6 +180,44 @@ const GuidePage = () => {
     </div>
   );
 
+  // Check if a list item is a "Best for X → Y" recommendation pattern
+  const isBestForPattern = (line: string) => /^- \*\*Best\s/i.test(line) && line.includes('→');
+
+  // Render a premium "Best for" card grid
+  const renderBestForCards = (lines: string[], key: number) => {
+    const items = lines.filter(l => l.startsWith('- ')).map(l => {
+      const text = l.slice(2);
+      const arrowIdx = text.indexOf('→');
+      if (arrowIdx === -1) return { label: text, desc: '' };
+      const label = text.slice(0, arrowIdx).replace(/\*\*/g, '').trim();
+      const desc = text.slice(arrowIdx + 1).trim();
+      return { label, desc };
+    });
+
+    return (
+      <div key={key} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+        {items.map((item, j) => (
+          <div
+            key={j}
+            className="group relative rounded-2xl border border-border bg-card p-4 hover:border-primary/30 hover:shadow-md transition-all duration-300"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Award className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-display font-bold text-foreground text-sm leading-snug mb-1">
+                  {item.label}
+                </h4>
+                <p className="text-sm text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: formatInline(item.desc) }} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   // Render markdown-like content (bold, paragraphs, lists, tables, internal guide links)
   const renderContent = (content: string, sectionIndex?: number) => {
     // Inject guide links for sections after the first 2
@@ -198,13 +236,33 @@ const GuidePage = () => {
         if (table) return renderPremiumTable(table, i);
       }
 
+      // H3 subheading (### Heading)
+      if (lines.length === 1 && lines[0].startsWith('### ')) {
+        const heading = lines[0].slice(4);
+        return (
+          <h3 key={i} className="flex items-center gap-3 text-lg font-display font-bold text-foreground mt-8 mb-4">
+            <span className="w-1 h-6 rounded-full bg-gradient-to-b from-primary to-primary/40" />
+            {heading}
+          </h3>
+        );
+      }
+
       const isList = lines.every((l) => l.startsWith('- ') || l.startsWith('**') || l.trim() === '');
 
+      // "Best for" pattern → premium card grid
+      if (isList && lines.some(l => l.startsWith('- ')) && lines.filter(l => l.startsWith('- ')).every(isBestForPattern)) {
+        return renderBestForCards(lines, i);
+      }
+
+      // Regular bullet list → premium styled
       if (isList && lines.some((l) => l.startsWith('- '))) {
         return (
-          <ul key={i} className="list-disc list-inside space-y-2 text-muted-foreground mb-4">
+          <ul key={i} className="space-y-2.5 mb-6 pl-1">
             {lines.filter((l) => l.startsWith('- ')).map((l, j) => (
-              <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(l.slice(2)) }} />
+              <li key={j} className="flex items-start gap-3 text-muted-foreground text-[15px] leading-relaxed">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-2.5 flex-shrink-0" />
+                <span dangerouslySetInnerHTML={{ __html: formatInline(l.slice(2)) }} />
+              </li>
             ))}
           </ul>
         );
@@ -213,7 +271,7 @@ const GuidePage = () => {
       return (
         <p
           key={i}
-          className="text-muted-foreground leading-relaxed mb-4"
+          className="text-muted-foreground leading-[1.8] mb-5 text-[15px]"
           dangerouslySetInnerHTML={{ __html: formatInline(para.replace(/\n/g, '<br/>')) }}
         />
       );
@@ -345,13 +403,21 @@ const GuidePage = () => {
           </div>
         </header>
 
-        {/* Quick Answer Snippet */}
+        {/* Quick Answer Snippet — Premium */}
         {guide.quickAnswer && (
-          <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 mb-8">
-            <h2 className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">
-              ✅ Quick Answer
-            </h2>
-            <p className="text-foreground leading-relaxed text-[15px]">{guide.quickAnswer}</p>
+          <div className="relative mb-10 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-card to-card overflow-hidden shadow-sm">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary to-primary/40" />
+            <div className="p-6 pl-7">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-primary" />
+                </div>
+                <h2 className="text-sm font-display font-bold text-primary uppercase tracking-wider">
+                  Quick Answer
+                </h2>
+              </div>
+              <p className="text-foreground leading-[1.75] text-[15px]">{guide.quickAnswer}</p>
+            </div>
           </div>
         )}
 
@@ -459,52 +525,61 @@ const GuidePage = () => {
           </nav>
         )}
 
-        {/* Table of Contents */}
-        <nav className="bg-muted/50 rounded-xl p-6 mb-10 border border-border">
-          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
-            In This Guide
-          </h2>
-          <ol className="space-y-2">
+        {/* Table of Contents — Premium */}
+        <nav className="rounded-2xl border border-border bg-card p-6 mb-12 shadow-sm">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <BookOpen className="w-4 h-4 text-primary" />
+            </div>
+            <h2 className="text-sm font-display font-bold text-foreground uppercase tracking-wider">
+              In This Guide
+            </h2>
+          </div>
+          <ol className="space-y-1.5">
             {guide.sections.map((section, i) => (
               <li key={i}>
                 <a
                   href={`#section-${i}`}
-                  className="text-sm text-primary hover:underline flex items-center gap-2"
+                  className="group flex items-center gap-3 text-sm py-1.5 px-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors"
                 >
-                  <span className="text-muted-foreground text-xs w-5">{i + 1}.</span>
-                  {section.heading}
+                  <span className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                    {i + 1}
+                  </span>
+                  <span className="text-muted-foreground group-hover:text-foreground transition-colors font-medium">
+                    {section.heading}
+                  </span>
                 </a>
               </li>
             ))}
             {guide.buyingCriteria && (
               <li>
-                <a href="#buying-criteria" className="text-sm text-primary hover:underline flex items-center gap-2">
-                  <span className="text-muted-foreground text-xs w-5">✓</span>
-                  Buying Criteria
+                <a href="#buying-criteria" className="group flex items-center gap-3 text-sm py-1.5 px-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors">
+                  <span className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">✓</span>
+                  <span className="text-muted-foreground group-hover:text-foreground transition-colors font-medium">Buying Criteria</span>
                 </a>
               </li>
             )}
             {guide.prosAndCons && (
               <li>
-                <a href="#pros-cons" className="text-sm text-primary hover:underline flex items-center gap-2">
-                  <span className="text-muted-foreground text-xs w-5">±</span>
-                  Pros &amp; Cons
+                <a href="#pros-cons" className="group flex items-center gap-3 text-sm py-1.5 px-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors">
+                  <span className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">±</span>
+                  <span className="text-muted-foreground group-hover:text-foreground transition-colors font-medium">Pros &amp; Cons</span>
                 </a>
               </li>
             )}
             {guide.commonMistakes && guide.commonMistakes.length > 0 && (
               <li>
-                <a href="#common-mistakes" className="text-sm text-primary hover:underline flex items-center gap-2">
-                  <span className="text-muted-foreground text-xs w-5">!</span>
-                  Common Mistakes
+                <a href="#common-mistakes" className="group flex items-center gap-3 text-sm py-1.5 px-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors">
+                  <span className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">!</span>
+                  <span className="text-muted-foreground group-hover:text-foreground transition-colors font-medium">Common Mistakes</span>
                 </a>
               </li>
             )}
             {guide.faq.length > 0 && (
               <li>
-                <a href="#faq" className="text-sm text-primary hover:underline flex items-center gap-2">
-                  <span className="text-muted-foreground text-xs w-5">?</span>
-                  Frequently Asked Questions
+                <a href="#faq" className="group flex items-center gap-3 text-sm py-1.5 px-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors">
+                  <span className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">?</span>
+                  <span className="text-muted-foreground group-hover:text-foreground transition-colors font-medium">Frequently Asked Questions</span>
                 </a>
               </li>
             )}
@@ -513,8 +588,11 @@ const GuidePage = () => {
 
         {/* Main Sections */}
         {guide.sections.map((section, i) => (
-          <section key={i} id={`section-${i}`} className="mb-10 scroll-mt-24">
-            <h2 className="text-2xl font-display font-bold text-foreground mb-4">
+          <section key={i} id={`section-${i}`} className="mb-12 scroll-mt-24">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-5 flex items-center gap-3">
+              <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
+                {i + 1}
+              </span>
               {section.heading}
             </h2>
             {renderContent(section.content, i)}
@@ -526,71 +604,23 @@ const GuidePage = () => {
           <ComparisonTable products={guide.comparisonProducts} />
         )}
 
-        {/* Buying Criteria Block */}
+        {/* Buying Criteria Block — Premium */}
         {guide.buyingCriteria && (
-          <section id="buying-criteria" className="mb-10 scroll-mt-24">
-            <h2 className="text-2xl font-display font-bold text-foreground mb-4">
+          <section id="buying-criteria" className="mb-12 scroll-mt-24">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-5">
               {guide.buyingCriteria.title || 'What to Look For'}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {guide.buyingCriteria.criteria.map((item, i) => (
-                <div key={i} className="bg-muted/30 rounded-lg p-4 border border-border">
-                  <h3 className="font-semibold text-foreground text-sm mb-1">{item.name}</h3>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Pros & Cons Block */}
-        {guide.prosAndCons && (
-          <section id="pros-cons" className="mb-10 scroll-mt-24">
-            <h2 className="text-2xl font-display font-bold text-foreground mb-4">
-              Pros &amp; Cons
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-5 border border-green-200 dark:border-green-900">
-                <h3 className="font-semibold text-foreground flex items-center gap-2 mb-3">
-                  <CheckCircle className="w-4 h-4 text-green-600" /> Pros
-                </h3>
-                <ul className="space-y-2">
-                  {guide.prosAndCons.pros.map((pro, i) => (
-                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
-                      <span className="text-green-600 mt-0.5">+</span> {pro}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-5 border border-red-200 dark:border-red-900">
-                <h3 className="font-semibold text-foreground flex items-center gap-2 mb-3">
-                  <XCircle className="w-4 h-4 text-red-600" /> Cons
-                </h3>
-                <ul className="space-y-2">
-                  {guide.prosAndCons.cons.map((con, i) => (
-                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
-                      <span className="text-red-600 mt-0.5">−</span> {con}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Common Mistakes Block */}
-        {guide.commonMistakes && guide.commonMistakes.length > 0 && (
-          <section id="common-mistakes" className="mb-10 scroll-mt-24">
-            <h2 className="text-2xl font-display font-bold text-foreground mb-4">
-              Common Mistakes to Avoid
-            </h2>
-            <div className="space-y-3">
-              {guide.commonMistakes.map((mistake, i) => (
-                <div key={i} className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg p-4 border border-amber-200 dark:border-amber-900">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-foreground text-sm">{mistake.mistake}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{mistake.whyItMatters}</p>
+                <div key={i} className="rounded-2xl border border-border bg-card p-5 hover:border-primary/30 hover:shadow-sm transition-all duration-300">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-display font-bold text-foreground text-sm mb-1">{item.name}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -598,21 +628,84 @@ const GuidePage = () => {
           </section>
         )}
 
-        {/* FAQ Accordion */}
+        {/* Pros & Cons Block — Premium */}
+        {guide.prosAndCons && (
+          <section id="pros-cons" className="mb-12 scroll-mt-24">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-5">
+              Pros &amp; Cons
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded-2xl p-5 border border-border bg-card">
+                <h3 className="font-display font-bold text-foreground flex items-center gap-2.5 mb-4">
+                  <div className="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center">
+                    <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                  </div>
+                  Pros
+                </h3>
+                <ul className="space-y-2.5">
+                  {guide.prosAndCons.pros.map((pro, i) => (
+                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2.5 leading-relaxed">
+                      <span className="text-green-600 font-bold mt-px">+</span> {pro}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-2xl p-5 border border-border bg-card">
+                <h3 className="font-display font-bold text-foreground flex items-center gap-2.5 mb-4">
+                  <div className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center">
+                    <XCircle className="w-3.5 h-3.5 text-red-600" />
+                  </div>
+                  Cons
+                </h3>
+                <ul className="space-y-2.5">
+                  {guide.prosAndCons.cons.map((con, i) => (
+                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2.5 leading-relaxed">
+                      <span className="text-red-600 font-bold mt-px">−</span> {con}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Common Mistakes Block — Premium */}
+        {guide.commonMistakes && guide.commonMistakes.length > 0 && (
+          <section id="common-mistakes" className="mb-12 scroll-mt-24">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-5">
+              Common Mistakes to Avoid
+            </h2>
+            <div className="space-y-3">
+              {guide.commonMistakes.map((mistake, i) => (
+                <div key={i} className="flex items-start gap-3.5 rounded-2xl p-5 border border-border bg-card hover:border-amber-500/30 transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-foreground text-sm mb-1">{mistake.mistake}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{mistake.whyItMatters}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* FAQ Accordion — Premium */}
         {guide.faq.length > 0 && (
           <section id="faq" className="mb-12 scroll-mt-24">
             <h2 className="text-2xl font-display font-bold text-foreground mb-6">
               Frequently Asked Questions
             </h2>
-            <div className="space-y-0 border border-border rounded-xl overflow-hidden">
+            <div className="space-y-0 border border-border rounded-2xl overflow-hidden shadow-sm">
               {guide.faq.map((item, i) => (
                 <details key={i} className="group border-b border-border last:border-0">
                   <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer hover:bg-muted/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
-                    <h3 className="text-[15px] font-semibold text-foreground text-left">{item.question}</h3>
+                    <h3 className="text-[15px] font-display font-semibold text-foreground text-left">{item.question}</h3>
                     <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform group-open:rotate-90" />
                   </summary>
                   <div className="px-5 pb-5 pt-0">
-                    <p className="text-muted-foreground leading-relaxed text-sm">{item.answer}</p>
+                    <p className="text-muted-foreground leading-[1.8] text-sm">{item.answer}</p>
                   </div>
                 </details>
               ))}
@@ -620,30 +713,37 @@ const GuidePage = () => {
           </section>
         )}
 
-        {/* How We Evaluated — Trust Section */}
-        <section className="mb-10 bg-muted/30 rounded-xl p-6 border border-border">
-          <h2 className="text-lg font-display font-bold text-foreground mb-3">How We Evaluated These Products</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-            Every product in this guide was evaluated by <Link to="/about-the-author" className="text-primary hover:underline">{AUTHOR.name}</Link> using our standardized research process. We compare materials, durability, real-world performance, and value for money across multiple price points.
+        {/* How We Evaluated — Trust Section Premium */}
+        <section className="mb-12 rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <CheckCircle className="w-4 h-4 text-primary" />
+            </div>
+            <h2 className="text-lg font-display font-bold text-foreground">How We Evaluated These Products</h2>
+          </div>
+          <p className="text-sm text-muted-foreground leading-[1.8] mb-3">
+            Every product in this guide was evaluated by <Link to="/about-the-author" className="text-primary hover:underline font-medium">{AUTHOR.name}</Link> using our standardized research process. We compare materials, durability, real-world performance, and value for money across multiple price points.
           </p>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Our recommendations are independent and never influenced by affiliate commissions. Read our full <Link to="/how-we-test-products" className="text-primary hover:underline">testing methodology</Link> and <Link to="/editorial-guidelines" className="text-primary hover:underline">editorial guidelines</Link> for complete transparency.
+          <p className="text-sm text-muted-foreground leading-[1.8]">
+            Our recommendations are independent and never influenced by affiliate commissions. Read our full <Link to="/how-we-test-products" className="text-primary hover:underline font-medium">testing methodology</Link> and <Link to="/editorial-guidelines" className="text-primary hover:underline font-medium">editorial guidelines</Link> for complete transparency.
           </p>
         </section>
 
-        {/* Shop Category CTA */}
+        {/* Shop Category CTA — Premium */}
         {guide.relatedCategories.length > 0 && (
-          <div className="bg-primary/5 rounded-xl p-6 mb-10 border border-primary/20">
-            <div className="flex items-center gap-3 mb-3">
-              <ShoppingBag className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-foreground">Shop Related Products</h3>
+          <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-card to-card p-6 mb-12 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                <ShoppingBag className="w-4 h-4 text-primary" />
+              </div>
+              <h3 className="font-display font-bold text-foreground">Shop Related Products</h3>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {guide.relatedCategories.map((cat) => (
                 <Link
                   key={cat}
                   to={`/products?category=${cat}`}
-                  className="text-sm bg-background border border-border rounded-full px-4 py-1.5 hover:border-primary/40 hover:text-primary transition-colors font-medium"
+                  className="text-sm bg-card border border-border rounded-full px-5 py-2 hover:border-primary/40 hover:text-primary hover:shadow-sm transition-all font-medium"
                 >
                   Shop all {cat.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                 </Link>
@@ -652,25 +752,29 @@ const GuidePage = () => {
           </div>
         )}
 
-        {/* Related Guides — Internal Link Authority Block */}
+        {/* Related Guides — Premium */}
         {relatedGuides && relatedGuides.length > 0 && (
           <section className="mt-12 pt-8 border-t border-border">
-            <h2 className="text-xl font-display font-bold text-foreground mb-6 flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
-              Related Buying Guides
-            </h2>
+            <div className="flex items-center gap-2.5 mb-6">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <BookOpen className="w-4 h-4 text-primary" />
+              </div>
+              <h2 className="text-xl font-display font-bold text-foreground">
+                Related Buying Guides
+              </h2>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {relatedGuides.map((rg) => (
                 <Link
                   key={rg.slug}
                   to={`/guides/${rg.slug}`}
-                  className="group block rounded-xl border border-border bg-card p-5 hover:border-primary/30 hover:shadow-sm transition-all"
+                  className="group block rounded-2xl border border-border bg-card p-5 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
                 >
-                  <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
+                  <h3 className="font-display font-bold text-foreground group-hover:text-primary transition-colors mb-1.5 text-[15px]">
                     {rg.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{rg.excerpt}</p>
-                  <span className="flex items-center gap-1 text-xs font-medium text-primary mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">{rg.excerpt}</p>
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-primary mt-3 group-hover:gap-2.5 transition-all duration-300">
                     Read Guide <ChevronRight className="w-3 h-3" />
                   </span>
                 </Link>
