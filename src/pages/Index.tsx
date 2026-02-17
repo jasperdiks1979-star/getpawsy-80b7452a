@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
 import smallPetsImage from '@/assets/categories/small-pets.jpg';
+import guideCatLitterImg from '@/assets/guides/guide-cat-litter.jpg';
+import guideDogBedsImg from '@/assets/guides/guide-dog-beds.jpg';
+import guideLitterFurnitureImg from '@/assets/guides/guide-litter-furniture.jpg';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Loader2, Star, Clock, BookOpen, Truck, ShieldCheck, RotateCcw, Heart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -449,10 +452,10 @@ const Index = () => {
 
       {/* Popular Guides - SEO Authority Injection */}
       <SectionErrorBoundary sectionName="Popular Guides">
-        <section className="py-16 bg-sand/30">
+        <section className="py-20 bg-sand/30">
           <div className="container px-4 md:px-6">
             <motion.div
-              className="text-center mb-10"
+              className="text-center mb-12"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -475,39 +478,50 @@ const Index = () => {
                   slug: 'best-cat-litter-box-2026',
                   title: 'Best Cat Litter Boxes (2026)',
                   desc: '12 tested picks for odor control, large cats & multi-cat homes.',
-                  icon: '🐱',
+                  image: guideCatLitterImg,
                 },
                 {
                   slug: 'best-dog-bed-2026',
                   title: 'Best Dog Beds (2026)',
                   desc: 'Orthopedic, calming & durable picks tested by real dog owners.',
-                  icon: '🐶',
+                  image: guideDogBedsImg,
                 },
                 {
                   slug: 'best-cat-litter-box-furniture-enclosures-2026',
                   title: 'Best Litter Box Furniture (2026)',
                   desc: 'Hidden enclosures & cabinets that blend into your home décor.',
-                  icon: '🏠',
+                  image: guideLitterFurnitureImg,
                 },
               ].map((guide) => (
                 <motion.div key={guide.slug} variants={itemVariants}>
                   <Link
                     to={`/guides/${guide.slug}`}
-                    className="group block bg-card rounded-2xl p-6 shadow-soft hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1 border border-border/50"
+                    className="group block bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-500 hover:-translate-y-1.5 border border-border/50"
                   >
-                    <span className="text-3xl mb-3 block">{guide.icon}</span>
-                    <h3 className="font-display font-semibold text-lg text-foreground group-hover:text-primary transition-colors mb-2">
-                      {getAnchorText(guide.slug, 'hero-insert')}
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed mb-3">{guide.desc}</p>
-                    <span className="text-sm font-medium text-primary inline-flex items-center gap-1">
-                      Read Guide <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
+                    <div className="relative aspect-[16/10] overflow-hidden">
+                      <img
+                        src={guide.image}
+                        alt={guide.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                    </div>
+                    <div className="p-6">
+                      <h3 className="font-display font-bold text-lg text-foreground group-hover:text-primary transition-colors mb-2 leading-snug">
+                        {getAnchorText(guide.slug, 'hero-insert')}
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-4">{guide.desc}</p>
+                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary group-hover:gap-2.5 transition-all duration-300">
+                        Read Guide <ArrowRight className="w-4 h-4" />
+                      </span>
+                    </div>
                   </Link>
                 </motion.div>
               ))}
             </motion.div>
-            <div className="text-center mt-8">
+            <div className="text-center mt-10">
               <Link to="/guides">
                 <Button variant="outline" className="gap-2 rounded-full">
                   View All Guides
