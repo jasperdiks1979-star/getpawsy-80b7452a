@@ -17,11 +17,11 @@ interface VolumeTier {
   isBestValue?: boolean;
 }
 
-// Volume discount tiers
+// Volume discount tiers — aggressive AOV strategy
 const VOLUME_TIERS: VolumeTier[] = [
   { quantity: 1, discount: 0, label: 'Buy 1', sublabel: 'Standard price' },
-  { quantity: 2, discount: 10, label: 'Buy 2', sublabel: 'Save 10%' },
-  { quantity: 3, discount: 15, label: 'Buy 3', sublabel: 'Save 15%', isBestValue: true },
+  { quantity: 2, discount: 15, label: 'Buy 2', sublabel: 'Save 15%', isBestValue: true },
+  { quantity: 3, discount: 25, label: 'Buy 3', sublabel: 'Save 25%' },
 ];
 
 export const VolumeDiscountSelector = ({

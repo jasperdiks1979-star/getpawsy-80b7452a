@@ -307,8 +307,8 @@ export function getVolumeBundleConfig(price: number): {
       showVolume: true,
       tiers: [
         { quantity: 1, discount: 0 },
-        { quantity: 2, discount: 10 },
-        { quantity: 3, discount: 15 },
+        { quantity: 2, discount: 15 },
+        { quantity: 3, discount: 25 },
       ],
     };
   }
@@ -318,18 +318,19 @@ export function getVolumeBundleConfig(price: number): {
       showVolume: true,
       tiers: [
         { quantity: 1, discount: 0 },
-        { quantity: 2, discount: 10 },
-        { quantity: 3, discount: 15 },
+        { quantity: 2, discount: 15 },
+        { quantity: 3, discount: 25 },
       ],
     };
   }
   
-  // Premium items: smaller discounts
+  // Premium items: slightly lower discounts
   return {
     showVolume: true,
     tiers: [
       { quantity: 1, discount: 0 },
-      { quantity: 2, discount: 8 },
+      { quantity: 2, discount: 10 },
+      { quantity: 3, discount: 20 },
     ],
   };
 }

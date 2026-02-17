@@ -59,6 +59,7 @@ import {
   US_FULFILLMENT_NOTE,
 } from '@/lib/shipping-constants';
 import { isAdTraffic } from '@/lib/ad-traffic';
+import { VolumeDiscountSelector } from '@/components/products/VolumeDiscountSelector';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -98,6 +99,7 @@ const ProductDetail = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [autoplayPaused, setAutoplayPaused] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [volumeDiscount, setVolumeDiscount] = useState(0);
   const autoplayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -583,20 +585,27 @@ const ProductDetail = () => {
     );
     
     // Use variant price if selected, otherwise use product price
-    const cartPrice = selectedVariant?.variantSellPrice 
+    const basePrice = selectedVariant?.variantSellPrice 
       ? Number(selectedVariant.variantSellPrice) 
       : Number(product.price);
+    
+    // Apply volume discount
+    const cartPrice = volumeDiscount > 0 
+      ? basePrice * (1 - volumeDiscount / 100) 
+      : basePrice;
     
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id + (selectedVariant ? `-${selectedVariant.vid}` : ''),
         name: product.name + (selectedVariant ? ` - ${selectedVariant.variantKey || selectedVariant.variantNameEn}` : ''),
-        price: cartPrice,
+        price: Math.round(cartPrice * 100) / 100,
         image: selectedVariant?.variantImage || product.image_url || '/placeholder.svg',
         variant: selectedVariant?.variantKey || selectedVariant?.variantNameEn,
       });
     }
-    toast.success(`${quantity}x ${product.name} added to cart!`);
+    
+    const savings = volumeDiscount > 0 ? ` (${volumeDiscount}% off!)` : '';
+    toast.success(`${quantity}x ${product.name} added to cart!${savings}`);
   };
 
   const handleWishlistToggle = () => {
@@ -937,6 +946,18 @@ const ProductDetail = () => {
                 Estimated delivery: {DELIVERY_TIME_STANDARD}
               </span>
             </div>
+
+            {/* Volume Discount — Buy More Save More */}
+            {inStock && (
+              <VolumeDiscountSelector
+                basePrice={selectedVariant?.variantSellPrice ? Number(selectedVariant.variantSellPrice) : Number(product.price)}
+                onQuantityChange={(newQty, discountPct) => {
+                  setQuantity(newQty);
+                  setVolumeDiscount(discountPct);
+                }}
+                selectedQuantity={quantity}
+              />
+            )}
 
             {/* Quantity & Actions - tracked for sticky bar visibility */}
             <motion.div 

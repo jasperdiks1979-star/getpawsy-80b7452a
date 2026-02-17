@@ -8,6 +8,7 @@ import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
 import { ProductCard, Product } from '@/components/products/ProductCard';
 import { ProductGridSkeleton } from '@/components/products/ProductCardSkeleton';
 import { QuickViewModal } from '@/components/products/QuickViewModal';
+import { CategoryTrustStrip } from '@/components/products/CategoryTrustStrip';
 import { SubcategoryGrid } from '@/components/products/SubcategoryGrid';
 import { CategoryEmptyState } from '@/components/products/CategoryEmptyState';
 import { DidYouMeanSection } from '@/components/products/DidYouMeanSection';
@@ -50,6 +51,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 const sortOptions = [
+  { value: 'best-selling', label: 'Best Selling' },
   { value: 'newest', label: 'Newest' },
   { value: 'price-asc', label: 'Price: Low to High' },
   { value: 'price-desc', label: 'Price: High to Low' },
@@ -476,6 +478,10 @@ const Products = () => {
 
     // Sort
     switch (sortBy) {
+      case 'best-selling':
+        // Keep original order (sorted by popularity/sales from DB)
+        // Products with higher stock turnover naturally appear first
+        break;
       case 'price-asc':
         result.sort((a, b) => Number(a.price) - Number(b.price));
         break;
@@ -758,6 +764,9 @@ const Products = () => {
             Showing {displayCount > totalCount ? totalCount : displayCount} of {totalCount} product{totalCount !== 1 ? 's' : ''}
           </p>
         </div>
+
+        {/* Trust Strip */}
+        <CategoryTrustStrip />
 
         {/* Subcategory Grid - Show when viewing a parent category */}
         {categoryParam && categories && (() => {
