@@ -360,8 +360,11 @@ const Index = () => {
       <WebsiteSchema />
       <LocalBusinessSchema />
       {/* Hero Section - Static render for fastest LCP */}
-      <section className="relative overflow-hidden min-h-[85vh] flex items-center">
-        {/* Lifestyle Background — local optimized image */}
+      <section
+        className="relative overflow-hidden flex items-center"
+        style={{ minHeight: '85vh', contain: 'layout style' }}
+      >
+        {/* Lifestyle Background — local optimized image, zero animation */}
         <div className="absolute inset-0 z-0">
           <img
             src="/hero-dog.webp"
@@ -372,7 +375,6 @@ const Index = () => {
             loading="eager"
             fetchPriority="high"
             decoding="async"
-            style={{ aspectRatio: '16/9' }}
           />
           {/* Warm, soft gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30" />
