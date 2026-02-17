@@ -92,6 +92,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [refreshSession]);
 
   useEffect(() => {
+    // Safety timeout: if auth init hasn't completed in 10s, stop blocking the UI
+    const authTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('[AuthProvider] Auth init timed out after 10s, unblocking UI');
+        setIsLoading(false);
+      }
+    }, 10_000);
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -132,9 +140,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       setIsLoading(false);
+    }).catch((e) => {
+      console.error('[AuthProvider] getSession failed:', e);
+      setIsLoading(false);
     });
 
     return () => {
+      clearTimeout(authTimeout);
       subscription.unsubscribe();
       if (refreshTimerRef.current) {
         clearTimeout(refreshTimerRef.current);

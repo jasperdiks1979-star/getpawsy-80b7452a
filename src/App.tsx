@@ -1,4 +1,4 @@
-import { lazy, Suspense, Component, ReactNode } from "react";
+import { lazy, Suspense, Component, ReactNode, useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -105,8 +105,8 @@ const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>
         } catch (swErr) {
           console.error('[LazyLoad] SW cleanup failed:', swErr);
         }
-        // Force hard reload to get fresh assets
-        window.location.reload();
+        // Force hard reload with cache-bust to get fresh assets
+        window.location.href = window.location.pathname + '?cb=' + Date.now();
         // Return a never-resolving promise to prevent React from rendering an error
         return new Promise(() => {});
       }
@@ -190,11 +190,35 @@ const queryClient = new QueryClient({
   },
 });
 
-const RouteLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-  </div>
-);
+const RouteLoader = () => {
+  const [showError, setShowError] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowError(true), 12_000);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (showError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4 text-center">
+        <div className="max-w-md">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Page took too long to load</h2>
+          <p className="text-muted-foreground text-sm mb-4">This might be a temporary issue. Please try reloading.</p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => window.location.reload()}>Reload</Button>
+            <Button variant="outline" onClick={() => { window.location.href = '/'; }}>Go Home</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+};
 
 const App = () => {
   return (
