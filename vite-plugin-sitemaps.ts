@@ -693,10 +693,28 @@ export default function sitemapPlugin(): Plugin {
     async closeBundle() {
       const outDir = resolvedOutDir;
       mkdirSync(outDir, { recursive: true });
-      console.log('[xml-plugin] Generating static XML files from Supabase REST API...');
+      console.log('[xml-plugin] Generating static XML files...');
 
-      // Global timeout: if all XML generation takes > 60s, bail out with fallbacks
-      const GLOBAL_TIMEOUT = 60000;
+      // Write fallback files FIRST so build always has valid XML
+      const fallbackFiles: [string, string][] = [
+        ['sitemap.xml', FALLBACK_EMPTY],
+        ['sitemap-static.xml', FALLBACK_EMPTY],
+        ['sitemap-products.xml', FALLBACK_EMPTY],
+        ['sitemap-categories.xml', FALLBACK_EMPTY],
+        ['sitemap-bestsellers.xml', FALLBACK_EMPTY],
+        ['sitemap-collections.xml', FALLBACK_EMPTY],
+        ['sitemap-blog.xml', FALLBACK_EMPTY],
+        ['sitemap-guides.xml', FALLBACK_EMPTY],
+        ['merchant-feed.xml', FALLBACK_FEED],
+        ['merchant-diagnostics.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`],
+      ];
+      for (const [name, xml] of fallbackFiles) {
+        writeFileSync(join(outDir, name), xml, 'utf-8');
+      }
+      console.log('[xml-plugin] ✓ Fallback XML files written');
+
+      // Now try to generate real XML from Supabase (non-blocking)
+      // Use a short 30s timeout to avoid build hangs
       try {
         await Promise.race([
           (async () => {
@@ -734,14 +752,14 @@ export default function sitemapPlugin(): Plugin {
               console.log(`[xml-plugin] ✓ ${name} (${xml.length} bytes)`);
             }
 
-            console.log('[xml-plugin] Done — all XML files generated at build time.');
+            console.log('[xml-plugin] Done — all XML files generated.');
           })(),
           new Promise<void>((_, reject) =>
-            setTimeout(() => reject(new Error('XML generation timed out after 60s')), GLOBAL_TIMEOUT)
+            setTimeout(() => reject(new Error('XML generation timed out')), 30000)
           ),
         ]);
       } catch (err) {
-        console.warn('[xml-plugin] ⚠️ XML generation failed or timed out, build continues:', err);
+        console.warn('[xml-plugin] ⚠️ XML generation failed/timed out, fallbacks in place:', err);
       }
     },
   };
