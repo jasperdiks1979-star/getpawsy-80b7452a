@@ -29,7 +29,7 @@ export const TrustMicrocopy: React.FC<TrustMicrocopyProps> = ({ className = '' }
       </div>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <CreditCard className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Secure Checkout • Visa • Mastercard • Apple Pay</span>
+        <span>Secure Checkout • Visa • Mastercard • Amex • Apple Pay</span>
       </div>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <Lock className="w-3.5 h-3.5 text-primary flex-shrink-0" />

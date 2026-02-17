@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, Send, ArrowRight, RotateCcw, Cookie, Clock } from 'lucide-react';
+import { Mail, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, ArrowRight, RotateCcw, Cookie, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -122,58 +122,39 @@ export const Footer = () => {
       {/* Decorative top wave */}
       <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-background to-transparent pointer-events-none" />
       
-      {/* Newsletter Section */}
-      <div className="bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-16 relative w-full">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM5QzkyQUMiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
-        
+      {/* Newsletter Section - Subtle, Premium */}
+      <div className="bg-muted/30 py-12 relative w-full">
         <div className="container px-4 md:px-6 relative max-w-full">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-2xl mx-auto text-center"
-          >
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 mb-6">
-              <Mail className="w-8 h-8 text-primary" />
-            </div>
-            <h3 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-3">
+          <div className="max-w-xl mx-auto text-center">
+            <h3 className="text-xl font-display font-semibold text-foreground mb-2">
               Stay in the Loop
             </h3>
-            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Get exclusive deals, pet care tips, and early access to new products.
+            <p className="text-sm text-muted-foreground mb-6">
+              Pet care tips, new arrivals & exclusive offers — no spam, ever.
             </p>
             
             <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <div className="relative flex-1">
-                <Input
-                  type="email"
-                  placeholder="Your email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-12 pl-4 pr-4 rounded-xl border-2 border-border/50 bg-background/80 backdrop-blur-sm focus:border-primary"
-                />
-              </div>
+              <Input
+                type="email"
+                placeholder="Your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-11 rounded-full border-border/50 bg-background"
+              />
               <Button 
                 type="submit" 
-                size="lg"
+                size="default"
                 disabled={isSubmitting}
-                className="h-12 px-6 btn-organic gap-2 font-semibold"
+                className="h-11 px-6 rounded-full gap-2 font-medium"
               >
-                {isSubmitting ? (
-                  'Subscribing...'
-                ) : (
-                  <>
-                    Subscribe
-                    <Send className="w-4 h-4" />
-                  </>
-                )}
+                {isSubmitting ? 'Subscribing...' : 'Subscribe'}
               </Button>
             </form>
             
-            <p className="text-xs text-muted-foreground mt-4">
-              By subscribing you agree to our privacy policy. Unsubscribe anytime.
+            <p className="text-xs text-muted-foreground mt-3">
+              Unsubscribe anytime. We respect your privacy.
             </p>
-          </motion.div>
+          </div>
         </div>
       </div>
 
@@ -402,6 +383,7 @@ export const Footer = () => {
                   <div className="flex items-center gap-2 text-xs text-background/60 font-medium">
                     <span className="bg-background/10 px-2 py-0.5 rounded">Visa</span>
                     <span className="bg-background/10 px-2 py-0.5 rounded">Mastercard</span>
+                    <span className="bg-background/10 px-2 py-0.5 rounded">Amex</span>
                     <span className="bg-background/10 px-2 py-0.5 rounded">Apple Pay</span>
                     <span className="bg-background/10 px-2 py-0.5 rounded">Stripe</span>
                   </div>
