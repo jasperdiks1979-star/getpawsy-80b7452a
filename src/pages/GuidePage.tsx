@@ -1,9 +1,12 @@
 import { useParams, Link } from 'react-router-dom';
+import { useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useQuery } from '@tanstack/react-query';
 import { Clock, BookOpen, ChevronRight, ShoppingBag, CheckCircle, XCircle, AlertTriangle, RefreshCw, User, Award } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { useGuide, useGuidesList } from '@/hooks/useGuides';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import NotFound from './NotFound';
 import { QuickRecommendation } from '@/components/guides/QuickRecommendation';
 import { ComparisonTable } from '@/components/guides/ComparisonTable';
@@ -19,6 +22,56 @@ const GuidePage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: guide, isLoading, error } = useGuide(slug);
   const { data: allGuides } = useGuidesList();
+
+  // Fetch products for internal linking in guide content
+  const { data: linkableProducts = [] } = useQuery({
+    queryKey: ['internal-linking-products'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('products_public')
+        .select('id, name, slug, category')
+        .eq('is_active', true)
+        .not('slug', 'is', null)
+        .limit(200);
+      return (data || []) as { id: string; name: string; slug: string | null; category: string | null }[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Build keyword → product URL lookup for auto-linking product mentions in guide content
+  const productLinkMap = useMemo(() => {
+    const map = new Map<string, string>();
+    
+    // Priority 1: Add guide's own comparisonProducts (most accurate, short names)
+    guide?.comparisonProducts?.forEach(cp => {
+      if (cp.name && cp.link) {
+        map.set(cp.name.toLowerCase().trim(), cp.link);
+      }
+    });
+    
+    // Priority 2: Add full product names from DB
+    linkableProducts.forEach(p => {
+      if (p.slug) {
+        const name = p.name.toLowerCase().trim();
+        if (!map.has(name)) {
+          map.set(name, `/product/${p.slug}`);
+        }
+        
+        // Extract meaningful multi-word phrases (3+ words) from product names
+        const words = name.split(/\s+/).filter(w => w.length >= 3);
+        for (let len = 4; len >= 3; len--) {
+          for (let i = 0; i <= words.length - len; i++) {
+            const phrase = words.slice(i, i + len).join(' ');
+            if (phrase.length >= 12 && !map.has(phrase)) {
+              map.set(phrase, `/product/${p.slug}`);
+            }
+          }
+        }
+      }
+    });
+    
+    return map;
+  }, [linkableProducts, guide?.comparisonProducts]);
 
   if (isLoading) {
     return (
@@ -284,6 +337,34 @@ const GuidePage = () => {
     // Markdown links [text](/guides/slug) → <a> tags
     result = result.replace(/\[([^\]]+)\]\(\/guides\/([a-z0-9-]+)\)/g, 
       '<a href="/guides/$2" class="text-primary hover:underline font-medium" data-internal-guide="true">$1</a>');
+    
+    // Auto-link product names found in content
+    if (productLinkMap.size > 0) {
+      // Sort by name length (longest first) to match most specific product first
+      const sortedProducts = Array.from(productLinkMap.entries())
+        .sort((a, b) => b[0].length - a[0].length);
+      
+      for (const [name, productUrl] of sortedProducts) {
+        // Skip very short names to avoid false matches
+        if (name.length < 10) continue;
+        
+        const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Match product name (case-insensitive), but not inside existing <a> tags or HTML attributes
+        const regex = new RegExp(
+          `(?<![<\\/a-zA-Z"=])\\b(${escapedName})\\b(?![^<]*>)(?![^<]*<\\/a>)`,
+          'gi'
+        );
+        
+        // Only link the first occurrence per product
+        let matched = false;
+        result = result.replace(regex, (match) => {
+          if (matched) return match;
+          matched = true;
+          return `<a href="${productUrl}" class="text-primary hover:underline font-medium transition-colors" data-internal-product="true">${match}</a>`;
+        });
+      }
+    }
+    
     return result;
   };
 
