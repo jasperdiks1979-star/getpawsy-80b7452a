@@ -1444,7 +1444,7 @@ const Admin = () => {
 
 
               <TouchTooltip content="Guides SEO Dashboard & Rankings">
-                <button onClick={() => navigate('/dashboard/guides-seo')} className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors">
+                <button onClick={() => navigate('/admin/guides')} className="flex items-center gap-1 px-2 py-2 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded transition-colors">
                   <LineChart className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden xs:inline">SEO</span>
                 </button>
