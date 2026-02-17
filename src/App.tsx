@@ -14,6 +14,7 @@ import { SafePinterestTag } from "@/components/tracking/SafePinterestTag";
 import { SafeGlobalVisitorTracker } from "@/components/tracking/SafeGlobalVisitorTracker";
 import { MarketingErrorBoundary } from "@/components/error/MarketingErrorBoundary";
 import { RecentPurchaseNotification } from "@/components/social-proof/RecentPurchaseNotification";
+import { InternalTrafficChip } from "@/components/tracking/InternalTrafficChip";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { setupGlobalErrorHandler } from "@/lib/error-reporter";
@@ -27,6 +28,7 @@ try { initDataHealer(); } catch (e) { console.error('[ProdSafe] initDataHealer f
 try { initLegacyLinkGuard(); } catch (e) { console.error('[ProdSafe] initLegacyLinkGuard failed:', e); }
 try { initLegacyFetchGuard(); } catch (e) { console.error('[ProdSafe] initLegacyFetchGuard failed:', e); }
 try { import('@/lib/founder-mode').then(m => m.consumeFounderKeyFromUrl()); } catch (e) { console.error('[ProdSafe] consumeFounderKeyFromUrl failed:', e); }
+try { import('@/lib/traffic').then(m => m.consumeInternalParamFromUrl()); } catch (e) { console.error('[ProdSafe] consumeInternalParamFromUrl failed:', e); }
 try { import('@/lib/analytics').then(m => m.initAnalyticsUserProperties()); } catch (e) { console.error('[ProdSafe] initAnalyticsUserProperties failed:', e); }
 
 // Critical routes - loaded immediately
@@ -165,6 +167,7 @@ const ContentOpportunitiesPage = lazyWithRetry(() => import("./pages/admin/Conte
 const MomentumAccelerationDashboard = lazyWithRetry(() => import("./pages/admin/MomentumAccelerationDashboard"));
 const BundlesPage = lazyWithRetry(() => import("./pages/admin/BundlesPage"));
 const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDominance"));
+const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/AnalyticsTrafficDocs"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -203,6 +206,7 @@ const App = () => {
                     <SafeGlobalVisitorTracker />
                     <RecentPurchaseNotification />
                   </MarketingErrorBoundary>
+                  <InternalTrafficChip />
                   <RouteErrorBoundary>
                     <Routes>
                       <Route path="/" element={<Index />} />
@@ -264,6 +268,7 @@ const App = () => {
                       <Route path="/admin/momentum" element={<Suspense fallback={<RouteLoader />}><MomentumAccelerationDashboard /></Suspense>} />
                       <Route path="/admin/bundles" element={<Suspense fallback={<RouteLoader />}><BundlesPage /></Suspense>} />
                       <Route path="/admin/cluster-dominance" element={<Suspense fallback={<RouteLoader />}><ClusterDominance /></Suspense>} />
+                      <Route path="/admin/analytics-traffic" element={<Suspense fallback={<RouteLoader />}><AnalyticsTrafficDocs /></Suspense>} />
                       
                       <Route path="*" element={<NotFound />} />
                     </Routes>

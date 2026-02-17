@@ -4,9 +4,11 @@ import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useVisitorHeartbeat } from '@/hooks/useVisitorHeartbeat';
 import { fireMarketingAsync, MARKETING_FLAGS } from '@/lib/marketingClient';
 import { MarketingErrorBoundary } from '@/components/error/MarketingErrorBoundary';
+import { pushTrafficContext } from '@/lib/traffic';
 
 /**
  * Safe Global Visitor Tracker — deferred gtag calls, never blocks rendering.
+ * Now also pushes traffic context to dataLayer on every route change.
  */
 const TrackerInner = () => {
   const location = useLocation();
@@ -16,6 +18,9 @@ const TrackerInner = () => {
 
   useEffect(() => {
     const path = location.pathname;
+
+    // Push traffic context to dataLayer (non-blocking, fires before page_view)
+    pushTrafficContext(path);
 
     // Defer Google Analytics page_view — non-blocking
     if (MARKETING_FLAGS.GOOGLE_ENABLED) {
