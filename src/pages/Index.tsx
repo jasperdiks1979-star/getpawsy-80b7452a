@@ -753,8 +753,8 @@ const Index = () => {
         </section>
       </SectionErrorBoundary>
 
-      {/* Mid-Page Cornerstone Authority Links */}
-      <SectionErrorBoundary sectionName="Top Rated Collections">
+      {/* Revenue Niches — 5 Core Product Categories */}
+      <SectionErrorBoundary sectionName="Revenue Niches">
         <section className="py-16">
           <div className="container px-4 md:px-6">
             <motion.div
@@ -764,58 +764,93 @@ const Index = () => {
               viewport={{ once: true }}
             >
               <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">
-                Explore Our Top-Rated Collections
+                Shop Our Most Popular Categories
               </h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Expert-tested, vet-informed picks trusted by thousands of US pet parents
+                Vet-recommended, expert-tested products solving real problems for US pet parents
               </p>
             </motion.div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Link
-                to="/bestsellers"
-                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-8 hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="text-3xl mb-4">🏆</div>
-                <h3 className="font-display font-bold text-xl mb-2 group-hover:text-primary transition-colors">
-                  Our Bestselling Pet Products
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  The most popular, highest-rated products chosen by pet parents across the US.
-                </p>
-                <span className="text-sm font-medium text-primary inline-flex items-center gap-1">
-                  Shop bestsellers <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </Link>
-              <Link
-                to="/collections/best-cat-litter-boxes"
-                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 p-8 hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="text-3xl mb-4">🐱</div>
-                <h3 className="font-display font-bold text-xl mb-2 group-hover:text-primary transition-colors">
-                  Top-Rated Litter Boxes 2026
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Expert-tested litter boxes for odor control, large cats, and multi-cat homes.
-                </p>
-                <span className="text-sm font-medium text-primary inline-flex items-center gap-1">
-                  Compare litter boxes <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </Link>
-              <Link
-                to="/collections/best-interactive-dog-toys"
-                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-secondary/10 to-accent/10 border border-secondary/30 p-8 hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="text-3xl mb-4">🐶</div>
-                <h3 className="font-display font-bold text-xl mb-2 group-hover:text-primary transition-colors">
-                  Best Interactive Dog Toys
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Puzzle toys, enrichment games, and interactive picks to keep your dog mentally sharp.
-                </p>
-                <span className="text-sm font-medium text-primary inline-flex items-center gap-1">
-                  Explore dog toys <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </Link>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[
+                {
+                  slug: 'orthopedic-calming-dog-beds',
+                  emoji: '🛏️',
+                  title: 'Orthopedic & Calming Dog Beds',
+                  problem: 'Joint pain keeping your dog up at night?',
+                  solution: 'Memory foam beds with anxiety-reducing bolsters. Vet-recommended for senior dogs & large breeds.',
+                  gradient: 'from-amber-500/10 to-orange-500/10',
+                  border: 'border-amber-500/20',
+                },
+                {
+                  slug: 'dog-car-travel-safety-seats',
+                  emoji: '🚗',
+                  title: 'Dog Car Safety Seats',
+                  problem: 'Worried about your dog during car rides?',
+                  solution: 'Crash-tested designs with adjustable harnesses. Safe, comfortable travel for dogs up to 30 lbs.',
+                  gradient: 'from-blue-500/10 to-cyan-500/10',
+                  border: 'border-blue-500/20',
+                },
+                {
+                  slug: 'automatic-cat-feeders',
+                  emoji: '🍽️',
+                  title: 'Automatic Cat Feeders',
+                  problem: 'Inconsistent feeding schedule stressing your cat?',
+                  solution: 'Smart feeders with app control, portion precision, and anti-jam technology for worry-free feeding.',
+                  gradient: 'from-primary/5 to-primary/10',
+                  border: 'border-primary/20',
+                },
+                {
+                  slug: 'indestructible-dog-chew-toys',
+                  emoji: '🦴',
+                  title: 'Indestructible Chew Toys',
+                  problem: 'Tired of replacing destroyed toys every week?',
+                  solution: 'Heavy-duty natural rubber toys built for aggressive chewers. Vet-approved for dental health.',
+                  gradient: 'from-green-500/10 to-emerald-500/10',
+                  border: 'border-green-500/20',
+                },
+                {
+                  slug: 'pet-grooming-vacuum-kits',
+                  emoji: '✂️',
+                  title: 'Grooming Vacuum Kits',
+                  problem: 'Pet hair everywhere after grooming?',
+                  solution: 'Clip, brush, and vacuum in one step. Captures 99% of loose hair. Quiet motors for anxious pets.',
+                  gradient: 'from-purple-500/10 to-violet-500/10',
+                  border: 'border-purple-500/20',
+                },
+                {
+                  slug: 'bestsellers',
+                  emoji: '🏆',
+                  title: 'Our Bestsellers',
+                  problem: 'Not sure where to start?',
+                  solution: 'The most popular, highest-rated products chosen by thousands of US pet parents.',
+                  gradient: 'from-secondary/10 to-accent/10',
+                  border: 'border-secondary/30',
+                  isInternal: true,
+                },
+              ].map((niche, i) => (
+                <motion.div
+                  key={niche.slug}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: i * 0.08 }}
+                >
+                  <Link
+                    to={niche.isInternal ? `/${niche.slug}` : `/collections/${niche.slug}`}
+                    className={`group block relative overflow-hidden rounded-2xl bg-gradient-to-br ${niche.gradient} border ${niche.border} p-7 hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1 h-full`}
+                  >
+                    <div className="text-3xl mb-3">{niche.emoji}</div>
+                    <h3 className="font-display font-bold text-lg mb-2 group-hover:text-primary transition-colors">
+                      {niche.title}
+                    </h3>
+                    <p className="text-sm font-medium text-foreground mb-1">{niche.problem}</p>
+                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{niche.solution}</p>
+                    <span className="text-sm font-medium text-primary inline-flex items-center gap-1">
+                      Shop now <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  </Link>
+                </motion.div>
+              ))}
             </div>
           </div>
         </section>
