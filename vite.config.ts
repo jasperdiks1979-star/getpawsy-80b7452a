@@ -47,10 +47,9 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('@tanstack/react-query')) {
               return 'query';
             }
-            // Recharts + d3 only used in admin/dashboard (lazy-loaded)
-            if (id.includes('recharts') || id.includes('d3-')) {
-              return 'recharts-vendor';
-            }
+            // REMOVED: recharts/d3 manual chunk — d3 circular deps cause TDZ crash on iOS Safari
+            // Recharts is only used in lazy-loaded admin pages, so Vite will
+            // naturally code-split it into async chunks that load on demand.
           }
         },
         // Optimize chunk file names for caching
@@ -70,8 +69,8 @@ export default defineConfig(({ mode }) => ({
       'react-router-dom',
       '@tanstack/react-query',
       'framer-motion',
-      'recharts',
-      'mapbox-gl',
+      // REMOVED: recharts & mapbox-gl — these are lazy-loaded and must NOT
+      // be pre-bundled/eagerly evaluated (d3 TDZ crash on iOS Safari)
     ],
   },
   plugins: [
