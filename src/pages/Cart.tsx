@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { PaymentBadges } from '@/components/shared/PaymentBadges';
 import { Helmet } from 'react-helmet-async';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Home, Truck, ShieldCheck, Gift, Star } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
@@ -253,14 +254,7 @@ const Cart = () => {
                   <span>{RETURNS_POLICY_SHORT}</span>
                 </div>
                 {/* Payment method badges */}
-                <div className="flex flex-wrap items-center gap-2 pt-2">
-                  <span className="text-xs text-muted-foreground">We accept:</span>
-                  {['Visa', 'Mastercard', 'Amex', 'Apple Pay', 'Stripe'].map((method) => (
-                    <span key={method} className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded border border-border">
-                      {method}
-                    </span>
-                  ))}
-                </div>
+                <PaymentBadges variant="dark" label="We accept:" className="pt-2" />
               </div>
 
               {/* Compact sidebar cross-sell */}
