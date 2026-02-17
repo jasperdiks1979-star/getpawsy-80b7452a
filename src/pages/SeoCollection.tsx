@@ -164,12 +164,12 @@ const SeoCollection = () => {
       const rawFaq = data.faq;
       const faq: FAQItem[] = Array.isArray(rawFaq) 
         ? rawFaq.map((item: unknown) => {
-            const faqItem = item as { question?: string; answer?: string };
+            const faqItem = item as { question?: string; answer?: string; q?: string; a?: string };
             return {
-              question: faqItem?.question || '',
-              answer: faqItem?.answer || ''
+              question: faqItem?.question || faqItem?.q || '',
+              answer: faqItem?.answer || faqItem?.a || ''
             };
-          })
+          }).filter(f => f.question && f.answer)
         : [];
       
       return { ...data, faq } as SeoCollectionData;
