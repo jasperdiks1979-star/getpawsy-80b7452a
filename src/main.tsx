@@ -5,7 +5,7 @@ import { AppErrorBoundary } from "./components/error/AppErrorBoundary";
 import App from "./App.tsx";
 import "./index.css";
 
-// v7 - Deferred analytics: gtag removed from <head>, loaded after mount
+// v8 - Fix: removed recharts/d3 manual vendor chunk (TDZ crash on iOS Safari)
 
 // === STEP 1: Install boot error handlers BEFORE anything else ===
 import {
