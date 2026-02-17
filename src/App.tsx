@@ -240,6 +240,18 @@ const App = () => {
                       <Route path="/founder-mode" element={<Suspense fallback={<RouteLoader />}><FounderMode /></Suspense>} />
                       <Route path="/slow-feeder-dog-bowls" element={<Suspense fallback={<RouteLoader />}><SlowFeederDogBowls /></Suspense>} />
                       
+                      {/* Category navigation routes — redirect to /products?category= */}
+                      <Route path="/dogs/dog-beds" element={<Navigate to="/products?category=dog-beds" replace />} />
+                      <Route path="/dogs/dog-toys" element={<Navigate to="/products?category=dog-toys" replace />} />
+                      <Route path="/dogs/dog-collars-leashes" element={<Navigate to="/products?category=dog-collars-leashes" replace />} />
+                      <Route path="/dogs/dog-carriers" element={<Navigate to="/products?category=dog-carriers" replace />} />
+                      <Route path="/dogs/dog-grooming" element={<Navigate to="/products?category=dog-grooming" replace />} />
+                      <Route path="/cats/cat-toys" element={<Navigate to="/products?category=cat-toys" replace />} />
+                      <Route path="/cats/cat-litter" element={<Navigate to="/products?category=cat-litter-boxes" replace />} />
+                      <Route path="/cats/cat-trees" element={<Navigate to="/products?category=cat-trees-and-condos" replace />} />
+                      <Route path="/cats/cat-carriers" element={<Navigate to="/products?category=cat-carriers" replace />} />
+                      <Route path="/category/:slug" element={<Navigate to="/products" replace />} />
+                      <Route path="/shop" element={<Navigate to="/products" replace />} />
                       {/* Admin sub-routes */}
                       <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
                       <Route path="/admin/diagnostics" element={<Suspense fallback={<RouteLoader />}><DiagnosticsPage /></Suspense>} />

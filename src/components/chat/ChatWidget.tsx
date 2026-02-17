@@ -44,28 +44,8 @@ export function ChatWidget({ productContext = [] }: ChatWidgetProps) {
     location.pathname === '/bestsellers' ||
     location.pathname === '/shop';
 
-  // Auto-open after inactivity (only once per session)
-  useEffect(() => {
-    if (!shouldShow || hasInteracted || isOpen) return;
-
-    const sessionKey = 'pawsy_chat_shown';
-    if (sessionStorage.getItem(sessionKey)) return;
-
-    // Random delay between 5-8 seconds
-    const delay = 5000 + Math.random() * 3000;
-    
-    inactivityTimerRef.current = setTimeout(() => {
-      setIsOpen(true);
-      setHasInteracted(true);
-      sessionStorage.setItem(sessionKey, 'true');
-    }, delay);
-
-    return () => {
-      if (inactivityTimerRef.current) {
-        clearTimeout(inactivityTimerRef.current);
-      }
-    };
-  }, [shouldShow, hasInteracted, isOpen, setIsOpen]);
+  // Chat is click-to-open only — no auto-open behavior
+  // This prevents viewport obstruction on mobile and desktop
 
   // Scroll to bottom when messages change
   useEffect(() => {

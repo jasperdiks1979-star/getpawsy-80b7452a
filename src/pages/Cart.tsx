@@ -252,6 +252,15 @@ const Cart = () => {
                   <Star className="w-4 h-4 text-amber-500" />
                   <span>{RETURNS_POLICY_SHORT}</span>
                 </div>
+                {/* Payment method badges */}
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <span className="text-xs text-muted-foreground">We accept:</span>
+                  {['Visa', 'Mastercard', 'Apple Pay', 'Stripe'].map((method) => (
+                    <span key={method} className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded border border-border">
+                      {method}
+                    </span>
+                  ))}
+                </div>
               </div>
 
               {/* Compact sidebar cross-sell */}
