@@ -122,25 +122,41 @@
       
       /* Ensure images always have reserved space */
       img { content-visibility: auto; }
+
+      /* Recovery UI styles */
+      #boot-recovery { display:none; }
+      #boot-recovery.active { display:flex; }
     </style>
   </head>
 
   <body>
     <div id="root">
-      <!-- Hydration guard: visible only if React fails to mount -->
-      <div id="hydration-fallback" style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafafa">
-        <div style="text-align:center;max-width:400px;padding:24px">
+      <!-- Enhanced Recovery UI: visible only if React fails to mount -->
+      <div id="boot-recovery" style="align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafafa;padding:24px">
+        <div style="text-align:center;max-width:440px">
           <div style="font-size:48px;margin-bottom:16px">🐾</div>
-          <h1 style="font-size:20px;font-weight:600;margin-bottom:8px;color:#1a1a1a">Loading GetPawsy…</h1>
-          <p style="font-size:14px;color:#666;margin-bottom:16px">If this screen stays, please reload.</p>
-          <button onclick="location.reload()" style="padding:10px 24px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;font-size:14px;cursor:pointer">Reload</button>
+          <h1 style="font-size:22px;font-weight:600;margin-bottom:8px;color:#1a1a1a">GetPawsy needs a refresh</h1>
+          <p style="font-size:14px;color:#666;margin-bottom:20px;line-height:1.5">
+            A new version is available or a temporary issue occurred. Click below to fix it automatically.
+          </p>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
+            <button onclick="location.reload()" style="padding:10px 24px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;font-size:14px;cursor:pointer;font-weight:500">
+              Reload
+            </button>
+            <button id="hard-reload-btn" style="padding:10px 24px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#333;font-size:14px;cursor:pointer;font-weight:500">
+              Hard Reload (clear cache)
+            </button>
+          </div>
+          <button id="copy-diag-btn" style="padding:6px 16px;border-radius:6px;border:1px solid #eee;background:#f9f9f9;color:#888;font-size:12px;cursor:pointer;margin-bottom:8px">
+            Copy diagnostics
+          </button>
+          <p id="boot-error-msg" style="font-size:11px;color:#bbb;margin-top:8px;word-break:break-all"></p>
         </div>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       // CRITICAL: Unregister ALL service workers and clear caches on every page load
-      // This prevents stale SW caches from breaking the app after deployments
       (function(){
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(function(regs) {
@@ -154,22 +170,71 @@
         }
       })();
 
-      // Boot timeout: if React hasn't mounted in 10s, show reload button
+      // Hard reload button handler
+      document.getElementById('hard-reload-btn').addEventListener('click', function() {
+        try {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              regs.forEach(function(r) { r.unregister(); });
+            });
+          }
+          if ('caches' in window) {
+            caches.keys().then(function(keys) {
+              keys.forEach(function(k) { caches.delete(k); });
+            });
+          }
+          sessionStorage.clear();
+        } catch(e) {}
+        window.location.href = window.location.pathname + '?cache_bust=' + Date.now();
+      });
+
+      // Copy diagnostics button
+      document.getElementById('copy-diag-btn').addEventListener('click', function() {
+        var diag = {
+          url: location.href,
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString(),
+          bootErrors: window.__bootErrors || [],
+          scripts: Array.from(document.querySelectorAll('script[src]')).map(function(s){return s.src;}),
+          links: Array.from(document.querySelectorAll('link[rel=stylesheet]')).map(function(l){return l.href;})
+        };
+        try {
+          navigator.clipboard.writeText(JSON.stringify(diag, null, 2));
+          this.textContent = 'Copied!';
+        } catch(e) {
+          this.textContent = 'Copy failed';
+        }
+      });
+
+      // Boot watchdog: if React hasn't mounted within 8s, show recovery UI
+      window.__bootErrors = [];
+      window.addEventListener('error', function(e) {
+        window.__bootErrors.push(e.message || 'Unknown error');
+      });
+
       (function(){
         var t = setTimeout(function(){
           var root = document.getElementById('root');
-          var fb = document.getElementById('hydration-fallback');
-          if (root && fb && root.children.length <= 1) {
-            fb.style.display = 'flex';
+          var recovery = document.getElementById('boot-recovery');
+          // Check if React has mounted (recovery div would be removed or root has other children)
+          if (root && recovery && root.children.length <= 1) {
+            recovery.className = 'active';
+            var errMsg = document.getElementById('boot-error-msg');
+            if (errMsg && window.__bootErrors.length > 0) {
+              errMsg.textContent = 'Error: ' + window.__bootErrors[window.__bootErrors.length - 1].substring(0, 150);
+            }
+            console.error('[BOOT_FAIL] React did not mount within 8 seconds. Boot errors:', window.__bootErrors);
           }
-        }, 10000);
+        }, 8000);
         
-        // Cancel timeout once React mounts (hydration-fallback gets removed)
+        // Cancel timeout once React mounts (boot-recovery gets removed)
         var obs = new MutationObserver(function(){
-          var fb = document.getElementById('hydration-fallback');
-          if (!fb) { clearTimeout(t); obs.disconnect(); }
+          var recovery = document.getElementById('boot-recovery');
+          if (!recovery) { clearTimeout(t); obs.disconnect(); }
         });
-        obs.observe(document.getElementById('root'), { childList: true });
+        if (document.getElementById('root')) {
+          obs.observe(document.getElementById('root'), { childList: true });
+        }
       })();
     </script>
   </body>
