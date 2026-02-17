@@ -177,40 +177,115 @@ const SeoCollection = () => {
     enabled: !!slug,
   });
 
-  // Fetch matching products
+  // Fetch matching products — keyword-first approach for accuracy
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['seo-collection-products', collection?.id],
     queryFn: async () => {
       if (!collection) return [];
 
+      const hasCategory = !!collection.product_category_filter;
+      const hasKeywords = !!collection.product_keyword_filter;
+      const keywords = hasKeywords
+        ? collection.product_keyword_filter!.split(',').map(k => k.trim().toLowerCase()).filter(Boolean)
+        : [];
+
+      // Infer pet type from collection name/slug for cross-contamination prevention
+      const collName = (collection.name + ' ' + collection.slug).toLowerCase();
+      const isDogCollection = collName.includes('dog') && !collName.includes('cat');
+      const isCatCollection = collName.includes('cat') && !collName.includes('dog');
+
+      const petTypeFilter = <T extends { name: string; category: string | null }>(items: T[]): T[] => {
+        if (!isDogCollection && !isCatCollection) return items;
+        return items.filter(p => {
+          const pName = p.name.toLowerCase();
+          const pCat = (p.category || '').toLowerCase();
+          if (isDogCollection) {
+            return !pCat.includes('cat') && !pCat.includes('bird') && !pCat.includes('hamster') &&
+                   !pCat.includes('guinea') && !pCat.includes('rabbit') &&
+                   !(pName.includes('cat ') || pName.startsWith('cat '));
+          }
+          if (isCatCollection) {
+            return !pCat.includes('dog') && !pCat.includes('bird') && !pCat.includes('hamster') &&
+                   !pCat.includes('guinea') && !pCat.includes('rabbit') &&
+                   !(pName.includes('dog ') || pName.startsWith('dog '));
+          }
+          return true;
+        });
+      };
+
+      // Strategy: If we have keywords, build an OR filter on product name
+      if (hasKeywords && !hasCategory) {
+        const { data, error } = await supabase
+          .from('products_public')
+          .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at')
+          .eq('is_active', true)
+          .eq('is_duplicate', false)
+          .limit(500);
+
+        if (error) {
+          console.error('Error fetching products:', error);
+          return [];
+        }
+
+        let filtered = (data || []).filter(product => {
+          const pName = product.name.toLowerCase();
+          return keywords.some(kw => pName.includes(kw));
+        });
+
+        // Apply pet-type safety filter
+        filtered = petTypeFilter(filtered);
+
+        // Sort: in-stock first, then by created_at desc
+        filtered.sort((a, b) => {
+          const aStock = (a.stock ?? 0) > 0 ? 0 : 1;
+          const bStock = (b.stock ?? 0) > 0 ? 0 : 1;
+          if (aStock !== bStock) return aStock - bStock;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+
+        return filtered.slice(0, 24) as CollectionProduct[];
+      }
+
+      // Category-based query
       let query = supabase
         .from('products_public')
-        .select('id, name, price, compare_at_price, image_url, slug, category, stock')
-        .eq('is_active', true);
+        .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at')
+        .eq('is_active', true)
+        .eq('is_duplicate', false);
 
-      // Filter by category if specified
-      if (collection.product_category_filter) {
+      if (hasCategory) {
         query = query.ilike('category', `%${collection.product_category_filter}%`);
       }
 
-      const { data, error } = await query.limit(24);
+      const { data, error } = await query.limit(hasKeywords ? 200 : 24);
 
       if (error) {
         console.error('Error fetching products:', error);
         return [];
       }
 
-      // Further filter by keywords if specified
       let filteredProducts = data || [];
-      if (collection.product_keyword_filter) {
-        const keywords = collection.product_keyword_filter.split(',').map(k => k.trim().toLowerCase());
+
+      // Apply keyword filter if both category and keywords specified
+      if (hasKeywords) {
         filteredProducts = filteredProducts.filter(product => {
-          const productName = product.name.toLowerCase();
-          return keywords.some(keyword => productName.includes(keyword));
+          const pName = product.name.toLowerCase();
+          return keywords.some(kw => pName.includes(kw));
         });
       }
 
-      return filteredProducts as CollectionProduct[];
+      // Apply pet-type safety filter
+      filteredProducts = petTypeFilter(filteredProducts);
+
+      // Sort: in-stock first, then by created_at desc
+      filteredProducts.sort((a, b) => {
+        const aStock = (a.stock ?? 0) > 0 ? 0 : 1;
+        const bStock = (b.stock ?? 0) > 0 ? 0 : 1;
+        if (aStock !== bStock) return aStock - bStock;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      return filteredProducts.slice(0, 24) as CollectionProduct[];
     },
     enabled: !!collection,
   });

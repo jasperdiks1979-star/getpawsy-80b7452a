@@ -174,6 +174,9 @@ const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDomina
 const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/AnalyticsTrafficDocs"));
 const SlowFeederDogBowls = lazyWithRetry(() => import("./pages/SlowFeederDogBowls"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
+const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
+const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
+const GrowthVerification = lazyWithRetry(() => import("./pages/GrowthVerification"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -245,8 +248,18 @@ const App = () => {
                       <Route path="/founder-mode" element={<Suspense fallback={<RouteLoader />}><FounderMode /></Suspense>} />
                       <Route path="/slow-feeder-dog-bowls" element={<Suspense fallback={<RouteLoader />}><SlowFeederDogBowls /></Suspense>} />
                       
+                      {/* Guide pages */}
+                      <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />
+                      <Route path="/guides/:slug" element={<Suspense fallback={<RouteLoader />}><GuidePage /></Suspense>} />
+                      
                       {/* SEO Collection pages — /collections/:slug */}
                       <Route path="/collections/:slug" element={<Suspense fallback={<RouteLoader />}><SeoCollection /></Suspense>} />
+                      
+                      {/* Legacy collection alias */}
+                      <Route path="/collection/:slug" element={<Suspense fallback={<RouteLoader />}><SeoCollection /></Suspense>} />
+                      
+                      {/* Growth verification diagnostics */}
+                      <Route path="/__ops/growth-verification" element={<Suspense fallback={<RouteLoader />}><GrowthVerification /></Suspense>} />
                       
                       {/* Parent category routes */}
                       <Route path="/dogs" element={<Navigate to="/products?category=dogs" replace />} />
