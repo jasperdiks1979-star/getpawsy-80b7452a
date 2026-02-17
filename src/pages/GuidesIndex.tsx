@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { BookOpen, Clock, ArrowRight, ChevronRight } from 'lucide-react';
+import { BookOpen, Clock, ArrowRight, ChevronRight, Sparkles } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { useGuidesList } from '@/hooks/useGuides';
 import { Loader2 } from 'lucide-react';
@@ -73,11 +73,7 @@ const GuidesIndex = () => {
             name: 'Pet Care Guides',
             description: 'Expert pet care guides for dog, cat, and small pet owners.',
             url: `${BASE_URL}/guides`,
-            publisher: {
-              '@type': 'Organization',
-              name: 'GetPawsy',
-              url: BASE_URL,
-            },
+            publisher: { '@type': 'Organization', name: 'GetPawsy', url: BASE_URL },
           })}
         </script>
         <script type="application/ld+json">
@@ -100,64 +96,73 @@ const GuidesIndex = () => {
           <span className="text-foreground font-medium">Guides</span>
         </nav>
 
-        <header className="mb-12">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-primary" />
+        {/* Premium Header */}
+        <header className="mb-14">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-sm">
+              <BookOpen className="w-7 h-7 text-primary" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground">
-              Pet Care Guides
-            </h1>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground tracking-tight">
+                Pet Care Guides
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Practical, expert-backed guides to help you make the best choices for your pets.
+              </p>
+            </div>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl">
-            Practical, expert-backed guides to help you make the best choices for your pets.
-          </p>
         </header>
 
         {/* Category Hub Sections */}
         {Object.entries(grouped).map(([category, categoryGuides]) => {
           const hub = CATEGORY_HUBS[category];
           return (
-            <section key={category} className="mb-14">
-              <div className="mb-6">
-                <h2 className="text-xl font-display font-semibold text-foreground border-b border-border pb-2">
-                  {category}
-                </h2>
+            <section key={category} className="mb-16">
+              <div className="mb-8">
+                <div className="flex items-center gap-3 mb-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">
+                    {category}
+                  </h2>
+                </div>
                 {hub && (
-                  <p className="text-sm text-muted-foreground mt-2">{hub.description}</p>
+                  <p className="text-sm text-muted-foreground ml-7">{hub.description}</p>
                 )}
+                <div className="mt-3 h-px bg-gradient-to-r from-primary/20 via-border to-transparent" />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {categoryGuides.map((guide) => (
                   <Link
                     key={guide.slug}
                     to={`/guides/${guide.slug}`}
-                    className="group block rounded-xl border border-border bg-card p-6 hover:border-primary/30 hover:shadow-md transition-all"
+                    className="group relative block rounded-2xl border border-border bg-card p-6 hover:border-primary/30 hover:shadow-soft hover:-translate-y-1 transition-all duration-300"
                   >
-                    <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-2">
+                    <h3 className="text-lg font-display font-bold text-foreground group-hover:text-primary transition-colors mb-2 leading-snug">
                       {guide.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mb-5 line-clamp-2 leading-relaxed">
                       {guide.excerpt}
                     </p>
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                         <Clock className="w-3.5 h-3.5" />
                         {guide.readingTime} min read
                       </span>
-                      <span className="flex items-center gap-1 text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="flex items-center gap-1.5 text-sm font-semibold text-primary group-hover:gap-2.5 transition-all duration-300">
                         Read Guide <ArrowRight className="w-4 h-4" />
                       </span>
                     </div>
                   </Link>
                 ))}
               </div>
+
               {/* Shop CTA for this category hub */}
               {hub && (
-                <div className="mt-4">
+                <div className="mt-5">
                   <Link
                     to={`/products?category=${hub.shopCategory}`}
-                    className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:gap-3 transition-all duration-300"
                   >
                     {hub.shopLabel} <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
