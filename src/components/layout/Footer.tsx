@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { PaymentBadges } from '@/components/shared/PaymentBadges';
 import { Mail, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, ArrowRight, RotateCcw, Cookie, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -378,16 +379,7 @@ export const Footer = () => {
                 </div>
 
                 {/* Payment method badges */}
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-background/40">Secure payments:</span>
-                  <div className="flex items-center gap-2 text-xs text-background/60 font-medium">
-                    <span className="bg-background/10 px-2 py-0.5 rounded">Visa</span>
-                    <span className="bg-background/10 px-2 py-0.5 rounded">Mastercard</span>
-                    <span className="bg-background/10 px-2 py-0.5 rounded">Amex</span>
-                    <span className="bg-background/10 px-2 py-0.5 rounded">Apple Pay</span>
-                    <span className="bg-background/10 px-2 py-0.5 rounded">Stripe</span>
-                  </div>
-                </div>
+                <PaymentBadges variant="light" />
               </div>
             </div>
           </div>

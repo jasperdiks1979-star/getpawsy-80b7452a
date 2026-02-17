@@ -1,5 +1,6 @@
 import React from 'react';
 import { Truck, RotateCcw, Lock, CreditCard } from 'lucide-react';
+import { PaymentBadges } from '@/components/shared/PaymentBadges';
 import {
   FREE_SHIPPING_THRESHOLD,
   DELIVERY_TIME_STANDARD,
@@ -29,7 +30,8 @@ export const TrustMicrocopy: React.FC<TrustMicrocopyProps> = ({ className = '' }
       </div>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <CreditCard className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Secure Checkout • Visa • Mastercard • Amex • Apple Pay • PayPal</span>
+        <span className="mr-1">Secure Checkout</span>
+        <PaymentBadges showLabel={false} variant="dark" className="gap-1.5" />
       </div>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <Lock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
