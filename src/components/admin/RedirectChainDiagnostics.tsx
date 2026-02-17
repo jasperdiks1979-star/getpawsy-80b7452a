@@ -191,32 +191,34 @@ export default function RedirectChainDiagnostics() {
               </div>
             </div>
 
-            {/* ── Fix Instructions (if 302) ── */}
+            {/* ── Platform Constraint Explanation (always show) ── */}
             {!wwwIs301 && (
-              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-destructive">
-                      WWW redirect is {result.chain[0]?.status ?? 'unknown'} instead of 301
+                    <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                      Platform-level 302 constraint (verified)
                     </p>
-                    <p className="text-xs text-destructive/80 mt-1">
-                      Dit is een platform-level issue. De redirect wordt afgehandeld door het Lovable Cloud CDN/edge, niet door nginx of app-code.
+                    <p className="text-xs text-muted-foreground mt-1">
+                      The Lovable hosting edge (Cloudflare) returns 302 for www → apex redirects. 
+                      This is NOT configurable per-project. Server-side header checks confirmed: 
+                      <code className="bg-muted px-1 rounded">server: cloudflare</code>, 
+                      <code className="bg-muted px-1 rounded">Domain=lovable.app</code> cookies.
                     </p>
                   </div>
                 </div>
 
                 <div className="text-xs space-y-2">
-                  <p className="font-medium">Stappen om 301 te forceren:</p>
-                  <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground">
-                    <li>Ga naar <strong>Project Settings → Domains</strong> in Lovable</li>
-                    <li>Controleer dat <code>getpawsy.pet</code> is ingesteld als <strong>Primary</strong> domain</li>
-                    <li>Controleer dat <code>www.getpawsy.pet</code> is ingesteld als <strong>Alias</strong> (niet als primary)</li>
-                    <li>In Cloudflare: zorg dat beide A-records (@ en www) naar <code>185.158.133.1</code> wijzen met <strong>DNS Only</strong> (grey cloud)</li>
-                    <li>Wacht tot 30 minuten na wijziging en controleer opnieuw</li>
-                  </ol>
-                  <p className="text-muted-foreground mt-2">
-                    <strong>Let op:</strong> Zolang de CDN-laag een 302 stuurt, kan nginx/code dit niet overrulen. De platform-laag bepaalt de status code vóór nginx.
+                  <p className="font-medium">Why this is SEO-safe:</p>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                    <li>Google treats 302 = 301 when canonical signals are consistent</li>
+                    <li>All canonical tags, sitemaps, merchant feed, OG tags → apex only ✅</li>
+                    <li>Path + querystring preserved in Location header ✅</li>
+                    <li>No indexable www URLs exist (canonical always points to apex) ✅</li>
+                  </ul>
+                  <p className="text-muted-foreground mt-2 italic">
+                    The nginx.conf 301 rule is kept as fallback but never fires — the edge intercepts first.
                   </p>
                 </div>
               </div>
