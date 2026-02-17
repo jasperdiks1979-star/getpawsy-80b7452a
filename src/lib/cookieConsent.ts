@@ -39,14 +39,19 @@ export function setConsent(value: ConsentValue): void {
 
 /** Push a gtag consent update based on current value */
 export function applyGtagConsent(value: ConsentValue): void {
-  if (typeof window === 'undefined' || !window.dataLayer) return;
-  // Use dataLayer.push to avoid type conflicts with gtag overloads
-  window.dataLayer.push('consent', 'update', {
-    analytics_storage: value === 'all' ? 'granted' : 'denied',
-    ad_storage: value === 'all' ? 'granted' : 'denied',
-    ad_user_data: value === 'all' ? 'granted' : 'denied',
-    ad_personalization: value === 'all' ? 'granted' : 'denied',
-  });
+  if (typeof window === 'undefined') return;
+  // Ensure dataLayer exists (may not if analytics deferred)
+  try {
+    (window as any).dataLayer = (window as any).dataLayer || [];
+    (window as any).dataLayer.push('consent', 'update', {
+      analytics_storage: value === 'all' ? 'granted' : 'denied',
+      ad_storage: value === 'all' ? 'granted' : 'denied',
+      ad_user_data: value === 'all' ? 'granted' : 'denied',
+      ad_personalization: value === 'all' ? 'granted' : 'denied',
+    });
+  } catch (e) {
+    console.warn('[CookieConsent] gtag consent update failed (non-fatal):', e);
+  }
 }
 
 /** Check whether a consent value allows marketing/analytics */

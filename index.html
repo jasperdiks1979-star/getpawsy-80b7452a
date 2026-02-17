@@ -53,26 +53,11 @@
     <meta name="twitter:description" content="Quality pet supplies for dogs, cats & more. Free shipping $50+. Vet-approved, eco-friendly products." />
     <meta name="twitter:image" content="https://getpawsy.pet/og-image.png" />
 
-    <!-- Google Analytics & Google Ads with GDPR Consent Mode -->
-    <script async defer src="https://www.googletagmanager.com/gtag/js?id=G-5WYL8RJDZF"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      
-      // Set default consent to denied (GDPR compliant)
-      gtag('consent', 'default', {
-        'analytics_storage': 'denied',
-        'ad_storage': 'denied',
-        'ad_user_data': 'denied',
-        'ad_personalization': 'denied',
-        'wait_for_update': 500
-      });
-      
-      gtag('js', new Date());
-      gtag('config', 'G-5WYL8RJDZF');
-      gtag('config', 'AW-381705659');
-      gtag('config', 'GT-5D48HPG2');
-    </script>
+    <!--
+      IMPORTANT: Google Analytics / Google Ads scripts are NO LONGER loaded here.
+      They are loaded dynamically AFTER React mounts via src/lib/deferred-analytics.ts
+      to prevent "Cannot access uninitialized variable" TDZ errors on iOS Safari.
+    -->
 
     <!-- Preload LCP hero image for fastest paint -->
     <link rel="preload" as="image" href="https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1200&q=80&auto=format" imagesrcset="https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=640&q=75&auto=format 640w, https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1024&q=80&auto=format 1024w, https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=1920&q=85&auto=format 1920w" imagesizes="100vw" fetchpriority="high">
@@ -96,7 +81,6 @@
     
     <!-- Critical inline styles for instant first paint and CLS prevention -->
     <style>
-      /* Font fallback with size-adjust to minimize CLS during font swap */
       @font-face {
         font-family: 'DM Sans Fallback';
         src: local('Arial');
@@ -115,15 +99,9 @@
       }
       body { font-family: 'DM Sans', 'DM Sans Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
       h1, h2, h3, h4, h5, h6 { font-family: 'Playfair Display', 'Playfair Fallback', Georgia, serif; }
-      
-      /* Reserve space for common layouts to prevent CLS */
       .skeleton-pulse { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: pulse 1.5s infinite; }
       @keyframes pulse { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-      
-      /* Ensure images always have reserved space */
       img { content-visibility: auto; }
-
-      /* Recovery UI styles */
       #boot-recovery { display:none; }
       #boot-recovery.active { display:flex; }
     </style>
@@ -131,7 +109,7 @@
 
   <body>
     <div id="root">
-      <!-- Enhanced Recovery UI: visible only if React fails to mount -->
+      <!-- Recovery UI: visible only if React fails to mount -->
       <div id="boot-recovery" style="align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafafa;padding:24px">
         <div style="text-align:center;max-width:440px">
           <div style="font-size:48px;margin-bottom:16px">🐾</div>
@@ -156,7 +134,13 @@
     </div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // CRITICAL: Unregister ALL service workers and clear caches on every page load
+      // === BOOT PROTECTION LAYER (vanilla JS, zero dependencies) ===
+      // This runs even if the main bundle completely fails to load/execute.
+
+      // 1) Ensure dataLayer exists for any gtag references (prevents TDZ)
+      window.dataLayer = window.dataLayer || [];
+
+      // 2) Unregister ALL service workers + clear caches on every load
       (function(){
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(function(regs) {
@@ -170,7 +154,35 @@
         }
       })();
 
-      // Hard reload button handler
+      // 3) Capture ALL boot errors with full stack traces
+      window.__bootErrors = [];
+      window.__bootStacks = [];
+      window.addEventListener('error', function(e) {
+        var info = {
+          message: e.message || 'Unknown error',
+          filename: e.filename || '',
+          lineno: e.lineno || 0,
+          colno: e.colno || 0,
+          stack: e.error && e.error.stack ? e.error.stack : '',
+          timestamp: new Date().toISOString()
+        };
+        window.__bootErrors.push(info);
+        console.error('[BOOT_FAIL]', info.message, 'at', info.filename + ':' + info.lineno + ':' + info.colno);
+        if (info.stack) console.error('[BOOT_FAIL] Stack:', info.stack);
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var reason = e.reason;
+        var info = {
+          message: reason && reason.message ? reason.message : String(reason),
+          stack: reason && reason.stack ? reason.stack : '',
+          timestamp: new Date().toISOString()
+        };
+        window.__bootErrors.push(info);
+        console.error('[BOOT_FAIL] Unhandled rejection:', info.message);
+        if (info.stack) console.error('[BOOT_FAIL] Stack:', info.stack);
+      });
+
+      // 4) Hard reload button handler
       document.getElementById('hard-reload-btn').addEventListener('click', function() {
         try {
           if ('serviceWorker' in navigator) {
@@ -184,19 +196,36 @@
             });
           }
           sessionStorage.clear();
+          // Best-effort clear IndexedDB
+          if (window.indexedDB && indexedDB.databases) {
+            indexedDB.databases().then(function(dbs) {
+              dbs.forEach(function(db) { if (db.name) indexedDB.deleteDatabase(db.name); });
+            }).catch(function(){});
+          }
         } catch(e) {}
         window.location.href = window.location.pathname + '?cache_bust=' + Date.now();
       });
 
-      // Copy diagnostics button
+      // 5) Copy diagnostics button — captures FULL error context
       document.getElementById('copy-diag-btn').addEventListener('click', function() {
+        var scripts = [];
+        try {
+          var scriptEls = document.querySelectorAll('script[src]');
+          for (var i = 0; i < scriptEls.length; i++) scripts.push(scriptEls[i].src);
+        } catch(e) {}
+
         var diag = {
           url: location.href,
           userAgent: navigator.userAgent,
           timestamp: new Date().toISOString(),
           bootErrors: window.__bootErrors || [],
-          scripts: Array.from(document.querySelectorAll('script[src]')).map(function(s){return s.src;}),
-          links: Array.from(document.querySelectorAll('link[rel=stylesheet]')).map(function(l){return l.href;})
+          loadedScripts: scripts,
+          swControlled: !!(navigator.serviceWorker && navigator.serviceWorker.controller),
+          onLine: navigator.onLine,
+          platform: navigator.platform || 'unknown',
+          viewport: window.innerWidth + 'x' + window.innerHeight,
+          devicePixelRatio: window.devicePixelRatio || 1,
+          language: navigator.language || 'unknown'
         };
         try {
           navigator.clipboard.writeText(JSON.stringify(diag, null, 2));
@@ -206,28 +235,25 @@
         }
       });
 
-      // Boot watchdog: if React hasn't mounted within 8s, show recovery UI
-      window.__bootErrors = [];
-      window.addEventListener('error', function(e) {
-        window.__bootErrors.push(e.message || 'Unknown error');
-      });
-
+      // 6) Boot watchdog: if React hasn't mounted within 8s, show recovery UI
       (function(){
         var t = setTimeout(function(){
           var root = document.getElementById('root');
           var recovery = document.getElementById('boot-recovery');
-          // Check if React has mounted (recovery div would be removed or root has other children)
           if (root && recovery && root.children.length <= 1) {
             recovery.className = 'active';
             var errMsg = document.getElementById('boot-error-msg');
-            if (errMsg && window.__bootErrors.length > 0) {
-              errMsg.textContent = 'Error: ' + window.__bootErrors[window.__bootErrors.length - 1].substring(0, 150);
+            if (errMsg && window.__bootErrors && window.__bootErrors.length > 0) {
+              var lastErr = window.__bootErrors[window.__bootErrors.length - 1];
+              var msg = lastErr.message || 'Unknown boot error';
+              if (lastErr.filename) msg += ' at ' + lastErr.filename.split('/').pop() + ':' + lastErr.lineno;
+              if (lastErr.stack) msg += '\n' + lastErr.stack.substring(0, 300);
+              errMsg.textContent = msg;
             }
-            console.error('[BOOT_FAIL] React did not mount within 8 seconds. Boot errors:', window.__bootErrors);
+            console.error('[BOOT_FAIL] React did not mount within 8 seconds. Errors:', window.__bootErrors);
           }
         }, 8000);
         
-        // Cancel timeout once React mounts (boot-recovery gets removed)
         var obs = new MutationObserver(function(){
           var recovery = document.getElementById('boot-recovery');
           if (!recovery) { clearTimeout(t); obs.disconnect(); }
@@ -235,6 +261,36 @@
         if (document.getElementById('root')) {
           obs.observe(document.getElementById('root'), { childList: true });
         }
+      })();
+
+      // 7) Boot debug mode: ?bootdebug=1 shows diagnostics even if app loads
+      (function(){
+        if (location.search.indexOf('bootdebug=1') === -1) return;
+        window.__bootdebugActive = true;
+        // Show diagnostics after a delay to let app mount
+        setTimeout(function(){
+          var panel = document.createElement('div');
+          panel.style.cssText = 'position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.9);color:#0f0;padding:16px;font-family:monospace;font-size:11px;z-index:99999;border-radius:8px;max-width:400px;max-height:60vh;overflow:auto;pointer-events:auto';
+          var scripts = [];
+          try { var s = document.querySelectorAll('script[src]'); for(var i=0;i<s.length;i++) scripts.push(s[i].src); } catch(e){}
+          var info = {
+            mode: 'boot-debug',
+            url: location.href,
+            ua: navigator.userAgent,
+            errors: window.__bootErrors || [],
+            scripts: scripts,
+            swControlled: !!(navigator.serviceWorker && navigator.serviceWorker.controller),
+            reactMounted: !document.getElementById('boot-recovery'),
+            timestamp: new Date().toISOString()
+          };
+          panel.innerHTML = '<b>[Boot Debug]</b><br><pre style="white-space:pre-wrap;word-break:break-all">' + JSON.stringify(info, null, 2) + '</pre>';
+          var copyBtn = document.createElement('button');
+          copyBtn.textContent = 'Copy';
+          copyBtn.style.cssText = 'margin-top:8px;padding:4px 12px;background:#333;color:#fff;border:1px solid #666;cursor:pointer';
+          copyBtn.onclick = function(){ navigator.clipboard.writeText(JSON.stringify(info,null,2)); copyBtn.textContent='Copied!'; };
+          panel.appendChild(copyBtn);
+          document.body.appendChild(panel);
+        }, 3000);
       })();
     </script>
   </body>

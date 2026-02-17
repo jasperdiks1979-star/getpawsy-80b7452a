@@ -5,7 +5,7 @@ import { AppErrorBoundary } from "./components/error/AppErrorBoundary";
 import App from "./App.tsx";
 import "./index.css";
 
-// v6 - Force rebuild: all boot diagnostics + recovery UI active
+// v7 - Deferred analytics: gtag removed from <head>, loaded after mount
 
 // === STEP 1: Install boot error handlers BEFORE anything else ===
 import {
@@ -36,7 +36,7 @@ try {
   console.error('[BOOT_FAIL] Env validation threw:', e);
 }
 
-// === STEP 3: Initialize Web Vitals (deferred, non-blocking) ===
+// === STEP 3: Web Vitals — deferred, non-blocking ===
 import { initVitalsCollector } from "./lib/vitals-collector";
 import { initLCPDebug } from "./lib/lcp-debug";
 if (typeof window !== 'undefined') {
@@ -74,7 +74,19 @@ try {
   // Mark successful mount
   markMounted();
 
-  // === STEP 5: Verify build integrity (async, non-blocking) ===
+  // === STEP 5: Load deferred analytics AFTER mount ===
+  // This was previously in index.html <head> and caused TDZ errors on iOS Safari
+  import("./lib/deferred-analytics").then(m => {
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(() => m.initDeferredAnalytics());
+    } else {
+      setTimeout(() => m.initDeferredAnalytics(), 1500);
+    }
+  }).catch(e => {
+    console.warn('[BOOT] Analytics load failed (non-fatal):', e);
+  });
+
+  // === STEP 6: Verify build integrity (async, non-blocking) ===
   verifyBuildIntegrity().catch(() => {});
 } catch (e) {
   console.error('[BOOT_FAIL] React mount failed:', e);
