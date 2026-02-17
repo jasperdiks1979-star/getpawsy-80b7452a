@@ -923,6 +923,74 @@ const Index = () => {
         </section>
       </SectionErrorBoundary>
 
+      {/* Mid-Page Cornerstone Authority Links */}
+      <SectionErrorBoundary sectionName="Top Rated Collections">
+        <section className="py-16">
+          <div className="container px-4 md:px-6">
+            <motion.div
+              className="text-center mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">
+                Explore Our Top-Rated Collections
+              </h2>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Expert-tested, vet-informed picks trusted by thousands of US pet parents
+              </p>
+            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Link
+                to="/bestsellers"
+                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-8 hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="text-3xl mb-4">🏆</div>
+                <h3 className="font-display font-bold text-xl mb-2 group-hover:text-primary transition-colors">
+                  Our Bestselling Pet Products
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  The most popular, highest-rated products chosen by pet parents across the US.
+                </p>
+                <span className="text-sm font-medium text-primary inline-flex items-center gap-1">
+                  Shop bestsellers <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Link>
+              <Link
+                to="/collections/best-cat-litter-boxes"
+                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 p-8 hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="text-3xl mb-4">🐱</div>
+                <h3 className="font-display font-bold text-xl mb-2 group-hover:text-primary transition-colors">
+                  Top-Rated Litter Boxes 2026
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Expert-tested litter boxes for odor control, large cats, and multi-cat homes.
+                </p>
+                <span className="text-sm font-medium text-primary inline-flex items-center gap-1">
+                  Compare litter boxes <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Link>
+              <Link
+                to="/collections/best-interactive-dog-toys"
+                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-secondary/10 to-accent/10 border border-secondary/30 p-8 hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="text-3xl mb-4">🐶</div>
+                <h3 className="font-display font-bold text-xl mb-2 group-hover:text-primary transition-colors">
+                  Best Interactive Dog Toys
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Puzzle toys, enrichment games, and interactive picks to keep your dog mentally sharp.
+                </p>
+                <span className="text-sm font-medium text-primary inline-flex items-center gap-1">
+                  Explore dog toys <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Link>
+            </div>
+          </div>
+        </section>
+      </SectionErrorBoundary>
+
       {safeRecentlyViewedProducts.length > 0 && (
         <SectionErrorBoundary sectionName="Recently Viewed">
           <section className="py-20 bg-sand/40">
