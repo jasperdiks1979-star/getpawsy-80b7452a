@@ -83,6 +83,13 @@ export default {
           DEFAULT: "hsl(var(--sand))",
           foreground: "hsl(var(--sand-foreground))",
         },
+        luxury: {
+          DEFAULT: "hsl(var(--luxury-bg))",
+          card: "hsl(var(--luxury-card))",
+          accent: "hsl(var(--luxury-accent))",
+          "accent-foreground": "hsl(var(--luxury-accent-foreground))",
+          muted: "hsl(var(--luxury-muted))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

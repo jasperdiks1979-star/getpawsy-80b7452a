@@ -65,6 +65,13 @@
     /* NEW: Premium warm sand accent for section backgrounds */
     --sand: 35 45% 95%;
     --sand-foreground: 35 50% 20%;
+
+    /* Luxury dark section */
+    --luxury-bg: 240 6% 6%;
+    --luxury-card: 240 5% 12%;
+    --luxury-accent: 36 70% 52%;
+    --luxury-accent-foreground: 36 100% 95%;
+    --luxury-muted: 240 4% 40%;
   }
 
 .dark {
