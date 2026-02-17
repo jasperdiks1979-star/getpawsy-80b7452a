@@ -371,7 +371,7 @@ const Index = () => {
             className="w-full h-full object-cover object-center"
             loading="eager"
             fetchPriority="high"
-            decoding="sync"
+            decoding="async"
             style={{ aspectRatio: '16/9' }}
           />
           {/* Warm, soft gradient overlay */}
