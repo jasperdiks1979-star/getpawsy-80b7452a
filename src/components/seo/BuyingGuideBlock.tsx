@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, ArrowRight } from 'lucide-react';
+import { BookOpen, ArrowRight, Trophy } from 'lucide-react';
+import { getProductCornerstonePath } from '@/lib/link-sculpt-config';
 
 /**
  * Contextual buying guide link block for product pages.
  * Maps product categories to cornerstone guides for internal authority flow.
+ * Also injects a secondary "collection cornerstone" link for link sculpting.
  */
 
 interface GuideMapping {
@@ -155,26 +157,46 @@ interface BuyingGuideBlockProps {
 
 export function BuyingGuideBlock({ category }: BuyingGuideBlockProps) {
   const guide = findGuide(category);
-  if (!guide) return null;
+  const collectionLink = getProductCornerstonePath(category);
+
+  if (!guide && !collectionLink) return null;
 
   return (
-    <section className="my-8">
-      <Link
-        to={`/guides/${guide.slug}`}
-        className="group flex items-start gap-4 rounded-xl border border-primary/20 bg-primary/5 p-5 hover:border-primary/40 hover:shadow-md transition-all"
-      >
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <BookOpen className="w-5 h-5 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <span className="text-xs font-medium text-primary uppercase tracking-wide">📘 Buying Guide</span>
-          <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mt-1 mb-1">
-            {guide.anchor}
-          </h3>
-          <p className="text-sm text-muted-foreground">{guide.description}</p>
-        </div>
-        <ArrowRight className="w-5 h-5 text-primary flex-shrink-0 mt-2 group-hover:translate-x-1 transition-transform" />
-      </Link>
+    <section className="my-8 space-y-4">
+      {/* Guide link */}
+      {guide && (
+        <Link
+          to={`/guides/${guide.slug}`}
+          className="group flex items-start gap-4 rounded-xl border border-primary/20 bg-primary/5 p-5 hover:border-primary/40 hover:shadow-md transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <BookOpen className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-xs font-medium text-primary uppercase tracking-wide">📘 Buying Guide</span>
+            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mt-1 mb-1">
+              {guide.anchor}
+            </h3>
+            <p className="text-sm text-muted-foreground">{guide.description}</p>
+          </div>
+          <ArrowRight className="w-5 h-5 text-primary flex-shrink-0 mt-2 group-hover:translate-x-1 transition-transform" />
+        </Link>
+      )}
+
+      {/* Collection cornerstone link — link sculpting */}
+      {collectionLink && (
+        <Link
+          to={collectionLink.path}
+          className="group flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-5 py-3 hover:border-primary/30 hover:bg-primary/5 transition-all"
+        >
+          <Trophy className="w-4 h-4 text-primary flex-shrink-0" />
+          <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+            Explore more top-rated options in our{' '}
+            <span className="font-medium text-primary">{collectionLink.anchor}</span>
+          </span>
+          <ArrowRight className="w-3.5 h-3.5 text-primary/60 flex-shrink-0 ml-auto group-hover:translate-x-1 transition-transform" />
+        </Link>
+      )}
     </section>
   );
 }

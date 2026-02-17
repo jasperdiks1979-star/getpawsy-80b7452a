@@ -1,12 +1,15 @@
 /**
  * Internal Linking Strategy for Blog Posts
- * Automatically converts keywords in blog content to internal links
+ * Automatically converts keywords in blog content to internal links.
+ * Includes cornerstone sculpt links for priority authority flow.
  */
+
+import { BLOG_CORNERSTONE_TRIGGERS, PRIORITY_CORNERSTONES, getCornerstoneAnchor } from './link-sculpt-config';
 
 interface LinkableKeyword {
   keyword: string;
   url: string;
-  type: 'product' | 'category' | 'blog';
+  type: 'product' | 'category' | 'blog' | 'cornerstone';
   priority: number; // Higher priority = more likely to be linked
 }
 
@@ -387,6 +390,21 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
       });
     });
   });
+
+  // ── Cornerstone sculpt keywords (highest priority — authority flow) ──
+  Object.entries(BLOG_CORNERSTONE_TRIGGERS).forEach(([trigger, targets]) => {
+    targets.forEach(({ cornerstoneId }) => {
+      const cs = PRIORITY_CORNERSTONES.find(c => c.id === cornerstoneId);
+      if (!cs) return;
+      const anchor = getCornerstoneAnchor(cornerstoneId, 'blog-inject');
+      keywords.push({
+        keyword: trigger.toLowerCase(),
+        url: cs.path,
+        type: 'cornerstone',
+        priority: 12, // Highest priority — sculpt links
+      });
+    });
+  });
   
   return keywords;
 };
@@ -477,9 +495,11 @@ export const addInternalLinks = (
         
         // Create the link - ensure match[1] is a string
         const matchedText = String(match[1] || keyword);
-        const linkClass = type === 'product' 
-          ? 'internal-link internal-link-product' 
-          : 'internal-link internal-link-category';
+        const linkClass = type === 'cornerstone'
+          ? 'internal-link internal-link-cornerstone'
+          : type === 'product' 
+            ? 'internal-link internal-link-product' 
+            : 'internal-link internal-link-category';
         
         const replacement = `<a href="${url}" class="${linkClass}" data-internal-link="${type}">${matchedText}</a>`;
         
