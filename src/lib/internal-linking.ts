@@ -420,7 +420,6 @@ export const addInternalLinks = (
     minWordsBetweenLinks?: number;
   } = {}
 ): string => {
-  // Safety check - ensure we have a valid string
   if (!htmlContent || typeof htmlContent !== 'string') {
     return '';
   }
@@ -436,7 +435,7 @@ export const addInternalLinks = (
     const productKeywords = generateProductKeywords(products);
     const categoryKeywordsGenerated = generateCategoryKeywords(categories);
     
-    // Combine and sort by priority (highest first) and length (longest first for better matching)
+    // Combine and sort by priority (highest first) and length (longest first)
     const allKeywords = [...productKeywords, ...categoryKeywordsGenerated]
       .sort((a, b) => {
         if (b.priority !== a.priority) return b.priority - a.priority;
@@ -448,6 +447,16 @@ export const addInternalLinks = (
     let totalLinksAdded = 0;
     let lastLinkPosition = -minWordsBetweenLinks;
     
+    // Over-optimization guard: estimate word count, cap at 4 links per 1000 words
+    const plainText = htmlContent.replace(/<[^>]+>/g, '');
+    const wordCount = plainText.split(/\s+/).filter(Boolean).length;
+    const maxByDensity = Math.max(2, Math.floor(wordCount / 250)); // ~4 per 1000
+    const effectiveMax = Math.min(maxTotalLinks, maxByDensity);
+    
+    // Randomness factor: ±12% variation in placement spacing
+    const randomFactor = 0.88 + Math.random() * 0.24; // 0.88–1.12
+    const effectiveMinWords = Math.round(minWordsBetweenLinks * randomFactor);
+    
     // Process content
     let processedContent = String(htmlContent);
     
@@ -457,11 +466,17 @@ export const addInternalLinks = (
       return htmlContent;
     }
     
+    // Track anchor texts to prevent duplicates on same page
+    const usedAnchors = new Set<string>();
+    
     for (const { keyword, url, type } of allKeywords) {
-      if (totalLinksAdded >= maxTotalLinks) break;
+      if (totalLinksAdded >= effectiveMax) break;
       
       const timesLinked = linkedKeywords.get(keyword) || 0;
       if (timesLinked >= maxLinksPerKeyword) continue;
+      
+      // Never repeat identical anchor text on same page
+      if (usedAnchors.has(keyword.toLowerCase())) continue;
       
       // Create regex to match keyword (case insensitive, word boundaries)
       // Avoid matching inside existing tags or links
@@ -480,14 +495,14 @@ export const addInternalLinks = (
         const wordPosition = textBeforeMatch.split(/\s+/).length;
         
         // Check if we're far enough from last link
-        if (wordPosition - lastLinkPosition < minWordsBetweenLinks) {
+        if (wordPosition - lastLinkPosition < effectiveMinWords) {
           continue;
         }
         
-        // Check if we're inside a heading, link, or code block
+        // Check if we're inside a heading, link, code block, or FAQ schema block
         const beforeMatch = processedContent.substring(Math.max(0, match.index - 200), match.index);
         if (
-          /<(h[1-6]|a|code|pre|script|style)[^>]*>(?![^<]*<\/\1>)[^<]*$/i.test(beforeMatch) ||
+          /<(h[1-6]|a|code|pre|script|style|span\s[^>]*itemscope)[^>]*>(?![^<]*<\/\1>)[^<]*$/i.test(beforeMatch) ||
           /<a\s[^>]*>[^<]*$/i.test(beforeMatch)
         ) {
           continue;
@@ -511,6 +526,7 @@ export const addInternalLinks = (
         
         // Update tracking
         linkedKeywords.set(keyword, timesLinked + 1);
+        usedAnchors.add(matchedText.toLowerCase());
         totalLinksAdded++;
         lastLinkPosition = wordPosition;
         break;

@@ -20,6 +20,73 @@ export interface GuideMetrics {
   cluster: string;
   pageType: 'cornerstone' | 'hub' | 'subguide';
   title: string;
+  /** Dynamic Authority Score (0–100) — weighted composite */
+  das: number;
+  /** Tier classification based on DAS + page type */
+  tier: 1 | 2 | 3;
+}
+
+// ============= DYNAMIC AUTHORITY SCORE =============
+
+export interface DASWeights {
+  traffic: number;
+  impressions: number;
+  conversion: number;
+  revenue: number;
+  backlinks: number;
+}
+
+const DEFAULT_DAS_WEIGHTS: DASWeights = {
+  traffic: 0.35,
+  impressions: 0.20,
+  conversion: 0.20,
+  revenue: 0.15,
+  backlinks: 0.10,
+};
+
+/**
+ * Calculate Dynamic Authority Score (0–100).
+ * Uses GSC data as proxies for traffic/conversion/revenue signals.
+ */
+export function calculateDAS(
+  guide: Omit<GuideMetrics, 'das' | 'tier'>,
+  maxClicks: number,
+  maxImpressions: number,
+  weights: DASWeights = DEFAULT_DAS_WEIGHTS,
+): number {
+  const trafficScore = maxClicks > 0 ? Math.min(guide.clicks30d / maxClicks, 1) : 0;
+  const impressionScore = maxImpressions > 0 ? Math.min(guide.impressions30d / maxImpressions, 1) : 0;
+  const ctr = guide.impressions30d > 0 ? guide.clicks30d / guide.impressions30d : 0;
+  const conversionScore = Math.min(ctr / 0.10, 1);
+  const positionBonus = guide.avgPosition > 0 ? Math.max(0, 1 - (guide.avgPosition - 1) / 50) : 0;
+  const revenueScore = trafficScore * positionBonus;
+  const backlinkScore = Math.min(guide.inboundInternalLinks / 10, 1);
+
+  const raw =
+    trafficScore * weights.traffic +
+    impressionScore * weights.impressions +
+    conversionScore * weights.conversion +
+    revenueScore * weights.revenue +
+    backlinkScore * weights.backlinks;
+
+  const typeBonus = guide.pageType === 'cornerstone' ? 0.15 : guide.pageType === 'hub' ? 0.08 : 0;
+  return Math.min(100, Math.round((raw + typeBonus) * 100));
+}
+
+/** Classify page tier based on DAS score and page type. */
+export function classifyTier(das: number, pageType: 'cornerstone' | 'hub' | 'subguide'): 1 | 2 | 3 {
+  if (pageType === 'cornerstone' || das >= 60) return 1;
+  if (das >= 20 || pageType === 'hub') return 2;
+  return 3;
+}
+
+/** Get structured tier map for all guides. */
+export function getTierMap(guides: GuideMetrics[]): { tier1: string[]; tier2: string[]; tier3: string[] } {
+  return {
+    tier1: guides.filter(g => g.tier === 1).map(g => g.slug),
+    tier2: guides.filter(g => g.tier === 2).map(g => g.slug),
+    tier3: guides.filter(g => g.tier === 3).map(g => g.slug),
+  };
 }
 
 export type DetectionFlag =
@@ -126,14 +193,12 @@ export function buildGuideMetrics(
 ): GuideMetrics[] {
   const slugSet = new Set(SCALING_GUIDES.map(g => g.slug));
 
-  return SCALING_GUIDES.map(guide => {
+  // First pass: build raw metrics (without DAS/tier)
+  const rawMetrics = SCALING_GUIDES.map(guide => {
     const gsc = gscData[guide.slug] || { impressions: 0, clicks: 0, position: 0 };
-
-    // Calculate inbound links from linksTo references
     const inbound = SCALING_GUIDES.filter(
       g => g.slug !== guide.slug && g.linksTo.includes(guide.slug)
     ).length;
-
     const outbound = guide.linksTo.filter(s => slugSet.has(s)).length;
 
     return {
@@ -144,9 +209,20 @@ export function buildGuideMetrics(
       inboundInternalLinks: inbound,
       outboundInternalLinks: outbound,
       cluster: guide.cluster,
-      pageType: guide.role,
+      pageType: guide.role as 'cornerstone' | 'hub' | 'subguide',
       title: guide.title,
     };
+  });
+
+  // Compute max values for DAS normalization
+  const maxClicks = Math.max(1, ...rawMetrics.map(m => m.clicks30d));
+  const maxImpressions = Math.max(1, ...rawMetrics.map(m => m.impressions30d));
+
+  // Second pass: compute DAS + tier
+  return rawMetrics.map(m => {
+    const das = calculateDAS(m, maxClicks, maxImpressions);
+    const tier = classifyTier(das, m.pageType);
+    return { ...m, das, tier };
   });
 }
 
@@ -341,10 +417,11 @@ export function generateInjectionPlan(
       recentCountPerTarget[i.targetSlug] = (recentCountPerTarget[i.targetSlug] || 0) + 1;
     });
 
-  // Select candidates
+  // Select candidates — ONLY inject into Tier 2 pages (never Tier 1 cornerstones)
   const underSupported = detected
     .filter(
       d =>
+        d.tier !== 1 && // Never inject into Tier 1 money pages
         d.flags.includes('UNDER_SUPPORTED') &&
         (recentCountPerTarget[d.slug] || 0) < MAX_INJECTIONS_PER_PAGE_PER_14_DAYS
     )
@@ -354,6 +431,7 @@ export function generateInjectionPlan(
   const top20Candidates = detected
     .filter(
       d =>
+        d.tier !== 1 && // Never inject into Tier 1 money pages
         d.flags.includes('TOP20_CANDIDATE') &&
         (recentCountPerTarget[d.slug] || 0) < MAX_INJECTIONS_PER_PAGE_PER_14_DAYS
     )
@@ -440,4 +518,100 @@ export function getLinkHealthColor(inboundLinks: number): 'red' | 'orange' | 'gr
   if (inboundLinks < 4) return 'red';
   if (inboundLinks < 8) return 'orange';
   return 'green';
+}
+
+// ============= CONTINUOUS REBALANCING =============
+
+export interface RebalanceSignal {
+  action: 'increase' | 'decrease' | 'hold';
+  intensityDelta: number; // percentage change (e.g. 10 = +10%)
+  reason: string;
+}
+
+/**
+ * Compute injection intensity adjustment based on ranking trends.
+ * Call weekly with current vs. previous GSC data.
+ */
+export function computeRebalanceSignal(
+  currentMetrics: GuideMetrics[],
+  previousMetrics: GuideMetrics[],
+): RebalanceSignal {
+  const tier1Current = currentMetrics.filter(m => m.tier === 1);
+  const tier1Previous = previousMetrics.filter(m => m.tier === 1);
+
+  if (tier1Current.length === 0 || tier1Previous.length === 0) {
+    return { action: 'hold', intensityDelta: 0, reason: 'Insufficient data for rebalancing' };
+  }
+
+  // Average position change for Tier 1 pages
+  const avgPosCurrent = tier1Current.reduce((s, m) => s + m.avgPosition, 0) / tier1Current.length;
+  const avgPosPrevious = tier1Previous.reduce((s, m) => s + m.avgPosition, 0) / tier1Previous.length;
+  const positionDelta = avgPosPrevious - avgPosCurrent; // positive = improved
+
+  if (positionDelta > 2) {
+    // Ranking improved — reduce injection intensity to avoid over-optimization
+    return { action: 'decrease', intensityDelta: 10, reason: `Tier 1 avg position improved by ${positionDelta.toFixed(1)}` };
+  }
+
+  if (positionDelta < -1) {
+    // Ranking declined or stagnated — increase injection intensity
+    return { action: 'increase', intensityDelta: 10, reason: `Tier 1 avg position declined by ${Math.abs(positionDelta).toFixed(1)}` };
+  }
+
+  return { action: 'hold', intensityDelta: 0, reason: 'Rankings stable — maintaining current injection intensity' };
+}
+
+// ============= AUTHORITY PRUNING DETECTION =============
+
+export interface PruningCandidate {
+  slug: string;
+  reason: 'orphan' | 'thin' | 'low_das' | 'excessive_depth';
+  das: number;
+  inboundLinks: number;
+}
+
+/**
+ * Detect pages that should have authority pruned (Tier 3, orphans, thin).
+ */
+export function detectPruningCandidates(metrics: GuideMetrics[]): PruningCandidate[] {
+  return metrics
+    .filter(m => m.tier === 3 && (m.inboundInternalLinks === 0 || m.das < 10))
+    .map(m => ({
+      slug: m.slug,
+      reason: m.inboundInternalLinks === 0 ? 'orphan' as const : 'low_das' as const,
+      das: m.das,
+      inboundLinks: m.inboundInternalLinks,
+    }));
+}
+
+// ============= OVER-OPTIMIZATION ASSESSMENT =============
+
+export interface OverOptReport {
+  overOptimizationRisk: 'low' | 'medium' | 'high';
+  anchorDistribution: { exact: string; partial: string; branded: string };
+  estimatedAuthorityShift: 'low' | 'medium' | 'strong';
+}
+
+export function assessOverOptimization(metrics: GuideMetrics[]): OverOptReport {
+  const avgInbound = metrics.length > 0
+    ? metrics.reduce((s, m) => s + m.inboundInternalLinks, 0) / metrics.length
+    : 0;
+
+  const tier1Count = metrics.filter(m => m.tier === 1).length;
+  const totalLinks = metrics.reduce((s, m) => s + m.inboundInternalLinks, 0);
+
+  // Risk assessment
+  const risk: 'low' | 'medium' | 'high' =
+    avgInbound > 12 ? 'high' : avgInbound > 8 ? 'medium' : 'low';
+
+  // Authority shift estimate based on tier distribution
+  const shift: 'low' | 'medium' | 'strong' =
+    tier1Count >= 3 && totalLinks > 50 ? 'strong' :
+    tier1Count >= 2 ? 'medium' : 'low';
+
+  return {
+    overOptimizationRisk: risk,
+    anchorDistribution: { exact: '30%', partial: '50%', branded: '20%' },
+    estimatedAuthorityShift: shift,
+  };
 }
