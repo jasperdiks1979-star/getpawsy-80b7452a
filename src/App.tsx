@@ -136,6 +136,36 @@ const Blog = lazyWithRetry(() => import("./pages/Blog"));
 const BlogPost = lazyWithRetry(() => import("./pages/BlogPost"));
 const FounderMode = lazyWithRetry(() => import("./pages/FounderMode"));
 
+// Admin sub-pages (all lazy-loaded, admin-only)
+const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPage"));
+const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
+const RevenueScalingPage = lazyWithRetry(() => import("./pages/admin/RevenueScalingPage"));
+const AutonomousSeoPage = lazyWithRetry(() => import("./pages/admin/AutonomousSeoPage"));
+const SeoWarRoomPage = lazyWithRetry(() => import("./pages/admin/SeoWarRoomPage"));
+const CompetitiveIntelligencePage = lazyWithRetry(() => import("./pages/admin/CompetitiveIntelligencePage"));
+const AuthorityEnginePage = lazyWithRetry(() => import("./pages/admin/AuthorityEnginePage"));
+const InternalLinkLog = lazyWithRetry(() => import("./pages/admin/InternalLinkLog"));
+const AdminSeoDashboard = lazyWithRetry(() => import("./pages/admin/AdminSeoDashboard"));
+const CrawlDiagnosticsDashboard = lazyWithRetry(() => import("./pages/admin/CrawlDiagnosticsDashboard"));
+const CrawlHealthDashboard = lazyWithRetry(() => import("./pages/admin/CrawlHealthDashboard"));
+const SnippetMonitor = lazyWithRetry(() => import("./pages/admin/SnippetMonitor"));
+const ClusterWarDashboard = lazyWithRetry(() => import("./pages/admin/ClusterWarDashboard"));
+const DogBedsClusterDashboard = lazyWithRetry(() => import("./pages/admin/DogBedsClusterDashboard"));
+const CatLitterClusterDashboard = lazyWithRetry(() => import("./pages/admin/CatLitterClusterDashboard"));
+const AnalyticsHub = lazyWithRetry(() => import("./pages/admin/AnalyticsHub"));
+const GuidesDashboard = lazyWithRetry(() => import("./pages/admin/GuidesDashboard"));
+const SeoIntelligencePage = lazyWithRetry(() => import("./pages/admin/SeoIntelligencePage"));
+const SeoMonitorPage = lazyWithRetry(() => import("./pages/admin/SeoMonitorPage"));
+const FeedGapReportPage = lazyWithRetry(() => import("./pages/admin/FeedGapReportPage"));
+const FeedInsightsPage = lazyWithRetry(() => import("./pages/admin/FeedInsightsPage"));
+const RedirectCheckPage = lazyWithRetry(() => import("./pages/admin/RedirectCheckPage"));
+const SecurityCredentialsDashboard = lazyWithRetry(() => import("./pages/admin/SecurityCredentialsDashboard"));
+const ScalingEnginePage = lazyWithRetry(() => import("./pages/admin/ScalingEnginePage"));
+const ContentOpportunitiesPage = lazyWithRetry(() => import("./pages/admin/ContentOpportunitiesPage"));
+const MomentumAccelerationDashboard = lazyWithRetry(() => import("./pages/admin/MomentumAccelerationDashboard"));
+const BundlesPage = lazyWithRetry(() => import("./pages/admin/BundlesPage"));
+const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDominance"));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -204,7 +234,37 @@ const App = () => {
                       <Route path="/blog/:slug" element={<Suspense fallback={<RouteLoader />}><BlogPost /></Suspense>} />
                       <Route path="/founder-mode" element={<Suspense fallback={<RouteLoader />}><FounderMode /></Suspense>} />
                       
+                      {/* Admin sub-routes */}
                       <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/admin/diagnostics" element={<Suspense fallback={<RouteLoader />}><DiagnosticsPage /></Suspense>} />
+                      <Route path="/admin/seo-command-center" element={<Suspense fallback={<RouteLoader />}><SeoCommandCenterPage /></Suspense>} />
+                      <Route path="/admin/revenue-scaling" element={<Suspense fallback={<RouteLoader />}><RevenueScalingPage /></Suspense>} />
+                      <Route path="/admin/autonomous-seo" element={<Suspense fallback={<RouteLoader />}><AutonomousSeoPage /></Suspense>} />
+                      <Route path="/admin/seo-war-room" element={<Suspense fallback={<RouteLoader />}><SeoWarRoomPage /></Suspense>} />
+                      <Route path="/admin/competitive-intelligence" element={<Suspense fallback={<RouteLoader />}><CompetitiveIntelligencePage /></Suspense>} />
+                      <Route path="/admin/authority-engine" element={<Suspense fallback={<RouteLoader />}><AuthorityEnginePage /></Suspense>} />
+                      <Route path="/admin/internal-link-log" element={<Suspense fallback={<RouteLoader />}><InternalLinkLog /></Suspense>} />
+                      <Route path="/admin/seo-dashboard" element={<Suspense fallback={<RouteLoader />}><AdminSeoDashboard /></Suspense>} />
+                      <Route path="/admin/crawl-diagnostics" element={<Suspense fallback={<RouteLoader />}><CrawlDiagnosticsDashboard /></Suspense>} />
+                      <Route path="/admin/crawl-health" element={<Suspense fallback={<RouteLoader />}><CrawlHealthDashboard /></Suspense>} />
+                      <Route path="/admin/snippet-monitor" element={<Suspense fallback={<RouteLoader />}><SnippetMonitor /></Suspense>} />
+                      <Route path="/admin/cluster-war" element={<Suspense fallback={<RouteLoader />}><ClusterWarDashboard /></Suspense>} />
+                      <Route path="/admin/dog-beds-cluster" element={<Suspense fallback={<RouteLoader />}><DogBedsClusterDashboard /></Suspense>} />
+                      <Route path="/admin/cat-litter-cluster" element={<Suspense fallback={<RouteLoader />}><CatLitterClusterDashboard /></Suspense>} />
+                      <Route path="/admin/analytics-hub" element={<Suspense fallback={<RouteLoader />}><AnalyticsHub /></Suspense>} />
+                      <Route path="/admin/guides" element={<Suspense fallback={<RouteLoader />}><GuidesDashboard /></Suspense>} />
+                      <Route path="/admin/seo-intelligence" element={<Suspense fallback={<RouteLoader />}><SeoIntelligencePage /></Suspense>} />
+                      <Route path="/admin/seo-monitor" element={<Suspense fallback={<RouteLoader />}><SeoMonitorPage /></Suspense>} />
+                      <Route path="/admin/feed-gap-report" element={<Suspense fallback={<RouteLoader />}><FeedGapReportPage /></Suspense>} />
+                      <Route path="/admin/feed-insights" element={<Suspense fallback={<RouteLoader />}><FeedInsightsPage /></Suspense>} />
+                      <Route path="/admin/redirect-check" element={<Suspense fallback={<RouteLoader />}><RedirectCheckPage /></Suspense>} />
+                      <Route path="/admin/security-credentials" element={<Suspense fallback={<RouteLoader />}><SecurityCredentialsDashboard /></Suspense>} />
+                      <Route path="/admin/scaling-engine" element={<Suspense fallback={<RouteLoader />}><ScalingEnginePage /></Suspense>} />
+                      <Route path="/admin/content-opportunities" element={<Suspense fallback={<RouteLoader />}><ContentOpportunitiesPage /></Suspense>} />
+                      <Route path="/admin/momentum" element={<Suspense fallback={<RouteLoader />}><MomentumAccelerationDashboard /></Suspense>} />
+                      <Route path="/admin/bundles" element={<Suspense fallback={<RouteLoader />}><BundlesPage /></Suspense>} />
+                      <Route path="/admin/cluster-dominance" element={<Suspense fallback={<RouteLoader />}><ClusterDominance /></Suspense>} />
+                      
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </RouteErrorBoundary>
