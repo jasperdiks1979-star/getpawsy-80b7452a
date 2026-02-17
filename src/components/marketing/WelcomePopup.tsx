@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { trackNewsletterSignup } from '@/lib/analytics';
 
 const POPUP_STORAGE_KEY = 'getpawsy_welcome_popup_seen';
-const POPUP_DELAY_MS = 3000; // Show after 3 seconds
+const POPUP_DELAY_MS = 60000; // Show after 60 seconds — non-intrusive delay
 const DISCOUNT_CODE = 'WELCOME10';
 
 // Inner component wrapped with forwardRef for AnimatePresence compatibility
@@ -169,9 +169,10 @@ export function WelcomePopup() {
   const location = useLocation();
   const isMobile = useIsMobile();
 
-  // Check if we're on checkout/cart pages - disable popup on mobile for these routes
+  // Disable popup on checkout/cart pages (all devices) and product pages (avoid CTA obstruction)
   const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
-  const shouldDisable = isMobile && isCheckoutRoute;
+  const isProductRoute = location.pathname.startsWith('/product/') || location.pathname.startsWith('/bestseller/');
+  const shouldDisable = isCheckoutRoute || isProductRoute;
 
   useEffect(() => {
     // Don't show on mobile checkout pages

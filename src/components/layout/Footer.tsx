@@ -327,13 +327,18 @@ export const Footer = () => {
         <div className="border-t border-background/10">
         <div className="container px-4 md:px-6 py-6">
             <div className="flex flex-col gap-4">
-              {/* Business Registration Info */}
+              {/* US Trust Section */}
               <div className="flex flex-col items-center gap-2 text-xs text-background/40 border-b border-background/10 pb-4">
-              <p>
-                  GetPawsy is a consumer brand operated by <strong className="text-background/60">Skidzo</strong>, a registered business (KVK: 78156955, VAT ID: NL003295015B69). Skidzo is responsible for all orders, payments, shipping, and customer service.
-                </p>
+                <div className="flex flex-wrap justify-center gap-4 text-background/60 mb-2">
+                  <span>🇺🇸 US-Based Customer Support</span>
+                  <span>🚚 Fast US Shipping</span>
+                  <span>🔄 30-Day Easy Returns</span>
+                </div>
                 <p>
-                  Customer support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-background/60 hover:text-primary transition-colors">{SUPPORT_EMAIL}</a>
+                  Customer support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-background/60 hover:text-primary transition-colors">{SUPPORT_EMAIL}</a> | <Link to="/returns" className="text-background/60 hover:text-primary transition-colors">Returns Policy</Link>
+                </p>
+                <p className="text-background/30 text-[10px]">
+                  GetPawsy is operated by Skidzo, a registered business. All orders, payments, and customer service handled in accordance with US consumer protection standards.
                 </p>
               </div>
               
@@ -391,13 +396,14 @@ export const Footer = () => {
                   </AlertDialog>
                 </div>
 
-                {/* Payment methods placeholder */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-background/40">Payment methods:</span>
-                  <div className="flex gap-1">
-                    {['💳', '🏦', '📱'].map((icon, idx) => (
-                      <span key={idx} className="text-lg">{icon}</span>
-                    ))}
+                {/* Payment method badges */}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-background/40">Secure payments:</span>
+                  <div className="flex items-center gap-2 text-xs text-background/60 font-medium">
+                    <span className="bg-background/10 px-2 py-0.5 rounded">Visa</span>
+                    <span className="bg-background/10 px-2 py-0.5 rounded">Mastercard</span>
+                    <span className="bg-background/10 px-2 py-0.5 rounded">Apple Pay</span>
+                    <span className="bg-background/10 px-2 py-0.5 rounded">Stripe</span>
                   </div>
                 </div>
               </div>
