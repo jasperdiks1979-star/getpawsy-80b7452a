@@ -213,6 +213,18 @@ const SeoCollection = () => {
         });
       };
 
+      // Relevance scoring: multi-word keywords score higher, require minimum threshold
+      const scoreProduct = (pName: string): number => {
+        let score = 0;
+        for (const kw of keywords) {
+          if (pName.includes(kw)) {
+            // Multi-word keywords are more specific = higher score
+            score += kw.includes(' ') ? 3 : 1;
+          }
+        }
+        return score;
+      };
+
       // Strategy: If we have keywords, build an OR filter on product name
       if (hasKeywords && !hasCategory) {
         const { data, error } = await supabase
@@ -227,23 +239,24 @@ const SeoCollection = () => {
           return [];
         }
 
-        let filtered = (data || []).filter(product => {
-          const pName = product.name.toLowerCase();
-          return keywords.some(kw => pName.includes(kw));
-        });
+        // Score each product and require minimum relevance
+        let scored = (data || [])
+          .map(product => ({ ...product, _score: scoreProduct(product.name.toLowerCase()) }))
+          .filter(p => p._score > 0);
 
         // Apply pet-type safety filter
-        filtered = petTypeFilter(filtered);
+        scored = petTypeFilter(scored);
 
-        // Sort: in-stock first, then by created_at desc
-        filtered.sort((a, b) => {
+        // Sort: highest relevance first, then in-stock, then newest
+        scored.sort((a, b) => {
+          if (b._score !== a._score) return b._score - a._score;
           const aStock = (a.stock ?? 0) > 0 ? 0 : 1;
           const bStock = (b.stock ?? 0) > 0 ? 0 : 1;
           if (aStock !== bStock) return aStock - bStock;
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
 
-        return filtered.slice(0, 24) as CollectionProduct[];
+        return scored.slice(0, 24) as CollectionProduct[];
       }
 
       // Category-based query
