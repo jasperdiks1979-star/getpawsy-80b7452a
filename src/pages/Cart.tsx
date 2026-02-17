@@ -255,7 +255,7 @@ const Cart = () => {
                 {/* Payment method badges */}
                 <div className="flex flex-wrap items-center gap-2 pt-2">
                   <span className="text-xs text-muted-foreground">We accept:</span>
-                  {['Visa', 'Mastercard', 'Apple Pay', 'Stripe'].map((method) => (
+                  {['Visa', 'Mastercard', 'Amex', 'Apple Pay', 'Stripe'].map((method) => (
                     <span key={method} className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded border border-border">
                       {method}
                     </span>
