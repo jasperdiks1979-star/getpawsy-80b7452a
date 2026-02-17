@@ -247,28 +247,29 @@ const GuidePage = () => {
         </nav>
 
         {/* Header */}
-        <header className="mb-10">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
-            <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">
+        <header className="mb-12">
+          <div className="flex flex-wrap items-center gap-2.5 text-sm text-muted-foreground mb-5">
+            <span className="bg-gradient-to-r from-primary/15 to-primary/5 text-primary px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ring-1 ring-primary/10">
               {guide.category}
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 font-medium">
               <Clock className="w-3.5 h-3.5" />
               {guide.readingTime} min read
             </span>
-            <span className="flex items-center gap-1.5 bg-accent/60 text-accent-foreground px-2.5 py-0.5 rounded-full text-xs font-medium">
+            <span className="flex items-center gap-1.5 bg-accent/60 text-accent-foreground px-2.5 py-1 rounded-full text-xs font-semibold">
               <RefreshCw className="w-3 h-3" />
-              Updated for {updatedYear}
+              Updated {updatedYear}
             </span>
           </div>
-         <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground leading-tight">
+
+          <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.15] tracking-tight">
             {guide.h1Override || guide.title}
           </h1>
-          <p className="text-lg text-muted-foreground mt-4">{guide.excerpt}</p>
+          <p className="text-lg text-muted-foreground mt-5 leading-relaxed max-w-2xl">{guide.excerpt}</p>
           
           {/* Trust Lines */}
           {guide.trustLines && guide.trustLines.length > 0 && (
-            <ul className="mt-4 space-y-1.5">
+            <ul className="mt-5 space-y-1.5">
               {guide.trustLines.map((line, i) => (
                 <li key={i} className="text-sm text-muted-foreground flex items-center gap-2">
                   <span className="text-primary">✓</span> {line}
@@ -277,14 +278,14 @@ const GuidePage = () => {
             </ul>
           )}
           
-          {/* Author Byline */}
-          <div className="flex items-center gap-3 mt-5 pt-4 border-t border-border">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-4 h-4 text-primary" />
+          {/* Author Byline — Premium */}
+          <div className="flex items-center gap-3.5 mt-6 pt-5 border-t border-border/60">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-sm">
+              <User className="w-5 h-5 text-primary" />
             </div>
             <div className="text-sm">
               <span className="text-muted-foreground">Written by </span>
-              <Link to="/about-the-author" className="text-foreground font-medium hover:text-primary transition-colors">
+              <Link to="/about-the-author" className="text-foreground font-semibold hover:text-primary transition-colors">
                 {AUTHOR.name}
               </Link>
               <span className="text-muted-foreground"> · {AUTHOR.shortBio}</span>
