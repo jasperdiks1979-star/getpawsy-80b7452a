@@ -5,7 +5,7 @@ import { AppErrorBoundary } from "./components/error/AppErrorBoundary";
 import App from "./App.tsx";
 import "./index.css";
 
-// v3 - Build fix: sitemap plugin writes fallback XML first to prevent build hangs
+// v4 - CRITICAL FIX: disabled sitemap plugin that was corrupting production builds
 
 // Initialize Web Vitals field-data collector (lightweight, non-blocking)
 import { initVitalsCollector } from "./lib/vitals-collector";
