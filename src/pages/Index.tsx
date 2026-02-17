@@ -1,5 +1,10 @@
 import { Link } from 'react-router-dom';
-import smallPetsImage from '@/assets/categories/small-pets.jpg';
+import catDogsImg from '@/assets/categories/dogs.jpg';
+import catCatsImg from '@/assets/categories/cats.jpg';
+import catBirdsImg from '@/assets/categories/birds.jpg';
+import catSmallPetsImg from '@/assets/categories/small-pets-new.jpg';
+import catReptilesImg from '@/assets/categories/reptiles.jpg';
+import catFishImg from '@/assets/categories/fish.jpg';
 import guideCatLitterImg from '@/assets/guides/guide-cat-litter.jpg';
 import guideDogBedsImg from '@/assets/guides/guide-dog-beds.jpg';
 import guideLitterFurnitureImg from '@/assets/guides/guide-litter-furniture.jpg';
@@ -346,12 +351,12 @@ const Index = () => {
   };
 
   const categoryImages: Record<string, string> = {
-    'Dogs': '/categories/dogs.jpg',
-    'Cats': '/categories/cats.jpg',
-    'Birds': '/categories/bird-supplies.jpg',
-    'Fish & Aquarium': '/categories/fish-tank.jpg',
-    'Small Pets': smallPetsImage || '/categories/small-pets.jpg',
-    'Reptiles': '/categories/reptiles.jpg',
+    'Dogs': catDogsImg,
+    'Cats': catCatsImg,
+    'Birds': catBirdsImg,
+    'Fish & Aquarium': catFishImg,
+    'Small Pets': catSmallPetsImg,
+    'Reptiles': catReptilesImg,
     'Toys': '/categories/toys.jpg',
     'Food': '/categories/food.jpg',
     'Grooming': '/categories/grooming.jpg',
