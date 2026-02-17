@@ -5,7 +5,7 @@ import { AppErrorBoundary } from "./components/error/AppErrorBoundary";
 import App from "./App.tsx";
 import "./index.css";
 
-// v5 - Boot diagnostics, recovery UI, build integrity checks
+// v6 - Force rebuild: all boot diagnostics + recovery UI active
 
 // === STEP 1: Install boot error handlers BEFORE anything else ===
 import {
