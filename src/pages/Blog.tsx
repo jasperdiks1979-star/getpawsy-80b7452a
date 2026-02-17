@@ -266,7 +266,7 @@ const Blog = () => {
         <meta property="og:title" content={seoContent.title} />
         <meta property="og:description" content={seoContent.description} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content={`https://getpawsy.pet/blog${selectedCategory ? `?category=${selectedCategory}` : ''}`} />
+        <meta property="og:url" content="https://getpawsy.pet/blog" />
         <meta property="og:site_name" content="GetPawsy" />
         
         {/* Twitter Card */}
