@@ -41,10 +41,17 @@ export interface GuideMeta {
   relatedCategories: string[];
 }
 
+export interface QuickRecommendationPick {
+  name: string;
+  reason: string;
+  link: string;
+  image?: string;
+}
+
 export interface QuickRecommendation {
-  bestOverall: { name: string; reason: string; link: string };
-  bestBudget: { name: string; reason: string; link: string };
-  bestPremium: { name: string; reason: string; link: string };
+  bestOverall: QuickRecommendationPick;
+  bestBudget: QuickRecommendationPick;
+  bestPremium: QuickRecommendationPick;
 }
 
 export interface ComparisonProduct {

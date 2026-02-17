@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Award, Shield, Truck, ArrowRight } from 'lucide-react';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface TopPick {
   label: string;
   name: string;
   price: string;
   link: string;
+  image?: string;
 }
 
 interface Props {
@@ -39,18 +41,33 @@ export function ConversionBadges({ picks }: Props) {
             <Link
               key={i}
               to={pick.link}
-              className="group relative block rounded-xl border border-border bg-card p-5 hover:border-primary/30 hover:shadow-soft hover:-translate-y-0.5 transition-all duration-300 text-center"
+              className="group relative block rounded-2xl border border-border bg-card overflow-hidden hover:border-primary/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
             >
-              <span className={`inline-flex items-center ${style.bg} ${style.text} text-xs font-bold px-3.5 py-1.5 rounded-full ring-1 ${style.ring} mb-3`}>
-                {pick.label}
-              </span>
-              <h3 className="font-display font-bold text-foreground text-sm leading-snug group-hover:text-primary transition-colors mb-2">
-                {pick.name}
-              </h3>
-              <p className="text-xl font-bold text-foreground tracking-tight">{pick.price}</p>
-              <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                Shop Now <ArrowRight className="w-3 h-3" />
-              </span>
+              {/* Product thumbnail */}
+              {pick.image && (
+                <div className="w-full aspect-[4/3] bg-muted overflow-hidden">
+                  <OptimizedImage
+                    src={pick.image}
+                    alt={pick.name}
+                    aspectRatio="auto"
+                    containerClassName="w-full h-full"
+                    className="group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+              )}
+
+              <div className="p-5 text-center">
+                <span className={`inline-flex items-center ${style.bg} ${style.text} text-xs font-bold px-3.5 py-1.5 rounded-full ring-1 ${style.ring} mb-3`}>
+                  {pick.label}
+                </span>
+                <h3 className="font-display font-bold text-foreground text-sm leading-snug group-hover:text-primary transition-colors mb-2">
+                  {pick.name}
+                </h3>
+                <p className="text-xl font-bold text-foreground tracking-tight">{pick.price}</p>
+                <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary group-hover:gap-2 transition-all duration-300">
+                  Shop Now <ArrowRight className="w-3 h-3" />
+                </span>
+              </div>
             </Link>
           );
         })}
