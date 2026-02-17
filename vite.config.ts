@@ -59,8 +59,8 @@ export default defineConfig(({ mode }) => ({
         assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
-    // Enable source maps only in development
-    sourcemap: mode === 'development',
+    // Temporarily enabled for production to debug ReferenceError on iOS Safari
+    sourcemap: true,
   },
   // Optimize dependency pre-bundling
   optimizeDeps: {
