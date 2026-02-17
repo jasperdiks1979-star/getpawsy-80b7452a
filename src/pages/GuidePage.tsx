@@ -303,9 +303,25 @@ const GuidePage = () => {
           </div>
         )}
 
-        {/* Quick Recommendation Box */}
+        {/* Quick Recommendation Box — enrich with images from comparisonProducts */}
         {guide.quickRecommendation && (
-          <QuickRecommendation data={guide.quickRecommendation} />
+          <QuickRecommendation
+            data={{
+              ...guide.quickRecommendation,
+              bestOverall: {
+                ...guide.quickRecommendation.bestOverall,
+                image: guide.quickRecommendation.bestOverall.image || guide.comparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestOverall.link)?.image,
+              },
+              bestBudget: {
+                ...guide.quickRecommendation.bestBudget,
+                image: guide.quickRecommendation.bestBudget.image || guide.comparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestBudget.link)?.image,
+              },
+              bestPremium: {
+                ...guide.quickRecommendation.bestPremium,
+                image: guide.quickRecommendation.bestPremium.image || guide.comparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestPremium.link)?.image,
+              },
+            }}
+          />
         )}
 
         {/* Conversion Badges — Top Picks with shipping/trust signals */}
@@ -316,6 +332,7 @@ const GuidePage = () => {
               name: p.name,
               price: p.price,
               link: p.link,
+              image: p.image,
             }))}
           />
         )}
