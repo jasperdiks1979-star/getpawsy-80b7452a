@@ -37,11 +37,11 @@ export interface DASWeights {
 }
 
 const DEFAULT_DAS_WEIGHTS: DASWeights = {
-  traffic: 0.35,
+  traffic: 0.30,
   impressions: 0.20,
-  conversion: 0.20,
-  revenue: 0.15,
-  backlinks: 0.10,
+  conversion: 0.15,
+  revenue: 0.20,
+  backlinks: 0.15,
 };
 
 /**
