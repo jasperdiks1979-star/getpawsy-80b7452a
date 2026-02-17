@@ -23,20 +23,74 @@ const GuidePage = () => {
   const { data: guide, isLoading, error } = useGuide(slug);
   const { data: allGuides } = useGuidesList();
 
-  // Fetch products for internal linking in guide content
+  // Fetch products for internal linking AND image enrichment in guide content
   const { data: linkableProducts = [] } = useQuery({
     queryKey: ['internal-linking-products'],
     queryFn: async () => {
       const { data } = await supabase
         .from('products_public')
-        .select('id, name, slug, category')
+        .select('id, name, slug, category, image_url')
         .eq('is_active', true)
         .not('slug', 'is', null)
         .limit(200);
-      return (data || []) as { id: string; name: string; slug: string | null; category: string | null }[];
+      return (data || []) as { id: string; name: string; slug: string | null; category: string | null; image_url: string | null }[];
     },
     staleTime: 5 * 60 * 1000,
   });
+
+  // Build a fuzzy product-name → image_url map for enriching guide sections
+  const productImageMap = useMemo(() => {
+    const map = new Map<string, string>();
+    linkableProducts.forEach(p => {
+      if (p.image_url) {
+        // Full name match
+        map.set(p.name.toLowerCase().trim(), p.image_url);
+        // Extract key phrases (3-5 words) for fuzzy matching
+        const words = p.name.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter(w => w.length >= 3);
+        for (let len = Math.min(5, words.length); len >= 3; len--) {
+          for (let i = 0; i <= words.length - len; i++) {
+            const phrase = words.slice(i, i + len).join(' ');
+            if (phrase.length >= 10 && !map.has(phrase)) {
+              map.set(phrase, p.image_url);
+            }
+          }
+        }
+      }
+    });
+    return map;
+  }, [linkableProducts]);
+
+  // Helper: find a real product image for a guide product name
+  const findProductImage = (name: string): string | undefined => {
+    const lower = name.toLowerCase().trim();
+    // Exact match first
+    if (productImageMap.has(lower)) return productImageMap.get(lower);
+    // Try to find a map entry that's contained in the name or vice versa
+    const nameWords = lower.replace(/[^\w\s]/g, ' ').split(/\s+/).filter(w => w.length >= 3);
+    let bestMatch: { key: string; score: number; url: string } | null = null;
+    for (const [key, url] of productImageMap) {
+      const keyWords = key.split(/\s+/);
+      const overlap = keyWords.filter(w => nameWords.includes(w)).length;
+      const score = overlap / Math.max(keyWords.length, 1);
+      if (overlap >= 2 && score >= 0.5 && (!bestMatch || overlap > bestMatch.score)) {
+        bestMatch = { key, score: overlap, url };
+      }
+    }
+    return bestMatch?.url;
+  };
+
+  // Enrich comparisonProducts with real images from the database
+  const enrichedComparisonProducts = useMemo(() => {
+    return guide?.comparisonProducts?.map(p => {
+      // Check if the image exists (static paths like /images/guides/... usually don't)
+      const isStaticPlaceholder = !p.image || p.image.startsWith('/images/guides/');
+      if (isStaticPlaceholder) {
+        const dbImage = findProductImage(p.name);
+        return dbImage ? { ...p, image: dbImage } : p;
+      }
+      return p;
+    });
+  }, [guide?.comparisonProducts, productImageMap]);
 
   // Build keyword → product URL lookup for auto-linking product mentions in guide content
   const productLinkMap = useMemo(() => {
@@ -502,31 +556,37 @@ const GuidePage = () => {
           </div>
         )}
 
-        {/* Quick Recommendation Box — enrich with images from comparisonProducts */}
+        {/* Quick Recommendation Box — enrich with images from DB */}
         {guide.quickRecommendation && (
           <QuickRecommendation
             data={{
               ...guide.quickRecommendation,
               bestOverall: {
                 ...guide.quickRecommendation.bestOverall,
-                image: guide.quickRecommendation.bestOverall.image || guide.comparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestOverall.link)?.image,
+                image: guide.quickRecommendation.bestOverall.image && !guide.quickRecommendation.bestOverall.image.startsWith('/images/guides/')
+                  ? guide.quickRecommendation.bestOverall.image
+                  : findProductImage(guide.quickRecommendation.bestOverall.name) || enrichedComparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestOverall.link)?.image,
               },
               bestBudget: {
                 ...guide.quickRecommendation.bestBudget,
-                image: guide.quickRecommendation.bestBudget.image || guide.comparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestBudget.link)?.image,
+                image: guide.quickRecommendation.bestBudget.image && !guide.quickRecommendation.bestBudget.image.startsWith('/images/guides/')
+                  ? guide.quickRecommendation.bestBudget.image
+                  : findProductImage(guide.quickRecommendation.bestBudget.name) || enrichedComparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestBudget.link)?.image,
               },
               bestPremium: {
                 ...guide.quickRecommendation.bestPremium,
-                image: guide.quickRecommendation.bestPremium.image || guide.comparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestPremium.link)?.image,
+                image: guide.quickRecommendation.bestPremium.image && !guide.quickRecommendation.bestPremium.image.startsWith('/images/guides/')
+                  ? guide.quickRecommendation.bestPremium.image
+                  : findProductImage(guide.quickRecommendation.bestPremium.name) || enrichedComparisonProducts?.find(p => p.link === guide.quickRecommendation!.bestPremium.link)?.image,
               },
             }}
           />
         )}
 
         {/* Conversion Badges — Top Picks with shipping/trust signals */}
-        {guide.comparisonProducts && guide.comparisonProducts.length >= 3 && (
+        {enrichedComparisonProducts && enrichedComparisonProducts.length >= 3 && (
           <ConversionBadges
-            picks={guide.comparisonProducts.slice(0, 3).map(p => ({
+            picks={enrichedComparisonProducts.slice(0, 3).map(p => ({
               label: p.badge || 'Top Pick',
               name: p.name,
               price: p.price,
@@ -681,8 +741,8 @@ const GuidePage = () => {
         ))}
 
         {/* Comparison Table */}
-        {guide.comparisonProducts && guide.comparisonProducts.length > 0 && (
-          <ComparisonTable products={guide.comparisonProducts} />
+        {enrichedComparisonProducts && enrichedComparisonProducts.length > 0 && (
+          <ComparisonTable products={enrichedComparisonProducts} />
         )}
 
         {/* Buying Criteria Block — Premium */}
