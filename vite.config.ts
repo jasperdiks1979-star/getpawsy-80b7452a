@@ -2,7 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-// TEMPORARILY DISABLED: sitemap plugin was corrupting production builds
+import buildIdPlugin from "./vite-plugin-build-id";
+// PERMANENTLY DISABLED: sitemap plugin was corrupting production builds
 // import sitemapPlugin from "./vite-plugin-sitemaps";
 
 // https://vitejs.dev/config/
@@ -47,7 +48,6 @@ export default defineConfig(({ mode }) => ({
               return 'query';
             }
             // Recharts + d3 only used in admin/dashboard (lazy-loaded)
-            // Separate chunk so it doesn't bloat the critical path
             if (id.includes('recharts') || id.includes('d3-')) {
               return 'recharts-vendor';
             }
@@ -77,7 +77,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
-    // sitemapPlugin(), // TEMPORARILY DISABLED
+    buildIdPlugin(),
+    // sitemapPlugin(), // PERMANENTLY DISABLED — was corrupting builds
   ].filter(Boolean),
   resolve: {
     alias: {

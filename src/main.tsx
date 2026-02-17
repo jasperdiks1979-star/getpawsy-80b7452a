@@ -5,13 +5,41 @@ import { AppErrorBoundary } from "./components/error/AppErrorBoundary";
 import App from "./App.tsx";
 import "./index.css";
 
-// v4 - CRITICAL FIX: disabled sitemap plugin that was corrupting production builds
+// v5 - Boot diagnostics, recovery UI, build integrity checks
 
-// Initialize Web Vitals field-data collector (lightweight, non-blocking)
+// === STEP 1: Install boot error handlers BEFORE anything else ===
+import {
+  initBootDiagnostics,
+  installBootErrorHandlers,
+  validateEnv,
+  verifyBuildIntegrity,
+  markMounted,
+  logBootDebug,
+} from "./lib/boot-diagnostics";
+
+// Initialize diagnostics immediately
+try {
+  initBootDiagnostics();
+  installBootErrorHandlers();
+  logBootDebug();
+} catch (e) {
+  console.error('[BOOT_FAIL] Diagnostics init failed:', e);
+}
+
+// === STEP 2: Validate environment ===
+try {
+  const envOk = validateEnv();
+  if (!envOk) {
+    console.error('[BOOT_FAIL] Environment validation failed');
+  }
+} catch (e) {
+  console.error('[BOOT_FAIL] Env validation threw:', e);
+}
+
+// === STEP 3: Initialize Web Vitals (deferred, non-blocking) ===
 import { initVitalsCollector } from "./lib/vitals-collector";
 import { initLCPDebug } from "./lib/lcp-debug";
 if (typeof window !== 'undefined') {
-  // Defer to avoid blocking initial render
   if ('requestIdleCallback' in window) {
     (window as any).requestIdleCallback(() => {
       initVitalsCollector();
@@ -25,12 +53,38 @@ if (typeof window !== 'undefined') {
   }
 }
 
-createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <AppErrorBoundary>
-      <HelmetProvider>
-        <App />
-      </HelmetProvider>
-    </AppErrorBoundary>
-  </React.StrictMode>
-);
+// === STEP 4: Mount React with error protection ===
+try {
+  const rootEl = document.getElementById("root");
+  if (!rootEl) {
+    throw new Error('[BOOT_FAIL] #root element not found');
+  }
+
+  const root = createRoot(rootEl);
+  root.render(
+    <React.StrictMode>
+      <AppErrorBoundary>
+        <HelmetProvider>
+          <App />
+        </HelmetProvider>
+      </AppErrorBoundary>
+    </React.StrictMode>
+  );
+
+  // Mark successful mount
+  markMounted();
+
+  // === STEP 5: Verify build integrity (async, non-blocking) ===
+  verifyBuildIntegrity().catch(() => {});
+} catch (e) {
+  console.error('[BOOT_FAIL] React mount failed:', e);
+  // Show recovery UI
+  const recovery = document.getElementById('boot-recovery');
+  if (recovery) {
+    recovery.className = 'active';
+    const errMsg = document.getElementById('boot-error-msg');
+    if (errMsg) {
+      errMsg.textContent = 'Mount error: ' + (e instanceof Error ? e.message : String(e));
+    }
+  }
+}
