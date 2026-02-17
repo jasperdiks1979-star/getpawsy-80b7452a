@@ -65,8 +65,12 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
         <div className="min-h-screen flex items-center justify-center bg-background p-4 text-center">
           <div className="max-w-md">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Oops, something went wrong</h2>
-            <Button onClick={() => window.location.reload()}>Refresh</Button>
+            <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
+            <p className="text-muted-foreground text-sm mb-4">This page couldn't load. Try refreshing or go back home.</p>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => this.setState({ hasError: false, error: null })}>Try Again</Button>
+              <Button variant="outline" onClick={() => { window.location.href = '/'; }}>Go Home</Button>
+            </div>
           </div>
         </div>
       );
@@ -240,16 +244,23 @@ const App = () => {
                       <Route path="/founder-mode" element={<Suspense fallback={<RouteLoader />}><FounderMode /></Suspense>} />
                       <Route path="/slow-feeder-dog-bowls" element={<Suspense fallback={<RouteLoader />}><SlowFeederDogBowls /></Suspense>} />
                       
+                      {/* Parent category routes */}
+                      <Route path="/dogs" element={<Navigate to="/products?category=dogs" replace />} />
+                      <Route path="/cats" element={<Navigate to="/products?category=cats" replace />} />
+                      
                       {/* Category navigation routes — redirect to /products?category= */}
                       <Route path="/dogs/dog-beds" element={<Navigate to="/products?category=dog-beds" replace />} />
                       <Route path="/dogs/dog-toys" element={<Navigate to="/products?category=dog-toys" replace />} />
+                      <Route path="/dogs/chew-toys" element={<Navigate to="/products?category=dog-toys" replace />} />
                       <Route path="/dogs/dog-collars-leashes" element={<Navigate to="/products?category=dog-collars-leashes" replace />} />
                       <Route path="/dogs/dog-carriers" element={<Navigate to="/products?category=dog-carriers" replace />} />
                       <Route path="/dogs/dog-grooming" element={<Navigate to="/products?category=dog-grooming" replace />} />
                       <Route path="/cats/cat-toys" element={<Navigate to="/products?category=cat-toys" replace />} />
                       <Route path="/cats/cat-litter" element={<Navigate to="/products?category=cat-litter-boxes" replace />} />
+                      <Route path="/cats/litter-boxes" element={<Navigate to="/products?category=cat-litter-boxes" replace />} />
                       <Route path="/cats/cat-trees" element={<Navigate to="/products?category=cat-trees-and-condos" replace />} />
                       <Route path="/cats/cat-carriers" element={<Navigate to="/products?category=cat-carriers" replace />} />
+                      <Route path="/cats/automatic-feeders" element={<Navigate to="/products?category=automatic-cat-feeders" replace />} />
                       <Route path="/category/:slug" element={<Navigate to="/products" replace />} />
                       <Route path="/shop" element={<Navigate to="/products" replace />} />
                       {/* Admin sub-routes */}
