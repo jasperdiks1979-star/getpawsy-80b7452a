@@ -16,7 +16,7 @@ const SafeGlobalVisitorTracker = lazy(() => import("@/components/tracking/SafeGl
 const RecentPurchaseNotification = lazy(() => import("@/components/social-proof/RecentPurchaseNotification").then(m => ({ default: m.RecentPurchaseNotification })));
 const InternalTrafficChip = lazy(() => import("@/components/tracking/InternalTrafficChip").then(m => ({ default: m.InternalTrafficChip })));
 import { MarketingErrorBoundary } from "@/components/error/MarketingErrorBoundary";
-import { AdminGuard } from "@/components/auth/AdminGuard";
+import { AdminRouteGuard } from "@/components/auth/AdminRouteGuard";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 // Defer non-critical initializers — don't block first paint
@@ -320,39 +320,39 @@ const App = () => {
                       <Route path="/shop" element={<Navigate to="/products" replace />} />
                       {/* Admin sub-routes */}
                       <Route path="/admin" element={<Navigate to="/admin/growth-execution" replace />} />
-                      <Route path="/admin/diagnostics" element={<AdminGuard><Suspense fallback={<RouteLoader />}><DiagnosticsPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/seo-command-center" element={<AdminGuard><Suspense fallback={<RouteLoader />}><SeoCommandCenterPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/revenue-scaling" element={<AdminGuard><Suspense fallback={<RouteLoader />}><RevenueScalingPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/autonomous-seo" element={<AdminGuard><Suspense fallback={<RouteLoader />}><AutonomousSeoPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/seo-war-room" element={<AdminGuard><Suspense fallback={<RouteLoader />}><SeoWarRoomPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/competitive-intelligence" element={<AdminGuard><Suspense fallback={<RouteLoader />}><CompetitiveIntelligencePage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/authority-engine" element={<AdminGuard><Suspense fallback={<RouteLoader />}><AuthorityEnginePage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/internal-link-log" element={<AdminGuard><Suspense fallback={<RouteLoader />}><InternalLinkLog /></Suspense></AdminGuard>} />
-                      <Route path="/admin/seo-dashboard" element={<AdminGuard><Suspense fallback={<RouteLoader />}><AdminSeoDashboard /></Suspense></AdminGuard>} />
-                      <Route path="/admin/crawl-diagnostics" element={<AdminGuard><Suspense fallback={<RouteLoader />}><CrawlDiagnosticsDashboard /></Suspense></AdminGuard>} />
-                      <Route path="/admin/crawl-health" element={<AdminGuard><Suspense fallback={<RouteLoader />}><CrawlHealthDashboard /></Suspense></AdminGuard>} />
-                      <Route path="/admin/snippet-monitor" element={<AdminGuard><Suspense fallback={<RouteLoader />}><SnippetMonitor /></Suspense></AdminGuard>} />
-                      <Route path="/admin/cluster-war" element={<AdminGuard><Suspense fallback={<RouteLoader />}><ClusterWarDashboard /></Suspense></AdminGuard>} />
-                      <Route path="/admin/dog-beds-cluster" element={<AdminGuard><Suspense fallback={<RouteLoader />}><DogBedsClusterDashboard /></Suspense></AdminGuard>} />
-                      <Route path="/admin/cat-litter-cluster" element={<AdminGuard><Suspense fallback={<RouteLoader />}><CatLitterClusterDashboard /></Suspense></AdminGuard>} />
-                      <Route path="/admin/analytics-hub" element={<AdminGuard><Suspense fallback={<RouteLoader />}><AnalyticsHub /></Suspense></AdminGuard>} />
-                      <Route path="/admin/guides" element={<AdminGuard><Suspense fallback={<RouteLoader />}><GuidesDashboard /></Suspense></AdminGuard>} />
-                      <Route path="/admin/seo-intelligence" element={<AdminGuard><Suspense fallback={<RouteLoader />}><SeoIntelligencePage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/seo-monitor" element={<AdminGuard><Suspense fallback={<RouteLoader />}><SeoMonitorPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/feed-gap-report" element={<AdminGuard><Suspense fallback={<RouteLoader />}><FeedGapReportPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/feed-insights" element={<AdminGuard><Suspense fallback={<RouteLoader />}><FeedInsightsPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/redirect-check" element={<AdminGuard><Suspense fallback={<RouteLoader />}><RedirectCheckPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/security-credentials" element={<AdminGuard><Suspense fallback={<RouteLoader />}><SecurityCredentialsDashboard /></Suspense></AdminGuard>} />
-                      <Route path="/admin/scaling-engine" element={<AdminGuard><Suspense fallback={<RouteLoader />}><ScalingEnginePage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/content-opportunities" element={<AdminGuard><Suspense fallback={<RouteLoader />}><ContentOpportunitiesPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/momentum" element={<AdminGuard><Suspense fallback={<RouteLoader />}><MomentumAccelerationDashboard /></Suspense></AdminGuard>} />
-                      <Route path="/admin/bundles" element={<AdminGuard><Suspense fallback={<RouteLoader />}><BundlesPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/cluster-dominance" element={<AdminGuard><Suspense fallback={<RouteLoader />}><ClusterDominance /></Suspense></AdminGuard>} />
-                      <Route path="/admin/analytics-traffic" element={<AdminGuard><Suspense fallback={<RouteLoader />}><AnalyticsTrafficDocs /></Suspense></AdminGuard>} />
-                      <Route path="/admin/reports" element={<AdminGuard><Suspense fallback={<RouteLoader />}><AdminReportsPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/growth-execution" element={<AdminGuard><Suspense fallback={<RouteLoader />}><GrowthExecutionPage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/backlink-engine" element={<AdminGuard><Suspense fallback={<RouteLoader />}><BacklinkEnginePage /></Suspense></AdminGuard>} />
-                      <Route path="/admin/resources" element={<AdminGuard><Suspense fallback={<RouteLoader />}><AdminResourcesPage /></Suspense></AdminGuard>} />
+                      <Route path="/admin/diagnostics" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><DiagnosticsPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/seo-command-center" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><SeoCommandCenterPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/revenue-scaling" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><RevenueScalingPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/autonomous-seo" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><AutonomousSeoPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/seo-war-room" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><SeoWarRoomPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/competitive-intelligence" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><CompetitiveIntelligencePage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/authority-engine" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><AuthorityEnginePage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/internal-link-log" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><InternalLinkLog /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/seo-dashboard" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><AdminSeoDashboard /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/crawl-diagnostics" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><CrawlDiagnosticsDashboard /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/crawl-health" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><CrawlHealthDashboard /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/snippet-monitor" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><SnippetMonitor /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/cluster-war" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><ClusterWarDashboard /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/dog-beds-cluster" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><DogBedsClusterDashboard /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/cat-litter-cluster" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><CatLitterClusterDashboard /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/analytics-hub" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><AnalyticsHub /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/guides" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><GuidesDashboard /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/seo-intelligence" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><SeoIntelligencePage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/seo-monitor" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><SeoMonitorPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/feed-gap-report" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><FeedGapReportPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/feed-insights" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><FeedInsightsPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/redirect-check" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><RedirectCheckPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/security-credentials" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><SecurityCredentialsDashboard /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/scaling-engine" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><ScalingEnginePage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/content-opportunities" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><ContentOpportunitiesPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/momentum" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><MomentumAccelerationDashboard /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/bundles" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><BundlesPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/cluster-dominance" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><ClusterDominance /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/analytics-traffic" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><AnalyticsTrafficDocs /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/reports" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><AdminReportsPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/growth-execution" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><GrowthExecutionPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/backlink-engine" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><BacklinkEnginePage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/resources" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><AdminResourcesPage /></Suspense></AdminRouteGuard>} />
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
                     </Routes>
