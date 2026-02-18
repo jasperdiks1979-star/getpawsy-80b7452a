@@ -17,8 +17,9 @@ export default function IndexingDiagnosticsPage() {
         <div>
           <h1 className="text-2xl font-bold">Indexing Diagnostics</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Crawl sitemap URLs, detect 4xx/redirect errors, validate structured data, and inspect cache headers.
-            Built 2026-02-18 to resolve GSC "other 4xx" and "redirect error" reports.
+            Implementation Summary: Crawls sitemaps &amp; robots.txt to detect 4xx, redirect chains, soft-404s,
+            canonical mismatches, and robots blocks. Schema Validator enforces penalty-safe mode (no fake reviews).
+            Headers Report checks Cache-Control for HTML/XML/assets. Updated 2026-02-18.
           </p>
         </div>
 
