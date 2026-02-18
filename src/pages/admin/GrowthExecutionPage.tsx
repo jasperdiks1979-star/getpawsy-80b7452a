@@ -16,6 +16,8 @@ import {
 } from '@/lib/seo-growth-engine-v3';
 import { classifyRankingZones } from '@/lib/ranking-zones';
 import { prepareBacklinkAssets, type BacklinkDominationResult } from '@/lib/backlink-domination';
+import { runHyperAggressiveEngine, HYPER_AGGRESSIVE_DEFAULTS, type HyperAggressiveResult } from '@/lib/hyper-aggressive-engine';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
 // ============= METRIC CARD =============
@@ -148,6 +150,25 @@ export default function GrowthExecutionPage() {
     }
     return prepareBacklinkAssets(Array.from(slugMap.values()));
   }, [gscData]);
+
+  // 🔥 Hyper Aggressive Mode
+  const [hyperEnabled, setHyperEnabled] = useState(false);
+  const hyperResult: HyperAggressiveResult | null = useMemo(() => {
+    if (!hyperEnabled || !gscData) return null;
+    const slugMap = new Map<string, { slug: string; position: number; impressions: number; clicks: number }>();
+    for (const row of gscData) {
+      if (!row.slug) continue;
+      if (!slugMap.has(row.slug)) {
+        slugMap.set(row.slug, {
+          slug: row.slug,
+          position: row.position || 99,
+          impressions: row.impressions || 0,
+          clicks: row.clicks || 0,
+        });
+      }
+    }
+    return runHyperAggressiveEngine(Array.from(slugMap.values()));
+  }, [gscData, hyperEnabled]);
 
   const downloadCsv = () => {
     if (!backlinkResult?.csvData) return;
@@ -450,7 +471,187 @@ export default function GrowthExecutionPage() {
           </Section>
         )}
 
-        {/* JSON Output */}
+        {/* 🔥 HYPER AGGRESSIVE MODE */}
+        <Card className={hyperEnabled ? 'border-red-500/50 bg-red-500/5' : 'border-border'}>
+          <CardHeader className="py-3 px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🔥</span>
+                <CardTitle className="text-sm font-semibold">Hyper Aggressive Mode</CardTitle>
+                <Badge variant={hyperEnabled ? 'destructive' : 'secondary'} className="text-xs">
+                  {hyperEnabled ? 'ACTIVE' : 'OFF'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Amazon-Level Domination</span>
+                <Switch
+                  checked={hyperEnabled}
+                  onCheckedChange={(checked) => {
+                    setHyperEnabled(checked);
+                    toast[checked ? 'warning' : 'info'](
+                      checked ? '🔥 Hyper Aggressive Mode activated' : 'Hyper Aggressive Mode deactivated'
+                    );
+                  }}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          {hyperEnabled && hyperResult && (
+            <CardContent className="pt-0 px-4 pb-4 space-y-4">
+              {/* Aggressiveness Meter */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">Aggressiveness</span>
+                    <span className="font-bold">{hyperResult.aggressivenessScore}/100</span>
+                  </div>
+                  <div className="h-3 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${hyperResult.aggressivenessScore}%`,
+                        background: `linear-gradient(90deg, hsl(var(--primary)), hsl(0 80% 50%))`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Impact Forecast */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="p-2 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">Impression Lift</p>
+                  <p className="font-semibold text-primary">{hyperResult.projectedImpact.impressionLift}</p>
+                </div>
+                <div className="p-2 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">Position Lift</p>
+                  <p className="font-semibold text-primary">{hyperResult.projectedImpact.positionLift}</p>
+                </div>
+                <div className="p-2 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">Click Growth</p>
+                  <p className="font-semibold text-primary">{hyperResult.projectedImpact.clickGrowth}</p>
+                </div>
+                <div className="p-2 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">Time to Results</p>
+                  <p className="font-semibold">{hyperResult.projectedImpact.timeToResults}</p>
+                </div>
+              </div>
+
+              {/* Warnings */}
+              {hyperResult.warnings.length > 0 && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 space-y-1">
+                  {hyperResult.warnings.map((w, i) => (
+                    <p key={i} className="text-xs text-destructive">{w}</p>
+                  ))}
+                </div>
+              )}
+
+              {/* KPIs */}
+              <div className="grid grid-cols-3 gap-2">
+                <MetricCard label="New Links" value={hyperResult.totalNewLinks} icon={Link} color="red" />
+                <MetricCard label="New Content" value={`${hyperResult.totalNewContent} pages`} icon={Zap} color="amber" />
+                <MetricCard label="Suppression" value={`${hyperResult.serpSuppression.length} targets`} icon={Target} color="primary" />
+              </div>
+
+              {/* Link Saturation */}
+              <Section title="Link Saturation Matrix" badge={`${hyperResult.linkSaturation.length} pages`}>
+                <div className="max-h-[250px] overflow-y-auto space-y-1">
+                  {hyperResult.linkSaturation.slice(0, 15).map(ls => (
+                    <div key={ls.sourceSlug} className="flex items-center justify-between text-xs p-2 rounded border">
+                      <span className="font-mono text-primary">/{ls.sourceSlug}</span>
+                      <div className="flex gap-2">
+                        <Badge variant="outline" className="text-[10px]">{ls.totalLinks} links</Badge>
+                        <Badge variant="secondary" className="text-[10px]">{ls.density}/1k words</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+
+              {/* SERP Suppression */}
+              {hyperResult.serpSuppression.length > 0 && (
+                <Section title="SERP Suppression Targets" badge={`${hyperResult.serpSuppression.length} keywords`}>
+                  <div className="max-h-[300px] overflow-y-auto space-y-2">
+                    {hyperResult.serpSuppression.map(s => (
+                      <div key={s.ourSlug} className="p-3 rounded-lg border bg-card text-sm">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-mono text-xs text-primary">/{s.ourSlug}</span>
+                          <div className="flex gap-2">
+                            <Badge variant="outline" className="text-xs">Pos {s.ourPosition}</Badge>
+                            <Badge
+                              variant={s.aggressivenessScore >= 7 ? 'destructive' : 'secondary'}
+                              className="text-xs"
+                            >
+                              🔥 {s.aggressivenessScore}/10
+                            </Badge>
+                          </div>
+                        </div>
+                        <ul className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                          {s.suppressionActions.slice(0, 4).map((a, i) => (
+                            <li key={i} className="flex items-start gap-1">
+                              <Zap className="h-3 w-3 mt-0.5 text-destructive shrink-0" />{a}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* Cluster Overbuild */}
+              {hyperResult.clusterOverbuilds.length > 0 && (
+                <Section title="Cluster Overbuild Plan" badge={`${hyperResult.totalNewContent} new pages`}>
+                  <div className="space-y-3">
+                    {hyperResult.clusterOverbuilds.map(co => (
+                      <div key={co.cluster} className="p-3 rounded-lg border bg-card">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold text-sm">{co.cluster}</span>
+                          <Badge variant="outline" className="text-xs">{co.currentPages} → {co.targetPages} pages</Badge>
+                        </div>
+                        <div className="space-y-1">
+                          {co.contentCalendar.slice(0, 5).map(item => (
+                            <div key={item.slug} className="flex items-center justify-between text-xs p-1.5 rounded bg-muted">
+                              <span className="font-mono text-primary truncate max-w-[50%]">/{item.slug}</span>
+                              <div className="flex gap-2">
+                                <Badge variant="secondary" className="text-[10px]">Week {item.week}</Badge>
+                                <Badge variant="outline" className="text-[10px]">{item.wordCount}w</Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* PageRank Funnels */}
+              <Section title="PageRank Funnels" badge={`${hyperResult.pageRankFunnels.length} money pages`}>
+                <div className="space-y-2">
+                  {hyperResult.pageRankFunnels.map(f => (
+                    <div key={f.moneyPage} className="p-3 rounded-lg border bg-card text-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-mono text-xs text-primary font-bold">/{f.moneyPage}</span>
+                        <Badge variant="outline" className="text-xs">{f.totalInboundLinks} inbound → {f.estimatedPageRankShare}% share</Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {f.funnelSources.slice(0, 6).map(s => (
+                          <Badge key={s.slug} variant="secondary" className="text-[10px] font-mono">← {s.slug}</Badge>
+                        ))}
+                        {f.funnelSources.length > 6 && (
+                          <Badge variant="outline" className="text-[10px]">+{f.funnelSources.length - 6} more</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            </CardContent>
+          )}
+        </Card>
+
+
         {result && (
           <Section title="Phase 8 — Structured Growth Report (JSON)">
             <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">
