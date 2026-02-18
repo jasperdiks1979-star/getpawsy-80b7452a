@@ -9,11 +9,12 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Target, TrendingUp, Link, Package, AlertTriangle, Download,
   Rocket, Search, Eye, MousePointerClick, ArrowUp, Zap, ChevronDown, ChevronUp,
+  Crosshair, FileText,
 } from 'lucide-react';
 import {
-  runGrowthEngineV3,
-  type GrowthEngineV3Result,
-} from '@/lib/seo-growth-engine-v3';
+  runGrowthEngineV4,
+  type GrowthEngineV4Result,
+} from '@/lib/seo-growth-engine-v4';
 import { classifyRankingZones } from '@/lib/ranking-zones';
 import { prepareBacklinkAssets, type BacklinkDominationResult } from '@/lib/backlink-domination';
 import { runHyperAggressiveEngine, HYPER_AGGRESSIVE_DEFAULTS, type HyperAggressiveResult } from '@/lib/hyper-aggressive-engine';
@@ -91,8 +92,8 @@ export default function GrowthExecutionPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Process data through V3 engine
-  const result: GrowthEngineV3Result | null = useMemo(() => {
+  // Process data through V4 engine
+  const result: GrowthEngineV4Result | null = useMemo(() => {
     if (!gscData || gscData.length === 0) return null;
 
     // Dedupe by slug, keeping latest
@@ -111,7 +112,7 @@ export default function GrowthExecutionPage() {
       }
     }
 
-    return runGrowthEngineV3(Array.from(slugMap.values()));
+    return runGrowthEngineV4(Array.from(slugMap.values()));
   }, [gscData]);
 
   // Ranking zones
@@ -201,10 +202,10 @@ export default function GrowthExecutionPage() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Rocket className="h-6 w-6 text-primary" />
-              SEO Growth Execution Layer
+              SEO Growth Engine V4
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              V3 Engine — Orphan eradication, position push, authority hubs & backlink prep
+              Full Growth Execution Layer — GSC correction, orphan domination, zero-click attack & backlink prep
             </p>
           </div>
           {backlinkResult && (
@@ -215,13 +216,15 @@ export default function GrowthExecutionPage() {
         </div>
 
         {/* KPI Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           <MetricCard label="Total Pages" value={gscData?.length || 0} icon={Search} />
+          <MetricCard label="GSC Match %" value={result?.gscCorrection.matchRate ? `${result.gscCorrection.matchRate}%` : '—'} icon={Target} color="green" />
           <MetricCard label="Orphans" value={result?.orphanFix.totalOrphans || 0} icon={AlertTriangle} color="red" />
           <MetricCard label="Pos 11-30" value={result?.position1130.length || 0} icon={ArrowUp} color="amber" />
-          <MetricCard label="Zero-Click" value={result?.ctrBoosts.length || 0} icon={MousePointerClick} color="red" />
+          <MetricCard label="Zero-Click" value={result?.zeroClickAttack.length || 0} icon={Crosshair} color="red" />
+          <MetricCard label="CTR Boost" value={result?.ctrBoosts.length || 0} icon={MousePointerClick} color="amber" />
           <MetricCard label="Product Wins" value={result?.productQuickWins.length || 0} icon={Package} color="blue" />
-          <MetricCard label="Link Assets" value={backlinkResult?.totalAssets || 0} icon={Link} color="green" />
+          <MetricCard label="Link Assets" value={result?.backlinkPrep.totalAssets || 0} icon={Link} color="green" />
         </div>
 
         {/* Forecast */}
@@ -233,17 +236,17 @@ export default function GrowthExecutionPage() {
               </h3>
               <div className="grid md:grid-cols-3 gap-3 text-sm">
                 <div className="p-3 rounded-lg bg-background">
-                  <p className="text-muted-foreground text-xs">Ranking Lift</p>
-                  <p className="font-medium">{result.forecast.estimatedRankingLift90Days}</p>
-                </div>
-                <div className="p-3 rounded-lg bg-background">
-                  <p className="text-muted-foreground text-xs">CTR Improvement</p>
-                  <p className="font-medium">{result.forecast.projectedCtrImprovement}</p>
-                </div>
-                <div className="p-3 rounded-lg bg-background">
-                  <p className="text-muted-foreground text-xs">Click Growth</p>
-                  <p className="font-medium">{result.forecast.projectedClickGrowth}</p>
-                </div>
+                 <p className="text-muted-foreground text-xs">Ranking Lift</p>
+                   <p className="font-medium">{result.report.estimatedRankingLift}</p>
+                 </div>
+                 <div className="p-3 rounded-lg bg-background">
+                   <p className="text-muted-foreground text-xs">CTR Improvement</p>
+                   <p className="font-medium">{result.report.projectedCtrImprovement}</p>
+                 </div>
+                 <div className="p-3 rounded-lg bg-background">
+                   <p className="text-muted-foreground text-xs">Click Growth</p>
+                   <p className="font-medium">{result.report.projectedTraffic90Days}</p>
+                 </div>
               </div>
             </CardContent>
           </Card>
@@ -282,7 +285,30 @@ export default function GrowthExecutionPage() {
           </Section>
         )}
 
-        {/* Phase 2: Position 11-30 Push */}
+        {/* Zero-Click Attack */}
+        {result && result.zeroClickAttack.length > 0 && (
+          <Section title="Phase 3 — Zero-Click Attack" badge={`${result.zeroClickAttack.length} pages`}>
+            <div className="max-h-[400px] overflow-y-auto space-y-2">
+              {result.zeroClickAttack.slice(0, 30).map(z => (
+                <div key={z.slug} className="p-3 rounded-lg border bg-card text-sm">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-mono text-xs text-primary">/{z.slug}</span>
+                    <div className="flex gap-1.5">
+                      <Badge variant="outline" className="text-xs">Pos {z.position}</Badge>
+                      <Badge variant="secondary" className="text-xs">{z.impressions} imp</Badge>
+                      <Badge variant="destructive" className="text-xs">{z.modifier}</Badge>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground line-through">{z.originalTitle}</p>
+                  <p className="text-xs font-medium text-primary">{z.newTitle}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{z.newMeta}</p>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Phase 4: Position 11-30 Push */}
         {result && result.position1130.length > 0 && (
           <Section title="Phase 2 — Position 11–30 Push" badge={`${result.position1130.length} targets`}>
             <div className="max-h-[400px] overflow-y-auto space-y-2">
@@ -662,7 +688,7 @@ export default function GrowthExecutionPage() {
                   breakdown: result.orphanFix.breakdown,
                 },
                 projectedImpressionGrowth: '+35-50% in 90 days with orphan fix + internal linking',
-                projectedTraffic90Days: result.forecast.projectedClickGrowth,
+                projectedTraffic90Days: result.report.projectedTraffic90Days,
                 quickWinURLList: result.position1130.slice(0, 10).map(p => p.slug),
                 backlinkPriorityList: backlinkResult?.assets.slice(0, 10).map(a => ({
                   slug: a.slug, score: a.priorityScore, position: a.position
