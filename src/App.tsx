@@ -189,6 +189,8 @@ const IndexingDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/Indexi
 const PerfAuditPage = lazyWithRetry(() => import("./pages/admin/PerfAuditPage"));
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
 const DomainHealthPage = lazyWithRetry(() => import("./pages/admin/DomainHealthPage"));
+const Gsc4xxTriagePage = lazyWithRetry(() => import("./pages/admin/Gsc4xxTriagePage"));
+const StructuredDataPage = lazyWithRetry(() => import("./pages/admin/StructuredDataPage"));
 const SlowFeederDogBowls = lazyWithRetry(() => import("./pages/SlowFeederDogBowls"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
@@ -361,6 +363,8 @@ const App = () => {
                       <Route path="/admin/perf-audit" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><PerfAuditPage /></Suspense></AdminRouteGuard>} />
                       <Route path="/admin/edge-diagnostics" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><EdgeDiagnosticsPage /></Suspense></AdminRouteGuard>} />
                       <Route path="/admin/domain-health" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><DomainHealthPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/gsc-4xx" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><Gsc4xxTriagePage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/structured-data" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><StructuredDataPage /></Suspense></AdminRouteGuard>} />
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
                     </Routes>
