@@ -69,7 +69,7 @@ export function prepareBacklinkAssets(
       priorityScore: calcPriorityScore(p),
     }))
     .sort((a, b) => b.priorityScore - a.priorityScore)
-    .slice(0, 20);
+    .slice(0, 50);
 
   const assets: LinkableAsset[] = sorted.map(p => {
     const slug = p.slug;

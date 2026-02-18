@@ -26,6 +26,9 @@ import {
   type PageType,
 } from './seo-growth-engine-v3';
 import { prepareBacklinkAssets, type BacklinkDominationResult } from './backlink-domination';
+import { runOrphanElimination, type LinkAutomationResult } from './internal-link-automation-v2';
+import { runPositionBoostV2, type PositionBoostResult } from './position-boost-engine-v2';
+import { runProductCtrRecovery, type ProductRecoveryResult } from './product-ctr-recovery';
 
 // ============= TYPES =============
 
@@ -62,11 +65,14 @@ export interface ZeroClickPage {
 export interface GrowthEngineV4Result {
   gscCorrection: GscCorrectionResult;
   orphanFix: OrphanFixResult;
+  orphanElimination: LinkAutomationResult;
   zeroClickAttack: ZeroClickPage[];
   position1130: Position1130Page[];
+  positionBoostV2: PositionBoostResult;
   authorityHubs: InternalLinkGraphSummary;
   ctrBoosts: CtrBoostRule[];
   productQuickWins: ProductQuickWin[];
+  productRecovery: ProductRecoveryResult;
   backlinkPrep: BacklinkDominationResult;
   report: {
     orphanReductionForecast: string;
@@ -77,6 +83,9 @@ export interface GrowthEngineV4Result {
     technicalFixSummary: string;
     estimatedRankingLift: string;
     projectedCtrImprovement: string;
+    productRecoveryCount: number;
+    positionBoostCount: number;
+    orphanEliminationRate: string;
   };
 }
 
@@ -94,6 +103,9 @@ const PREFIX_MAP: Record<string, PageType> = {
   'collections/': 'collection',
   'collection/': 'collection',
   'guides/': 'guide',
+  'guide/': 'guide',
+  'category/': 'collection',
+  'categories/': 'collection',
 };
 
 function normalizeGscUrl(rawUrl: string): { slug: string; pageType: PageType } {
@@ -116,11 +128,14 @@ function normalizeGscUrl(rawUrl: string): { slug: string; pageType: PageType } {
   }
 
   // Static pages
-  const staticPages = ['about', 'contact', 'shipping', 'returns', 'privacy', 'terms', 'faq', 'cookies', 'track'];
+  const staticPages = ['about', 'contact', 'shipping', 'returns', 'privacy', 'terms', 'faq', 'cookies', 'track', 'cart', 'checkout', 'login', 'register', 'account', 'search'];
   if (staticPages.includes(url)) return { slug: url, pageType: 'static' };
 
   // Homepage
-  if (url === '' || url === '/') return { slug: '__homepage__', pageType: 'homepage' };
+  if (url === '' || url === '/' || url === 'index' || url === 'index.html') return { slug: '__homepage__', pageType: 'homepage' };
+
+  // Query-based category pages (e.g. products?category=dogs)
+  if (url.includes('?') || url.includes('=')) return { slug: url.split('?')[0] || url, pageType: 'static' };
 
   // Default: assume guide
   return { slug: url, pageType: 'guide' };
@@ -236,16 +251,22 @@ export function runGrowthEngineV4(
     ctr: p.ctr,
   })));
 
-  // Phase 2: Orphan domination
+  // Phase 2: Orphan domination (legacy)
   const orphanFix = detectOrphanPages(allPages);
+
+  // Phase 2b: Orphan elimination V2 (auto-link matrix)
+  const orphanElimination = runOrphanElimination(allPages);
 
   // Phase 3: Zero click attack
   const zeroClickAttack = generateZeroClickAttack(allPages);
 
-  // Phase 4: Position 11-30 push (expanded to 30)
+  // Phase 4: Position 11-30 push
   const position1130 = generatePosition1130Strategy(
     allPages.filter(p => p.position >= 11 && p.position <= 30 && p.impressions > 10)
   );
+
+  // Phase 4b: Position boost V2 (11-20 product focus)
+  const positionBoostV2 = runPositionBoostV2(allPages);
 
   // Phase 5: Authority hubs
   const authorityHubs = buildAuthorityHubs();
@@ -258,33 +279,46 @@ export function runGrowthEngineV4(
     allPages.filter(p => p.impressions > 20)
   );
 
-  // Phase 8: Backlink prep
+  // Phase 7b: Product CTR recovery
+  const productRecovery = runProductCtrRecovery(allPages);
+
+  // Phase 8: Backlink prep (expanded to 50)
   const backlinkPrep = prepareBacklinkAssets(allPages);
 
   // Generate report
   const totalImp = allPages.reduce((s, p) => s + p.impressions, 0);
   const avgPos = allPages.length > 0 ? allPages.reduce((s, p) => s + p.position, 0) / allPages.length : 0;
-  const projectedLift = Math.round(avgPos * 0.7); // 30% improvement forecast
+  const projectedLift = Math.round(avgPos * 0.7);
+
+  // Forecast with orphan + backlink simulation
+  const orphanResolved = orphanElimination.totalOrphansBefore - orphanElimination.totalOrphansAfter;
+  const visibilityBoost = orphanElimination.totalOrphansAfter < 10 ? 1.3 : 1.0;
 
   const report = {
-    orphanReductionForecast: `${orphanFix.totalOrphans} → <20 (${Math.max(0, orphanFix.totalOrphans - 20)} to fix)`,
-    projectedImpressionGrowth: `${totalImp.toLocaleString()} → ${Math.round(totalImp * 2.5).toLocaleString()} (+150% in 90 days)`,
-    projectedTraffic90Days: `${Math.round(totalImp * 0.035)} → ${Math.round(totalImp * 2.5 * 0.06)} daily clicks`,
-    quickWinURLCount: position1130.length + zeroClickAttack.length,
+    orphanReductionForecast: `${orphanElimination.totalOrphansBefore} → ${orphanElimination.totalOrphansAfter} (${orphanResolved} auto-linked)`,
+    projectedImpressionGrowth: `${totalImp.toLocaleString()} → ${Math.round(totalImp * 2.5 * visibilityBoost).toLocaleString()} (+${Math.round((2.5 * visibilityBoost - 1) * 100)}% in 90 days)`,
+    projectedTraffic90Days: `${Math.round(totalImp * 0.035)} → ${Math.round(totalImp * 2.5 * visibilityBoost * 0.06)} daily clicks`,
+    quickWinURLCount: position1130.length + zeroClickAttack.length + positionBoostV2.totalTargets,
     backlinkPriorityCount: backlinkPrep.totalAssets,
-    technicalFixSummary: `${gscCorrection.unmatchedRows} unmatched GSC rows fixed, ${zeroClickAttack.length} zero-click pages attacked, ${orphanFix.totalOrphans} orphans identified`,
-    estimatedRankingLift: `Avg position ${avgPos.toFixed(1)} → ${projectedLift.toFixed(1)} (30% improvement)`,
-    projectedCtrImprovement: `0.3% → 3.5%+ (10x CTR growth from title optimization)`,
+    technicalFixSummary: `${gscCorrection.unmatchedRows} GSC rows fixed, ${zeroClickAttack.length} zero-click attacked, ${orphanResolved} orphans auto-linked, ${productRecovery.totalProducts} products recovered`,
+    estimatedRankingLift: `Avg ${avgPos.toFixed(1)} → ${projectedLift.toFixed(1)} (30% lift)`,
+    projectedCtrImprovement: `0.3% → 3.5%+ (10x CTR from title + intro optimization)`,
+    productRecoveryCount: productRecovery.totalProducts,
+    positionBoostCount: positionBoostV2.totalTargets,
+    orphanEliminationRate: `${orphanElimination.totalOrphansBefore > 0 ? Math.round((orphanResolved / orphanElimination.totalOrphansBefore) * 100) : 0}%`,
   };
 
   return {
     gscCorrection,
     orphanFix,
+    orphanElimination,
     zeroClickAttack,
     position1130,
+    positionBoostV2,
     authorityHubs,
     ctrBoosts,
     productQuickWins,
+    productRecovery,
     backlinkPrep,
     report,
   };

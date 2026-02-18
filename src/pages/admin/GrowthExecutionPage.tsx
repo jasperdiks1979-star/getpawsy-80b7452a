@@ -216,15 +216,17 @@ export default function GrowthExecutionPage() {
         </div>
 
         {/* KPI Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           <MetricCard label="Total Pages" value={gscData?.length || 0} icon={Search} />
           <MetricCard label="GSC Match %" value={result?.gscCorrection.matchRate ? `${result.gscCorrection.matchRate}%` : '—'} icon={Target} color="green" />
-          <MetricCard label="Orphans" value={result?.orphanFix.totalOrphans || 0} icon={AlertTriangle} color="red" />
-          <MetricCard label="Pos 11-30" value={result?.position1130.length || 0} icon={ArrowUp} color="amber" />
+          <MetricCard label="Orphans" value={result ? `${result.orphanElimination.totalOrphansAfter}` : '—'} icon={AlertTriangle} color={result && result.orphanElimination.totalOrphansAfter < 10 ? 'green' : 'red'} />
+          <MetricCard label="Pos 11-20 Push" value={result?.positionBoostV2.totalTargets || 0} icon={ArrowUp} color="amber" />
           <MetricCard label="Zero-Click" value={result?.zeroClickAttack.length || 0} icon={Crosshair} color="red" />
-          <MetricCard label="CTR Boost" value={result?.ctrBoosts.length || 0} icon={MousePointerClick} color="amber" />
+          <MetricCard label="CTR Recovery" value={result?.productRecovery.totalProducts || 0} icon={MousePointerClick} color="amber" />
           <MetricCard label="Product Wins" value={result?.productQuickWins.length || 0} icon={Package} color="blue" />
           <MetricCard label="Link Assets" value={result?.backlinkPrep.totalAssets || 0} icon={Link} color="green" />
+          <MetricCard label="Auto-Links" value={result?.orphanElimination.totalInjectionsGenerated || 0} icon={Zap} color="primary" />
+          <MetricCard label="Elimination %" value={result?.report.orphanEliminationRate || '—'} icon={TrendingUp} color="green" />
         </div>
 
         {/* Forecast */}
@@ -257,28 +259,33 @@ export default function GrowthExecutionPage() {
           <Card className="border-green-500/30 bg-green-500/5">
             <CardContent className="p-4">
               <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                <MousePointerClick className="h-4 w-4 text-green-600" /> CTR Doubling Target — 60-Day Plan
+                <MousePointerClick className="h-4 w-4 text-green-600" /> Growth Forecast — 90-Day Plan
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
                 <div className="p-3 rounded-lg bg-background border">
-                  <p className="text-muted-foreground text-xs">Current CTR</p>
-                  <p className="text-lg font-bold text-red-600">0.3%</p>
-                  <p className="text-[10px] text-muted-foreground">6 clicks / 1,937 imp</p>
+                  <p className="text-muted-foreground text-xs">Orphans</p>
+                  <p className="text-lg font-bold text-green-600">{result.orphanElimination.totalOrphansBefore} → {result.orphanElimination.totalOrphansAfter}</p>
+                  <p className="text-[10px] text-muted-foreground">{result.report.orphanEliminationRate} auto-linked</p>
                 </div>
                 <div className="p-3 rounded-lg bg-background border">
-                  <p className="text-muted-foreground text-xs">Target CTR (60d)</p>
-                  <p className="text-lg font-bold text-green-600">2.0%</p>
-                  <p className="text-[10px] text-muted-foreground">~39 clicks projected</p>
+                  <p className="text-muted-foreground text-xs">Pos 11-20 Push</p>
+                  <p className="text-lg font-bold text-primary">{result.positionBoostV2.totalTargets} URLs</p>
+                  <p className="text-[10px] text-muted-foreground">Avg {result.positionBoostV2.avgCurrentPosition} → {result.positionBoostV2.projectedAvgPosition}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-background border">
-                  <p className="text-muted-foreground text-xs">Target Position (90d)</p>
-                  <p className="text-lg font-bold text-primary">&lt;15</p>
-                  <p className="text-[10px] text-muted-foreground">From avg 21.7</p>
+                  <p className="text-muted-foreground text-xs">Product Recovery</p>
+                  <p className="text-lg font-bold text-amber-600">{result.productRecovery.totalProducts} products</p>
+                  <p className="text-[10px] text-muted-foreground">CTR {result.productRecovery.avgCtrBefore.toFixed(1)}% → {result.productRecovery.projectedAvgCtr.toFixed(1)}%</p>
                 </div>
                 <div className="p-3 rounded-lg bg-background border">
-                  <p className="text-muted-foreground text-xs">Target Clicks (90d)</p>
-                  <p className="text-lg font-bold text-primary">100+</p>
-                  <p className="text-[10px] text-muted-foreground">From current 6</p>
+                  <p className="text-muted-foreground text-xs">Backlink Assets</p>
+                  <p className="text-lg font-bold text-blue-600">{result.backlinkPrep.totalAssets}</p>
+                  <p className="text-[10px] text-muted-foreground">Avg score: {result.backlinkPrep.avgPriorityScore}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-background border">
+                  <p className="text-muted-foreground text-xs">90-Day Projection</p>
+                  <p className="text-lg font-bold text-primary">{result.report.projectedTraffic90Days.split('→')[1]?.trim() || '—'}</p>
+                  <p className="text-[10px] text-muted-foreground">{result.report.estimatedRankingLift}</p>
                 </div>
               </div>
               <div className="mt-3 grid md:grid-cols-3 gap-2 text-xs">
@@ -286,10 +293,10 @@ export default function GrowthExecutionPage() {
                   <span className="font-medium">Phase 1 (0-30d):</span> Title optimization + zero-click attack on {result.zeroClickAttack.length + result.ctrBoosts.length} pages
                 </div>
                 <div className="p-2 rounded bg-background border">
-                  <span className="font-medium">Phase 2 (30-60d):</span> Orphan elimination ({result.orphanFix.totalOrphans} → &lt;10) + internal linking
+                  <span className="font-medium">Phase 2 (30-60d):</span> Orphan elimination ({result.orphanElimination.totalOrphansBefore} → {result.orphanElimination.totalOrphansAfter}) + {result.orphanElimination.totalInjectionsGenerated} auto-links
                 </div>
                 <div className="p-2 rounded bg-background border">
-                  <span className="font-medium">Phase 3 (60-90d):</span> Authority hub expansion + backlink outreach ({result.backlinkPrep.totalAssets} assets)
+                  <span className="font-medium">Phase 3 (60-90d):</span> Authority hub expansion + {result.backlinkPrep.totalAssets} backlink assets + {result.productRecovery.totalProducts} product recoveries
                 </div>
               </div>
             </CardContent>
@@ -897,47 +904,57 @@ export default function GrowthExecutionPage() {
           <Section title="Growth Acceleration Report (JSON)" defaultOpen>
             <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[400px]">
               {JSON.stringify({
-                mode: 'GROWTH_ACCELERATION',
+                mode: 'GROWTH_ACCELERATION_V4',
                 timestamp: new Date().toISOString(),
-                orphanReductionForecast: {
-                  current: result.orphanFix.totalOrphans,
-                  target: '<10',
-                  reduction: `${result.orphanFix.totalOrphans} → <10`,
-                  breakdown: result.orphanFix.breakdown,
+                orphanElimination: {
+                  before: result.orphanElimination.totalOrphansBefore,
+                  after: result.orphanElimination.totalOrphansAfter,
+                  autoLinksGenerated: result.orphanElimination.totalInjectionsGenerated,
+                  eliminationRate: result.report.orphanEliminationRate,
+                  byType: result.orphanElimination.byType,
                 },
-                ctrDoublingTarget: {
-                  currentCtr: '0.3%',
-                  targetCtr60d: '2.0%',
-                  currentClicks: 6,
-                  targetClicks90d: '100+',
-                  currentAvgPosition: 21.7,
-                  targetPosition90d: '<15',
+                positionBoostV2: {
+                  totalTargets: result.positionBoostV2.totalTargets,
+                  avgCurrentPosition: result.positionBoostV2.avgCurrentPosition,
+                  projectedAvgPosition: result.positionBoostV2.projectedAvgPosition,
+                  topTargets: result.positionBoostV2.targets.slice(0, 10).map(t => ({
+                    slug: t.slug, position: t.position, impressions: t.impressions, lift: t.estimatedLift,
+                  })),
+                },
+                productRecovery: {
+                  totalProducts: result.productRecovery.totalProducts,
+                  avgCtrBefore: `${result.productRecovery.avgCtrBefore.toFixed(1)}%`,
+                  projectedAvgCtr: `${result.productRecovery.projectedAvgCtr.toFixed(1)}%`,
                 },
                 pagesUpgraded: {
                   zeroClickAttacked: result.zeroClickAttack.length,
                   position1130Pushed: result.position1130.length,
+                  positionBoostedV2: result.positionBoostV2.totalTargets,
                   ctrBoosted: result.ctrBoosts.length,
                   productSeoOptimized: result.productQuickWins.length,
+                  productRecovered: result.productRecovery.totalProducts,
                 },
                 authorityHubs: result.authorityHubs.hubs.map(h => ({
-                  name: h.name,
-                  slug: h.hubSlug,
-                  clusterPages: h.clusterPages.length,
-                  inboundLinks: h.inboundLinks,
+                  name: h.name, slug: h.hubSlug, pages: h.clusterPages.length, inbound: h.inboundLinks,
                 })),
-                projectedImpressionGrowth: `1,937 → ${Math.round(1937 * 2.5).toLocaleString()} (+150% in 90 days)`,
-                projectedTraffic90Days: result.report.projectedTraffic90Days,
-                quickWinURLList: result.position1130.slice(0, 15).map(p => p.slug),
-                backlinkPriorityList: backlinkResult?.assets.slice(0, 10).map(a => ({
-                  slug: a.slug, score: a.priorityScore, position: a.position,
-                })) || [],
-                technicalFixSummary: {
-                  orphansToFix: result.orphanFix.totalOrphans,
-                  titlesToOptimize: result.position1130.length + result.ctrBoosts.length,
-                  productSeoMissing: result.productQuickWins.length,
-                  hubsCreated: result.authorityHubs.hubs.length,
-                  gscMatchRate: `${result.gscCorrection.matchRate}%`,
-                  unmatchedRowsFixed: result.gscCorrection.unmatchedRows,
+                backlinkAssets: {
+                  total: result.backlinkPrep.totalAssets,
+                  avgScore: result.backlinkPrep.avgPriorityScore,
+                  topAssets: backlinkResult?.assets.slice(0, 10).map(a => ({
+                    slug: a.slug, score: a.priorityScore, position: a.position,
+                  })) || [],
+                },
+                forecast: {
+                  orphanReduction: result.report.orphanReductionForecast,
+                  impressionGrowth: result.report.projectedImpressionGrowth,
+                  traffic90Days: result.report.projectedTraffic90Days,
+                  rankingLift: result.report.estimatedRankingLift,
+                  ctrImprovement: result.report.projectedCtrImprovement,
+                },
+                gscIntegrity: {
+                  matchRate: `${result.gscCorrection.matchRate}%`,
+                  unmatchedFixed: result.gscCorrection.unmatchedRows,
+                  byType: result.gscCorrection.byType,
                 },
                 redirectVerification: {
                   wwwRedirect: '302 (platform constraint — mitigated via canonical + sitemap)',
