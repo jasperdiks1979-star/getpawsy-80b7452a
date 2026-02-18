@@ -116,18 +116,35 @@ function generateMeta(slug: string): string {
   return meta;
 }
 
+// V3 CTR modifiers for zero-click pages
+const ZERO_CLICK_MODIFIERS = [
+  '(Vet Approved)',
+  '(Expert Guide)',
+  '(2026 Edition)',
+  '(Avoid These Mistakes)',
+];
+
 export function generateCtrBoosts(
   pages: Array<{ slug: string; position: number; impressions: number; clicks: number; ctr: number }>
 ): CtrBoostSuggestion[] {
-  // Only target pages ranking 1-15
-  const targets = pages.filter(p => p.position >= 1 && p.position <= 15 && p.impressions >= 50);
+  // Target pages ranking 1-20 with meaningful impressions
+  const targets = pages.filter(p => p.position >= 1 && p.position <= 20 && p.impressions >= 10);
   
   return targets
     .sort((a, b) => b.impressions - a.impressions)
-    .map(p => {
+    .map((p, i) => {
       const override = MANUAL_CTR_OVERRIDES[p.slug];
-      const suggestedTitle = override?.title || generateTitle(p.slug, p.position);
+      let suggestedTitle = override?.title || generateTitle(p.slug, p.position);
       const suggestedMeta = override?.meta || generateMeta(p.slug);
+      
+      // V3: If position <= 20 AND clicks = 0, append modifier
+      if (p.position <= 20 && p.clicks === 0 && !override) {
+        const hash = p.slug.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+        const modifier = ZERO_CLICK_MODIFIERS[(hash + i) % ZERO_CLICK_MODIFIERS.length];
+        if ((suggestedTitle + ' ' + modifier).length <= 65) {
+          suggestedTitle = `${suggestedTitle} ${modifier}`;
+        }
+      }
       
       // FAQ potential: guide-like pages with informational intent
       const hasFaqPotential = /^(best-|how-to-|choosing-|guide-|why-)/.test(p.slug) ||
@@ -141,7 +158,9 @@ export function generateCtrBoosts(
         suggestedTitle,
         suggestedMeta,
         hasFaqPotential,
-        reason: p.ctr < 3
+        reason: p.clicks === 0
+          ? `ZERO CLICKS at position ${p.position} with ${p.impressions} impressions — modifier appended`
+          : p.ctr < 3
           ? `Low CTR (${p.ctr.toFixed(1)}%) at position ${p.position} with ${p.impressions} impressions`
           : `Position ${p.position} – title optimization can push CTR from ${p.ctr.toFixed(1)}% to 5%+`,
       };
