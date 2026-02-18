@@ -61,6 +61,10 @@
 
     <!-- Preload LCP hero image — local optimized WebP -->
     <link rel="preload" as="image" href="/hero-dog.webp" type="image/webp" fetchpriority="high">
+    <!-- Inline critical hero layout to guarantee paint before CSS parse -->
+    <style>
+      .hero-lcp-section { position:relative; overflow:hidden; display:flex; align-items:center; min-height:85vh; contain:layout style; }
+    </style>
 
     <!-- DNS Prefetch / preconnect — only critical origins -->
     <link rel="preconnect" href="https://nojvgfbcjgipjxpfatmm.supabase.co" crossorigin>
