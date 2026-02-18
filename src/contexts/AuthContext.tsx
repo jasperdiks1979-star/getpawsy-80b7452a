@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveIsAdmin } from '@/lib/auth/isAdmin';
 
 interface AuthContextType {
   user: User | null;
@@ -25,24 +26,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const checkAdminRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error checking admin role:', error);
-        return false;
-      }
-      return !!data;
-    } catch {
-      return false;
-    }
-  };
+  const checkAdminRole = useCallback(async (user: User | null) => {
+    const result = await resolveIsAdmin(user);
+    setIsAdmin(result);
+    return result;
+  }, []);
 
   const refreshSession = useCallback(async (): Promise<Session | null> => {
     try {
@@ -115,7 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Defer admin check with setTimeout to prevent deadlock
         if (session?.user) {
           setTimeout(() => {
-            checkAdminRole(session.user.id).then(setIsAdmin);
+            checkAdminRole(session.user);
           }, 0);
         } else {
           setIsAdmin(false);
@@ -136,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       if (session?.user) {
-        checkAdminRole(session.user.id).then(setIsAdmin);
+        checkAdminRole(session.user);
       }
       
       setIsLoading(false);

@@ -44,7 +44,7 @@ const CHECKS = [
 ];
 
 export default function DiagnosticsPage() {
-  const { isAdmin, session } = useAuth();
+  const { isAdmin, session, user } = useAuth();
   const [checks, setChecks] = useState<HealthCheck[]>(
     CHECKS.map(c => ({ ...c, status: null, contentType: null, bodyPreview: null, ok: false, loading: false, error: null }))
   );
@@ -211,7 +211,7 @@ export default function DiagnosticsPage() {
   return (
     <div className="min-h-screen bg-background p-6 max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <Link to="/dashboard">
+        <Link to="/admin/growth-execution">
           <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
         </Link>
         <h1 className="text-2xl font-bold">Site Diagnostics</h1>
@@ -219,6 +219,23 @@ export default function DiagnosticsPage() {
           {allGreen ? '✅ All Healthy' : '⚠️ Issues Detected'}
         </Badge>
       </div>
+
+      {/* Admin Auth Diagnostics */}
+      <Card className="mb-6 border-green-500/30">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-green-600" />
+            Admin Auth Diagnostics
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm font-mono">
+          <p><strong>Email:</strong> {user?.email ?? 'N/A'}</p>
+          <p><strong>User ID:</strong> {user?.id ?? 'N/A'}</p>
+          <p><strong>isAdmin (context):</strong> {isAdmin ? '✅ true' : '❌ false'}</p>
+          <p><strong>Session valid:</strong> {session ? '✅ yes' : '❌ no'}</p>
+          <p><strong>Session expires:</strong> {session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A'}</p>
+        </CardContent>
+      </Card>
 
       {/* Automated Monitoring Status */}
       <MonitoringStatusCard />

@@ -649,7 +649,7 @@ export const Navbar = () => {
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem asChild>
-                      <Link to="/dashboard" className="flex items-center gap-2 cursor-pointer">
+                      <Link to="/admin/growth-execution" className="flex items-center gap-2 cursor-pointer">
                         <Shield className="h-4 w-4" />
                         Admin Dashboard
                       </Link>
@@ -715,20 +715,19 @@ export const Navbar = () => {
                           </SheetClose>
                         ))}
                         
-                        {/* Admin link */}
-                        {user && (
+                        {/* Admin link — only for admins */}
+                        {user && isAdmin && (
                           <SheetClose asChild>
                             <Link
-                              to="/dashboard"
+                              to="/admin/growth-execution"
                               className={`px-4 py-3 text-lg font-medium rounded-xl transition-colors flex items-center gap-3 ${
-                                isActive('/dashboard')
+                                isActive('/admin')
                                   ? 'text-primary bg-primary/10'
                                   : 'hover:bg-muted'
                               }`}
                             >
                               <Shield className="h-5 w-5" />
                               Admin Dashboard
-                              {!isAdmin && <Badge variant="outline" className="ml-auto text-xs">Test</Badge>}
                             </Link>
                           </SheetClose>
                         )}
