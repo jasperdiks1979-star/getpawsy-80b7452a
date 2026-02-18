@@ -1494,10 +1494,22 @@ const Admin = () => {
                 <span>Reports</span>
               </button>
             </TouchTooltip>
-            <TouchTooltip content="SEO Growth Execution Layer V3">
+            <TouchTooltip content="SEO Growth Engine V4">
               <button onClick={() => navigate('/admin/growth-execution')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
                 <TrendingUp className="w-3.5 h-3.5 shrink-0" />
-                <span>Growth V3</span>
+                <span>Growth V4</span>
+              </button>
+            </TouchTooltip>
+            <TouchTooltip content="Backlink Domination Engine">
+              <button onClick={() => navigate('/admin/backlink-engine')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
+                <Link className="w-3.5 h-3.5 shrink-0" />
+                <span>Backlinks</span>
+              </button>
+            </TouchTooltip>
+            <TouchTooltip content="Admin Resources & PDF Library">
+              <button onClick={() => navigate('/admin/resources')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
+                <FileText className="w-3.5 h-3.5 shrink-0" />
+                <span>Resources</span>
               </button>
             </TouchTooltip>
           </div>

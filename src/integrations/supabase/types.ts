@@ -53,6 +53,36 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_resources: {
+        Row: {
+          created_at: string
+          file_path: string
+          file_size: number | null
+          file_url: string
+          id: string
+          title: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          title: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          title?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       authority_clusters: {
         Row: {
           config: Json | null
@@ -4045,6 +4075,45 @@ export type Database = {
           status?: string
           trigger_type?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      seo_page_metrics: {
+        Row: {
+          avg_position: number
+          clicks: number
+          created_at: string
+          ctr: number
+          id: string
+          impressions: number
+          last_updated: string
+          page_type: string
+          slug: string | null
+          url: string
+        }
+        Insert: {
+          avg_position?: number
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          last_updated?: string
+          page_type?: string
+          slug?: string | null
+          url: string
+        }
+        Update: {
+          avg_position?: number
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          last_updated?: string
+          page_type?: string
+          slug?: string | null
+          url?: string
         }
         Relationships: []
       }
