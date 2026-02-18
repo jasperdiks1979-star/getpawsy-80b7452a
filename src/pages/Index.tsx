@@ -331,7 +331,7 @@ const Index = () => {
               
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <Link to="/bestsellers">
-                  <Button size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                  <Button size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow duration-200">
                     Shop Bestsellers
                     <ArrowRight className="w-5 h-5" />
                   </Button>
