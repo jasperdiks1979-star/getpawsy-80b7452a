@@ -188,6 +188,7 @@ const AdminResourcesPage = lazyWithRetry(() => import("./pages/admin/AdminResour
 const IndexingDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/IndexingDiagnosticsPage"));
 const PerfAuditPage = lazyWithRetry(() => import("./pages/admin/PerfAuditPage"));
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
+const DomainHealthPage = lazyWithRetry(() => import("./pages/admin/DomainHealthPage"));
 const SlowFeederDogBowls = lazyWithRetry(() => import("./pages/SlowFeederDogBowls"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
@@ -359,6 +360,7 @@ const App = () => {
                       <Route path="/admin/indexing-diagnostics" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><IndexingDiagnosticsPage /></Suspense></AdminRouteGuard>} />
                       <Route path="/admin/perf-audit" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><PerfAuditPage /></Suspense></AdminRouteGuard>} />
                       <Route path="/admin/edge-diagnostics" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><EdgeDiagnosticsPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/domain-health" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><DomainHealthPage /></Suspense></AdminRouteGuard>} />
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
                     </Routes>
