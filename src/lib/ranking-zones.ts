@@ -45,31 +45,35 @@ function getZone(position: number): RankingZone {
   return 'red';
 }
 
-function getZoneActions(zone: RankingZone, ctr: number): string[] {
+function getZoneActions(zone: RankingZone, ctr: number, clicks: number): string[] {
   switch (zone) {
     case 'green':
+      if (clicks === 0) return ['ZERO CLICKS — Rewrite title with emotional hook', 'Add FAQ schema', 'Append CTR modifier (Vet Approved/Expert Guide)'];
       return ctr < 3
         ? ['Optimize title for higher CTR', 'Add FAQ schema', 'Test meta description variants']
         : ['Maintain current position', 'Monitor for ranking decay'];
     case 'neutral':
       return [
-        'Push to Top 10 with 1-2 internal links',
+        'Push to Top 10 with 2-3 internal links from cluster pages',
         'Add supporting content in cluster',
-        'Optimize title with power modifiers',
-      ];
+        'Optimize title with power modifiers + year marker',
+        clicks === 0 ? 'URGENT: Zero clicks — rewrite title + meta immediately' : 'Monitor CTR trend',
+      ].filter(Boolean);
     case 'yellow':
       return [
         'Build 2-3 quality backlinks',
         'Improve internal linking (add 3+ contextual links)',
         'Expand content by 20%',
         'Add comparison table or FAQ section',
+        'Add to authority hub page',
       ];
     case 'red':
       return [
-        'Consider merging with stronger page',
-        'Or complete rewrite with new angle',
+        'Consider merging with stronger page in same cluster',
+        'Or complete rewrite with new angle targeting different intent',
         'Do NOT push backlinks yet',
         'Evaluate if keyword intent matches content',
+        'Check if page is orphaned (add internal links first)',
       ];
   }
 }
@@ -86,7 +90,7 @@ export function classifyRankingZones(
       clicks: p.clicks,
       ctr: p.ctr,
       zone,
-      actions: getZoneActions(zone, p.ctr),
+      actions: getZoneActions(zone, p.ctr, p.clicks),
     };
   });
 
