@@ -365,6 +365,8 @@ const App = () => {
                       <Route path="/admin/domain-health" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><DomainHealthPage /></Suspense></AdminRouteGuard>} />
                       <Route path="/admin/gsc-4xx" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><Gsc4xxTriagePage /></Suspense></AdminRouteGuard>} />
                       <Route path="/admin/structured-data" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><StructuredDataPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/seo-structured-data" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><StructuredDataPage /></Suspense></AdminRouteGuard>} />
+                      <Route path="/admin/perf" element={<AdminRouteGuard><Suspense fallback={<RouteLoader />}><PerfAuditPage /></Suspense></AdminRouteGuard>} />
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
                     </Routes>
