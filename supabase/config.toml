@@ -170,3 +170,6 @@ verify_jwt = false
 
 [functions.seo-diagnostics]
 verify_jwt = false
+
+[functions.domain-health-check]
+verify_jwt = false
