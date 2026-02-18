@@ -1494,6 +1494,12 @@ const Admin = () => {
                 <span>Reports</span>
               </button>
             </TouchTooltip>
+            <TouchTooltip content="SEO Growth Execution Layer V3">
+              <button onClick={() => navigate('/admin/growth-execution')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">
+                <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                <span>Growth V3</span>
+              </button>
+            </TouchTooltip>
           </div>
 
           {/* Sales Dashboard Tab */}

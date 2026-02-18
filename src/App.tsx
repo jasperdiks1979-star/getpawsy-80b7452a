@@ -181,6 +181,7 @@ const BundlesPage = lazyWithRetry(() => import("./pages/admin/BundlesPage"));
 const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDominance"));
 const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/AnalyticsTrafficDocs"));
 const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsPage"));
+const GrowthExecutionPage = lazyWithRetry(() => import("./pages/admin/GrowthExecutionPage"));
 const SlowFeederDogBowls = lazyWithRetry(() => import("./pages/SlowFeederDogBowls"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
@@ -346,6 +347,7 @@ const App = () => {
                       <Route path="/admin/cluster-dominance" element={<Suspense fallback={<RouteLoader />}><ClusterDominance /></Suspense>} />
                       <Route path="/admin/analytics-traffic" element={<Suspense fallback={<RouteLoader />}><AnalyticsTrafficDocs /></Suspense>} />
                       <Route path="/admin/reports" element={<Suspense fallback={<RouteLoader />}><AdminReportsPage /></Suspense>} />
+                      <Route path="/admin/growth-execution" element={<Suspense fallback={<RouteLoader />}><GrowthExecutionPage /></Suspense>} />
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
                     </Routes>
