@@ -169,6 +169,8 @@ const ZERO_CLICK_MODIFIERS = [
   '(Vet Approved)',
   '(Expert Picks)',
   '(Avoid These Mistakes)',
+  '(Complete Buyer Guide)',
+  '(Updated 2026)',
 ];
 
 const EMOTIONAL_META_TEMPLATES = [

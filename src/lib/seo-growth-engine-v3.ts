@@ -105,6 +105,8 @@ const CTR_MODIFIERS = [
   '(Expert Guide)',
   '(2026 Edition)',
   '(Avoid These Mistakes)',
+  '(Complete Buyer Guide)',
+  '(Updated 2026)',
 ] as const;
 
 const TITLE_TEMPLATES: Record<string, (kw: string) => string> = {
@@ -263,7 +265,7 @@ export function generatePosition1130Strategy(
   const targets = pages
     .filter(p => p.position >= 11 && p.position <= 30)
     .sort((a, b) => b.impressions - a.impressions)
-    .slice(0, 20);
+    .slice(0, 30);
 
   return targets.map(p => {
     const pageType = classifyPageType(p.slug);
@@ -346,7 +348,7 @@ export function buildAuthorityHubs(): InternalLinkGraphSummary {
       name: 'Dog Enrichment Hub',
       hubSlug: 'dog-enrichment-hub',
       clusterPages: [...new Set(dogPages)],
-      inboundLinks: dogPages.length * 2, // Each page links to hub + hub links to each
+      inboundLinks: dogPages.length * 2,
       outboundLinks: dogPages.length,
       introText: 'Your complete resource for dog enrichment, mental stimulation, and behavioral health. Explore our expert-reviewed guides covering interactive toys, puzzle feeders, indoor games, and anxiety solutions — all designed to keep your dog happy, healthy, and engaged.',
       maxCrawlDepth: 2,
@@ -371,6 +373,29 @@ export function buildAuthorityHubs(): InternalLinkGraphSummary {
       inboundLinks: catPages.length * 2,
       outboundLinks: catPages.length,
       introText: 'Discover everything about cat enrichment, from interactive toys and climbing structures to water fountains and litter box solutions. Our vet-reviewed guides help indoor cat owners create stimulating environments that prevent boredom and support natural feline behavior.',
+      maxCrawlDepth: 2,
+    });
+  }
+
+  // PET HEALTH KNOWLEDGE HUB
+  const petHealthPages = SEO_CONTENT_CLUSTERS
+    .filter(c => c.name.toLowerCase().includes('health') || c.name.toLowerCase().includes('wellness') || c.name.toLowerCase().includes('nutrition'))
+    .flatMap(c => [c.pillarSlug, ...c.blogTopics.map(t => t.slug)]);
+
+  // Also pull general pet care topics
+  const petCarePages = SEO_CONTENT_CLUSTERS
+    .filter(c => c.name.toLowerCase().includes('care') || c.name.toLowerCase().includes('grooming') || c.name.toLowerCase().includes('safety'))
+    .flatMap(c => [c.pillarSlug, ...c.blogTopics.map(t => t.slug)]);
+
+  const allHealthPages = [...new Set([...petHealthPages, ...petCarePages])];
+  if (allHealthPages.length > 0) {
+    hubs.push({
+      name: 'Pet Health Knowledge Hub',
+      hubSlug: 'pet-health-knowledge-hub',
+      clusterPages: allHealthPages,
+      inboundLinks: allHealthPages.length * 2,
+      outboundLinks: allHealthPages.length,
+      introText: 'Your trusted resource for pet health, nutrition, and wellness. Expert-reviewed guides covering common health concerns, preventive care, grooming best practices, and safety tips for dogs and cats in 2026.',
       maxCrawlDepth: 2,
     });
   }
@@ -428,9 +453,9 @@ export function identifyProductQuickWins(
   pages: Array<{ slug: string; impressions: number; clicks: number; position: number }>
 ): ProductQuickWin[] {
   const productPages = pages
-    .filter(p => classifyPageType(p.slug) === 'product' && p.impressions > 10)
+    .filter(p => classifyPageType(p.slug) === 'product' && p.impressions > 5)
     .sort((a, b) => b.impressions - a.impressions)
-    .slice(0, 10);
+    .slice(0, 50);
 
   return productPages.map(p => {
     const name = humanizeSlug(p.slug.replace('product/', ''));
@@ -443,6 +468,7 @@ export function identifyProductQuickWins(
         { question: `How fast is shipping for this ${name.toLowerCase()}?`, answer: 'We offer free standard shipping across the US. Most orders arrive within 7-15 business days. Express shipping options are available at checkout.' },
         { question: `What materials is this ${name.toLowerCase()} made from?`, answer: 'This product is made from premium, pet-safe materials. All items meet US safety standards. Check the product description for specific material details.' },
         { question: `Can I return this ${name.toLowerCase()}?`, answer: 'Yes! We offer a 30-day hassle-free return policy. If you or your pet aren\'t satisfied, contact our support team for a full refund or exchange.' },
+        { question: `Why do pet owners choose this ${name.toLowerCase()}?`, answer: `Pet owners love this ${name.toLowerCase()} for its durability, safety, and great value. Thousands of satisfied customers trust GetPawsy for quality pet products backed by expert reviews.` },
       ],
       relatedGuides: findRelatedGuidesForProduct(p.slug),
     };
