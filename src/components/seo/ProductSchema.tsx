@@ -41,7 +41,7 @@ export function ProductSchema({
     ? rawDescription 
     : `Shop ${product.name} at GetPawsy. Premium quality pet product designed for comfort and durability. Fast US shipping, 30-day hassle-free returns.`;
 
-  // Build review structured data — use real reviews when available, safe placeholder otherwise
+  // Build review structured data ONLY from real approved reviews — no placeholders
   const hasRealReviews = reviews.length > 0;
   const aggregateRating = hasRealReviews ? {
     '@type': 'AggregateRating',
@@ -49,13 +49,7 @@ export function ProductSchema({
     reviewCount: reviews.length,
     bestRating: '5',
     worstRating: '1',
-  } : {
-    '@type': 'AggregateRating',
-    ratingValue: '5.0',
-    reviewCount: 1,
-    bestRating: '5',
-    worstRating: '1',
-  };
+  } : undefined;
 
   const reviewSchema = hasRealReviews ? reviews.slice(0, 10).map((r) => ({
     '@type': 'Review',
@@ -70,20 +64,7 @@ export function ProductSchema({
       '@type': 'Person',
       name: 'Verified Buyer',
     },
-  })) : [{
-    '@type': 'Review',
-    reviewRating: {
-      '@type': 'Rating',
-      ratingValue: 5,
-      bestRating: 5,
-      worstRating: 1,
-    },
-    reviewBody: 'Excellent quality product. My pet loves it!',
-    author: {
-      '@type': 'Person',
-      name: 'Verified Buyer',
-    },
-  }];
+  })) : undefined;
 
   // Generate keywords
   const keywords = generateProductKeywords(
@@ -182,8 +163,8 @@ export function ProductSchema({
         },
       },
     },
-    aggregateRating,
-    review: reviewSchema,
+    ...(aggregateRating ? { aggregateRating } : {}),
+    ...(reviewSchema ? { review: reviewSchema } : {}),
   };
 
   // WebPage schema for product page
