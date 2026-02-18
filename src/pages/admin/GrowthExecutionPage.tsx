@@ -18,8 +18,10 @@ import {
 import { classifyRankingZones } from '@/lib/ranking-zones';
 import { prepareBacklinkAssets, type BacklinkDominationResult } from '@/lib/backlink-domination';
 import { runHyperAggressiveEngine, HYPER_AGGRESSIVE_DEFAULTS, type HyperAggressiveResult } from '@/lib/hyper-aggressive-engine';
+import { runDominanceMode, type DominanceModeResult } from '@/lib/dominance-mode-engine';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { Crown, Shield, Flame } from 'lucide-react';
 
 // ============= METRIC CARD =============
 
@@ -170,6 +172,26 @@ export default function GrowthExecutionPage() {
     }
     return runHyperAggressiveEngine(Array.from(slugMap.values()));
   }, [gscData, hyperEnabled]);
+
+  // 👑 DOMINANCE MODE
+  const [dominanceEnabled, setDominanceEnabled] = useState(false);
+  const dominanceResult: DominanceModeResult | null = useMemo(() => {
+    if (!dominanceEnabled || !gscData) return null;
+    const slugMap = new Map<string, { slug: string; position: number; impressions: number; clicks: number; ctr: number }>();
+    for (const row of gscData) {
+      if (!row.slug) continue;
+      if (!slugMap.has(row.slug)) {
+        slugMap.set(row.slug, {
+          slug: row.slug,
+          position: row.position || 99,
+          impressions: row.impressions || 0,
+          clicks: row.clicks || 0,
+          ctr: (row.ctr || 0) * 100,
+        });
+      }
+    }
+    return runDominanceMode(Array.from(slugMap.values()));
+  }, [gscData, dominanceEnabled]);
 
   const downloadCsv = () => {
     if (!backlinkResult?.csvData) return;
@@ -899,6 +921,147 @@ export default function GrowthExecutionPage() {
           )}
         </Card>
 
+        {/* 👑 DOMINANCE MODE */}
+        <Card className={dominanceEnabled ? 'border-amber-500/50 bg-amber-500/5' : 'border-border'}>
+          <CardHeader className="py-3 px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-amber-500" />
+                <CardTitle className="text-sm font-semibold">Dominance Mode</CardTitle>
+                <Badge variant={dominanceEnabled ? 'default' : 'secondary'} className="text-xs">
+                  {dominanceEnabled ? 'ACTIVE' : 'OFF'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Authority Expansion</span>
+                <Switch
+                  checked={dominanceEnabled}
+                  onCheckedChange={(checked) => {
+                    setDominanceEnabled(checked);
+                    toast[checked ? 'warning' : 'info'](
+                      checked ? '👑 Dominance Mode activated' : 'Dominance Mode deactivated'
+                    );
+                  }}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          {dominanceEnabled && dominanceResult && (
+            <CardContent className="pt-0 px-4 pb-4 space-y-4">
+              {/* KPI Widgets */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <MetricCard label="Authority Injection %" value={`${dominanceResult.kpis.authorityInjectionPct}%`} icon={Shield} color="green" />
+                <MetricCard label="Backlink Velocity (30d)" value={dominanceResult.kpis.backlinkVelocity30d} icon={Flame} color="amber" />
+                <MetricCard label="Money URL Avg Pos" value={dominanceResult.kpis.moneyUrlAvgPosition} icon={Target} color="primary" />
+                <MetricCard label="CTR Lift %" value={`${dominanceResult.kpis.ctrLiftPct}%`} icon={MousePointerClick} color="blue" />
+                <MetricCard label="Orphan Elimination %" value={`${dominanceResult.kpis.orphanEliminationPct}%`} icon={AlertTriangle} color="green" />
+              </div>
+
+              {/* 90-Day Forecast v2 */}
+              <div className="p-4 rounded-lg border bg-background space-y-2">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" /> 90-Day Dominance Forecast
+                </h4>
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="text-xs text-muted-foreground">Avg Position</p>
+                    <p className="text-lg font-bold">{dominanceResult.forecast90d.currentAvgPosition} → <span className="text-primary">{dominanceResult.forecast90d.projectedAvgPosition}</span></p>
+                    <p className="text-[10px] text-muted-foreground">-{dominanceResult.forecast90d.positionLiftFromLinks} from link velocity</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="text-xs text-muted-foreground">Impressions</p>
+                    <p className="text-lg font-bold">{dominanceResult.forecast90d.currentImpressions.toLocaleString()} → <span className="text-primary">{dominanceResult.forecast90d.projectedImpressions.toLocaleString()}</span></p>
+                    <p className="text-[10px] text-muted-foreground">+{dominanceResult.forecast90d.impressionGrowthPct}% growth</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="text-xs text-muted-foreground">Clicks</p>
+                    <p className="text-lg font-bold">{dominanceResult.forecast90d.currentClicks} → <span className="text-primary">{dominanceResult.forecast90d.projectedClicks}</span></p>
+                    <p className="text-[10px] text-muted-foreground">+{Math.round(dominanceResult.forecast90d.ctrIncreaseFromRewrites * 100)}% CTR lift</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Money URL Table */}
+              <Section title="Top 20 Money URLs" badge={`${dominanceResult.moneyUrls.length} targets`} defaultOpen>
+                <div className="max-h-[500px] overflow-y-auto space-y-2">
+                  {dominanceResult.moneyUrls.map((u, i) => (
+                    <div key={u.slug} className="p-3 rounded-lg border bg-card text-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-muted-foreground">#{i + 1}</span>
+                          <span className="font-mono text-xs text-primary truncate max-w-[200px]">/{u.slug}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <Badge variant="outline" className="text-[10px]">Pos {u.position}</Badge>
+                          <Badge variant="secondary" className="text-[10px]">{u.impressions} imp</Badge>
+                          <Badge variant="default" className="text-[10px]">{u.pageType}</Badge>
+                          <Badge variant="outline" className="text-[10px]">Score: {u.authorityScore}</Badge>
+                        </div>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <p className="text-muted-foreground mb-0.5">CTR Rewrite:</p>
+                          <p className="line-through opacity-60">{u.ctrRewrite.originalTitle}</p>
+                          <p className="font-medium text-primary">{u.ctrRewrite.newTitle}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">{u.ctrRewrite.newMeta}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground mb-0.5">Anchor Variations:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {u.anchorVariations.map((a, j) => (
+                              <Badge key={j} variant="outline" className="text-[10px]">"{a}"</Badge>
+                            ))}
+                          </div>
+                          <p className="text-muted-foreground mt-1 mb-0.5">Internal Injections: {u.internalInjections.length}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+
+              {/* 30-Day Backlink Attack Plan */}
+              <Section title="30-Day Backlink Attack Plan" badge={`${dominanceResult.totalBacklinkPlacements} placements`}>
+                <div className="space-y-3">
+                  {dominanceResult.backlinkPlan.map(week => (
+                    <div key={week.week} className="p-3 rounded-lg border bg-card">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold">Week {week.week} — {week.label}</h4>
+                        <Badge variant="secondary" className="text-xs">{week.totalPlacements} placements</Badge>
+                      </div>
+                      <div className="space-y-1">
+                        {week.tasks.map((task, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs p-2 rounded bg-muted">
+                            <span className="truncate max-w-[60%]">{task.description}</span>
+                            <div className="flex gap-1">
+                              <Badge variant="outline" className="text-[10px]">{task.count}x</Badge>
+                              <Badge variant="secondary" className="text-[10px]">{task.anchorType}</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="p-3 rounded-lg bg-muted text-xs space-y-1">
+                    <p className="font-semibold">Anchor Distribution Target:</p>
+                    <div className="flex gap-3">
+                      <span>Branded: {dominanceResult.anchorDistribution.branded}%</span>
+                      <span>Partial: {dominanceResult.anchorDistribution.partial}%</span>
+                      <span>Contextual: {dominanceResult.anchorDistribution.contextual}%</span>
+                      <span>Exact: {dominanceResult.anchorDistribution.exact}%</span>
+                    </div>
+                  </div>
+                </div>
+              </Section>
+
+              {/* Orphan Impact */}
+              <div className="p-3 rounded-lg border bg-muted text-sm flex items-center justify-between">
+                <span>Orphan Reduction</span>
+                <span className="font-bold">{dominanceResult.orphansReduced.before} → <span className="text-primary">{dominanceResult.orphansReduced.after}</span></span>
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
         {result && (
           <Section title="Growth Acceleration Report (JSON)" defaultOpen>
