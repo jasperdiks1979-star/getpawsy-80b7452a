@@ -7,6 +7,11 @@ import "./index.css";
 
 // v8 - Fix: removed recharts/d3 manual vendor chunk (TDZ crash on iOS Safari)
 
+// === STEP 0: www → apex redirect (app-level fallback for platform 302) ===
+if (typeof window !== 'undefined' && window.location.hostname.startsWith('www.')) {
+  window.location.replace('https://getpawsy.pet' + window.location.pathname + window.location.search + window.location.hash);
+}
+
 // === STEP 1: Install boot error handlers BEFORE anything else ===
 import {
   initBootDiagnostics,

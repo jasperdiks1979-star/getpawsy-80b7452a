@@ -47,6 +47,9 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('@tanstack/react-query')) {
               return 'query';
             }
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
             // REMOVED: recharts/d3 manual chunk — d3 circular deps cause TDZ crash on iOS Safari
             // Recharts is only used in lazy-loaded admin pages, so Vite will
             // naturally code-split it into async chunks that load on demand.
@@ -58,8 +61,8 @@ export default defineConfig(({ mode }) => ({
         assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
-    // Temporarily enabled for production to debug ReferenceError on iOS Safari
-    sourcemap: true,
+    // Disabled for production — reduces bundle size significantly
+    sourcemap: false,
   },
   // Optimize dependency pre-bundling
   optimizeDeps: {

@@ -373,7 +373,7 @@ const Index = () => {
             height={675}
             loading="eager"
             fetchPriority="high"
-            decoding="sync"
+            decoding="async"
             style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', aspectRatio: '16/9' }}
           />
           {/* Warm, soft gradient overlay */}
