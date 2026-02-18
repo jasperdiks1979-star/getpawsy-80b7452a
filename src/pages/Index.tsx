@@ -359,22 +359,22 @@ const Index = () => {
       </Helmet>
       <WebsiteSchema />
       <LocalBusinessSchema />
-      {/* Hero Section - Static render for fastest LCP */}
+      {/* Hero Section - Static render for fastest LCP, zero JS dependency */}
       <section
         className="relative overflow-hidden flex items-center"
         style={{ minHeight: '85vh', contain: 'layout style' }}
       >
-        {/* Lifestyle Background — local optimized image, zero animation */}
-        <div className="absolute inset-0 z-0">
+        {/* LCP image — inline styles to bypass Tailwind parse delay */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
           <img
             src="/hero-dog.webp"
             alt="Happy dog relaxing at home with premium pet products"
             width={1200}
             height={675}
-            className="w-full h-full object-cover object-center"
             loading="eager"
             fetchPriority="high"
-            decoding="async"
+            decoding="sync"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', aspectRatio: '16/9' }}
           />
           {/* Warm, soft gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30" />
