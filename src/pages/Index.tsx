@@ -297,7 +297,7 @@ const Index = () => {
 
       {/* Hero Section — ZERO JS animation, pure CSS for fastest LCP */}
       <section
-        className="relative overflow-hidden flex items-center"
+        className="hero-lcp-section relative overflow-hidden flex items-center"
         style={{ minHeight: '85vh', contain: 'layout style' }}
       >
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
@@ -309,7 +309,7 @@ const Index = () => {
             loading="eager"
             fetchPriority="high"
             decoding="async"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', aspectRatio: '16/9' }}
+            className="hero-lcp-img"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30" />
           <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
