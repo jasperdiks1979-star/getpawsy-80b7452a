@@ -1,81 +1,71 @@
 import { Link } from 'react-router-dom';
-import catDogsImg from '@/assets/categories/dogs.jpg';
-import catCatsImg from '@/assets/categories/cats.jpg';
-import catBirdsImg from '@/assets/categories/birds.jpg';
-import catSmallPetsImg from '@/assets/categories/small-pets-new.jpg';
-import catReptilesImg from '@/assets/categories/reptiles.jpg';
-import catFishImg from '@/assets/categories/fish.jpg';
-import guideCatLitterImg from '@/assets/guides/guide-cat-litter.jpg';
-import guideDogBedsImg from '@/assets/guides/guide-dog-beds.jpg';
-import guideLitterFurnitureImg from '@/assets/guides/guide-litter-furniture.jpg';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Loader2, Star, Clock, BookOpen, Truck, ShieldCheck, RotateCcw, Heart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
 import { supabase } from '@/integrations/supabase/client';
 import { dedupeProducts } from '@/lib/dedupe-products';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import type { CarouselApi } from '@/components/ui/carousel';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { trackNewsletterSignup } from '@/lib/analytics';
 import { toast } from 'sonner';
 
-import { BestsellersSection } from '@/components/home/BestsellersSection';
-import { AnimatedTrustBadges } from '@/components/home/AnimatedTrustBadges';
-import { PremiumNicheGrid } from '@/components/home/PremiumNicheGrid';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { WebsiteSchema, LocalBusinessSchema } from '@/components/seo';
 import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { initPageDebug, logDataSanitization, createSectionDebugger } from '@/lib/debug-logger';
-import { prefetchImages } from '@/hooks/useCriticalImagePreload';
 import { getAnchorText } from '@/lib/anchor-text-helper';
-// FREE_SHIPPING_THRESHOLD and RETURN_WINDOW_DAYS are now used directly in AnimatedTrustBadges
+import { FadeInView } from '@/components/ui/FadeInView';
+
+// Lazy-load below-fold sections to keep initial JS minimal
+const AnimatedTrustBadges = lazy(() => import('@/components/home/AnimatedTrustBadges'));
+const BestsellersSection = lazy(() => import('@/components/home/BestsellersSection').then(m => ({ default: m.BestsellersSection })));
+const PremiumNicheGrid = lazy(() => import('@/components/home/PremiumNicheGrid').then(m => ({ default: m.PremiumNicheGrid })));
+
+// Lazy-load category & guide images — not needed for first paint
+const catDogsImg = () => import('@/assets/categories/dogs.jpg').then(m => m.default);
+const catCatsImg = () => import('@/assets/categories/cats.jpg').then(m => m.default);
+const catBirdsImg = () => import('@/assets/categories/birds.jpg').then(m => m.default);
+const catSmallPetsImg = () => import('@/assets/categories/small-pets-new.jpg').then(m => m.default);
+const catReptilesImg = () => import('@/assets/categories/reptiles.jpg').then(m => m.default);
+const catFishImg = () => import('@/assets/categories/fish.jpg').then(m => m.default);
+const guideCatLitterImg = () => import('@/assets/guides/guide-cat-litter.jpg').then(m => m.default);
+const guideDogBedsImg = () => import('@/assets/guides/guide-dog-beds.jpg').then(m => m.default);
+const guideLitterFurnitureImg = () => import('@/assets/guides/guide-litter-furniture.jpg').then(m => m.default);
 
 // Debug loggers for each section
 const categoriesDebug = createSectionDebugger('Categories');
 const productsDebug = createSectionDebugger('FeaturedProducts');
 const recentlyViewedDebug = createSectionDebugger('RecentlyViewed');
 
+/** Lazy image component — loads image module on mount */
+function LazyImage({ loader, alt, className, width, height }: { loader: () => Promise<string>; alt: string; className?: string; width?: number; height?: number }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => { loader().then(setSrc).catch(() => {}); }, []);
+  if (!src) return <div className={className} style={{ width, height, background: 'hsl(38 35% 93%)' }} />;
+  return <img src={src} alt={alt} className={className} width={width} height={height} loading="lazy" decoding="async" onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }} />;
+}
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.1,
-    },
-  },
+// Category image loaders map
+const categoryImageLoaders: Record<string, () => Promise<string>> = {
+  'Dogs': catDogsImg,
+  'Cats': catCatsImg,
+  'Birds': catBirdsImg,
+  'Fish & Aquarium': catFishImg,
+  'Small Pets': catSmallPetsImg,
+  'Reptiles': catReptilesImg,
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { 
-      duration: 0.6,
-      ease: "easeOut" as const
-    },
-  },
-};
-
-const featureVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { 
-      duration: 0.5,
-      ease: "easeOut" as const
-    },
-  },
+// Guide image loaders
+const guideImageLoaders = {
+  'best-cat-litter-box-2026': guideCatLitterImg,
+  'best-dog-bed-2026': guideDogBedsImg,
+  'best-cat-litter-box-furniture-enclosures-2026': guideLitterFurnitureImg,
 };
 
 const Index = () => {
@@ -102,6 +92,7 @@ const Index = () => {
     }, 4000);
     return () => clearInterval(interval);
   }, [productsApi]);
+
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
     queryKey: ['featured-products'],
     queryFn: async () => {
@@ -120,7 +111,6 @@ const Index = () => {
    const { data: categories, isLoading: categoriesLoading } = useQuery({
      queryKey: ['homepage-categories'],
      queryFn: async () => {
-       // Fetch parent categories
        const { data: categoriesData, error } = await supabase
          .from('categories')
          .select('*')
@@ -130,35 +120,27 @@ const Index = () => {
        if (error) throw error;
        if (!categoriesData) return [];
  
-       // Fetch active products to calculate counts
-       // products_public view already filters is_active=true AND is_duplicate=false
-        const { data: productsData } = await supabase
-          .from('products_public')
-          .select('category');
+       const { data: productsData } = await supabase
+         .from('products_public')
+         .select('category');
  
-       // Fetch all subcategories to map products to parent categories
        const { data: allCategories } = await supabase
          .from('categories')
          .select('id, parent_id, name, slug');
  
-        // Build a recursive mapping to find the ROOT parent category for any category
-        // This handles multi-level hierarchies (e.g., Small Pets > Hamsters > Hamster Cages)
         const findRootParent = (categoryId: string, visited = new Set<string>()): string | null => {
-          if (visited.has(categoryId)) return null; // Prevent infinite loops
+          if (visited.has(categoryId)) return null;
           visited.add(categoryId);
-          
           const cat = allCategories?.find(c => c.id === categoryId);
           if (!cat) return null;
-          if (!cat.parent_id) return categoryId; // This is a root category
+          if (!cat.parent_id) return categoryId;
           return findRootParent(cat.parent_id, visited);
         };
         
-        // Build a mapping of category name/slug to ROOT parent category ID
         const catToRootParentMap: Record<string, string> = {};
         allCategories?.forEach(cat => {
           const rootParentId = findRootParent(cat.id);
           if (rootParentId && rootParentId !== cat.id) {
-            // Map by both name and slug for flexible matching
             catToRootParentMap[cat.name.toLowerCase().trim()] = rootParentId;
             if (cat.slug) {
               catToRootParentMap[cat.slug.toLowerCase().trim()] = rootParentId;
@@ -166,22 +148,17 @@ const Index = () => {
           }
         });
  
-       // Count products per parent category
        const parentCountMap: Record<string, number> = {};
        productsData?.forEach(p => {
          if (p.category) {
            const normalizedCat = p.category.toLowerCase().trim();
-           
-           // Check if this is a direct match to a parent category
            const parentMatch = categoriesData.find(
              parent => parent.name.toLowerCase().trim() === normalizedCat ||
                        parent.slug?.toLowerCase().trim() === normalizedCat
            );
-           
            if (parentMatch) {
              parentCountMap[parentMatch.id] = (parentCountMap[parentMatch.id] || 0) + 1;
            } else {
-              // Check if product category matches any descendant category
               const parentId = catToRootParentMap[normalizedCat];
              if (parentId) {
                parentCountMap[parentId] = (parentCountMap[parentId] || 0) + 1;
@@ -190,31 +167,22 @@ const Index = () => {
          }
        });
  
-       // Add product counts to categories
        const categoriesWithCounts = categoriesData.map(cat => ({
          ...cat,
          product_count: parentCountMap[cat.id] || 0,
        }));
  
-       // Only return categories with at least 1 product
-       // This prevents "dead end" navigation
         return categoriesWithCounts.filter(cat => cat.product_count > 0);
      },
    });
 
-  // Sanitize categories to prevent React error #310
   const safeCategories = useMemo(() => {
     if (!categories) return [];
-    
-    // Log original data for debugging
     categoriesDebug.logDataReceived('categories', categories);
-    
     const sanitized = categories.map(cat => {
-      // Check each field for objects
       categoriesDebug.warnIfObject('cat.name', cat.name);
       categoriesDebug.warnIfObject('cat.description', cat.description);
       categoriesDebug.warnIfObject('cat.image_url', cat.image_url);
-      
       return {
         ...cat,
         name: safeString(cat.name),
@@ -223,36 +191,27 @@ const Index = () => {
         slug: safeString(cat.slug),
       };
     });
-    
     logDataSanitization('categories', categories, sanitized);
     return sanitized;
   }, [categories]);
 
-  // Sanitize featured products to prevent React error #310
   const safeFeaturedProducts = useMemo(() => {
     if (!featuredProducts) return [];
-    
-    // Log original data for debugging
     productsDebug.logDataReceived('featuredProducts', featuredProducts);
-    
     const sanitized = featuredProducts
       .map(p => {
-        // Check for object fields before sanitization
         productsDebug.warnIfObject('product.name', p.name);
         productsDebug.warnIfObject('product.description', p.description);
         productsDebug.warnIfObject('product.category', p.category);
         productsDebug.warnIfObject('product.image_url', p.image_url);
         productsDebug.warnIfObject('product.price', p.price);
-        
         return safeProduct(p);
       })
       .filter((p): p is SafeProduct => p !== null);
-    
     logDataSanitization('featuredProducts', featuredProducts, sanitized);
     return sanitized;
   }, [featuredProducts]);
 
-  // Recently viewed products
   const { getRecentlyViewedIds } = useRecentlyViewed();
   const recentlyViewedIds = getRecentlyViewedIds();
 
@@ -265,10 +224,8 @@ const Index = () => {
         .select('*')
         .in('id', recentlyViewedIds)
         .eq('is_active', true);
-      
       if (error) throw error;
       if (!data) return [];
-      // Sort by recently viewed order and filter out any undefined products
       return recentlyViewedIds
         .map(id => data.find(p => p.id === id))
         .filter((p): p is NonNullable<typeof p> => p != null);
@@ -276,24 +233,17 @@ const Index = () => {
     enabled: recentlyViewedIds.length > 0,
   });
 
-  // Sanitize recently viewed products
   const safeRecentlyViewedProducts = useMemo(() => {
     if (!recentlyViewedProducts) return [];
-    
-    // Log original data for debugging
     recentlyViewedDebug.logDataReceived('recentlyViewedProducts', recentlyViewedProducts);
-    
     const sanitized = recentlyViewedProducts
       .map(p => {
-        // Check for object fields before sanitization
         recentlyViewedDebug.warnIfObject('product.name', p.name);
         recentlyViewedDebug.warnIfObject('product.description', p.description);
         recentlyViewedDebug.warnIfObject('product.price', p.price);
-        
         return safeProduct(p);
       })
       .filter((p): p is SafeProduct => p !== null);
-    
     logDataSanitization('recentlyViewedProducts', recentlyViewedProducts, sanitized);
     return sanitized;
   }, [recentlyViewedProducts]);
@@ -304,13 +254,11 @@ const Index = () => {
       toast.error('Please enter a valid email address');
       return;
     }
-    
     setIsSubscribing(true);
     try {
       const { error } = await supabase
         .from('newsletter_subscribers')
         .insert({ email: newsletterEmail });
-      
       if (error) {
         if (error.code === '23505') {
           toast.info('You\'re already subscribed to our newsletter!');
@@ -327,19 +275,6 @@ const Index = () => {
     } finally {
       setIsSubscribing(false);
     }
-  };
-
-  const categoryImages: Record<string, string> = {
-    'Dogs': catDogsImg,
-    'Cats': catCatsImg,
-    'Birds': catBirdsImg,
-    'Fish & Aquarium': catFishImg,
-    'Small Pets': catSmallPetsImg,
-    'Reptiles': catReptilesImg,
-    'Toys': '/categories/toys.jpg',
-    'Food': '/categories/food.jpg',
-    'Grooming': '/categories/grooming.jpg',
-    'Accessories': '/categories/accessories.jpg',
   };
 
   return (
@@ -359,12 +294,12 @@ const Index = () => {
       </Helmet>
       <WebsiteSchema />
       <LocalBusinessSchema />
-      {/* Hero Section - Static render for fastest LCP, zero JS dependency */}
+
+      {/* Hero Section — ZERO JS animation, pure CSS for fastest LCP */}
       <section
         className="relative overflow-hidden flex items-center"
         style={{ minHeight: '85vh', contain: 'layout style' }}
       >
-        {/* LCP image — inline styles to bypass Tailwind parse delay */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
           <img
             src="/hero-dog.webp"
@@ -376,7 +311,6 @@ const Index = () => {
             decoding="async"
             style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', aspectRatio: '16/9' }}
           />
-          {/* Warm, soft gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30" />
           <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
         </div>
@@ -384,20 +318,17 @@ const Index = () => {
         <div className="container relative z-10 px-4 md:px-6 py-16 md:py-24">
           <div className="max-w-2xl">
             <div className="space-y-6">
-              {/* Simple, warm headline */}
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
                 Trusted Pet Products,
                 <br />
                 <span className="text-primary">Delivered Fast</span>
               </h1>
               
-              {/* Clear, benefit-focused subline */}
               <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
                 Premium everyday essentials for dogs and cats. 
                 Free US shipping over $35. 30-day hassle-free returns.
               </p>
               
-              {/* Primary CTAs */}
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <Link to="/bestsellers">
                   <Button size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
@@ -416,66 +347,56 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Animated Trust Badges */}
+      {/* Trust Badges — lazy loaded */}
       <SectionErrorBoundary sectionName="Features">
-        <AnimatedTrustBadges />
+        <Suspense fallback={<div className="py-6 md:py-10 bg-sand/50 border-y border-border/30" style={{ minHeight: 80 }} />}>
+          <AnimatedTrustBadges />
+        </Suspense>
       </SectionErrorBoundary>
 
-      {/* Popular Guides - SEO Authority Injection */}
+      {/* Popular Guides */}
       <SectionErrorBoundary sectionName="Popular Guides">
         <section className="py-20 bg-sand/30">
           <div className="container px-4 md:px-6">
-            <motion.div
-              className="text-center mb-12"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
+            <FadeInView className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Trusted Buying Guides</h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                 Vet-backed & updated 2026 — expert-tested picks for your pet
               </p>
-            </motion.div>
-            <motion.div
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
-              {[
+            </FadeInView>
+            <FadeInView className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {([
                 {
                   slug: 'best-cat-litter-box-2026',
                   title: 'Best Cat Litter Boxes (2026)',
                   desc: '12 tested picks for odor control, large cats & multi-cat homes.',
-                  image: guideCatLitterImg,
+                  imageLoader: guideImageLoaders['best-cat-litter-box-2026'],
                 },
                 {
                   slug: 'best-dog-bed-2026',
                   title: 'Best Dog Beds (2026)',
                   desc: 'Orthopedic, calming & durable picks tested by real dog owners.',
-                  image: guideDogBedsImg,
+                  imageLoader: guideImageLoaders['best-dog-bed-2026'],
                 },
                 {
                   slug: 'best-cat-litter-box-furniture-enclosures-2026',
                   title: 'Best Litter Box Furniture (2026)',
                   desc: 'Hidden enclosures & cabinets that blend into your home décor.',
-                  image: guideLitterFurnitureImg,
+                  imageLoader: guideImageLoaders['best-cat-litter-box-furniture-enclosures-2026'],
                 },
-              ].map((guide) => (
-                <motion.div key={guide.slug} variants={itemVariants}>
+              ]).map((guide) => (
+                <div key={guide.slug}>
                   <Link
                     to={`/guides/${guide.slug}`}
                     className="group block bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-500 hover:-translate-y-1.5 border border-border/50"
                   >
                     <div className="relative aspect-[16/10] overflow-hidden">
-                      <img
-                        src={guide.image}
+                      <LazyImage
+                        loader={guide.imageLoader}
                         alt={guide.title}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        loading="lazy"
-                        decoding="async"
+                        width={600}
+                        height={375}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                     </div>
@@ -489,9 +410,9 @@ const Index = () => {
                       </span>
                     </div>
                   </Link>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </FadeInView>
             <div className="text-center mt-10">
               <Link to="/guides">
                 <Button variant="outline" className="gap-2 rounded-full">
@@ -504,27 +425,23 @@ const Index = () => {
         </section>
       </SectionErrorBoundary>
 
-      {/* Bestsellers Section */}
+      {/* Bestsellers Section — lazy */}
       <SectionErrorBoundary sectionName="Bestsellers">
-        <BestsellersSection />
+        <Suspense fallback={<div className="py-20" style={{ minHeight: 400 }} />}>
+          <BestsellersSection />
+        </Suspense>
       </SectionErrorBoundary>
 
       {/* Categories */}
       <SectionErrorBoundary sectionName="Categories">
         <section id="categories" className="py-20">
           <div className="container px-4 md:px-6">
-            <motion.div 
-              className="text-center mb-12"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
+            <FadeInView className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Shop by Category</h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                 Find exactly what your beloved companion needs, from nutritious food to cozy accessories
               </p>
-            </motion.div>
+            </FadeInView>
             
             {categoriesLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
@@ -539,45 +456,27 @@ const Index = () => {
                 ))}
               </div>
             ) : (
-              <motion.div 
-                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4"
-                variants={containerVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-              >
+              <FadeInView className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                 {safeCategories.map((category) => (
-                  <motion.div 
-                    key={category.id} 
-                    variants={itemVariants}
-                    whileHover={{ y: -8 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
+                  <div key={category.id} className="transition-transform duration-300 hover:-translate-y-2">
                     <Link
                       to={`/products?category=${encodeURIComponent(category.name)}`}
                       className="group block relative overflow-hidden rounded-2xl aspect-square shadow-soft hover:shadow-soft-lg transition-shadow duration-300"
                     >
-                      {/* Image with zoom effect - use categoryImages map as primary source */}
-                      <img 
-                        src={categoryImages[category.name] || category.image_url || '/categories/dogs.jpg'}
+                      <LazyImage 
+                        loader={categoryImageLoaders[category.name] || (async () => category.image_url || '/categories/dogs.jpg')}
                         alt={`${category.name} - Shop premium ${category.name.toLowerCase()} products for pets`}
                         width={400}
                         height={400}
-                        loading="lazy"
-                        decoding="async"
                         className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-115"
-                        onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
                       />
                       
-                      {/* Gradient overlay with enhanced hover */}
                       <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/30 to-transparent transition-all duration-300 group-hover:from-primary/90 group-hover:via-primary/30" />
                       
-                      {/* Shine effect on hover */}
                       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
                       </div>
                       
-                      {/* Content with slide-up animation */}
                       <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300">
                         <h3 className="font-display font-semibold text-lg text-white mb-1 transform translate-y-0 group-hover:-translate-y-1 transition-transform duration-300">
                           {category.name}
@@ -587,14 +486,13 @@ const Index = () => {
                         </p>
                       </div>
                       
-                      {/* Corner accent */}
                       <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-0 group-hover:scale-100 transition-all duration-300">
                         <ArrowRight className="w-4 h-4 text-white" />
                       </div>
                     </Link>
-                  </motion.div>
+                  </div>
                 ))}
-              </motion.div>
+              </FadeInView>
             )}
           </div>
         </section>
@@ -604,13 +502,7 @@ const Index = () => {
       <SectionErrorBoundary sectionName="Featured Products">
         <section className="py-20 bg-sand/40">
           <div className="container px-4 md:px-6">
-            <motion.div 
-              className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
+            <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
               <div>
                 <h2 className="text-3xl md:text-4xl font-display font-bold mb-2">Featured Favorites</h2>
                 <p className="text-muted-foreground text-lg">Handpicked selections loved by pets everywhere</p>
@@ -621,7 +513,7 @@ const Index = () => {
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-            </motion.div>
+            </FadeInView>
             
             {productsLoading && (
               <div className="flex items-center justify-center py-16">
@@ -630,19 +522,10 @@ const Index = () => {
             )}
             
             {!productsLoading && safeFeaturedProducts.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
+              <FadeInView>
                 <Carousel
                   setApi={setProductsApi}
-                  opts={{
-                    align: "start",
-                    loop: true,
-                    dragFree: true,
-                  }}
+                  opts={{ align: "start", loop: true, dragFree: true }}
                   className="w-full cursor-grab active:cursor-grabbing"
                 >
                   <CarouselContent className="-ml-4">
@@ -655,7 +538,7 @@ const Index = () => {
                   <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
                   <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
                 </Carousel>
-              </motion.div>
+              </FadeInView>
             )}
 
             {!productsLoading && safeFeaturedProducts.length === 0 && (
@@ -672,89 +555,52 @@ const Index = () => {
         </section>
       </SectionErrorBoundary>
 
-
-      {/* Why Choose GetPawsy — Trust & Value Props */}
+      {/* Why Choose GetPawsy */}
       <SectionErrorBoundary sectionName="Why Choose">
         <section className="py-20 bg-sand/30">
           <div className="container px-4 md:px-6">
-            <motion.div 
-              className="text-center mb-12"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
+            <FadeInView className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Why Pet Parents Choose GetPawsy</h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                 We believe every pet deserves quality — without the premium markup
               </p>
-            </motion.div>
+            </FadeInView>
 
-            <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
+            <FadeInView className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                {
-                  icon: ShieldCheck,
-                  title: 'Tested & Vetted',
-                  desc: 'Every product is researched and evaluated before it hits our shelves. No filler, no junk.',
-                },
-                {
-                  icon: Truck,
-                  title: 'Free US Shipping Over $35',
-                  desc: 'Fast, reliable delivery across the US. Most orders ship within 1–2 business days.',
-                },
-                {
-                  icon: RotateCcw,
-                  title: '30-Day Easy Returns',
-                  desc: 'Not the right fit? Send it back hassle-free. We make returns simple and painless.',
-                },
-                {
-                  icon: Heart,
-                  title: 'Built for Pet Parents',
-                  desc: 'Our buying guides, expert reviews, and hand-picked products help you choose with confidence.',
-                },
-              ].map((item, i) => (
-                <motion.div
+                { icon: ShieldCheck, title: 'Tested & Vetted', desc: 'Every product is researched and evaluated before it hits our shelves. No filler, no junk.' },
+                { icon: Truck, title: 'Free US Shipping Over $35', desc: 'Fast, reliable delivery across the US. Most orders ship within 1–2 business days.' },
+                { icon: RotateCcw, title: '30-Day Easy Returns', desc: 'Not the right fit? Send it back hassle-free. We make returns simple and painless.' },
+                { icon: Heart, title: 'Built for Pet Parents', desc: 'Our buying guides, expert reviews, and hand-picked products help you choose with confidence.' },
+              ].map((item) => (
+                <div
                   key={item.title}
                   className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-soft-lg transition-shadow duration-300 border border-border/50 text-center"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: i * 0.1 }}
                 >
                   <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                     <item.icon className="w-7 h-7 text-primary" />
                   </div>
                   <h3 className="font-display font-semibold text-lg mb-2">{item.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </FadeInView>
           </div>
         </section>
       </SectionErrorBoundary>
 
-      {/* Revenue Niches — Premium Lifestyle Grid */}
+      {/* Revenue Niches — lazy */}
       <SectionErrorBoundary sectionName="Revenue Niches">
-        <PremiumNicheGrid />
+        <Suspense fallback={<div className="py-20" style={{ minHeight: 400 }} />}>
+          <PremiumNicheGrid />
+        </Suspense>
       </SectionErrorBoundary>
 
       {safeRecentlyViewedProducts.length > 0 && (
         <SectionErrorBoundary sectionName="Recently Viewed">
           <section className="py-20 bg-sand/40">
             <div className="container px-4 md:px-6">
-              <motion.div 
-                className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
+              <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center">
                     <Clock className="w-6 h-6 text-secondary-foreground" />
@@ -764,20 +610,11 @@ const Index = () => {
                     <p className="text-muted-foreground text-lg">Pick up where you left off</p>
                   </div>
                 </div>
-              </motion.div>
+              </FadeInView>
               
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
+              <FadeInView>
                 <Carousel
-                  opts={{
-                    align: "start",
-                    loop: false,
-                    dragFree: true,
-                  }}
+                  opts={{ align: "start", loop: false, dragFree: true }}
                   className="w-full cursor-grab active:cursor-grabbing"
                 >
                   <CarouselContent className="-ml-4">
@@ -790,23 +627,17 @@ const Index = () => {
                   <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
                   <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
                 </Carousel>
-              </motion.div>
+              </FadeInView>
             </div>
           </section>
         </SectionErrorBoundary>
       )}
 
-      {/* Explore Our Expert Pet Guides — Mid-Page Authority Grid (6 links) */}
+      {/* Explore Expert Pet Guides */}
       <SectionErrorBoundary sectionName="Expert Guides">
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
-            <motion.div
-              className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
+            <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                   <BookOpen className="w-6 h-6 text-primary" />
@@ -819,16 +650,9 @@ const Index = () => {
               <Link to="/guides" className="group flex items-center gap-2 text-primary font-semibold hover:underline">
                 View all guides <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-            </motion.div>
+            </FadeInView>
 
-            <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              {/* Cornerstones — semantic anchors */}
+            <FadeInView className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 { slug: 'best-cat-litter-box-2026', badge: 'Cornerstone Guide', desc: '12 tested picks for odor control, large cats & multi-cat homes — with pros & cons.' },
                 { slug: 'best-dog-bed-2026', badge: 'Cornerstone Guide', desc: 'Orthopedic, calming & durable beds tested with real dogs of all sizes.' },
@@ -846,7 +670,6 @@ const Index = () => {
                   <p className="text-sm text-muted-foreground line-clamp-2">{guide.desc}</p>
                 </Link>
               ))}
-              {/* Hubs — partial anchors */}
               {[
                 { slug: 'how-many-litter-boxes-per-cat', badge: 'Expert Advice', desc: 'The vet-backed n+1 rule explained with real placement tips.' },
                 { slug: 'best-orthopedic-dog-bed', badge: 'Buying Guide', desc: 'Joint-support beds tested for senior dogs and large breeds.' },
@@ -865,23 +688,16 @@ const Index = () => {
                   <p className="text-sm text-muted-foreground line-clamp-2">{guide.desc}</p>
                 </Link>
               ))}
-            </motion.div>
+            </FadeInView>
           </div>
         </section>
       </SectionErrorBoundary>
 
-      {/* CTA Section */}
+      {/* Newsletter CTA */}
       <SectionErrorBoundary sectionName="Newsletter">
         <section className="py-20">
           <div className="container px-4 md:px-6">
-            <motion.div 
-              className="relative overflow-hidden rounded-3xl gradient-warm p-10 md:p-16 text-center"
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              {/* Decorative elements */}
+            <FadeInView className="relative overflow-hidden rounded-3xl gradient-warm p-10 md:p-16 text-center">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
               <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
               
@@ -916,7 +732,7 @@ const Index = () => {
                   No spam, unsubscribe anytime. We respect your inbox.
                 </p>
               </div>
-            </motion.div>
+            </FadeInView>
           </div>
         </section>
       </SectionErrorBoundary>
