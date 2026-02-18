@@ -1,16 +1,17 @@
 /**
- * SEO Content Clusters Strategy
+ * SEO Content Clusters Strategy V2
  * 
- * Defines core collection pages and supporting blog topics
- * for building topical authority in the US pet market.
+ * STRATEGIC FOCUS: Dog Enrichment, Cat Enrichment, Behavior
+ * De-prioritized: Exotic birds, Hedgehog, Non-core pets
  * 
  * Structure:
- * - Pillar Page (Collection) = Main topic targeting head terms
- * - Supporting Blogs = Long-tail content linking back to collection
- * - Product Links = Internal links from blogs to relevant products
+ * - Money Page = Main commercial hub targeting head terms
+ * - Supporting Articles = Long-tail content linking TO money page
+ * - Money page links BACK to all support pages
+ * - Anchor text variation enforced (no repetition)
  */
 
-// ============= CONTENT CLUSTER DEFINITIONS =============
+// ============= TYPES =============
 
 export interface BlogTopic {
   slug: string;
@@ -28,136 +29,221 @@ export interface ContentCluster {
   secondaryKeywords: string[];
   blogTopics: BlogTopic[];
   internalLinkAnchors: string[];
+  priority: 'critical' | 'high' | 'medium' | 'low' | 'deprioritized';
 }
 
+// ============= CORE CLUSTERS (Dog & Cat Enrichment + Behavior) =============
+
 export const SEO_CONTENT_CLUSTERS: ContentCluster[] = [
-  // ============= DOG TRAVEL CLUSTER =============
+  // ===================== DOG ENRICHMENT CLUSTER (MONEY PAGE) =====================
   {
-    name: 'Dog Travel',
-    pillarSlug: 'dog-travel-accessories',
-    pillarKeyword: 'dog travel accessories',
+    name: 'Dog Enrichment',
+    pillarSlug: 'best-interactive-dog-toys',
+    pillarKeyword: 'interactive dog toys',
+    priority: 'critical',
     secondaryKeywords: [
-      'dog car seat',
-      'dog travel carrier',
-      'dog car hammock',
-      'pet travel essentials',
-      'dog road trip gear',
+      'dog enrichment toys',
+      'dog puzzle toys',
+      'mental stimulation dogs',
+      'dog boredom solutions',
+      'indoor dog activities',
     ],
     blogTopics: [
       {
-        slug: 'best-dog-car-seats-for-road-trips',
-        title: 'Best Dog Car Seats for Safe Road Trips',
-        targetKeyword: 'dog car seats for road trips',
+        slug: 'signs-your-dog-is-bored',
+        title: 'Signs Your Dog Is Bored (And What to Do About It)',
+        targetKeyword: 'signs dog is bored',
+        searchIntent: 'informational',
+        linkedCollection: 'best-interactive-dog-toys',
+      },
+      {
+        slug: 'mental-stimulation-for-dogs',
+        title: 'Mental Stimulation for Dogs: Why It Matters More Than Exercise',
+        targetKeyword: 'mental stimulation for dogs',
+        searchIntent: 'informational',
+        linkedCollection: 'best-interactive-dog-toys',
+      },
+      {
+        slug: 'indoor-dog-games',
+        title: 'Indoor Dog Games That Actually Tire Out Your Dog',
+        targetKeyword: 'indoor dog games',
+        searchIntent: 'informational',
+        linkedCollection: 'best-interactive-dog-toys',
+      },
+      {
+        slug: 'dog-puzzle-toys-guide',
+        title: 'Dog Puzzle Toys: Complete Guide to Choosing the Right One',
+        targetKeyword: 'dog puzzle toys guide',
         searchIntent: 'commercial',
-        linkedCollection: 'dog-travel-accessories',
+        linkedCollection: 'best-interactive-dog-toys',
       },
       {
-        slug: 'how-to-travel-with-anxious-dog',
-        title: 'How to Travel with an Anxious Dog: A Calming Guide',
-        targetKeyword: 'traveling with anxious dog',
+        slug: 'outdoor-dog-enrichment-ideas',
+        title: 'Outdoor Dog Enrichment Ideas for Every Backyard',
+        targetKeyword: 'outdoor dog enrichment',
         searchIntent: 'informational',
-        linkedCollection: 'dog-travel-accessories',
-      },
-      {
-        slug: 'dog-road-trip-checklist',
-        title: 'The Complete Dog Road Trip Checklist',
-        targetKeyword: 'dog road trip checklist',
-        searchIntent: 'informational',
-        linkedCollection: 'dog-travel-accessories',
-      },
-      {
-        slug: 'keeping-dogs-safe-in-cars',
-        title: 'How to Keep Your Dog Safe in the Car',
-        targetKeyword: 'dog car safety',
-        searchIntent: 'informational',
-        linkedCollection: 'dog-travel-accessories',
-      },
-      {
-        slug: 'dog-friendly-road-trip-destinations',
-        title: 'Dog-Friendly Road Trip Destinations in the US',
-        targetKeyword: 'dog friendly road trips',
-        searchIntent: 'informational',
-        linkedCollection: 'dog-travel-accessories',
+        linkedCollection: 'best-interactive-dog-toys',
       },
     ],
     internalLinkAnchors: [
-      'dog travel accessories',
-      'dog car seat',
-      'dog car hammock',
-      'pet carrier',
-      'travel gear for dogs',
+      'interactive dog toys',
+      'dog enrichment toys',
+      'best dog puzzle toys',
+      'dog mental stimulation toys',
+      'toys for bored dogs',
     ],
   },
 
-  // ============= INDOOR CAT ENRICHMENT CLUSTER =============
+  // ===================== CAT ENRICHMENT CLUSTER (MONEY PAGE) =====================
   {
-    name: 'Indoor Cat Enrichment',
-    pillarSlug: 'indoor-cat-enrichment',
-    pillarKeyword: 'indoor cat enrichment',
+    name: 'Cat Enrichment',
+    pillarSlug: 'best-cat-toys-for-indoor-cats',
+    pillarKeyword: 'best enrichment toys cats',
+    priority: 'critical',
     secondaryKeywords: [
-      'cat trees',
-      'cat scratching posts',
-      'interactive cat toys',
-      'cat window perch',
+      'indoor cat toys',
       'cat enrichment ideas',
+      'cat boredom solutions',
+      'interactive cat toys',
+      'cat mental stimulation',
     ],
     blogTopics: [
       {
-        slug: 'best-cat-trees-for-apartments',
-        title: 'Best Cat Trees for Small Apartments',
-        targetKeyword: 'cat trees for apartments',
+        slug: 'indoor-cat-boredom-signs',
+        title: 'Indoor Cat Boredom: Signs, Risks, and Easy Fixes',
+        targetKeyword: 'indoor cat boredom signs',
+        searchIntent: 'informational',
+        linkedCollection: 'best-cat-toys-for-indoor-cats',
+      },
+      {
+        slug: 'cat-climbing-behavior-explained',
+        title: 'Cat Climbing Behavior Explained: Why Cats Need Vertical Space',
+        targetKeyword: 'cat climbing behavior',
+        searchIntent: 'informational',
+        linkedCollection: 'best-cat-toys-for-indoor-cats',
+      },
+      {
+        slug: 'cat-water-fountain-benefits',
+        title: 'Cat Water Fountain Benefits: What Vets Actually Say',
+        targetKeyword: 'cat water fountain benefits',
+        searchIntent: 'informational',
+        linkedCollection: 'best-cat-toys-for-indoor-cats',
+      },
+      {
+        slug: 'cat-sleep-patterns-explained',
+        title: 'Cat Sleep Patterns Explained: How Much Sleep Is Normal?',
+        targetKeyword: 'cat sleep patterns',
+        searchIntent: 'informational',
+        linkedCollection: 'best-cat-toys-for-indoor-cats',
+      },
+      {
+        slug: 'best-cat-trees-guide',
+        title: 'Best Cat Trees (2026) – Size, Material & Safety Guide',
+        targetKeyword: 'best cat trees guide',
         searchIntent: 'commercial',
-        linkedCollection: 'indoor-cat-enrichment',
-      },
-      {
-        slug: 'how-to-keep-indoor-cats-entertained',
-        title: 'How to Keep Your Indoor Cat Entertained All Day',
-        targetKeyword: 'keeping indoor cats entertained',
-        searchIntent: 'informational',
-        linkedCollection: 'indoor-cat-enrichment',
-      },
-      {
-        slug: 'diy-cat-enrichment-ideas',
-        title: 'Easy DIY Cat Enrichment Ideas for Bored Cats',
-        targetKeyword: 'cat enrichment ideas',
-        searchIntent: 'informational',
-        linkedCollection: 'indoor-cat-enrichment',
-      },
-      {
-        slug: 'why-cats-need-scratching-posts',
-        title: 'Why Your Cat Needs a Scratching Post (And How to Choose One)',
-        targetKeyword: 'cat scratching post guide',
-        searchIntent: 'informational',
-        linkedCollection: 'indoor-cat-enrichment',
-      },
-      {
-        slug: 'interactive-toys-for-solo-cats',
-        title: 'Best Interactive Toys for Cats Who Play Alone',
-        targetKeyword: 'interactive cat toys',
-        searchIntent: 'commercial',
-        linkedCollection: 'indoor-cat-enrichment',
+        linkedCollection: 'best-cat-toys-for-indoor-cats',
       },
     ],
     internalLinkAnchors: [
-      'cat trees',
-      'cat scratching posts',
+      'enrichment toys for cats',
+      'indoor cat toys',
+      'best cat enrichment ideas',
       'interactive cat toys',
-      'cat enrichment toys',
-      'indoor cat entertainment',
+      'cat boredom solutions',
     ],
   },
 
-  // ============= DOG FEEDING & NUTRITION CLUSTER =============
+  // ===================== DOG BEHAVIOR CLUSTER =====================
+  {
+    name: 'Dog Behavior',
+    pillarSlug: 'dog-enrichment-toys',
+    pillarKeyword: 'dog enrichment',
+    priority: 'high',
+    secondaryKeywords: [
+      'dog anxiety solutions',
+      'dog destructive behavior',
+      'dog separation anxiety',
+      'calm dog training',
+      'dog behavioral enrichment',
+    ],
+    blogTopics: [
+      {
+        slug: 'dog-separation-anxiety-solutions',
+        title: 'Dog Separation Anxiety: Proven Solutions That Work',
+        targetKeyword: 'dog separation anxiety solutions',
+        searchIntent: 'informational',
+        linkedCollection: 'dog-enrichment-toys',
+      },
+      {
+        slug: 'why-dogs-chew-everything',
+        title: 'Why Dogs Chew Everything (And How to Redirect It)',
+        targetKeyword: 'why dogs chew everything',
+        searchIntent: 'informational',
+        linkedCollection: 'dog-enrichment-toys',
+      },
+      {
+        slug: 'calming-activities-for-dogs',
+        title: 'Calming Activities for Anxious Dogs – Vet-Approved Guide',
+        targetKeyword: 'calming activities for dogs',
+        searchIntent: 'informational',
+        linkedCollection: 'dog-enrichment-toys',
+      },
+    ],
+    internalLinkAnchors: [
+      'dog enrichment toys',
+      'dog behavioral enrichment',
+      'calming toys for dogs',
+      'anxiety solutions for dogs',
+    ],
+  },
+
+  // ===================== CAT BEHAVIOR CLUSTER =====================
+  {
+    name: 'Cat Behavior',
+    pillarSlug: 'best-cat-litter-boxes',
+    pillarKeyword: 'cat behavior',
+    priority: 'high',
+    secondaryKeywords: [
+      'cat litter box behavior',
+      'cat spraying solutions',
+      'cat scratching behavior',
+      'multi-cat household tips',
+    ],
+    blogTopics: [
+      {
+        slug: 'cat-litter-box-problems-solutions',
+        title: 'Cat Litter Box Problems: Why They Happen & How to Fix Them',
+        targetKeyword: 'cat litter box problems',
+        searchIntent: 'informational',
+        linkedCollection: 'best-cat-litter-boxes',
+      },
+      {
+        slug: 'why-cats-scratch-furniture',
+        title: 'Why Cats Scratch Furniture (And How to Stop It)',
+        targetKeyword: 'cats scratch furniture',
+        searchIntent: 'informational',
+        linkedCollection: 'best-cat-litter-boxes',
+      },
+    ],
+    internalLinkAnchors: [
+      'best cat litter boxes',
+      'cat behavior solutions',
+      'cat litter box guide',
+      'self-cleaning litter boxes',
+    ],
+  },
+
+  // ===================== DOG FEEDING (HIGH PRIORITY) =====================
   {
     name: 'Dog Feeding Solutions',
-    pillarSlug: 'no-spill-dog-feeding',
-    pillarKeyword: 'no spill dog bowls',
+    pillarSlug: 'best-slow-feeder-dog-bowls',
+    pillarKeyword: 'slow feeder dog bowls',
+    priority: 'high',
     secondaryKeywords: [
-      'slow feeder dog bowls',
+      'no spill dog bowls',
       'elevated dog bowls',
-      'dog water fountains',
+      'dog food puzzles',
       'mess-free dog feeding',
-      'dog food storage',
     ],
     blogTopics: [
       {
@@ -165,148 +251,60 @@ export const SEO_CONTENT_CLUSTERS: ContentCluster[] = [
         title: 'Why Slow Feeder Bowls Are Better for Your Dog',
         targetKeyword: 'slow feeder bowl benefits',
         searchIntent: 'informational',
-        linkedCollection: 'no-spill-dog-feeding',
+        linkedCollection: 'best-slow-feeder-dog-bowls',
       },
       {
         slug: 'how-to-stop-dog-eating-too-fast',
         title: 'How to Stop Your Dog from Eating Too Fast',
         targetKeyword: 'dog eating too fast solutions',
         searchIntent: 'informational',
-        linkedCollection: 'no-spill-dog-feeding',
-      },
-      {
-        slug: 'elevated-dog-bowl-guide',
-        title: 'Are Elevated Dog Bowls Better? A Complete Guide',
-        targetKeyword: 'elevated dog bowls',
-        searchIntent: 'informational',
-        linkedCollection: 'no-spill-dog-feeding',
-      },
-      {
-        slug: 'best-dog-bowls-for-messy-eaters',
-        title: 'Best Dog Bowls for Messy Eaters',
-        targetKeyword: 'dog bowls for messy eaters',
-        searchIntent: 'commercial',
-        linkedCollection: 'no-spill-dog-feeding',
+        linkedCollection: 'best-slow-feeder-dog-bowls',
       },
     ],
     internalLinkAnchors: [
-      'slow feeder bowls',
+      'slow feeder dog bowls',
       'no-spill dog bowls',
-      'elevated dog bowls',
       'dog feeding solutions',
-      'mess-free dog bowls',
+      'best dog bowls',
     ],
   },
 
-  // ============= PET COMFORT & BEDS CLUSTER =============
+  // ===================== DE-PRIORITIZED CLUSTERS =====================
+  {
+    name: 'Dog Travel',
+    pillarSlug: 'dog-travel-accessories',
+    pillarKeyword: 'dog travel accessories',
+    priority: 'low',
+    secondaryKeywords: ['dog car seat', 'pet travel carrier'],
+    blogTopics: [],
+    internalLinkAnchors: ['dog travel gear', 'pet carrier'],
+  },
   {
     name: 'Pet Comfort',
     pillarSlug: 'pet-comfort-beds',
     pillarKeyword: 'pet beds',
-    secondaryKeywords: [
-      'orthopedic dog beds',
-      'calming dog beds',
-      'cat beds',
-      'pet blankets',
-      'cozy pet accessories',
-    ],
-    blogTopics: [
-      {
-        slug: 'best-orthopedic-dog-beds-for-senior-dogs',
-        title: 'Best Orthopedic Dog Beds for Senior Dogs',
-        targetKeyword: 'orthopedic dog beds for seniors',
-        searchIntent: 'commercial',
-        linkedCollection: 'pet-comfort-beds',
-      },
-      {
-        slug: 'calming-beds-for-anxious-dogs',
-        title: 'Do Calming Dog Beds Actually Work?',
-        targetKeyword: 'calming dog beds',
-        searchIntent: 'informational',
-        linkedCollection: 'pet-comfort-beds',
-      },
-      {
-        slug: 'how-to-choose-right-dog-bed-size',
-        title: 'How to Choose the Right Dog Bed Size',
-        targetKeyword: 'dog bed size guide',
-        searchIntent: 'informational',
-        linkedCollection: 'pet-comfort-beds',
-      },
-      {
-        slug: 'best-cat-beds-for-curlers',
-        title: 'Best Cat Beds for Cats Who Love to Curl Up',
-        targetKeyword: 'cat beds for curling',
-        searchIntent: 'commercial',
-        linkedCollection: 'pet-comfort-beds',
-      },
-    ],
-    internalLinkAnchors: [
-      'orthopedic dog beds',
-      'calming pet beds',
-      'cozy cat beds',
-      'pet comfort products',
-      'dog beds',
-    ],
+    priority: 'low',
+    secondaryKeywords: ['orthopedic dog beds', 'calming dog beds'],
+    blogTopics: [],
+    internalLinkAnchors: ['pet beds', 'dog beds'],
   },
-
-  // ============= GUINEA PIG CARE CLUSTER =============
   {
     name: 'Guinea Pig Care',
     pillarSlug: 'guinea-pig-cages-playpens',
     pillarKeyword: 'guinea pig cage',
-    secondaryKeywords: [
-      'guinea pig playpen',
-      'guinea pig enclosure',
-      'guinea pig habitat',
-      'cavy cage',
-      'guinea pig setup',
-    ],
-    blogTopics: [
-      {
-        slug: 'how-to-choose-the-right-guinea-pig-cage',
-        title: 'How to Choose the Right Guinea Pig Cage',
-        targetKeyword: 'guinea pig cage',
-        searchIntent: 'commercial',
-        linkedCollection: 'guinea-pig-cages-playpens',
-      },
-    ],
-    internalLinkAnchors: [
-      'guinea pig cage',
-      'guinea pig cages',
-      'guinea pig playpen',
-      'guinea pig enclosure',
-      'cavy cage',
-    ],
+    priority: 'deprioritized',
+    secondaryKeywords: ['guinea pig playpen'],
+    blogTopics: [],
+    internalLinkAnchors: ['guinea pig cage'],
   },
-
-  // ============= CAT CARRIERS & TRAVEL CLUSTER =============
   {
     name: 'Cat Travel',
     pillarSlug: 'cat-carriers',
     pillarKeyword: 'cat carrier',
-    secondaryKeywords: [
-      'portable cat carrier',
-      'soft-sided cat carrier',
-      'cat kennel',
-      'travel pet crate',
-      'airline approved carrier',
-    ],
-    blogTopics: [
-      {
-        slug: 'how-to-choose-a-cat-carrier-for-travel',
-        title: 'How to Choose a Cat Carrier for Safe, Stress-Free Travel',
-        targetKeyword: 'cat carrier',
-        searchIntent: 'commercial',
-        linkedCollection: 'cat-carriers',
-      },
-    ],
-    internalLinkAnchors: [
-      'cat carrier',
-      'portable cat carrier',
-      'soft-sided cat carrier',
-      'travel pet crate',
-      'cat kennel',
-    ],
+    priority: 'deprioritized',
+    secondaryKeywords: ['portable cat carrier'],
+    blogTopics: [],
+    internalLinkAnchors: ['cat carrier'],
   },
 ];
 
@@ -315,8 +313,9 @@ export const SEO_CONTENT_CLUSTERS: ContentCluster[] = [
 export const INTERNAL_LINKING_RULES = {
   maxLinksPerBlog: 10,
   minWordsBetweenLinks: 30,
-  priorityOrder: ['collection', 'product', 'related-blog'],
-  anchorVariation: true, // Use varied anchor text
+  priorityOrder: ['money-page', 'collection', 'product', 'related-blog'],
+  anchorVariation: true,
+  maxExactMatchPct: 30, // Never exceed 30% exact-match anchors
 };
 
 // ============= CONTENT TEMPLATES =============
@@ -341,35 +340,75 @@ export const BLOG_CONTENT_GUIDELINES = {
   ],
 };
 
-// ============= HELPER FUNCTIONS =============
+// ============= RELATED ENRICHMENT GUIDES BLOCK =============
+
+export interface RelatedGuideLink {
+  slug: string;
+  title: string;
+  anchor: string;
+}
 
 /**
- * Get all blog topics for a specific cluster
+ * Get related guides for a "Related Enrichment Guides" contextual block
  */
+export function getRelatedEnrichmentGuides(currentSlug: string): RelatedGuideLink[] {
+  const links: RelatedGuideLink[] = [];
+
+  for (const cluster of SEO_CONTENT_CLUSTERS) {
+    if (cluster.priority === 'deprioritized' || cluster.priority === 'low') continue;
+
+    // If current page is within this cluster, link to the money page + sibling articles
+    const isInCluster = cluster.pillarSlug === currentSlug ||
+      cluster.blogTopics.some(t => t.slug === currentSlug);
+
+    if (isInCluster) {
+      // Add money page if not current
+      if (cluster.pillarSlug !== currentSlug) {
+        links.push({
+          slug: cluster.pillarSlug,
+          title: cluster.pillarKeyword,
+          anchor: cluster.internalLinkAnchors[0] || cluster.pillarKeyword,
+        });
+      }
+
+      // Add sibling support articles (not self)
+      for (const topic of cluster.blogTopics) {
+        if (topic.slug !== currentSlug) {
+          links.push({
+            slug: topic.slug,
+            title: topic.title,
+            anchor: topic.targetKeyword,
+          });
+        }
+      }
+    }
+  }
+
+  // Limit to 5 related guides
+  return links.slice(0, 5);
+}
+
+// ============= HELPER FUNCTIONS =============
+
 export function getBlogTopicsForCluster(clusterName: string): BlogTopic[] {
   const cluster = SEO_CONTENT_CLUSTERS.find(c => c.name === clusterName);
   return cluster?.blogTopics || [];
 }
 
-/**
- * Get recommended internal link anchors for a collection
- */
 export function getLinkAnchorsForCollection(collectionSlug: string): string[] {
   const cluster = SEO_CONTENT_CLUSTERS.find(c => c.pillarSlug === collectionSlug);
   return cluster?.internalLinkAnchors || [];
 }
 
-/**
- * Count total planned blog topics
- */
 export function getTotalBlogTopics(): number {
   return SEO_CONTENT_CLUSTERS.reduce((sum, cluster) => sum + cluster.blogTopics.length, 0);
 }
 
-/**
- * Get clusters by priority (for content calendar)
- */
 export function getClustersByPriority(): ContentCluster[] {
-  // Priority based on search volume potential
-  return SEO_CONTENT_CLUSTERS.sort((a, b) => b.blogTopics.length - a.blogTopics.length);
+  const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3, deprioritized: 4 };
+  return [...SEO_CONTENT_CLUSTERS].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+}
+
+export function getActiveClusterCount(): number {
+  return SEO_CONTENT_CLUSTERS.filter(c => c.priority !== 'deprioritized').length;
 }

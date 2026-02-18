@@ -187,7 +187,7 @@ export async function fetchGSCMetricsForGuides(): Promise<GSCFetchResult> {
       const totalClicks = periodRows.reduce((s, r) => s + (r.clicks || 0), 0);
       const avgPos = periodRows.reduce((s, r) => s + (r.position || 0), 0) / periodRows.length;
       return {
-        page: `/guides/${slug}/`, slug,
+        page: `/${slug}`, slug,
         impressions: totalImpr, clicks: totalClicks,
         ctr: totalImpr > 0 ? (totalClicks / totalImpr) * 100 : 0,
         avgPosition: Math.round(avgPos * 10) / 10, period,
@@ -195,7 +195,7 @@ export async function fetchGSCMetricsForGuides(): Promise<GSCFetchResult> {
     };
 
     const current7d = latestSlug ? {
-      page: `/guides/${slug}/`, slug,
+      page: `/${slug}`, slug,
       impressions: latestSlug.impressions || 0,
       clicks: latestSlug.clicks || 0,
       ctr: latestSlug.ctr ? latestSlug.ctr * 100 : 0,
@@ -210,7 +210,7 @@ export async function fetchGSCMetricsForGuides(): Promise<GSCFetchResult> {
       .sort((a, b) => (b.impressions || 0) - (a.impressions || 0))
       .slice(0, 10)
       .map(r => ({
-        query: r.keyword, page: `/guides/${slug}/`,
+        query: r.keyword, page: `/${slug}`,
         impressions: r.impressions || 0, clicks: r.clicks || 0,
         ctr: (r.ctr || 0) * 100, position: r.position || 0,
       }));

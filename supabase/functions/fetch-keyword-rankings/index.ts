@@ -115,7 +115,14 @@ async function fetchGSCData(
   return await response.json();
 }
 
-// ============= GUIDE SLUG MAPPING =============
+// ============= PAGE TYPE & SLUG MAPPING =============
+
+type PageType = 'homepage' | 'guide' | 'blog' | 'product' | 'collection' | 'category' | 'static' | 'bestseller';
+
+interface PageMatch {
+  slug: string;
+  pageType: PageType;
+}
 
 // Known guide slugs — loaded once per run from guides index
 let _knownSlugs: Set<string> | null = null;
@@ -139,72 +146,115 @@ async function loadKnownSlugs(): Promise<Set<string>> {
   return _knownSlugs;
 }
 
-function extractSlugFromUrl(pageUrl: string): string | null {
+// Paths that should never be indexed / tracked
+const SKIP_PATHS = new Set([
+  'auth', 'track', 'cart', 'cookies', 'login', 'sitemap', 'robots', 'favicon',
+  'admin', 'checkout', 'order', 'dashboard', 'profile', 'orders', 'payment-success',
+  'install', 'live-map', 'google-review', 'security', '__ops',
+]);
+
+function normalizeGscUrl(rawUrl: string): { pathname: string } | null {
   try {
-    const url = new URL(pageUrl.startsWith('http') ? pageUrl : `https://example.com${pageUrl}`);
-    const pathname = url.pathname.replace(/\/+$/, '').replace(/^\/+/, '');
-    // Strip tracking params — just use pathname
-    if (!pathname || pathname.length === 0) return null;
-
-    const parts = pathname.split('/').filter(Boolean);
-
-    // /guides/slug-here → slug-here (HIGHEST PRIORITY)
-    if (parts[0] === 'guides' && parts[1]) {
-      return parts[1].toLowerCase().trim();
-    }
-
-    // /collections/slug → slug (for collection pages)
-    if (parts[0] === 'collections' && parts[1]) {
-      return parts[1].toLowerCase().trim();
-    }
-
-    // /blog/slug → slug (for blog posts)
-    if (parts[0] === 'blog' && parts[1]) {
-      return parts[1].toLowerCase().trim();
-    }
-
-    // Root-level: /best-cat-litter-box-2026 → best-cat-litter-box-2026
-    if (parts.length === 1) {
-      return parts[0].toLowerCase().trim();
-    }
-
-    return null;
+    const url = new URL(rawUrl.startsWith('http') ? rawUrl : `https://getpawsy.pet${rawUrl}`);
+    const pathname = url.pathname.replace(/\/+$/, '').toLowerCase() || '/';
+    return { pathname };
   } catch {
-    // Fallback regex
-    const match = pageUrl.match(/\/([a-z0-9-]+)\/?(?:\?.*)?$/i);
-    return match ? match[1].toLowerCase().trim() : null;
+    return null;
   }
 }
 
-function matchPageToSlug(pageUrl: string, knownSlugs: Set<string>): string | null {
-  const slug = extractSlugFromUrl(pageUrl);
-  if (!slug || slug.length < 5) return null;
-
-  // Skip known non-guide paths
-  const skipPaths = ['auth', 'track', 'cart', 'cookies', 'contact', 'about', 'shipping',
-    'blog', 'products', 'admin', 'login', 'sitemap', 'robots', 'favicon',
-    'bestseller', 'product', 'category', 'search', 'checkout', 'order',
-    'privacy', 'terms', 'security', 'install', 'live-map', 'google-review',
-    'dashboard', 'profile', 'orders', 'payment-success', 'faq', 'returns'];
-  if (skipPaths.includes(slug)) return null;
-
-  // Match 1: exact match against known guide slugs
-  if (knownSlugs.has(slug)) return slug;
-
-  // Match 2: pattern-based (best-*, *-2026, how-to-*, etc.)
-  if (/^best-/.test(slug) || /-202[4-9]$/.test(slug) || /^how-to-/.test(slug) ||
-      /^choosing-/.test(slug) || /-vs-/.test(slug) || /^guide-/.test(slug) ||
-      /^top-/.test(slug) || /^safest-/.test(slug) || /-guide$/.test(slug) ||
-      /^outdoor-/.test(slug) || /^guinea-pig-/.test(slug) || /^cat-/.test(slug)) {
-    return slug;
+function classifyPage(pathname: string, knownSlugs: Set<string>): PageMatch | null {
+  if (pathname === '/' || pathname === '') {
+    return { slug: '__homepage__', pageType: 'homepage' };
   }
 
-  // Match 3: endsWith any known slug (for nested URLs like /guides/slug or /category/slug)
-  for (const known of knownSlugs) {
-    if (slug.endsWith(known) || slug === known) return known;
+  const parts = pathname.split('/').filter(Boolean);
+  if (parts.length === 0) return { slug: '__homepage__', pageType: 'homepage' };
+
+  const first = parts[0];
+
+  if (SKIP_PATHS.has(first)) return null;
+
+  // /guides/slug
+  if (first === 'guides' && parts[1]) {
+    return { slug: parts[1], pageType: 'guide' };
+  }
+
+  // /blog or /blog/slug
+  if (first === 'blog') {
+    if (parts[1]) return { slug: parts[1], pageType: 'blog' };
+    return { slug: '__blog_index__', pageType: 'blog' };
+  }
+
+  // /product/slug
+  if (first === 'product' && parts[1]) {
+    return { slug: parts[1], pageType: 'product' };
+  }
+
+  // /products (index page)
+  if (first === 'products') {
+    return { slug: '__products_index__', pageType: 'product' };
+  }
+
+  // /bestseller/slug or /bestsellers
+  if (first === 'bestseller' || first === 'bestsellers') {
+    if (parts[1]) return { slug: parts[1], pageType: 'bestseller' };
+    return { slug: '__bestsellers__', pageType: 'bestseller' };
+  }
+
+  // /collections/slug or /c/slug
+  if ((first === 'collections' || first === 'c') && parts[1]) {
+    return { slug: parts[1], pageType: 'collection' };
+  }
+  if (first === 'collections' || first === 'c') {
+    return { slug: '__collections_index__', pageType: 'collection' };
+  }
+
+  // /dogs/*, /cats/* (category sub-routes)
+  if (first === 'dogs' || first === 'cats') {
+    const subSlug = parts.slice(1).join('/') || first;
+    return { slug: subSlug, pageType: 'category' };
+  }
+
+  // Static pages
+  const staticPages = new Set(['about', 'contact', 'shipping', 'returns', 'privacy', 'terms', 'faq', 'search']);
+  if (staticPages.has(first) && parts.length === 1) {
+    return { slug: first, pageType: 'static' };
+  }
+
+  // Root-level SEO pages
+  if (parts.length === 1) {
+    const slug = parts[0];
+    if (knownSlugs.has(slug)) return { slug, pageType: 'guide' };
+    if (/^best-/.test(slug) || /-202[4-9]$/.test(slug) || /^how-to-/.test(slug) ||
+        /^choosing-/.test(slug) || /-vs-/.test(slug) || /^guide-/.test(slug) ||
+        /^top-/.test(slug) || /^safest-/.test(slug) || /-guide$/.test(slug)) {
+      return { slug, pageType: 'guide' };
+    }
+    return { slug, pageType: 'collection' };
+  }
+
+  // Fallback: nested path with known slug
+  const lastPart = parts[parts.length - 1];
+  if (lastPart && knownSlugs.has(lastPart)) {
+    return { slug: lastPart, pageType: 'guide' };
   }
 
   return null;
+}
+
+// Legacy wrapper for backward compatibility
+function matchPageToSlug(pageUrl: string, knownSlugs: Set<string>): string | null {
+  const norm = normalizeGscUrl(pageUrl);
+  if (!norm) return null;
+  const match = classifyPage(norm.pathname, knownSlugs);
+  return match?.slug || null;
+}
+
+function matchPageFull(pageUrl: string, knownSlugs: Set<string>): PageMatch | null {
+  const norm = normalizeGscUrl(pageUrl);
+  if (!norm) return null;
+  return classifyPage(norm.pathname, knownSlugs);
 }
 
 // ============= CONCURRENCY LOCK =============
@@ -379,17 +429,22 @@ async function runGSCSync(
       );
     }
 
-    // 6. Aggregate per guide slug
+    // 6. Aggregate per slug with page type
     const slugAggregates: Record<string, {
       impressions: number; clicks: number; positions: number[]; queries: string[];
+      pageType: PageType;
     }> = {};
     let unmatchedCount = 0;
 
+    // Breakdown counters per pageType
+    const pageTypeStats: Record<string, { count: number; impressions: number; clicks: number }> = {};
+
     for (const row of queryRows) {
-      const slug = matchPageToSlug(row.keys[0], knownSlugs);
-      if (!slug) { unmatchedCount++; continue; }
+      const match = matchPageFull(row.keys[0], knownSlugs);
+      if (!match) { unmatchedCount++; continue; }
+      const { slug, pageType } = match;
       if (!slugAggregates[slug]) {
-        slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [] };
+        slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [], pageType };
       }
       slugAggregates[slug].impressions += row.impressions;
       slugAggregates[slug].clicks += row.clicks;
@@ -402,14 +457,24 @@ async function runGSCSync(
 
     // Override with page-level totals (more accurate)
     for (const row of pageRows) {
-      const slug = matchPageToSlug(row.keys[0], knownSlugs);
-      if (!slug) { unmatchedCount++; continue; }
+      const match = matchPageFull(row.keys[0], knownSlugs);
+      if (!match) { unmatchedCount++; continue; }
+      const { slug, pageType } = match;
       if (!slugAggregates[slug]) {
-        slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [] };
+        slugAggregates[slug] = { impressions: 0, clicks: 0, positions: [], queries: [], pageType };
       }
       slugAggregates[slug].impressions = row.impressions;
       slugAggregates[slug].clicks = row.clicks;
       slugAggregates[slug].positions = [row.position];
+    }
+
+    // Build pageType stats
+    for (const [, agg] of Object.entries(slugAggregates)) {
+      const pt = agg.pageType;
+      if (!pageTypeStats[pt]) pageTypeStats[pt] = { count: 0, impressions: 0, clicks: 0 };
+      pageTypeStats[pt].count++;
+      pageTypeStats[pt].impressions += agg.impressions;
+      pageTypeStats[pt].clicks += agg.clicks;
     }
 
     const now = new Date().toISOString();
@@ -429,7 +494,7 @@ async function runGSCSync(
     const totalImpressions = rankings.reduce((s, r) => s + r.impressions, 0);
     const totalClicks = rankings.reduce((s, r) => s + r.clicks, 0);
 
-    console.log(`[GSC Sync] Matched ${rankings.length} guide slugs, ${totalImpressions} total impressions, ${totalClicks} total clicks`);
+    console.log(`[GSC Sync] Matched ${rankings.length} pages (${Object.entries(pageTypeStats).map(([t,s]) => `${t}:${s.count}`).join(', ')}), ${totalImpressions} total impressions, ${totalClicks} total clicks`);
 
     // 7. Query-level rows
     const queryRankings = queryRows
@@ -504,11 +569,12 @@ async function runGSCSync(
         syncedAt: now, runId: lockId,
         dateRange: { start: startStr, end: endStr },
         knownGuideCount: knownSlugs.size,
+        pageTypeBreakdown: pageTypeStats,
         slugs: rankings.map(r => ({
           slug: r.slug, impressions: r.impressions, clicks: r.clicks, position: r.position,
         })),
         debug: {
-          matchedGuides: rankings.length,
+          matchedPages: rankings.length,
           unmatchedPageRows: unmatchedUrls.length,
           topUnmatchedPrefixes,
           first20Unmatched: unmatchedUrls.slice(0, 20).map(r => r.keys[0]),
