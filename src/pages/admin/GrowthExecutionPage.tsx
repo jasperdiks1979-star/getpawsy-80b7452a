@@ -983,7 +983,7 @@ export default function GrowthExecutionPage() {
 
               {/* Money URL Table */}
               <Section title="Top 20 Money URLs" badge={`${dominanceResult.moneyUrls.length} targets`} defaultOpen>
-                <div className="max-h-[500px] overflow-y-auto space-y-2">
+                <div className="max-h-[600px] overflow-y-auto space-y-2">
                   {dominanceResult.moneyUrls.map((u, i) => (
                     <div key={u.slug} className="p-3 rounded-lg border bg-card text-sm">
                       <div className="flex items-center justify-between mb-2">
@@ -991,11 +991,15 @@ export default function GrowthExecutionPage() {
                           <span className="text-xs font-bold text-muted-foreground">#{i + 1}</span>
                           <span className="font-mono text-xs text-primary truncate max-w-[200px]">/{u.slug}</span>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-wrap">
                           <Badge variant="outline" className="text-[10px]">Pos {u.position}</Badge>
                           <Badge variant="secondary" className="text-[10px]">{u.impressions} imp</Badge>
                           <Badge variant="default" className="text-[10px]">{u.pageType}</Badge>
                           <Badge variant="outline" className="text-[10px]">Score: {u.authorityScore}</Badge>
+                          <Badge variant={u.intentClassification === 'transactional' ? 'destructive' : u.intentClassification === 'commercial' ? 'default' : 'secondary'} className="text-[10px]">
+                            {u.intentClassification}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">{u.suggestedAssetType}</Badge>
                         </div>
                       </div>
                       <div className="grid md:grid-cols-2 gap-2 text-xs">
@@ -1004,12 +1008,34 @@ export default function GrowthExecutionPage() {
                           <p className="line-through opacity-60">{u.ctrRewrite.originalTitle}</p>
                           <p className="font-medium text-primary">{u.ctrRewrite.newTitle}</p>
                           <p className="text-[10px] text-muted-foreground mt-1">{u.ctrRewrite.newMeta}</p>
+                          {/* Trust Signals */}
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {u.trustSignals.map((ts, j) => (
+                              <span key={j} className="inline-flex items-center gap-0.5 text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                                {ts.icon} {ts.label}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                         <div>
                           <p className="text-muted-foreground mb-0.5">Anchor Variations:</p>
                           <div className="flex flex-wrap gap-1">
                             {u.anchorVariations.map((a, j) => (
                               <Badge key={j} variant="outline" className="text-[10px]">"{a}"</Badge>
+                            ))}
+                          </div>
+                          <p className="text-muted-foreground mt-1.5 mb-0.5">Weekly Backlink Plan:</p>
+                          <div className="flex gap-1">
+                            {u.weeklyBacklinkPlan.map((wb) => (
+                              <span key={wb.week} className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                                W{wb.week}: {wb.count}× {wb.anchorType}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-muted-foreground mt-1.5 mb-0.5">FAQ Schema ({u.faqSchema.length}):</p>
+                          <div className="space-y-0.5">
+                            {u.faqSchema.map((faq, j) => (
+                              <p key={j} className="text-[10px] text-muted-foreground truncate">Q: {faq.question}</p>
                             ))}
                           </div>
                           <p className="text-muted-foreground mt-1 mb-0.5">Internal Injections: {u.internalInjections.length}</p>

@@ -1,5 +1,5 @@
 /**
- * GetPawsy Dominance Mode Engine
+ * GetPawsy Dominance Mode Engine V2
  * 
  * Full execution system:
  * 1. Money URL Priority Engine — identifies top 20 high-opportunity URLs
@@ -10,6 +10,19 @@
  */
 
 // ============= TYPES =============
+
+export type IntentType = 'transactional' | 'commercial' | 'informational';
+export type AssetType = 'guest-post' | 'resource-link' | 'niche-edit' | 'authority-guide';
+
+export interface FaqEntry {
+  question: string;
+  answer: string;
+}
+
+export interface TrustSignal {
+  label: string;
+  icon: string;
+}
 
 export interface MoneyUrl {
   slug: string;
@@ -25,6 +38,17 @@ export interface MoneyUrl {
   internalInjections: InternalInjection[];
   backlinkPriority: number;
   authorityScore: number;
+  intentClassification: IntentType;
+  weeklyBacklinkPlan: WeeklyBacklinkAllocation[];
+  suggestedAssetType: AssetType;
+  faqSchema: FaqEntry[];
+  trustSignals: TrustSignal[];
+}
+
+export interface WeeklyBacklinkAllocation {
+  week: number;
+  count: number;
+  anchorType: 'branded' | 'partial' | 'contextual' | 'exact';
 }
 
 export interface CtrRewrite {
@@ -104,6 +128,14 @@ const EMOTIONAL_META = [
   (kw: string) => `The only ${kw} guide you need in 2026. Vet-approved, expert-tested, and trusted by thousands of pet owners.`,
 ];
 
+const TRUST_SIGNALS: TrustSignal[] = [
+  { label: 'Free US Shipping', icon: '🚚' },
+  { label: 'US Warehouse', icon: '🏭' },
+  { label: 'Fast 2-5 Day Delivery', icon: '⚡' },
+  { label: '30-Day Returns', icon: '↩️' },
+  { label: 'Vet Approved', icon: '🩺' },
+];
+
 // ============= HELPERS =============
 
 function humanize(slug: string): string {
@@ -123,15 +155,69 @@ function classifyPageType(slug: string): MoneyUrl['pageType'] {
   return 'guide';
 }
 
+function classifyIntent(slug: string, pageType: MoneyUrl['pageType']): IntentType {
+  if (pageType === 'product' || pageType === 'bestseller') return 'transactional';
+  if (pageType === 'collection') return 'commercial';
+  const kw = slug.toLowerCase();
+  if (kw.includes('best') || kw.includes('top') || kw.includes('review') || kw.includes('vs') || kw.includes('compare')) return 'commercial';
+  return 'informational';
+}
+
+function suggestAssetType(pageType: MoneyUrl['pageType'], intent: IntentType): AssetType {
+  if (pageType === 'product' || intent === 'transactional') return 'niche-edit';
+  if (pageType === 'collection' || intent === 'commercial') return 'resource-link';
+  if (pageType === 'blog') return 'guest-post';
+  return 'authority-guide';
+}
+
 function generateAnchors(slug: string): string[] {
   const kw = humanize(slug).toLowerCase();
   const words = kw.split(' ');
   return [
-    kw,                                        // exact
-    `best ${kw}`,                              // partial
-    `${kw} guide 2026`,                        // partial + year
-    `learn more about ${words.slice(0, 3).join(' ')}`, // contextual
-    `GetPawsy ${words.slice(0, 2).join(' ')} picks`,   // branded
+    kw,
+    `best ${kw}`,
+    `${kw} guide 2026`,
+    `learn more about ${words.slice(0, 3).join(' ')}`,
+    `GetPawsy ${words.slice(0, 2).join(' ')} picks`,
+  ];
+}
+
+function generateFaqSchema(slug: string, pageType: MoneyUrl['pageType']): FaqEntry[] {
+  const kw = humanize(slug).toLowerCase();
+  const faqs: FaqEntry[] = [];
+
+  if (pageType === 'product' || pageType === 'bestseller') {
+    faqs.push(
+      { question: `What makes this ${kw} the best choice for my pet?`, answer: `Our ${kw} is vet-approved, made with premium materials, and designed for maximum comfort and durability. Thousands of pet owners trust GetPawsy for quality pet products.` },
+      { question: `Does this ${kw} come with free shipping?`, answer: `Yes! All GetPawsy orders ship free within the US from our domestic warehouse. Typical delivery is 2-5 business days.` },
+      { question: `Can I return the ${kw} if my pet doesn't like it?`, answer: `Absolutely. We offer a hassle-free 30-day return policy on all products, including this ${kw}. Your satisfaction is guaranteed.` },
+    );
+  } else if (pageType === 'collection' || pageType === 'guide') {
+    faqs.push(
+      { question: `How do I choose the right ${kw} for my pet?`, answer: `Consider your pet's size, breed, and activity level. Our guide covers the top-rated options for 2026 with expert recommendations to help you decide.` },
+      { question: `What are the top-rated ${kw} in 2026?`, answer: `We've tested and reviewed the best ${kw} available. Our expert picks are based on durability, safety, and value for money — all vet-approved.` },
+    );
+  } else {
+    faqs.push(
+      { question: `What should I know about ${kw}?`, answer: `This comprehensive guide covers everything pet owners need to know about ${kw}, including expert tips, product recommendations, and common mistakes to avoid.` },
+      { question: `Is this ${kw} guide updated for 2026?`, answer: `Yes, this guide is fully updated for 2026 with the latest products, research, and vet-approved recommendations.` },
+    );
+  }
+
+  return faqs;
+}
+
+function generateWeeklyBacklinks(backlinkPriority: number): WeeklyBacklinkAllocation[] {
+  const total = Math.max(2, Math.min(backlinkPriority, 12));
+  const w1 = Math.ceil(total * 0.15);
+  const w2 = Math.ceil(total * 0.35);
+  const w3 = Math.ceil(total * 0.30);
+  const w4 = Math.max(1, total - w1 - w2 - w3);
+  return [
+    { week: 1, count: w1, anchorType: 'branded' },
+    { week: 2, count: w2, anchorType: 'partial' },
+    { week: 3, count: w3, anchorType: 'contextual' },
+    { week: 4, count: w4, anchorType: 'exact' },
   ];
 }
 
@@ -145,18 +231,16 @@ export function identifyMoneyUrls(
   pages: Array<{ slug: string; position: number; impressions: number; clicks: number; ctr: number; title?: string }>,
   allSlugs: string[]
 ): MoneyUrl[] {
-  // Filter: position 8-20, impressions > 20, clicks=0 OR CTR < 0.5%
   const candidates = pages.filter(p =>
     p.position >= 8 && p.position <= 20 &&
     p.impressions > 20 &&
     (p.clicks === 0 || p.ctr < 0.5)
   );
 
-  // Rank by opportunity score: impressions × (21 - position)
   const ranked = candidates
     .map(p => ({
       ...p,
-      opportunityScore: Math.round(p.impressions * (21 - p.position)),
+      opportunityScore: Math.round(p.impressions * (20 - p.position)),
     }))
     .sort((a, b) => b.opportunityScore - a.opportunityScore)
     .slice(0, 20);
@@ -166,6 +250,7 @@ export function identifyMoneyUrls(
     const h = hash(p.slug);
     const kw = humanize(p.slug).toLowerCase();
     const modifier = AUTHORITY_MODIFIERS[h % AUTHORITY_MODIFIERS.length];
+    const intent = classifyIntent(p.slug, pageType);
 
     // CTR rewrite
     const origTitle = p.title || humanize(p.slug);
@@ -182,12 +267,23 @@ export function identifyMoneyUrls(
     // Internal injections
     const injections = buildInternalInjections(p.slug, pageType, allSlugs);
 
-    // Authority score: composite of position, impressions, injections
+    // Authority score
     const authorityScore = Math.round(
-      (Math.max(0, 21 - p.position) * 5) +
+      (Math.max(0, 20 - p.position) * 5) +
       (Math.log(p.impressions + 1) * 10) +
       (injections.length * 8)
     );
+
+    // Backlink priority & weekly distribution
+    const backlinkPriority = Math.round(p.opportunityScore! / 100);
+
+    // FAQ schema
+    const faqSchema = generateFaqSchema(p.slug, pageType);
+
+    // Trust signals (products/bestsellers get all, others get subset)
+    const trustSignals = (pageType === 'product' || pageType === 'bestseller')
+      ? TRUST_SIGNALS
+      : TRUST_SIGNALS.filter((_, i) => i < 3);
 
     return {
       slug: p.slug,
@@ -199,15 +295,15 @@ export function identifyMoneyUrls(
       opportunityScore: p.opportunityScore!,
       anchorVariations: generateAnchors(p.slug),
       dominanceTarget: true as const,
-      ctrRewrite: {
-        originalTitle: origTitle,
-        newTitle,
-        newMeta,
-        modifier,
-      },
+      ctrRewrite: { originalTitle: origTitle, newTitle, newMeta, modifier },
       internalInjections: injections,
-      backlinkPriority: Math.round(p.opportunityScore! / 100),
+      backlinkPriority,
       authorityScore,
+      intentClassification: intent,
+      weeklyBacklinkPlan: generateWeeklyBacklinks(backlinkPriority),
+      suggestedAssetType: suggestAssetType(pageType, intent),
+      faqSchema,
+      trustSignals,
     };
   });
 }
@@ -219,32 +315,24 @@ function buildInternalInjections(slug: string, pageType: MoneyUrl['pageType'], a
   const kw = humanize(slug);
   const kwLower = slug.replace(/-/g, ' ').toLowerCase();
 
-  // Find 3 high-impression contextual links (simulated from related slugs)
   const relatedGuides = allSlugs
     .filter(s => s !== slug && classifyPageType(s) === 'guide' && kwLower.split(' ').some(w => w.length > 3 && s.includes(w)))
     .slice(0, 3);
 
   for (const src of relatedGuides) {
-    injections.push({
-      sourceSlug: src,
-      anchorText: kw,
-      placement: 'contextual-body',
-    });
+    injections.push({ sourceSlug: src, anchorText: kw, placement: 'contextual-body' });
   }
 
-  // 1 guide link
   const guideLink = allSlugs.find(s => s !== slug && classifyPageType(s) === 'guide' && !relatedGuides.includes(s) && s.includes(kwLower.split(' ')[0]));
   if (guideLink) {
     injections.push({ sourceSlug: guideLink, anchorText: `${kw} Guide`, placement: 'guide-link' });
   }
 
-  // 1 collection link
   const collectionLink = allSlugs.find(s => classifyPageType(s) === 'collection');
   if (collectionLink) {
     injections.push({ sourceSlug: collectionLink, anchorText: `Browse ${kw}`, placement: 'collection-link' });
   }
 
-  // Buyer intro for products
   if (pageType === 'product') {
     injections.push({ sourceSlug: slug, anchorText: '', placement: 'buyer-intro' });
   }
@@ -259,8 +347,7 @@ export function generateBacklinkAttackPlan(moneyUrls: MoneyUrl[]): BacklinkWeekP
   const top10 = moneyUrls.slice(0, 10).map(u => u.slug);
 
   const week1: BacklinkWeekPlan = {
-    week: 1,
-    label: 'Foundation — Niche Outreach & Expert Placement',
+    week: 1, label: 'Foundation — Niche Outreach & Expert Placement',
     tasks: [
       { type: 'niche-outreach', description: 'Outreach to 5 niche pet blogs with link placement pitch', count: 5, targetSlugs: top5, anchorType: 'branded', status: 'planned' },
       { type: 'product-inclusion', description: 'Request inclusion in 3 product roundup articles', count: 3, targetSlugs: top5.slice(0, 3), anchorType: 'partial', status: 'planned' },
@@ -271,8 +358,7 @@ export function generateBacklinkAttackPlan(moneyUrls: MoneyUrl[]): BacklinkWeekP
   };
 
   const week2: BacklinkWeekPlan = {
-    week: 2,
-    label: 'Scale — Guest Posts & HARO Authority',
+    week: 2, label: 'Scale — Guest Posts & HARO Authority',
     tasks: [
       { type: 'guest-post', description: 'Pitch 10 guest posts to pet/lifestyle blogs', count: 10, targetSlugs: top10, anchorType: 'partial', status: 'planned' },
       { type: 'haro-pitch', description: '5 HARO-style expert authority pitches', count: 5, targetSlugs: top5, anchorType: 'branded', status: 'planned' },
@@ -283,8 +369,7 @@ export function generateBacklinkAttackPlan(moneyUrls: MoneyUrl[]): BacklinkWeekP
   };
 
   const week3: BacklinkWeekPlan = {
-    week: 3,
-    label: 'Amplify — Linkbait Assets & Hub Expansion',
+    week: 3, label: 'Amplify — Linkbait Assets & Hub Expansion',
     tasks: [
       { type: 'linkbait-asset', description: 'Create 5 data-driven linkbait mini-assets', count: 5, targetSlugs: top5, anchorType: 'branded', status: 'planned' },
       { type: 'hub-expansion', description: 'Publish 2 enrichment hub expansions', count: 2, targetSlugs: top5.slice(0, 2), anchorType: 'partial', status: 'planned' },
@@ -294,8 +379,7 @@ export function generateBacklinkAttackPlan(moneyUrls: MoneyUrl[]): BacklinkWeekP
   };
 
   const week4: BacklinkWeekPlan = {
-    week: 4,
-    label: 'Reinforce — Stacking & Diversification',
+    week: 4, label: 'Reinforce — Stacking & Diversification',
     tasks: [
       { type: 'reinforce', description: 'Reinforce top 10 performing URLs with additional links', count: 10, targetSlugs: top10, anchorType: 'branded', status: 'planned' },
       { type: 'anchor-audit', description: 'Anchor diversification check across all money URLs', count: 1, targetSlugs: top10, anchorType: 'branded', status: 'planned' },
@@ -315,22 +399,16 @@ export function runDominanceMode(
 ): DominanceModeResult {
   const allSlugs = pages.map(p => p.slug);
 
-  // Part 1: Money URLs
   const moneyUrls = identifyMoneyUrls(pages, allSlugs);
-
-  // Part 2: Backlink plan
   const backlinkPlan = generateBacklinkAttackPlan(moneyUrls);
   const totalBacklinkPlacements = backlinkPlan.reduce((s, w) => s + w.totalPlacements, 0);
 
-  // Anchor distribution (target: 40% branded, 30% partial, 20% contextual, 10% exact)
   const anchorDistribution = { branded: 40, partial: 30, contextual: 20, exact: 10 };
 
-  // Part 3: Orphan reduction estimate
   const orphansBefore = pages.filter(p => (p.inboundLinks ?? 0) === 0).length;
   const injectionCount = moneyUrls.reduce((s, u) => s + u.internalInjections.length, 0);
   const orphansAfter = Math.max(0, orphansBefore - injectionCount - Math.round(orphansBefore * 0.85));
 
-  // KPIs
   const moneyUrlAvgPos = moneyUrls.length > 0
     ? moneyUrls.reduce((s, u) => s + u.position, 0) / moneyUrls.length
     : 0;
@@ -341,16 +419,14 @@ export function runDominanceMode(
       : 0,
     backlinkVelocity30d: totalBacklinkPlacements,
     moneyUrlAvgPosition: Math.round(moneyUrlAvgPos * 10) / 10,
-    ctrLiftPct: moneyUrls.length > 0 ? 2.5 : 0, // projected from rewrites
+    ctrLiftPct: moneyUrls.length > 0 ? 2.5 : 0,
     orphanEliminationPct: orphansBefore > 0 ? Math.round(((orphansBefore - orphansAfter) / orphansBefore) * 100) : 0,
   };
 
-  // 90-day forecast v2
   const totalImpressions = pages.reduce((s, p) => s + p.impressions, 0);
   const totalClicks = pages.reduce((s, p) => s + p.clicks, 0);
   const avgPos = pages.length > 0 ? pages.reduce((s, p) => s + p.position, 0) / pages.length : 50;
 
-  // Simulate: 50 backlinks → ~15% position lift, CTR rewrites → 2x CTR, orphan fix → 30% visibility boost
   const linkVelocityFactor = Math.min(totalBacklinkPlacements / 50, 1);
   const positionLift = avgPos * 0.15 * linkVelocityFactor;
   const ctrMultiplier = 1 + (moneyUrls.length / 20) * 1.5;
