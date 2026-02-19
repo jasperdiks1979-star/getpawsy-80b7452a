@@ -47,9 +47,10 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('@supabase')) {
               return 'supabase';
             }
-            if (id.includes('recharts') || id.includes('d3-')) {
-              return 'charts';
-            }
+            // REMOVED: recharts/d3 manual chunk — caused TDZ crash on iPhone Safari 18
+            // d3 modules have circular internal deps that Safari's strict TDZ enforcement rejects
+            // when forced into a single chunk. Let Vite naturally code-split these.
+            // See: P0 incident 2026-02-19
             if (id.includes('mapbox-gl')) {
               return 'mapbox';
             }
