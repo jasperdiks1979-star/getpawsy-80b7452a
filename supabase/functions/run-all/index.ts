@@ -282,8 +282,12 @@ async function executeStep(
         // Edge function returned non-JSON (HTML error page, etc.)
         throw new Error(`${fnName} returned non-JSON (status ${res.status}): ${text.slice(0, 200)}`);
       }
+      // Return parsed JSON even for non-2xx — let caller decide how to handle ok:false
       if (!res.ok) {
-        throw new Error(data.error as string || data.reason as string || `${fnName} failed (${res.status})`);
+        // Attach status info but return data so caller can inspect reauthRequired / error fields
+        data._httpStatus = res.status;
+        data._fnName = fnName;
+        if (data.ok === undefined) data.ok = false;
       }
       return data;
     } catch (e) {
@@ -296,11 +300,19 @@ async function executeStep(
     case 'gsc_query_level_sync': {
       try {
         const data = await callFunction('fetch-keyword-rankings');
+        // Check for ok:false responses (e.g. missing credentials)
+        if (data.ok === false) {
+          const errMsg = (data.error as string) || (data.reason as string) || 'GSC sync returned ok:false';
+          if (errMsg.includes('GOOGLE_SERVICE_ACCOUNT_JSON') || errMsg.includes('not configured')) {
+            return { synced: false, reauthRequired: true, error: 'Google service account not configured. Add GOOGLE_SERVICE_ACCOUNT_JSON secret.' };
+          }
+          return { synced: false, reauthRequired: true, error: errMsg };
+        }
         return { synced: true, ...data };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         // Check if it's an auth/token issue
-        if (msg.includes('invalid_token') || msg.includes('Invalid token') || msg.includes('401') || msg.includes('Unauthorized') || msg.includes('invalid_grant')) {
+        if (msg.includes('invalid_token') || msg.includes('Invalid token') || msg.includes('401') || msg.includes('Unauthorized') || msg.includes('invalid_grant') || msg.includes('Token exchange failed') || msg.includes('GOOGLE_SERVICE_ACCOUNT_JSON')) {
           return { synced: false, reauthRequired: true, error: msg };
         }
         throw e;
