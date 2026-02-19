@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Package, Search, Truck, CheckCircle, Clock, MapPin, ExternalLink, AlertCircle, FileWarning } from 'lucide-react';
 import OrderClaimButton from '@/components/orders/OrderClaimButton';
@@ -142,6 +143,7 @@ const TrackOrder = () => {
 
   return (
     <Layout>
+      <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6 max-w-2xl mx-auto">
           <motion.div
