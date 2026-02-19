@@ -15,6 +15,12 @@ const STEPS = [
   { key: 'content_generation_queue', label: 'Content Generation Queue', critical: false },
   { key: 'indexing_submit', label: 'Indexing Submit (Full Stack)', critical: false },
   { key: 'compile_report', label: 'Compile Run Report', critical: false },
+  { key: 'ctr_intelligence', label: 'CTR Intelligence Update', critical: false },
+  { key: 'cluster_intelligence', label: 'Cluster Intelligence Update', critical: false },
+  { key: 'competitor_gap_scan', label: 'Competitor Gap Scan', critical: false },
+  { key: 'serp_feature_analyzer', label: 'SERP Feature Analyzer', critical: false },
+  { key: 'zero_click_optimizer', label: 'Zero-Click Optimizer', critical: false },
+  { key: 'authority_gap_engine', label: 'Authority Gap Engine', critical: false },
 ];
 
 const COOLDOWN_MINUTES = 30;
@@ -620,6 +626,305 @@ async function executeStep(
       };
 
       return summary;
+    }
+
+    // ─── V6 Steps ───
+    case 'ctr_intelligence': {
+      const { data: gscData } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, clicks, impressions, ctr, position')
+        .gt('impressions', 10)
+        .order('impressions', { ascending: false })
+        .limit(500);
+
+      if (!gscData?.length) return { updated: false, reason: 'No GSC data available' };
+
+      const positionBuckets: Record<number, { clicks: number; impressions: number; count: number }> = {};
+      for (const row of gscData) {
+        const pos = Math.round(row.position);
+        if (pos < 1 || pos > 50) continue;
+        if (!positionBuckets[pos]) positionBuckets[pos] = { clicks: 0, impressions: 0, count: 0 };
+        positionBuckets[pos].clicks += row.clicks;
+        positionBuckets[pos].impressions += row.impressions;
+        positionBuckets[pos].count++;
+      }
+
+      let upserted = 0;
+      for (const [pos, bucket] of Object.entries(positionBuckets)) {
+        const expectedCtr = bucket.impressions > 0 ? bucket.clicks / bucket.impressions : 0;
+        await supabase.from('ctr_model_data').upsert({
+          position: Number(pos),
+          expected_ctr: expectedCtr,
+          sample_size: bucket.count,
+          device: 'all',
+          query_type: 'all',
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'position,device,query_type' });
+        upserted++;
+      }
+
+      const anomalies: Array<{ query: string; position: number; actual_ctr: number; expected_ctr: number }> = [];
+      for (const row of gscData.slice(0, 100)) {
+        const pos = Math.round(row.position);
+        const bucket = positionBuckets[pos];
+        if (!bucket || bucket.impressions === 0) continue;
+        const expected = bucket.clicks / bucket.impressions;
+        if (expected === 0) continue;
+        const gap = (row.ctr - expected) / expected;
+        if (Math.abs(gap) > 0.3) {
+          anomalies.push({ query: row.query, position: pos, actual_ctr: row.ctr, expected_ctr: expected });
+        }
+      }
+
+      return { updated: true, positionsModeled: upserted, anomalies: anomalies.length, topAnomalies: anomalies.slice(0, 5) };
+    }
+
+    case 'cluster_intelligence': {
+      const { data: queries } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, clicks, impressions, position')
+        .gte('impressions', 5)
+        .lte('position', 60)
+        .order('impressions', { ascending: false })
+        .limit(300);
+
+      if (!queries?.length) return { clustered: false, reason: 'No qualifying queries' };
+
+      const clusters: Record<string, { keywords: typeof queries; totalImpressions: number; totalClicks: number; positions: number[] }> = {};
+      for (const q of queries) {
+        const words = q.query.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean);
+        const key = words.slice(0, 2).join(' ') || q.query;
+        if (!clusters[key]) clusters[key] = { keywords: [], totalImpressions: 0, totalClicks: 0, positions: [] };
+        clusters[key].keywords.push(q);
+        clusters[key].totalImpressions += q.impressions;
+        clusters[key].totalClicks += q.clicks;
+        clusters[key].positions.push(q.position);
+      }
+
+      const validClusters = Object.entries(clusters).filter(([, c]) => c.keywords.length >= 2);
+      let stored = 0;
+      for (const [label, cluster] of validClusters.slice(0, 30)) {
+        const avgPos = cluster.positions.reduce((a, b) => a + b, 0) / cluster.positions.length;
+        const primaryKw = cluster.keywords[0].query;
+        const targetUrl = cluster.keywords[0].page;
+
+        await supabase.from('keyword_clusters').upsert({
+          cluster_label: label,
+          primary_keyword: primaryKw,
+          keyword_count: cluster.keywords.length,
+          keywords: cluster.keywords.map(k => ({ query: k.query, impressions: k.impressions, position: k.position })),
+          total_impressions: cluster.totalImpressions,
+          total_clicks: cluster.totalClicks,
+          avg_position: avgPos,
+          target_url: targetUrl,
+          intent_type: avgPos <= 10 ? 'transactional' : avgPos <= 30 ? 'commercial' : 'informational',
+          run_id: runId,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'cluster_label' });
+        stored++;
+      }
+
+      return { clustered: true, clustersFound: validClusters.length, stored };
+    }
+
+    // ─── V7 Steps ───
+    case 'competitor_gap_scan': {
+      const { data: weakKeywords } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, clicks, impressions, ctr, position')
+        .gt('impressions', 50)
+        .gt('position', 15)
+        .order('impressions', { ascending: false })
+        .limit(50);
+
+      if (!weakKeywords?.length) return { gaps: 0, reason: 'No weak keywords found' };
+
+      const gaps = weakKeywords.map(kw => {
+        const estCompetitorPos = Math.min(kw.position - 5, 5);
+        const contentGapScore = Math.min(100, Math.round((kw.position - estCompetitorPos) * 3 + (1 - kw.ctr) * 20));
+        const estimatedGain = Math.round(kw.impressions * 0.05 * (kw.position > 20 ? 2 : 1));
+        return {
+          run_id: runId,
+          keyword: kw.query,
+          competitor_url: null,
+          competitor_position: estCompetitorPos,
+          our_position: kw.position,
+          content_gap_score: contentGapScore,
+          schema_gap: {},
+          authority_gap: Math.max(0, kw.position - 10),
+          estimated_gain_if_matched: estimatedGain,
+        };
+      });
+
+      await supabase.from('competitor_gaps').insert(gaps);
+
+      await log(supabase, runId, 'competitor_gap_scan', 'info',
+        `Found ${gaps.length} competitive gaps. Top: "${gaps[0]?.keyword}" (+${gaps[0]?.estimated_gain_if_matched} clicks)`);
+
+      return { gaps: gaps.length, topKeyword: gaps[0]?.keyword, topGain: gaps[0]?.estimated_gain_if_matched };
+    }
+
+    case 'serp_feature_analyzer': {
+      const { data: eligiblePages } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, impressions, position, ctr')
+        .gt('impressions', 20)
+        .lte('position', 20)
+        .order('impressions', { ascending: false })
+        .limit(50);
+
+      if (!eligiblePages?.length) return { analyzed: 0 };
+
+      const { data: blogPosts } = await supabase
+        .from('blog_posts')
+        .select('slug')
+        .eq('is_published', true);
+
+      const blogSlugs = new Set(blogPosts?.map(b => b.slug) || []);
+      const features: Array<{
+        run_id: string; keyword: string; page_url: string; feature_type: string;
+        status: string; impressions: number; position: number;
+      }> = [];
+
+      for (const page of eligiblePages) {
+        const slug = page.page.split('/').pop() || '';
+        const hasBlog = blogSlugs.has(slug);
+
+        features.push({
+          run_id: runId, keyword: page.query, page_url: page.page,
+          feature_type: 'faq', status: hasBlog ? 'eligible' : 'missing',
+          impressions: page.impressions, position: page.position,
+        });
+
+        if (page.position <= 8) {
+          features.push({
+            run_id: runId, keyword: page.query, page_url: page.page,
+            feature_type: 'featured_snippet', status: page.impressions > 100 ? 'eligible' : 'missing',
+            impressions: page.impressions, position: page.position,
+          });
+        }
+
+        if (/how|what|why|when|best|guide|tips/i.test(page.query)) {
+          features.push({
+            run_id: runId, keyword: page.query, page_url: page.page,
+            feature_type: 'paa', status: 'eligible',
+            impressions: page.impressions, position: page.position,
+          });
+        }
+      }
+
+      if (features.length > 0) await supabase.from('serp_features').insert(features);
+
+      return {
+        analyzed: eligiblePages.length,
+        features: features.length,
+        captured: features.filter(f => f.status === 'captured').length,
+        eligible: features.filter(f => f.status === 'eligible').length,
+        missing: features.filter(f => f.status === 'missing').length,
+      };
+    }
+
+    case 'zero_click_optimizer': {
+      const { data: infoPages } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, impressions, position')
+        .gt('impressions', 30)
+        .lte('position', 15)
+        .order('impressions', { ascending: false })
+        .limit(30);
+
+      if (!infoPages?.length) return { assessed: 0 };
+
+      const { data: blogs } = await supabase
+        .from('blog_posts')
+        .select('slug, content')
+        .eq('is_published', true);
+
+      const blogMap = new Map(blogs?.map(b => [b.slug, b]) || []);
+      let assessed = 0;
+      let readyCount = 0;
+
+      for (const page of infoPages) {
+        const slug = page.page.split('/').pop() || '';
+        const blog = blogMap.get(slug);
+        const content = blog?.content || '';
+
+        const hasDirectAnswer = content.length > 200;
+        const hasComparisonTable = /<table/i.test(content) || /comparison|vs\.|versus/i.test(content);
+        const hasDefinition = /definition|what is|means/i.test(page.query);
+        const hasQuickAnswer = content.slice(0, 500).split(/\s+/).length >= 30;
+
+        const feats = [hasDirectAnswer, hasComparisonTable, hasDefinition, hasQuickAnswer];
+        const score = Math.round((feats.filter(Boolean).length / 4) * 100);
+        const ready = score >= 50;
+
+        await supabase.from('zero_click_pages').upsert({
+          page_url: page.page, slug,
+          zero_click_ready: ready,
+          has_direct_answer: hasDirectAnswer,
+          has_definition_schema: hasDefinition,
+          has_comparison_table: hasComparisonTable,
+          has_quick_answer: hasQuickAnswer,
+          visibility_score: score,
+          last_checked_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'page_url' });
+
+        assessed++;
+        if (ready) readyCount++;
+      }
+
+      return { assessed, ready: readyCount, notReady: assessed - readyCount };
+    }
+
+    case 'authority_gap_engine': {
+      const { data: topPages } = await supabase
+        .from('gsc_keywords')
+        .select('page, clicks, impressions, position')
+        .order('clicks', { ascending: false })
+        .limit(20);
+
+      const { data: clusters } = await supabase
+        .from('keyword_clusters')
+        .select('cluster_label, target_url, avg_position, total_impressions')
+        .gt('total_impressions', 50)
+        .order('total_impressions', { ascending: false })
+        .limit(20);
+
+      const weakClusters = (clusters || []).filter(c => (c.avg_position || 99) > 20);
+      const strongPages = (topPages || []).filter(p => p.position <= 10);
+
+      const velocity = strongPages.length > 0 ? strongPages.reduce((s, p) => s + p.clicks, 0) / strongPages.length : 0;
+      const serpCapture = topPages?.length ? (strongPages.length / topPages.length) * 100 : 0;
+
+      await supabase.from('strategy_state_history').insert({
+        run_id: runId,
+        ranking_velocity: velocity,
+        ctr_growth: 0,
+        gap_closure_rate: weakClusters.length > 0 ? ((clusters?.length || 0) - weakClusters.length) / (clusters?.length || 1) * 100 : 100,
+        serp_capture_pct: serpCapture,
+        strategy_action: weakClusters.length > 5 ? 'increase_aggressiveness' : velocity > 50 ? 'scale_clusters' : 'maintain',
+        reasoning: `${strongPages.length} pages in top 10, ${weakClusters.length} weak clusters. Velocity: ${velocity.toFixed(1)} clicks/page avg.`,
+      });
+
+      for (const page of (topPages || []).filter(p => p.position <= 5)) {
+        await supabase.from('ranking_defense').upsert({
+          page_url: page.page,
+          keyword: '',
+          position: page.position,
+          defense_status: 'locked',
+          locked_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'page_url,keyword' });
+      }
+
+      return {
+        strongPages: strongPages.length,
+        weakClusters: weakClusters.length,
+        totalClusters: clusters?.length || 0,
+        strategyAction: weakClusters.length > 5 ? 'increase_aggressiveness' : 'maintain',
+        defenseLocked: (topPages || []).filter(p => p.position <= 5).length,
+      };
     }
 
     default:

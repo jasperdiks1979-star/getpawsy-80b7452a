@@ -85,7 +85,7 @@ export function RunAllPanel() {
                 Pipeline Runner (Full Stack)
               </CardTitle>
               <CardDescription>
-                GSC sync · Crawl health · Perf snapshot · Orphan detection · CTR recovery · Ranking push · Content queue · Indexing submit
+                GSC sync · Crawl health · Perf snapshot · Orphan detection · CTR recovery · Ranking push · Content queue · Indexing submit · CTR intelligence · Cluster intelligence · Competitor gap · SERP features · Zero-click · Authority gap
               </CardDescription>
             </div>
             <Button variant="ghost" size="icon" onClick={refresh} disabled={triggering}>

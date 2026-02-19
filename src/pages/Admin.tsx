@@ -57,6 +57,10 @@ const ReviewModerationManager = lazy(() => import("@/components/admin/ReviewMode
 const AdvancedVisitorStatsWidget = lazy(() => import("@/components/admin/widgets/AdvancedVisitorStatsWidget").then(module => ({ default: module.AdvancedVisitorStatsWidget })));
 const PinterestTrafficWidget = lazy(() => import("@/components/admin/widgets/PinterestTrafficWidget").then(module => ({ default: module.PinterestTrafficWidget })));
 const PinterestAdsWidget = lazy(() => import("@/components/admin/widgets/PinterestAdsWidget").then(module => ({ default: module.PinterestAdsWidget })));
+const CompetitorGapWidget = lazy(() => import("@/components/admin/widgets/CompetitorGapWidget").then(module => ({ default: module.CompetitorGapWidget })));
+const SerpCoverageWidget = lazy(() => import("@/components/admin/widgets/SerpCoverageWidget").then(module => ({ default: module.SerpCoverageWidget })));
+const ZeroClickWidget = lazy(() => import("@/components/admin/widgets/ZeroClickWidget").then(module => ({ default: module.ZeroClickWidget })));
+const StrategyAdaptationWidget = lazy(() => import("@/components/admin/widgets/StrategyAdaptationWidget").then(module => ({ default: module.StrategyAdaptationWidget })));
 import { TrafficReportDownload } from "@/components/admin/TrafficReportDownload";
 import { AdminManualDownload } from "@/components/admin/AdminManualDownload";
 import { ProductCsvExport } from "@/components/admin/ProductCsvExport";
@@ -3295,6 +3299,22 @@ const Admin = () => {
                 <GrowthAnalyticsDashboard />
               </Suspense>
             </AuthErrorBoundary>
+
+            {/* V7 SEO Intelligence Widgets */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
+                <CompetitorGapWidget />
+              </Suspense>
+              <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
+                <SerpCoverageWidget />
+              </Suspense>
+              <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
+                <ZeroClickWidget />
+              </Suspense>
+              <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
+                <StrategyAdaptationWidget />
+              </Suspense>
+            </div>
           </TabsContent>
 
           {/* Reviews Moderation Tab */}
