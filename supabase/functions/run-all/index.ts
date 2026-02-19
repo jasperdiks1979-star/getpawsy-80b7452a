@@ -377,64 +377,70 @@ async function executeStep(
         }
       }
 
-      // Check www→apex redirect with diagnostic headers
-      const redirectChecks = [
-        { label: 'www→apex redirect', from: 'https://www.getpawsy.pet/' },
-      ];
-      for (const rc of redirectChecks) {
-        const start = Date.now();
+      // === REDIRECT CHAIN PROOF ===
+      // Walk the full redirect chain from www to final destination
+      const redirectChainProof: Array<{ url: string; status: number; location: string | null; server: string | null; cfRay: string | null }> = [];
+      let chainUrl = 'https://www.getpawsy.pet/';
+      const maxHops = 5;
+      for (let i = 0; i < maxHops; i++) {
         try {
-          const res = await fetch(rc.from, { method: 'HEAD', redirect: 'manual' });
-          const location = res.headers.get('location') || '';
+          const res = await fetch(chainUrl, { method: 'HEAD', redirect: 'manual', signal: AbortSignal.timeout(5000) });
+          const location = res.headers.get('location');
           const server = res.headers.get('server');
           const cfRay = res.headers.get('cf-ray');
-          const cfCacheStatus = res.headers.get('cf-cache-status');
-          const via = res.headers.get('via');
-
-          const diagHeaders = { server, cfRay, cfCacheStatus, via };
-          const redirectSource = cfRay && server?.toLowerCase().includes('cloudflare') ? 'cloudflare' : 'origin';
-
-          const isRedirectStatus = [301, 302, 307, 308].includes(res.status);
-          // Normalize: strip trailing slash for comparison
-          const normalizedLocation = location.replace(/\/$/, '');
-          const normalizedTarget = CANONICAL_HOST; // https://getpawsy.pet
-          const targetCorrect = normalizedLocation === normalizedTarget || location === normalizedTarget + '/';
-
-          let ok = false;
-          let warning: string | undefined;
-          let error: string | undefined;
-
-          if (isRedirectStatus && targetCorrect) {
-            ok = true;
-            if (res.status === 302 || res.status === 307) {
-              warning = `Temporary redirect (${res.status}) detected; SEO recommends 301 or 308. Source: ${redirectSource}.`;
-            }
-          } else if (isRedirectStatus && !targetCorrect) {
-            ok = false;
-            error = `Redirect target is "${location}" but expected "${CANONICAL_HOST}/". Fix DNS/hosting redirect config.`;
-          } else if (res.status === 200) {
-            ok = false;
-            error = `No redirect: www returned 200 directly. Both www and apex serve content (duplicate). Fix: add redirect rule.`;
+          redirectChainProof.push({ url: chainUrl, status: res.status, location, server, cfRay });
+          if (res.status >= 300 && res.status < 400 && location) {
+            chainUrl = location.startsWith('http') ? location : new URL(location, chainUrl).href;
           } else {
-            ok = false;
-            error = `Unexpected status ${res.status} from www. Expected redirect (301/308).`;
+            break;
           }
-
-          checks.push({
-            label: rc.label, url: rc.from,
-            status: res.status, ok, critical: !ok, // only critical if NOT ok
-            ttfb_ms: Date.now() - start,
-            redirectTarget: location, warning, error,
-            headers: diagHeaders, redirectSource,
-          });
         } catch (e) {
-          checks.push({ label: rc.label, url: rc.from, status: 0, ok: false, critical: true, ttfb_ms: Date.now() - start, error: String(e) });
+          redirectChainProof.push({ url: chainUrl, status: 0, location: null, server: null, cfRay: null });
+          break;
         }
       }
 
+      // === REDIRECT INTEGRITY ASSESSMENT ===
+      const firstHop = redirectChainProof[0];
+      const isPermanent = firstHop && (firstHop.status === 301 || firstHop.status === 308);
+      const normalizedTarget = (firstHop?.location || '').replace(/\/$/, '');
+      const targetIsApex = normalizedTarget === CANONICAL_HOST;
+      const hasIntermediate302 = redirectChainProof.some(h => h.status === 302 || h.status === 307);
+      const redirectSource = firstHop?.cfRay && firstHop?.server?.toLowerCase().includes('cloudflare') ? 'cloudflare' : 'origin';
+
+      const redirectIntegrity = {
+        pass: isPermanent && targetIsApex && !hasIntermediate302,
+        isPermanent,
+        targetIsApex,
+        hasIntermediate302,
+        firstHopStatus: firstHop?.status || 0,
+        firstHopLocation: firstHop?.location || '',
+        redirectSource,
+        chain: redirectChainProof,
+        failures: [] as string[],
+      };
+      if (!isPermanent) redirectIntegrity.failures.push(`First hop is ${firstHop?.status || 'unknown'}, expected 301 or 308`);
+      if (!targetIsApex) redirectIntegrity.failures.push(`Target "${firstHop?.location}" does not match apex "${CANONICAL_HOST}"`);
+      if (hasIntermediate302) redirectIntegrity.failures.push('Intermediate 302/307 found in chain');
+
+      // Add redirect check to checks array
+      checks.push({
+        label: 'www→apex redirect',
+        url: 'https://www.getpawsy.pet/',
+        status: firstHop?.status || 0,
+        ok: redirectIntegrity.pass,
+        critical: !targetIsApex, // wrong target is critical; 302 with correct target is non-critical warning
+        ttfb_ms: 0,
+        redirectTarget: firstHop?.location || '',
+        warning: !redirectIntegrity.pass && targetIsApex ? `Temporary redirect (${firstHop?.status}) detected; SEO requires 301/308. Source: ${redirectSource}.` : undefined,
+        error: !targetIsApex ? `Redirect target "${firstHop?.location}" does not match "${CANONICAL_HOST}". Fix hosting config.` : undefined,
+        headers: { server: firstHop?.server || null, cfRay: firstHop?.cfRay || null, cfCacheStatus: null, via: null },
+        redirectSource,
+      });
+
       const hasCriticalFailures = checks.some(c => !c.ok && c.critical);
       const warnings = checks.filter(c => c.warning).map(c => ({ label: c.label, warning: c.warning }));
-      return { checked: true, hasCriticalFailures, checks, warnings };
+      return { checked: true, hasCriticalFailures, checks, warnings, redirectIntegrity };
     }
 
     case 'performance_snapshot': {

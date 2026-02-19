@@ -3,14 +3,41 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   ShieldCheck, ShieldAlert, ShieldOff, RefreshCw, CheckCircle, XCircle,
   AlertTriangle, ArrowRight, Link2, Globe, FileX, Layers, ArrowDown, ArrowUp,
-  Loader2, BarChart3, Minus,
+  Loader2, BarChart3, Minus, ExternalLink,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+
+interface RedirectChainHop {
+  url: string;
+  status: number;
+  location: string | null;
+  server: string | null;
+  cfRay: string | null;
+}
+
+interface RedirectIntegrity {
+  pass: boolean;
+  isPermanent: boolean;
+  targetIsApex: boolean;
+  hasIntermediate302: boolean;
+  firstHopStatus: number;
+  firstHopLocation: string;
+  redirectSource: string;
+  chain: RedirectChainHop[];
+  failures: string[];
+}
+
+interface GovernorDecision {
+  allowed: boolean;
+  reason: string;
+  hardBlock: boolean;
+  recommendedMode: string;
+  nextSafeRunInSeconds: number;
+}
 
 interface StabilityData {
   redirect: {
@@ -21,6 +48,7 @@ interface StabilityData {
     warning?: string;
     error?: string;
   };
+  redirectIntegrity: RedirectIntegrity | null;
   unmatchedCount: number;
   unmatchedUrls: string[];
   orphans: {
@@ -32,6 +60,7 @@ interface StabilityData {
   contentOutlines: number;
   nextActions: string[];
   governorStatus: string;
+  governorDecision: GovernorDecision | null;
 }
 
 export function AGMStabilityDashboard() {
@@ -50,7 +79,8 @@ export function AGMStabilityDashboard() {
         .single();
 
       let orphanTotal = 0;
-      let redirectStatus: StabilityData['redirect'] = { statusCode: 302, isPermanent: false, isApex: true, source: 'cloudflare' };
+      let redirectStatus: StabilityData['redirect'] = { statusCode: 302, isPermanent: false, isApex: true, source: 'unknown' };
+      let redirectIntegrity: RedirectIntegrity | null = null;
       let unmatchedUrls: string[] = [];
 
       if (latestRun?.id) {
@@ -76,6 +106,10 @@ export function AGMStabilityDashboard() {
               error: wwwCheck.error,
             };
           }
+          // Extract redirect integrity proof if available
+          if ((result as any).redirectIntegrity) {
+            redirectIntegrity = (result as any).redirectIntegrity as RedirectIntegrity;
+          }
         }
 
         // Get orphan detection step
@@ -88,7 +122,7 @@ export function AGMStabilityDashboard() {
 
         if (orphanStep?.result) {
           const r = orphanStep.result as any;
-          orphanTotal = r.orphansBefore || r.totalOrphans || 0;
+          orphanTotal = r.orphansBefore || r.totalOrphans || r.totalPages || 0;
         }
 
         // Get GSC sync for unmatched
@@ -105,7 +139,7 @@ export function AGMStabilityDashboard() {
         }
       }
 
-      // Count products and blog posts for orphan breakdown
+      // Count products and blog posts
       const { count: productCount } = await supabase
         .from('products')
         .select('id', { count: 'exact', head: true })
@@ -122,16 +156,36 @@ export function AGMStabilityDashboard() {
         .select('id', { count: 'exact', head: true })
         .eq('status', 'approved');
 
+      // Get latest governor decision
+      const { data: govLog } = await supabase
+        .from('governor_decision_logs')
+        .select('decision, reason, signals, next_safe_run_seconds, force_override')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let governorDecision: GovernorDecision | null = null;
+      if (govLog) {
+        governorDecision = {
+          allowed: govLog.decision === 'allowed',
+          reason: govLog.reason || '',
+          hardBlock: govLog.decision === 'blocked',
+          recommendedMode: govLog.decision === 'allowed' ? 'FULL' : govLog.decision === 'softlimit' ? 'LIGHT' : 'BLOCKED',
+          nextSafeRunInSeconds: govLog.next_safe_run_seconds || 0,
+        };
+      }
+
       // Build stability data
       const stabilityData: StabilityData = {
         redirect: redirectStatus,
+        redirectIntegrity,
         unmatchedCount: unmatchedUrls.length,
         unmatchedUrls: unmatchedUrls.slice(0, 10),
         orphans: {
           total: orphanTotal,
           byType: [
-            { type: 'Products', count: Math.round(orphanTotal * 0.66), trend: 'stable' },
-            { type: 'Blog/Guides', count: Math.round(orphanTotal * 0.34), trend: 'improving' },
+            { type: 'Products', count: productCount || 0, trend: 'stable' },
+            { type: 'Blog/Guides', count: blogCount || 0, trend: 'stable' },
           ],
         },
         internalLinksAdded: linkCount || 0,
@@ -141,13 +195,14 @@ export function AGMStabilityDashboard() {
         ],
         contentOutlines: 0,
         nextActions: [],
-        governorStatus: 'allowed',
+        governorStatus: governorDecision?.allowed ? 'allowed' : governorDecision?.hardBlock ? 'blocked' : 'softlimit',
+        governorDecision,
       };
 
       // Generate next actions
       const actions: string[] = [];
       if (!stabilityData.redirect.isPermanent) {
-        actions.push('Fix www→apex redirect from 302 to 301/308 in Cloudflare');
+        actions.push('Fix www→apex redirect from 302 to 301/308 at hosting layer');
       }
       if (stabilityData.unmatchedCount > 0) {
         actions.push(`Resolve ${stabilityData.unmatchedCount} unmatched GSC URLs`);
@@ -187,6 +242,12 @@ export function AGMStabilityDashboard() {
 
   if (!data) return null;
 
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  };
+
   return (
     <Card className="border-primary/20">
       <CardHeader className="pb-3">
@@ -197,7 +258,7 @@ export function AGMStabilityDashboard() {
               AGM – Stability & Index Hygiene
             </CardTitle>
             <CardDescription>
-              Redirect correctness, orphan elimination, unmatched URL resolution
+              Redirect integrity, orphan elimination, governor status, sitemap hygiene
             </CardDescription>
           </div>
           <Button variant="ghost" size="icon" onClick={fetchData} disabled={loading}>
@@ -209,7 +270,6 @@ export function AGMStabilityDashboard() {
       <CardContent className="space-y-4">
         {/* Status Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {/* Redirect Status */}
           <StatusCard
             label="www→apex Redirect"
             value={`${data.redirect.statusCode}`}
@@ -217,22 +277,18 @@ export function AGMStabilityDashboard() {
             warning={!!data.redirect.warning}
             detail={data.redirect.isPermanent ? '301/308 ✓' : `${data.redirect.statusCode} — needs fix`}
           />
-          {/* Unmatched URLs */}
           <StatusCard
             label="Unmatched URLs"
             value={String(data.unmatchedCount)}
             ok={data.unmatchedCount === 0}
             detail={data.unmatchedCount === 0 ? 'All clean' : `${data.unmatchedCount} need resolution`}
           />
-          {/* Orphan Pages */}
           <StatusCard
-            label="Orphan Pages"
+            label="Total Pages"
             value={String(data.orphans.total)}
-            ok={data.orphans.total < 20}
-            warning={data.orphans.total >= 20 && data.orphans.total < 100}
-            detail={data.orphans.total < 20 ? 'Healthy' : 'Needs link patches'}
+            ok={true}
+            detail={`${data.orphans.byType[0]?.count || 0} products, ${data.orphans.byType[1]?.count || 0} blog`}
           />
-          {/* Internal Links */}
           <StatusCard
             label="Links Injected"
             value={String(data.internalLinksAdded)}
@@ -241,8 +297,90 @@ export function AGMStabilityDashboard() {
           />
         </div>
 
-        {/* Redirect Detail */}
-        {(data.redirect.warning || data.redirect.error) && (
+        {/* Governor Decision Summary */}
+        {data.governorDecision && (
+          <div className={cn(
+            'flex items-start gap-2 text-xs px-3 py-2.5 rounded-md border',
+            data.governorDecision.allowed
+              ? 'bg-green-500/5 border-green-500/20 text-green-700 dark:text-green-400'
+              : data.governorDecision.hardBlock
+                ? 'bg-destructive/5 border-destructive/20 text-destructive'
+                : 'bg-yellow-500/5 border-yellow-500/20 text-yellow-700 dark:text-yellow-400'
+          )}>
+            {data.governorDecision.allowed ? (
+              <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5" />
+            ) : data.governorDecision.hardBlock ? (
+              <ShieldOff className="h-4 w-4 shrink-0 mt-0.5" />
+            ) : (
+              <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+            )}
+            <div className="flex-1">
+              <div className="font-semibold">
+                Governor: {data.governorDecision.recommendedMode}
+                {data.governorDecision.nextSafeRunInSeconds > 0 && (
+                  <Badge variant="outline" className="text-[9px] h-4 px-1.5 ml-2">
+                    next in {formatTime(data.governorDecision.nextSafeRunInSeconds)}
+                  </Badge>
+                )}
+              </div>
+              <div className="text-muted-foreground mt-0.5">{data.governorDecision.reason}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Redirect Integrity Proof */}
+        {data.redirectIntegrity && (
+          <div className="space-y-1.5">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <Globe className="h-3 w-3" />
+              Redirect Chain Proof
+              <Badge variant={data.redirectIntegrity.pass ? 'default' : 'destructive'} className="text-[9px] h-4 px-1.5 ml-1">
+                {data.redirectIntegrity.pass ? 'PASS' : 'FAIL'}
+              </Badge>
+            </h4>
+            <div className="border rounded-md overflow-hidden">
+              <table className="w-full text-[10px]">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="text-left p-1.5 font-medium text-muted-foreground">Hop</th>
+                    <th className="text-left p-1.5 font-medium text-muted-foreground">URL</th>
+                    <th className="text-center p-1.5 font-medium text-muted-foreground">Status</th>
+                    <th className="text-left p-1.5 font-medium text-muted-foreground">Location</th>
+                    <th className="text-left p-1.5 font-medium text-muted-foreground">Server</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.redirectIntegrity.chain.map((hop, i) => (
+                    <tr key={i} className="border-t border-border/50">
+                      <td className="p-1.5 text-muted-foreground">{i + 1}</td>
+                      <td className="p-1.5 font-mono truncate max-w-[200px]">{hop.url}</td>
+                      <td className="p-1.5 text-center">
+                        <Badge variant={hop.status === 301 || hop.status === 308 ? 'default' : hop.status === 302 || hop.status === 307 ? 'destructive' : 'secondary'} className="text-[9px] h-4 px-1">
+                          {hop.status}
+                        </Badge>
+                      </td>
+                      <td className="p-1.5 font-mono truncate max-w-[200px] text-muted-foreground">{hop.location || '—'}</td>
+                      <td className="p-1.5 text-muted-foreground">{hop.server || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {data.redirectIntegrity.failures.length > 0 && (
+              <div className="space-y-0.5 mt-1">
+                {data.redirectIntegrity.failures.map((f, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-[10px] text-destructive">
+                    <XCircle className="h-3 w-3 shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Redirect Detail (legacy fallback when no chain proof) */}
+        {!data.redirectIntegrity && (data.redirect.warning || data.redirect.error) && (
           <div className={cn(
             'flex items-start gap-2 text-xs px-3 py-2 rounded-md border',
             data.redirect.error
@@ -251,9 +389,7 @@ export function AGMStabilityDashboard() {
           )}>
             <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
             <div>
-              <span className="font-medium">
-                {data.redirect.error ? 'Critical: ' : 'Warning: '}
-              </span>
+              <span className="font-medium">{data.redirect.error ? 'Critical: ' : 'Warning: '}</span>
               {data.redirect.error || data.redirect.warning}
               <span className="text-muted-foreground ml-1">(Source: {data.redirect.source})</span>
             </div>
@@ -277,25 +413,16 @@ export function AGMStabilityDashboard() {
           </div>
         )}
 
-        {/* Orphan Breakdown */}
+        {/* Page Breakdown */}
         <div className="space-y-1.5">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Orphan Breakdown by Type
+            Page Breakdown by Type
           </h4>
           <div className="grid grid-cols-2 gap-2">
             {data.orphans.byType.map(o => (
               <div key={o.type} className="border rounded-md p-2 flex items-center justify-between">
                 <span className="text-xs font-medium">{o.type}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold">{o.count}</span>
-                  {o.trend === 'improving' ? (
-                    <ArrowDown className="h-3 w-3 text-green-500" />
-                  ) : o.trend === 'worsening' ? (
-                    <ArrowUp className="h-3 w-3 text-destructive" />
-                  ) : (
-                    <Minus className="h-3 w-3 text-muted-foreground" />
-                  )}
-                </div>
+                <span className="text-sm font-bold">{o.count}</span>
               </div>
             ))}
           </div>
