@@ -49,6 +49,7 @@ const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRanki
 const ProductResearchTool = lazy(() => import("@/components/admin/product-research/ProductResearchTool").then(module => ({ default: module.ProductResearchTool })));
 const ContentScraperTool = lazy(() => import("@/components/admin/content-scraper/ContentScraperTool").then(module => ({ default: module.ContentScraperTool })));
 const RunCenterCard = lazy(() => import("@/components/admin/RunCenterCard").then(module => ({ default: module.RunCenterCard })));
+const RunAllControls = lazy(() => import("@/components/admin/RunAllControls").then(module => ({ default: module.RunAllControls })));
 const SupplierImportManager = lazy(() => import("@/components/admin/SupplierImportManager").then(module => ({ default: module.SupplierImportManager })));
 const ABTestDashboard = lazy(() => import("@/components/admin/ABTestDashboard"));
 const GrowthAnalyticsDashboard = lazy(() => import("@/components/admin/GrowthAnalyticsDashboard"));
@@ -1210,6 +1211,7 @@ const Admin = () => {
               <Package className="w-4 h-4 mr-2" />
               {existingProducts?.length || 0} products
             </Badge>
+            <Suspense fallback={null}><RunAllControls /></Suspense>
           </div>
         </div>
 
