@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     minify: 'esbuild',
-    target: 'es2020',
+    target: 'es2019',
     chunkSizeWarningLimit: 500,
     cssMinify: true,
     cssCodeSplit: true,
@@ -46,6 +46,15 @@ export default defineConfig(({ mode }) => ({
             }
             if (id.includes('@supabase')) {
               return 'supabase';
+            }
+            if (id.includes('recharts') || id.includes('d3-')) {
+              return 'charts';
+            }
+            if (id.includes('mapbox-gl')) {
+              return 'mapbox';
+            }
+            if (id.includes('@tiptap') || id.includes('prosemirror')) {
+              return 'editor';
             }
           }
         },
