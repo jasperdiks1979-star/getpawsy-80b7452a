@@ -23,6 +23,7 @@ import { runContentDominance, type ContentDominanceResult } from '@/lib/content-
 import { runGrowthDomination, type GrowthDominationResult } from '@/lib/growth-domination-engine';
 import { runEnterpriseExpansion, type EnterpriseExpansionResult } from '@/lib/enterprise-expansion-engine';
 import { runAlgorithmImmunityStack, type AlgorithmImmunityStackResult } from '@/lib/algorithm-immunity-engine';
+import { runIntelligenceStack, type IntelligenceStackResult } from '@/lib/intelligence-domination-engine';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Crown, Shield, Flame } from 'lucide-react';
@@ -291,6 +292,28 @@ export default function GrowthExecutionPage() {
     if (!immunityEnabled || !gscImmunityData || gscImmunityData.length === 0) return null;
     return runAlgorithmImmunityStack(gscImmunityData);
   }, [gscImmunityData, immunityEnabled]);
+
+  // 🧠 INTELLIGENCE STACK
+  const [intelligenceEnabled, setIntelligenceEnabled] = useState(false);
+  const { data: gscIntelData } = useQuery({
+    queryKey: ['gsc-keywords-intelligence'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, clicks, impressions, ctr, position')
+        .order('impressions', { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: intelligenceEnabled,
+  });
+
+  const intelligenceResult: IntelligenceStackResult | null = useMemo(() => {
+    if (!intelligenceEnabled || !gscIntelData || gscIntelData.length === 0) return null;
+    return runIntelligenceStack(gscIntelData);
+  }, [gscIntelData, intelligenceEnabled]);
 
   const downloadCsv = () => {
     if (!backlinkResult?.csvData) return;
@@ -1298,6 +1321,200 @@ export default function GrowthExecutionPage() {
               {/* System JSON */}
               <Section title="Content Dominance Report (JSON)">
                 <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(contentDominanceResult.systemSummary, null, 2)}</pre>
+              </Section>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* 🧠 INTELLIGENCE + COMPETITIVE DOMINATION + CONVERSION AMPLIFICATION */}
+        <Card className={intelligenceEnabled ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-border'}>
+          <CardHeader className="py-3 px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Crosshair className="h-5 w-5 text-cyan-500" />
+                <CardTitle className="text-sm font-semibold">Intelligence + Domination Stack</CardTitle>
+                <Badge variant={intelligenceEnabled ? 'default' : 'secondary'} className="text-xs">
+                  {intelligenceEnabled ? 'ACTIVE' : 'OFF'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Intent + Gap + CRO</span>
+                <Switch checked={intelligenceEnabled} onCheckedChange={(checked) => { setIntelligenceEnabled(checked); toast[checked ? 'success' : 'info'](checked ? '🧠 Intelligence Stack activated' : 'Intelligence Stack deactivated'); }} />
+              </div>
+            </div>
+          </CardHeader>
+          {intelligenceEnabled && intelligenceResult && (
+            <CardContent className="pt-0 px-4 pb-4 space-y-4">
+              {/* System Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <MetricCard label="Real Queries" value={intelligenceResult.systemSummary.totalRealQueries} icon={Search} color="green" />
+                <MetricCard label="Intent Match" value={`${intelligenceResult.systemSummary.intentMatchScore}%`} icon={Target} color="primary" />
+                <MetricCard label="Quick Wins" value={intelligenceResult.systemSummary.quickWinKeywordCount} icon={Zap} color="amber" />
+                <MetricCard label="Growth Status" value={intelligenceResult.systemSummary.enterpriseGrowthStatus} icon={Crown} color="blue" />
+              </div>
+
+              {/* Phase 1: Intent Modeling */}
+              <Section title="Phase 1 — Search Intent Modeling" badge={`${intelligenceResult.intent.intentClustersDetected} clusters | ${intelligenceResult.intent.mismatchedPages} mismatches`} defaultOpen>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Intent Match Avg</p><p className="font-bold text-lg text-primary">{intelligenceResult.intent.intentMatchScoreAverage}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Commercial Density</p><p className="font-bold text-lg">{intelligenceResult.intent.commercialDensityIndex}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Mismatched Pages</p><p className="font-bold text-lg">{intelligenceResult.intent.mismatchedPages}</p></div>
+                  </div>
+
+                  <p className="text-xs font-semibold">Intent Distribution:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {Object.entries(intelligenceResult.intent.intentDistribution).map(([k, v]) => (
+                      <Badge key={k} variant="outline" className="text-[10px]">{k}: {v}</Badge>
+                    ))}
+                  </div>
+
+                  {intelligenceResult.intent.clusters.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">Top Intent Clusters:</p>
+                      <div className="max-h-[200px] overflow-y-auto space-y-1">
+                        {intelligenceResult.intent.clusters.slice(0, 8).map((c, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                            <span className="font-mono text-primary truncate max-w-[35%]">{c.theme}</span>
+                            <div className="flex gap-1">
+                              <Badge variant="secondary" className="text-[10px]">{c.intent}</Badge>
+                              <Badge variant="outline" className="text-[10px]">{c.queries.length} queries</Badge>
+                              <Badge variant="outline" className="text-[10px]">{c.totalImpressions} imp</Badge>
+                              <Badge variant="outline" className="text-[10px]">Pos {c.avgPosition}</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {intelligenceResult.intent.pageMatches.filter(p => p.mismatch).length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">⚠️ Intent Mismatches:</p>
+                      <div className="max-h-[150px] overflow-y-auto space-y-1">
+                        {intelligenceResult.intent.pageMatches.filter(p => p.mismatch).slice(0, 5).map((p, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border border-destructive/30">
+                            <span className="font-mono truncate max-w-[40%]">{p.page.replace('https://getpawsy.pet', '')}</span>
+                            <div className="flex gap-1">
+                              <Badge variant="destructive" className="text-[10px]">Score {p.matchScore}%</Badge>
+                              <Badge variant="outline" className="text-[10px]">{p.reason.slice(0, 30)}</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Section>
+
+              {/* Phase 2: Competitive Gap Scanner */}
+              <Section title="Phase 2 — Competitive Gap Scanner" badge={`${intelligenceResult.competitive.competitorGapsDetected} gaps | ${intelligenceResult.competitive.quickWinTargets.length} quick wins`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Takeover Prob</p><p className="font-bold text-lg text-primary">{intelligenceResult.competitive.takeoverProbability}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Gap Priority</p><p className="font-bold text-lg">{intelligenceResult.competitive.gapPriorityIndex}/100</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Total Gaps</p><p className="font-bold text-lg">{intelligenceResult.competitive.competitorGapsDetected}</p></div>
+                  </div>
+
+                  <p className="text-xs font-semibold">Gap Categories:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {Object.entries(intelligenceResult.competitive.categoryBreakdown).map(([k, v]) => (
+                      <Badge key={k} variant="outline" className="text-[10px]">{k.replace('_', ' ')}: {v}</Badge>
+                    ))}
+                  </div>
+
+                  {intelligenceResult.competitive.quickWinTargets.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">🎯 Quick Win Targets:</p>
+                      <div className="max-h-[200px] overflow-y-auto space-y-1">
+                        {intelligenceResult.competitive.quickWinTargets.slice(0, 10).map((g, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                            <span className="font-mono text-primary truncate max-w-[40%]">{g.keyword}</span>
+                            <div className="flex gap-1">
+                              <Badge variant="outline" className="text-[10px]">Pos {g.position}</Badge>
+                              <Badge variant="secondary" className="text-[10px]">{g.gapCategory.replace('_', ' ')}</Badge>
+                              <Badge variant="outline" className="text-[10px]">Score {g.takeoverScore}</Badge>
+                              <Badge variant="secondary" className="text-[10px]">{g.impressions} imp</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {intelligenceResult.competitive.authorityExpansionTargets.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">📈 Authority Expansion:</p>
+                      <div className="max-h-[150px] overflow-y-auto space-y-1">
+                        {intelligenceResult.competitive.authorityExpansionTargets.slice(0, 5).map((g, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                            <span className="font-mono truncate max-w-[40%]">{g.keyword}</span>
+                            <div className="flex gap-1">
+                              <Badge variant="outline" className="text-[10px]">Pos {g.position}</Badge>
+                              <Badge variant="secondary" className="text-[10px]">{g.impressions} imp</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Section>
+
+              {/* Phase 3: Conversion Amplifier */}
+              <Section title="Phase 3 — Conversion Amplification" badge={`CVR ${(intelligenceResult.conversion.currentConversionEstimate * 100).toFixed(1)}% → ${(intelligenceResult.conversion.optimizedConversionEstimate * 100).toFixed(1)}%`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Current CVR</p><p className="font-bold text-lg">{(intelligenceResult.conversion.currentConversionEstimate * 100).toFixed(2)}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Optimized CVR</p><p className="font-bold text-lg text-primary">{(intelligenceResult.conversion.optimizedConversionEstimate * 100).toFixed(2)}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Rev/1K Visitors</p><p className="font-bold text-lg">${intelligenceResult.conversion.revenuePer1000Visitors}</p></div>
+                  </div>
+
+                  <p className="text-xs font-semibold">Friction Points:</p>
+                  <div className="max-h-[200px] overflow-y-auto space-y-1">
+                    {intelligenceResult.conversion.frictionPoints.map((f, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                        <span className="truncate max-w-[35%]">{f.area}</span>
+                        <div className="flex gap-1">
+                          <Badge variant={f.severity === 'high' ? 'destructive' : 'secondary'} className="text-[10px]">{f.severity}</Badge>
+                          <span className="text-muted-foreground truncate max-w-[200px]">{f.fix.slice(0, 45)}...</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-xs font-semibold">Revenue Scenarios:</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {intelligenceResult.conversion.scenarios.map((s, i) => (
+                      <div key={i} className="p-2 rounded-lg bg-background border text-xs text-center">
+                        <p className="text-muted-foreground">+{s.liftPct}% CVR</p>
+                        <p className="font-bold text-primary">${s.revPer1000}/1K</p>
+                        <p className="text-muted-foreground">+${s.monthlyRevDelta}/mo</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-xs font-semibold">CRO Actions:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {intelligenceResult.conversion.croActions.map((a, i) => <Badge key={i} variant="outline" className="text-[10px]">{a.slice(0, 55)}</Badge>)}
+                  </div>
+                </div>
+              </Section>
+
+              {/* Projections */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">90-Day Traffic Lift</p>
+                  <p className="font-semibold text-primary text-sm">{intelligenceResult.systemSummary.projectedTrafficLift90Days}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">90-Day Revenue Lift</p>
+                  <p className="font-semibold text-primary text-sm">{intelligenceResult.systemSummary.projectedRevenueLift90Days}</p>
+                </div>
+              </div>
+
+              <Section title="System Report (JSON)">
+                <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(intelligenceResult.systemSummary, null, 2)}</pre>
               </Section>
             </CardContent>
           )}
