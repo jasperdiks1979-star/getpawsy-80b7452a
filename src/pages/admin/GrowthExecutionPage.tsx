@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Target, TrendingUp, Link, Package, AlertTriangle, Download,
   Rocket, Search, Eye, MousePointerClick, ArrowUp, Zap, ChevronDown, ChevronUp,
-  Crosshair, FileText,
+  Crosshair, FileText, BookOpen, Globe,
 } from 'lucide-react';
 import {
   runGrowthEngineV4,
@@ -19,6 +19,7 @@ import { classifyRankingZones } from '@/lib/ranking-zones';
 import { prepareBacklinkAssets, type BacklinkDominationResult } from '@/lib/backlink-domination';
 import { runHyperAggressiveEngine, HYPER_AGGRESSIVE_DEFAULTS, type HyperAggressiveResult } from '@/lib/hyper-aggressive-engine';
 import { runDominanceMode, type DominanceModeResult } from '@/lib/dominance-mode-engine';
+import { runContentDominance, type ContentDominanceResult } from '@/lib/content-dominance-engine';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Crown, Shield, Flame } from 'lucide-react';
@@ -177,7 +178,7 @@ export default function GrowthExecutionPage() {
   const [dominanceEnabled, setDominanceEnabled] = useState(false);
   const dominanceResult: DominanceModeResult | null = useMemo(() => {
     if (!dominanceEnabled || !gscData) return null;
-    const slugMap = new Map<string, { slug: string; position: number; impressions: number; clicks: number; ctr: number }>();
+    const slugMap = new window.Map<string, { slug: string; position: number; impressions: number; clicks: number; ctr: number }>();
     for (const row of gscData) {
       if (!row.slug) continue;
       if (!slugMap.has(row.slug)) {
@@ -192,6 +193,35 @@ export default function GrowthExecutionPage() {
     }
     return runDominanceMode(Array.from(slugMap.values()));
   }, [gscData, dominanceEnabled]);
+
+  // 📡 CONTENT DOMINANCE MODE (real query-level data)
+  const [contentDominanceEnabled, setContentDominanceEnabled] = useState(false);
+  const { data: gscQueryData } = useQuery({
+    queryKey: ['gsc-keywords-content-dominance'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, clicks, impressions, ctr, position')
+        .order('impressions', { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: contentDominanceEnabled,
+  });
+
+  const contentDominanceResult: ContentDominanceResult | null = useMemo(() => {
+    if (!contentDominanceEnabled || !gscQueryData || gscQueryData.length === 0) return null;
+    return runContentDominance(gscQueryData.map(r => ({
+      query: r.query,
+      page: r.page,
+      clicks: r.clicks,
+      impressions: r.impressions,
+      ctr: r.ctr,
+      position: r.position,
+    })));
+  }, [gscQueryData, contentDominanceEnabled]);
 
   const downloadCsv = () => {
     if (!backlinkResult?.csvData) return;
@@ -1085,6 +1115,121 @@ export default function GrowthExecutionPage() {
                 <span>Orphan Reduction</span>
                 <span className="font-bold">{dominanceResult.orphansReduced.before} → <span className="text-primary">{dominanceResult.orphansReduced.after}</span></span>
               </div>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* 📡 CONTENT DOMINANCE MODE */}
+        <Card className={contentDominanceEnabled ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border'}>
+          <CardHeader className="py-3 px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-emerald-500" />
+                <CardTitle className="text-sm font-semibold">Content Dominance Mode</CardTitle>
+                <Badge variant={contentDominanceEnabled ? 'default' : 'secondary'} className="text-xs">
+                  {contentDominanceEnabled ? 'ACTIVE' : 'OFF'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Query-Driven Intelligence</span>
+                <Switch checked={contentDominanceEnabled} onCheckedChange={(checked) => { setContentDominanceEnabled(checked); toast[checked ? 'success' : 'info'](checked ? '📡 Content Dominance Mode activated' : 'Content Dominance Mode deactivated'); }} />
+              </div>
+            </div>
+          </CardHeader>
+          {contentDominanceEnabled && contentDominanceResult && (
+            <CardContent className="pt-0 px-4 pb-4 space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <MetricCard label="Real Queries" value={contentDominanceResult.systemSummary.totalRealQueries} icon={Search} color="green" />
+                <MetricCard label="Total Impressions" value={contentDominanceResult.systemSummary.totalImpressions.toLocaleString()} icon={Eye} color="blue" />
+                <MetricCard label="Breakout Targets" value={contentDominanceResult.systemSummary.breakoutTargetsDetected} icon={Rocket} color="amber" />
+                <MetricCard label="Yellow Zone" value={contentDominanceResult.yellowZoneQueries.length} icon={Target} color="primary" />
+              </div>
+              <div className="p-3 rounded-lg border flex items-center justify-between" style={{ background: 'hsl(var(--primary) / 0.05)', borderColor: 'hsl(var(--primary) / 0.2)' }}>
+                <div className="flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /><span className="text-sm font-medium">System: {contentDominanceResult.systemSummary.systemIntegrity}</span></div>
+                <Badge variant={contentDominanceResult.systemSummary.safePushEnabled ? 'default' : 'destructive'} className="text-xs">Safe Push: {contentDominanceResult.systemSummary.safePushEnabled ? 'ON' : 'OFF'}</Badge>
+              </div>
+
+              {/* Breakout Blueprint */}
+              <Section title={`Breakout Blueprint: ${contentDominanceResult.breakoutBlueprint.targetKeyword}`} badge={`Pos ${contentDominanceResult.breakoutBlueprint.currentPosition}`} defaultOpen>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Traffic Lift</p><p className="font-semibold text-primary">{contentDominanceResult.breakoutBlueprint.projectedTrafficLift}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Semantic Coverage</p><p className="font-semibold text-primary">{contentDominanceResult.breakoutBlueprint.semanticCoverageScore}/100</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Top 20 Probability</p><p className="font-semibold text-primary">{contentDominanceResult.breakoutBlueprint.estimatedTop20Probability}</p></div>
+                  </div>
+                  <p className="text-xs font-semibold">Guide Architecture ({contentDominanceResult.breakoutBlueprint.guideSections.length} sections):</p>
+                  {contentDominanceResult.breakoutBlueprint.guideSections.map((s, i) => (
+                    <div key={i} className="p-2 rounded border text-xs">
+                      <div className="flex items-center justify-between mb-1"><span className="font-medium">{s.h2}</span><Badge variant="outline" className="text-[10px]">{s.targetWordCount}w</Badge></div>
+                      <div className="flex flex-wrap gap-1">{s.h3s.map((h3, j) => <Badge key={j} variant="secondary" className="text-[10px]">H3: {h3}</Badge>)}</div>
+                    </div>
+                  ))}
+                  <p className="text-xs font-semibold">Semantic Variants ({contentDominanceResult.breakoutBlueprint.semanticVariants.length}):</p>
+                  <div className="flex flex-wrap gap-1">{contentDominanceResult.breakoutBlueprint.semanticVariants.map((v, i) => <Badge key={i} variant="outline" className="text-[10px]">{v}</Badge>)}</div>
+                  <p className="text-xs font-semibold">FAQ Schema ({contentDominanceResult.breakoutBlueprint.faqEntries.length}):</p>
+                  {contentDominanceResult.breakoutBlueprint.faqEntries.map((f, i) => <div key={i} className="p-2 rounded bg-muted text-xs"><p className="font-medium">Q: {f.question}</p><p className="text-muted-foreground mt-0.5">{f.answer.slice(0, 120)}...</p></div>)}
+                  <p className="text-xs font-semibold">Internal Links ({contentDominanceResult.breakoutBlueprint.internalLinks.length}):</p>
+                  {contentDominanceResult.breakoutBlueprint.internalLinks.map((l, i) => <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border"><span className="font-mono text-primary">{l.targetSlug}</span><Badge variant="outline" className="text-[10px]">"{l.anchorText}"</Badge></div>)}
+                </div>
+              </Section>
+
+              {/* Topical Authority Map */}
+              <Section title="Topical Authority Map" badge={`${contentDominanceResult.topicalAuthorityMap.totalPagesRequired} pages | ${(contentDominanceResult.topicalAuthorityMap.totalWordCount / 1000).toFixed(0)}k words`}>
+                <div className="space-y-3">
+                  {contentDominanceResult.topicalAuthorityMap.pillars.map(pillar => (
+                    <div key={pillar.slug} className="p-3 rounded-lg border bg-card">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" />{pillar.name}</h4>
+                        <div className="flex gap-1"><Badge variant="outline" className="text-[10px]">{pillar.clusters.length} clusters</Badge><Badge variant="secondary" className="text-[10px]">Auth: {pillar.authorityProjection}</Badge></div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mb-2">Cornerstone: {pillar.cornerstonePage} ({pillar.cornerstoneWordCount}w)</p>
+                      <div className="space-y-1">{pillar.clusters.slice(0, 5).map(c => (
+                        <div key={c.slug} className="flex items-center justify-between text-xs p-1.5 rounded bg-muted">
+                          <span className="truncate max-w-[45%]">{c.title}</span>
+                          <div className="flex gap-1">
+                            <Badge variant="outline" className="text-[10px]">{c.wordCount}w</Badge>
+                            <Badge variant={c.intent === 'commercial' ? 'default' : 'secondary'} className="text-[10px]">{c.intent}</Badge>
+                            <Badge variant={c.priority === 'high' ? 'destructive' : 'outline'} className="text-[10px]">{c.priority}</Badge>
+                          </div>
+                        </div>
+                      ))}{pillar.clusters.length > 5 && <p className="text-[10px] text-muted-foreground">+{pillar.clusters.length - 5} more</p>}</div>
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground">Links: {contentDominanceResult.topicalAuthorityMap.internalLinkGraph.length} total | Authority projection: {contentDominanceResult.topicalAuthorityMap.authorityScoreProjection}/100</p>
+                </div>
+              </Section>
+
+              {/* 90-Day Roadmap */}
+              <Section title="90-Day Dominance Roadmap">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Ranking Lift</p><p className="font-semibold text-primary text-[11px]">{contentDominanceResult.roadmap.expectedRankingLift}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Traffic Increase</p><p className="font-semibold text-primary text-[11px]">{contentDominanceResult.roadmap.expectedTrafficIncrease}</p></div>
+                  </div>
+                  {contentDominanceResult.roadmap.months.map(m => (
+                    <div key={m.month} className="p-3 rounded-lg border bg-card">
+                      <div className="flex items-center justify-between mb-2"><h4 className="text-sm font-semibold">Month {m.month} — {m.label}</h4><div className="flex gap-1"><Badge variant="outline" className="text-[10px]">{m.pillarPages} pillars</Badge><Badge variant="secondary" className="text-[10px]">{m.clusterArticles} clusters</Badge></div></div>
+                      <div className="space-y-1 mb-2">{m.tasks.map((t, i) => <div key={i} className="flex items-start gap-1 text-xs"><Zap className="h-3 w-3 mt-0.5 text-primary shrink-0" /><span>{t}</span></div>)}</div>
+                      <div className="flex flex-wrap gap-2">{m.targets.map((t, i) => <span key={i} className="text-[10px] bg-muted px-2 py-1 rounded">{t.metric}: {t.current} → {t.target}</span>)}</div>
+                    </div>
+                  ))}
+                  <div className="p-3 rounded-lg bg-muted"><p className="text-xs font-semibold mb-2">Authority Growth:</p><div className="flex items-end gap-2 h-16">{contentDominanceResult.roadmap.authorityGrowthCurve.map(p => <div key={p.month} className="flex flex-col items-center flex-1"><div className="w-full bg-primary/70 rounded-t" style={{ height: `${p.score}%` }} /><span className="text-[10px] text-muted-foreground mt-1">M{p.month}: {p.score}</span></div>)}</div></div>
+                </div>
+              </Section>
+
+              {/* Needle Movers */}
+              {contentDominanceResult.needleMovers.length > 0 && (
+                <Section title="Needle Movers" badge={`${contentDominanceResult.needleMovers.length} queries`}>
+                  <div className="max-h-[200px] overflow-y-auto space-y-1">{contentDominanceResult.needleMovers.map((q, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs p-2 rounded border"><span className="font-mono text-primary truncate max-w-[50%]">{q.query}</span><div className="flex gap-1"><Badge variant="outline" className="text-[10px]">Pos {Math.round(q.position)}</Badge><Badge variant="secondary" className="text-[10px]">{q.impressions} imp</Badge></div></div>
+                  ))}</div>
+                </Section>
+              )}
+
+              {/* System JSON */}
+              <Section title="Content Dominance Report (JSON)">
+                <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(contentDominanceResult.systemSummary, null, 2)}</pre>
+              </Section>
             </CardContent>
           )}
         </Card>
