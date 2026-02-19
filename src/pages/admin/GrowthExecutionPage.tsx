@@ -25,6 +25,7 @@ import { runEnterpriseExpansion, type EnterpriseExpansionResult } from '@/lib/en
 import { runAlgorithmImmunityStack, type AlgorithmImmunityStackResult } from '@/lib/algorithm-immunity-engine';
 import { runIntelligenceStack, type IntelligenceStackResult } from '@/lib/intelligence-domination-engine';
 import { runAutonomousSeoGrowth, type AutonomousSeoResult } from '@/lib/autonomous-seo-growth-engine';
+import { runRevenueMarketCapture, type RevenueMarketCaptureResult } from '@/lib/revenue-market-capture-engine';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Crown, Shield, Flame } from 'lucide-react';
@@ -337,6 +338,28 @@ export default function GrowthExecutionPage() {
     if (!autonomousEnabled || !gscAutoData || gscAutoData.length === 0) return null;
     return runAutonomousSeoGrowth(gscAutoData);
   }, [gscAutoData, autonomousEnabled]);
+
+  // 💰 REVENUE + MARKET CAPTURE + ALGORITHM SHIELD
+  const [revenueEngineEnabled, setRevenueEngineEnabled] = useState(false);
+  const { data: gscRevenueData } = useQuery({
+    queryKey: ['gsc-keywords-revenue-capture'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, clicks, impressions, ctr, position')
+        .order('impressions', { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: revenueEngineEnabled,
+  });
+
+  const revenueResult: RevenueMarketCaptureResult | null = useMemo(() => {
+    if (!revenueEngineEnabled || !gscRevenueData || gscRevenueData.length === 0) return null;
+    return runRevenueMarketCapture(gscRevenueData);
+  }, [gscRevenueData, revenueEngineEnabled]);
 
   const downloadCsv = () => {
     if (!backlinkResult?.csvData) return;
@@ -1538,6 +1561,179 @@ export default function GrowthExecutionPage() {
 
               <Section title="System Report (JSON)">
                 <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(intelligenceResult.systemSummary, null, 2)}</pre>
+              </Section>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* 💰 REVENUE + MARKET CAPTURE + ALGORITHM SHIELD */}
+        <Card className={revenueEngineEnabled ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border'}>
+          <CardHeader className="py-3 px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-emerald-500" />
+                <CardTitle className="text-sm font-semibold">Revenue + Market Capture + Algorithm Shield</CardTitle>
+                <Badge variant={revenueEngineEnabled ? 'default' : 'secondary'} className="text-xs">
+                  {revenueEngineEnabled ? 'ENTERPRISE' : 'OFF'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Full Stack</span>
+                <Switch checked={revenueEngineEnabled} onCheckedChange={(checked) => { setRevenueEngineEnabled(checked); toast[checked ? 'success' : 'info'](checked ? '💰 Revenue + Market Capture Engine activated' : 'Revenue Engine deactivated'); }} />
+              </div>
+            </div>
+          </CardHeader>
+          {revenueEngineEnabled && revenueResult && (
+            <CardContent className="pt-0 px-4 pb-4 space-y-4">
+              {/* System Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <MetricCard label="Real Queries" value={revenueResult.systemSummary.totalRealQueries} icon={Search} color="green" />
+                <MetricCard label="90d Revenue" value={revenueResult.systemSummary.projected90DayRevenueLift} icon={TrendingUp} color="primary" />
+                <MetricCard label="Authority" value={`${revenueResult.systemSummary.authorityGrowthIndex}%`} icon={Crown} color="amber" />
+                <MetricCard label="Stability" value={`${revenueResult.systemSummary.algorithmStabilityIndex}%`} icon={Shield} color="blue" />
+              </div>
+
+              {/* Phase 1: Revenue Engine */}
+              <Section title="Phase 1 — Autonomous Revenue Engine" badge={`${revenueResult.revenueEngine.seoRevenueTargets.length} targets | CVR ${revenueResult.revenueEngine.currentConversionEstimate}% → ${revenueResult.revenueEngine.optimizedConversionEstimate}%`} defaultOpen>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Rev/1K Visitors</p><p className="font-bold text-lg text-primary">${revenueResult.revenueEngine.revenuePer1000Visitors}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">AOV Lift</p><p className="font-bold text-lg">{revenueResult.revenueEngine.aovLiftEstimate}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">90d Revenue</p><p className="font-bold text-lg">{revenueResult.revenueEngine.projectedRevenueLift90Days}</p></div>
+                  </div>
+
+                  <p className="text-xs font-semibold">🎯 Top SEO Revenue Targets:</p>
+                  <div className="max-h-[200px] overflow-y-auto space-y-1">
+                    {revenueResult.revenueEngine.seoRevenueTargets.slice(0, 10).map((t, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                        <span className="font-mono text-primary truncate max-w-[35%]">{t.query}</span>
+                        <div className="flex gap-1">
+                          <Badge variant="outline" className="text-[10px]">Pos {t.position}</Badge>
+                          <Badge variant="secondary" className="text-[10px]">{t.impressions} imp</Badge>
+                          <Badge variant="outline" className="text-[10px]">+{t.projectedCtrLift}% CTR</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-xs font-semibold">🔧 CRO Improvements:</p>
+                  <div className="max-h-[150px] overflow-y-auto space-y-1">
+                    {revenueResult.revenueEngine.croImprovements.map((c, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                        <span className="truncate max-w-[50%]">{c.fix}</span>
+                        <div className="flex gap-1">
+                          <Badge variant={c.impact === 'high' ? 'destructive' : 'secondary'} className="text-[10px]">{c.impact}</Badge>
+                          <Badge variant="outline" className="text-[10px]">+{c.projectedLift}%</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-xs font-semibold">📈 AOV Strategies:</p>
+                  <div className="space-y-1">
+                    {revenueResult.revenueEngine.aovStrategies.map((a, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                        <span>{a.strategy}</span>
+                        <Badge variant="outline" className="text-[10px]">+{a.projectedAovLift}% AOV</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              {/* Phase 2: Market Capture */}
+              <Section title="Phase 2 — 12-Month Market Capture" badge={`${revenueResult.marketCapture.categoryHubs.length} hubs | ${revenueResult.marketCapture.totalClusterArticles} articles | ${revenueResult.marketCapture.marketShareProbability}% market share`}>
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold">Category Authority Hubs:</p>
+                  <div className="max-h-[200px] overflow-y-auto space-y-1">
+                    {revenueResult.marketCapture.categoryHubs.map((h, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                        <span className="font-mono text-primary">{h.category}</span>
+                        <div className="flex gap-1">
+                          <Badge variant="outline" className="text-[10px]">{h.pillarWordCount}w pillar</Badge>
+                          <Badge variant="secondary" className="text-[10px]">{h.clusterArticles} articles</Badge>
+                          <Badge variant="outline" className="text-[10px]">{h.queriesSupporting} queries</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-xs font-semibold">Quarterly Roadmap:</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {revenueResult.marketCapture.quarterlyPhases.map((p, i) => (
+                      <div key={i} className="p-2 rounded-lg bg-background border text-xs">
+                        <p className="font-bold text-primary">{p.quarter}: {p.label}</p>
+                        {p.targets.map((t, j) => <p key={j} className="text-muted-foreground text-[10px]">• {t}</p>)}
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-xs font-semibold">12-Month Forecast:</p>
+                  <div className="max-h-[120px] overflow-y-auto">
+                    <div className="grid grid-cols-6 gap-1">
+                      {revenueResult.marketCapture.trafficForecast12Month.map((m, i) => (
+                        <div key={i} className="p-1.5 rounded border text-center text-[10px]">
+                          <p className="font-bold">M{m.month}</p>
+                          <p className="text-muted-foreground">{(m.traffic / 1000).toFixed(1)}K</p>
+                          <p className="text-primary">${(m.revenue / 1000).toFixed(1)}K</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Section>
+
+              {/* Phase 3: Algorithm Shield */}
+              <Section title="Phase 3 — Core Update Shield" badge={`Immunity ${revenueResult.algorithmShield.immunityIndex}% | Stability ${revenueResult.algorithmShield.algorithmStabilityScore}% | ${revenueResult.algorithmShield.volatilityDetected ? '⚠️ VOLATILE' : '✅ STABLE'}`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Immunity</p><p className="font-bold text-lg text-primary">{revenueResult.algorithmShield.immunityIndex}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Trust Score</p><p className="font-bold text-lg">{revenueResult.algorithmShield.trustSignalScore}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Content Depth</p><p className="font-bold text-lg">{revenueResult.algorithmShield.contentDepthIndex}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Stability</p><p className="font-bold text-lg">{revenueResult.algorithmShield.algorithmStabilityScore}%</p></div>
+                  </div>
+
+                  <p className="text-xs font-semibold">Early Signals:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {revenueResult.algorithmShield.earlySignals.map((s, i) => (
+                      <Badge key={i} variant={s.status === 'normal' ? 'secondary' : s.status === 'warning' ? 'outline' : 'destructive'} className="text-[10px]">
+                        {s.signal}: {s.value}
+                      </Badge>
+                    ))}
+                  </div>
+
+                  <p className="text-xs font-semibold">Adaptive Actions:</p>
+                  <div className="max-h-[120px] overflow-y-auto space-y-1">
+                    {revenueResult.algorithmShield.adaptiveActions.map((a, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                        <span className="truncate max-w-[50%]">{a.action}</span>
+                        <Badge variant={a.status === 'applied' ? 'destructive' : a.status === 'monitoring' ? 'outline' : 'secondary'} className="text-[10px]">{a.status}</Badge>
+                      </div>
+                    ))}
+                  </div>
+
+                  {revenueResult.algorithmShield.risks.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">⚠️ Risk Scanner ({revenueResult.algorithmShield.risks.length} items):</p>
+                      <div className="max-h-[150px] overflow-y-auto space-y-1">
+                        {revenueResult.algorithmShield.risks.slice(0, 8).map((r, i) => (
+                          <div key={i} className="text-xs p-1.5 rounded border">
+                            <div className="flex items-center gap-1">
+                              <Badge variant={r.severity === 'critical' ? 'destructive' : 'secondary'} className="text-[10px]">{r.severity}</Badge>
+                              <Badge variant="outline" className="text-[10px]">{r.type.replace('_', ' ')}</Badge>
+                              <span className="text-muted-foreground truncate">{r.description.slice(0, 60)}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Section>
+
+              {/* System JSON */}
+              <Section title="System Report (JSON)">
+                <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(revenueResult.systemSummary, null, 2)}</pre>
               </Section>
             </CardContent>
           )}
