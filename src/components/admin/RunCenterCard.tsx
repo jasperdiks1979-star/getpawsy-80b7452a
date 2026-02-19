@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,11 +10,21 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   Play, Loader2, CheckCircle, XCircle, Clock, AlertTriangle,
-  RefreshCw, SkipForward, ChevronDown, ChevronUp, FileJson, Copy, Zap, Shield,
+  RefreshCw, SkipForward, ChevronDown, ChevronUp, FileJson, Copy, Zap, Shield, Globe,
 } from 'lucide-react';
 import { useJobRunner, type JobRunStep, type JobRunLog } from '@/hooks/useJobRunner';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+interface RedirectResult {
+  url: string;
+  status: number;
+  location: string | null;
+  server: string | null;
+  cfRay: string | null;
+  redirectSource: string;
+}
 
 export function RunCenterCard() {
   const { run, steps, logs, loading, triggering, isActive, error, reauthRequired, traceId, triggerRun, refresh } = useJobRunner();
@@ -22,6 +32,8 @@ export function RunCenterCard() {
   const [reportOpen, setReportOpen] = useState(false);
   const [confirmFullStack, setConfirmFullStack] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState<string | null>(null);
+  const [redirectDebug, setRedirectDebug] = useState<RedirectResult[] | null>(null);
+  const [redirectLoading, setRedirectLoading] = useState(false);
 
   // Parse cooldown from error
   const cooldownMatch = error?.match(/Next manual run allowed at (.+)/);
@@ -38,6 +50,27 @@ export function RunCenterCard() {
     const iv = setInterval(tick, 1000);
     return () => clearInterval(iv);
   }, [cooldownTarget, refresh]);
+
+  const runRedirectDebug = useCallback(async () => {
+    setRedirectLoading(true);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('domain-health-check');
+      if (fnErr) throw fnErr;
+      const results = (data?.results || []).map((r: any) => ({
+        url: r.target,
+        status: r.hops?.[0]?.status || 0,
+        location: r.hops?.[0]?.location || null,
+        server: r.hops?.[0]?.server || null,
+        cfRay: r.hops?.[0]?.cfRay || null,
+        redirectSource: r.hops?.[0]?.cfRay && r.hops?.[0]?.server?.toLowerCase().includes('cloudflare') ? 'cloudflare' : 'origin',
+      }));
+      setRedirectDebug(results);
+    } catch (e) {
+      toast.error('Redirect debug failed: ' + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setRedirectLoading(false);
+    }
+  }, []);
 
   const handleRun = async (mode: 'dryrun' | 'fullstack') => {
     setConfirmFullStack(false);
@@ -242,6 +275,35 @@ export function RunCenterCard() {
               No runs yet. Use Dry Run or Full Stack to start.
             </p>
           )}
+
+          {/* Redirect Debug */}
+          <div className="border-t pt-2 space-y-1.5">
+            <Button
+              variant="ghost" size="sm"
+              className="gap-1.5 text-[10px] h-6 px-2"
+              onClick={runRedirectDebug}
+              disabled={redirectLoading}
+            >
+              {redirectLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Globe className="h-3 w-3" />}
+              Redirect Debug
+            </Button>
+            {redirectDebug && (
+              <div className="space-y-0.5 font-mono text-[9px]">
+                {redirectDebug.map((r, i) => (
+                  <div key={i} className="flex items-start gap-1.5 px-1.5 py-0.5 rounded bg-muted/30">
+                    <Badge variant={r.status >= 300 && r.status < 400 ? 'outline' : 'destructive'} className="text-[8px] h-3.5 px-1 shrink-0">
+                      {r.status}
+                    </Badge>
+                    <div className="min-w-0">
+                      <span className="text-muted-foreground">{r.url}</span>
+                      {r.location && <span className="text-foreground"> → {r.location}</span>}
+                      <span className="text-muted-foreground/60 ml-1">({r.redirectSource}{r.server ? `, ${r.server}` : ''})</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
