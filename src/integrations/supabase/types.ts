@@ -1577,6 +1577,45 @@ export type Database = {
         }
         Relationships: []
       }
+      governor_decision_logs: {
+        Row: {
+          created_at: string
+          decision: string
+          force_override: boolean
+          id: string
+          next_safe_run_seconds: number | null
+          reason: string
+          run_type_executed: string | null
+          run_type_requested: string
+          signals: Json
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          decision: string
+          force_override?: boolean
+          id?: string
+          next_safe_run_seconds?: number | null
+          reason: string
+          run_type_executed?: string | null
+          run_type_requested: string
+          signals?: Json
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          decision?: string
+          force_override?: boolean
+          id?: string
+          next_safe_run_seconds?: number | null
+          reason?: string
+          run_type_executed?: string | null
+          run_type_requested?: string
+          signals?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       gsc_keywords: {
         Row: {
           clicks: number
