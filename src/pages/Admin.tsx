@@ -61,6 +61,10 @@ const CompetitorGapWidget = lazy(() => import("@/components/admin/widgets/Compet
 const SerpCoverageWidget = lazy(() => import("@/components/admin/widgets/SerpCoverageWidget").then(module => ({ default: module.SerpCoverageWidget })));
 const ZeroClickWidget = lazy(() => import("@/components/admin/widgets/ZeroClickWidget").then(module => ({ default: module.ZeroClickWidget })));
 const StrategyAdaptationWidget = lazy(() => import("@/components/admin/widgets/StrategyAdaptationWidget").then(module => ({ default: module.StrategyAdaptationWidget })));
+const CompetitorIntelWidget = lazy(() => import("@/components/admin/widgets/CompetitorIntelWidget").then(module => ({ default: module.CompetitorIntelWidget })));
+const BacklinkHeatmapWidget = lazy(() => import("@/components/admin/widgets/BacklinkHeatmapWidget").then(module => ({ default: module.BacklinkHeatmapWidget })));
+const RevenueOptimizerWidget = lazy(() => import("@/components/admin/widgets/RevenueOptimizerWidget").then(module => ({ default: module.RevenueOptimizerWidget })));
+const MarketTakeoverWidget = lazy(() => import("@/components/admin/widgets/MarketTakeoverWidget").then(module => ({ default: module.MarketTakeoverWidget })));
 import { TrafficReportDownload } from "@/components/admin/TrafficReportDownload";
 import { AdminManualDownload } from "@/components/admin/AdminManualDownload";
 import { ProductCsvExport } from "@/components/admin/ProductCsvExport";
@@ -3311,8 +3315,23 @@ const Admin = () => {
               <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
                 <ZeroClickWidget />
               </Suspense>
-              <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
+               <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
                 <StrategyAdaptationWidget />
+              </Suspense>
+            </div>
+            {/* V8 Enterprise Widgets */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
+                <CompetitorIntelWidget />
+              </Suspense>
+              <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
+                <BacklinkHeatmapWidget />
+              </Suspense>
+              <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
+                <RevenueOptimizerWidget />
+              </Suspense>
+              <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
+                <MarketTakeoverWidget />
               </Suspense>
             </div>
           </TabsContent>
