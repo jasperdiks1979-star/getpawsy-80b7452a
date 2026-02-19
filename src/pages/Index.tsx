@@ -1,26 +1,38 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ArrowRight, Loader2, Star, Clock, BookOpen, Truck, ShieldCheck, RotateCcw, Heart } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ArrowRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
-import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
 import { supabase } from '@/integrations/supabase/client';
 import { dedupeProducts } from '@/lib/dedupe-products';
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import type { CarouselApi } from '@/components/ui/carousel';
-import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
-import { trackNewsletterSignup } from '@/lib/analytics';
+import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
+import { FadeInView } from '@/components/ui/FadeInView';
+import { getAnchorText } from '@/lib/anchor-text-helper';
 import { toast } from 'sonner';
 
+// Below-fold imports — lazy loaded to reduce initial bundle
+const Loader2Icon = lazy(() => import('lucide-react').then(m => ({ default: m.Loader2 })));
+import { Skeleton } from '@/components/ui/skeleton';
+import { ProductCard } from '@/components/products/ProductCard';
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
+import type { CarouselApi } from '@/components/ui/carousel';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { WebsiteSchema, LocalBusinessSchema } from '@/components/seo';
-import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
-import { initPageDebug, logDataSanitization, createSectionDebugger } from '@/lib/debug-logger';
-import { getAnchorText } from '@/lib/anchor-text-helper';
-import { FadeInView } from '@/components/ui/FadeInView';
+
+// Below-fold icons — tree-shaken but small enough to keep sync
+import { Clock, BookOpen, Truck, ShieldCheck, RotateCcw, Heart, Star, Loader2 } from 'lucide-react';
+
+// Non-critical imports deferred
+const trackNewsletterSignup = (email: string) => import('@/lib/analytics').then(m => m.trackNewsletterSignup(email));
+const initPageDebug = (name: string) => import('@/lib/debug-logger').then(m => m.initPageDebug(name));
+const logDataSanitization = (label: string, raw: any, sanitized: any) => import('@/lib/debug-logger').then(m => m.logDataSanitization(label, raw, sanitized));
+const createSectionDebugger = (name: string) => ({
+  logDataReceived: (label: string, data: any) => import('@/lib/debug-logger').then(m => m.createSectionDebugger(name).logDataReceived(label, data)),
+  warnIfObject: (label: string, value: any) => import('@/lib/debug-logger').then(m => m.createSectionDebugger(name).warnIfObject(label, value)),
+});
 
 // Lazy-load below-fold sections to keep initial JS minimal
 const AnimatedTrustBadges = lazy(() => import('@/components/home/AnimatedTrustBadges'));

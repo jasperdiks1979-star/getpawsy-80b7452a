@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Truck, Shield, HeartHandshake, Clock } from 'lucide-react';
 import { FREE_SHIPPING_THRESHOLD, RETURN_WINDOW_DAYS, DELIVERY_TIME_STANDARD } from '@/lib/shipping-constants';
 
@@ -29,51 +28,22 @@ const badges = [
   },
 ];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const badgeVariants = {
-  hidden: { opacity: 0, y: 15 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 350,
-      damping: 25,
-    },
-  },
-};
-
 export const AnimatedTrustBadges = () => {
   return (
-    <motion.section
+    <section
       className="py-6 md:py-10 bg-sand/50 border-y border-border/30"
-      variants={containerVariants}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: '-30px' }}
       aria-label="Trust and shipping information"
     >
       <div className="container px-4 md:px-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
-          {badges.map((badge) => {
+          {badges.map((badge, i) => {
             const Icon = badge.icon;
             return (
-              <motion.div
+              <div
                 key={badge.title}
-                variants={badgeVariants}
-                className="group flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-card/60 backdrop-blur-sm border border-border/40 hover:border-primary/20 hover:bg-card/80 transition-all duration-300"
+                className="group flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-card/60 backdrop-blur-sm border border-border/40 hover:border-primary/20 hover:bg-card/80 transition-all duration-300 animate-fadeInUp"
+                style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}
               >
-                {/* Icon */}
                 <div
                   className={`flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center ${
                     badge.color === 'primary' ? 'bg-primary/10' :
@@ -90,7 +60,6 @@ export const AnimatedTrustBadges = () => {
                   }`} />
                 </div>
 
-                {/* Text - left aligned for better scanning */}
                 <div className="min-w-0">
                   <h3 className="font-semibold text-foreground text-sm md:text-base leading-tight">
                     {badge.title}
@@ -99,12 +68,12 @@ export const AnimatedTrustBadges = () => {
                     {badge.description}
                   </p>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 };
 
