@@ -83,6 +83,388 @@ export type Database = {
         }
         Relationships: []
       }
+      agm_actions: {
+        Row: {
+          action_type: string
+          batch_id: string | null
+          brand_guard_pass: boolean | null
+          created_at: string
+          diff_snapshot: Json | null
+          executed_at: string | null
+          executed_by: string | null
+          execution_mode: string
+          expected_uplift: Json | null
+          hypothesis: string | null
+          id: string
+          measurement_window_days: number | null
+          priority: number | null
+          risk_score: number | null
+          rollback_at: string | null
+          rollback_plan: string | null
+          run_id: string | null
+          status: string
+          target_ref: string
+          target_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          batch_id?: string | null
+          brand_guard_pass?: boolean | null
+          created_at?: string
+          diff_snapshot?: Json | null
+          executed_at?: string | null
+          executed_by?: string | null
+          execution_mode?: string
+          expected_uplift?: Json | null
+          hypothesis?: string | null
+          id?: string
+          measurement_window_days?: number | null
+          priority?: number | null
+          risk_score?: number | null
+          rollback_at?: string | null
+          rollback_plan?: string | null
+          run_id?: string | null
+          status?: string
+          target_ref: string
+          target_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          batch_id?: string | null
+          brand_guard_pass?: boolean | null
+          created_at?: string
+          diff_snapshot?: Json | null
+          executed_at?: string | null
+          executed_by?: string | null
+          execution_mode?: string
+          expected_uplift?: Json | null
+          hypothesis?: string | null
+          id?: string
+          measurement_window_days?: number | null
+          priority?: number | null
+          risk_score?: number | null
+          rollback_at?: string | null
+          rollback_plan?: string | null
+          run_id?: string | null
+          status?: string
+          target_ref?: string
+          target_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agm_actions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agm_config: {
+        Row: {
+          auto_rollback_threshold_pct: number | null
+          brand_guard_enabled: boolean | null
+          daily_action_budget: number | null
+          daily_indexing_budget: number | null
+          execution_mode: string
+          id: string
+          max_critical_changes_per_day: number | null
+          min_collection_products: number | null
+          playbook_weights: Json | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auto_rollback_threshold_pct?: number | null
+          brand_guard_enabled?: boolean | null
+          daily_action_budget?: number | null
+          daily_indexing_budget?: number | null
+          execution_mode?: string
+          id?: string
+          max_critical_changes_per_day?: number | null
+          min_collection_products?: number | null
+          playbook_weights?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auto_rollback_threshold_pct?: number | null
+          brand_guard_enabled?: boolean | null
+          daily_action_budget?: number | null
+          daily_indexing_budget?: number | null
+          execution_mode?: string
+          id?: string
+          max_critical_changes_per_day?: number | null
+          min_collection_products?: number | null
+          playbook_weights?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      agm_experiments: {
+        Row: {
+          baseline_metrics: Json | null
+          confidence: number | null
+          created_at: string
+          ended_at: string | null
+          experiment_type: string
+          id: string
+          is_holdout: boolean | null
+          result_metrics: Json | null
+          started_at: string | null
+          status: string
+          target_ref: string
+          updated_at: string
+          variant_a: Json
+          variant_b: Json
+          winner: string | null
+        }
+        Insert: {
+          baseline_metrics?: Json | null
+          confidence?: number | null
+          created_at?: string
+          ended_at?: string | null
+          experiment_type: string
+          id?: string
+          is_holdout?: boolean | null
+          result_metrics?: Json | null
+          started_at?: string | null
+          status?: string
+          target_ref: string
+          updated_at?: string
+          variant_a?: Json
+          variant_b?: Json
+          winner?: string | null
+        }
+        Update: {
+          baseline_metrics?: Json | null
+          confidence?: number | null
+          created_at?: string
+          ended_at?: string | null
+          experiment_type?: string
+          id?: string
+          is_holdout?: boolean | null
+          result_metrics?: Json | null
+          started_at?: string | null
+          status?: string
+          target_ref?: string
+          updated_at?: string
+          variant_a?: Json
+          variant_b?: Json
+          winner?: string | null
+        }
+        Relationships: []
+      }
+      agm_impact_tracking: {
+        Row: {
+          action_id: string
+          anomaly_detected: boolean | null
+          attribution_confidence: number | null
+          auto_rolled_back: boolean | null
+          baseline_clicks: number | null
+          baseline_ctr: number | null
+          baseline_impressions: number | null
+          baseline_position: number | null
+          created_at: string
+          day14_clicks: number | null
+          day14_ctr: number | null
+          day14_impressions: number | null
+          day14_position: number | null
+          day28_clicks: number | null
+          day28_ctr: number | null
+          day28_impressions: number | null
+          day28_position: number | null
+          day7_clicks: number | null
+          day7_ctr: number | null
+          day7_impressions: number | null
+          day7_position: number | null
+          id: string
+          target_ref: string
+          updated_at: string
+        }
+        Insert: {
+          action_id: string
+          anomaly_detected?: boolean | null
+          attribution_confidence?: number | null
+          auto_rolled_back?: boolean | null
+          baseline_clicks?: number | null
+          baseline_ctr?: number | null
+          baseline_impressions?: number | null
+          baseline_position?: number | null
+          created_at?: string
+          day14_clicks?: number | null
+          day14_ctr?: number | null
+          day14_impressions?: number | null
+          day14_position?: number | null
+          day28_clicks?: number | null
+          day28_ctr?: number | null
+          day28_impressions?: number | null
+          day28_position?: number | null
+          day7_clicks?: number | null
+          day7_ctr?: number | null
+          day7_impressions?: number | null
+          day7_position?: number | null
+          id?: string
+          target_ref: string
+          updated_at?: string
+        }
+        Update: {
+          action_id?: string
+          anomaly_detected?: boolean | null
+          attribution_confidence?: number | null
+          auto_rolled_back?: boolean | null
+          baseline_clicks?: number | null
+          baseline_ctr?: number | null
+          baseline_impressions?: number | null
+          baseline_position?: number | null
+          created_at?: string
+          day14_clicks?: number | null
+          day14_ctr?: number | null
+          day14_impressions?: number | null
+          day14_position?: number | null
+          day28_clicks?: number | null
+          day28_ctr?: number | null
+          day28_impressions?: number | null
+          day28_position?: number | null
+          day7_clicks?: number | null
+          day7_ctr?: number | null
+          day7_impressions?: number | null
+          day7_position?: number | null
+          id?: string
+          target_ref?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agm_impact_tracking_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "agm_actions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agm_opportunity_edges: {
+        Row: {
+          created_at: string
+          edge_type: string
+          id: string
+          metadata: Json | null
+          source_node_id: string
+          target_node_id: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string
+          edge_type: string
+          id?: string
+          metadata?: Json | null
+          source_node_id: string
+          target_node_id: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string
+          edge_type?: string
+          id?: string
+          metadata?: Json | null
+          source_node_id?: string
+          target_node_id?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agm_opportunity_edges_source_node_id_fkey"
+            columns: ["source_node_id"]
+            isOneToOne: false
+            referencedRelation: "agm_opportunity_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agm_opportunity_edges_target_node_id_fkey"
+            columns: ["target_node_id"]
+            isOneToOne: false
+            referencedRelation: "agm_opportunity_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agm_opportunity_nodes: {
+        Row: {
+          created_at: string
+          id: string
+          node_ref: string
+          node_type: string
+          opportunity_score: number | null
+          signals: Json
+          title: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          node_ref: string
+          node_type: string
+          opportunity_score?: number | null
+          signals?: Json
+          title?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          node_ref?: string
+          node_type?: string
+          opportunity_score?: number | null
+          signals?: Json
+          title?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      agm_playbook_history: {
+        Row: {
+          action_type: string
+          avg_uplift_clicks: number | null
+          avg_uplift_impressions: number | null
+          created_at: string
+          id: string
+          page_type: string | null
+          sample_count: number | null
+          success_rate: number | null
+          weight: number | null
+        }
+        Insert: {
+          action_type: string
+          avg_uplift_clicks?: number | null
+          avg_uplift_impressions?: number | null
+          created_at?: string
+          id?: string
+          page_type?: string | null
+          sample_count?: number | null
+          success_rate?: number | null
+          weight?: number | null
+        }
+        Update: {
+          action_type?: string
+          avg_uplift_clicks?: number | null
+          avg_uplift_impressions?: number | null
+          created_at?: string
+          id?: string
+          page_type?: string | null
+          sample_count?: number | null
+          success_rate?: number | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
       authority_clusters: {
         Row: {
           config: Json | null

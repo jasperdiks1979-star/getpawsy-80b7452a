@@ -65,6 +65,7 @@ const CompetitorIntelWidget = lazy(() => import("@/components/admin/widgets/Comp
 const BacklinkHeatmapWidget = lazy(() => import("@/components/admin/widgets/BacklinkHeatmapWidget").then(module => ({ default: module.BacklinkHeatmapWidget })));
 const RevenueOptimizerWidget = lazy(() => import("@/components/admin/widgets/RevenueOptimizerWidget").then(module => ({ default: module.RevenueOptimizerWidget })));
 const MarketTakeoverWidget = lazy(() => import("@/components/admin/widgets/MarketTakeoverWidget").then(module => ({ default: module.MarketTakeoverWidget })));
+const AutonomousGrowthDashboard = lazy(() => import("@/components/admin/widgets/AutonomousGrowthDashboard"));
 import { TrafficReportDownload } from "@/components/admin/TrafficReportDownload";
 import { AdminManualDownload } from "@/components/admin/AdminManualDownload";
 import { ProductCsvExport } from "@/components/admin/ProductCsvExport";
@@ -3334,6 +3335,10 @@ const Admin = () => {
                 <MarketTakeoverWidget />
               </Suspense>
             </div>
+            {/* AGM: Autonomous Growth Dashboard */}
+            <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
+              <AutonomousGrowthDashboard />
+            </Suspense>
           </TabsContent>
 
           {/* Reviews Moderation Tab */}
