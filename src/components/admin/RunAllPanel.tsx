@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import {
   RefreshCw, SkipForward, Terminal, ChevronDown, ChevronUp, FileJson,
 } from 'lucide-react';
 import { useJobRunner, type JobRunStep, type JobRunLog } from '@/hooks/useJobRunner';
+import { GovernorStatusDisplay } from '@/components/admin/GovernorStatusDisplay';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -22,35 +23,6 @@ export function RunAllPanel() {
   const [logsOpen, setLogsOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [cooldownRemaining, setCooldownRemaining] = useState<string | null>(null);
-
-  // Parse cooldown from error message
-  const cooldownMatch = error?.match(/Next manual run allowed at (.+)/);
-  const cooldownTarget = cooldownMatch ? new Date(cooldownMatch[1]) : null;
-
-  // Cooldown countdown timer
-  useEffect(() => {
-    if (!cooldownTarget) {
-      setCooldownRemaining(null);
-      return;
-    }
-
-    const tick = () => {
-      const diff = cooldownTarget.getTime() - Date.now();
-      if (diff <= 0) {
-        setCooldownRemaining(null);
-        refresh();
-        return;
-      }
-      const mins = Math.floor(diff / 60000);
-      const secs = Math.floor((diff % 60000) / 1000);
-      setCooldownRemaining(`${mins}m ${secs}s`);
-    };
-
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [cooldownTarget, refresh]);
 
   const handleConfirmRun = async () => {
     setConfirmOpen(false);
@@ -96,10 +68,13 @@ export function RunAllPanel() {
 
         <CardContent className="space-y-4">
           {/* Action Button */}
+          {/* Adaptive Execution Governor Status */}
+          <GovernorStatusDisplay mode="fullstack" />
+
           <div className="flex flex-wrap gap-2 items-center">
             <Button
               onClick={() => setConfirmOpen(true)}
-              disabled={isActive || triggering || !!cooldownRemaining}
+              disabled={isActive || triggering}
               className="gap-2"
             >
               {triggering ? (
@@ -107,16 +82,12 @@ export function RunAllPanel() {
               ) : (
                 <Play className="h-4 w-4" />
               )}
-              {isActive
-                ? 'Run in progress…'
-                : cooldownRemaining
-                  ? `Cooldown: ${cooldownRemaining}`
-                  : 'Run ALL now (Full Stack)'}
+              {isActive ? 'Run in progress…' : 'Run ALL now (Full Stack)'}
             </Button>
           </div>
 
-          {/* Error display (excluding cooldown which is shown on button) */}
-          {error && !isActive && !cooldownRemaining && (
+          {/* Error display */}
+          {error && !isActive && (
             <div className="text-xs bg-destructive/10 text-destructive border border-destructive/20 rounded px-3 py-2 flex items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               {error}
