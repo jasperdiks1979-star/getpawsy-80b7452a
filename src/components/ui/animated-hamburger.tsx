@@ -1,69 +1,30 @@
-import { motion } from 'framer-motion';
-
 interface AnimatedHamburgerProps {
   isOpen: boolean;
   className?: string;
 }
 
+/**
+ * Pure CSS animated hamburger — no framer-motion dependency.
+ * Removes the animations chunk from the critical rendering path.
+ */
 export const AnimatedHamburger = ({ isOpen, className = '' }: AnimatedHamburgerProps) => {
-  const lineProps = {
-    strokeWidth: 2,
-    vectorEffect: "non-scaling-stroke" as const,
-    initial: "closed",
-    animate: isOpen ? "open" : "closed",
-  };
-
   return (
-    <motion.svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      className={`w-5 h-5 ${className}`}
-      initial={false}
-    >
-      {/* Top line */}
-      <motion.line
-        x1="4"
-        x2="20"
-        y1="6"
-        y2="6"
-        variants={{
-          closed: { y1: 6, y2: 6, rotate: 0 },
-          open: { y1: 12, y2: 12, rotate: 45 },
-        }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        {...lineProps}
-        style={{ transformOrigin: "center" }}
+    <div className={`relative w-5 h-5 flex flex-col justify-center items-center ${className}`}>
+      <span
+        className={`absolute left-0 w-full h-[2px] bg-current rounded-full transition-all duration-300 ease-in-out ${
+          isOpen ? 'top-[9px] rotate-45' : 'top-[4px] rotate-0'
+        }`}
       />
-      
-      {/* Middle line */}
-      <motion.line
-        x1="4"
-        x2="20"
-        y1="12"
-        y2="12"
-        variants={{
-          closed: { opacity: 1, scaleX: 1 },
-          open: { opacity: 0, scaleX: 0 },
-        }}
-        transition={{ duration: 0.2, ease: "easeInOut" }}
-        {...lineProps}
+      <span
+        className={`absolute left-0 top-[9px] w-full h-[2px] bg-current rounded-full transition-all duration-200 ease-in-out ${
+          isOpen ? 'opacity-0 scale-x-0' : 'opacity-100 scale-x-100'
+        }`}
       />
-      
-      {/* Bottom line */}
-      <motion.line
-        x1="4"
-        x2="20"
-        y1="18"
-        y2="18"
-        variants={{
-          closed: { y1: 18, y2: 18, rotate: 0 },
-          open: { y1: 12, y2: 12, rotate: -45 },
-        }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        {...lineProps}
-        style={{ transformOrigin: "center" }}
+      <span
+        className={`absolute left-0 w-full h-[2px] bg-current rounded-full transition-all duration-300 ease-in-out ${
+          isOpen ? 'top-[9px] -rotate-45' : 'top-[14px] rotate-0'
+        }`}
       />
-    </motion.svg>
+    </div>
   );
 };

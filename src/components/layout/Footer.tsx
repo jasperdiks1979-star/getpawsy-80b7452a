@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+// framer-motion removed — CSS transitions used instead (perf: critical path)
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import {
@@ -181,18 +181,16 @@ export const Footer = () => {
               {/* Social Links */}
               <div className="flex items-center gap-3">
                 {socialLinks.map((social) => (
-                  <motion.a
+                  <a
                     key={social.label}
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={social.label}
-                    whileHover={{ scale: 1.1, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`flex items-center justify-center w-10 h-10 rounded-xl bg-background/10 text-background/70 transition-colors ${social.color}`}
+                    className={`flex items-center justify-center w-10 h-10 rounded-xl bg-background/10 text-background/70 transition-all duration-200 hover:scale-110 hover:-translate-y-0.5 active:scale-95 ${social.color}`}
                   >
                     <social.icon className="w-5 h-5" />
-                  </motion.a>
+                  </a>
                 ))}
               </div>
 

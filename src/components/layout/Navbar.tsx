@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Search, User, LogOut, Shield, Heart, X, ChevronDown, ChevronRight, Gift, Truck, ArrowRight, Award, Trophy, Star } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+// framer-motion removed — CSS animations used instead (perf: critical path, saves ~60KB gzip)
 import { useQuery } from '@tanstack/react-query';
 import { useCart } from '@/contexts/CartContext';
 import { useCartIconRef } from '@/contexts/CartAnimationContext';
@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { EnhancedSearch } from '@/components/search/EnhancedSearch';
+const EnhancedSearch = lazy(() => import('@/components/search/EnhancedSearch').then(m => ({ default: m.EnhancedSearch })));
 import { AnimatedHamburger } from '@/components/ui/animated-hamburger';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FloatingCartPreview } from '@/components/cart/FloatingCartPreview';
@@ -114,54 +114,48 @@ const MegaMenuCategoryItem = ({
         )}
       </div>
 
-      {/* Subcategories dropdown */}
-      <AnimatePresence>
-        {hasChildren && isExpanded && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="pl-4 overflow-hidden"
-          >
-            <div className="border-l-2 border-muted pl-2 py-1 space-y-1">
-              {/* Link to parent category */}
+      {/* Subcategories dropdown — CSS animation */}
+      {hasChildren && isExpanded && (
+        <div
+          className="pl-4 overflow-hidden animate-[slideDown_0.2s_ease-out]"
+        >
+          <div className="border-l-2 border-muted pl-2 py-1 space-y-1">
+            {/* Link to parent category */}
+            <Link
+              to={`/products?category=${encodeURIComponent(category.slug)}`}
+              onClick={onClose}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors text-primary font-medium"
+            >
+              All {category.name}
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+            {category.children.map((child) => (
               <Link
-                to={`/products?category=${encodeURIComponent(category.slug)}`}
+                key={child.id}
+                to={`/products?category=${encodeURIComponent(child.slug)}`}
                 onClick={onClose}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors text-primary font-medium"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
               >
-                All {category.name}
-                <ArrowRight className="w-3 h-3" />
+                {child.image_url && (
+                  <div className="w-6 h-6 rounded-md overflow-hidden flex-shrink-0">
+                    <img 
+                      src={child.image_url} 
+                      alt={child.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <span className="truncate">{child.name}</span>
+                {child.product_count !== undefined && child.product_count > 0 && (
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    ({child.product_count})
+                  </span>
+                )}
               </Link>
-              {category.children.map((child) => (
-                <Link
-                  key={child.id}
-                  to={`/products?category=${encodeURIComponent(child.slug)}`}
-                  onClick={onClose}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
-                >
-                  {child.image_url && (
-                    <div className="w-6 h-6 rounded-md overflow-hidden flex-shrink-0">
-                      <img 
-                        src={child.image_url} 
-                        alt={child.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <span className="truncate">{child.name}</span>
-                  {child.product_count !== undefined && child.product_count > 0 && (
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      ({child.product_count})
-                    </span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -213,52 +207,46 @@ const MobileCategoryItem = ({
         )}
       </div>
 
-      <AnimatePresence>
-        {hasChildren && isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden bg-muted/30"
-          >
-            <div className="py-2 px-4 space-y-1">
+      {hasChildren && isExpanded && (
+        <div
+          className="overflow-hidden bg-muted/30 animate-[slideDown_0.2s_ease-out]"
+        >
+          <div className="py-2 px-4 space-y-1">
+            <Link
+              to={`/products?category=${encodeURIComponent(category.slug)}`}
+              onClick={onClose}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary font-medium hover:bg-muted transition-colors"
+            >
+              All {category.name}
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+            {category.children.map((child) => (
               <Link
-                to={`/products?category=${encodeURIComponent(category.slug)}`}
+                key={child.id}
+                to={`/products?category=${encodeURIComponent(child.slug)}`}
                 onClick={onClose}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary font-medium hover:bg-muted transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
               >
-                All {category.name}
-                <ArrowRight className="w-3 h-3" />
+                {child.image_url && (
+                  <div className="w-6 h-6 rounded-md overflow-hidden flex-shrink-0">
+                    <img 
+                      src={child.image_url} 
+                      alt={child.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <span className="truncate flex-1">{child.name}</span>
+                {child.product_count !== undefined && child.product_count > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    ({child.product_count})
+                  </span>
+                )}
               </Link>
-              {category.children.map((child) => (
-                <Link
-                  key={child.id}
-                  to={`/products?category=${encodeURIComponent(child.slug)}`}
-                  onClick={onClose}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
-                >
-                  {child.image_url && (
-                    <div className="w-6 h-6 rounded-md overflow-hidden flex-shrink-0">
-                      <img 
-                        src={child.image_url} 
-                        alt={child.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <span className="truncate flex-1">{child.name}</span>
-                  {child.product_count !== undefined && child.product_count > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      ({child.product_count})
-                    </span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -413,30 +401,23 @@ export const Navbar = () => {
   return (
     <>
       {/* Promo Banner */}
-      <AnimatePresence>
-        {!isBannerDismissed && (
-          <motion.div 
-            initial={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-primary text-primary-foreground text-sm font-medium overflow-hidden"
-          >
-            <div className="container flex items-center justify-center gap-2 py-2 px-4 relative">
-              <Truck className="w-4 h-4" />
-              <span>Free US shipping on orders over $35</span>
-              <span className="hidden sm:inline text-primary-foreground/80">•</span>
-              <span className="hidden sm:inline text-primary-foreground/80">Fast delivery 🚀</span>
-              <button
-                onClick={dismissBanner}
-                className="absolute right-4 p-1 hover:bg-primary-foreground/20 rounded-full transition-colors"
-                aria-label="Dismiss banner"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {!isBannerDismissed && (
+        <div className="bg-primary text-primary-foreground text-sm font-medium overflow-hidden">
+          <div className="container flex items-center justify-center gap-2 py-2 px-4 relative">
+            <Truck className="w-4 h-4" />
+            <span>Free US shipping on orders over $35</span>
+            <span className="hidden sm:inline text-primary-foreground/80">•</span>
+            <span className="hidden sm:inline text-primary-foreground/80">Fast delivery 🚀</span>
+            <button
+              onClick={dismissBanner}
+              className="absolute right-4 p-1 hover:bg-primary-foreground/20 rounded-full transition-colors"
+              aria-label="Dismiss banner"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <header 
         className={`sticky top-0 z-50 w-full max-w-[100vw] overflow-x-hidden transition-all duration-300 ${
@@ -452,13 +433,11 @@ export const Navbar = () => {
             className="flex items-center gap-3 font-bold text-xl group"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
-            <motion.div 
-              className="flex items-center justify-center w-11 h-11 rounded-2xl overflow-hidden shadow-soft"
-              whileHover={{ scale: 1.05, rotate: -5 }}
-              whileTap={{ scale: 0.95 }}
+            <div 
+              className="flex items-center justify-center w-11 h-11 rounded-2xl overflow-hidden shadow-soft transition-transform duration-200 hover:scale-105 hover:-rotate-[5deg] active:scale-95"
             >
               <img src={logoIcon} alt="GetPawsy" className="w-full h-full object-cover" />
-            </motion.div>
+            </div>
             <span className="font-display text-foreground text-xl sm:text-2xl">
               Get<span className="text-primary">Pawsy</span>
             </span>
@@ -582,15 +561,11 @@ export const Navbar = () => {
                   <Button variant="ghost" size="icon" className="relative rounded-full">
                     <ShoppingCart className="h-5 w-5" />
                     {totalItems > 0 && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        key={totalItems}
-                      >
+                      <div key={totalItems} className="animate-[scaleIn_0.2s_ease-out]">
                         <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
                           {totalItems}
                         </Badge>
-                      </motion.div>
+                      </div>
                     )}
                   </Button>
                 </div>
@@ -609,15 +584,11 @@ export const Navbar = () => {
                 <Button variant="ghost" size="icon" className="relative rounded-full">
                   <ShoppingCart className="h-5 w-5" />
                   {totalItems > 0 && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      key={totalItems}
-                    >
+                    <div key={totalItems} className="animate-[scaleIn_0.2s_ease-out]">
                       <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
                         {totalItems}
                       </Badge>
-                    </motion.div>
+                    </div>
                   )}
                 </Button>
               </div>
@@ -836,120 +807,104 @@ export const Navbar = () => {
         </div>
 
         {/* Search Bar */}
-        <AnimatePresence>
-          {isSearchOpen && (
-            <motion.div 
-              className="container px-4 md:px-6 pb-4"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <div className="relative max-w-2xl mx-auto">
+        {isSearchOpen && (
+          <div className="container px-4 md:px-6 pb-4 animate-[fadeSlideDown_0.2s_ease-out]">
+            <div className="relative max-w-2xl mx-auto">
+              <Suspense fallback={<div className="h-10 rounded-lg bg-muted animate-pulse" />}>
                 <EnhancedSearch
                   variant="default"
                   placeholder="What are you looking for?"
                   autoFocus
                   onClose={handleCloseSearch}
                 />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </Suspense>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Mega Menu Overlay */}
-      <AnimatePresence>
-        {isMegaMenuOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-              onClick={closeMegaMenu}
-            />
-            
-            {/* Mega Menu Content */}
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="fixed left-0 right-0 top-[72px] z-50 bg-background border-b shadow-soft"
-              onMouseLeave={closeMegaMenu}
-            >
-              <div className="container px-4 md:px-6 py-6">
-                <div className="grid lg:grid-cols-4 gap-6">
-                  {/* Categories Grid */}
-                  <div className="lg:col-span-3">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                      Shop by Category
-                    </h3>
-                    <ScrollArea className="max-h-[60vh]">
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                        {categoryTree.map((category, idx) => (
-                          <motion.div
-                            key={category.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.03 }}
-                          >
-                            <MegaMenuCategoryItem
-                              category={category}
-                              onClose={closeMegaMenu}
-                              expandedCategory={expandedCategory}
-                              setExpandedCategory={setExpandedCategory}
-                            />
-                          </motion.div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-
-                  {/* Promo Section */}
-                  <div className="lg:border-l lg:pl-6">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                      Featured
-                    </h3>
-                    <div className="space-y-3">
-                      {promoItems.map((promo) => (
-                        <Link
-                          key={promo.label}
-                          to={promo.href}
-                          onClick={closeMegaMenu}
-                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors group"
+      {isMegaMenuOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 animate-[fadeIn_0.2s_ease-out]"
+            onClick={closeMegaMenu}
+          />
+          
+          {/* Mega Menu Content */}
+          <div
+            className="fixed left-0 right-0 top-[72px] z-50 bg-background border-b shadow-soft animate-[fadeSlideDown_0.2s_ease-out]"
+            onMouseLeave={closeMegaMenu}
+          >
+            <div className="container px-4 md:px-6 py-6">
+              <div className="grid lg:grid-cols-4 gap-6">
+                {/* Categories Grid */}
+                <div className="lg:col-span-3">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                    Shop by Category
+                  </h3>
+                  <ScrollArea className="max-h-[60vh]">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {categoryTree.map((category, idx) => (
+                        <div
+                          key={category.id}
+                          className="animate-[fadeSlideUp_0.3s_ease-out_both]"
+                          style={{ animationDelay: `${idx * 30}ms` }}
                         >
-                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                            <promo.icon className="w-5 h-5" />
-                          </div>
-                          <span className="font-medium text-foreground group-hover:text-primary transition-colors">
-                            {promo.label}
-                          </span>
-                          <ArrowRight className="w-4 h-4 ml-auto opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
-                        </Link>
+                          <MegaMenuCategoryItem
+                            category={category}
+                            onClose={closeMegaMenu}
+                            expandedCategory={expandedCategory}
+                            setExpandedCategory={setExpandedCategory}
+                          />
+                        </div>
                       ))}
-                      
-                      {/* CTA */}
-                      <Link
-                        to="/products"
-                        onClick={closeMegaMenu}
-                        className="block mt-4"
-                      >
-                        <Button className="w-full btn-organic gap-2">
-                          View all products
-                          <ArrowRight className="w-4 h-4" />
-                        </Button>
-                      </Link>
                     </div>
+                  </ScrollArea>
+                </div>
+
+                {/* Promo Section */}
+                <div className="lg:border-l lg:pl-6">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                    Featured
+                  </h3>
+                  <div className="space-y-3">
+                    {promoItems.map((promo) => (
+                      <Link
+                        key={promo.label}
+                        to={promo.href}
+                        onClick={closeMegaMenu}
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors group"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                          <promo.icon className="w-5 h-5" />
+                        </div>
+                        <span className="font-medium text-foreground group-hover:text-primary transition-colors">
+                          {promo.label}
+                        </span>
+                        <ArrowRight className="w-4 h-4 ml-auto opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
+                      </Link>
+                    ))}
+                    
+                    {/* CTA */}
+                    <Link
+                      to="/products"
+                      onClick={closeMegaMenu}
+                      className="block mt-4"
+                    >
+                      <Button className="w-full btn-organic gap-2">
+                        View all products
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 };
