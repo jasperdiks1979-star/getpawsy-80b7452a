@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { RunAllPanel } from '@/components/admin/RunAllPanel';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -99,6 +100,9 @@ export default function AdminSeoDashboard() {
             Safety: Max {THRESHOLDS.SAFETY.maxChangesPerPage14d} changes/page/14d · No auto-rewrites · All suggestions require manual approval
           </span>
         </div>
+
+        {/* Pipeline Runner */}
+        <RunAllPanel />
 
         {/* Tabs */}
         <div className="border-b overflow-x-auto">

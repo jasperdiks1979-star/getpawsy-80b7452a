@@ -1568,6 +1568,139 @@ export type Database = {
         }
         Relationships: []
       }
+      job_run_logs: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          level: string
+          message: string
+          run_id: string
+          step_key: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          level?: string
+          message: string
+          run_id: string
+          step_key?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          level?: string
+          message?: string
+          run_id?: string
+          step_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_run_logs_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_run_steps: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          result: Json | null
+          run_id: string
+          started_at: string | null
+          status: string
+          step_key: string
+          step_label: string
+          step_order: number
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          result?: Json | null
+          run_id: string
+          started_at?: string | null
+          status?: string
+          step_key: string
+          step_label: string
+          step_order: number
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          result?: Json | null
+          run_id?: string
+          started_at?: string | null
+          status?: string
+          step_key?: string
+          step_label?: string
+          step_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          report: Json | null
+          source: string
+          started_at: string | null
+          status: string
+          triggered_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          report?: Json | null
+          source?: string
+          started_at?: string | null
+          status?: string
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          report?: Json | null
+          source?: string
+          started_at?: string | null
+          status?: string
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       key_rotation_logs: {
         Row: {
           account_name: string
