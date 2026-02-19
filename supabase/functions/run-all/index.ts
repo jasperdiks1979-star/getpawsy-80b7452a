@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const STEPS = [
-  { key: 'gsc_query_level_sync', label: 'GSC Query-Level Sync', critical: true },
+  { key: 'gsc_query_level_sync', label: 'GSC Query-Level Sync', critical: false },
   { key: 'crawl_health_check', label: 'Crawl & Health Check', critical: true },
   { key: 'performance_snapshot', label: 'Performance Snapshot', critical: false },
   { key: 'orphan_detection', label: 'Orphan Detection & Internal Link Plan', critical: false },
@@ -94,18 +94,20 @@ Deno.serve(async (req) => {
     }
 
     // Cooldown for manual runs (schedule bypasses)
+    // Only enforce cooldown after runs that progressed past step 1 (not immediate failures)
     if (source === 'manual') {
       const cooldownCutoff = new Date(Date.now() - COOLDOWN_MINUTES * 60 * 1000).toISOString();
       const { data: recentRun } = await supabase
         .from('job_runs')
-        .select('id, finished_at')
+        .select('id, finished_at, duration_ms, status')
         .eq('source', 'manual')
         .gte('finished_at', cooldownCutoff)
         .order('finished_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (recentRun) {
+      // Only enforce cooldown if the run actually progressed (duration > 5s means it ran real steps)
+      if (recentRun && recentRun.duration_ms && recentRun.duration_ms > 5000) {
         const nextAllowed = new Date(new Date(recentRun.finished_at).getTime() + COOLDOWN_MINUTES * 60 * 1000);
         return jsonResponse({
           ok: false, traceId,
@@ -181,9 +183,16 @@ Deno.serve(async (req) => {
           crawlHealthPassed = false;
         }
 
-        // Check if GSC step returned reauthRequired
+        // Check if GSC step returned reauthRequired — treat as non-critical failure, continue pipeline
         if (step.key === 'gsc_query_level_sync' && result?.reauthRequired) {
-          throw new Error('GSC re-authentication required. Please re-auth via Admin Dashboard.');
+          const errMsg = (result.error as string) || 'GSC re-authentication required';
+          await supabase.from('job_run_steps')
+            .update({ status: 'failed', finished_at: new Date().toISOString(), duration_ms: Date.now() - stepStart, error_message: errMsg, result })
+            .eq('run_id', run.id).eq('step_key', step.key);
+          await log(supabase, run.id, step.key, 'warn', `GSC auth issue (non-blocking): ${errMsg}`);
+          report[step.key] = { status: 'failed', error: errMsg, reauthRequired: true };
+          allSuccess = false;
+          continue; // Continue to next step — GSC is not critical
         }
 
         await supabase.from('job_run_steps')

@@ -64,7 +64,14 @@ export function RunCenterCard() {
 
   // Check if any step has reauthRequired in its result
   const gscStep = steps.find(s => s.step_key === 'gsc_query_level_sync');
-  const gscNeedsReauth = reauthRequired || (gscStep?.status === 'failed' && gscStep?.error_message?.includes('re-auth'));
+  const gscNeedsReauth = reauthRequired || 
+    (gscStep?.status === 'failed' && (
+      gscStep?.error_message?.includes('re-auth') || 
+      gscStep?.error_message?.includes('service account') ||
+      gscStep?.error_message?.includes('GOOGLE_SERVICE_ACCOUNT_JSON') ||
+      gscStep?.error_message?.includes('Token exchange') ||
+      gscStep?.error_message?.includes('Invalid token')
+    ));
 
   return (
     <>
@@ -89,9 +96,18 @@ export function RunCenterCard() {
         <CardContent className="space-y-3">
           {/* Reauth warning */}
           {gscNeedsReauth && (
-            <div className="text-[10px] bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border border-yellow-500/20 rounded px-2 py-1.5 flex items-center gap-1.5">
-              <AlertTriangle className="h-3 w-3 shrink-0" />
-              GSC re-authentication required. Refresh the page or re-login to fix token issues.
+            <div className="text-[10px] bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border border-yellow-500/20 rounded px-2 py-1.5 space-y-1">
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                <span className="font-medium">Google Search Console auth issue</span>
+              </div>
+              <p className="pl-4">
+                {gscStep?.error_message || 'GSC token needs re-configuration.'}
+                {' '}The pipeline will continue with other steps, but GSC data won't sync until fixed.
+              </p>
+              <p className="pl-4 text-muted-foreground">
+                Check that the GOOGLE_SERVICE_ACCOUNT_JSON secret is correctly configured in your backend settings.
+              </p>
             </div>
           )}
 
