@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useSeoFeatureFlags } from '@/hooks/useSeoFeatureFlags';
 import { Helmet } from 'react-helmet-async';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -84,6 +85,7 @@ function Section({ title, badge, children, defaultOpen = false }: {
 // ============= MAIN PAGE =============
 
 export default function GrowthExecutionPage() {
+  const { flags, setFlag, isLoading: flagsLoading } = useSeoFeatureFlags();
   // Fetch GSC data from keyword_rankings
   const { data: gscData, isLoading } = useQuery({
     queryKey: ['growth-engine-v3-data'],
@@ -162,7 +164,8 @@ export default function GrowthExecutionPage() {
   }, [gscData]);
 
   // 🔥 Hyper Aggressive Mode
-  const [hyperEnabled, setHyperEnabled] = useState(false);
+  const hyperEnabled = flags.hyper_aggressive;
+  const setHyperEnabled = (v: boolean) => setFlag('hyper_aggressive', v);
   const hyperResult: HyperAggressiveResult | null = useMemo(() => {
     if (!hyperEnabled || !gscData) return null;
     const slugMap = new Map<string, { slug: string; position: number; impressions: number; clicks: number }>();
@@ -181,7 +184,8 @@ export default function GrowthExecutionPage() {
   }, [gscData, hyperEnabled]);
 
   // 👑 DOMINANCE MODE
-  const [dominanceEnabled, setDominanceEnabled] = useState(false);
+  const dominanceEnabled = flags.dominance_mode;
+  const setDominanceEnabled = (v: boolean) => setFlag('dominance_mode', v);
   const dominanceResult: DominanceModeResult | null = useMemo(() => {
     if (!dominanceEnabled || !gscData) return null;
     const slugMap = new window.Map<string, { slug: string; position: number; impressions: number; clicks: number; ctr: number }>();
@@ -201,7 +205,8 @@ export default function GrowthExecutionPage() {
   }, [gscData, dominanceEnabled]);
 
   // 📡 CONTENT DOMINANCE MODE (real query-level data)
-  const [contentDominanceEnabled, setContentDominanceEnabled] = useState(false);
+  const contentDominanceEnabled = flags.content_dominance;
+  const setContentDominanceEnabled = (v: boolean) => setFlag('content_dominance', v);
   const { data: gscQueryData } = useQuery({
     queryKey: ['gsc-keywords-content-dominance'],
     queryFn: async () => {
@@ -230,7 +235,8 @@ export default function GrowthExecutionPage() {
   }, [gscQueryData, contentDominanceEnabled]);
 
   // 🔥 GROWTH DOMINATION STACK
-  const [dominationEnabled, setDominationEnabled] = useState(false);
+  const dominationEnabled = flags.growth_domination;
+  const setDominationEnabled = (v: boolean) => setFlag('growth_domination', v);
   const { data: gscDominationData } = useQuery({
     queryKey: ['gsc-keywords-domination'],
     queryFn: async () => {
@@ -252,7 +258,8 @@ export default function GrowthExecutionPage() {
   }, [gscDominationData, dominationEnabled]);
 
   // 🏢 ENTERPRISE EXPANSION STACK
-  const [enterpriseEnabled, setEnterpriseEnabled] = useState(false);
+  const enterpriseEnabled = flags.enterprise_expansion;
+  const setEnterpriseEnabled = (v: boolean) => setFlag('enterprise_expansion', v);
   const { data: gscEnterpriseData } = useQuery({
     queryKey: ['gsc-keywords-enterprise'],
     queryFn: async () => {
@@ -274,7 +281,8 @@ export default function GrowthExecutionPage() {
   }, [gscEnterpriseData, enterpriseEnabled]);
 
   // 🛡️ ALGORITHM IMMUNITY STACK
-  const [immunityEnabled, setImmunityEnabled] = useState(false);
+  const immunityEnabled = flags.algorithm_immunity;
+  const setImmunityEnabled = (v: boolean) => setFlag('algorithm_immunity', v);
   const { data: gscImmunityData } = useQuery({
     queryKey: ['gsc-keywords-immunity'],
     queryFn: async () => {
@@ -296,7 +304,8 @@ export default function GrowthExecutionPage() {
   }, [gscImmunityData, immunityEnabled]);
 
   // 🧠 INTELLIGENCE STACK
-  const [intelligenceEnabled, setIntelligenceEnabled] = useState(false);
+  const intelligenceEnabled = flags.intelligence_stack;
+  const setIntelligenceEnabled = (v: boolean) => setFlag('intelligence_stack', v);
   const { data: gscIntelData } = useQuery({
     queryKey: ['gsc-keywords-intelligence'],
     queryFn: async () => {
@@ -318,7 +327,8 @@ export default function GrowthExecutionPage() {
   }, [gscIntelData, intelligenceEnabled]);
 
   // 🔄 AUTONOMOUS SEO GROWTH LOOP
-  const [autonomousEnabled, setAutonomousEnabled] = useState(false);
+  const autonomousEnabled = flags.autonomous_growth_loop;
+  const setAutonomousEnabled = (v: boolean) => setFlag('autonomous_growth_loop', v);
   const { data: gscAutoData } = useQuery({
     queryKey: ['gsc-keywords-autonomous'],
     queryFn: async () => {
@@ -340,7 +350,8 @@ export default function GrowthExecutionPage() {
   }, [gscAutoData, autonomousEnabled]);
 
   // 💰 REVENUE + MARKET CAPTURE + ALGORITHM SHIELD
-  const [revenueEngineEnabled, setRevenueEngineEnabled] = useState(false);
+  const revenueEngineEnabled = flags.revenue_market_capture;
+  const setRevenueEngineEnabled = (v: boolean) => setFlag('revenue_market_capture', v);
   const { data: gscRevenueData } = useQuery({
     queryKey: ['gsc-keywords-revenue-capture'],
     queryFn: async () => {
