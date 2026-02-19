@@ -5,9 +5,16 @@ import { AppErrorBoundary } from "./components/error/AppErrorBoundary";
 import App from "./App.tsx";
 import "./index.css";
 
-// v8 - Fix: removed recharts/d3 manual vendor chunk (TDZ crash on iOS Safari)
+// v9 - Fix: removed charts manualChunks entirely (d3 TDZ crash on iOS Safari 18)
+// BUILD_MARKER: 2026-02-19T-v9-no-charts-chunk
 
-// === STEP 0: www → apex redirect (app-level fallback for platform 302) ===
+// === STEP 0: Build marker for deploy verification ===
+if (typeof window !== 'undefined') {
+  (window as any).__BUILD_ID__ = 'v9-no-charts-chunk-' + Date.now().toString(36);
+  console.log('[BUILD] v9-no-charts-chunk deployed');
+}
+
+// === STEP 0b: www → apex redirect (app-level fallback for platform 302) ===
 if (typeof window !== 'undefined' && window.location.hostname.startsWith('www.')) {
   window.location.replace('https://getpawsy.pet' + window.location.pathname + window.location.search + window.location.hash);
 }
