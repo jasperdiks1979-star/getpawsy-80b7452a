@@ -151,6 +151,12 @@ const Blog = lazyWithRetry(() => import("./pages/Blog"));
 const BlogPost = lazyWithRetry(() => import("./pages/BlogPost"));
 const FounderMode = lazyWithRetry(() => import("./pages/FounderMode"));
 
+/** Redirect legacy /collection/:slug to /collections/:slug with 301-equivalent */
+function CollectionRedirect() {
+  const { slug } = useParams<{ slug: string }>();
+  return <Navigate to={`/collections/${slug || ''}`} replace />;
+}
+
 // Admin sub-pages (all lazy-loaded, admin-only)
 const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPage"));
 const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
@@ -301,8 +307,8 @@ const App = () => {
                       {/* SEO Collection pages — /collections/:slug */}
                       <Route path="/collections/:slug" element={<Suspense fallback={<RouteLoader />}><SeoCollection /></Suspense>} />
                       
-                      {/* Legacy collection alias */}
-                      <Route path="/collection/:slug" element={<Suspense fallback={<RouteLoader />}><SeoCollection /></Suspense>} />
+                      {/* Legacy /collection/:slug → redirect to /collections/:slug */}
+                      <Route path="/collection/:slug" element={<CollectionRedirect />} />
                       
                       {/* Growth verification diagnostics */}
                       <Route path="/__ops/growth-verification" element={<Suspense fallback={<RouteLoader />}><GrowthVerification /></Suspense>} />
