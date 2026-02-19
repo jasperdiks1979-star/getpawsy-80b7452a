@@ -11,6 +11,7 @@ import {
   Play, Loader2, CheckCircle, XCircle, Clock, Shield,
 } from 'lucide-react';
 import { useJobRunner } from '@/hooks/useJobRunner';
+import { GovernorStatusDisplay } from '@/components/admin/GovernorStatusDisplay';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -40,7 +41,7 @@ export function RunAllControls() {
     try { return localStorage.getItem(LS_DRY_RUN_KEY) !== 'false'; } catch { return true; }
   });
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [cooldownRemaining, setCooldownRemaining] = useState<string | null>(null);
+  const [forceOverride, setForceOverride] = useState(false);
   const [lastRun, setLastRun] = useState<LastRunSummary | null>(() => {
     try { const v = localStorage.getItem(LS_LAST_RUN_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
   });
@@ -68,23 +69,8 @@ export function RunAllControls() {
     try { localStorage.setItem(LS_LAST_RUN_KEY, JSON.stringify(summary)); } catch {}
   }, [run, steps, traceId]);
 
-  // Parse cooldown from error
-  const cooldownMatch = error?.match(/Next manual run allowed at (.+)/);
-  const cooldownTarget = cooldownMatch ? new Date(cooldownMatch[1]) : null;
-
-  useEffect(() => {
-    if (!cooldownTarget) { setCooldownRemaining(null); return; }
-    const tick = () => {
-      const diff = cooldownTarget.getTime() - Date.now();
-      if (diff <= 0) { setCooldownRemaining(null); refresh(); return; }
-      const m = Math.floor(diff / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setCooldownRemaining(`${m}:${String(s).padStart(2, '0')}`);
-    };
-    tick();
-    const iv = setInterval(tick, 1000);
-    return () => clearInterval(iv);
-  }, [cooldownTarget, refresh]);
+  // Governor-based adaptive evaluation replaces static cooldown
+  // GovernorStatusDisplay component handles countdown and re-evaluation
 
   const handleClick = useCallback(() => {
     if (dryRun) {
@@ -96,7 +82,6 @@ export function RunAllControls() {
 
   const doRun = async (mode: 'dryrun' | 'fullstack') => {
     setConfirmOpen(false);
-    // Run ALL master control (Dashboard)
     const result = await triggerRun(mode);
     if (result?.ok) {
       toast.success(mode === 'dryrun' ? 'Dry Run started' : 'Full Stack pipeline started');
@@ -104,16 +89,11 @@ export function RunAllControls() {
       toast.error('GSC re-auth needed. Pipeline will still run other steps.');
     } else {
       const reason = result?.reason || 'Failed to start pipeline';
-      if (reason.includes('Next manual run allowed at')) {
-        const ts = reason.match(/at (.+)/)?.[1];
-        toast.info(`Cooldown active. Next run allowed at ${ts ? new Date(ts).toLocaleTimeString() : 'soon'}.`);
-      } else {
-        toast.error(reason);
-      }
+      toast.error(reason);
     }
   };
 
-  const disabled = isActive || triggering || !!cooldownRemaining;
+  const disabled = isActive || triggering;
 
   if (loading) return null;
 
@@ -140,7 +120,13 @@ export function RunAllControls() {
   return (
     <>
       {/* Compact control group */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
+        {/* Adaptive Execution Status */}
+        <GovernorStatusDisplay
+          mode={dryRun ? 'dryrun' : 'fullstack'}
+          forceOverride={forceOverride}
+          onForceOverrideChange={setForceOverride}
+        />
         <div className="flex items-center gap-2 flex-wrap">
           {/* Dry Run toggle */}
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -172,11 +158,9 @@ export function RunAllControls() {
             )}
             {isActive
               ? 'Running…'
-              : cooldownRemaining
-                ? `Cooldown ${cooldownRemaining}`
-                : dryRun
-                  ? 'Run ALL (Dry Run)'
-                  : 'Run ALL + Indexing'}
+              : dryRun
+                ? 'Run ALL (Dry Run)'
+                : 'Run ALL + Indexing'}
           </Button>
         </div>
 

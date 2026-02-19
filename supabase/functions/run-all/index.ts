@@ -27,7 +27,7 @@ const STEPS = [
   { key: 'market_share_simulation', label: 'Market Share Simulation', critical: false },
 ];
 
-const COOLDOWN_MINUTES = 30;
+// COOLDOWN_MINUTES removed — replaced by execution-governor adaptive evaluation
 const MAX_INDEXING_URLS = 20;
 const CANONICAL_HOST = 'https://getpawsy.pet';
 const INDEXING_DEDUPE_DAYS = 7;
@@ -103,27 +103,40 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cooldown for manual runs (schedule bypasses)
-    // Only enforce cooldown after runs that progressed past step 1 (not immediate failures)
+    // Adaptive Run Limiter — call execution-governor for signal-based evaluation
     if (source === 'manual') {
-      const cooldownCutoff = new Date(Date.now() - COOLDOWN_MINUTES * 60 * 1000).toISOString();
-      const { data: recentRun } = await supabase
-        .from('job_runs')
-        .select('id, finished_at, duration_ms, status')
-        .eq('source', 'manual')
-        .gte('finished_at', cooldownCutoff)
-        .order('finished_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      // Only enforce cooldown if the run actually progressed (duration > 5s means it ran real steps)
-      if (recentRun && recentRun.duration_ms && recentRun.duration_ms > 5000) {
-        const nextAllowed = new Date(new Date(recentRun.finished_at).getTime() + COOLDOWN_MINUTES * 60 * 1000);
-        return jsonResponse({
-          ok: false, traceId,
-          reason: `Next manual run allowed at ${nextAllowed.toISOString()}`,
-          nextAllowedAt: nextAllowed.toISOString(),
+      const forceOverride = body.forceOverride === true;
+      try {
+        const govRes = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/execution-governor`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader,
+          },
+          body: JSON.stringify({ mode, forceOverride }),
         });
+        const govData = await govRes.json();
+        if (govData.ok && !govData.allowed) {
+          return jsonResponse({
+            ok: false, traceId,
+            reason: govData.reason,
+            governorDecision: govData,
+            nextSafeRunInSeconds: govData.nextSafeRunInSeconds,
+            hardBlock: govData.hardBlock,
+          });
+        }
+        // If governor returned a different recommended mode, override
+        if (govData.ok && govData.recommendedMode && govData.recommendedMode !== mode) {
+          await log(supabase, '', null, 'info', `Governor recommends ${govData.recommendedMode} instead of ${mode}`);
+          // Only downgrade, never upgrade
+          if (mode === 'fullstack' && govData.recommendedMode === 'dryrun') {
+            mode = 'dryrun';
+          }
+        }
+      } catch (govErr) {
+        // Governor failure is non-blocking — log and continue with conservative fallback
+        console.warn(`[run-all][${traceId}] Governor evaluation failed, proceeding with caution:`, govErr);
+        await log(supabase, '', null, 'warn', `Governor evaluation failed: ${govErr}. Proceeding with fallback.`);
       }
     }
 
