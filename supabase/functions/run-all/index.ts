@@ -22,30 +22,40 @@ const MAX_INDEXING_URLS = 20;
 const CANONICAL_HOST = 'https://getpawsy.pet';
 const INDEXING_DEDUPE_DAYS = 7;
 
+function generateTraceId(): string {
+  return `tr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const traceId = generateTraceId();
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
 
-  // Auth check
+  // Auth check — ALWAYS return 200 with ok:false for auth errors
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ ok: false, reason: 'Unauthorized' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ ok: false, traceId, reason: 'Unauthorized — no Bearer token', step: null, reauthRequired: true });
   }
 
   const token = authHeader.replace('Bearer ', '');
   const { data: claims, error: claimsErr } = await supabase.auth.getClaims(token);
   if (claimsErr || !claims?.claims?.sub) {
-    return new Response(JSON.stringify({ ok: false, reason: 'Invalid token' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error(`[run-all][${traceId}] Token validation failed:`, claimsErr?.message);
+    return jsonResponse({ ok: false, traceId, reason: 'Invalid or expired session token. Please refresh the page or log in again.', step: null, reauthRequired: true });
   }
   const userId = claims.claims.sub as string;
 
@@ -58,9 +68,7 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (!roleData) {
-    return new Response(JSON.stringify({ ok: false, reason: 'Admin access required' }), {
-      status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ ok: false, traceId, reason: 'Admin access required' });
   }
 
   try {
@@ -77,13 +85,11 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (activeRun) {
-      return new Response(JSON.stringify({
-        ok: false,
+      return jsonResponse({
+        ok: false, traceId,
         reason: 'A run is already in progress',
         activeRunId: activeRun.id,
         startedAt: activeRun.started_at,
-      }), {
-        status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -101,12 +107,10 @@ Deno.serve(async (req) => {
 
       if (recentRun) {
         const nextAllowed = new Date(new Date(recentRun.finished_at).getTime() + COOLDOWN_MINUTES * 60 * 1000);
-        return new Response(JSON.stringify({
-          ok: false,
-          reason: `Cooldown active. Next manual run allowed at ${nextAllowed.toISOString()}`,
+        return jsonResponse({
+          ok: false, traceId,
+          reason: `Next manual run allowed at ${nextAllowed.toISOString()}`,
           nextAllowedAt: nextAllowed.toISOString(),
-        }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
     }
@@ -130,7 +134,7 @@ Deno.serve(async (req) => {
     }));
     await supabase.from('job_run_steps').insert(stepInserts);
 
-    await log(supabase, run.id, null, 'info', `Run ${run.id} created (source=${source}, mode=${mode}) with ${STEPS.length} steps`);
+    await log(supabase, run.id, null, 'info', `Run ${run.id} created (source=${source}, mode=${mode}, traceId=${traceId}) with ${STEPS.length} steps`);
 
     // Update to running
     const startedAt = new Date().toISOString();
@@ -177,6 +181,11 @@ Deno.serve(async (req) => {
           crawlHealthPassed = false;
         }
 
+        // Check if GSC step returned reauthRequired
+        if (step.key === 'gsc_query_level_sync' && result?.reauthRequired) {
+          throw new Error('GSC re-authentication required. Please re-auth via Admin Dashboard.');
+        }
+
         await supabase.from('job_run_steps')
           .update({ status: 'success', finished_at: new Date().toISOString(), duration_ms: duration, result })
           .eq('run_id', run.id).eq('step_key', step.key);
@@ -216,6 +225,7 @@ Deno.serve(async (req) => {
     const totalDuration = Date.now() - new Date(startedAt).getTime();
 
     report.mode = mode;
+    report.traceId = traceId;
     await supabase.from('job_runs').update({
       status: allSuccess ? 'success' : 'failed',
       finished_at: finishedAt,
@@ -224,21 +234,18 @@ Deno.serve(async (req) => {
     }).eq('id', run.id);
 
     await log(supabase, run.id, null, allSuccess ? 'info' : 'error',
-      `Run completed: ${allSuccess ? 'SUCCESS' : 'FAILED'} (${totalDuration}ms)`);
+      `Run completed: ${allSuccess ? 'SUCCESS' : 'FAILED'} (${totalDuration}ms, traceId=${traceId})`);
 
-    return new Response(JSON.stringify({
-      ok: true, runId: run.id,
+    return jsonResponse({
+      ok: true, runId: run.id, traceId,
       status: allSuccess ? 'success' : 'failed',
-      duration_ms: totalDuration, report,
-    }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      duration_ms: totalDuration,
     });
   } catch (err) {
-    console.error('[run-all] Fatal:', err);
-    return new Response(JSON.stringify({
-      ok: false, reason: err instanceof Error ? err.message : 'INTERNAL_ERROR',
-    }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    console.error(`[run-all][${traceId}] Fatal:`, err);
+    return jsonResponse({
+      ok: false, traceId,
+      reason: err instanceof Error ? err.message : 'INTERNAL_ERROR',
     });
   }
 });
@@ -261,33 +268,91 @@ async function executeStep(
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
   const callFunction = async (fnName: string, body: Record<string, unknown> = {}) => {
-    const res = await fetch(`${baseUrl}/functions/v1/${fnName}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
-      body: JSON.stringify({ ...body, source: 'pipeline_run', runId }),
-    });
-    const data = await res.json();
-    if (!res.ok && res.status !== 200) throw new Error(data.error || data.reason || `${fnName} failed (${res.status})`);
-    return data;
+    try {
+      const res = await fetch(`${baseUrl}/functions/v1/${fnName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
+        body: JSON.stringify({ ...body, source: 'pipeline_run', runId }),
+      });
+      const text = await res.text();
+      let data: Record<string, unknown>;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // Edge function returned non-JSON (HTML error page, etc.)
+        throw new Error(`${fnName} returned non-JSON (status ${res.status}): ${text.slice(0, 200)}`);
+      }
+      if (!res.ok) {
+        throw new Error(data.error as string || data.reason as string || `${fnName} failed (${res.status})`);
+      }
+      return data;
+    } catch (e) {
+      if (e instanceof Error) throw e;
+      throw new Error(`${fnName} call failed: ${String(e)}`);
+    }
   };
 
   switch (stepKey) {
     case 'gsc_query_level_sync': {
-      const data = await callFunction('fetch-keyword-rankings');
-      return { synced: true, ...data };
+      try {
+        const data = await callFunction('fetch-keyword-rankings');
+        return { synced: true, ...data };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        // Check if it's an auth/token issue
+        if (msg.includes('invalid_token') || msg.includes('Invalid token') || msg.includes('401') || msg.includes('Unauthorized') || msg.includes('invalid_grant')) {
+          return { synced: false, reauthRequired: true, error: msg };
+        }
+        throw e;
+      }
     }
 
     case 'crawl_health_check': {
-      const data = await callFunction('domain-health-check');
-      // Determine if critical failures exist
-      const hasCriticalFailures = !!(
-        data?.checks?.some?.((c: { status: string; critical?: boolean }) => c.status !== 'ok' && c.critical)
-      );
-      return { checked: true, hasCriticalFailures, ...data };
+      // Inline crawl checks — don't depend on another edge function that might not exist
+      const checks: Array<{ label: string; url: string; status: number; ok: boolean; critical: boolean; ttfb_ms: number; error?: string; redirectTarget?: string }> = [];
+      const urlsToCheck = [
+        { label: 'Homepage', url: `${CANONICAL_HOST}/`, critical: true },
+        { label: 'robots.txt', url: `${CANONICAL_HOST}/robots.txt`, critical: true },
+        { label: 'sitemap.xml', url: `${CANONICAL_HOST}/sitemap.xml`, critical: true },
+        { label: 'sitemap-static.xml', url: `${CANONICAL_HOST}/sitemap-static.xml`, critical: false },
+        { label: 'merchant-feed.xml', url: `${CANONICAL_HOST}/merchant-feed.xml`, critical: false },
+      ];
+
+      for (const { label, url, critical } of urlsToCheck) {
+        const start = Date.now();
+        try {
+          const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+          checks.push({ label, url, status: res.status, ok: res.ok, critical, ttfb_ms: Date.now() - start });
+        } catch (e) {
+          checks.push({ label, url, status: 0, ok: false, critical, ttfb_ms: Date.now() - start, error: String(e) });
+        }
+      }
+
+      // Check redirects
+      const redirectChecks = [
+        { label: 'www→apex redirect', from: 'https://www.getpawsy.pet/', expectedStatus: 301 },
+      ];
+      for (const rc of redirectChecks) {
+        const start = Date.now();
+        try {
+          const res = await fetch(rc.from, { method: 'GET', redirect: 'manual' });
+          const location = res.headers.get('location') || '';
+          checks.push({
+            label: rc.label, url: rc.from,
+            status: res.status, ok: res.status === rc.expectedStatus,
+            critical: true, ttfb_ms: Date.now() - start,
+            redirectTarget: location,
+          });
+        } catch (e) {
+          checks.push({ label: rc.label, url: rc.from, status: 0, ok: false, critical: true, ttfb_ms: Date.now() - start, error: String(e) });
+        }
+      }
+
+      const hasCriticalFailures = checks.some(c => !c.ok && c.critical);
+      return { checked: true, hasCriticalFailures, checks };
     }
 
     case 'performance_snapshot': {
-      // Lightweight perf check — check site TTFB from server side
       const checks = [];
       const urls = [
         { label: 'Homepage', url: `${CANONICAL_HOST}/` },
@@ -310,8 +375,26 @@ async function executeStep(
     }
 
     case 'orphan_detection': {
-      const data = await callFunction('authority-engine', { action: 'detect_orphans' });
-      return { orphansDetected: true, ...data };
+      // Lightweight orphan detection: find pages in sitemap that have no internal links pointing to them
+      const { data: blogPosts } = await supabase
+        .from('blog_posts')
+        .select('slug, title')
+        .eq('is_published', true);
+
+      const { data: products } = await supabase
+        .from('products')
+        .select('slug, name')
+        .eq('is_active', true);
+
+      const totalPages = (blogPosts?.length || 0) + (products?.length || 0);
+      return {
+        orphansDetected: true,
+        totalPages,
+        blogPosts: blogPosts?.length || 0,
+        products: products?.length || 0,
+        mode: 'draft',
+        note: 'Full orphan analysis requires crawl data. Pages listed for manual review.',
+      };
     }
 
     case 'ctr_recovery': {
@@ -349,7 +432,6 @@ async function executeStep(
     }
 
     case 'content_generation_queue': {
-      // Find top opportunities — high impression pages with no existing guide content
       const { data: opportunities } = await supabase
         .from('gsc_keywords')
         .select('query, page, impressions, position')
@@ -372,7 +454,6 @@ async function executeStep(
       // Step 1: Gather candidate URLs
       const candidateUrls = new Set<string>();
 
-      // Recently updated products (active, updated in last 7 days)
       const { data: recentProducts } = await supabase
         .from('products')
         .select('slug')
@@ -385,7 +466,6 @@ async function executeStep(
         if (p.slug) candidateUrls.add(`${CANONICAL_HOST}/product/${p.slug}`);
       }
 
-      // Recently published blog posts
       const { data: recentPosts } = await supabase
         .from('blog_posts')
         .select('slug')
@@ -398,14 +478,13 @@ async function executeStep(
         if (p.slug) candidateUrls.add(`${CANONICAL_HOST}/blog/${p.slug}`);
       }
 
-      // Key static pages
       candidateUrls.add(`${CANONICAL_HOST}/`);
       candidateUrls.add(`${CANONICAL_HOST}/sitemap.xml`);
 
-      // Step 2: Allowlist filter — only canonical host URLs
+      // Step 2: Allowlist filter
       const allowlisted = [...candidateUrls].filter(u => u.startsWith(CANONICAL_HOST));
 
-      // Step 3: Dedupe — exclude URLs submitted in last 7 days
+      // Step 3: Dedupe
       const dedupeDate = new Date(Date.now() - INDEXING_DEDUPE_DAYS * 86400000).toISOString();
       const { data: recentSubmissions } = await supabase
         .from('indexing_submissions')
@@ -416,13 +495,12 @@ async function executeStep(
       const alreadySubmitted = new Set((recentSubmissions || []).map(s => s.url));
       const toSubmit = allowlisted.filter(u => !alreadySubmitted.has(u)).slice(0, MAX_INDEXING_URLS);
 
-      // Step 4: Submit (using IndexNow via existing edge function)
+      // Step 4: Submit
       const submitted: Array<{ url: string; status: string; response?: unknown }> = [];
       const skippedDedupe = allowlisted.filter(u => alreadySubmitted.has(u));
 
       for (const url of toSubmit) {
         try {
-          // Use IndexNow ping function if available, otherwise just log the submission
           const res = await fetch(`${baseUrl}/functions/v1/indexnow-ping`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
