@@ -1517,6 +1517,44 @@ export type Database = {
         }
         Relationships: []
       }
+      indexing_submissions: {
+        Row: {
+          created_at: string
+          id: string
+          response_json: Json | null
+          run_id: string | null
+          status: string
+          submitted_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          response_json?: Json | null
+          run_id?: string | null
+          status?: string
+          submitted_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          response_json?: Json | null
+          run_id?: string | null
+          status?: string
+          submitted_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indexing_submissions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       internal_link_injections: {
         Row: {
           anchor_text: string

@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
         .select('*')
         .eq('run_id', run.id)
         .order('created_at', { ascending: false })
-        .limit(50),
+        .limit(100),
     ]);
 
     return new Response(JSON.stringify({
