@@ -14,8 +14,29 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
 import { safeString } from "@/lib/safe-render";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+// Recharts is lazy-imported to prevent the charts chunk from loading at bootstrap
+// VITE_DISABLE_CHARTS=true will skip chart rendering entirely (emergency kill switch)
 import { useIsMobile } from "@/hooks/use-mobile";
+import { lazy, Suspense } from "react";
+
+const CHARTS_DISABLED = import.meta.env.VITE_DISABLE_CHARTS === 'true';
+
+// Lazy wrapper for the PieChart to isolate charts chunk
+const LazyPieChart = lazy(() =>
+  import("recharts").then(m => ({
+    default: ({ data, colors }: { data: any[]; colors: string[] }) => (
+      <m.ResponsiveContainer width="100%" height="100%">
+        <m.PieChart>
+          <m.Pie data={data} cx="50%" cy="50%" innerRadius={12} outerRadius={22} dataKey="value" stroke="none">
+            {data.map((_: any, i: number) => (
+              <m.Cell key={i} fill={colors[i % colors.length]} />
+            ))}
+          </m.Pie>
+        </m.PieChart>
+      </m.ResponsiveContainer>
+    ),
+  }))
+);
 
 interface LiveStats {
   totalVisitors: number;
@@ -380,23 +401,16 @@ export const LiveCheckoutWidget = () => {
                   {totalFunnel > 0 && (
                     <div className="flex items-center gap-3 p-2 rounded-md bg-muted/20">
                       <div className="w-16 h-16 flex-shrink-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
+                        {CHARTS_DISABLED ? (
+                          <div className="w-full h-full rounded-full border-2 border-muted" />
+                        ) : (
+                          <Suspense fallback={<div className="w-full h-full rounded-full border-2 border-muted animate-pulse" />}>
+                            <LazyPieChart
                               data={funnelData}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={18}
-                              outerRadius={28}
-                              paddingAngle={2}
-                              dataKey="value"
-                            >
-                              {funnelData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                          </PieChart>
-                        </ResponsiveContainer>
+                              colors={funnelData.map((d: any) => d.color)}
+                            />
+                          </Suspense>
+                        )}
                       </div>
                       <div className="flex-1 space-y-1">
                         {funnelData.map((item) => (

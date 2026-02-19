@@ -19,7 +19,9 @@ import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext
 import type { CarouselApi } from '@/components/ui/carousel';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
-import { WebsiteSchema, LocalBusinessSchema } from '@/components/seo';
+// Direct imports — avoid barrel re-export to prevent pulling unrelated seo modules
+import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
+import { LocalBusinessSchema } from '@/components/seo/LocalBusinessSchema';
 
 // Below-fold icons — tree-shaken but small enough to keep sync
 import { Clock, BookOpen, Truck, ShieldCheck, RotateCcw, Heart, Star, Loader2 } from 'lucide-react';
