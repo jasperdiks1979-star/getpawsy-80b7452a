@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     minify: 'esbuild',
-    target: 'es2019',
+    target: 'es2020',
     chunkSizeWarningLimit: 500,
     cssMinify: true,
     cssCodeSplit: true,
