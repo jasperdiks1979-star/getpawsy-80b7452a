@@ -909,6 +909,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ctr_model_data: {
+        Row: {
+          created_at: string
+          device: string
+          expected_ctr: number
+          id: string
+          position: number
+          query_type: string
+          sample_size: number
+          stddev_ctr: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device?: string
+          expected_ctr?: number
+          id?: string
+          position: number
+          query_type?: string
+          sample_size?: number
+          stddev_ctr?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device?: string
+          expected_ctr?: number
+          id?: string
+          position?: number
+          query_type?: string
+          sample_size?: number
+          stddev_ctr?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cwv_validation_events: {
         Row: {
           created_by: string | null
@@ -1779,6 +1815,68 @@ export type Database = {
             columns: ["service_account_key_id"]
             isOneToOne: false
             referencedRelation: "service_account_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      keyword_clusters: {
+        Row: {
+          avg_position: number | null
+          cluster_label: string
+          created_at: string
+          id: string
+          intent_type: string | null
+          keyword_count: number
+          keywords: Json
+          orphan_candidates: Json | null
+          primary_keyword: string
+          run_id: string | null
+          suggested_new_article: boolean | null
+          target_url: string | null
+          total_clicks: number
+          total_impressions: number
+          updated_at: string
+        }
+        Insert: {
+          avg_position?: number | null
+          cluster_label: string
+          created_at?: string
+          id?: string
+          intent_type?: string | null
+          keyword_count?: number
+          keywords?: Json
+          orphan_candidates?: Json | null
+          primary_keyword: string
+          run_id?: string | null
+          suggested_new_article?: boolean | null
+          target_url?: string | null
+          total_clicks?: number
+          total_impressions?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_position?: number | null
+          cluster_label?: string
+          created_at?: string
+          id?: string
+          intent_type?: string | null
+          keyword_count?: number
+          keywords?: Json
+          orphan_candidates?: Json | null
+          primary_keyword?: string
+          run_id?: string | null
+          suggested_new_article?: boolean | null
+          target_url?: string | null
+          total_clicks?: number
+          total_impressions?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_clusters_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
             referencedColumns: ["id"]
           },
         ]
@@ -4720,6 +4818,59 @@ export type Database = {
           zero_stock_count?: number
         }
         Relationships: []
+      }
+      strategy_evolution_log: {
+        Row: {
+          action_taken: string
+          confidence_score: number | null
+          created_at: string
+          delta_impact: Json | null
+          id: string
+          new_value: Json | null
+          previous_value: Json | null
+          run_id: string | null
+          stability_status: string | null
+          strategy_type: string
+          target_keyword: string | null
+          target_url: string | null
+        }
+        Insert: {
+          action_taken: string
+          confidence_score?: number | null
+          created_at?: string
+          delta_impact?: Json | null
+          id?: string
+          new_value?: Json | null
+          previous_value?: Json | null
+          run_id?: string | null
+          stability_status?: string | null
+          strategy_type: string
+          target_keyword?: string | null
+          target_url?: string | null
+        }
+        Update: {
+          action_taken?: string
+          confidence_score?: number | null
+          created_at?: string
+          delta_impact?: Json | null
+          id?: string
+          new_value?: Json | null
+          previous_value?: Json | null
+          run_id?: string | null
+          stability_status?: string | null
+          strategy_type?: string
+          target_keyword?: string | null
+          target_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_evolution_log_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       supplier_import_logs: {
         Row: {
