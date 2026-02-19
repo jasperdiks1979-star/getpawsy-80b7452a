@@ -122,6 +122,56 @@ export type Database = {
         }
         Relationships: []
       }
+      backlink_outreach_scores: {
+        Row: {
+          authority_score: number | null
+          created_at: string
+          id: string
+          outreach_priority_score: number | null
+          recommended_anchor_type: string | null
+          relevance_score: number | null
+          run_id: string | null
+          spam_risk: number | null
+          suggested_pitch_topic: string | null
+          target_domain: string
+          tier: string
+        }
+        Insert: {
+          authority_score?: number | null
+          created_at?: string
+          id?: string
+          outreach_priority_score?: number | null
+          recommended_anchor_type?: string | null
+          relevance_score?: number | null
+          run_id?: string | null
+          spam_risk?: number | null
+          suggested_pitch_topic?: string | null
+          target_domain: string
+          tier?: string
+        }
+        Update: {
+          authority_score?: number | null
+          created_at?: string
+          id?: string
+          outreach_priority_score?: number | null
+          recommended_anchor_type?: string | null
+          relevance_score?: number | null
+          run_id?: string | null
+          spam_risk?: number | null
+          suggested_pitch_topic?: string | null
+          target_domain?: string
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backlink_outreach_scores_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bestsellers: {
         Row: {
           created_at: string
@@ -648,6 +698,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      competitor_content_intelligence: {
+        Row: {
+          actionable_improvements: Json | null
+          competitor_url: string | null
+          content_depth_delta: number | null
+          created_at: string
+          id: string
+          keyword: string
+          run_id: string | null
+          schema_gap: Json | null
+          semantic_gap_score: number | null
+          snippet_format_presence: boolean | null
+          structural_advantage_score: number | null
+        }
+        Insert: {
+          actionable_improvements?: Json | null
+          competitor_url?: string | null
+          content_depth_delta?: number | null
+          created_at?: string
+          id?: string
+          keyword: string
+          run_id?: string | null
+          schema_gap?: Json | null
+          semantic_gap_score?: number | null
+          snippet_format_presence?: boolean | null
+          structural_advantage_score?: number | null
+        }
+        Update: {
+          actionable_improvements?: Json | null
+          competitor_url?: string | null
+          content_depth_delta?: number | null
+          created_at?: string
+          id?: string
+          keyword?: string
+          run_id?: string | null
+          schema_gap?: Json | null
+          semantic_gap_score?: number | null
+          snippet_format_presence?: boolean | null
+          structural_advantage_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_content_intelligence_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       competitor_gaps: {
         Row: {
@@ -2044,6 +2144,62 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_share_simulations: {
+        Row: {
+          cluster_expansion_growth: number | null
+          competitive_pressure: number | null
+          confidence_score: number | null
+          created_at: string
+          id: string
+          projected_market_share_gain: number | null
+          projected_revenue_90d: number | null
+          projected_traffic_90d: number | null
+          run_id: string | null
+          scenario: string
+          serp_capture_growth: number | null
+          top10_share_pct: number | null
+          top3_share_pct: number | null
+        }
+        Insert: {
+          cluster_expansion_growth?: number | null
+          competitive_pressure?: number | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          projected_market_share_gain?: number | null
+          projected_revenue_90d?: number | null
+          projected_traffic_90d?: number | null
+          run_id?: string | null
+          scenario: string
+          serp_capture_growth?: number | null
+          top10_share_pct?: number | null
+          top3_share_pct?: number | null
+        }
+        Update: {
+          cluster_expansion_growth?: number | null
+          competitive_pressure?: number | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          projected_market_share_gain?: number | null
+          projected_revenue_90d?: number | null
+          projected_traffic_90d?: number | null
+          run_id?: string | null
+          scenario?: string
+          serp_capture_growth?: number | null
+          top10_share_pct?: number | null
+          top3_share_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_share_simulations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
             referencedColumns: ["id"]
           },
         ]
@@ -4629,6 +4785,68 @@ export type Database = {
           url?: string
         }
         Relationships: []
+      }
+      seo_revenue_matrix: {
+        Row: {
+          action_taken: string | null
+          aov: number | null
+          clicks: number | null
+          created_at: string
+          ctr: number | null
+          current_position: number | null
+          defense_mode: boolean | null
+          estimated_cvr: number | null
+          id: string
+          impressions: number | null
+          keyword: string
+          page_url: string | null
+          revenue_potential_30d: number | null
+          revenue_potential_90d: number | null
+          run_id: string | null
+        }
+        Insert: {
+          action_taken?: string | null
+          aov?: number | null
+          clicks?: number | null
+          created_at?: string
+          ctr?: number | null
+          current_position?: number | null
+          defense_mode?: boolean | null
+          estimated_cvr?: number | null
+          id?: string
+          impressions?: number | null
+          keyword: string
+          page_url?: string | null
+          revenue_potential_30d?: number | null
+          revenue_potential_90d?: number | null
+          run_id?: string | null
+        }
+        Update: {
+          action_taken?: string | null
+          aov?: number | null
+          clicks?: number | null
+          created_at?: string
+          ctr?: number | null
+          current_position?: number | null
+          defense_mode?: boolean | null
+          estimated_cvr?: number | null
+          id?: string
+          impressions?: number | null
+          keyword?: string
+          page_url?: string | null
+          revenue_potential_30d?: number | null
+          revenue_potential_90d?: number | null
+          run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_revenue_matrix_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       serp_features: {
         Row: {
