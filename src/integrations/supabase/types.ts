@@ -1391,6 +1391,45 @@ export type Database = {
         }
         Relationships: []
       }
+      gsc_keywords: {
+        Row: {
+          clicks: number
+          created_at: string
+          ctr: number
+          id: string
+          impressions: number
+          page: string
+          position: number
+          query: string
+          sync_date: string
+          updated_at: string
+        }
+        Insert: {
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          page: string
+          position?: number
+          query: string
+          sync_date: string
+          updated_at?: string
+        }
+        Update: {
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          page?: string
+          position?: number
+          query?: string
+          sync_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gsc_sync_runs: {
         Row: {
           created_at: string
