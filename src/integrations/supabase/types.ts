@@ -3736,6 +3736,71 @@ export type Database = {
         }
         Relationships: []
       }
+      ranking_deltas: {
+        Row: {
+          crawl_timestamp: string
+          created_at: string
+          ctr_after: number | null
+          ctr_before: number | null
+          delta_ctr: number | null
+          delta_impressions: number | null
+          delta_position: number | null
+          id: string
+          impressions_after: number | null
+          impressions_before: number | null
+          keyword: string
+          page_url: string | null
+          position_after: number | null
+          position_before: number | null
+          run_id: string | null
+          volatility_score: number | null
+        }
+        Insert: {
+          crawl_timestamp?: string
+          created_at?: string
+          ctr_after?: number | null
+          ctr_before?: number | null
+          delta_ctr?: number | null
+          delta_impressions?: number | null
+          delta_position?: number | null
+          id?: string
+          impressions_after?: number | null
+          impressions_before?: number | null
+          keyword: string
+          page_url?: string | null
+          position_after?: number | null
+          position_before?: number | null
+          run_id?: string | null
+          volatility_score?: number | null
+        }
+        Update: {
+          crawl_timestamp?: string
+          created_at?: string
+          ctr_after?: number | null
+          ctr_before?: number | null
+          delta_ctr?: number | null
+          delta_impressions?: number | null
+          delta_position?: number | null
+          id?: string
+          impressions_after?: number | null
+          impressions_before?: number | null
+          keyword?: string
+          page_url?: string | null
+          position_after?: number | null
+          position_before?: number | null
+          run_id?: string | null
+          volatility_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ranking_deltas_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rate_limits: {
         Row: {
           created_at: string
