@@ -4030,6 +4030,54 @@ export type Database = {
         }
         Relationships: []
       }
+      seo_feature_flags: {
+        Row: {
+          algorithm_immunity: boolean
+          autonomous_growth_loop: boolean
+          content_dominance: boolean
+          created_at: string
+          dominance_mode: boolean
+          enterprise_expansion: boolean
+          growth_domination: boolean
+          hyper_aggressive: boolean
+          id: string
+          intelligence_stack: boolean
+          revenue_market_capture: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          algorithm_immunity?: boolean
+          autonomous_growth_loop?: boolean
+          content_dominance?: boolean
+          created_at?: string
+          dominance_mode?: boolean
+          enterprise_expansion?: boolean
+          growth_domination?: boolean
+          hyper_aggressive?: boolean
+          id?: string
+          intelligence_stack?: boolean
+          revenue_market_capture?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          algorithm_immunity?: boolean
+          autonomous_growth_loop?: boolean
+          content_dominance?: boolean
+          created_at?: string
+          dominance_mode?: boolean
+          enterprise_expansion?: boolean
+          growth_domination?: boolean
+          hyper_aggressive?: boolean
+          id?: string
+          intelligence_stack?: boolean
+          revenue_market_capture?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       seo_nurture_queue: {
         Row: {
           conversion_sent: boolean
