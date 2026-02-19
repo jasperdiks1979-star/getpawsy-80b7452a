@@ -56,6 +56,22 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('@tiptap') || id.includes('prosemirror')) {
               return 'editor';
             }
+            if (id.includes('zod') || id.includes('react-hook-form') || id.includes('@hookform')) {
+              return 'forms';
+            }
+            if (id.includes('date-fns')) {
+              return 'date-utils';
+            }
+            if (id.includes('sonner') || id.includes('canvas-confetti')) {
+              return 'notifications';
+            }
+          }
+          // App-level splits: admin & SEO dashboards into separate chunks
+          if (id.includes('/pages/admin/') || id.includes('/components/admin/')) {
+            return 'admin-dashboard';
+          }
+          if (id.includes('/lib/seo-agent') || id.includes('/lib/seo-') || id.includes('/components/seo/')) {
+            return 'seo-engine';
           }
         },
         chunkFileNames: 'assets/[name]-[hash].js',

@@ -15,15 +15,28 @@ import { toast } from 'sonner';
 // Below-fold imports — lazy loaded to reduce initial bundle
 const Loader2Icon = lazy(() => import('lucide-react').then(m => ({ default: m.Loader2 })));
 import { Skeleton } from '@/components/ui/skeleton';
-import { ProductCard } from '@/components/products/ProductCard';
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
-import type { CarouselApi } from '@/components/ui/carousel';
-import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { WebsiteSchema, LocalBusinessSchema } from '@/components/seo';
 
-// Below-fold icons — tree-shaken but small enough to keep sync
-import { Clock, BookOpen, Truck, ShieldCheck, RotateCcw, Heart, Star, Loader2 } from 'lucide-react';
+// Below-fold heavy components — lazy loaded to reduce initial JS
+const ProductCard = lazy(() => import('@/components/products/ProductCard').then(m => ({ default: m.ProductCard })));
+const CarouselModule = lazy(() => import('@/components/ui/carousel').then(m => ({
+  default: ({ children, ...props }: any) => {
+    const C = m.Carousel;
+    return <C {...props}>{children}</C>;
+  }
+})));
+
+// Below-fold icons — lazy loaded to keep main bundle lean
+import { ArrowRight } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+const Clock = lazy(() => import('lucide-react').then(m => ({ default: m.Clock })));
+const BookOpen = lazy(() => import('lucide-react').then(m => ({ default: m.BookOpen })));
+const Truck = lazy(() => import('lucide-react').then(m => ({ default: m.Truck })));
+const ShieldCheck = lazy(() => import('lucide-react').then(m => ({ default: m.ShieldCheck })));
+const RotateCcw = lazy(() => import('lucide-react').then(m => ({ default: m.RotateCcw })));
+const Heart = lazy(() => import('lucide-react').then(m => ({ default: m.Heart })));
+const Star = lazy(() => import('lucide-react').then(m => ({ default: m.Star })));
 
 // Non-critical imports deferred
 const trackNewsletterSignup = (email: string) => import('@/lib/analytics').then(m => m.trackNewsletterSignup(email));
