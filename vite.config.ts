@@ -70,7 +70,25 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('/pages/admin/') || id.includes('/components/admin/')) {
             return 'admin-dashboard';
           }
-          if (id.includes('/lib/seo-agent') || id.includes('/lib/seo-') || id.includes('/components/seo/')) {
+          // SEO schema components (small, used by product/category pages) stay in default chunks
+          // Only heavy admin-only SEO engines go into the seo-engine chunk
+          // IMPORTANT: /lib/seo-keywords is a pure data file — must NOT be in seo-engine
+          // to avoid pulling the entire chunk into Index.tsx at bootstrap
+          if (
+            (id.includes('/lib/seo-agent') ||
+             id.includes('/lib/seo-command-center') ||
+             id.includes('/lib/seo-decision-engine') ||
+             id.includes('/lib/seo-growth-engine') ||
+             id.includes('/lib/seo-auto-optimizer') ||
+             id.includes('/lib/seo-autonomous-engine') ||
+             id.includes('/lib/seo-revenue-scaling') ||
+             id.includes('/lib/seo-monitoring') ||
+             id.includes('/lib/seo-evaluation-framework') ||
+             id.includes('/lib/seo-content-clusters') ||
+             id.includes('/lib/seo-content-prompts') ||
+             id.includes('/lib/seo-optimization-log') ||
+             id.includes('/lib/seo-monthly-optimization-routine'))
+          ) {
             return 'seo-engine';
           }
         },
