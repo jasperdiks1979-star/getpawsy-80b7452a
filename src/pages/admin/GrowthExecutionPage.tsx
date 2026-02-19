@@ -20,6 +20,7 @@ import { prepareBacklinkAssets, type BacklinkDominationResult } from '@/lib/back
 import { runHyperAggressiveEngine, HYPER_AGGRESSIVE_DEFAULTS, type HyperAggressiveResult } from '@/lib/hyper-aggressive-engine';
 import { runDominanceMode, type DominanceModeResult } from '@/lib/dominance-mode-engine';
 import { runContentDominance, type ContentDominanceResult } from '@/lib/content-dominance-engine';
+import { runGrowthDomination, type GrowthDominationResult } from '@/lib/growth-domination-engine';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Crown, Shield, Flame } from 'lucide-react';
@@ -222,6 +223,28 @@ export default function GrowthExecutionPage() {
       position: r.position,
     })));
   }, [gscQueryData, contentDominanceEnabled]);
+
+  // 🔥 GROWTH DOMINATION STACK
+  const [dominationEnabled, setDominationEnabled] = useState(false);
+  const { data: gscDominationData } = useQuery({
+    queryKey: ['gsc-keywords-domination'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, clicks, impressions, ctr, position')
+        .order('impressions', { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: dominationEnabled,
+  });
+
+  const dominationResult: GrowthDominationResult | null = useMemo(() => {
+    if (!dominationEnabled || !gscDominationData || gscDominationData.length === 0) return null;
+    return runGrowthDomination(gscDominationData);
+  }, [gscDominationData, dominationEnabled]);
 
   const downloadCsv = () => {
     if (!backlinkResult?.csvData) return;
@@ -1229,6 +1252,212 @@ export default function GrowthExecutionPage() {
               {/* System JSON */}
               <Section title="Content Dominance Report (JSON)">
                 <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(contentDominanceResult.systemSummary, null, 2)}</pre>
+              </Section>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* 🔥 GROWTH DOMINATION STACK */}
+        <Card className={dominationEnabled ? 'border-orange-500/50 bg-orange-500/5' : 'border-border'}>
+          <CardHeader className="py-3 px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Flame className="h-5 w-5 text-orange-500" />
+                <CardTitle className="text-sm font-semibold">Growth Domination Stack</CardTitle>
+                <Badge variant={dominationEnabled ? 'default' : 'secondary'} className="text-xs">
+                  {dominationEnabled ? 'FULL STACK ACTIVE' : 'OFF'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Buyer Intent + Semantic + CRO</span>
+                <Switch checked={dominationEnabled} onCheckedChange={(checked) => { setDominationEnabled(checked); toast[checked ? 'success' : 'info'](checked ? '🔥 Growth Domination Stack activated' : 'Growth Domination Stack deactivated'); }} />
+              </div>
+            </div>
+          </CardHeader>
+          {dominationEnabled && dominationResult && (
+            <CardContent className="pt-0 px-4 pb-4 space-y-4">
+              {/* System Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <MetricCard label="Real Queries" value={dominationResult.systemSummary.totalRealQueries} icon={Search} color="green" />
+                <MetricCard label="Total Impressions" value={dominationResult.systemSummary.totalImpressions.toLocaleString()} icon={Eye} color="blue" />
+                <MetricCard label="Yellow Zone (Query)" value={dominationResult.yellowZoneQueryLevel.length} icon={Target} color="amber" />
+                <MetricCard label="Commercial Visibility" value={`${dominationResult.buyerIntent.commercialVisibilityScore}%`} icon={TrendingUp} color="primary" />
+              </div>
+
+              <div className="p-3 rounded-lg border flex items-center justify-between" style={{ background: 'hsl(var(--primary) / 0.05)', borderColor: 'hsl(var(--primary) / 0.2)' }}>
+                <div className="flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /><span className="text-sm font-medium">System: {dominationResult.systemSummary.systemIntegrity}</span></div>
+                <div className="flex gap-1">
+                  <Badge className="text-[10px]">Intent: {dominationResult.systemSummary.buyerIntentPush}</Badge>
+                  <Badge className="text-[10px]">Semantic: {dominationResult.systemSummary.semanticMode}</Badge>
+                  <Badge className="text-[10px]">CRO: {dominationResult.systemSummary.conversionLayer}</Badge>
+                </div>
+              </div>
+
+              {/* Phase 1: Buyer Intent */}
+              <Section title="Phase 1 — US Buyer-Intent Product Push" badge={`${dominationResult.buyerIntent.highIntentKeywords.length} targets`} defaultOpen>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Revenue Lift</p><p className="font-semibold text-primary">{dominationResult.buyerIntent.projectedRevenueLift}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Optimized Products</p><p className="font-semibold text-primary">{dominationResult.buyerIntent.optimizedProducts.length} pages</p></div>
+                  </div>
+                  <p className="text-xs font-semibold">Top Buyer-Intent Keywords:</p>
+                  <div className="max-h-[250px] overflow-y-auto space-y-1">
+                    {dominationResult.buyerIntent.highIntentKeywords.slice(0, 15).map((kw, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-2 rounded border">
+                        <span className="font-mono text-primary truncate max-w-[40%]">{kw.query}</span>
+                        <div className="flex gap-1">
+                          <Badge variant={kw.intent === 'transactional' ? 'destructive' : 'default'} className="text-[10px]">{kw.intent}</Badge>
+                          <Badge variant="outline" className="text-[10px]">Pos {Math.round(kw.position)}</Badge>
+                          <Badge variant="secondary" className="text-[10px]">{kw.impressions} imp</Badge>
+                          <Badge variant="outline" className="text-[10px]">Score: {kw.priorityScore}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {dominationResult.buyerIntent.optimizedProducts.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold mt-2">Product Optimizations:</p>
+                      {dominationResult.buyerIntent.optimizedProducts.slice(0, 5).map((prod, i) => (
+                        <div key={i} className="p-2 rounded border text-xs space-y-1">
+                          <p className="font-mono text-primary">{prod.page}</p>
+                          <p><span className="font-medium">New Title:</span> {prod.titleRewrite.slice(0, 60)}</p>
+                          <p className="text-muted-foreground">{prod.metaRewrite.slice(0, 120)}...</p>
+                          <div className="flex gap-1 flex-wrap">
+                            {prod.trustBlocks.map((t, j) => <Badge key={j} variant="outline" className="text-[10px]">{t}</Badge>)}
+                            {prod.comparisonTable && <Badge variant="destructive" className="text-[10px]">+ Comparison Table</Badge>}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </Section>
+
+              {/* Phase 2: Semantic NLP */}
+              <Section title="Phase 2 — Semantic NLP Optimization" badge={`${dominationResult.semanticNlp.targets.length} URLs`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Coverage Before</p><p className="font-bold text-lg">{dominationResult.semanticNlp.semanticCoverageScoreBefore}/100</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Coverage After</p><p className="font-bold text-lg text-primary">{dominationResult.semanticNlp.semanticCoverageScoreAfter}/100</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Authority</p><p className="font-bold text-lg">{dominationResult.semanticNlp.authorityProjection}/100</p></div>
+                  </div>
+                  <p className="text-xs">Depth Increase: <span className="font-semibold text-primary">{dominationResult.semanticNlp.topicalDepthIncrease}</span></p>
+
+                  {dominationResult.semanticNlp.cannibalizationFixes.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold text-destructive">⚠ Cannibalization Detected ({dominationResult.semanticNlp.cannibalizationFixes.length}):</p>
+                      {dominationResult.semanticNlp.cannibalizationFixes.slice(0, 5).map((fix, i) => (
+                        <div key={i} className="p-2 rounded bg-destructive/5 border border-destructive/20 text-xs">
+                          <p className="font-mono">"{fix.query}" → {fix.pages.length} pages</p>
+                          <p className="text-muted-foreground">{fix.resolution.slice(0, 120)}</p>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {dominationResult.semanticNlp.thinContentDetected.length > 0 && (
+                    <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-xs">
+                      <p className="font-semibold">Thin Content ({dominationResult.semanticNlp.thinContentDetected.length} pages):</p>
+                      {dominationResult.semanticNlp.thinContentDetected.slice(0, 5).map((url, i) => (
+                        <p key={i} className="font-mono text-muted-foreground">{url}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className="text-xs font-semibold">Top Semantic Targets:</p>
+                  <div className="max-h-[200px] overflow-y-auto space-y-1">
+                    {dominationResult.semanticNlp.targets.slice(0, 8).map((t, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                        <span className="font-mono truncate max-w-[45%]">{t.url}</span>
+                        <div className="flex gap-1">
+                          <Badge variant="outline" className="text-[10px]">{t.currentDepthScore} → {t.optimizedDepthScore}</Badge>
+                          <Badge variant="secondary" className="text-[10px]">{t.queries.length} queries</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              {/* Phase 3: Conversion */}
+              <Section title="Phase 3 — Conversion Maximization" badge={`${dominationResult.conversion.optimizedConversionEstimate}% CVR target`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Current CVR</p><p className="font-bold text-lg">{dominationResult.conversion.currentConversionEstimate}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Target CVR</p><p className="font-bold text-lg text-primary">{dominationResult.conversion.optimizedConversionEstimate}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Rev / 1k Visitors</p><p className="font-bold text-lg">${dominationResult.conversion.expectedRevenuePer1000Visitors}</p></div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs font-semibold text-destructive mb-1">Friction Points ({dominationResult.conversion.frictionPoints.length}):</p>
+                      {dominationResult.conversion.frictionPoints.map((f, i) => (
+                        <div key={i} className="flex items-start gap-1 text-xs mb-1"><AlertTriangle className="h-3 w-3 mt-0.5 text-destructive shrink-0" /><span>{f}</span></div>
+                      ))}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-primary mb-1">Improvements ({dominationResult.conversion.improvements.length}):</p>
+                      {dominationResult.conversion.improvements.map((imp, i) => (
+                        <div key={i} className="flex items-start gap-1 text-xs mb-1"><Zap className="h-3 w-3 mt-0.5 text-primary shrink-0" /><span>{imp}</span></div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-xs font-semibold">Cross-Sell Funnels:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {dominationResult.conversion.crossSellOpportunities.map((cs, i) => (
+                      <Badge key={i} variant="outline" className="text-[10px]">{cs}</Badge>
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              {/* Yellow Zone Query Level */}
+              {dominationResult.yellowZoneQueryLevel.length > 0 && (
+                <Section title="Yellow Zone (Query-Level)" badge={`${dominationResult.yellowZoneQueryLevel.length} queries pos 11-30`}>
+                  <div className="max-h-[200px] overflow-y-auto space-y-1">
+                    {dominationResult.yellowZoneQueryLevel.map((q, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-2 rounded border">
+                        <span className="font-mono text-primary truncate max-w-[50%]">{q.query}</span>
+                        <div className="flex gap-1">
+                          <Badge variant="outline" className="text-[10px]">Pos {Math.round(q.position)}</Badge>
+                          <Badge variant="secondary" className="text-[10px]">{q.impressions} imp</Badge>
+                          <Badge variant="outline" className="text-[10px]">{q.clicks} clicks</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* Authority Growth Curve */}
+              <div className="p-3 rounded-lg bg-muted">
+                <p className="text-xs font-semibold mb-2">90-Day Authority Growth:</p>
+                <div className="flex items-end gap-2 h-16">
+                  {dominationResult.systemSummary.authorityGrowthCurve.map(p => (
+                    <div key={p.month} className="flex flex-col items-center flex-1">
+                      <div className="w-full bg-primary/70 rounded-t" style={{ height: `${p.score}%` }} />
+                      <span className="text-[10px] text-muted-foreground mt-1">M{p.month}: {p.score}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Projections */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">90-Day Traffic Lift</p>
+                  <p className="font-semibold text-primary text-sm">{dominationResult.systemSummary.projected90DayTrafficLift}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">90-Day Revenue Lift</p>
+                  <p className="font-semibold text-primary text-sm">{dominationResult.systemSummary.projected90DayRevenueLift}</p>
+                </div>
+              </div>
+
+              {/* Full JSON */}
+              <Section title="Growth Domination Report (JSON)">
+                <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(dominationResult.systemSummary, null, 2)}</pre>
               </Section>
             </CardContent>
           )}
