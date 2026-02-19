@@ -67,6 +67,7 @@ const RevenueOptimizerWidget = lazy(() => import("@/components/admin/widgets/Rev
 const MarketTakeoverWidget = lazy(() => import("@/components/admin/widgets/MarketTakeoverWidget").then(module => ({ default: module.MarketTakeoverWidget })));
 const AutonomousGrowthDashboard = lazy(() => import("@/components/admin/widgets/AutonomousGrowthDashboard"));
 const AGMStabilityDashboard = lazy(() => import("@/components/admin/widgets/AGMStabilityDashboard"));
+const GuideVisibilityWidget = lazy(() => import("@/components/admin/widgets/GuideVisibilityWidget"));
 import { TrafficReportDownload } from "@/components/admin/TrafficReportDownload";
 import { AdminManualDownload } from "@/components/admin/AdminManualDownload";
 import { ProductCsvExport } from "@/components/admin/ProductCsvExport";
@@ -3343,6 +3344,10 @@ const Admin = () => {
             {/* AGM: Stability & Index Hygiene */}
             <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
               <AGMStabilityDashboard />
+            </Suspense>
+            {/* Guide Visibility & Index Report */}
+            <Suspense fallback={<Card className="p-6"><Skeleton className="h-48 w-full" /></Card>}>
+              <GuideVisibilityWidget />
             </Suspense>
           </TabsContent>
 
