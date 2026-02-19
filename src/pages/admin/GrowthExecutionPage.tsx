@@ -22,6 +22,7 @@ import { runDominanceMode, type DominanceModeResult } from '@/lib/dominance-mode
 import { runContentDominance, type ContentDominanceResult } from '@/lib/content-dominance-engine';
 import { runGrowthDomination, type GrowthDominationResult } from '@/lib/growth-domination-engine';
 import { runEnterpriseExpansion, type EnterpriseExpansionResult } from '@/lib/enterprise-expansion-engine';
+import { runAlgorithmImmunityStack, type AlgorithmImmunityStackResult } from '@/lib/algorithm-immunity-engine';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Crown, Shield, Flame } from 'lucide-react';
@@ -268,6 +269,28 @@ export default function GrowthExecutionPage() {
     if (!enterpriseEnabled || !gscEnterpriseData || gscEnterpriseData.length === 0) return null;
     return runEnterpriseExpansion(gscEnterpriseData);
   }, [gscEnterpriseData, enterpriseEnabled]);
+
+  // 🛡️ ALGORITHM IMMUNITY STACK
+  const [immunityEnabled, setImmunityEnabled] = useState(false);
+  const { data: gscImmunityData } = useQuery({
+    queryKey: ['gsc-keywords-immunity'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, clicks, impressions, ctr, position')
+        .order('impressions', { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: immunityEnabled,
+  });
+
+  const immunityResult: AlgorithmImmunityStackResult | null = useMemo(() => {
+    if (!immunityEnabled || !gscImmunityData || gscImmunityData.length === 0) return null;
+    return runAlgorithmImmunityStack(gscImmunityData);
+  }, [gscImmunityData, immunityEnabled]);
 
   const downloadCsv = () => {
     if (!backlinkResult?.csvData) return;
@@ -1275,6 +1298,164 @@ export default function GrowthExecutionPage() {
               {/* System JSON */}
               <Section title="Content Dominance Report (JSON)">
                 <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(contentDominanceResult.systemSummary, null, 2)}</pre>
+              </Section>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* 🛡️ ALGORITHM IMMUNITY + ZERO-CLICK + CATEGORY DOMINANCE */}
+        <Card className={immunityEnabled ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border'}>
+          <CardHeader className="py-3 px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-emerald-500" />
+                <CardTitle className="text-sm font-semibold">Algorithm Immunity Stack</CardTitle>
+                <Badge variant={immunityEnabled ? 'default' : 'secondary'} className="text-xs">
+                  {immunityEnabled ? 'ACTIVE' : 'OFF'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Immunity + Zero-Click + Category</span>
+                <Switch checked={immunityEnabled} onCheckedChange={(checked) => { setImmunityEnabled(checked); toast[checked ? 'success' : 'info'](checked ? '🛡️ Algorithm Immunity Stack activated' : 'Immunity Stack deactivated'); }} />
+              </div>
+            </div>
+          </CardHeader>
+          {immunityEnabled && immunityResult && (
+            <CardContent className="pt-0 px-4 pb-4 space-y-4">
+              {/* System Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <MetricCard label="Real Queries" value={immunityResult.systemSummary.totalRealQueries} icon={Search} color="green" />
+                <MetricCard label="Immunity Index" value={immunityResult.systemSummary.updateImmunityIndex} icon={Shield} color="primary" />
+                <MetricCard label="Snippet Score" value={immunityResult.systemSummary.snippetCaptureScore} icon={Eye} color="amber" />
+                <MetricCard label="SEO Status" value={immunityResult.systemSummary.enterpriseSEOStatus} icon={Crown} color="blue" />
+              </div>
+
+              {/* Phase 1: Algorithm Immunity */}
+              <Section title="Phase 1 — Algorithm Update Immunity" badge={`Index: ${immunityResult.immunity.updateImmunityIndex}/100`} defaultOpen>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Intent Precision</p><p className="font-bold text-lg text-primary">{immunityResult.immunity.intentPrecisionScore}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Pages to Merge</p><p className="font-bold text-lg">{immunityResult.immunity.pagesMerged}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Thin Eliminated</p><p className="font-bold text-lg">{immunityResult.immunity.thinContentEliminated}</p></div>
+                  </div>
+
+                  {immunityResult.immunity.contentPruningCandidates.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">Content Pruning Candidates:</p>
+                      <div className="max-h-[200px] overflow-y-auto space-y-1">
+                        {immunityResult.immunity.contentPruningCandidates.slice(0, 10).map((c, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                            <span className="font-mono truncate max-w-[40%]">{c.page.replace('https://getpawsy.pet', '')}</span>
+                            <div className="flex gap-1">
+                              <Badge variant={c.issue === 'thin' ? 'destructive' : 'secondary'} className="text-[10px]">{c.issue}</Badge>
+                              <Badge variant="outline" className="text-[10px]">{c.action}</Badge>
+                              <Badge variant="outline" className="text-[10px]">{c.totalImpressions} imp</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  <p className="text-xs font-semibold">Trust Actions:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {immunityResult.immunity.trustActions.map((a, i) => <Badge key={i} variant="outline" className="text-[10px]">{a.slice(0, 50)}</Badge>)}
+                  </div>
+
+                  <p className="text-xs font-semibold">Spam Prevention:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {immunityResult.immunity.spamSignalsPrevented.map((s, i) => <Badge key={i} variant="secondary" className="text-[10px]">{s.slice(0, 55)}</Badge>)}
+                  </div>
+                </div>
+              </Section>
+
+              {/* Phase 2: Zero-Click */}
+              <Section title="Phase 2 — Zero-Click Snippet Capture" badge={`${immunityResult.zeroClick.snippetBlocksCreated} targets | CTR +${immunityResult.zeroClick.ctrLiftProjection}%`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Snippet Targets</p><p className="font-bold text-lg text-primary">{immunityResult.zeroClick.snippetBlocksCreated}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Featured Prob</p><p className="font-bold text-lg">{immunityResult.zeroClick.featuredSnippetProbability}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Capture Score</p><p className="font-bold text-lg">{immunityResult.zeroClick.zeroClickCaptureScore}/100</p></div>
+                  </div>
+
+                  {immunityResult.zeroClick.snippetTargets.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">Snippet Targets:</p>
+                      <div className="max-h-[200px] overflow-y-auto space-y-1">
+                        {immunityResult.zeroClick.snippetTargets.slice(0, 10).map((t, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                            <span className="font-mono text-primary truncate max-w-[40%]">{t.query}</span>
+                            <div className="flex gap-1">
+                              <Badge variant="outline" className="text-[10px]">Pos {t.position}</Badge>
+                              <Badge variant="secondary" className="text-[10px]">{t.snippetType}</Badge>
+                              <Badge variant="outline" className="text-[10px]">{Math.round(t.captureProb * 100)}% prob</Badge>
+                              <Badge variant="secondary" className="text-[10px]">{t.impressions} imp</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {immunityResult.zeroClick.paaTargets.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">PAA Targets:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {immunityResult.zeroClick.paaTargets.map((p, i) => <Badge key={i} variant="outline" className="text-[10px]">{p}</Badge>)}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Section>
+
+              {/* Phase 3: Category Dominance */}
+              <Section title="Phase 3 — Category Dominance" badge={`${immunityResult.categoryDominance.categoryHubsPlanned} hubs | ${immunityResult.categoryDominance.supportArticlesPlanned} articles`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Authority Score</p><p className="font-bold text-lg text-primary">{immunityResult.categoryDominance.categoryAuthorityScoreProjection}/100</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Internal Links</p><p className="font-bold text-lg">{immunityResult.categoryDominance.internalLinksAdded}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Revenue Bridge</p><p className="font-bold text-lg">{immunityResult.categoryDominance.revenueBridgeStrength}/100</p></div>
+                  </div>
+
+                  <p className="text-xs font-semibold">Category Hubs:</p>
+                  <div className="max-h-[300px] overflow-y-auto space-y-2">
+                    {immunityResult.categoryDominance.hubs.map((h, i) => (
+                      <div key={i} className="p-2 rounded border text-xs space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-primary">{h.category}</span>
+                          <div className="flex gap-1">
+                            <Badge variant="outline" className="text-[10px]">{h.realQueries.length} queries</Badge>
+                            <Badge variant="secondary" className="text-[10px]">{h.totalImpressions} imp</Badge>
+                            <Badge variant="outline" className="text-[10px]">Auth {h.authorityScore}</Badge>
+                          </div>
+                        </div>
+                        <p className="text-muted-foreground truncate">Pillar: {h.pillarTitle.slice(0, 70)}...</p>
+                        <p className="text-muted-foreground">{h.supportingArticles.length} supporting articles | {h.internalLinks.length} links</p>
+                        <div className="flex gap-1 flex-wrap">
+                          {h.supportingArticles.slice(0, 3).map((s, j) => (
+                            <Badge key={j} variant="secondary" className="text-[10px]">{s.type}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              {/* Projections */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">6-Month Traffic Lift</p>
+                  <p className="font-semibold text-primary text-sm">{immunityResult.systemSummary.projected6MonthTrafficLift}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">6-Month Revenue Lift</p>
+                  <p className="font-semibold text-primary text-sm">{immunityResult.systemSummary.projected6MonthRevenueLift}</p>
+                </div>
+              </div>
+
+              <Section title="System Report (JSON)">
+                <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(immunityResult.systemSummary, null, 2)}</pre>
               </Section>
             </CardContent>
           )}
