@@ -28,6 +28,9 @@ Disallow: /slow-feeder-offer
 Disallow: /download-ads
 Disallow: /technical-declaration
 Disallow: /appeal-response
+Disallow: /cookies
+Disallow: /privacy-policy-iframe
+Disallow: /terms-iframe
 
 # Block tracking/query parameters (including mid-querystring)
 Disallow: /*?*utm_

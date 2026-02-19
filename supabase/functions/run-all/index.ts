@@ -11,7 +11,7 @@ const STEPS = [
   { key: 'performance_snapshot', label: 'Performance Snapshot', critical: false },
   { key: 'orphan_detection', label: 'Orphan Detection & Internal Link Plan', critical: false },
   { key: 'ctr_recovery', label: 'CTR Recovery Optimizer', critical: false },
-  { key: 'ranking_push', label: 'Ranking Push Builder (pos 11–20)', critical: false },
+  { key: 'ranking_push', label: 'Ranking Push Builder (pos 6–25)', critical: false },
   { key: 'content_generation_queue', label: 'Content Generation Queue', critical: false },
   { key: 'indexing_submit', label: 'Indexing Submit (Full Stack)', critical: false },
   { key: 'compile_report', label: 'Compile Run Report', critical: false },
@@ -470,14 +470,15 @@ async function executeStep(
     }
 
     case 'ctr_recovery': {
+      // Early Domain Acceleration: lowered thresholds (≥20 impressions, CTR < 1%, pos ≤ 25)
       const { data: lowCtrPages } = await supabase
         .from('gsc_keywords')
         .select('query, page, clicks, impressions, ctr, position')
-        .gt('impressions', 50)
-        .lt('ctr', 0.02)
-        .lte('position', 20)
+        .gt('impressions', 20)
+        .lt('ctr', 0.01)
+        .lte('position', 25)
         .order('impressions', { ascending: false })
-        .limit(20);
+        .limit(30);
 
       const suggestions = (lowCtrPages || []).map(p => ({
         page: p.page, query: p.query,
@@ -488,38 +489,59 @@ async function executeStep(
     }
 
     case 'ranking_push': {
-      const MIN_IMPRESSIONS = 30;
-      const { data: pushCandidates } = await supabase
+      // Early Domain Acceleration: expanded range (pos 6–25, ≥10 impressions OR ≥1 click)
+      const MIN_IMPRESSIONS = 10;
+      const { data: pushByImpressions } = await supabase
         .from('gsc_keywords')
         .select('query, page, clicks, impressions, ctr, position')
-        .gte('position', 11).lte('position', 20)
+        .gte('position', 6).lte('position', 25)
         .gt('impressions', MIN_IMPRESSIONS)
         .order('impressions', { ascending: false })
-        .limit(15);
+        .limit(25);
 
-      if (!pushCandidates?.length) {
-        return { count: 0, candidates: [], skipped: true, reason: `No candidates with ≥${MIN_IMPRESSIONS} impressions in pos 11–20` };
+      const { data: pushByClicks } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, clicks, impressions, ctr, position')
+        .gte('position', 6).lte('position', 25)
+        .gt('clicks', 0)
+        .order('clicks', { ascending: false })
+        .limit(10);
+
+      // Merge and deduplicate
+      const seen = new Set<string>();
+      const pushCandidates: typeof pushByImpressions = [];
+      for (const list of [pushByImpressions || [], pushByClicks || []]) {
+        for (const c of list) {
+          const key = `${c.query}|${c.page}`;
+          if (!seen.has(key)) { seen.add(key); pushCandidates.push(c); }
+        }
       }
-      return { count: pushCandidates.length, candidates: pushCandidates };
+
+      if (!pushCandidates.length) {
+        return { count: 0, candidates: [], skipped: true, reason: `No candidates with ≥${MIN_IMPRESSIONS} impressions or ≥1 click in pos 6–25` };
+      }
+      return { count: pushCandidates.length, candidates: pushCandidates, mode: 'early_domain_acceleration' };
     }
 
     case 'content_generation_queue': {
+      // Early Domain Acceleration: lower threshold (≥5 impressions, pos ≤ 40) + active mode
       const { data: opportunities } = await supabase
         .from('gsc_keywords')
         .select('query, page, impressions, position')
-        .gt('impressions', 100)
-        .lte('position', 30)
+        .gt('impressions', 5)
+        .lte('position', 40)
         .order('impressions', { ascending: false })
-        .limit(10);
+        .limit(15);
 
       const outlines = (opportunities || []).map(o => ({
         query: o.query, page: o.page,
         impressions: o.impressions, position: o.position,
         action: 'generate_outline_draft',
         status: 'queued_for_review',
+        expansionNeeded: o.position >= 15,
       }));
 
-      return { count: outlines.length, outlines, mode: 'draft', autoPublish: false };
+      return { count: outlines.length, outlines, mode: 'active', autoPublish: false };
     }
 
     case 'indexing_submit': {
@@ -733,13 +755,14 @@ async function executeStep(
 
     // ─── V7 Steps ───
     case 'competitor_gap_scan': {
+      // Early Domain Acceleration: lower threshold (≥5 impressions, pos > 14)
       const { data: weakKeywords } = await supabase
         .from('gsc_keywords')
         .select('query, page, clicks, impressions, ctr, position')
-        .gt('impressions', 50)
-        .gt('position', 15)
+        .gt('impressions', 5)
+        .gt('position', 14)
         .order('impressions', { ascending: false })
-        .limit(50);
+        .limit(80);
 
       if (!weakKeywords?.length) return { gaps: 0, reason: 'No weak keywords found' };
 
@@ -769,13 +792,14 @@ async function executeStep(
     }
 
     case 'serp_feature_analyzer': {
+      // Early Domain Acceleration: lower thresholds (≥5 impressions, pos ≤ 30)
       const { data: eligiblePages } = await supabase
         .from('gsc_keywords')
         .select('query, page, impressions, position, ctr')
-        .gt('impressions', 20)
-        .lte('position', 20)
+        .gt('impressions', 5)
+        .lte('position', 30)
         .order('impressions', { ascending: false })
-        .limit(50);
+        .limit(80);
 
       if (!eligiblePages?.length) return { analyzed: 0 };
 
@@ -829,13 +853,14 @@ async function executeStep(
     }
 
     case 'zero_click_optimizer': {
+      // Early Domain Acceleration: lower thresholds (≥5 impressions, pos ≤ 25)
       const { data: infoPages } = await supabase
         .from('gsc_keywords')
         .select('query, page, impressions, position')
-        .gt('impressions', 30)
-        .lte('position', 15)
+        .gt('impressions', 5)
+        .lte('position', 25)
         .order('impressions', { ascending: false })
-        .limit(30);
+        .limit(50);
 
       if (!infoPages?.length) return { assessed: 0 };
 
@@ -934,13 +959,14 @@ async function executeStep(
     // ─── V8 Steps ───
     case 'competitor_content_intel': {
       // Analyze our weakest keywords and estimate competitor structural advantages
+      // Early Domain Acceleration: lower thresholds (≥5 impressions, pos > 8)
       const { data: weakPages } = await supabase
         .from('gsc_keywords')
         .select('query, page, clicks, impressions, ctr, position')
-        .gt('impressions', 30)
-        .gt('position', 10)
+        .gt('impressions', 5)
+        .gt('position', 8)
         .order('impressions', { ascending: false })
-        .limit(40);
+        .limit(60);
 
       if (!weakPages?.length) return { analyzed: 0, reason: 'No weak pages to analyze' };
 
@@ -1060,12 +1086,13 @@ async function executeStep(
     }
 
     case 'revenue_optimization_engine': {
+      // Early Domain Acceleration: lower threshold (≥5 impressions)
       const { data: keywords } = await supabase
         .from('gsc_keywords')
         .select('query, page, clicks, impressions, ctr, position')
-        .gt('impressions', 20)
+        .gt('impressions', 5)
         .order('impressions', { ascending: false })
-        .limit(50);
+        .limit(80);
 
       if (!keywords?.length) return { optimized: 0 };
 
