@@ -24,6 +24,7 @@ import { runGrowthDomination, type GrowthDominationResult } from '@/lib/growth-d
 import { runEnterpriseExpansion, type EnterpriseExpansionResult } from '@/lib/enterprise-expansion-engine';
 import { runAlgorithmImmunityStack, type AlgorithmImmunityStackResult } from '@/lib/algorithm-immunity-engine';
 import { runIntelligenceStack, type IntelligenceStackResult } from '@/lib/intelligence-domination-engine';
+import { runAutonomousSeoGrowth, type AutonomousSeoResult } from '@/lib/autonomous-seo-growth-engine';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Crown, Shield, Flame } from 'lucide-react';
@@ -314,6 +315,28 @@ export default function GrowthExecutionPage() {
     if (!intelligenceEnabled || !gscIntelData || gscIntelData.length === 0) return null;
     return runIntelligenceStack(gscIntelData);
   }, [gscIntelData, intelligenceEnabled]);
+
+  // 🔄 AUTONOMOUS SEO GROWTH LOOP
+  const [autonomousEnabled, setAutonomousEnabled] = useState(false);
+  const { data: gscAutoData } = useQuery({
+    queryKey: ['gsc-keywords-autonomous'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, clicks, impressions, ctr, position')
+        .order('impressions', { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: autonomousEnabled,
+  });
+
+  const autonomousResult: AutonomousSeoResult | null = useMemo(() => {
+    if (!autonomousEnabled || !gscAutoData || gscAutoData.length === 0) return null;
+    return runAutonomousSeoGrowth(gscAutoData);
+  }, [gscAutoData, autonomousEnabled]);
 
   const downloadCsv = () => {
     if (!backlinkResult?.csvData) return;
@@ -1515,6 +1538,232 @@ export default function GrowthExecutionPage() {
 
               <Section title="System Report (JSON)">
                 <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(intelligenceResult.systemSummary, null, 2)}</pre>
+              </Section>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* 🔄 AUTONOMOUS SEO GROWTH AI LOOP */}
+        <Card className={autonomousEnabled ? 'border-orange-500/50 bg-orange-500/5' : 'border-border'}>
+          <CardHeader className="py-3 px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Rocket className="h-5 w-5 text-orange-500" />
+                <CardTitle className="text-sm font-semibold">Autonomous SEO Growth Loop</CardTitle>
+                <Badge variant={autonomousEnabled ? 'default' : 'secondary'} className="text-xs">
+                  {autonomousEnabled ? 'RUNNING' : 'OFF'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Self-Improving AI</span>
+                <Switch checked={autonomousEnabled} onCheckedChange={(checked) => { setAutonomousEnabled(checked); toast[checked ? 'success' : 'info'](checked ? '🔄 Autonomous SEO Loop activated' : 'Autonomous Loop deactivated'); }} />
+              </div>
+            </div>
+          </CardHeader>
+          {autonomousEnabled && autonomousResult && (
+            <CardContent className="pt-0 px-4 pb-4 space-y-4">
+              {/* System Status */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <MetricCard label="Real Queries" value={autonomousResult.systemSummary.totalRealQueries} icon={Search} color="green" />
+                <MetricCard label="Velocity Index" value={`${autonomousResult.systemSummary.rankingVelocityIndex}%`} icon={TrendingUp} color="primary" />
+                <MetricCard label="Traffic Accel" value={autonomousResult.systemSummary.trafficAccelerationRate} icon={ArrowUp} color="amber" />
+                <MetricCard label="Revenue Accel" value={autonomousResult.systemSummary.revenueAccelerationRate} icon={Zap} color="blue" />
+              </div>
+
+              {/* Module 1: Query Intelligence */}
+              <Section title="Module 1 — Query Intelligence" badge={`${autonomousResult.queryIntelligence.newQueriesDetected} queries | ${autonomousResult.queryIntelligence.semanticClusters.length} clusters`} defaultOpen>
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold">Intent Distribution:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {Object.entries(autonomousResult.queryIntelligence.intentDistribution).map(([k, v]) => (
+                      <Badge key={k} variant="outline" className="text-[10px]">{k.replace('_', ' ')}: {v}</Badge>
+                    ))}
+                  </div>
+
+                  {autonomousResult.queryIntelligence.emergingTopicSignals.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">🚀 Emerging Topics:</p>
+                      <div className="max-h-[150px] overflow-y-auto space-y-1">
+                        {autonomousResult.queryIntelligence.emergingTopicSignals.map((s, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                            <span className="font-mono text-primary">{s.topic}</span>
+                            <div className="flex gap-1">
+                              <Badge variant="outline" className="text-[10px]">{s.queryCount} queries</Badge>
+                              <Badge variant="secondary" className="text-[10px]">Pos {s.avgPosition}</Badge>
+                              <Badge variant="outline" className="text-[10px]">{s.totalImpressions} imp</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  <p className="text-xs font-semibold">Semantic Clusters:</p>
+                  <div className="max-h-[150px] overflow-y-auto space-y-1">
+                    {autonomousResult.queryIntelligence.semanticClusters.slice(0, 8).map((c, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                        <span className="font-mono truncate max-w-[35%]">{c.theme}</span>
+                        <div className="flex gap-1">
+                          <Badge variant="outline" className="text-[10px]">{c.queries.length} q</Badge>
+                          <Badge variant="secondary" className="text-[10px]">Pos {c.avgPos}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{c.impressions} imp</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              {/* Module 2: Opportunity Detector */}
+              <Section title="Module 2 — Opportunity Detector" badge={`${autonomousResult.opportunityDetector.totalOpportunities} opportunities | ${autonomousResult.opportunityDetector.cannibalizationFlags.length} cannibal risks`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Yellow Zone</p><p className="font-bold text-lg text-primary">{autonomousResult.opportunityDetector.yellowZoneTargets.length}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Expansion</p><p className="font-bold text-lg">{autonomousResult.opportunityDetector.expansionTargets.length}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Breakout</p><p className="font-bold text-lg">{autonomousResult.opportunityDetector.breakoutCandidates.length}</p></div>
+                  </div>
+
+                  {autonomousResult.opportunityDetector.yellowZoneTargets.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">🎯 Yellow Zone (Pos 11-20):</p>
+                      <div className="max-h-[200px] overflow-y-auto space-y-1">
+                        {autonomousResult.opportunityDetector.yellowZoneTargets.slice(0, 10).map((t, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                            <span className="font-mono text-primary truncate max-w-[40%]">{t.query}</span>
+                            <div className="flex gap-1">
+                              <Badge variant="outline" className="text-[10px]">Pos {Math.round(t.position * 10) / 10}</Badge>
+                              <Badge variant="secondary" className="text-[10px]">{t.impressions} imp</Badge>
+                              <Badge variant="outline" className="text-[10px]">Score {t.score}</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {autonomousResult.opportunityDetector.cannibalizationFlags.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">⚠️ Cannibalization Risks:</p>
+                      <div className="max-h-[150px] overflow-y-auto space-y-1">
+                        {autonomousResult.opportunityDetector.cannibalizationFlags.slice(0, 5).map((f, i) => (
+                          <div key={i} className="text-xs p-1.5 rounded border border-destructive/30">
+                            <div className="flex items-center gap-1">
+                              <Badge variant={f.risk === 'high' ? 'destructive' : 'secondary'} className="text-[10px]">{f.risk}</Badge>
+                              <span className="font-mono">{f.query}</span>
+                            </div>
+                            <p className="text-muted-foreground mt-1">{f.pages.length} pages competing</p>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Section>
+
+              {/* Module 3: Safe Optimizer */}
+              <Section title="Module 3 — Safe Optimization Executor" badge={`${autonomousResult.safeOptimizer.pagesOptimized} pages | +${autonomousResult.safeOptimizer.projectedCTRIncrease}% CTR`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Pages Optimized</p><p className="font-bold text-lg text-primary">{autonomousResult.safeOptimizer.pagesOptimized}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">CTR Increase</p><p className="font-bold text-lg">+{autonomousResult.safeOptimizer.projectedCTRIncrease}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Rank Lift</p><p className="font-bold text-lg">+{autonomousResult.safeOptimizer.projectedRankingLift} pos</p></div>
+                  </div>
+
+                  <p className="text-xs font-semibold">Optimization Types:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {Object.entries(autonomousResult.safeOptimizer.optimizationTypeBreakdown).map(([k, v]) => (
+                      <Badge key={k} variant="outline" className="text-[10px]">{k.replace('_', ' ')}: {v}</Badge>
+                    ))}
+                  </div>
+
+                  <p className="text-xs font-semibold">Top Actions:</p>
+                  <div className="max-h-[200px] overflow-y-auto space-y-1">
+                    {autonomousResult.safeOptimizer.actions.slice(0, 8).map((a, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                        <span className="truncate max-w-[40%]">{a.description.slice(0, 50)}...</span>
+                        <div className="flex gap-1">
+                          <Badge variant={a.priority === 'high' ? 'destructive' : 'secondary'} className="text-[10px]">{a.priority}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{a.type.replace('_', ' ')}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              {/* Module 4: Authority Reinforcer */}
+              <Section title="Module 4 — Internal Authority Reinforcer" badge={`Authority ${autonomousResult.authorityReinforcer.internalAuthorityScore}% | ${autonomousResult.authorityReinforcer.orphanPagesRemaining} orphans`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Authority Score</p><p className="font-bold text-lg text-primary">{autonomousResult.authorityReinforcer.internalAuthorityScore}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Link Health</p><p className="font-bold text-lg">{autonomousResult.authorityReinforcer.linkGraphHealth}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Orphans</p><p className="font-bold text-lg">{autonomousResult.authorityReinforcer.orphanPagesRemaining}</p></div>
+                  </div>
+
+                  <p className="text-xs font-semibold">Click Depth:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {Object.entries(autonomousResult.authorityReinforcer.clickDepthDistribution).map(([k, v]) => (
+                      <Badge key={k} variant="outline" className="text-[10px]">{k.replace('_', ' ')}: {v}</Badge>
+                    ))}
+                  </div>
+
+                  {autonomousResult.authorityReinforcer.linkRecommendations.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">Link Recommendations:</p>
+                      <div className="max-h-[150px] overflow-y-auto space-y-1">
+                        {autonomousResult.authorityReinforcer.linkRecommendations.slice(0, 6).map((r, i) => (
+                          <div key={i} className="text-xs p-1.5 rounded border">
+                            <div className="flex items-center gap-1">
+                              <Badge variant="secondary" className="text-[10px]">{r.anchorType}</Badge>
+                              <span className="text-muted-foreground truncate">{r.reason.slice(0, 60)}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Section>
+
+              {/* Module 5: Feedback Loop */}
+              <Section title="Module 5 — Performance Feedback Loop" badge={`Success ${autonomousResult.feedbackLoop.optimizationSuccessRate}% | ${autonomousResult.feedbackLoop.rankingVelocityTrend}`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Success Rate</p><p className="font-bold text-lg text-primary">{autonomousResult.feedbackLoop.optimizationSuccessRate}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Velocity</p><p className="font-bold text-lg">{autonomousResult.feedbackLoop.rankingVelocityTrend}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Traffic Rate</p><p className="font-bold text-lg">{autonomousResult.feedbackLoop.trafficGrowthRate}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Commercial %</p><p className="font-bold text-lg">{autonomousResult.feedbackLoop.conversionGrowthRate}%</p></div>
+                  </div>
+
+                  <p className="text-xs font-semibold">Tactics Effectiveness:</p>
+                  <div className="max-h-[150px] overflow-y-auto space-y-1">
+                    {autonomousResult.feedbackLoop.tacticsEffectiveness.map((t, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                        <span>{t.tactic}</span>
+                        <div className="flex gap-1">
+                          <Badge variant="outline" className="text-[10px]">{t.successRate}% success</Badge>
+                          <Badge variant="secondary" className="text-[10px]">+{t.avgLift} pos avg</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {autonomousResult.feedbackLoop.rollbackActions.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">⚠️ Rollback Candidates:</p>
+                      <div className="max-h-[100px] overflow-y-auto space-y-1">
+                        {autonomousResult.feedbackLoop.rollbackActions.slice(0, 5).map((r, i) => (
+                          <p key={i} className="text-[10px] text-muted-foreground p-1 border rounded">{r}</p>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Section>
+
+              {/* System Report */}
+              <Section title="System Report (JSON)">
+                <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(autonomousResult.systemSummary, null, 2)}</pre>
               </Section>
             </CardContent>
           )}
