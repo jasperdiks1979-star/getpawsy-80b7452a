@@ -5,6 +5,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+function jsonResponse(body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,20 +22,16 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
 
-  // Auth check
+  // Auth check — return 200 with ok:false
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ ok: false, reason: 'Unauthorized' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ ok: false, reason: 'Unauthorized' });
   }
 
   const token = authHeader.replace('Bearer ', '');
   const { data: claims, error: claimsErr } = await supabase.auth.getClaims(token);
   if (claimsErr || !claims?.claims?.sub) {
-    return new Response(JSON.stringify({ ok: false, reason: 'Invalid token' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ ok: false, reason: 'Invalid token' });
   }
   const userId = claims.claims.sub as string;
 
@@ -40,9 +43,7 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (!roleData) {
-    return new Response(JSON.stringify({ ok: false, reason: 'Admin access required' }), {
-      status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ ok: false, reason: 'Admin access required' });
   }
 
   try {
@@ -72,9 +73,7 @@ Deno.serve(async (req) => {
     }
 
     if (!run) {
-      return new Response(JSON.stringify({ ok: true, run: null, steps: [], logs: [] }), {
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse({ ok: true, run: null, steps: [], logs: [] });
     }
 
     // Fetch steps and logs
@@ -92,21 +91,17 @@ Deno.serve(async (req) => {
         .limit(100),
     ]);
 
-    return new Response(JSON.stringify({
+    return jsonResponse({
       ok: true,
       run,
       steps: stepsResult.data || [],
       logs: (logsResult.data || []).reverse(),
-    }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
     console.error('[job-status] Error:', err);
-    return new Response(JSON.stringify({
+    return jsonResponse({
       ok: false,
       reason: err instanceof Error ? err.message : 'INTERNAL_ERROR',
-    }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });

@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function RunCenterCard() {
-  const { run, steps, logs, loading, triggering, isActive, error, triggerRun, refresh } = useJobRunner();
+  const { run, steps, logs, loading, triggering, isActive, error, reauthRequired, traceId, triggerRun, refresh } = useJobRunner();
   const [logsOpen, setLogsOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [confirmFullStack, setConfirmFullStack] = useState(false);
@@ -44,6 +44,8 @@ export function RunCenterCard() {
     const result = await triggerRun(mode);
     if (result?.ok) {
       toast.success(mode === 'dryrun' ? 'Dry Run started' : 'Full Stack pipeline started');
+    } else if (result?.reauthRequired) {
+      toast.error('Session expired or GSC re-auth needed. Please refresh and try again.');
     } else {
       toast.error(result?.reason || 'Failed to start pipeline');
     }
@@ -58,7 +60,11 @@ export function RunCenterCard() {
 
   const disabled = isActive || triggering || !!cooldownRemaining;
 
-  if (loading) return null; // Don't show skeleton on main dashboard — keep it clean
+  if (loading) return null;
+
+  // Check if any step has reauthRequired in its result
+  const gscStep = steps.find(s => s.step_key === 'gsc_query_level_sync');
+  const gscNeedsReauth = reauthRequired || (gscStep?.status === 'failed' && gscStep?.error_message?.includes('re-auth'));
 
   return (
     <>
@@ -81,8 +87,16 @@ export function RunCenterCard() {
         </CardHeader>
 
         <CardContent className="space-y-3">
+          {/* Reauth warning */}
+          {gscNeedsReauth && (
+            <div className="text-[10px] bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border border-yellow-500/20 rounded px-2 py-1.5 flex items-center gap-1.5">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              GSC re-authentication required. Refresh the page or re-login to fix token issues.
+            </div>
+          )}
+
           {/* Buttons */}
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-start">
             <div className="space-y-0.5">
               <Button
                 size="sm"
@@ -113,9 +127,19 @@ export function RunCenterCard() {
 
           {/* Error (non-cooldown) */}
           {error && !isActive && !cooldownRemaining && (
-            <div className="text-[10px] bg-destructive/10 text-destructive border border-destructive/20 rounded px-2 py-1.5 flex items-center gap-1.5">
-              <AlertTriangle className="h-3 w-3 shrink-0" />
-              {error}
+            <div className="text-[10px] bg-destructive/10 text-destructive border border-destructive/20 rounded px-2 py-1.5 space-y-1">
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                <span>{error}</span>
+              </div>
+              {traceId && (
+                <div className="text-muted-foreground flex items-center gap-1">
+                  <span>Trace: {traceId}</span>
+                  <button onClick={() => { navigator.clipboard.writeText(traceId); toast.success('Trace ID copied'); }} className="hover:text-foreground">
+                    <Copy className="h-2.5 w-2.5" />
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -135,6 +159,16 @@ export function RunCenterCard() {
                   {run.duration_ms != null && <span> · {fmtDur(run.duration_ms)}</span>}
                 </div>
               </div>
+
+              {/* TraceId for completed runs */}
+              {run.report && (run.report as Record<string, unknown>)?.traceId && (
+                <div className="text-[9px] text-muted-foreground flex items-center gap-1">
+                  Trace: {String((run.report as Record<string, unknown>).traceId)}
+                  <button onClick={() => { navigator.clipboard.writeText(String((run.report as Record<string, unknown>).traceId)); toast.success('Trace ID copied'); }} className="hover:text-foreground">
+                    <Copy className="h-2 w-2" />
+                  </button>
+                </div>
+              )}
 
               {/* Steps */}
               <div className="space-y-0.5">
@@ -246,13 +280,13 @@ function StepRow({ step }: { step: JobRunStep }) {
   const Icon = icons[step.status] || Clock;
   return (
     <div className="flex items-center justify-between text-[10px] py-0.5 px-1.5 rounded hover:bg-muted/50">
-      <div className="flex items-center gap-1.5">
-        <Icon className={cn("h-3 w-3", colors[step.status], step.status === 'running' && 'animate-spin')} />
-        <span className={cn(step.status === 'skipped' && 'line-through text-muted-foreground')}>{step.step_label}</span>
+      <div className="flex items-center gap-1.5 min-w-0">
+        <Icon className={cn("h-3 w-3 shrink-0", colors[step.status], step.status === 'running' && 'animate-spin')} />
+        <span className={cn("truncate", step.status === 'skipped' && 'line-through text-muted-foreground')}>{step.step_label}</span>
       </div>
-      <div className="flex items-center gap-1.5 text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-muted-foreground shrink-0 ml-2">
         {step.duration_ms != null && <span>{fmtDur(step.duration_ms)}</span>}
-        {step.error_message && <span className="text-destructive truncate max-w-[150px]" title={step.error_message}>{step.error_message}</span>}
+        {step.error_message && <span className="text-destructive truncate max-w-[120px]" title={step.error_message}>{step.error_message}</span>}
       </div>
     </div>
   );

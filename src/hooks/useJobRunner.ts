@@ -44,25 +44,30 @@ export interface JobStatusState {
   loading: boolean;
   triggering: boolean;
   error: string | null;
+  reauthRequired: boolean;
+  traceId: string | null;
 }
 
 export function useJobRunner() {
   const { invokeFunction } = useAuthenticatedFetch();
   const [state, setState] = useState<JobStatusState>({
     run: null, steps: [], logs: [], loading: true, triggering: false, error: null,
+    reauthRequired: false, traceId: null,
   });
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStatus = useCallback(async (runId?: string) => {
     const { data, error } = await invokeFunction<{
-      ok: boolean; run: JobRun | null; steps: JobRunStep[]; logs: JobRunLog[];
+      ok: boolean; run: JobRun | null; steps: JobRunStep[]; logs: JobRunLog[]; reason?: string;
     }>('job-status', {
       body: JSON.stringify({ runId: runId || null, latest: runId ? false : true }),
       silent: true,
     });
 
     if (error || !data?.ok) {
-      setState(prev => ({ ...prev, loading: false, error: error?.message || 'Failed to fetch status' }));
+      // Only set error if we got a real error, not just "no data"
+      const errMsg = data?.reason || error?.message || 'Failed to fetch status';
+      setState(prev => ({ ...prev, loading: false, error: errMsg }));
       return;
     }
 
@@ -84,29 +89,33 @@ export function useJobRunner() {
   }, [fetchStatus]);
 
   const triggerRun = useCallback(async (mode: 'dryrun' | 'fullstack' = 'fullstack') => {
-    setState(prev => ({ ...prev, triggering: true, error: null }));
+    setState(prev => ({ ...prev, triggering: true, error: null, reauthRequired: false, traceId: null }));
 
     const { data, error } = await invokeFunction<{
       ok: boolean; runId?: string; reason?: string; nextAllowedAt?: string; activeRunId?: string;
+      traceId?: string; reauthRequired?: boolean;
     }>('run-all', {
       body: JSON.stringify({ source: 'manual', mode }),
       silent: true,
     });
 
+    const traceId = data?.traceId || null;
+    const reauthRequired = data?.reauthRequired || false;
+
     if (error || !data?.ok) {
       const reason = data?.reason || error?.message || 'Failed to trigger run';
-      setState(prev => ({ ...prev, triggering: false, error: reason }));
-      return { ok: false, reason };
+      setState(prev => ({ ...prev, triggering: false, error: reason, traceId, reauthRequired }));
+      return { ok: false, reason, traceId, reauthRequired };
     }
 
-    setState(prev => ({ ...prev, triggering: false }));
+    setState(prev => ({ ...prev, triggering: false, traceId }));
 
     if (data.runId) {
       await fetchStatus(data.runId);
       startPolling(data.runId);
     }
 
-    return { ok: true, runId: data.runId };
+    return { ok: true, runId: data.runId, traceId };
   }, [invokeFunction, fetchStatus, startPolling]);
 
   // Initial load
