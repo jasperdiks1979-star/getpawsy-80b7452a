@@ -49,21 +49,13 @@ export interface JobStatusState {
 export function useJobRunner() {
   const { invokeFunction } = useAuthenticatedFetch();
   const [state, setState] = useState<JobStatusState>({
-    run: null,
-    steps: [],
-    logs: [],
-    loading: true,
-    triggering: false,
-    error: null,
+    run: null, steps: [], logs: [], loading: true, triggering: false, error: null,
   });
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStatus = useCallback(async (runId?: string) => {
     const { data, error } = await invokeFunction<{
-      ok: boolean;
-      run: JobRun | null;
-      steps: JobRunStep[];
-      logs: JobRunLog[];
+      ok: boolean; run: JobRun | null; steps: JobRunStep[]; logs: JobRunLog[];
     }>('job-status', {
       body: JSON.stringify({ runId: runId || null, latest: runId ? false : true }),
       silent: true,
@@ -75,12 +67,7 @@ export function useJobRunner() {
     }
 
     setState(prev => ({
-      ...prev,
-      run: data.run,
-      steps: data.steps,
-      logs: data.logs,
-      loading: false,
-      error: null,
+      ...prev, run: data.run, steps: data.steps, logs: data.logs, loading: false, error: null,
     }));
 
     return data.run;
@@ -91,25 +78,18 @@ export function useJobRunner() {
     pollingRef.current = setInterval(async () => {
       const run = await fetchStatus(runId);
       if (run && (run.status === 'success' || run.status === 'failed' || run.status === 'cancelled')) {
-        if (pollingRef.current) {
-          clearInterval(pollingRef.current);
-          pollingRef.current = null;
-        }
+        if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
       }
     }, 3000);
   }, [fetchStatus]);
 
-  const triggerRun = useCallback(async () => {
+  const triggerRun = useCallback(async (mode: 'dryrun' | 'fullstack' = 'fullstack') => {
     setState(prev => ({ ...prev, triggering: true, error: null }));
 
     const { data, error } = await invokeFunction<{
-      ok: boolean;
-      runId?: string;
-      reason?: string;
-      nextAllowedAt?: string;
-      activeRunId?: string;
+      ok: boolean; runId?: string; reason?: string; nextAllowedAt?: string; activeRunId?: string;
     }>('run-all', {
-      body: JSON.stringify({ source: 'manual' }),
+      body: JSON.stringify({ source: 'manual', mode }),
       silent: true,
     });
 
@@ -121,7 +101,6 @@ export function useJobRunner() {
 
     setState(prev => ({ ...prev, triggering: false }));
 
-    // Start polling for this run
     if (data.runId) {
       await fetchStatus(data.runId);
       startPolling(data.runId);
@@ -137,18 +116,10 @@ export function useJobRunner() {
         startPolling(run.id);
       }
     });
-
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
+    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [fetchStatus, startPolling]);
 
   const isActive = state.run?.status === 'queued' || state.run?.status === 'running';
 
-  return {
-    ...state,
-    isActive,
-    triggerRun,
-    refresh: () => fetchStatus(),
-  };
+  return { ...state, isActive, triggerRun, refresh: () => fetchStatus() };
 }

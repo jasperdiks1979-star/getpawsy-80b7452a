@@ -48,6 +48,7 @@ const OosResyncAudit = lazy(() => import("@/components/admin/OosResyncAudit"));
 const KeywordRankingTracker = lazy(() => import("@/components/admin/KeywordRankingTracker").then(module => ({ default: module.KeywordRankingTracker })));
 const ProductResearchTool = lazy(() => import("@/components/admin/product-research/ProductResearchTool").then(module => ({ default: module.ProductResearchTool })));
 const ContentScraperTool = lazy(() => import("@/components/admin/content-scraper/ContentScraperTool").then(module => ({ default: module.ContentScraperTool })));
+const RunCenterCard = lazy(() => import("@/components/admin/RunCenterCard").then(module => ({ default: module.RunCenterCard })));
 const SupplierImportManager = lazy(() => import("@/components/admin/SupplierImportManager").then(module => ({ default: module.SupplierImportManager })));
 const ABTestDashboard = lazy(() => import("@/components/admin/ABTestDashboard"));
 const GrowthAnalyticsDashboard = lazy(() => import("@/components/admin/GrowthAnalyticsDashboard"));
@@ -1463,6 +1464,7 @@ const Admin = () => {
               </TouchTooltip>
             </TabsList>
           </TooltipProvider>
+          <Suspense fallback={null}><RunCenterCard /></Suspense>
           <div className="flex flex-wrap gap-1 pb-1 -mt-4">
             <TouchTooltip content="SEO Command Center - Top 10 Assault & Gap Hunter">
               <button onClick={() => navigate('/admin/seo-command-center')} className="flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap bg-muted hover:bg-muted-foreground/20 rounded-md transition-colors border border-border">

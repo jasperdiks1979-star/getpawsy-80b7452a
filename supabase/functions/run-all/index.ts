@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const source = body.source || 'manual';
+    const mode = body.mode || 'fullstack'; // 'dryrun' | 'fullstack'
 
     // Distributed lock — check for active run
     const { data: activeRun } = await supabase
@@ -129,7 +130,7 @@ Deno.serve(async (req) => {
     }));
     await supabase.from('job_run_steps').insert(stepInserts);
 
-    await log(supabase, run.id, null, 'info', `Run ${run.id} created (source=${source}, mode=fullstack) with ${STEPS.length} steps`);
+    await log(supabase, run.id, null, 'info', `Run ${run.id} created (source=${source}, mode=${mode}) with ${STEPS.length} steps`);
 
     // Update to running
     const startedAt = new Date().toISOString();
@@ -153,6 +154,16 @@ Deno.serve(async (req) => {
       const stepStart = Date.now();
 
       try {
+        // Dryrun mode: skip indexing step entirely
+        if (step.key === 'indexing_submit' && mode === 'dryrun') {
+          await supabase.from('job_run_steps')
+            .update({ status: 'skipped', finished_at: new Date().toISOString(), duration_ms: 0 })
+            .eq('run_id', run.id).eq('step_key', step.key);
+          await log(supabase, run.id, step.key, 'info', 'Indexing step skipped (dryrun)');
+          report[step.key] = { status: 'skipped', reason: 'dryrun mode' };
+          continue;
+        }
+
         // Special guard: skip indexing if crawl health failed
         if (step.key === 'indexing_submit' && !crawlHealthPassed) {
           throw new Error('Indexing aborted: crawl_health_check failed critical items');
@@ -204,6 +215,7 @@ Deno.serve(async (req) => {
     const finishedAt = new Date().toISOString();
     const totalDuration = Date.now() - new Date(startedAt).getTime();
 
+    report.mode = mode;
     await supabase.from('job_runs').update({
       status: allSuccess ? 'success' : 'failed',
       finished_at: finishedAt,
