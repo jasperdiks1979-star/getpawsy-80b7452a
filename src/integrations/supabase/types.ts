@@ -649,6 +649,56 @@ export type Database = {
         }
         Relationships: []
       }
+      competitor_gaps: {
+        Row: {
+          authority_gap: number | null
+          competitor_position: number | null
+          competitor_url: string | null
+          content_gap_score: number | null
+          created_at: string
+          estimated_gain_if_matched: number | null
+          id: string
+          keyword: string
+          our_position: number | null
+          run_id: string | null
+          schema_gap: Json | null
+        }
+        Insert: {
+          authority_gap?: number | null
+          competitor_position?: number | null
+          competitor_url?: string | null
+          content_gap_score?: number | null
+          created_at?: string
+          estimated_gain_if_matched?: number | null
+          id?: string
+          keyword: string
+          our_position?: number | null
+          run_id?: string | null
+          schema_gap?: Json | null
+        }
+        Update: {
+          authority_gap?: number | null
+          competitor_position?: number | null
+          competitor_url?: string | null
+          content_gap_score?: number | null
+          created_at?: string
+          estimated_gain_if_matched?: number | null
+          id?: string
+          keyword?: string
+          our_position?: number | null
+          run_id?: string | null
+          schema_gap?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_gaps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competitor_products: {
         Row: {
           category: string | null
@@ -3834,6 +3884,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ranking_defense: {
+        Row: {
+          auto_response_taken: string | null
+          created_at: string
+          defense_status: string
+          id: string
+          keyword: string
+          last_ctr: number | null
+          last_position_drop: number | null
+          locked_at: string | null
+          page_url: string
+          position: number
+          updated_at: string | null
+        }
+        Insert: {
+          auto_response_taken?: string | null
+          created_at?: string
+          defense_status?: string
+          id?: string
+          keyword: string
+          last_ctr?: number | null
+          last_position_drop?: number | null
+          locked_at?: string | null
+          page_url: string
+          position: number
+          updated_at?: string | null
+        }
+        Update: {
+          auto_response_taken?: string | null
+          created_at?: string
+          defense_status?: string
+          id?: string
+          keyword?: string
+          last_ctr?: number | null
+          last_position_drop?: number | null
+          locked_at?: string | null
+          page_url?: string
+          position?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ranking_deltas: {
         Row: {
           crawl_timestamp: string
@@ -4538,6 +4630,53 @@ export type Database = {
         }
         Relationships: []
       }
+      serp_features: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          feature_type: string
+          id: string
+          impressions: number | null
+          keyword: string
+          page_url: string | null
+          position: number | null
+          run_id: string | null
+          status: string
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          feature_type: string
+          id?: string
+          impressions?: number | null
+          keyword: string
+          page_url?: string | null
+          position?: number | null
+          run_id?: string | null
+          status?: string
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          feature_type?: string
+          id?: string
+          impressions?: number | null
+          keyword?: string
+          page_url?: string | null
+          position?: number | null
+          run_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "serp_features_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_account_keys: {
         Row: {
           account_email: string
@@ -4865,6 +5004,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "strategy_evolution_log_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_state_history: {
+        Row: {
+          cluster_expansion_growth: number | null
+          created_at: string
+          ctr_growth: number | null
+          gap_closure_rate: number | null
+          id: string
+          ranking_velocity: number | null
+          reasoning: string | null
+          run_id: string | null
+          serp_capture_pct: number | null
+          strategy_action: string | null
+        }
+        Insert: {
+          cluster_expansion_growth?: number | null
+          created_at?: string
+          ctr_growth?: number | null
+          gap_closure_rate?: number | null
+          id?: string
+          ranking_velocity?: number | null
+          reasoning?: string | null
+          run_id?: string | null
+          serp_capture_pct?: number | null
+          strategy_action?: string | null
+        }
+        Update: {
+          cluster_expansion_growth?: number | null
+          created_at?: string
+          ctr_growth?: number | null
+          gap_closure_rate?: number | null
+          id?: string
+          ranking_velocity?: number | null
+          reasoning?: string | null
+          run_id?: string | null
+          serp_capture_pct?: number | null
+          strategy_action?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_state_history_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
             referencedRelation: "job_runs"
@@ -5250,6 +5436,51 @@ export type Database = {
           ts?: string
           ttfb_value?: number | null
           ua?: string | null
+        }
+        Relationships: []
+      }
+      zero_click_pages: {
+        Row: {
+          created_at: string
+          has_comparison_table: boolean | null
+          has_definition_schema: boolean | null
+          has_direct_answer: boolean | null
+          has_quick_answer: boolean | null
+          id: string
+          last_checked_at: string | null
+          page_url: string
+          slug: string | null
+          updated_at: string | null
+          visibility_score: number | null
+          zero_click_ready: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          has_comparison_table?: boolean | null
+          has_definition_schema?: boolean | null
+          has_direct_answer?: boolean | null
+          has_quick_answer?: boolean | null
+          id?: string
+          last_checked_at?: string | null
+          page_url: string
+          slug?: string | null
+          updated_at?: string | null
+          visibility_score?: number | null
+          zero_click_ready?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          has_comparison_table?: boolean | null
+          has_definition_schema?: boolean | null
+          has_direct_answer?: boolean | null
+          has_quick_answer?: boolean | null
+          id?: string
+          last_checked_at?: string | null
+          page_url?: string
+          slug?: string | null
+          updated_at?: string | null
+          visibility_score?: number | null
+          zero_click_ready?: boolean | null
         }
         Relationships: []
       }
