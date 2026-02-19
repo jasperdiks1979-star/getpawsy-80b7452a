@@ -646,6 +646,12 @@ serve(async (req) => {
       return await runGSCSync(adminSupabase, serviceAccountJson, 'cron');
     }
 
+    // ============= PIPELINE RUN (called by run-all with service role key — already authenticated) =============
+    if (body.source === 'pipeline_run') {
+      console.log('[GSC] Pipeline run — skipping user auth (service role authenticated)');
+      return await runGSCSync(adminSupabase, serviceAccountJson, 'pipeline');
+    }
+
     // ============= AUTH CHECK (for manual actions) =============
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
