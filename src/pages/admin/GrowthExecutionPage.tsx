@@ -21,6 +21,7 @@ import { runHyperAggressiveEngine, HYPER_AGGRESSIVE_DEFAULTS, type HyperAggressi
 import { runDominanceMode, type DominanceModeResult } from '@/lib/dominance-mode-engine';
 import { runContentDominance, type ContentDominanceResult } from '@/lib/content-dominance-engine';
 import { runGrowthDomination, type GrowthDominationResult } from '@/lib/growth-domination-engine';
+import { runEnterpriseExpansion, type EnterpriseExpansionResult } from '@/lib/enterprise-expansion-engine';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Crown, Shield, Flame } from 'lucide-react';
@@ -245,6 +246,28 @@ export default function GrowthExecutionPage() {
     if (!dominationEnabled || !gscDominationData || gscDominationData.length === 0) return null;
     return runGrowthDomination(gscDominationData);
   }, [gscDominationData, dominationEnabled]);
+
+  // 🏢 ENTERPRISE EXPANSION STACK
+  const [enterpriseEnabled, setEnterpriseEnabled] = useState(false);
+  const { data: gscEnterpriseData } = useQuery({
+    queryKey: ['gsc-keywords-enterprise'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gsc_keywords')
+        .select('query, page, clicks, impressions, ctr, position')
+        .order('impressions', { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: enterpriseEnabled,
+  });
+
+  const enterpriseResult: EnterpriseExpansionResult | null = useMemo(() => {
+    if (!enterpriseEnabled || !gscEnterpriseData || gscEnterpriseData.length === 0) return null;
+    return runEnterpriseExpansion(gscEnterpriseData);
+  }, [gscEnterpriseData, enterpriseEnabled]);
 
   const downloadCsv = () => {
     if (!backlinkResult?.csvData) return;
@@ -1252,6 +1275,167 @@ export default function GrowthExecutionPage() {
               {/* System JSON */}
               <Section title="Content Dominance Report (JSON)">
                 <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(contentDominanceResult.systemSummary, null, 2)}</pre>
+              </Section>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* 🏢 ENTERPRISE EXPANSION STACK */}
+        <Card className={enterpriseEnabled ? 'border-purple-500/50 bg-purple-500/5' : 'border-border'}>
+          <CardHeader className="py-3 px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-purple-500" />
+                <CardTitle className="text-sm font-semibold">Enterprise Expansion Stack</CardTitle>
+                <Badge variant={enterpriseEnabled ? 'default' : 'secondary'} className="text-xs">
+                  {enterpriseEnabled ? 'DEPLOYED' : 'OFF'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Authority + E-E-A-T + 6M Forecast</span>
+                <Switch checked={enterpriseEnabled} onCheckedChange={(checked) => { setEnterpriseEnabled(checked); toast[checked ? 'success' : 'info'](checked ? '🏢 Enterprise Expansion Stack deployed' : 'Enterprise Stack deactivated'); }} />
+              </div>
+            </div>
+          </CardHeader>
+          {enterpriseEnabled && enterpriseResult && (
+            <CardContent className="pt-0 px-4 pb-4 space-y-4">
+              {/* System Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <MetricCard label="Real Queries" value={enterpriseResult.systemSummary.totalRealQueries} icon={Search} color="green" />
+                <MetricCard label="Authority Index" value={enterpriseResult.systemSummary.authorityGrowthIndex} icon={Crown} color="primary" />
+                <MetricCard label="Enterprise Ready" value={enterpriseResult.systemSummary.enterpriseReadinessLevel} icon={Shield} color="amber" />
+                <MetricCard label="Clusters" value={enterpriseResult.authorityExpansion.clustersCreated} icon={Target} color="blue" />
+              </div>
+
+              {/* Phase 1: Authority Expansion */}
+              <Section title="Phase 1 — Authority Expansion" badge={`${enterpriseResult.authorityExpansion.pillarPagesPlanned} pillars + ${enterpriseResult.authorityExpansion.supportingArticlesPlanned} articles`} defaultOpen>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Authority Score</p><p className="font-bold text-lg text-primary">{enterpriseResult.authorityExpansion.topicalAuthorityScoreProjection}/100</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Internal Links</p><p className="font-bold text-lg">{enterpriseResult.authorityExpansion.internalLinkExpansionCount}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Orphan Forecast</p><p className="font-semibold text-xs text-primary">{enterpriseResult.authorityExpansion.orphanReductionForecast.slice(0, 40)}</p></div>
+                  </div>
+
+                  <p className="text-xs font-semibold">Topical Clusters:</p>
+                  <div className="max-h-[250px] overflow-y-auto space-y-2">
+                    {enterpriseResult.authorityExpansion.clusters.map((c, i) => (
+                      <div key={i} className="p-2 rounded border text-xs space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-primary">{c.name}</span>
+                          <div className="flex gap-1">
+                            <Badge variant="outline" className="text-[10px]">{c.realQueries.length} queries</Badge>
+                            <Badge variant="secondary" className="text-[10px]">{c.totalImpressions} imp</Badge>
+                            <Badge variant="outline" className="text-[10px]">Avg pos {c.avgPosition}</Badge>
+                          </div>
+                        </div>
+                        <p className="text-muted-foreground">Pillar: {c.pillar.title.slice(0, 60)}...</p>
+                        <p className="text-muted-foreground">{c.supporting.length} supporting articles planned</p>
+                        {c.competitorGaps.length > 0 && (
+                          <div className="flex gap-1 flex-wrap">
+                            <span className="text-destructive font-medium">Gaps:</span>
+                            {c.competitorGaps.slice(0, 3).map((g, j) => <Badge key={j} variant="destructive" className="text-[10px]">{g}</Badge>)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {enterpriseResult.authorityExpansion.lowCompetitionTargets.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold">Low-Competition High-Impression Targets:</p>
+                      <div className="max-h-[150px] overflow-y-auto space-y-1">
+                        {enterpriseResult.authorityExpansion.lowCompetitionTargets.map((t, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                            <span className="font-mono text-primary truncate max-w-[50%]">{t.query}</span>
+                            <div className="flex gap-1">
+                              <Badge variant="outline" className="text-[10px]">Pos {t.position}</Badge>
+                              <Badge variant="secondary" className="text-[10px]">{t.impressions} imp</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Section>
+
+              {/* Phase 2: E-E-A-T */}
+              <Section title="Phase 2 — E-E-A-T Reinforcement" badge={`${enterpriseResult.eeat.eeatScoreBefore} → ${enterpriseResult.eeat.eeatScoreAfter}`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-4 gap-2">
+                    {enterpriseResult.eeat.dimensions.map((d, i) => (
+                      <div key={i} className="p-2 rounded-lg bg-background border text-xs text-center">
+                        <p className="text-muted-foreground text-[10px]">{d.name}</p>
+                        <p className="font-bold">{d.scoreBefore} → <span className="text-primary">{d.scoreAfter}</span></p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Authority Signal</p><p className="font-bold text-primary">{enterpriseResult.eeat.authoritySignalStrength}/100</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Brand Entity</p><p className="font-bold text-primary">{enterpriseResult.eeat.brandEntityConfidence}/100</p></div>
+                  </div>
+
+                  <p className="text-xs font-semibold">Trust Page Audit:</p>
+                  <div className="space-y-1">
+                    {enterpriseResult.eeat.trustPageAudit.map((t, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-1.5 rounded border">
+                        <span className="font-mono">{t.page}</span>
+                        <Badge variant={t.status === 'exists' ? 'default' : t.status === 'missing' ? 'destructive' : 'secondary'} className="text-[10px]">{t.status}</Badge>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-xs font-semibold">Structured Data:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {enterpriseResult.eeat.structuredDataRecommendations.map((r, i) => <Badge key={i} variant="outline" className="text-[10px]">{r}</Badge>)}
+                  </div>
+                </div>
+              </Section>
+
+              {/* Phase 3: Revenue Forecast */}
+              <Section title="Phase 3 — 6-Month Revenue Forecast" badge={`$${enterpriseResult.revenueForecast.projectedRevenueMonth6}/mo target`}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Monthly Clicks</p><p className="font-bold">{enterpriseResult.revenueForecast.currentMetrics.totalClicks}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Avg Position</p><p className="font-bold">{enterpriseResult.revenueForecast.currentMetrics.avgPosition}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Avg CTR</p><p className="font-bold">{enterpriseResult.revenueForecast.currentMetrics.avgCtr}%</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Est. Revenue</p><p className="font-bold">${enterpriseResult.revenueForecast.currentMetrics.estimatedMonthlyRevenue}/mo</p></div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead><tr className="border-b"><th className="p-1.5 text-left">Scenario</th><th className="p-1.5 text-right">M1 Traffic</th><th className="p-1.5 text-right">M3 Traffic</th><th className="p-1.5 text-right">M6 Traffic</th><th className="p-1.5 text-right">M6 Revenue</th><th className="p-1.5 text-right">ROI</th><th className="p-1.5 text-right">Content</th></tr></thead>
+                      <tbody>
+                        {Object.values(enterpriseResult.revenueForecast.scenarios).map((s, i) => (
+                          <tr key={i} className="border-b"><td className="p-1.5 font-medium">{s.label}</td><td className="p-1.5 text-right">{s.trafficMonth1}</td><td className="p-1.5 text-right">{s.trafficMonth3}</td><td className="p-1.5 text-right font-semibold text-primary">{s.trafficMonth6}</td><td className="p-1.5 text-right font-semibold">${s.revenueMonth6}</td><td className="p-1.5 text-right">{s.roiMultiplier}x</td><td className="p-1.5 text-right">{s.contentRequired} pcs</td></tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Break-Even</p><p className="font-bold">Month {enterpriseResult.revenueForecast.breakEvenMonth}</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Rank Velocity</p><p className="font-bold text-primary">{enterpriseResult.revenueForecast.rankingVelocityScore} pos/mo</p></div>
+                    <div className="p-2 rounded-lg bg-background border text-xs"><p className="text-muted-foreground">Breakout Prob</p><p className="font-bold">{Math.round(enterpriseResult.revenueForecast.breakoutProbability * 100)}%</p></div>
+                  </div>
+                </div>
+              </Section>
+
+              {/* Projections */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">6-Month Traffic</p>
+                  <p className="font-semibold text-primary text-sm">{enterpriseResult.systemSummary.sixMonthTrafficProjection}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-background border text-xs">
+                  <p className="text-muted-foreground">6-Month Revenue</p>
+                  <p className="font-semibold text-primary text-sm">{enterpriseResult.systemSummary.sixMonthRevenueProjection}</p>
+                </div>
+              </div>
+
+              <Section title="Enterprise Report (JSON)">
+                <pre className="text-[10px] bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px]">{JSON.stringify(enterpriseResult.systemSummary, null, 2)}</pre>
               </Section>
             </CardContent>
           )}
