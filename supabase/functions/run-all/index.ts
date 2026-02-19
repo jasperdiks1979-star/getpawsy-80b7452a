@@ -170,9 +170,10 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Special guard: skip indexing if crawl health failed
+        // Special guard: skip indexing if crawl health had critical failures (wrong redirect target, missing redirect, etc.)
+        // Note: a 302 with correct target does NOT block indexing — only logs a warning
         if (step.key === 'indexing_submit' && !crawlHealthPassed) {
-          throw new Error('Indexing aborted: crawl_health_check failed critical items');
+          throw new Error('Indexing aborted: crawl_health_check has critical failures (redirect target wrong or missing). Check Redirect Debug for details.');
         }
 
         const result = await executeStep(supabase, step.key, run.id);
@@ -330,7 +331,11 @@ async function executeStep(
 
     case 'crawl_health_check': {
       // Inline crawl checks — don't depend on another edge function that might not exist
-      const checks: Array<{ label: string; url: string; status: number; ok: boolean; critical: boolean; ttfb_ms: number; error?: string; redirectTarget?: string }> = [];
+      const checks: Array<{
+        label: string; url: string; status: number; ok: boolean; critical: boolean;
+        ttfb_ms: number; error?: string; redirectTarget?: string; warning?: string;
+        headers?: Record<string, string | null>; redirectSource?: string;
+      }> = [];
       const urlsToCheck = [
         { label: 'Homepage', url: `${CANONICAL_HOST}/`, critical: true },
         { label: 'robots.txt', url: `${CANONICAL_HOST}/robots.txt`, critical: true },
@@ -349,20 +354,55 @@ async function executeStep(
         }
       }
 
-      // Check redirects
+      // Check www→apex redirect with diagnostic headers
       const redirectChecks = [
-        { label: 'www→apex redirect', from: 'https://www.getpawsy.pet/', expectedStatus: 301 },
+        { label: 'www→apex redirect', from: 'https://www.getpawsy.pet/' },
       ];
       for (const rc of redirectChecks) {
         const start = Date.now();
         try {
-          const res = await fetch(rc.from, { method: 'GET', redirect: 'manual' });
+          const res = await fetch(rc.from, { method: 'HEAD', redirect: 'manual' });
           const location = res.headers.get('location') || '';
+          const server = res.headers.get('server');
+          const cfRay = res.headers.get('cf-ray');
+          const cfCacheStatus = res.headers.get('cf-cache-status');
+          const via = res.headers.get('via');
+
+          const diagHeaders = { server, cfRay, cfCacheStatus, via };
+          const redirectSource = cfRay && server?.toLowerCase().includes('cloudflare') ? 'cloudflare' : 'origin';
+
+          const isRedirectStatus = [301, 302, 307, 308].includes(res.status);
+          // Normalize: strip trailing slash for comparison
+          const normalizedLocation = location.replace(/\/$/, '');
+          const normalizedTarget = CANONICAL_HOST; // https://getpawsy.pet
+          const targetCorrect = normalizedLocation === normalizedTarget || location === normalizedTarget + '/';
+
+          let ok = false;
+          let warning: string | undefined;
+          let error: string | undefined;
+
+          if (isRedirectStatus && targetCorrect) {
+            ok = true;
+            if (res.status === 302 || res.status === 307) {
+              warning = `Temporary redirect (${res.status}) detected; SEO recommends 301 or 308. Source: ${redirectSource}.`;
+            }
+          } else if (isRedirectStatus && !targetCorrect) {
+            ok = false;
+            error = `Redirect target is "${location}" but expected "${CANONICAL_HOST}/". Fix DNS/hosting redirect config.`;
+          } else if (res.status === 200) {
+            ok = false;
+            error = `No redirect: www returned 200 directly. Both www and apex serve content (duplicate). Fix: add redirect rule.`;
+          } else {
+            ok = false;
+            error = `Unexpected status ${res.status} from www. Expected redirect (301/308).`;
+          }
+
           checks.push({
             label: rc.label, url: rc.from,
-            status: res.status, ok: res.status === rc.expectedStatus,
-            critical: true, ttfb_ms: Date.now() - start,
-            redirectTarget: location,
+            status: res.status, ok, critical: !ok, // only critical if NOT ok
+            ttfb_ms: Date.now() - start,
+            redirectTarget: location, warning, error,
+            headers: diagHeaders, redirectSource,
           });
         } catch (e) {
           checks.push({ label: rc.label, url: rc.from, status: 0, ok: false, critical: true, ttfb_ms: Date.now() - start, error: String(e) });
@@ -370,7 +410,8 @@ async function executeStep(
       }
 
       const hasCriticalFailures = checks.some(c => !c.ok && c.critical);
-      return { checked: true, hasCriticalFailures, checks };
+      const warnings = checks.filter(c => c.warning).map(c => ({ label: c.label, warning: c.warning }));
+      return { checked: true, hasCriticalFailures, checks, warnings };
     }
 
     case 'performance_snapshot': {
