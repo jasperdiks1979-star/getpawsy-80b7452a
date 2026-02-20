@@ -400,13 +400,15 @@ export const Navbar = () => {
             to="/" 
             className="flex items-center gap-3 font-bold text-xl group"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            aria-label="GetPawsy — go to homepage"
           >
             <div 
               className="flex items-center justify-center w-11 h-11 rounded-2xl overflow-hidden shadow-soft transition-transform duration-200 hover:scale-105 hover:-rotate-[5deg] active:scale-95"
+              aria-hidden="true"
             >
-              <img src={logoIcon} alt="GetPawsy" className="w-full h-full object-cover" />
+              <img src={logoIcon} alt="" className="w-full h-full object-cover" />
             </div>
-            <span className="font-display text-foreground text-xl sm:text-2xl">
+            <span className="font-display text-foreground text-xl sm:text-2xl" aria-hidden="true">
               Get<span className="text-primary">Pawsy</span>
             </span>
           </Link>
@@ -483,6 +485,8 @@ export const Navbar = () => {
             <button
               onMouseEnter={() => setIsMegaMenuOpen(true)}
               onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
+              aria-haspopup="true"
+              aria-expanded={isMegaMenuOpen}
               className={`flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors rounded-full ${
                 isMegaMenuOpen
                   ? 'text-primary bg-primary/10'
@@ -490,7 +494,7 @@ export const Navbar = () => {
               }`}
             >
               Categories
-              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMegaMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
           </nav>
 
@@ -502,16 +506,22 @@ export const Navbar = () => {
               size="icon"
               className="rounded-full"
               onClick={() => setIsSearchOpen(!isSearchOpen)}
+              aria-label={isSearchOpen ? 'Close search' : 'Open search'}
+              aria-expanded={isSearchOpen}
             >
-              <Search className="h-5 w-5" />
+              <Search className="h-5 w-5" aria-hidden="true" />
             </Button>
 
             {/* Wishlist */}
-            <Link to="/wishlist" className="hidden sm:block">
-              <Button variant="ghost" size="icon" className="relative rounded-full">
-                <Heart className={`h-5 w-5 transition-colors ${wishlist.length > 0 ? 'fill-accent text-accent' : ''}`} />
+            <Link
+              to="/wishlist"
+              className="hidden sm:block"
+              aria-label={wishlist.length > 0 ? `Wishlist (${wishlist.length} items)` : 'Wishlist'}
+            >
+              <Button variant="ghost" size="icon" className="relative rounded-full" tabIndex={-1} aria-hidden="true">
+                <Heart className={`h-5 w-5 transition-colors ${wishlist.length > 0 ? 'fill-accent text-accent' : ''}`} aria-hidden="true" />
                 {wishlist.length > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full bg-accent text-accent-foreground">
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full bg-accent text-accent-foreground" aria-hidden="true">
                     {wishlist.length}
                   </Badge>
                 )}
@@ -524,13 +534,16 @@ export const Navbar = () => {
               onMouseEnter={() => setIsCartPreviewOpen(true)}
               onMouseLeave={() => setIsCartPreviewOpen(false)}
             >
-              <Link to="/cart">
+              <Link
+                to="/cart"
+                aria-label={totalItems > 0 ? `Shopping cart (${totalItems} items)` : 'Shopping cart'}
+              >
                 <div ref={cartIconRef as React.RefObject<HTMLDivElement>}>
-                  <Button variant="ghost" size="icon" className="relative rounded-full">
-                    <ShoppingCart className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="relative rounded-full" tabIndex={-1} aria-hidden="true">
+                    <ShoppingCart className="h-5 w-5" aria-hidden="true" />
                     {totalItems > 0 && (
                       <div key={totalItems} className="animate-[scaleIn_0.2s_ease-out]">
-                        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
+                        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full" aria-hidden="true">
                           {totalItems}
                         </Badge>
                       </div>
@@ -547,13 +560,17 @@ export const Navbar = () => {
             </div>
 
             {/* Mobile Cart (no preview) */}
-            <Link to="/cart" className="sm:hidden">
+            <Link
+              to="/cart"
+              className="sm:hidden"
+              aria-label={totalItems > 0 ? `Shopping cart (${totalItems} items)` : 'Shopping cart'}
+            >
               <div ref={cartIconRef as React.RefObject<HTMLDivElement>}>
-                <Button variant="ghost" size="icon" className="relative rounded-full">
-                  <ShoppingCart className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="relative rounded-full" tabIndex={-1} aria-hidden="true">
+                  <ShoppingCart className="h-5 w-5" aria-hidden="true" />
                   {totalItems > 0 && (
                     <div key={totalItems} className="animate-[scaleIn_0.2s_ease-out]">
-                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
+                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full" aria-hidden="true">
                         {totalItems}
                       </Badge>
                     </div>
@@ -566,8 +583,8 @@ export const Navbar = () => {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex">
-                    <User className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex" aria-label="My account">
+                    <User className="h-5 w-5" aria-hidden="true" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 rounded-xl bg-background border shadow-soft">
@@ -615,7 +632,14 @@ export const Navbar = () => {
             {/* Mobile Menu */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild className="lg:hidden">
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full"
+                  aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+                  aria-expanded={isMobileMenuOpen}
+                  aria-controls="mobile-nav"
+                >
                   <AnimatedHamburger isOpen={isMobileMenuOpen} />
                 </Button>
               </SheetTrigger>

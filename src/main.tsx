@@ -60,10 +60,14 @@ try {
   console.error('[BOOT_FAIL] Env validation threw:', e);
 }
 
-// === STEP 3: Web Vitals — deferred, non-blocking ===
+// === STEP 3: Web Vitals + Perf Logger — deferred, non-blocking ===
 import { initVitalsCollector } from "./lib/vitals-collector";
 import { initLCPDebug } from "./lib/lcp-debug";
+// Perf logger: zero-cost when ?perf=1 absent (checked inside)
+import { initPerfLogger } from "./lib/perf-logger";
 if (typeof window !== 'undefined') {
+  // Init perf logger immediately (it self-gates on ?perf param)
+  initPerfLogger();
   if ('requestIdleCallback' in window) {
     (window as any).requestIdleCallback(() => {
       initVitalsCollector();

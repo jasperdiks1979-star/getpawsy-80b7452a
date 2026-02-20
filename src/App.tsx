@@ -197,6 +197,7 @@ const IndexingDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/Indexi
 const CatCondoGrowthDashboard = lazyWithRetry(() => import("./pages/admin/CatCondoGrowthDashboard"));
 const SeoAgentAutonomous = lazyWithRetry(() => import("./pages/admin/SeoAgentAutonomous"));
 const PerfAuditPage = lazyWithRetry(() => import("./pages/admin/PerfAuditPage"));
+const PerfDebugPage = lazyWithRetry(() => import("./pages/admin/PerfDebugPage"));
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
 const DomainHealthPage = lazyWithRetry(() => import("./pages/admin/DomainHealthPage"));
 const Gsc4xxTriagePage = lazyWithRetry(() => import("./pages/admin/Gsc4xxTriagePage"));
@@ -317,6 +318,9 @@ const App = () => {
                       
                       {/* Growth verification diagnostics */}
                       <Route path="/__ops/growth-verification" element={<Suspense fallback={<RouteLoader />}><GrowthVerification /></Suspense>} />
+                      
+                      {/* Performance debug guide — hidden, no-index */}
+                      <Route path="/debug/perf" element={<Suspense fallback={<RouteLoader />}><PerfDebugPage /></Suspense>} />
                       
                       {/* Parent category routes */}
                       <Route path="/dogs" element={<Navigate to="/products?category=dogs" replace />} />
