@@ -640,20 +640,24 @@ const Products = () => {
   const categoryDescription = categoryParam ? getCategoryDescription(categoryParam) : null;
 
   // SEO-optimized H1 titles for target keyword categories
+  // SEO-optimized H1 — pull from category SEO data when available, fallback to manual overrides
   const seoH1Overrides: Record<string, string> = {
     'guinea-pig-cages': 'Guinea Pig Cages & Playpens',
-    'cat-trees-and-condos': 'Cat Trees & Cat Condos for Sale',
-    'dog-toys': 'Dog Toys & Enrichment Games',
-    'cat-carriers': 'Cat Carriers & Travel Crates',
-    'dog-carriers': 'Dog Carriers & Portable Travel Crates',
     'guinea-pig-toys': 'Guinea Pig Toys & Enrichment',
-    'cat-houses': 'Cat Houses & Indoor Shelters',
-    'cat-toys': 'Cat Toys & Interactive Games',
   };
 
-  const categoryH1 = categoryParam && seoH1Overrides[categoryParam]
-    ? seoH1Overrides[categoryParam]
-    : categoryDisplayName;
+  // Dynamic H1: prefer rich SEO data, then manual overrides, then display name
+  const getCategoryH1 = () => {
+    if (!categoryParam) return null;
+    // Check rich SEO content database first
+    const { CATEGORY_SEO_DATA } = require('@/lib/category-seo-data');
+    if (CATEGORY_SEO_DATA[categoryParam]) return CATEGORY_SEO_DATA[categoryParam].h1;
+    // Fallback to manual overrides
+    if (seoH1Overrides[categoryParam]) return seoH1Overrides[categoryParam];
+    return null;
+  };
+
+  const categoryH1 = getCategoryH1() || categoryDisplayName;
 
   // Generate dynamic SEO content
   const pageTitle = categoryDisplayName 
