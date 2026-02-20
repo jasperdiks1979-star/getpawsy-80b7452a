@@ -269,91 +269,39 @@ export const Navbar = () => {
   const navigate = useNavigate();
 
   // Fetch categories from database
+  // FIX: Single query, no full-table-scan on products_public.
+  // Product counts are omitted in the Navbar — they are not visible in the UI
+  // and were the sole reason for the full-table-scan. Counts are shown only in
+  // the category grid on the homepage (which is behind the hydrationReady gate).
   const { data: categories = [] } = useQuery({
     queryKey: ['navbar-categories'],
     queryFn: async () => {
-      // Fetch all categories
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
-         .select('id, name, slug, parent_id, image_url, display_order')
-         .order('display_order', { ascending: true });
+        .select('id, name, slug, parent_id, image_url, display_order')
+        .order('display_order', { ascending: true });
 
       if (categoriesError) throw categoriesError;
 
-      // Fetch active canonical products to calculate counts
-       const { data: productsData, error: productsError } = await supabase
-         .from('products_public')
-         .select('category');
-
-      if (productsError) throw productsError;
-
-       // Build a recursive function to find the ROOT parent category for any category
-       // This handles multi-level hierarchies (e.g., Small Pets > Hamsters > Hamster Cages)
-       const findRootParent = (categoryId: string, visited = new Set<string>()): string | null => {
-         if (visited.has(categoryId)) return null; // Prevent infinite loops
-         visited.add(categoryId);
-         
-         const cat = categoriesData?.find(c => c.id === categoryId);
-         if (!cat) return null;
-         if (!cat.parent_id) return categoryId; // This is a root category
-         return findRootParent(cat.parent_id, visited);
-       };
-       
-       // Build mappings for counting
-       const categoryById: Record<string, { id: string; parent_id: string | null }> = {};
-       const catNameToId: Record<string, string> = {};
-       categoriesData?.forEach(cat => {
-         categoryById[cat.id] = { id: cat.id, parent_id: cat.parent_id };
-         catNameToId[cat.name.toLowerCase().trim()] = cat.id;
-         if (cat.slug) {
-           catNameToId[cat.slug.toLowerCase().trim()] = cat.id;
-         }
-       });
- 
-       // Count products per category (direct count) AND per root parent
-      const countMap: Record<string, number> = {};
-       const rootCountMap: Record<string, number> = {};
-      productsData?.forEach((p) => {
-        if (p.category) {
-          const normalizedCat = p.category.toLowerCase().trim();
-           const catId = catNameToId[normalizedCat];
-           if (catId) {
-             // Direct count for this category
-             countMap[catId] = (countMap[catId] || 0) + 1;
-             
-             // Also count for root parent
-             const rootId = findRootParent(catId);
-             if (rootId) {
-               rootCountMap[rootId] = (rootCountMap[rootId] || 0) + 1;
-             }
-           }
-        }
-      });
-
-       // Add counts to categories (matching by ID)
-      const categoriesWithCounts = (categoriesData || []).map((cat) => ({
-        ...cat,
-         // For root categories, use rootCountMap; for children, use direct countMap
-         product_count: cat.parent_id ? (countMap[cat.id] || 0) : (rootCountMap[cat.id] || 0),
-      })) as Category[];
-
-       return categoriesWithCounts;
+      // Return flat list — tree is built in useMemo below.
+      // No product count query needed: counts aren't rendered in the Navbar.
+      return (categoriesData || []) as Category[];
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 60 * 1000, // 15 min — categories change rarely
+    gcTime: 30 * 60 * 1000,
   });
 
   // Build category tree
+  // Build category tree — no product_count filtering since we removed the scan.
+  // All DB categories are valid; empty ones are rare and acceptable in the nav.
   const categoryTree = useMemo(() => {
     const buildTree = (parentId: string | null): CategoryWithChildren[] => {
       return categories
         .filter((cat) => cat.parent_id === parentId)
-        // Filter out categories with 0 products at parent level
-        .filter((cat) => parentId !== null || (cat.product_count || 0) > 0)
         .sort((a, b) => (a.display_order || 999) - (b.display_order || 999))
         .map((cat) => ({
           ...cat,
-          // Filter out children with 0 products
-          children: buildTree(cat.id).filter(child => (child.product_count || 0) > 0),
+          children: buildTree(cat.id),
         }));
     };
     return buildTree(null);
