@@ -316,6 +316,8 @@ const Index = () => {
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
           <img
             src="/hero-dog.webp"
+            srcSet="/hero-dog-600.webp 600w, /hero-dog-900.webp 900w, /hero-dog.webp 1200w"
+            sizes="100vw"
             alt="Happy dog relaxing at home with premium pet products"
             width={1200}
             height={675}

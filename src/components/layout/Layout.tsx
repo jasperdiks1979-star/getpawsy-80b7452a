@@ -44,11 +44,12 @@ function useDeferWidgets(): boolean {
     // Check if grid has already rendered via the timing mark
     const checkGrid = setInterval(() => {
       try {
-        const { getGridTiming } = require('@/lib/grid-timing');
-        if (getGridTiming().gridFirstItemRenderedAt !== null) {
-          activate();
-          cleanup();
-        }
+        import('@/lib/grid-timing').then(({ getGridTiming }) => {
+          if (getGridTiming().gridFirstItemRenderedAt !== null) {
+            activate();
+            cleanup();
+          }
+        });
       } catch {}
     }, 200);
 
