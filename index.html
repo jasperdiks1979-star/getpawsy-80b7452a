@@ -59,8 +59,8 @@
       to prevent "Cannot access uninitialized variable" TDZ errors on iOS Safari.
     -->
 
-    <!-- Preload LCP hero image — local optimized WebP with responsive srcset -->
-    <link rel="preload" as="image" href="/hero-dog.webp" type="image/webp" fetchpriority="high" imagesrcset="/hero-dog.webp 1200w" imagesizes="100vw">
+    <!-- Preload LCP hero image — responsive srcset for mobile/desktop -->
+    <link rel="preload" as="image" href="/hero-dog.webp" type="image/webp" fetchpriority="high" imagesrcset="/hero-dog-600.webp 600w, /hero-dog-900.webp 900w, /hero-dog.webp 1200w" imagesizes="100vw">
     <!-- Inline critical hero layout to guarantee paint before CSS parse -->
     <style>
       .hero-lcp-section { position:relative; overflow:hidden; display:flex; align-items:center; min-height:85vh; contain:layout style; }
@@ -73,10 +73,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <!-- Fonts: reduced to 2 weights each for smaller payload -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <!-- Preload primary font files for fastest LCP text paint -->
+    <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZOIHTWEBlw.woff2" crossorigin>
+    
+    <!-- Fonts: single weight each for minimal payload, font-display:swap guaranteed -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
     </noscript>
     
     <!-- Critical inline styles for instant first paint and CLS prevention -->

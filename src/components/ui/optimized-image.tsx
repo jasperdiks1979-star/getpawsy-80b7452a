@@ -120,13 +120,15 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           fetchPriority={priority ? 'high' : 'auto'}
-          sizes={priority ? '(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw' : undefined}
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           onLoad={handleLoad}
           onError={handleError}
           className={cn(
             'w-full h-full object-cover',
-            isLoaded ? 'opacity-100' : 'opacity-0',
-            'transition-opacity duration-200',
+            priority 
+              ? 'opacity-100' // No transition on LCP-path images
+              : isLoaded ? 'opacity-100' : 'opacity-0',
+            !priority && 'transition-opacity duration-200',
             className
           )}
           style={{ contentVisibility: 'auto' }}
