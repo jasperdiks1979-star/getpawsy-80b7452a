@@ -8,10 +8,22 @@ import "./index.css";
 // v9 - Fix: removed charts manualChunks entirely (d3 TDZ crash on iOS Safari 18)
 // BUILD_MARKER: 2026-02-19T-v9-no-charts-chunk
 
-// === STEP 0: Build marker for deploy verification ===
+// === STEP 0: Build marker + BUNDLE EXECUTION START timestamp ===
 if (typeof window !== 'undefined') {
   (window as any).__BUILD_ID__ = 'v9-no-charts-chunk-' + Date.now().toString(36);
   console.log('[BUILD] v9-no-charts-chunk deployed');
+
+  // ── LCP Trace: JS bundle execution timestamp ─────────────────────────────
+  // This is the FIRST LINE of the main bundle that runs — marks when V8 has
+  // finished parsing + compiling this chunk and begun executing it.
+  if (new URLSearchParams(window.location.search).has('lcpTrace')) {
+    const bundleStartTs = performance.now();
+    const lcpWindow = bundleStartTs <= 2000;
+    const tag = lcpWindow ? '🔴 [LCP-WINDOW]' : '🟢 [POST-LCP]';
+    console.log(`${tag} BUNDLE_EXEC | T+${Math.round(bundleStartTs)}ms | main.tsx first line executing (JS parse+compile complete)`);
+    (window as any).__lcpTrace = (window as any).__lcpTrace || {};
+    (window as any).__lcpTrace.bundleExecAt = bundleStartTs;
+  }
 }
 
 // === STEP 0b: www → apex redirect (app-level fallback for platform 302) ===
@@ -72,13 +84,33 @@ try {
     throw new Error('[BOOT_FAIL] #root element not found');
   }
 
-  // ── LCP Trace: log the exact React mount timestamp ──────────────────────
+  // ── LCP Trace: createRoot called timestamp ────────────────────────────────
+  const isTracing = typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('lcpTrace');
+  if (isTracing) {
+    const ts = performance.now();
+    const lcpWindow = ts <= 2000;
+    const tag = lcpWindow ? '🔴 [LCP-WINDOW]' : '🟢 [POST-LCP]';
+    console.log(`${tag} CREATE_ROOT | T+${Math.round(ts)}ms | ReactDOM.createRoot() called`);
+    (window as any).__lcpTrace = (window as any).__lcpTrace || {};
+    (window as any).__lcpTrace.createRootAt = ts;
+  }
+
   import('./lib/lcp-render-trace').then(({ traceReactMount, scheduleTraceSummary }) => {
     traceReactMount();
     scheduleTraceSummary();
   });
 
   const root = createRoot(rootEl);
+
+  // ── LCP Trace: root.render() called ─────────────────────────────────────
+  if (isTracing) {
+    const ts = performance.now();
+    const tag = ts <= 2000 ? '🔴 [LCP-WINDOW]' : '🟢 [POST-LCP]';
+    console.log(`${tag} RENDER_CALL | T+${Math.round(ts)}ms | root.render() invoked (React tree evaluation begins)`);
+    (window as any).__lcpTrace.renderCallAt = ts;
+  }
+
   root.render(
     // ⚠️  React.StrictMode is ACTIVE.
     // In development, React intentionally double-invokes render functions,

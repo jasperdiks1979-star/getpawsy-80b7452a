@@ -109,6 +109,76 @@
       /* Hide static hero shell once React mounts (replaced by React tree) */
       #static-hero-shell { will-change:contents; }
     </style>
+  <!-- ═══════════════════════════════════════════════════════════════════
+       PRE-REACT TIMELINE TRACER
+       Runs as an inline sync script so it captures timestamps BEFORE any
+       JS bundle has downloaded or executed. Activate with ?lcpTrace=1.
+       All times are relative to performance.timeOrigin (= navigationStart).
+       ═══════════════════════════════════════════════════════════════════ -->
+  <script>
+    (function(){
+      if (location.search.indexOf('lcpTrace=1') === -1 &&
+          location.search.indexOf('lcpTrace=true') === -1) return;
+
+      var t0 = performance.now(); // ms since navigationStart = timeOrigin
+
+      // ── helper ──────────────────────────────────────────────────────
+      function ms(label, ts) {
+        var lcpWindow = ts <= 2000;
+        var tag = lcpWindow ? '\uD83D\uDD34 [LCP-WINDOW]' : '\uD83D\uDFE2 [POST-LCP]';
+        console.log(tag + ' ' + label + ' | T+' + Math.round(ts) + 'ms');
+      }
+
+      // ── Timestamp 1: this inline script executed ─────────────────────
+      window.__lcpTrace = { headScriptAt: t0 };
+      ms('HEAD_SCRIPT  | Inline tracer executing (= HTML parsed to <head> end)', t0);
+
+      // ── Timestamp 2: DOMContentLoaded ────────────────────────────────
+      window.addEventListener('DOMContentLoaded', function() {
+        var ts = performance.now();
+        window.__lcpTrace.domContentLoadedAt = ts;
+        ms('DCL          | DOMContentLoaded fired', ts);
+      });
+
+      // ── Timestamp 3: window.load ─────────────────────────────────────
+      window.addEventListener('load', function() {
+        var ts = performance.now();
+        window.__lcpTrace.windowLoadAt = ts;
+        ms('WINDOW_LOAD  | All resources loaded (images, fonts, scripts)', ts);
+
+        // ── Bundle sizes from Resource Timing API ─────────────────────
+        try {
+          var entries = performance.getEntriesByType('resource');
+          var jsBundles = entries.filter(function(e) {
+            return e.initiatorType === 'script' && e.name.indexOf('.js') > -1;
+          });
+          var totalEncoded = 0;
+          var mainBundle = null;
+          jsBundles.forEach(function(e) {
+            var enc = e.encodedBodySize || 0;
+            totalEncoded += enc;
+            // The largest JS file is the main bundle
+            if (!mainBundle || enc > (mainBundle.encodedBodySize || 0)) mainBundle = e;
+          });
+          console.log(
+            '\uD83D\uDFE2 [POST-LCP] JS_BUNDLES | ' + jsBundles.length + ' scripts, total gzip ~' +
+            Math.round(totalEncoded / 1024) + 'KB' +
+            (mainBundle
+              ? ' | Largest: ' + mainBundle.name.split('/').pop() + ' (' + Math.round((mainBundle.encodedBodySize || 0) / 1024) + 'KB gzip, ' + Math.round((mainBundle.decodedBodySize || 0) / 1024) + 'KB raw)'
+              : '')
+          );
+          // TTFB from navigation timing
+          var nav = performance.getEntriesByType('navigation')[0];
+          if (nav) {
+            ms('TTFB         | Time to first byte', nav.responseStart);
+            ms('HTML_RECV    | HTML fully received', nav.responseEnd);
+            ms('DOM_PARSED   | DOM parsing complete', nav.domContentLoadedEventStart);
+            ms('PARSE_END    | Document interactive', nav.domInteractive);
+          }
+        } catch(e) {}
+      });
+    })();
+  </script>
   </head>
 
   <body>
