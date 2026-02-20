@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 import { trackGoogleAdsAddToCart } from '@/lib/analytics';
-import { supabase } from '@/integrations/supabase/client';
+// ⚡ supabase is NOT imported at top level — dynamic import keeps ~138KB SDK off critical path
+const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { toast } from 'sonner';
 import { fireMarketingAsync } from '@/lib/marketingClient';
@@ -72,6 +73,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
     
     try {
+      const supabase = await getSupabase();
       // Check if cart already exists for this session
       const { data: existingCart } = await supabase
         .from('abandoned_carts')
@@ -81,7 +83,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (existingCart) {
-        // Update existing cart - use type assertion for JSONB
         const { error } = await supabase
           .from('abandoned_carts')
           .update({
@@ -92,7 +93,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .eq('id', existingCart.id);
         if (error) console.error('Error updating abandoned cart:', error);
       } else {
-        // Insert new cart - use type assertion for JSONB
         const { error } = await supabase
           .from('abandoned_carts')
           .insert([{
@@ -189,6 +189,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const referrer = sessionStorage.getItem("original_referrer") || null;
       
       // Always insert the activity, even without location
+      const supabase = await getSupabase();
       const { error } = await supabase.from("visitor_activity").insert({
         session_id: sessionId,
         activity_type: "cart",
@@ -294,6 +295,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Mark cart as recovered in database
       const sessionId = getCartSessionId();
       try {
+        const supabase = await getSupabase();
         await supabase
           .from('abandoned_carts')
           .update({ recovered_at: new Date().toISOString() })
