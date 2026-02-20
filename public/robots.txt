@@ -28,7 +28,7 @@ Disallow: /slow-feeder-offer
 Disallow: /download-ads
 Disallow: /technical-declaration
 Disallow: /appeal-response
-Disallow: /cookies
+# /cookies is a real policy page — allowed for indexing
 Disallow: /privacy-policy-iframe
 Disallow: /terms-iframe
 
