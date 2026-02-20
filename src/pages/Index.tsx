@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { dedupeProducts } from '@/lib/dedupe-products';
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { safeString, safePrice, safeNumber, safeProduct, SafeProduct } from '@/lib/safe-render';
+import { safeString, safePrice, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { FadeInView } from '@/components/ui/FadeInView';
 import { getAnchorText } from '@/lib/anchor-text-helper';
 import { toast } from 'sonner';
 
-// Below-fold imports — lazy-loaded to keep initial bundle minimal
+// ── Below-fold heavy components — lazy-loaded (not in initial bundle) ──────
 const Skeleton = lazy(() => import('@/components/ui/skeleton').then(m => ({ default: m.Skeleton })));
 const ProductCard = lazy(() => import('@/components/products/ProductCard').then(m => ({ default: m.ProductCard })));
 const Carousel = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.Carousel })));
@@ -21,78 +21,111 @@ const CarouselItem = lazy(() => import('@/components/ui/carousel').then(m => ({ 
 const CarouselPrevious = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.CarouselPrevious })));
 const CarouselNext = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.CarouselNext })));
 import type { CarouselApi } from '@/components/ui/carousel';
-import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
-import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
-// Direct imports — avoid barrel re-export to prevent pulling unrelated seo modules
-import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
-import { LocalBusinessSchema } from '@/components/seo/LocalBusinessSchema';
 
-// Below-fold icons — tree-shaken, tiny (~200B each), kept sync for array pattern usage
-import { Clock, BookOpen, Truck, ShieldCheck, RotateCcw, Heart, Star, Loader2 } from 'lucide-react';
-
-// Non-critical imports deferred
-const trackNewsletterSignup = (email: string) => import('@/lib/analytics').then(m => m.trackNewsletterSignup(email));
-const initPageDebug = (name: string) => import('@/lib/debug-logger').then(m => m.initPageDebug(name));
-const logDataSanitization = (label: string, raw: any, sanitized: any) => import('@/lib/debug-logger').then(m => m.logDataSanitization(label, raw, sanitized));
-const createSectionDebugger = (name: string) => ({
-  logDataReceived: (label: string, data: any) => import('@/lib/debug-logger').then(m => m.createSectionDebugger(name).logDataReceived(label, data)),
-  warnIfObject: (label: string, value: any) => import('@/lib/debug-logger').then(m => m.createSectionDebugger(name).warnIfObject(label, value)),
-});
-
-// Lazy-load below-fold sections to keep initial JS minimal
+// ── Below-fold page sections — lazy-loaded ───────────────────────────────
 const AnimatedTrustBadges = lazy(() => import('@/components/home/AnimatedTrustBadges'));
 const BestsellersSection = lazy(() => import('@/components/home/BestsellersSection').then(m => ({ default: m.BestsellersSection })));
 const PremiumNicheGrid = lazy(() => import('@/components/home/PremiumNicheGrid').then(m => ({ default: m.PremiumNicheGrid })));
 
-// Lazy-load category & guide images — not needed for first paint
-const catDogsImg = () => import('@/assets/categories/dogs.jpg').then(m => m.default);
-const catCatsImg = () => import('@/assets/categories/cats.jpg').then(m => m.default);
-const catBirdsImg = () => import('@/assets/categories/birds.jpg').then(m => m.default);
-const catSmallPetsImg = () => import('@/assets/categories/small-pets-new.jpg').then(m => m.default);
-const catReptilesImg = () => import('@/assets/categories/reptiles.jpg').then(m => m.default);
-const catFishImg = () => import('@/assets/categories/fish.jpg').then(m => m.default);
-const guideCatLitterImg = () => import('@/assets/guides/guide-cat-litter.jpg').then(m => m.default);
-const guideDogBedsImg = () => import('@/assets/guides/guide-dog-beds.jpg').then(m => m.default);
-const guideLitterFurnitureImg = () => import('@/assets/guides/guide-litter-furniture.jpg').then(m => m.default);
+// ── SEO schemas — tiny, sync ─────────────────────────────────────────────
+import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
+import { LocalBusinessSchema } from '@/components/seo/LocalBusinessSchema';
+import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 
-// Debug loggers for each section
-const categoriesDebug = createSectionDebugger('Categories');
-const productsDebug = createSectionDebugger('FeaturedProducts');
-const recentlyViewedDebug = createSectionDebugger('RecentlyViewed');
+// ── Icons: only import what is strictly needed above fold ─────────────────
+import { Loader2 } from 'lucide-react';
+// Below-fold icons deferred via dynamic import inside the component
+const BELOW_FOLD_ICONS = {
+  Clock: lazy(() => import('lucide-react').then(m => ({ default: m.Clock }))),
+  BookOpen: lazy(() => import('lucide-react').then(m => ({ default: m.BookOpen }))),
+  Truck: lazy(() => import('lucide-react').then(m => ({ default: m.Truck }))),
+  ShieldCheck: lazy(() => import('lucide-react').then(m => ({ default: m.ShieldCheck }))),
+  RotateCcw: lazy(() => import('lucide-react').then(m => ({ default: m.RotateCcw }))),
+  Heart: lazy(() => import('lucide-react').then(m => ({ default: m.Heart }))),
+  Star: lazy(() => import('lucide-react').then(m => ({ default: m.Star }))),
+};
 
-/** Lazy image component — loads image module on mount */
-function LazyImage({ loader, alt, className, width, height }: { loader: () => Promise<string>; alt: string; className?: string; width?: number; height?: number }) {
-  const [src, setSrc] = useState<string | null>(null);
-  useEffect(() => { loader().then(setSrc).catch(() => {}); }, []);
-  if (!src) return <div className={className} style={{ width, height, background: 'hsl(38 35% 93%)' }} />;
-  return <img src={src} alt={alt} className={className} width={width} height={height} loading="lazy" decoding="async" onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }} />;
-}
+// ── Non-critical analytics/debug — deferred ───────────────────────────────
+const trackNewsletterSignup = (email: string) =>
+  import('@/lib/analytics').then(m => m.trackNewsletterSignup(email));
 
-// Category image loaders map
+// ── Category image loaders — never in initial bundle ─────────────────────
 const categoryImageLoaders: Record<string, () => Promise<string>> = {
-  'Dogs': catDogsImg,
-  'Cats': catCatsImg,
-  'Birds': catBirdsImg,
-  'Fish & Aquarium': catFishImg,
-  'Small Pets': catSmallPetsImg,
-  'Reptiles': catReptilesImg,
+  'Dogs': () => import('@/assets/categories/dogs.jpg').then(m => m.default),
+  'Cats': () => import('@/assets/categories/cats.jpg').then(m => m.default),
+  'Birds': () => import('@/assets/categories/birds.jpg').then(m => m.default),
+  'Fish & Aquarium': () => import('@/assets/categories/fish.jpg').then(m => m.default),
+  'Small Pets': () => import('@/assets/categories/small-pets-new.jpg').then(m => m.default),
+  'Reptiles': () => import('@/assets/categories/reptiles.jpg').then(m => m.default),
 };
 
 // Guide image loaders
-const guideImageLoaders = {
-  'best-cat-litter-box-2026': guideCatLitterImg,
-  'best-dog-bed-2026': guideDogBedsImg,
-  'best-cat-litter-box-furniture-enclosures-2026': guideLitterFurnitureImg,
+const guideImageLoaders: Record<string, () => Promise<string>> = {
+  'best-cat-litter-box-2026': () => import('@/assets/guides/guide-cat-litter.jpg').then(m => m.default),
+  'best-dog-bed-2026': () => import('@/assets/guides/guide-dog-beds.jpg').then(m => m.default),
+  'best-cat-litter-box-furniture-enclosures-2026': () => import('@/assets/guides/guide-litter-furniture.jpg').then(m => m.default),
 };
 
-const Index = () => {
-  // Initialize debug mode on mount
+/** Lazy image component — loads image module on mount, shows warm placeholder */
+function LazyImage({ loader, alt, className, width, height }: {
+  loader: () => Promise<string>;
+  alt: string;
+  className?: string;
+  width?: number;
+  height?: number;
+}) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => { loader().then(setSrc).catch(() => {}); }, []); // eslint-disable-line
+  if (!src) return <div className={className} style={{ width, height, background: 'hsl(38 35% 93%)' }} />;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      width={width}
+      height={height}
+      loading="lazy"
+      decoding="async"
+      onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
+    />
+  );
+}
+
+// ── Hook: gates non-critical data fetches until after first interaction/paint ──
+function useHydrationReady(): boolean {
+  const [ready, setReady] = useState(false);
   useEffect(() => {
-    initPageDebug('Index/Homepage');
-  }, []);
-  
+    if (ready) return;
+    const activate = () => setReady(true);
+    // Defer until idle or user interaction — whichever comes first
+    const ric = 'requestIdleCallback' in window
+      ? (window as any).requestIdleCallback(activate, { timeout: 3000 })
+      : setTimeout(activate, 1000);
+    const handler = () => { activate(); };
+    window.addEventListener('scroll', handler, { once: true, passive: true });
+    window.addEventListener('click', handler, { once: true, passive: true });
+    window.addEventListener('touchstart', handler, { once: true, passive: true });
+    return () => {
+      if ('requestIdleCallback' in window) {
+        (window as any).cancelIdleCallback(ric);
+      } else {
+        clearTimeout(ric as number);
+      }
+      window.removeEventListener('scroll', handler);
+      window.removeEventListener('click', handler);
+      window.removeEventListener('touchstart', handler);
+    };
+  }, [ready]);
+  return ready;
+}
+
+const Index = () => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
+
+  // Gate — non-critical queries only run after first paint / idle
+  const hydrationReady = useHydrationReady();
 
   // Featured products carousel state
   const [productsApi, setProductsApi] = useState<CarouselApi>();
@@ -110,125 +143,106 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [productsApi]);
 
+  // ── Featured products — only starts fetching after hydration gate ──
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
     queryKey: ['featured-products'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products_public')
-        .select('*')
+        .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(12);
-      
       if (error) throw error;
       return dedupeProducts(data || []);
     },
+    enabled: hydrationReady,
+    staleTime: 5 * 60 * 1000, // 5 min — reduce refetch churn
   });
 
-   const { data: categories, isLoading: categoriesLoading } = useQuery({
-     queryKey: ['homepage-categories'],
-     queryFn: async () => {
-       const { data: categoriesData, error } = await supabase
-         .from('categories')
-         .select('*')
-         .is('parent_id', null)
-         .order('display_order', { ascending: true });
-       
-       if (error) throw error;
-       if (!categoriesData) return [];
- 
-       const { data: productsData } = await supabase
-         .from('products_public')
-         .select('category');
- 
-       const { data: allCategories } = await supabase
-         .from('categories')
-         .select('id, parent_id, name, slug');
- 
-        const findRootParent = (categoryId: string, visited = new Set<string>()): string | null => {
-          if (visited.has(categoryId)) return null;
-          visited.add(categoryId);
-          const cat = allCategories?.find(c => c.id === categoryId);
-          if (!cat) return null;
-          if (!cat.parent_id) return categoryId;
-          return findRootParent(cat.parent_id, visited);
-        };
-        
-        const catToRootParentMap: Record<string, string> = {};
-        allCategories?.forEach(cat => {
-          const rootParentId = findRootParent(cat.id);
-          if (rootParentId && rootParentId !== cat.id) {
-            catToRootParentMap[cat.name.toLowerCase().trim()] = rootParentId;
-            if (cat.slug) {
-              catToRootParentMap[cat.slug.toLowerCase().trim()] = rootParentId;
-            }
+  // ── Categories — deferred until hydration gate ──────────────────────────
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['homepage-categories'],
+    queryFn: async () => {
+      const { data: categoriesData, error } = await supabase
+        .from('categories')
+        .select('*')
+        .is('parent_id', null)
+        .order('display_order', { ascending: true });
+      if (error) throw error;
+      if (!categoriesData) return [];
+
+      const { data: productsData } = await supabase
+        .from('products_public')
+        .select('category');
+
+      const { data: allCategories } = await supabase
+        .from('categories')
+        .select('id, parent_id, name, slug');
+
+      const findRootParent = (categoryId: string, visited = new Set<string>()): string | null => {
+        if (visited.has(categoryId)) return null;
+        visited.add(categoryId);
+        const cat = allCategories?.find(c => c.id === categoryId);
+        if (!cat) return null;
+        if (!cat.parent_id) return categoryId;
+        return findRootParent(cat.parent_id, visited);
+      };
+
+      const catToRootParentMap: Record<string, string> = {};
+      allCategories?.forEach(cat => {
+        const rootParentId = findRootParent(cat.id);
+        if (rootParentId && rootParentId !== cat.id) {
+          catToRootParentMap[cat.name.toLowerCase().trim()] = rootParentId;
+          if (cat.slug) catToRootParentMap[cat.slug.toLowerCase().trim()] = rootParentId;
+        }
+      });
+
+      const parentCountMap: Record<string, number> = {};
+      productsData?.forEach(p => {
+        if (p.category) {
+          const normalizedCat = p.category.toLowerCase().trim();
+          const parentMatch = categoriesData.find(
+            parent =>
+              parent.name.toLowerCase().trim() === normalizedCat ||
+              parent.slug?.toLowerCase().trim() === normalizedCat
+          );
+          if (parentMatch) {
+            parentCountMap[parentMatch.id] = (parentCountMap[parentMatch.id] || 0) + 1;
+          } else {
+            const parentId = catToRootParentMap[normalizedCat];
+            if (parentId) parentCountMap[parentId] = (parentCountMap[parentId] || 0) + 1;
           }
-        });
- 
-       const parentCountMap: Record<string, number> = {};
-       productsData?.forEach(p => {
-         if (p.category) {
-           const normalizedCat = p.category.toLowerCase().trim();
-           const parentMatch = categoriesData.find(
-             parent => parent.name.toLowerCase().trim() === normalizedCat ||
-                       parent.slug?.toLowerCase().trim() === normalizedCat
-           );
-           if (parentMatch) {
-             parentCountMap[parentMatch.id] = (parentCountMap[parentMatch.id] || 0) + 1;
-           } else {
-              const parentId = catToRootParentMap[normalizedCat];
-             if (parentId) {
-               parentCountMap[parentId] = (parentCountMap[parentId] || 0) + 1;
-             }
-           }
-         }
-       });
- 
-       const categoriesWithCounts = categoriesData.map(cat => ({
-         ...cat,
-         product_count: parentCountMap[cat.id] || 0,
-       }));
- 
-        return categoriesWithCounts.filter(cat => cat.product_count > 0);
-     },
-   });
+        }
+      });
+
+      return categoriesData
+        .map(cat => ({ ...cat, product_count: parentCountMap[cat.id] || 0 }))
+        .filter(cat => cat.product_count > 0);
+    },
+    enabled: hydrationReady,
+    staleTime: 10 * 60 * 1000, // 10 min
+  });
 
   const safeCategories = useMemo(() => {
     if (!categories) return [];
-    categoriesDebug.logDataReceived('categories', categories);
-    const sanitized = categories.map(cat => {
-      categoriesDebug.warnIfObject('cat.name', cat.name);
-      categoriesDebug.warnIfObject('cat.description', cat.description);
-      categoriesDebug.warnIfObject('cat.image_url', cat.image_url);
-      return {
-        ...cat,
-        name: safeString(cat.name),
-        description: safeString(cat.description),
-        image_url: safeString(cat.image_url),
-        slug: safeString(cat.slug),
-      };
-    });
-    logDataSanitization('categories', categories, sanitized);
-    return sanitized;
+    return categories.map(cat => ({
+      ...cat,
+      name: safeString(cat.name),
+      description: safeString(cat.description),
+      image_url: safeString(cat.image_url),
+      slug: safeString(cat.slug),
+    }));
   }, [categories]);
 
   const safeFeaturedProducts = useMemo(() => {
     if (!featuredProducts) return [];
-    productsDebug.logDataReceived('featuredProducts', featuredProducts);
-    const sanitized = featuredProducts
-      .map(p => {
-        productsDebug.warnIfObject('product.name', p.name);
-        productsDebug.warnIfObject('product.description', p.description);
-        productsDebug.warnIfObject('product.category', p.category);
-        productsDebug.warnIfObject('product.image_url', p.image_url);
-        productsDebug.warnIfObject('product.price', p.price);
-        return safeProduct(p);
-      })
+    return featuredProducts
+      .map(p => safeProduct(p))
       .filter((p): p is SafeProduct => p !== null);
-    logDataSanitization('featuredProducts', featuredProducts, sanitized);
-    return sanitized;
   }, [featuredProducts]);
 
+  // ── Recently viewed — gated on hydration ────────────────────────────────
   const { getRecentlyViewedIds } = useRecentlyViewed();
   const recentlyViewedIds = getRecentlyViewedIds();
 
@@ -238,7 +252,7 @@ const Index = () => {
       if (recentlyViewedIds.length === 0) return [];
       const { data, error } = await supabase
         .from('products_public')
-        .select('*')
+        .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
         .in('id', recentlyViewedIds)
         .eq('is_active', true);
       if (error) throw error;
@@ -247,22 +261,15 @@ const Index = () => {
         .map(id => data.find(p => p.id === id))
         .filter((p): p is NonNullable<typeof p> => p != null);
     },
-    enabled: recentlyViewedIds.length > 0,
+    enabled: hydrationReady && recentlyViewedIds.length > 0,
+    staleTime: 5 * 60 * 1000,
   });
 
   const safeRecentlyViewedProducts = useMemo(() => {
     if (!recentlyViewedProducts) return [];
-    recentlyViewedDebug.logDataReceived('recentlyViewedProducts', recentlyViewedProducts);
-    const sanitized = recentlyViewedProducts
-      .map(p => {
-        recentlyViewedDebug.warnIfObject('product.name', p.name);
-        recentlyViewedDebug.warnIfObject('product.description', p.description);
-        recentlyViewedDebug.warnIfObject('product.price', p.price);
-        return safeProduct(p);
-      })
+    return recentlyViewedProducts
+      .map(p => safeProduct(p))
       .filter((p): p is SafeProduct => p !== null);
-    logDataSanitization('recentlyViewedProducts', recentlyViewedProducts, sanitized);
-    return sanitized;
   }, [recentlyViewedProducts]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -287,7 +294,7 @@ const Index = () => {
         trackNewsletterSignup(newsletterEmail);
       }
       setNewsletterEmail('');
-    } catch (error) {
+    } catch {
       toast.error('Something went wrong. Please try again later.');
     } finally {
       setIsSubscribing(false);
@@ -312,7 +319,7 @@ const Index = () => {
       <WebsiteSchema />
       <LocalBusinessSchema />
 
-      {/* Hero Section — ZERO JS animation, pure CSS for fastest LCP */}
+      {/* ── HERO — zero JS animation, instant paint ─────────────────────── */}
       <section
         className="hero-lcp-section relative overflow-hidden flex items-center"
         style={{ minHeight: '85vh', contain: 'layout style' }}
@@ -333,21 +340,20 @@ const Index = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30" />
           <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
         </div>
-        
+
         <div className="container relative z-10 px-4 md:px-6 py-16 md:py-24">
           <div className="max-w-2xl">
-            <div className="space-y-6">
+            {/* instant=true — no JS state/observer needed, paints at 0ms */}
+            <FadeInView instant className="space-y-6">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
                 Trusted Pet Products,
                 <br />
                 <span className="text-primary">Delivered Fast</span>
               </h1>
-              
               <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
-                Premium everyday essentials for dogs and cats. 
+                Premium everyday essentials for dogs and cats.
                 Free US shipping over $35. 30-day hassle-free returns.
               </p>
-              
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <Link to="/bestsellers">
                   <Button size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow duration-200">
@@ -361,26 +367,26 @@ const Index = () => {
                   </Button>
                 </Link>
               </div>
-            </div>
+            </FadeInView>
           </div>
         </div>
       </section>
 
-      {/* Trust Badges — lazy loaded */}
+      {/* ── Trust Badges — lazy-loaded, mounts after hero paint ─────────── */}
       <SectionErrorBoundary sectionName="Features">
         <Suspense fallback={<div className="py-6 md:py-10 bg-sand/50 border-y border-border/30" style={{ minHeight: 80 }} />}>
           <AnimatedTrustBadges />
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* Popular Guides */}
+      {/* ── Popular Guides ───────────────────────────────────────────────── */}
       <SectionErrorBoundary sectionName="Popular Guides">
         <section className="py-20 bg-sand/30">
           <div className="container px-4 md:px-6">
             <FadeInView className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Trusted Buying Guides</h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Vet-backed & updated 2026 — expert-tested picks for your pet
+                Vet-backed &amp; updated 2026 — expert-tested picks for your pet
               </p>
             </FadeInView>
             <FadeInView className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -436,7 +442,6 @@ const Index = () => {
               <Link to="/guides">
                 <Button variant="outline" className="gap-2 rounded-full">
                   View All Guides
-                  <BookOpen className="w-4 h-4" />
                 </Button>
               </Link>
             </div>
@@ -444,14 +449,14 @@ const Index = () => {
         </section>
       </SectionErrorBoundary>
 
-      {/* Bestsellers Section — lazy */}
+      {/* ── Bestsellers — lazy + gated ──────────────────────────────────── */}
       <SectionErrorBoundary sectionName="Bestsellers">
         <Suspense fallback={<div className="py-20" style={{ minHeight: 400 }} />}>
-          <BestsellersSection />
+          {hydrationReady && <BestsellersSection />}
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* Categories */}
+      {/* ── Categories ──────────────────────────────────────────────────── */}
       <SectionErrorBoundary sectionName="Categories">
         <section id="categories" className="py-20">
           <div className="container px-4 md:px-6">
@@ -461,16 +466,14 @@ const Index = () => {
                 Find exactly what your beloved companion needs, from nutritious food to cozy accessories
               </p>
             </FadeInView>
-            
+
             {categoriesLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                 {Array.from({ length: 6 }).map((_, index) => (
                   <div key={index} className="relative overflow-hidden rounded-2xl aspect-square">
-                    <Skeleton className="w-full h-full" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <Skeleton className="h-5 w-3/4 mb-2" />
-                      <Skeleton className="h-3 w-1/2" />
-                    </div>
+                    <Suspense fallback={<div className="w-full h-full bg-muted rounded-2xl" />}>
+                      <Skeleton className="w-full h-full" />
+                    </Suspense>
                   </div>
                 ))}
               </div>
@@ -482,20 +485,14 @@ const Index = () => {
                       to={`/products?category=${encodeURIComponent(category.name)}`}
                       className="group block relative overflow-hidden rounded-2xl aspect-square shadow-soft hover:shadow-soft-lg transition-shadow duration-300"
                     >
-                      <LazyImage 
+                      <LazyImage
                         loader={categoryImageLoaders[category.name] || (async () => category.image_url || '/categories/dogs.jpg')}
                         alt={`${category.name} - Shop premium ${category.name.toLowerCase()} products for pets`}
                         width={400}
                         height={400}
                         className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-115"
                       />
-                      
                       <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/30 to-transparent transition-all duration-300 group-hover:from-primary/90 group-hover:via-primary/30" />
-                      
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-                      </div>
-                      
                       <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300">
                         <h3 className="font-display font-semibold text-lg text-white mb-1 transform translate-y-0 group-hover:-translate-y-1 transition-transform duration-300">
                           {category.name}
@@ -504,7 +501,6 @@ const Index = () => {
                           View products →
                         </p>
                       </div>
-                      
                       <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-0 group-hover:scale-100 transition-all duration-300">
                         <ArrowRight className="w-4 h-4 text-white" />
                       </div>
@@ -517,7 +513,7 @@ const Index = () => {
         </section>
       </SectionErrorBoundary>
 
-      {/* Featured Products */}
+      {/* ── Featured Products ────────────────────────────────────────────── */}
       <SectionErrorBoundary sectionName="Featured Products">
         <section className="py-20 bg-sand/40">
           <div className="container px-4 md:px-6">
@@ -533,34 +529,42 @@ const Index = () => {
                 </Button>
               </Link>
             </FadeInView>
-            
+
             {productsLoading && (
               <div className="flex items-center justify-center py-16">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
             )}
-            
-            {!productsLoading && safeFeaturedProducts.length > 0 && (
+
+            {!productsLoading && !hydrationReady && (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            )}
+
+            {hydrationReady && !productsLoading && safeFeaturedProducts.length > 0 && (
               <FadeInView>
-                <Carousel
-                  setApi={setProductsApi}
-                  opts={{ align: "start", loop: true, dragFree: true }}
-                  className="w-full cursor-grab active:cursor-grabbing"
-                >
-                  <CarouselContent className="-ml-4">
-                    {safeFeaturedProducts.map((product) => (
-                      <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
-                        <ProductCard product={product as any} />
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-                  <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-                </Carousel>
+                <Suspense fallback={<div className="h-80" />}>
+                  <Carousel
+                    setApi={setProductsApi}
+                    opts={{ align: 'start', loop: true, dragFree: true }}
+                    className="w-full cursor-grab active:cursor-grabbing"
+                  >
+                    <CarouselContent className="-ml-4">
+                      {safeFeaturedProducts.map((product) => (
+                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
+                          <ProductCard product={product as any} />
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+                    <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+                  </Carousel>
+                </Suspense>
               </FadeInView>
             )}
 
-            {!productsLoading && safeFeaturedProducts.length === 0 && (
+            {hydrationReady && !productsLoading && safeFeaturedProducts.length === 0 && (
               <div className="text-center py-16 bg-card rounded-3xl shadow-soft">
                 <p className="text-muted-foreground mb-4">
                   No products available yet. Import products via the admin page.
@@ -574,7 +578,7 @@ const Index = () => {
         </section>
       </SectionErrorBoundary>
 
-      {/* Why Choose GetPawsy */}
+      {/* ── Why Choose GetPawsy ──────────────────────────────────────────── */}
       <SectionErrorBoundary sectionName="Why Choose">
         <section className="py-20 bg-sand/30">
           <div className="container px-4 md:px-6">
@@ -584,37 +588,42 @@ const Index = () => {
                 We believe every pet deserves quality — without the premium markup
               </p>
             </FadeInView>
-
             <FadeInView className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { icon: ShieldCheck, title: 'Tested & Vetted', desc: 'Every product is researched and evaluated before it hits our shelves. No filler, no junk.' },
-                { icon: Truck, title: 'Free US Shipping Over $35', desc: 'Fast, reliable delivery across the US. Most orders ship within 1–2 business days.' },
-                { icon: RotateCcw, title: '30-Day Easy Returns', desc: 'Not the right fit? Send it back hassle-free. We make returns simple and painless.' },
-                { icon: Heart, title: 'Built for Pet Parents', desc: 'Our buying guides, expert reviews, and hand-picked products help you choose with confidence.' },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-soft-lg transition-shadow duration-300 border border-border/50 text-center"
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <item.icon className="w-7 h-7 text-primary" />
+                { iconKey: 'ShieldCheck' as const, title: 'Tested & Vetted', desc: 'Every product is researched and evaluated before it hits our shelves. No filler, no junk.' },
+                { iconKey: 'Truck' as const, title: 'Free US Shipping Over $35', desc: 'Fast, reliable delivery across the US. Most orders ship within 1–2 business days.' },
+                { iconKey: 'RotateCcw' as const, title: '30-Day Easy Returns', desc: 'Not the right fit? Send it back hassle-free. We make returns simple and painless.' },
+                { iconKey: 'Heart' as const, title: 'Built for Pet Parents', desc: 'Our buying guides, expert reviews, and hand-picked products help you choose with confidence.' },
+              ].map((item) => {
+                const Icon = BELOW_FOLD_ICONS[item.iconKey];
+                return (
+                  <div
+                    key={item.title}
+                    className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-soft-lg transition-shadow duration-300 border border-border/50 text-center"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                      <Suspense fallback={<div className="w-7 h-7" />}>
+                        <Icon className="w-7 h-7 text-primary" />
+                      </Suspense>
+                    </div>
+                    <h3 className="font-display font-semibold text-lg mb-2">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                   </div>
-                  <h3 className="font-display font-semibold text-lg mb-2">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
+                );
+              })}
             </FadeInView>
           </div>
         </section>
       </SectionErrorBoundary>
 
-      {/* Revenue Niches — lazy */}
+      {/* ── Revenue Niches — fully lazy + gated ─────────────────────────── */}
       <SectionErrorBoundary sectionName="Revenue Niches">
         <Suspense fallback={<div className="py-20" style={{ minHeight: 400 }} />}>
-          <PremiumNicheGrid />
+          {hydrationReady && <PremiumNicheGrid />}
         </Suspense>
       </SectionErrorBoundary>
 
+      {/* ── Recently Viewed — only renders if data exists ────────────────── */}
       {safeRecentlyViewedProducts.length > 0 && (
         <SectionErrorBoundary sectionName="Recently Viewed">
           <section className="py-20 bg-sand/40">
@@ -622,7 +631,9 @@ const Index = () => {
               <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-secondary-foreground" />
+                    <Suspense fallback={<div className="w-6 h-6" />}>
+                      <BELOW_FOLD_ICONS.Clock className="w-6 h-6 text-secondary-foreground" />
+                    </Suspense>
                   </div>
                   <div>
                     <h2 className="text-3xl md:text-4xl font-display font-bold">Recently Viewed</h2>
@@ -630,36 +641,39 @@ const Index = () => {
                   </div>
                 </div>
               </FadeInView>
-              
               <FadeInView>
-                <Carousel
-                  opts={{ align: "start", loop: false, dragFree: true }}
-                  className="w-full cursor-grab active:cursor-grabbing"
-                >
-                  <CarouselContent className="-ml-4">
-                    {safeRecentlyViewedProducts.map((product) => (
-                      <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
-                        <ProductCard product={product as any} />
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-                  <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-                </Carousel>
+                <Suspense fallback={<div className="h-80" />}>
+                  <Carousel
+                    opts={{ align: 'start', loop: false, dragFree: true }}
+                    className="w-full cursor-grab active:cursor-grabbing"
+                  >
+                    <CarouselContent className="-ml-4">
+                      {safeRecentlyViewedProducts.map((product) => (
+                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
+                          <ProductCard product={product as any} />
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+                    <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
+                  </Carousel>
+                </Suspense>
               </FadeInView>
             </div>
           </section>
         </SectionErrorBoundary>
       )}
 
-      {/* Explore Expert Pet Guides */}
+      {/* ── Expert Guides ────────────────────────────────────────────────── */}
       <SectionErrorBoundary sectionName="Expert Guides">
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
             <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <BookOpen className="w-6 h-6 text-primary" />
+                  <Suspense fallback={<div className="w-6 h-6" />}>
+                    <BELOW_FOLD_ICONS.BookOpen className="w-6 h-6 text-primary" />
+                  </Suspense>
                 </div>
                 <div>
                   <h2 className="text-3xl md:text-4xl font-display font-bold">Explore Our Expert Pet Guides</h2>
@@ -712,20 +726,19 @@ const Index = () => {
         </section>
       </SectionErrorBoundary>
 
-      {/* Newsletter CTA */}
+      {/* ── Newsletter CTA ───────────────────────────────────────────────── */}
       <SectionErrorBoundary sectionName="Newsletter">
         <section className="py-20">
           <div className="container px-4 md:px-6">
             <FadeInView className="relative overflow-hidden rounded-3xl gradient-warm p-10 md:p-16 text-center">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
               <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-              
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 text-primary-foreground">
                   Join Our Pack! 🐾
                 </h2>
                 <p className="text-lg text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-                  Subscribe to our newsletter and get 15% off your first order, 
+                  Subscribe to our newsletter and get 15% off your first order,
                   plus exclusive deals and pet care tips from our experts.
                 </p>
                 <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
@@ -737,10 +750,10 @@ const Index = () => {
                     className="flex-1 px-5 py-3.5 rounded-full bg-white/15 border border-white/25 placeholder:text-white/60 text-white focus:outline-none focus:ring-2 focus:ring-white/40 backdrop-blur-sm"
                     disabled={isSubscribing}
                   />
-                  <Button 
-                    type="submit" 
-                    variant="secondary" 
-                    size="lg" 
+                  <Button
+                    type="submit"
+                    variant="secondary"
+                    size="lg"
                     className="rounded-full px-8"
                     disabled={isSubscribing}
                   >
