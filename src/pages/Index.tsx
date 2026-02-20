@@ -12,10 +12,14 @@ import { FadeInView } from '@/components/ui/FadeInView';
 import { getAnchorText } from '@/lib/anchor-text-helper';
 import { toast } from 'sonner';
 
-// Below-fold imports
-import { Skeleton } from '@/components/ui/skeleton';
-import { ProductCard } from '@/components/products/ProductCard';
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
+// Below-fold imports — lazy-loaded to keep initial bundle minimal
+const Skeleton = lazy(() => import('@/components/ui/skeleton').then(m => ({ default: m.Skeleton })));
+const ProductCard = lazy(() => import('@/components/products/ProductCard').then(m => ({ default: m.ProductCard })));
+const Carousel = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.Carousel })));
+const CarouselContent = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.CarouselContent })));
+const CarouselItem = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.CarouselItem })));
+const CarouselPrevious = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.CarouselPrevious })));
+const CarouselNext = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.CarouselNext })));
 import type { CarouselApi } from '@/components/ui/carousel';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
@@ -23,7 +27,7 @@ import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
 import { LocalBusinessSchema } from '@/components/seo/LocalBusinessSchema';
 
-// Below-fold icons — tree-shaken but small enough to keep sync
+// Below-fold icons — tree-shaken, tiny (~200B each), kept sync for array pattern usage
 import { Clock, BookOpen, Truck, ShieldCheck, RotateCcw, Heart, Star, Loader2 } from 'lucide-react';
 
 // Non-critical imports deferred

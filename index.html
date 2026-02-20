@@ -105,15 +105,60 @@
       .skeleton-pulse { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: pulse 1.5s infinite; }
       @keyframes pulse { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
       img { content-visibility: auto; }
-      #boot-recovery { display:none; }
       #boot-recovery.active { display:flex; }
+      /* Hide static hero shell once React mounts (replaced by React tree) */
+      #static-hero-shell { will-change:contents; }
     </style>
   </head>
 
   <body>
     <div id="root">
+      <!--
+        STATIC HERO SHELL — paints before ANY JS executes.
+        This is the #1 LCP optimisation for an SPA: the browser can render the
+        hero image + H1 text from raw HTML while React bundles are still loading.
+        React's createRoot().render() replaces #root's children, so this vanishes
+        automatically once the app mounts.
+      -->
+      <div id="static-hero-shell" style="position:relative;overflow:hidden;display:flex;align-items:center;min-height:85vh;contain:layout style">
+        <!-- Hero image — matches Index.tsx hero exactly -->
+        <div style="position:absolute;inset:0;z-index:0">
+          <img
+            src="/hero-dog.webp"
+            srcset="/hero-dog-600.webp 600w, /hero-dog-900.webp 900w, /hero-dog.webp 1200w"
+            sizes="100vw"
+            alt="Happy dog relaxing at home with premium pet products"
+            width="1200"
+            height="675"
+            fetchpriority="high"
+            decoding="async"
+            style="width:100%;height:100%;object-fit:cover;object-position:center;aspect-ratio:16/9"
+          />
+          <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(255,253,248,0.95),rgba(255,253,248,0.75),rgba(255,253,248,0.3))"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(255,253,248,0.4),transparent,transparent)"></div>
+        </div>
+        <div style="position:relative;z-index:10;padding:64px 24px;max-width:1280px;margin:0 auto;width:100%">
+          <div style="max-width:672px">
+            <h1 style="font-family:'Playfair Display','Playfair Fallback',Georgia,serif;font-size:clamp(2.25rem,5vw,3.75rem);font-weight:700;line-height:1.1;letter-spacing:-0.015em;color:#1a1a1a;margin:0 0 24px">
+              Trusted Pet Products,<br/><span style="color:#7C3AED">Delivered Fast</span>
+            </h1>
+            <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:clamp(1rem,2vw,1.25rem);color:#6b7280;max-width:512px;line-height:1.6;margin:0 0 32px">
+              Premium everyday essentials for dogs and cats. Free US shipping over $35. 30-day hassle-free returns.
+            </p>
+            <div style="display:flex;flex-wrap:wrap;gap:16px">
+              <a href="/bestsellers" style="display:inline-flex;align-items:center;gap:8px;padding:12px 40px;border-radius:9999px;background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,0.15)">
+                Shop Bestsellers →
+              </a>
+              <a href="/products" style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;border-radius:9999px;background:transparent;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;border:1px solid #d1d5db">
+                Browse All
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Recovery UI: visible only if React fails to mount -->
-      <div id="boot-recovery" style="align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafafa;padding:24px">
+      <div id="boot-recovery" style="display:none;align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafafa;padding:24px">
         <div style="text-align:center;max-width:440px">
           <div style="font-size:48px;margin-bottom:16px">🐾</div>
           <h1 style="font-size:22px;font-weight:600;margin-bottom:8px;color:#1a1a1a">GetPawsy needs a refresh</h1>
