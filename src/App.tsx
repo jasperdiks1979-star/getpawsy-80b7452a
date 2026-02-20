@@ -193,6 +193,7 @@ const GrowthExecutionPage = lazyWithRetry(() => import("./pages/admin/GrowthExec
 const BacklinkEnginePage = lazyWithRetry(() => import("./pages/admin/BacklinkEnginePage"));
 const AdminResourcesPage = lazyWithRetry(() => import("./pages/admin/AdminResourcesPage"));
 const IndexingDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/IndexingDiagnosticsPage"));
+const CatCondoGrowthDashboard = lazyWithRetry(() => import("./pages/admin/CatCondoGrowthDashboard"));
 const PerfAuditPage = lazyWithRetry(() => import("./pages/admin/PerfAuditPage"));
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
 const DomainHealthPage = lazyWithRetry(() => import("./pages/admin/DomainHealthPage"));
@@ -381,6 +382,7 @@ const App = () => {
                         <Route path="perf" element={<Suspense fallback={<RouteLoader />}><PerfAuditPage /></Suspense>} />
                         <Route path="seo-agent" element={<Suspense fallback={<RouteLoader />}><SeoAgentControlCenter /></Suspense>} />
                         <Route path="commerce-intelligence" element={<Suspense fallback={<RouteLoader />}><CommerceIntelligencePage /></Suspense>} />
+                        <Route path="cat-condo-growth" element={<Suspense fallback={<RouteLoader />}><CatCondoGrowthDashboard /></Suspense>} />
                       </Route>
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
