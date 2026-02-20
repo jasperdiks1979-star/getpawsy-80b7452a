@@ -72,8 +72,20 @@ try {
     throw new Error('[BOOT_FAIL] #root element not found');
   }
 
+  // ── LCP Trace: log the exact React mount timestamp ──────────────────────
+  import('./lib/lcp-render-trace').then(({ traceReactMount, scheduleTraceSummary }) => {
+    traceReactMount();
+    scheduleTraceSummary();
+  });
+
   const root = createRoot(rootEl);
   root.render(
+    // ⚠️  React.StrictMode is ACTIVE.
+    // In development, React intentionally double-invokes render functions,
+    // state initialisers, and effects to detect side-effects.
+    // Any component showing MOUNT twice within ~50ms is StrictMode — NOT a real
+    // extra render in production. To verify: build with `bun run build` and
+    // open the production preview — double mounts disappear.
     <React.StrictMode>
       <AppErrorBoundary>
         <HelmetProvider>
