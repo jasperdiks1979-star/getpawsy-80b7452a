@@ -41,8 +41,7 @@ export const AnimatedTrustBadges = () => {
             return (
               <div
                 key={badge.title}
-                className="group flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-card/60 backdrop-blur-sm border border-border/40 hover:border-primary/20 hover:bg-card/80 transition-all duration-300 animate-fadeInUp"
-                style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}
+          className="group flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-card/60 backdrop-blur-sm border border-border/40 hover:border-primary/20 hover:bg-card/80 transition-all duration-300"
               >
                 <div
                   className={`flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center ${

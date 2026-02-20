@@ -4,20 +4,35 @@ interface FadeInViewProps {
   children: ReactNode;
   className?: string;
   as?: 'div' | 'section';
+  /**
+   * If true, renders children immediately with no animation.
+   * Use for above-the-fold content that must paint instantly (LCP elements).
+   */
+  instant?: boolean;
 }
 
 /**
  * Lightweight IntersectionObserver-based fade-in.
  * Zero-dependency replacement for framer-motion whileInView on the homepage.
- * Reduces initial JS by ~45KB gzip (framer-motion not needed on first paint).
+ * 
+ * - Set instant=true for above-fold sections to eliminate any JS/paint delay.
+ * - Below-fold sections get a 300ms fade-in via CSS transition.
  */
-export function FadeInView({ children, className = '', as: Tag = 'div' }: FadeInViewProps) {
+export function FadeInView({ children, className = '', as: Tag = 'div', instant = false }: FadeInViewProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  // instant=true or SSR: skip IntersectionObserver entirely
+  const [visible, setVisible] = useState(instant);
 
   useEffect(() => {
+    if (instant) return;
     const el = ref.current;
     if (!el) return;
+    // If already in viewport on mount (e.g. just below hero), show immediately
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight) {
+      setVisible(true);
+      return;
+    }
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -25,17 +40,21 @@ export function FadeInView({ children, className = '', as: Tag = 'div' }: FadeIn
           observer.disconnect();
         }
       },
-      { rootMargin: '50px', threshold: 0.1 }
+      { rootMargin: '80px', threshold: 0.05 }
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [instant]);
+
+  if (instant) {
+    return <Tag className={className}>{children}</Tag>;
+  }
 
   return (
     <Tag
       ref={ref as any}
-      className={`${className} transition-all duration-500 ease-out ${
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+      className={`${className} transition-all duration-300 ease-out ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
       }`}
     >
       {children}
