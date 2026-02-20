@@ -24,7 +24,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   traceMount('AuthProvider');                        // ← mount timestamp
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // FIX: isLoading starts FALSE so children render immediately without waiting
+  // for getSession(). Auth state resolves asynchronously via onAuthStateChange.
+  // Previously isLoading=true meant any component reading useAuth().isLoading
+  // would defer rendering for the full getSession() round-trip (~300-800ms).
+  const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
