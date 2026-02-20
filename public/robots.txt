@@ -32,6 +32,9 @@ Disallow: /cookies
 Disallow: /privacy-policy-iframe
 Disallow: /terms-iframe
 
+# Block category parameter pages (canonical lives at /collections/*)
+Disallow: /*?*category=
+
 # Block tracking/query parameters (including mid-querystring)
 Disallow: /*?*utm_
 Disallow: /*?*gclid=

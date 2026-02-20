@@ -121,6 +121,27 @@ const seoCollectionKeywords: Record<string, string[]> = {
   'guinea-pig-cages-playpens': [
     'guinea pig cage', 'guinea pig cages', 'guinea pig playpen', 'guinea pig enclosure',
     'guinea pig habitat', 'cavy cage', 'c&c cage', 'guinea pig pen', 'guinea pig hutch'
+  ],
+  'cat-condos': [
+    'cat condo', 'cat condos', 'cat condo for large cats', 'modern cat condo',
+    'wooden cat condo', 'multi cat condo', 'cat condo vs cat tree', 'indoor cat condo',
+    'cat hideaway furniture', 'enclosed cat furniture', 'cat condo with scratching post'
+  ],
+  'large-cat-condos': [
+    'large cat condo', 'big cat condo', 'maine coon cat condo', 'heavy duty cat condo',
+    'cat condo for 20 lb cat', 'cat furniture for large cats'
+  ],
+  'modern-cat-condos': [
+    'modern cat condo', 'stylish cat condo', 'minimalist cat condo', 'aesthetic cat furniture',
+    'designer cat condo', 'mid century cat furniture'
+  ],
+  'multi-cat-condos': [
+    'multi cat condo', 'cat condo for multiple cats', 'two cat condo', 'multi level cat condo',
+    'cat condo for 2 cats', 'cat condo for 3 cats'
+  ],
+  'wooden-cat-condos': [
+    'wooden cat condo', 'solid wood cat condo', 'natural wood cat furniture',
+    'eco friendly cat condo', 'bamboo cat condo'
   ]
 };
 

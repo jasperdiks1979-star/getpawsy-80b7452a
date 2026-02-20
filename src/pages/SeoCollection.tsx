@@ -118,31 +118,51 @@ const generateFAQJsonLd = (faqs: FAQItem[]) => ({
   }))
 });
 
-// Generate Breadcrumb JSON-LD
-const generateBreadcrumbJsonLd = (collection: SeoCollectionData) => ({
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
+// Generate Breadcrumb JSON-LD — supports parent pillar hierarchy
+const generateBreadcrumbJsonLd = (collection: SeoCollectionData, parentCollection?: { slug: string; name: string } | null) => {
+  const items = [
     {
-      '@type': 'ListItem',
+      '@type': 'ListItem' as const,
       position: 1,
       name: 'Home',
       item: 'https://getpawsy.pet'
     },
     {
-      '@type': 'ListItem',
+      '@type': 'ListItem' as const,
       position: 2,
-      name: 'Collections',
+      name: 'Cat Furniture',
       item: 'https://getpawsy.pet/products'
     },
-    {
+  ];
+
+  if (parentCollection) {
+    items.push({
       '@type': 'ListItem',
       position: 3,
-      name: collection.name,
+      name: parentCollection.name.replace(/\s–.*$/, ''),
+      item: `https://getpawsy.pet/collections/${parentCollection.slug}`
+    });
+    items.push({
+      '@type': 'ListItem',
+      position: 4,
+      name: collection.name.replace(/\s–.*$/, ''),
       item: `https://getpawsy.pet/collections/${collection.slug}`
-    }
-  ]
-});
+    });
+  } else {
+    items.push({
+      '@type': 'ListItem',
+      position: 3,
+      name: collection.name.replace(/\s–.*$/, ''),
+      item: `https://getpawsy.pet/collections/${collection.slug}`
+    });
+  }
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items
+  };
+};
 
 const SeoCollection = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -322,6 +342,48 @@ const SeoCollection = () => {
     enabled: !!collection?.related_blog_slug,
   });
 
+  // Determine if this is a sub-collection by checking if related_collection_slugs
+  // contains a single parent pillar (sub-collections link UP to their pillar)
+  const isSubCollection = (collection?.related_collection_slugs?.length === 1);
+  const parentSlug = isSubCollection ? collection?.related_collection_slugs[0] : null;
+
+  // Fetch parent collection for breadcrumb hierarchy
+  const { data: parentCollection } = useQuery({
+    queryKey: ['seo-collection-parent', parentSlug],
+    queryFn: async () => {
+      if (!parentSlug) return null;
+      const { data, error } = await supabase
+        .from('seo_collections')
+        .select('slug, name')
+        .eq('slug', parentSlug)
+        .eq('is_active', true)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!parentSlug,
+  });
+
+  // Fetch sub-collections for pillar pages (pillar has multiple related slugs)
+  const subCollectionSlugs = (!isSubCollection && collection?.related_collection_slugs?.length) 
+    ? collection.related_collection_slugs : [];
+  
+  const { data: subCollections = [] } = useQuery({
+    queryKey: ['seo-sub-collections', subCollectionSlugs],
+    queryFn: async () => {
+      if (subCollectionSlugs.length === 0) return [];
+      const { data, error } = await supabase
+        .from('seo_collections')
+        .select('slug, name, primary_keyword, meta_description')
+        .in('slug', subCollectionSlugs)
+        .eq('is_active', true)
+        .order('display_order');
+      if (error) return [];
+      return data;
+    },
+    enabled: subCollectionSlugs.length > 0,
+  });
+
   if (collectionLoading) {
     return (
       <Layout>
@@ -358,7 +420,7 @@ const SeoCollection = () => {
 
   const collectionJsonLd = generateCollectionJsonLd(collection, products);
   const faqJsonLd = collection.faq.length > 0 ? generateFAQJsonLd(collection.faq) : null;
-  const breadcrumbJsonLd = generateBreadcrumbJsonLd(collection);
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd(collection, parentCollection);
 
   return (
     <Layout>
@@ -415,12 +477,24 @@ const SeoCollection = () => {
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/products">Shop</Link>
+                <Link to="/products">Cat Furniture</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
+            {parentCollection && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to={`/collections/${parentCollection.slug}`}>
+                      {parentCollection.name.replace(/\s–.*$/, '')}
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </>
+            )}
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{collection.name}</BreadcrumbPage>
+              <BreadcrumbPage>{collection.name.replace(/\s–.*$/, '')}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -502,6 +576,44 @@ const SeoCollection = () => {
           )}
         </section>
 
+        {/* Sub-Category Navigation (pillar pages only) */}
+        {subCollections.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-semibold mb-4">Browse by Type</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {subCollections.map((sub) => (
+                <Link
+                  key={sub.slug}
+                  to={`/collections/${sub.slug}`}
+                  className="group block bg-card border rounded-xl p-5 hover:border-primary/50 hover:shadow-md transition-all"
+                >
+                  <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors">
+                    {sub.name.replace(/\s–.*$/, '')}
+                  </h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {sub.meta_description}
+                  </p>
+                  <span className="inline-flex items-center gap-1 text-primary text-xs mt-2">
+                    Shop Now <ArrowRight className="w-3 h-3" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Back to Pillar (sub-collection pages only) */}
+        {parentCollection && (
+          <div className="mb-8">
+            <Link
+              to={`/collections/${parentCollection.slug}`}
+              className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+            >
+              <ChevronRight className="w-3 h-3 rotate-180" />
+              View all {parentCollection.name.replace(/\s–.*$/, '')}
+            </Link>
+          </div>
+        )}
         {/* Featured Snippet Block */}
         <section className="mb-12 max-w-4xl">
           <h2 className="text-2xl font-semibold mb-3">
