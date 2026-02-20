@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback, Re
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { resolveIsAdmin } from '@/lib/auth/isAdmin';
+import { traceEffect, traceStateSet, traceAuthEvent, traceMount } from '@/lib/lcp-render-trace';
 
 interface AuthContextType {
   user: User | null;
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  traceMount('AuthProvider');                        // ← mount timestamp
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,10 +82,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [refreshSession]);
 
   useEffect(() => {
+    traceEffect('AuthProvider', 'auth-init');        // ← effect fire timestamp
+
     // Safety timeout: if auth init hasn't completed in 10s, stop blocking the UI
     const authTimeout = setTimeout(() => {
       if (isLoading) {
         console.warn('[AuthProvider] Auth init timed out after 10s, unblocking UI');
+        traceStateSet('AuthProvider', 'isLoading', false);
         setIsLoading(false);
       }
     }, 10_000);
@@ -92,6 +97,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event);
+        traceAuthEvent(`onAuthStateChange → ${event}`);
+        traceStateSet('AuthProvider', 'session+user', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -109,12 +116,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsAdmin(false);
         }
         
+        traceStateSet('AuthProvider', 'isLoading', false);
         setIsLoading(false);
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      traceAuthEvent(`getSession resolved (hasSession=${!!session})`);
+      traceStateSet('AuthProvider', 'session+user [getSession]', !!session);
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -127,9 +137,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         checkAdminRole(session.user);
       }
       
+      traceStateSet('AuthProvider', 'isLoading [getSession]', false);
       setIsLoading(false);
     }).catch((e) => {
       console.error('[AuthProvider] getSession failed:', e);
+      traceStateSet('AuthProvider', 'isLoading [getSession catch]', false);
       setIsLoading(false);
     });
 

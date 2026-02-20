@@ -11,6 +11,7 @@ import { safeString, safePrice, safeProduct, SafeProduct } from '@/lib/safe-rend
 import { FadeInView } from '@/components/ui/FadeInView';
 import { getAnchorText } from '@/lib/anchor-text-helper';
 import { toast } from 'sonner';
+import { traceMount, traceEffect, traceStateSet, traceQuery } from '@/lib/lcp-render-trace';
 
 // ── Below-fold heavy components — lazy-loaded (not in initial bundle) ──────
 const Skeleton = lazy(() => import('@/components/ui/skeleton').then(m => ({ default: m.Skeleton })));
@@ -97,7 +98,11 @@ function useHydrationReady(): boolean {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     if (ready) return;
-    const activate = () => setReady(true);
+    traceEffect('useHydrationReady', 'setup');
+    const activate = () => {
+      traceStateSet('useHydrationReady', 'ready', true);
+      setReady(true);
+    };
     // Defer until idle or user interaction — whichever comes first
     const ric = 'requestIdleCallback' in window
       ? (window as any).requestIdleCallback(activate, { timeout: 3000 })
@@ -121,6 +126,8 @@ function useHydrationReady(): boolean {
 }
 
 const Index = () => {
+  traceMount('Index');                               // ← homepage mount timestamp
+
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
 
@@ -133,6 +140,7 @@ const Index = () => {
   // Auto-play for featured products carousel
   useEffect(() => {
     if (!productsApi) return;
+    traceEffect('Index', 'carousel-autoplay setup');
     const interval = setInterval(() => {
       if (productsApi.canScrollNext()) {
         productsApi.scrollNext();
@@ -147,6 +155,7 @@ const Index = () => {
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
     queryKey: ['featured-products'],
     queryFn: async () => {
+      traceQuery('Index', 'featured-products', 'started');
       const { data, error } = await supabase
         .from('products_public')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
@@ -154,10 +163,11 @@ const Index = () => {
         .order('created_at', { ascending: false })
         .limit(12);
       if (error) throw error;
+      traceQuery('Index', 'featured-products', 'resolved');
       return dedupeProducts(data || []);
     },
     enabled: hydrationReady,
-    staleTime: 5 * 60 * 1000, // 5 min — reduce refetch churn
+    staleTime: 5 * 60 * 1000,
   });
 
   // ── Categories — deferred until hydration gate ──────────────────────────
@@ -340,6 +350,10 @@ const Index = () => {
             fetchPriority="high"
             decoding="async"
             className="hero-lcp-img"
+            onLoad={() => {
+              // This is the hero image load event — closest proxy to browser LCP
+              import('@/lib/lcp-render-trace').then(({ traceHeroImageLoad }) => traceHeroImageLoad());
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30" />
           <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />

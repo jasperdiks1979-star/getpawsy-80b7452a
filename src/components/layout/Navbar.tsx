@@ -1,8 +1,9 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Search, User, LogOut, Shield, Heart, X, ChevronDown, ChevronRight, Gift, Truck, ArrowRight, Award, Trophy, Star } from 'lucide-react';
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 // framer-motion removed — CSS animations used instead (perf: critical path, saves ~60KB gzip)
 import { useQuery } from '@tanstack/react-query';
+import { traceMount, traceEffect, traceStateSet, traceQuery } from '@/lib/lcp-render-trace';
 import { useCart } from '@/contexts/CartContext';
 import { useCartIconRef } from '@/contexts/CartAnimationContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -252,6 +253,8 @@ const MobileCategoryItem = ({
 };
 
 export const Navbar = () => {
+  traceMount('Navbar');                              // ← exact mount timestamp
+
   const { totalItems } = useCart();
   const cartIconRef = useCartIconRef();
   const { user, isAdmin, signOut } = useAuth();
@@ -268,32 +271,24 @@ export const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Fetch categories from database
-  // FIX: Single query, no full-table-scan on products_public.
-  // Product counts are omitted in the Navbar — they are not visible in the UI
-  // and were the sole reason for the full-table-scan. Counts are shown only in
-  // the category grid on the homepage (which is behind the hydrationReady gate).
+  // Track when the navbar-categories query fires
   const { data: categories = [] } = useQuery({
     queryKey: ['navbar-categories'],
     queryFn: async () => {
+      traceQuery('Navbar', 'navbar-categories', 'started');
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('id, name, slug, parent_id, image_url, display_order')
         .order('display_order', { ascending: true });
 
       if (categoriesError) throw categoriesError;
-
-      // Return flat list — tree is built in useMemo below.
-      // No product count query needed: counts aren't rendered in the Navbar.
+      traceQuery('Navbar', 'navbar-categories', 'resolved');
       return (categoriesData || []) as Category[];
     },
-    staleTime: 15 * 60 * 1000, // 15 min — categories change rarely
+    staleTime: 15 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 
-  // Build category tree
-  // Build category tree — no product_count filtering since we removed the scan.
-  // All DB categories are valid; empty ones are rare and acceptable in the nav.
   const categoryTree = useMemo(() => {
     const buildTree = (parentId: string | null): CategoryWithChildren[] => {
       return categories
@@ -307,17 +302,25 @@ export const Navbar = () => {
     return buildTree(null);
   }, [categories]);
 
-  // Handle scroll effect
+  // ── Effect 1: scroll listener (fires immediately on mount) ──────────────
   useEffect(() => {
+    traceEffect('Navbar', 'scroll-listener setup');
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      // Only log state changes, not every scroll event
+      setIsScrolled(prev => {
+        const next = window.scrollY > 20;
+        if (prev !== next) traceStateSet('Navbar', 'isScrolled', next);
+        return next;
+      });
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mega menu on route change
+  // ── Effect 2: close mega menu on route change ────────────────────────────
   useEffect(() => {
+    traceEffect('Navbar', 'route-change-close-menu');
+    traceStateSet('Navbar', 'isMegaMenuOpen+isSearchOpen', false);
     setIsMegaMenuOpen(false);
     setIsSearchOpen(false);
     setExpandedCategory(null);
