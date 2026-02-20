@@ -138,6 +138,7 @@ export function CategorySchema({
       <link rel="alternate" hrefLang="x-default" href={canonicalUrl} />
 
       {/* Robots — noindex all filtered/search/category views; only /products is indexable */}
+      {/* Category pages canonicalize to /collections/* pillar pages — always noindex parameter URLs */}
       <meta name="robots" content={(isSearch || categoryName) ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'} />
 
       {/* Open Graph */}
