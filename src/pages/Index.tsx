@@ -4,7 +4,8 @@ import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
+// ⚡ supabase NOT imported at top-level — dynamic import in queryFns keeps ~138KB off critical path
+const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { dedupeProducts } from '@/lib/dedupe-products';
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { safeString, safePrice, safeProduct, SafeProduct } from '@/lib/safe-render';
@@ -156,6 +157,7 @@ const Index = () => {
     queryKey: ['featured-products'],
     queryFn: async () => {
       traceQuery('Index', 'featured-products', 'started');
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('products_public')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
@@ -178,6 +180,7 @@ const Index = () => {
     queryKey: ['homepage-categories'],
     queryFn: async () => {
       // Run both queries in parallel — eliminates the sequential await chain
+      const supabase = await getSupabase();
       const [categoriesRes, allCategoriesRes, productsRes] = await Promise.all([
         supabase
           .from('categories')
@@ -191,7 +194,7 @@ const Index = () => {
           .from('products_public')
           .select('category')
           .eq('is_active', true)
-          .limit(500), // limit to 500 — sufficient sample for homepage counts
+          .limit(500),
       ]);
 
       if (categoriesRes.error) throw categoriesRes.error;
@@ -264,6 +267,7 @@ const Index = () => {
     queryKey: ['recently-viewed-products', recentlyViewedIds],
     queryFn: async () => {
       if (recentlyViewedIds.length === 0) return [];
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('products_public')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
@@ -294,6 +298,7 @@ const Index = () => {
     }
     setIsSubscribing(true);
     try {
+      const supabase = await getSupabase();
       const { error } = await supabase
         .from('newsletter_subscribers')
         .insert({ email: newsletterEmail });

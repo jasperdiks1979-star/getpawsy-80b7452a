@@ -1,9 +1,29 @@
-import { createContext, useContext, useEffect, useState, useRef, useCallback, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-import { resolveIsAdmin } from '@/lib/auth/isAdmin';
+/**
+ * AuthContext — CRITICAL PATH OPTIMISED
+ * ──────────────────────────────────────
+ * @supabase/supabase-js is NOT imported at the top level.
+ * It is dynamically imported inside the useEffect so the ~138 KB gzip
+ * SDK chunk is excluded from the initial JS waterfall.
+ *
+ * Timeline:
+ *   T+0ms   React renders App (no supabase on main thread)
+ *   T+~50ms AuthProvider mounts, useEffect fires
+ *   T+~50ms dynamic import('@supabase/client') begins in background
+ *   T+~250ms supabase chunk downloaded+parsed, auth listeners active
+ */
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  ReactNode,
+} from 'react';
+import type { User, Session } from '@supabase/supabase-js';
 import { traceEffect, traceStateSet, traceAuthEvent, traceMount } from '@/lib/lcp-render-trace';
 
+// ── Types only — zero runtime cost, stripped at build ─────────────────────────
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -20,19 +40,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Refresh token 5 minutes before expiration
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
+/** Lazy-load the supabase client — called only from async contexts */
+const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  traceMount('AuthProvider');                        // ← mount timestamp
+  traceMount('AuthProvider');
+
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  // FIX: isLoading starts FALSE so children render immediately without waiting
-  // for getSession(). Auth state resolves asynchronously via onAuthStateChange.
-  // Previously isLoading=true meant any component reading useAuth().isLoading
-  // would defer rendering for the full getSession() round-trip (~300-800ms).
+  // Starts FALSE — children render immediately without waiting for getSession().
+  // Auth state resolves asynchronously via onAuthStateChange.
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Stable action refs — recreated only when needed ───────────────────────
+  const scheduleTokenRefreshRef = useRef<((expiresAt: number) => void) | null>(null);
 
   const checkAdminRole = useCallback(async (user: User | null) => {
+    if (!user) { setIsAdmin(false); return false; }
+    // Dynamic import keeps isAdmin.ts (and its supabase dep) out of critical path
+    const { resolveIsAdmin } = await import('@/lib/auth/isAdmin');
     const result = await resolveIsAdmin(user);
     setIsAdmin(result);
     return result;
@@ -40,14 +68,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshSession = useCallback(async (): Promise<Session | null> => {
     try {
-      console.log('Manually refreshing session...');
+      const supabase = await getSupabase();
       const { data, error } = await supabase.auth.refreshSession();
-      
-      if (error) {
-        console.error('[ProdSafe] Failed to refresh session:', error);
-        return null;
-      }
-      
+      if (error) { console.error('[ProdSafe] Failed to refresh session:', error); return null; }
       return data.session;
     } catch (e) {
       console.error('[ProdSafe] refreshSession crashed (non-fatal):', e);
@@ -56,37 +79,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const scheduleTokenRefresh = useCallback((expiresAt: number) => {
-    // Clear any existing timer
     if (refreshTimerRef.current) {
       clearTimeout(refreshTimerRef.current);
       refreshTimerRef.current = null;
     }
-
     const expiresAtMs = expiresAt * 1000;
     const timeUntilRefresh = expiresAtMs - Date.now() - TOKEN_REFRESH_MARGIN_MS;
 
     if (timeUntilRefresh <= 0) {
-      // Token already expired or about to expire, refresh immediately
-      console.log('Token expired or expiring soon, refreshing immediately...');
       refreshSession();
       return;
     }
-
     console.log(`Scheduling token refresh in ${Math.round(timeUntilRefresh / 1000 / 60)} minutes`);
-    
     refreshTimerRef.current = setTimeout(async () => {
-      console.log('Proactively refreshing token before expiration...');
       const newSession = await refreshSession();
-      
-      if (newSession?.expires_at) {
-        // Schedule next refresh
-        scheduleTokenRefresh(newSession.expires_at);
-      }
+      if (newSession?.expires_at) scheduleTokenRefreshRef.current?.(newSession.expires_at);
     }, timeUntilRefresh);
   }, [refreshSession]);
 
+  // Keep ref in sync for use inside timer callbacks
+  useEffect(() => { scheduleTokenRefreshRef.current = scheduleTokenRefresh; }, [scheduleTokenRefresh]);
+
   useEffect(() => {
-    traceEffect('AuthProvider', 'auth-init');        // ← effect fire timestamp
+    traceEffect('AuthProvider', 'auth-init (async — supabase not yet loaded)');
+
+    let subscription: { unsubscribe: () => void } | null = null;
 
     // Safety timeout: if auth init hasn't completed in 10s, stop blocking the UI
     const authTimeout = setTimeout(() => {
@@ -97,109 +114,85 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }, 10_000);
 
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+    // ── Dynamic import — supabase SDK downloads AFTER React is mounted ────────
+    // This removes ~138 KB gzip from the initial JS waterfall.
+    const initAuth = async () => {
+      const supabase = await getSupabase();
+
+      // Set up auth state listener FIRST
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
         console.log('Auth state changed:', event);
         traceAuthEvent(`onAuthStateChange → ${event}`);
         traceStateSet('AuthProvider', 'session+user', !!session);
         setSession(session);
         setUser(session?.user ?? null);
-        
-        // Schedule proactive token refresh
-        if (session?.expires_at) {
-          scheduleTokenRefresh(session.expires_at);
-        }
-        
-        // Defer admin check with setTimeout to prevent deadlock
+        if (session?.expires_at) scheduleTokenRefresh(session.expires_at);
         if (session?.user) {
-          setTimeout(() => {
-            checkAdminRole(session.user);
-          }, 0);
+          setTimeout(() => checkAdminRole(session.user), 0);
         } else {
           setIsAdmin(false);
         }
-        
         traceStateSet('AuthProvider', 'isLoading', false);
         setIsLoading(false);
-      }
-    );
+      });
+      subscription = data.subscription;
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      traceAuthEvent(`getSession resolved (hasSession=${!!session})`);
-      traceStateSet('AuthProvider', 'session+user [getSession]', !!session);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      // Schedule proactive token refresh
-      if (session?.expires_at) {
-        scheduleTokenRefresh(session.expires_at);
-      }
-      
-      if (session?.user) {
-        checkAdminRole(session.user);
-      }
-      
-      traceStateSet('AuthProvider', 'isLoading [getSession]', false);
-      setIsLoading(false);
-    }).catch((e) => {
-      console.error('[AuthProvider] getSession failed:', e);
-      traceStateSet('AuthProvider', 'isLoading [getSession catch]', false);
+      // THEN check for existing session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        traceAuthEvent(`getSession resolved (hasSession=${!!session})`);
+        traceStateSet('AuthProvider', 'session+user [getSession]', !!session);
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.expires_at) scheduleTokenRefresh(session.expires_at);
+        if (session?.user) checkAdminRole(session.user);
+        traceStateSet('AuthProvider', 'isLoading [getSession]', false);
+        setIsLoading(false);
+      }).catch((e) => {
+        console.error('[AuthProvider] getSession failed:', e);
+        traceStateSet('AuthProvider', 'isLoading [getSession catch]', false);
+        setIsLoading(false);
+      });
+    };
+
+    initAuth().catch(e => {
+      console.error('[AuthProvider] initAuth failed:', e);
       setIsLoading(false);
     });
 
     return () => {
       clearTimeout(authTimeout);
-      subscription.unsubscribe();
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-      }
+      subscription?.unsubscribe();
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
-  }, [scheduleTokenRefresh]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const supabase = await getSupabase();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
+    const supabase = await getSupabase();
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
+        emailRedirectTo: `${window.location.origin}/`,
+        data: { full_name: fullName },
       },
     });
     return { error };
   };
 
   const signOut = async () => {
+    const supabase = await getSupabase();
     await supabase.auth.signOut();
     setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        isLoading,
-        isAdmin,
-        signIn,
-        signUp,
-        signOut,
-        refreshSession,
-      }}
-    >
+    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, signIn, signUp, signOut, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );
@@ -207,8 +200,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

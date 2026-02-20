@@ -18,7 +18,8 @@ const InternalTrafficChip = lazy(() => import("@/components/tracking/InternalTra
 import { MarketingErrorBoundary } from "@/components/error/MarketingErrorBoundary";
 import { AdminRouteGuard } from "@/components/auth/AdminRouteGuard";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Loader2, AlertCircle } from "lucide-react";
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import { Button } from "@/components/ui/button";
 // Defer non-critical initializers — don't block first paint
 const setupGlobalErrorHandler = () => import("@/lib/error-reporter").then(m => m.setupGlobalErrorHandler());

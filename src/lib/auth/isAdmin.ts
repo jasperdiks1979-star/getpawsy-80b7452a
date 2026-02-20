@@ -1,5 +1,6 @@
-import { User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
+// ⚡ Dynamic import — keeps supabase SDK out of the critical path
+const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { isAdminEmail } from './admin';
 
 /**
@@ -11,6 +12,7 @@ export async function resolveIsAdmin(user: User | null): Promise<boolean> {
 
   // 1. DB role check (primary)
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('user_roles')
       .select('role')

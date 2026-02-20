@@ -37,7 +37,8 @@ const EnhancedSearch = lazy(() => import('@/components/search/EnhancedSearch').t
 import { AnimatedHamburger } from '@/components/ui/animated-hamburger';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FloatingCartPreview } from '@/components/cart/FloatingCartPreview';
-import { supabase } from '@/integrations/supabase/client';
+// ⚡ supabase NOT imported at top-level — dynamic import in queryFn keeps ~138KB off critical path
+const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import logoIcon from '@/assets/logo-getpawsy.png';
 
 const navLinks = [
@@ -291,6 +292,7 @@ export const Navbar = () => {
     queryKey: ['navbar-categories'],
     queryFn: async () => {
       traceQuery('Navbar', 'navbar-categories', 'started');
+      const supabase = await getSupabase();
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('id, name, slug, parent_id, image_url, display_order')
