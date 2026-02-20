@@ -37,7 +37,8 @@ export default defineConfig(({ mode }) => ({
             // Animation — keep isolated so pages without it don't pay the cost
             if (id.includes('framer-motion')) return 'animations';
 
-            // Icons — large, tree-shaken at import level but chunked for caching
+            // Icons — individual icon modules cached together but separate from barrel
+            // Per-icon deep imports (lucide-react/dist/esm/icons/*) land here automatically
             if (id.includes('lucide-react')) return 'icons';
 
             // Heavy utilities — never in initial bundle

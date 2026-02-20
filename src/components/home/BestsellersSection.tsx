@@ -1,8 +1,10 @@
 import { useMemo, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Award, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import Award from 'lucide-react/dist/esm/icons/award';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StarRating } from '@/components/ui/star-rating';
@@ -159,7 +161,6 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
         className="w-full"
       >
         <CarouselContent className="-ml-4 md:-ml-4" style={{ perspective: '1200px' }}>
-          <AnimatePresence mode="sync">
             {bestsellers.map((bestseller, index) => {
               const product = bestseller.products;
               if (!product) return null;
@@ -186,54 +187,26 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                   className="pl-4 md:pl-4 basis-[92%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
                   style={{ zIndex: cardStyle.zIndex }}
                 >
-                  <motion.div
-                    initial={{ opacity: 0, y: 40, scale: 0.8 }}
-                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ 
-                      delay: index * 0.1,
-                      duration: 0.6,
-                      ease: [0.25, 0.46, 0.45, 0.94],
-                    }}
+                  {/* CSS fade-in on view — replaces framer whileInView */}
+                  <div
+                    className="animate-[fadeSlideUp_0.6s_ease-out_both]"
+                    style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    <motion.div
-                      animate={{
-                        scale: cardStyle.scale,
+                    {/* CSS transform for coverflow — replaces framer motion.div animate */}
+                    <div
+                      className="relative transition-all duration-300 ease-out hover:scale-[1.02]"
+                      style={{
+                        transform: `scale(${cardStyle.scale}) rotateY(${cardStyle.rotateY}deg) translateY(${cardStyle.translateY}px)`,
                         opacity: cardStyle.opacity,
-                        rotateY: cardStyle.rotateY,
-                        y: cardStyle.translateY,
-                      }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 300,
-                        damping: 30,
-                        mass: 0.8,
-                      }}
-                      whileHover={cardStyle.isActive ? { 
-                        scale: 1.12,
-                        transition: { type: "spring", stiffness: 400, damping: 25 }
-                      } : undefined}
-                      style={{ 
                         transformStyle: 'preserve-3d',
                         transformOrigin: 'center top',
                       }}
-                      className="relative"
                     >
-                      {/* Glow effect for active card - enhanced */}
+                      {/* Glow effect for active card */}
                       {cardStyle.isActive && (
                         <>
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 0.6 }}
-                            exit={{ opacity: 0 }}
-                            className="absolute -inset-6 bg-gradient-to-br from-amber-400/30 via-orange-500/25 to-rose-400/20 rounded-[2rem] blur-3xl -z-10"
-                          />
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 0.4 }}
-                            exit={{ opacity: 0 }}
-                            className="absolute -inset-3 bg-gradient-to-tr from-primary/20 to-amber-300/20 rounded-3xl blur-xl -z-10"
-                          />
+                          <div className="absolute -inset-6 bg-gradient-to-br from-amber-400/30 via-orange-500/25 to-rose-400/20 rounded-[2rem] blur-3xl -z-10 animate-[fadeIn_0.3s_ease-out]" />
+                          <div className="absolute -inset-3 bg-gradient-to-tr from-primary/20 to-amber-300/20 rounded-3xl blur-xl -z-10 animate-[fadeIn_0.3s_ease-out]" />
                         </>
                       )}
                       
@@ -241,20 +214,19 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                         to={`/bestseller/${safeSlug}`}
                         className={`group block overflow-hidden transition-all duration-500 ${
                           cardStyle.isActive 
-                            ? 'rounded-2xl bg-white ring-2 ring-amber-200/60 shadow-[0_20px_60px_-15px_rgba(251,146,60,0.35)]' 
+                            ? 'rounded-2xl bg-card ring-2 ring-amber-200/60 shadow-[0_20px_60px_-15px_rgba(251,146,60,0.35)]' 
                             : cardStyle.isAdjacent 
                               ? 'rounded-xl bg-card/80 shadow-lg ring-1 ring-black/5' 
                               : 'rounded-xl bg-card/60 shadow-md'
                         }`}
                       >
-                        {/* Image Container with glass overlay */}
+                        {/* Image Container */}
                         <div className="relative aspect-square overflow-hidden">
-                          {/* Subtle inner shine effect */}
                           {cardStyle.isActive && (
                             <div className="absolute inset-0 z-[1] pointer-events-none bg-gradient-to-br from-white/20 via-transparent to-transparent" />
                           )}
                           
-                          {/* Rank Badge - enhanced with glow */}
+                          {/* Rank Badge */}
                           <div className="absolute top-3 left-3 z-10">
                             <Badge className={`px-3 py-1.5 text-xs font-bold transition-all duration-300 ${
                               cardStyle.isActive 
@@ -266,7 +238,7 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                             </Badge>
                           </div>
 
-                          {/* Discount Badge - enhanced */}
+                          {/* Discount Badge */}
                           {discount > 0 && (
                             <div className="absolute top-3 right-3 z-10">
                               <Badge className={`px-2.5 py-1 text-xs font-bold transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white border-0 ${
@@ -293,20 +265,15 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                             }`}
                           />
 
-                          {/* Overlay on hover - only for active card */}
+                          {/* Overlay on hover — active card only */}
                           {cardStyle.isActive && (
                             <>
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                              
-                              {/* View Button on hover - glassmorphism style */}
                               <div className="absolute inset-0 flex items-end justify-center pb-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
-                                <motion.span 
-                                  className="bg-white/95 backdrop-blur-sm text-foreground px-6 py-2.5 rounded-full text-sm font-semibold shadow-xl flex items-center gap-2 ring-1 ring-black/5"
-                                  whileHover={{ scale: 1.05 }}
-                                >
+                                <span className="bg-card/95 backdrop-blur-sm text-foreground px-6 py-2.5 rounded-full text-sm font-semibold shadow-xl flex items-center gap-2 ring-1 ring-border/20 hover:scale-105 transition-transform duration-150">
                                   View Product
                                   <ArrowRight className="w-4 h-4" />
-                                </motion.span>
+                                </span>
                               </div>
                             </>
                           )}
@@ -316,7 +283,6 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                         <div className={`p-4 transition-all duration-300 ${
                           cardStyle.isActive ? 'bg-card' : 'bg-muted/30'
                         }`}>
-                          {/* Category */}
                           {safeCategory && (
                             <p className={`text-xs font-medium mb-1 truncate transition-colors duration-300 ${
                               cardStyle.isActive ? 'text-primary' : 'text-muted-foreground'
@@ -324,15 +290,11 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                               {safeCategory}
                             </p>
                           )}
-
-                          {/* Product Name */}
                           <h3 className={`font-semibold text-sm mb-2 line-clamp-2 transition-colors duration-300 ${
                             cardStyle.isActive ? 'group-hover:text-primary' : ''
                           }`}>
                             {safeHeadline || safeName}
                           </h3>
-
-                          {/* Rating */}
                           {productRating && productRating.reviewCount > 0 ? (
                             <div className="mb-2">
                               <StarRating 
@@ -342,8 +304,6 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                               />
                             </div>
                           ) : null}
-
-                          {/* Price */}
                           <div className="flex items-baseline gap-2">
                             <span className={`text-lg font-bold transition-colors duration-300 ${
                               cardStyle.isActive ? 'text-primary' : 'text-foreground'
@@ -358,33 +318,27 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                           </div>
                         </div>
                       </Link>
-                    </motion.div>
-                  </motion.div>
+                    </div>
+                  </div>
                 </CarouselItem>
               );
             })}
-          </AnimatePresence>
         </CarouselContent>
       </Carousel>
 
-      {/* Enhanced Dots Indicator */}
+      {/* Dots Indicator — CSS width transition replaces framer animate */}
       <div className="flex justify-center items-center gap-2 mt-8">
         {bestsellers.map((_, index) => {
-          const isActive = current === index;
+          const isActiveDot = current === index;
           return (
-            <motion.button
+            <button
               key={index}
               onClick={() => api?.scrollTo(index)}
-              className={`rounded-full transition-all duration-300 ${
-                isActive 
-                  ? 'bg-gradient-to-r from-primary to-amber-500' 
-                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+              className={`rounded-full transition-all duration-300 h-[10px] hover:scale-125 ${
+                isActiveDot
+                  ? 'bg-gradient-to-r from-primary to-amber-500 w-8'
+                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50 w-[10px]'
               }`}
-              animate={{
-                width: isActive ? 32 : 10,
-                height: 10,
-              }}
-              whileHover={{ scale: 1.2 }}
               aria-label={`Go to slide ${index + 1}`}
             />
           );
@@ -438,14 +392,8 @@ export const BestsellersSection = () => {
   return (
     <section className="pt-12 pb-16 bg-gradient-to-b from-primary/5 via-accent/5 to-background overflow-visible">
       <div className="container px-4 md:px-6 overflow-visible">
-        {/* Header - Minimal */}
-        <motion.div 
-          className="text-center mb-2"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-        >
+        {/* Header */}
+        <div className="text-center mb-2 animate-[fadeSlideUp_0.5s_ease-out_both]">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-medium mb-1">
             <Award className="w-3 h-3" />
             Top Products
@@ -453,7 +401,7 @@ export const BestsellersSection = () => {
           <h2 className="text-2xl md:text-3xl font-display font-bold">
             Bestsellers
           </h2>
-        </motion.div>
+        </div>
 
         {/* Loading State */}
         {isLoading && <BestsellersGridSkeleton count={4} />}
@@ -465,20 +413,14 @@ export const BestsellersSection = () => {
 
         {/* CTA */}
         {!isLoading && bestsellers && bestsellers.length > 0 && (
-          <motion.div 
-            className="text-center mt-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
+          <div className="text-center mt-12 animate-[fadeSlideUp_0.5s_ease-out_both]" style={{ animationDelay: '0.3s' }}>
             <Link to="/products">
               <Button size="lg" variant="outline" className="gap-2 rounded-full px-8">
                 View All Products
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-          </motion.div>
+          </div>
         )}
       </div>
     </section>

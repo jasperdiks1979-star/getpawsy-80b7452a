@@ -1,4 +1,7 @@
-import { Truck, Shield, HeartHandshake, Clock } from 'lucide-react';
+import Truck from 'lucide-react/dist/esm/icons/truck';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import HeartHandshake from 'lucide-react/dist/esm/icons/heart-handshake';
+import Clock from 'lucide-react/dist/esm/icons/clock';
 import { FREE_SHIPPING_THRESHOLD, RETURN_WINDOW_DAYS, DELIVERY_TIME_STANDARD } from '@/lib/shipping-constants';
 
 const badges = [
