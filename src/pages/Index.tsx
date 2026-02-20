@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ArrowRight } from 'lucide-react';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -35,16 +35,16 @@ import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 
 // ── Icons: only import what is strictly needed above fold ─────────────────
-import { Loader2 } from 'lucide-react';
-// Below-fold icons deferred via dynamic import inside the component
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+// Below-fold icons — deep per-icon imports, each only loaded when visible
 const BELOW_FOLD_ICONS = {
-  Clock: lazy(() => import('lucide-react').then(m => ({ default: m.Clock }))),
-  BookOpen: lazy(() => import('lucide-react').then(m => ({ default: m.BookOpen }))),
-  Truck: lazy(() => import('lucide-react').then(m => ({ default: m.Truck }))),
-  ShieldCheck: lazy(() => import('lucide-react').then(m => ({ default: m.ShieldCheck }))),
-  RotateCcw: lazy(() => import('lucide-react').then(m => ({ default: m.RotateCcw }))),
-  Heart: lazy(() => import('lucide-react').then(m => ({ default: m.Heart }))),
-  Star: lazy(() => import('lucide-react').then(m => ({ default: m.Star }))),
+  Clock: lazy(() => import('lucide-react/dist/esm/icons/clock')),
+  BookOpen: lazy(() => import('lucide-react/dist/esm/icons/book-open')),
+  Truck: lazy(() => import('lucide-react/dist/esm/icons/truck')),
+  ShieldCheck: lazy(() => import('lucide-react/dist/esm/icons/shield-check')),
+  RotateCcw: lazy(() => import('lucide-react/dist/esm/icons/rotate-ccw')),
+  Heart: lazy(() => import('lucide-react/dist/esm/icons/heart')),
+  Star: lazy(() => import('lucide-react/dist/esm/icons/star')),
 };
 
 // ── Non-critical analytics/debug — deferred ───────────────────────────────

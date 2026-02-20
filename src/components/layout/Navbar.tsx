@@ -1,5 +1,20 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, User, LogOut, Shield, Heart, X, ChevronDown, ChevronRight, Gift, Truck, ArrowRight, Award, Trophy, Star } from 'lucide-react';
+// ── Lucide: per-icon deep imports — eliminates full lucide barrel from critical chunk ──
+import ShoppingCart from 'lucide-react/dist/esm/icons/shopping-cart';
+import Search from 'lucide-react/dist/esm/icons/search';
+import User from 'lucide-react/dist/esm/icons/user';
+import LogOut from 'lucide-react/dist/esm/icons/log-out';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import Heart from 'lucide-react/dist/esm/icons/heart';
+import X from 'lucide-react/dist/esm/icons/x';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Gift from 'lucide-react/dist/esm/icons/gift';
+import Truck from 'lucide-react/dist/esm/icons/truck';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import Award from 'lucide-react/dist/esm/icons/award';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import Star from 'lucide-react/dist/esm/icons/star';
 import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 // framer-motion removed — CSS animations used instead (perf: critical path, saves ~60KB gzip)
 import { useQuery } from '@tanstack/react-query';

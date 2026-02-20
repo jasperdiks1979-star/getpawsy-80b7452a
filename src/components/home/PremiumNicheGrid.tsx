@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 
 import orthopedicBedsImg from '@/assets/niches/orthopedic-beds.jpg';
 import carSafetySeatsImg from '@/assets/niches/car-safety-seats.jpg';
@@ -61,35 +60,14 @@ const niches = [
   },
 ];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.12, delayChildren: 0.15 },
-  },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const },
-  },
-};
+// CSS keyframe variants replace framer-motion staggered entrance
 
 export const PremiumNicheGrid = () => {
   return (
     <section className="py-20 md:py-28" style={{ background: 'hsl(var(--luxury-bg))' }}>
       <div className="container px-4 md:px-6">
-        {/* Section Header */}
-        <motion.div
-          className="text-center mb-14 md:mb-20"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
+        {/* Section Header — CSS fade-in replaces framer whileInView */}
+        <div className="text-center mb-14 md:mb-20 animate-[fadeSlideUp_0.6s_ease-out_both]">
           <p
             className="text-sm font-medium tracking-[0.2em] uppercase mb-4"
             style={{ color: 'hsl(var(--luxury-accent))' }}
@@ -106,28 +84,23 @@ export const PremiumNicheGrid = () => {
             className="text-lg max-w-2xl mx-auto leading-relaxed"
             style={{ color: 'hsl(var(--luxury-muted))' }}
           >
-            Comfort, safety & smart solutions — thoughtfully selected for dogs and cats.
+            Comfort, safety &amp; smart solutions — thoughtfully selected for dogs and cats.
           </p>
-        </motion.div>
+        </div>
 
-        {/* Grid */}
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-50px' }}
-        >
-          {niches.map((niche) => (
-            <motion.div key={niche.slug} variants={cardVariants}>
+        {/* Grid — staggered CSS animations replace framer staggerChildren */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+          {niches.map((niche, idx) => (
+            <div
+              key={niche.slug}
+              className="animate-[fadeSlideUp_0.6s_ease-out_both]"
+              style={{ animationDelay: `${idx * 0.12}s` }}
+            >
               <Link
                 to={niche.isInternal ? `/${niche.slug}` : `/collections/${niche.slug}`}
                 className="group block relative overflow-hidden rounded-2xl aspect-[16/10] focus-visible:ring-2 focus-visible:ring-offset-2"
-                style={{
-                  boxShadow: '0 4px 30px hsl(0 0% 0% / 0.4)',
-                }}
+                style={{ boxShadow: '0 4px 30px hsl(0 0% 0% / 0.4)' }}
               >
-                {/* Image with hover zoom */}
                 <img
                   src={niche.image}
                   alt={niche.alt}
@@ -138,23 +111,14 @@ export const PremiumNicheGrid = () => {
                   className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                   style={{ contentVisibility: 'auto' }}
                 />
-
-                {/* Dark gradient overlay — heavier on hover */}
                 <div
                   className="absolute inset-0 transition-all duration-500"
-                  style={{
-                    background:
-                      'linear-gradient(to top, hsl(0 0% 0% / 0.75) 0%, hsl(0 0% 0% / 0.35) 50%, hsl(0 0% 0% / 0.15) 100%)',
-                  }}
+                  style={{ background: 'linear-gradient(to top, hsl(0 0% 0% / 0.75) 0%, hsl(0 0% 0% / 0.35) 50%, hsl(0 0% 0% / 0.15) 100%)' }}
                 />
                 <div
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                  style={{
-                    background: 'hsl(0 0% 0% / 0.15)',
-                  }}
+                  style={{ background: 'hsl(0 0% 0% / 0.15)' }}
                 />
-
-                {/* Content */}
                 <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-7">
                   <h3
                     className="font-display font-bold text-xl md:text-2xl mb-2 leading-snug"
@@ -162,27 +126,18 @@ export const PremiumNicheGrid = () => {
                   >
                     {niche.title}
                   </h3>
-                  <p
-                    className="text-sm mb-2 leading-relaxed max-w-[90%]"
-                    style={{ color: 'hsl(0 0% 100% / 0.8)' }}
-                  >
+                  <p className="text-sm mb-2 leading-relaxed max-w-[90%]" style={{ color: 'hsl(0 0% 100% / 0.8)' }}>
                     {niche.benefit}
                   </p>
-                  <p
-                    className="text-xs mb-4"
-                    style={{ color: 'hsl(var(--luxury-accent) / 0.9)' }}
-                  >
+                  <p className="text-xs mb-4" style={{ color: 'hsl(var(--luxury-accent) / 0.9)' }}>
                     {niche.trust}
                   </p>
-
-                  {/* CTA */}
                   <span
                     className="inline-flex items-center gap-2 text-sm font-semibold tracking-wide"
                     style={{ color: 'hsl(var(--luxury-accent))' }}
                   >
                     Explore Collection
                     <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1.5" />
-                    {/* Underline animation */}
                     <span
                       className="absolute bottom-6 left-6 md:left-7 h-[1px] w-0 group-hover:w-[140px] transition-all duration-500"
                       style={{ background: 'hsl(var(--luxury-accent))' }}
@@ -190,9 +145,9 @@ export const PremiumNicheGrid = () => {
                   </span>
                 </div>
               </Link>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
