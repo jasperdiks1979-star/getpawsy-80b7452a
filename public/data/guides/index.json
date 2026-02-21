@@ -598,5 +598,65 @@
     "featuredImage": "/images/guides/cat-tree-apartment.jpg",
     "readingTime": 9,
     "relatedCategories": ["cat-trees-and-condos", "cat-furniture"]
+  },
+  {
+    "slug": "how-to-choose-the-right-dog-bed-size",
+    "title": "How to Choose the Right Dog Bed Size (2026) – Complete Sizing Guide by Breed & Weight",
+    "excerpt": "Learn exactly how to choose the right dog bed size based on breed, weight, and sleep style. Avoid the #1 sizing mistake dog owners make.",
+    "category": "Dog Beds",
+    "keywords": ["how to choose dog bed size", "dog bed size guide", "what size dog bed do I need"],
+    "publishedAt": "2026-02-20",
+    "updatedAt": "2026-02-21",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 12,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "are-orthopedic-dog-beds-worth-it",
+    "title": "Are Orthopedic Dog Beds Worth It? (2026) – Vet Insights & Real Cost Analysis",
+    "excerpt": "Are orthopedic dog beds actually worth the higher price? We break down the real cost, foam science, and vet-backed evidence.",
+    "category": "Dog Beds",
+    "keywords": ["are orthopedic dog beds worth it", "orthopedic dog bed benefits", "memory foam dog bed worth it"],
+    "publishedAt": "2026-02-20",
+    "updatedAt": "2026-02-21",
+    "featuredImage": "/images/guides/best-orthopedic-dog-bed.jpg",
+    "readingTime": 14,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "best-dog-bed-materials-explained",
+    "title": "Best Dog Bed Materials Explained (2026) – Foam, Fiber & Fabric Compared",
+    "excerpt": "Dog bed materials compared by durability, support, and safety. Memory foam, polyester fill, gel foam, cedar, and cover fabrics ranked honestly.",
+    "category": "Dog Beds",
+    "keywords": ["dog bed materials", "best dog bed filling", "memory foam vs polyester dog bed"],
+    "publishedAt": "2026-02-20",
+    "updatedAt": "2026-02-21",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 13,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "how-to-wash-a-dog-bed-properly",
+    "title": "How to Wash a Dog Bed Properly (2026) – Step-by-Step for Every Material",
+    "excerpt": "How to wash a dog bed without ruining the foam or shrinking the cover. Step-by-step instructions for memory foam, polyester fill, and every cover type.",
+    "category": "Dog Beds",
+    "keywords": ["how to wash a dog bed", "wash dog bed properly", "clean dog bed memory foam"],
+    "publishedAt": "2026-02-20",
+    "updatedAt": "2026-02-21",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 11,
+    "relatedCategories": ["pet-beds"]
+  },
+  {
+    "slug": "dog-bed-for-anxiety-do-they-work",
+    "title": "Dog Beds for Anxiety: Do They Actually Work? (2026) – Science & Real Results",
+    "excerpt": "Do anxiety dog beds actually reduce stress? We examine the science behind calming beds, bolster designs, and weighted blankets.",
+    "category": "Dog Beds",
+    "keywords": ["dog bed for anxiety", "do calming dog beds work", "anxiety dog bed science"],
+    "publishedAt": "2026-02-20",
+    "updatedAt": "2026-02-21",
+    "featuredImage": "/images/guides/best-dog-bed-2026.jpg",
+    "readingTime": 15,
+    "relatedCategories": ["pet-beds"]
   }
 ]
