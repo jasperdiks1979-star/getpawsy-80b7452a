@@ -168,6 +168,7 @@ const SeoWarRoomPage = lazyWithRetry(() => import("./pages/admin/SeoWarRoomPage"
 const CompetitiveIntelligencePage = lazyWithRetry(() => import("./pages/admin/CompetitiveIntelligencePage"));
 const AuthorityEnginePage = lazyWithRetry(() => import("./pages/admin/AuthorityEnginePage"));
 const InternalLinkLog = lazyWithRetry(() => import("./pages/admin/InternalLinkLog"));
+const SeoAccelerationPage = lazyWithRetry(() => import("./pages/admin/SeoAccelerationPage"));
 const AdminSeoDashboard = lazyWithRetry(() => import("./pages/admin/AdminSeoDashboard"));
 const CrawlDiagnosticsDashboard = lazyWithRetry(() => import("./pages/admin/CrawlDiagnosticsDashboard"));
 const CrawlHealthDashboard = lazyWithRetry(() => import("./pages/admin/CrawlHealthDashboard"));
@@ -404,6 +405,7 @@ const App = () => {
                         <Route path="commerce-intelligence" element={<Suspense fallback={<RouteLoader />}><CommerceIntelligencePage /></Suspense>} />
                         <Route path="cat-condo-growth" element={<Suspense fallback={<RouteLoader />}><CatCondoGrowthDashboard /></Suspense>} />
                         <Route path="seo-agent-auto" element={<Suspense fallback={<RouteLoader />}><SeoAgentAutonomous /></Suspense>} />
+                        <Route path="seo-acceleration" element={<Suspense fallback={<RouteLoader />}><SeoAccelerationPage /></Suspense>} />
                       </Route>
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
