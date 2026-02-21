@@ -1,4 +1,5 @@
 import { CheckCircle, XCircle, Sparkles } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import { Badge } from '@/components/ui/badge';
 import {
   Accordion,
@@ -6,7 +7,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-
 /**
  * Hero Product Conversion Boost
  * 
@@ -170,6 +170,24 @@ export const HeroProductBoost = ({ productSlug }: HeroProductBoostProps) => {
           ))}
         </Accordion>
       </div>
+
+      {/* FAQPage Schema for rich results */}
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: data.faqs.map((faq) => ({
+              '@type': 'Question',
+              name: faq.q,
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: faq.a,
+              },
+            })),
+          })}
+        </script>
+      </Helmet>
     </div>
   );
 };
