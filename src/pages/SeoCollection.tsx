@@ -42,6 +42,10 @@ import { CategoryRelatedGuides } from '@/components/seo/CategoryRelatedGuides';
 import { CategoryPopularProducts } from '@/components/seo/CategoryPopularProducts';
 import { CategoryClusterLinks } from '@/components/seo/CategoryClusterLinks';
 import { CollectionExpertGuides } from '@/components/seo/CollectionExpertGuides';
+import { ExpertBlock } from '@/components/seo/ExpertBlock';
+import { ComparisonTable, getComparisonData } from '@/components/seo/ComparisonTable';
+import { CollectionTableOfContents, getCollectionTocItems } from '@/components/seo/CollectionTableOfContents';
+import { ScrollProgressIndicator } from '@/components/ui/ScrollProgressIndicator';
 
 interface FAQItem {
   question: string;
@@ -426,8 +430,13 @@ const SeoCollection = () => {
   const faqJsonLd = collection.faq.length > 0 ? generateFAQJsonLd(collection.faq) : null;
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(collection, parentCollection);
 
+  const comparisonData = getComparisonData(collection.slug);
+  const tocItems = getCollectionTocItems(!!comparisonData, collection.faq.length > 0);
+  const isPriorityCategory = !!comparisonData; // has comparison = priority category
+
   return (
     <Layout>
+      {isPriorityCategory && <ScrollProgressIndicator />}
       <Helmet>
         <title>{collection.meta_title || generateCollectionMetaTitle(collection.primary_keyword)}</title>
         <meta 
@@ -535,8 +544,19 @@ const SeoCollection = () => {
           )}
         </header>
 
+        {/* Phase 2: Expert Block + ToC + Comparison for priority categories */}
+        {isPriorityCategory && (
+          <ExpertBlock categoryName={collection.name.replace(/\s–.*$/, '')} />
+        )}
+        {isPriorityCategory && <CollectionTableOfContents items={tocItems} />}
+        {comparisonData && (
+          <div id="comparison">
+            <ComparisonTable title={comparisonData.title} rows={comparisonData.rows} />
+          </div>
+        )}
+
         {/* Section B: Product Grid */}
-        <section className="mb-12">
+        <section id="products" className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold">
               Shop {collection.name}
@@ -572,6 +592,7 @@ const SeoCollection = () => {
                   listId="seo-collection"
                   listName={collection.name}
                   position={index + 1}
+                  popularChoice={isPriorityCategory && index < 3 && (product.stock ?? 0) > 0}
                 />
               ))}
             </div>
@@ -589,7 +610,9 @@ const SeoCollection = () => {
         </section>
 
         {/* Expert Guides — curated guide links for this collection */}
-        <CollectionExpertGuides collectionSlug={collection.slug} />
+        <div id="expert-guides">
+          <CollectionExpertGuides collectionSlug={collection.slug} />
+        </div>
 
         {/* Sub-Category Navigation (pillar pages only) */}
         {subCollections.length > 0 && (
@@ -640,7 +663,7 @@ const SeoCollection = () => {
         </section>
 
         {/* Trust Reinforcement */}
-        <section className="mb-12 grid sm:grid-cols-3 gap-4">
+        <section id="trust" className="mb-12 grid sm:grid-cols-3 gap-4">
           <div className="bg-card border rounded-xl p-5 text-center">
             <Truck className="w-6 h-6 text-primary mx-auto mb-2" />
             <h3 className="font-semibold text-sm mb-1">Free US Shipping</h3>
@@ -660,7 +683,7 @@ const SeoCollection = () => {
 
         {/* Section C: Mini FAQ */}
         {collection.faq.length > 0 && (
-          <section className="mb-12 bg-muted/30 rounded-2xl p-6 md:p-8">
+          <section id="faq" className="mb-12 bg-muted/30 rounded-2xl p-6 md:p-8">
             <div className="flex items-center gap-2 mb-6">
               <HelpCircle className="w-5 h-5 text-primary" />
               <h2 className="text-2xl font-semibold">

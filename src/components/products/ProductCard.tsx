@@ -49,6 +49,8 @@ interface ProductCardProps {
   reviewCount?: number;
   /** Mark first above-the-fold cards as priority for eager image loading (LCP optimization) */
   priority?: boolean;
+  /** Show "Popular Choice" badge for top-performing products */
+  popularChoice?: boolean;
 }
 
 export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(({ 
@@ -59,6 +61,7 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   rating,
   reviewCount,
   priority = false,
+  popularChoice = false,
 }, ref) => {
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
@@ -180,6 +183,11 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
           
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
+            {popularChoice && !isOutOfStock && (
+              <Badge className="bg-primary text-primary-foreground shadow-soft text-[10px]">
+                ⭐ Popular Choice
+              </Badge>
+            )}
             {discount && discount > 0 && (
               <Badge className="bg-destructive text-destructive-foreground shadow-soft">
                 -{discount}%
