@@ -26,6 +26,7 @@ import { useProductRatings } from '@/hooks/useProductRatings';
 import { CategorySchema } from '@/components/seo/CategorySchema';
 import { CategorySeoContent } from '@/components/seo/CategorySeoContent';
 import { generateCategoryMetaDescription, getKeywordsForCategory } from '@/lib/seo-keywords';
+import { CATEGORY_SEO_DATA } from '@/lib/category-seo-data';
 import { trackViewItemList } from '@/lib/analytics';
 import { dedupeProducts } from '@/lib/dedupe-products';
 import { markGridRendered } from '@/lib/lcp-debug';
@@ -650,7 +651,6 @@ const Products = () => {
   const getCategoryH1 = () => {
     if (!categoryParam) return null;
     // Check rich SEO content database first
-    const { CATEGORY_SEO_DATA } = require('@/lib/category-seo-data');
     if (CATEGORY_SEO_DATA[categoryParam]) return CATEGORY_SEO_DATA[categoryParam].h1;
     // Fallback to manual overrides
     if (seoH1Overrides[categoryParam]) return seoH1Overrides[categoryParam];
