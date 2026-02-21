@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, X, Truck, Star } from 'lucide-react';
+import { getCategoryCollectionUrl } from '@/lib/category-collection-map';
 
 interface Props {
   categorySlug: string;
@@ -43,7 +44,7 @@ export function StickyCTA({ categorySlug, categoryLabel }: Props) {
         </div>
         <div className="flex items-center gap-2">
           <Link
-            to={`/products?category=${categorySlug}`}
+            to={getCategoryCollectionUrl(categorySlug)}
             className="bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded-full hover:opacity-90 transition-opacity whitespace-nowrap flex-1 text-center"
           >
             Browse {categoryLabel}

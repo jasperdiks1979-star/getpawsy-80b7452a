@@ -11,6 +11,7 @@ import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { safeString, safePrice, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { FadeInView } from '@/components/ui/FadeInView';
 import { getAnchorText } from '@/lib/anchor-text-helper';
+import { getCategoryCollectionUrl } from '@/lib/category-collection-map';
 import { toast } from 'sonner';
 import { traceMount, traceEffect, traceStateSet, traceQuery } from '@/lib/lcp-render-trace';
 
@@ -520,7 +521,7 @@ const Index = () => {
                 {safeCategories.map((category) => (
                   <div key={category.id} className="transition-transform duration-300 hover:-translate-y-2">
                     <Link
-                      to={`/products?category=${encodeURIComponent(category.name)}`}
+                      to={getCategoryCollectionUrl(category.name)}
                       className="group block relative overflow-hidden rounded-2xl aspect-square shadow-soft hover:shadow-soft-lg transition-shadow duration-300"
                     >
                       <LazyImage

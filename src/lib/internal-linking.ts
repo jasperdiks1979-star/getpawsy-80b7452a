@@ -5,6 +5,7 @@
  */
 
 import { BLOG_CORNERSTONE_TRIGGERS, PRIORITY_CORNERSTONES, getCornerstoneAnchor } from './link-sculpt-config';
+import { getCategoryCollectionUrl } from './category-collection-map';
 
 interface LinkableKeyword {
   keyword: string;
@@ -426,7 +427,7 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
   const keywords: LinkableKeyword[] = [];
   
   categories.forEach((category) => {
-    const categoryUrl = `/products?category=${category.slug}`;
+    const categoryUrl = getCategoryCollectionUrl(category.slug);
     
     // Add category name
     keywords.push({
@@ -455,7 +456,7 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
       if (!keywords.some(k => k.keyword === kw.toLowerCase())) {
         keywords.push({
           keyword: kw.toLowerCase(),
-          url: `/products?category=${slug}`,
+          url: getCategoryCollectionUrl(slug),
           type: 'category',
           priority: 4,
         });
@@ -467,7 +468,7 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
   Object.entries(productPhrases).forEach(([phrase, categorySlug]) => {
     keywords.push({
       keyword: phrase.toLowerCase(),
-      url: `/products?category=${categorySlug}`,
+      url: getCategoryCollectionUrl(categorySlug),
       type: 'category',
       priority: 9, // High priority for specific phrases
     });

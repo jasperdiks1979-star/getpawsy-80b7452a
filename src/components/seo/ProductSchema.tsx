@@ -1,6 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { generateProductKeywords, generateMetaDescription } from '@/lib/seo-keywords';
 import { computeAvailability } from '@/lib/availability';
+import { getCategoryCollectionFullUrl } from '@/lib/category-collection-map';
 
 interface ProductSchemaProps {
   product: {
@@ -206,7 +207,7 @@ export function ProductSchema({
         '@type': 'ListItem',
         position: 3,
         name: product.category,
-        item: `${baseUrl}/products?category=${encodeURIComponent(product.category)}`,
+        item: getCategoryCollectionFullUrl(product.category, baseUrl),
       }] : []),
       {
         '@type': 'ListItem',
