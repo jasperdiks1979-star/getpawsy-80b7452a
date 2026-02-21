@@ -67,6 +67,43 @@ const HERO_DATA: Record<string, {
     ],
     urgencyLine: 'Introductory pricing — first batch at this price point',
   },
+  'dog-cot-cooling-pet-bed-3': {
+    whoFor: [
+      'Dogs that overheat easily during summer — this bed promotes constant airflow underneath',
+      'Large & medium breeds (up to 150 lbs) who need sturdy, supportive rest',
+      'Senior dogs with joint stiffness — the elevated frame relieves pressure on hips and elbows',
+      'Pet parents who want one bed for both indoor and outdoor use',
+      'Dogs recovering from surgery who need a clean, raised sleeping surface',
+    ],
+    whoNotFor: [
+      'Very small dogs under 10 lbs — the mesh may not contour enough for tiny breeds',
+      'Dogs that love to burrow or nest — this is an open-air cot design',
+      'Pet parents looking for a plush, cushioned mattress feel — this is firm orthopedic support',
+    ],
+    faqs: [
+      {
+        q: 'Is this elevated dog bed good for large breeds?',
+        a: 'Absolutely. The heavy-duty steel frame supports dogs up to 150 lbs. The breathable mesh distributes weight evenly, making it ideal for large breeds like Labs, Golden Retrievers, and German Shepherds who need joint relief.',
+      },
+      {
+        q: 'Does the elevated design help with arthritis?',
+        a: 'Yes. By lifting your dog off the ground, this raised cot reduces pressure on joints, hips, and elbows. The even weight distribution mimics orthopedic support, and many pet parents notice improved mobility within days.',
+      },
+      {
+        q: 'Can this cooling dog bed be used outdoors?',
+        a: 'Yes — the rust-resistant steel frame and UV-resistant mesh are designed for outdoor use. Use it on your patio, deck, camping trips, or anywhere your dog needs a cool, clean spot to rest.',
+      },
+      {
+        q: 'Is the breathable mesh washable?',
+        a: 'Yes. The mesh fabric is removable and easy to clean — just wipe down or hand-wash with mild soap. It dries quickly, making it low-maintenance for everyday use.',
+      },
+      {
+        q: 'What weight capacity does this raised dog cot support?',
+        a: 'This elevated dog bed supports up to 150 lbs with its reinforced steel frame. The legs lock securely to prevent wobbling, even with larger, more active dogs.',
+      },
+    ],
+    urgencyLine: 'High-demand summer item — limited stock available',
+  },
 };
 
 export const HeroProductBoost = ({ productSlug }: HeroProductBoostProps) => {
