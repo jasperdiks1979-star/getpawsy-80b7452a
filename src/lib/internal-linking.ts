@@ -142,6 +142,79 @@ const seoCollectionKeywords: Record<string, string[]> = {
   'wooden-cat-condos': [
     'wooden cat condo', 'solid wood cat condo', 'natural wood cat furniture',
     'eco friendly cat condo', 'bamboo cat condo'
+  ],
+  // New high-intent collection keywords
+  'best-dog-beds-large-dogs': [
+    'dog bed for large dogs', 'large dog bed', 'big dog bed', 'orthopedic large dog bed',
+    'bed for 70 pound dog', 'bed for 100 pound dog', 'xl dog bed', 'extra large dog bed'
+  ],
+  'self-cleaning-litter-box-guide': [
+    'self cleaning litter box', 'automatic litter box for multiple cats',
+    'best self cleaning litter box', 'robot litter box', 'hands free litter box'
+  ],
+  'best-cat-litter-boxes': [
+    'best cat litter box', 'top rated litter boxes', 'litter box for odor control',
+    'enclosed litter box', 'hooded litter box', 'covered litter box'
+  ],
+  'best-interactive-dog-toys': [
+    'best dog toy', 'interactive dog toy', 'puzzle toy for dogs', 'enrichment toy for dogs',
+    'boredom busting dog toy', 'mental stimulation toy for dogs'
+  ],
+  'orthopedic-calming-dog-beds': [
+    'orthopedic dog bed', 'calming dog bed', 'memory foam dog bed', 'anxiety dog bed',
+    'joint support dog bed', 'bed for older dogs', 'senior dog bed'
+  ],
+  'best-slow-feeder-dog-bowls': [
+    'slow feeder dog bowl', 'anti gulp dog bowl', 'bloat prevention bowl',
+    'slow eating bowl', 'puzzle feeder bowl for dogs'
+  ],
+  'indestructible-dog-chew-toys': [
+    'indestructible dog toy', 'tough dog toy', 'heavy duty chew toy',
+    'dog toy for aggressive chewers', 'power chewer toy', 'durable dog toy'
+  ],
+  'best-dog-car-seats': [
+    'dog car seat', 'dog booster seat', 'car seat for small dogs',
+    'crash tested dog seat', 'pet car seat', 'dog travel seat'
+  ],
+  'best-cat-beds': [
+    'best cat bed', 'cat cave', 'donut cat bed', 'heated cat bed',
+    'calming cat bed', 'cozy cat bed', 'cat sleeping spot'
+  ],
+  'best-dog-harnesses': [
+    'no pull dog harness', 'best dog harness', 'front clip harness',
+    'easy walk harness', 'dog walking harness', 'anti pull harness'
+  ],
+  'best-cat-scratching-posts': [
+    'cat scratching post', 'best scratcher for cats', 'sisal scratching post',
+    'tall scratching post', 'cat scratch pad', 'durable cat scratcher'
+  ],
+  'best-cat-carriers': [
+    'best cat carrier', 'airline approved cat carrier', 'cat carrier for vet',
+    'soft sided cat carrier', 'cat backpack carrier', 'expandable cat carrier'
+  ],
+  'best-cat-window-perches': [
+    'cat window perch', 'cat window shelf', 'suction cup cat perch',
+    'window hammock for cats', 'cat bird watching perch'
+  ],
+  'dog-car-travel-safety-seats': [
+    'dog car safety', 'dog travel safety', 'pet car restraint',
+    'dog seat belt', 'car barrier for dogs', 'dog car hammock'
+  ],
+  'best-dog-grooming-kits': [
+    'dog grooming kit', 'home grooming kit', 'pet grooming vacuum',
+    'dog clipper set', 'grooming kit for dogs at home'
+  ],
+  'best-interactive-cat-toys': [
+    'interactive cat toy', 'electronic cat toy', 'automatic cat toy',
+    'laser toy for cats', 'robotic cat toy', 'motorized cat toy'
+  ],
+  'best-dog-travel-water-bottles': [
+    'dog water bottle', 'portable dog water bottle', 'dog travel water',
+    'hiking water bottle for dogs', 'pet water bottle for walks'
+  ],
+  'best-dog-crate-beds': [
+    'dog crate bed', 'crate pad', 'crate mat for dogs', 'washable crate bed',
+    'chew proof crate bed', 'dog kennel pad'
   ]
 };
 
@@ -446,9 +519,9 @@ export const addInternalLinks = (
   }
 
   const {
-    maxLinksPerKeyword = 1,
-    maxTotalLinks = 10,
-    minWordsBetweenLinks = 50,
+    maxLinksPerKeyword = 2,
+    maxTotalLinks = 20,
+    minWordsBetweenLinks = 35,
   } = options;
   
   try {
@@ -471,7 +544,7 @@ export const addInternalLinks = (
     // Over-optimization guard: estimate word count, cap at 4 links per 1000 words
     const plainText = htmlContent.replace(/<[^>]+>/g, '');
     const wordCount = plainText.split(/\s+/).filter(Boolean).length;
-    const maxByDensity = Math.max(2, Math.floor(wordCount / 250)); // ~4 per 1000
+    const maxByDensity = Math.max(4, Math.floor(wordCount / 150)); // ~6-7 per 1000
     const effectiveMax = Math.min(maxTotalLinks, maxByDensity);
     
     // Randomness factor: ±12% variation in placement spacing
@@ -481,9 +554,9 @@ export const addInternalLinks = (
     // Process content
     let processedContent = String(htmlContent);
     
-    // Don't process if already has many links
+    // Don't process if already saturated with links
     const existingLinkCount = (htmlContent.match(/<a\s/gi) || []).length;
-    if (existingLinkCount > 5) {
+    if (existingLinkCount > 15) {
       return htmlContent;
     }
     
