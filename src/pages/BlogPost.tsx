@@ -15,6 +15,7 @@ import { useInternalLinking } from '@/hooks/useInternalLinking';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { ArticleSchema } from '@/components/seo/ArticleSchema';
 import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
+import { BlogCategoryLinks } from '@/components/seo/BlogCategoryLinks';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -563,6 +564,11 @@ const BlogPostPage = () => {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Category Collection & Guide Links — internal linking authority */}
+        {post.category && (
+          <BlogCategoryLinks blogCategory={post.category} />
         )}
 
         {/* CTA */}
