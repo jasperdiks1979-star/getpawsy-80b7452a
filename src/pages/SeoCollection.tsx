@@ -41,6 +41,7 @@ import {
 import { CategoryRelatedGuides } from '@/components/seo/CategoryRelatedGuides';
 import { CategoryPopularProducts } from '@/components/seo/CategoryPopularProducts';
 import { CategoryClusterLinks } from '@/components/seo/CategoryClusterLinks';
+import { CollectionExpertGuides } from '@/components/seo/CollectionExpertGuides';
 
 interface FAQItem {
   question: string;
@@ -586,6 +587,9 @@ const SeoCollection = () => {
             </div>
           )}
         </section>
+
+        {/* Expert Guides — curated guide links for this collection */}
+        <CollectionExpertGuides collectionSlug={collection.slug} />
 
         {/* Sub-Category Navigation (pillar pages only) */}
         {subCollections.length > 0 && (
