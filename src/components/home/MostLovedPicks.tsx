@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Star, Truck, ShieldCheck, ArrowRight } from 'lucide-react';
+// ── Lucide: per-icon deep imports — eliminates full lucide barrel from critical chunk ──
+import Star from 'lucide-react/dist/esm/icons/star';
+import Truck from 'lucide-react/dist/esm/icons/truck';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FadeInView } from '@/components/ui/FadeInView';

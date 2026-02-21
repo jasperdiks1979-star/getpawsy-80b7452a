@@ -1,5 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { trackAddToWishlist, trackRemoveFromWishlist } from '@/lib/analytics';
+// ⚡ Analytics deferred — not needed for initial render
+const trackAddToWishlist = (productId: string, productName?: string, productPrice?: number) =>
+  import('@/lib/analytics').then(m => m.trackAddToWishlist(productId, productName, productPrice));
+const trackRemoveFromWishlist = (productId: string, productName?: string) =>
+  import('@/lib/analytics').then(m => m.trackRemoveFromWishlist(productId, productName));
 
 interface WishlistItem {
   productId: string;
