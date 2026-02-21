@@ -810,3 +810,25 @@
   from { transform: scale(1); opacity: 0.8; }
   to { transform: scale(3); opacity: 0; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   GLOBAL CLICKABILITY HARDENING
+   Ensures no accidental pointer-events/touch-action blocking on iOS.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Guarantee root containers never block taps */
+html, body, #root {
+  pointer-events: auto !important;
+  touch-action: auto !important;
+}
+
+/* All buttons and links must be tappable with no 300ms delay */
+a, button, [role="button"], input[type="submit"], input[type="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Decorative hero overlays must never capture taps */
+.hero-lcp-section > div:first-child > div:not(:first-child) {
+  pointer-events: none !important;
+}
