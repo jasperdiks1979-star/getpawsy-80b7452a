@@ -757,5 +757,38 @@
     "updatedAt": "2026-02-21",
     "readingTime": 5,
     "relatedCategories": ["best-dog-car-seats"]
+  },
+  {
+    "slug": "best-orthopedic-dog-bed-for-large-dogs",
+    "title": "Best Orthopedic Dog Bed for Large Dogs (2026) — Vet-Backed Picks for Joint Relief",
+    "excerpt": "Large breed dogs deserve deep joint support. We tested 8 orthopedic beds for durability, foam density, and ease of cleaning.",
+    "category": "Dog Beds",
+    "keywords": ["orthopedic dog bed large dogs", "best orthopedic dog bed", "memory foam dog bed", "large breed dog bed"],
+    "publishedAt": "2026-02-21",
+    "updatedAt": "2026-02-21",
+    "readingTime": 9,
+    "relatedCategories": ["dog-beds", "orthopedic-dog-beds"]
+  },
+  {
+    "slug": "are-cat-condos-worth-it",
+    "title": "Are Cat Condos Worth It? What Every Cat Owner Should Know (2026)",
+    "excerpt": "Cat condos reduce behavioral issues, save your couch, and keep indoor cats mentally stimulated. Here's the honest breakdown.",
+    "category": "Cat Furniture",
+    "keywords": ["are cat condos worth it", "cat condo benefits", "cat tree vs cat condo", "best cat condo"],
+    "publishedAt": "2026-02-21",
+    "updatedAt": "2026-02-21",
+    "readingTime": 8,
+    "relatedCategories": ["cat-trees-condos", "cat-furniture"]
+  },
+  {
+    "slug": "safest-dog-car-seat-for-travel",
+    "title": "Safest Dog Car Seat for Travel — Crash-Tested Picks & Safety Guide (2026)",
+    "excerpt": "An unrestrained 60-lb dog becomes a 2,700-lb projectile in a 35 mph crash. Here's how to keep your dog safe.",
+    "category": "Dog Car Seats",
+    "keywords": ["safest dog car seat", "dog car seat safety", "dog car harness", "crash tested dog car seat"],
+    "publishedAt": "2026-02-21",
+    "updatedAt": "2026-02-21",
+    "readingTime": 8,
+    "relatedCategories": ["dog-carriers", "dog-car-seats"]
   }
 ]

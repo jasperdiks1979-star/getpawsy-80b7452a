@@ -29,7 +29,7 @@ const AnimatedTrustBadges = lazy(() => import('@/components/home/AnimatedTrustBa
 const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAuthoritySection'));
 const BestsellersSection = lazy(() => import('@/components/home/BestsellersSection').then(m => ({ default: m.BestsellersSection })));
 const PremiumNicheGrid = lazy(() => import('@/components/home/PremiumNicheGrid').then(m => ({ default: m.PremiumNicheGrid })));
-
+const MostLovedPicks = lazy(() => import('@/components/home/MostLovedPicks'));
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
 import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
 import { LocalBusinessSchema } from '@/components/seo/LocalBusinessSchema';
@@ -395,6 +395,13 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* ── Most Loved Picks — Hero Conversion Block ──────────────── */}
+      <SectionErrorBoundary sectionName="Most Loved Picks">
+        <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
+          <MostLovedPicks />
+        </Suspense>
+      </SectionErrorBoundary>
 
       {/* ── Homepage Authority Section — SEO category links ─────────── */}
       <SectionErrorBoundary sectionName="Authority Categories">
