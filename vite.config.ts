@@ -30,31 +30,11 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('@tanstack/react-query')) return 'query';
             if (id.includes('@supabase')) return 'supabase';
 
-            // UI component libraries — split into critical vs deferred
-            // radix-core: only primitives needed for initial paint (Slot, Tooltip)
-            if (
-              id.includes('@radix-ui/react-slot') ||
-              id.includes('@radix-ui/react-tooltip')
-            ) return 'radix-core';
-            // radix-interactive: loaded on first user interaction (menus, dialogs, sheets)
-            if (
-              id.includes('@radix-ui/react-dialog') ||
-              id.includes('@radix-ui/react-dropdown-menu') ||
-              id.includes('@radix-ui/react-popover') ||
-              id.includes('@radix-ui/react-scroll-area') ||
-              id.includes('@radix-ui/react-navigation-menu')
-            ) return 'radix-interactive';
-            // radix-forms: only loaded on form/admin pages
-            if (
-              id.includes('@radix-ui/react-select') ||
-              id.includes('@radix-ui/react-checkbox') ||
-              id.includes('@radix-ui/react-radio-group') ||
-              id.includes('@radix-ui/react-switch') ||
-              id.includes('@radix-ui/react-slider') ||
-              id.includes('@radix-ui/react-label')
-            ) return 'radix-forms';
-            // everything else radix: accordion, tabs, collapsible, etc.
-            if (id.includes('@radix-ui')) return 'radix-ui';
+            // NOTE: @radix-ui intentionally NOT chunked — TDZ crash in Safari 18.
+            // Radix packages share internal primitives; manual splitting creates
+            // circular init errors identical to the d3/recharts incident.
+            // Let Vite naturally code-split these. See: P0 incident 2026-02-21
+
             if (id.includes('embla-carousel')) return 'carousel';
 
             // Animation — keep isolated so pages without it don't pay the cost
