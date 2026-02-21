@@ -38,6 +38,19 @@ const categoryToGuide: Record<string, { slug: string; label: string }> = {
   'cat toys': { slug: 'best-cat-toys-for-indoor-cats', label: 'Indoor Cat Enrichment' },
   'dog beds': { slug: 'best-dog-beds-guide', label: 'Dog Bed Buying Guide' },
   'dog toys': { slug: 'best-dog-toys-guide', label: 'Dog Toy Buying Guide' },
+  'dog car': { slug: 'best-dog-car-seats', label: 'Dog Car Seat Guide' },
+};
+
+// Related collections for cross-linking depth (Phase 3)
+const categoryToRelatedCollection: Record<string, { slug: string; label: string }> = {
+  'cat trees': { slug: 'best-cat-beds', label: 'Cat Beds' },
+  'cat litter': { slug: 'automatic-cat-feeders', label: 'Automatic Cat Feeders' },
+  'cat beds': { slug: 'cat-condos', label: 'Cat Condos' },
+  'dog beds': { slug: 'best-orthopedic-dog-beds', label: 'Orthopedic Dog Beds' },
+  'dog toys': { slug: 'best-interactive-dog-toys', label: 'Interactive Dog Toys' },
+  'dog car': { slug: 'dog-travel-accessories', label: 'Dog Travel Accessories' },
+  'dog harness': { slug: 'best-dog-car-seats', label: 'Dog Car Seats' },
+  'dog grooming': { slug: 'dogs', label: 'All Dog Products' },
 };
 
 function findCollectionMatch(category: string | null): { slug: string; label: string } | null {
@@ -61,9 +74,19 @@ function findGuideMatch(category: string | null): { slug: string; label: string 
   return null;
 }
 
+function findRelatedCollection(category: string | null): { slug: string; label: string } | null {
+  if (!category) return null;
+  const catLower = category.toLowerCase();
+  for (const [key, value] of Object.entries(categoryToRelatedCollection)) {
+    if (catLower.includes(key)) return value;
+  }
+  return null;
+}
+
 export function ExploreMoreCategory({ category, currentProductId }: ExploreMoreCategoryProps) {
   const collectionMatch = findCollectionMatch(category);
   const guideMatch = findGuideMatch(category);
+  const relatedCollectionMatch = findRelatedCollection(category);
 
   // Fetch 2 related products from same category
   const { data: relatedProducts = [] } = useQuery({
@@ -147,6 +170,22 @@ export function ExploreMoreCategory({ category, currentProductId }: ExploreMoreC
             </span>
             <span className="inline-flex items-center gap-1 text-primary text-xs mt-1">
               Read Guide <ArrowRight className="w-3 h-3" />
+            </span>
+          </Link>
+        )}
+
+        {/* Related collection link (Phase 3 depth) */}
+        {relatedCollectionMatch && relatedCollectionMatch.slug !== collectionMatch?.slug && (
+          <Link
+            to={`/collections/${relatedCollectionMatch.slug}`}
+            className="group flex flex-col items-center justify-center bg-card border rounded-xl p-5 hover:border-primary/30 hover:shadow-md transition-all text-center"
+          >
+            <ShoppingBag className="w-6 h-6 text-muted-foreground mb-2" />
+            <span className="font-medium text-sm group-hover:text-primary transition-colors">
+              {relatedCollectionMatch.label}
+            </span>
+            <span className="inline-flex items-center gap-1 text-primary text-xs mt-1">
+              Browse Related <ArrowRight className="w-3 h-3" />
             </span>
           </Link>
         )}
