@@ -81,6 +81,11 @@ export function HomepageAuthoritySection() {
             <Link to="/collections/cat-condos" className="text-primary hover:underline font-medium">
               cat tree for a small apartment
             </Link>,
+            an{' '}
+            <Link to="/product/dog-cot-cooling-pet-bed-3" className="text-primary hover:underline font-medium">
+              elevated dog cot
+            </Link>{' '}
+            for summer cooling,
             or enrichment toys that actually last — our US-based team has tested and reviewed
             every product. We ship fast within the United States with free delivery on orders
             over $35 and offer a 30-day hassle-free return policy. Thousands of pet parents
