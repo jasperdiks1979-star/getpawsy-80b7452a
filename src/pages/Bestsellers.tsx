@@ -224,11 +224,13 @@ const Bestsellers = () => {
 
       if (error) throw error;
 
-      return (data || []).map((item) => ({
-        ...item,
-        product: Array.isArray(item.product) ? item.product[0] : item.product,
-        selling_points: item.selling_points as unknown as SellingPoint[] | null,
-      })) as BestsellerWithProduct[];
+      return (data || [])
+        .map((item) => ({
+          ...item,
+          product: Array.isArray(item.product) ? item.product[0] : item.product,
+          selling_points: item.selling_points as unknown as SellingPoint[] | null,
+        }))
+        .filter((item) => item.product != null) as BestsellerWithProduct[];
     },
     staleTime: 5 * 60 * 1000,
   });
