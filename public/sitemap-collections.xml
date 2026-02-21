@@ -71,4 +71,6 @@
   <url><loc>https://getpawsy.pet/collections/cat-condos-for-large-cats</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
   <url><loc>https://getpawsy.pet/collections/wall-mounted-cat-furniture</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
   <url><loc>https://getpawsy.pet/collections/luxury-cat-towers</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <!-- Resource pages -->
+  <url><loc>https://getpawsy.pet/resources/dog-bed-size-chart</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
 </urlset>
