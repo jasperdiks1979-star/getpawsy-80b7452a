@@ -360,8 +360,8 @@ const Index = () => {
               import('@/lib/lcp-render-trace').then(({ traceHeroImageLoad }) => traceHeroImageLoad());
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent pointer-events-none" />
         </div>
 
         <div className="container relative z-10 px-4 md:px-6 py-16 md:py-24">
@@ -377,18 +377,18 @@ const Index = () => {
                 Premium everyday essentials for dogs and cats.
                 Free US shipping over $35. 30-day hassle-free returns.
               </p>
-              <div className="flex flex-wrap items-center gap-4 pt-2">
-                <Link to="/bestsellers">
-                  <Button size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow duration-200">
+              <div className="flex flex-wrap items-center gap-4 pt-2 relative z-10 pointer-events-auto">
+                <Button asChild size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow duration-200">
+                  <Link to="/bestsellers">
                     Shop Bestsellers
                     <ArrowRight className="w-5 h-5" />
-                  </Button>
-                </Link>
-                <Link to="/products">
-                  <Button size="lg" variant="outline" className="gap-2 rounded-full px-8 py-6 text-base font-semibold">
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="gap-2 rounded-full px-8 py-6 text-base font-semibold">
+                  <Link to="/products">
                     Browse All
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </FadeInView>
           </div>
