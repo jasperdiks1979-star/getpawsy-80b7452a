@@ -204,8 +204,8 @@
             decoding="async"
             style="width:100%;height:100%;object-fit:cover;object-position:center;aspect-ratio:16/9"
           />
-          <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(255,253,248,0.95),rgba(255,253,248,0.75),rgba(255,253,248,0.3))"></div>
-          <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(255,253,248,0.4),transparent,transparent)"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(255,253,248,0.95),rgba(255,253,248,0.75),rgba(255,253,248,0.3));pointer-events:none"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(255,253,248,0.4),transparent,transparent);pointer-events:none"></div>
         </div>
         <div style="position:relative;z-index:10;padding:64px 24px;max-width:1280px;margin:0 auto;width:100%">
           <div style="max-width:672px">
@@ -215,11 +215,11 @@
             <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:clamp(1rem,2vw,1.25rem);color:#6b7280;max-width:512px;line-height:1.6;margin:0 0 32px">
               Premium everyday essentials for dogs and cats. Free US shipping over $35. 30-day hassle-free returns.
             </p>
-            <div style="display:flex;flex-wrap:wrap;gap:16px">
-              <a href="/bestsellers" style="display:inline-flex;align-items:center;gap:8px;padding:12px 40px;border-radius:9999px;background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,0.15)">
+            <div style="display:flex;flex-wrap:wrap;gap:16px;position:relative;z-index:50;pointer-events:auto">
+              <a href="/bestsellers" style="display:inline-flex;align-items:center;gap:8px;padding:12px 40px;border-radius:9999px;background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,0.15);touch-action:manipulation;-webkit-tap-highlight-color:transparent">
                 Shop Bestsellers →
               </a>
-              <a href="/products" style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;border-radius:9999px;background:transparent;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;border:1px solid #d1d5db">
+              <a href="/products" style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;border-radius:9999px;background:transparent;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;border:1px solid #d1d5db;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
                 Browse All
               </a>
             </div>
@@ -250,6 +250,12 @@
         </div>
       </div>
     </div>
+    <noscript>
+      <div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#fef3c7;padding:12px 16px;text-align:center;font-family:sans-serif;font-size:14px">
+        JavaScript is required. <a href="/products" style="color:#1a1a1a;font-weight:600;text-decoration:underline">Browse Products</a> |
+        <a href="/bestsellers" style="color:#1a1a1a;font-weight:600;text-decoration:underline">Shop Bestsellers</a>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       // === BOOT PROTECTION LAYER (vanilla JS, zero dependencies) ===

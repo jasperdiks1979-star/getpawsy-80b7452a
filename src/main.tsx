@@ -4,6 +4,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { AppErrorBoundary } from "./components/error/AppErrorBoundary";
 import App from "./App.tsx";
 import "./index.css";
+import { initTapDebug } from "./lib/tap-debug";
 
 // v9 - Fix: removed charts manualChunks entirely (d3 TDZ crash on iOS Safari 18)
 // BUILD_MARKER: 2026-02-19T-v9-no-charts-chunk
@@ -45,6 +46,7 @@ import {
 try {
   initBootDiagnostics();
   installBootErrorHandlers();
+  initTapDebug();
   logBootDebug();
 } catch (e) {
   console.error('[BOOT_FAIL] Diagnostics init failed:', e);
