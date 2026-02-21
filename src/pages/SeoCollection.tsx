@@ -46,6 +46,7 @@ import { ExpertBlock } from '@/components/seo/ExpertBlock';
 import { ComparisonTable, getComparisonData } from '@/components/seo/ComparisonTable';
 import { CollectionTableOfContents, getCollectionTocItems } from '@/components/seo/CollectionTableOfContents';
 import { ScrollProgressIndicator } from '@/components/ui/ScrollProgressIndicator';
+import { RelatedCategoriesBlock } from '@/components/seo/RelatedCategoriesBlock';
 
 interface FAQItem {
   question: string;
@@ -521,13 +522,14 @@ const SeoCollection = () => {
             {collection.name}
           </h1>
           <div 
-            className="text-muted-foreground text-base leading-relaxed max-w-4xl prose prose-headings:text-foreground prose-headings:font-display prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-2 prose-p:mb-4"
+            className="text-muted-foreground text-base leading-relaxed max-w-4xl prose prose-headings:text-foreground prose-headings:font-display prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-2 prose-p:mb-4 prose-a:text-primary prose-a:underline prose-strong:text-foreground"
             dangerouslySetInnerHTML={{ 
               __html: collection.seo_intro
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                 .replace(/^### (.+)$/gm, '<h3>$1</h3>')
                 .replace(/^## (.+)$/gm, '<h2>$1</h2>')
                 .replace(/\n\n/g, '</p><p>')
-                .replace(/^(?!<[h])(.+)/gm, (match) => match.startsWith('<') ? match : `<p>${match}</p>`)
+                .replace(/^(?!<[h|s])(.+)/gm, (match) => match.startsWith('<') ? match : `<p>${match}</p>`)
                 .replace(/<p><\/p>/g, '')
             }}
           />
@@ -614,11 +616,13 @@ const SeoCollection = () => {
           <CollectionExpertGuides collectionSlug={collection.slug} />
         </div>
 
-        {/* Sub-Category Navigation (pillar pages only) */}
+        {/* Sub-Category Navigation — "Explore by Type" (pillar pages only) */}
         {subCollections.length > 0 && (
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4">Browse by Type</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <h2 className="text-2xl font-semibold mb-4">
+              Explore {collection.name.replace(/\s–.*$/, '')} by Type
+            </h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {subCollections.map((sub) => (
                 <Link
                   key={sub.slug}
@@ -628,6 +632,11 @@ const SeoCollection = () => {
                   <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors">
                     {sub.name.replace(/\s–.*$/, '')}
                   </h3>
+                  {sub.primary_keyword && (
+                    <span className="text-xs text-muted-foreground/70 italic block mb-1">
+                      {sub.primary_keyword}
+                    </span>
+                  )}
                   <p className="text-xs text-muted-foreground line-clamp-2">
                     {sub.meta_description}
                   </p>
@@ -639,6 +648,9 @@ const SeoCollection = () => {
             </div>
           </section>
         )}
+
+        {/* Related Categories Block — sibling category cross-links */}
+        <RelatedCategoriesBlock collectionSlug={collection.slug} />
 
         {/* Back to Pillar (sub-collection pages only) */}
         {parentCollection && (
