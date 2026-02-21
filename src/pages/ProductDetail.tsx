@@ -50,6 +50,7 @@ import { CustomersAlsoBought } from '@/components/products/CustomersAlsoBought';
 import { RelatedGuides } from '@/components/guides/RelatedGuides';
 import { BuyingGuideBlock } from '@/components/seo/BuyingGuideBlock';
 import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
+import { HeroProductBoost } from '@/components/products/HeroProductBoost';
 import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
@@ -923,6 +924,9 @@ const ProductDetail = () => {
               productName={product.name} 
               category={product.category || ''} 
             />
+
+            {/* Hero Product Conversion Boost — Who is this for / FAQ / urgency */}
+            {product.slug && <HeroProductBoost productSlug={product.slug} />}
 
             {/* Stock Status - Simple, no quantity pressure */}
             <div className="flex items-center gap-3">
