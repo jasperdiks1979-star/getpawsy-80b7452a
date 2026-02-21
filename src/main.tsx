@@ -1,3 +1,4 @@
+console.log("BOOT START");
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
@@ -135,6 +136,8 @@ try {
 
   // Mark successful mount
   markMounted();
+  (window as any).__BOOT_OK__ = true;
+  console.log("BOOT SUCCESS");
 
   // === STEP 5: Load deferred analytics AFTER mount ===
   // This was previously in index.html <head> and caused TDZ errors on iOS Safari

@@ -1,6 +1,29 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- EMERGENCY: Global crash detector — catches fatal JS errors before React loads -->
+    <script>
+      window.__BOOT_OK__ = false;
+      window.__BOOT_ERRORS__ = [];
+      window.addEventListener('error', function(e) {
+        window.__BOOT_ERRORS__.push({ type: 'error', msg: e.message, file: e.filename, line: e.lineno });
+        console.error('[CRASH_DETECT] JS ERROR:', e.message, 'at', e.filename + ':' + e.lineno);
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var msg = e.reason && e.reason.message ? e.reason.message : String(e.reason);
+        window.__BOOT_ERRORS__.push({ type: 'rejection', msg: msg });
+        console.error('[CRASH_DETECT] PROMISE REJECTION:', msg);
+      });
+      setTimeout(function() {
+        if (!window.__BOOT_OK__) {
+          console.error('[CRASH_DETECT] Boot did not complete within 8s');
+          var rec = document.getElementById('boot-recovery');
+          if (rec) rec.style.display = 'flex';
+          var msg = document.getElementById('boot-error-msg');
+          if (msg) msg.textContent = 'Boot timeout. Errors: ' + JSON.stringify(window.__BOOT_ERRORS__);
+        }
+      }, 8000);
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <title>GetPawsy - Premium Pet Products | Dog Beds, Cat Trees & Pet Supplies</title>
