@@ -6,14 +6,17 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 // ⚡ supabase NOT imported at top-level — dynamic import in queryFns keeps ~138KB off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
-import { dedupeProducts } from '@/lib/dedupe-products';
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { safeString, safePrice, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { FadeInView } from '@/components/ui/FadeInView';
+
+// ⚡ Deferred imports — not needed for first paint
+const getDedupeProducts = () => import('@/lib/dedupe-products').then(m => m.dedupeProducts);
+const showToast = (type: 'success' | 'error' | 'info', msg: string) =>
+  import('sonner').then(m => m.toast[type](msg));
+// Small pure-data modules — sync is fine (< 5KB combined, no deps)
 import { getAnchorText } from '@/lib/anchor-text-helper';
 import { getCategoryCollectionUrl } from '@/lib/category-collection-map';
-import { toast } from 'sonner';
-import { traceMount, traceEffect, traceStateSet, traceQuery } from '@/lib/lcp-render-trace';
 
 // ── Below-fold heavy components — lazy-loaded (not in initial bundle) ──────
 const Skeleton = lazy(() => import('@/components/ui/skeleton').then(m => ({ default: m.Skeleton })));
@@ -32,10 +35,11 @@ const BestsellersSection = lazy(() => import('@/components/home/BestsellersSecti
 const PremiumNicheGrid = lazy(() => import('@/components/home/PremiumNicheGrid').then(m => ({ default: m.PremiumNicheGrid })));
 const MostLovedPicks = lazy(() => import('@/components/home/MostLovedPicks'));
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
-import { WebsiteSchema } from '@/components/seo/WebsiteSchema';
-import { LocalBusinessSchema } from '@/components/seo/LocalBusinessSchema';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
-import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+
+// ⚡ SEO schemas — tiny but not needed for LCP, defer
+const WebsiteSchema = lazy(() => import('@/components/seo/WebsiteSchema').then(m => ({ default: m.WebsiteSchema })));
+const LocalBusinessSchema = lazy(() => import('@/components/seo/LocalBusinessSchema').then(m => ({ default: m.LocalBusinessSchema })));
 
 // ── Icons: only import what is strictly needed above fold ─────────────────
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
@@ -101,9 +105,7 @@ function useHydrationReady(): boolean {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     if (ready) return;
-    traceEffect('useHydrationReady', 'setup');
     const activate = () => {
-      traceStateSet('useHydrationReady', 'ready', true);
       setReady(true);
     };
     // Defer until idle or user interaction — whichever comes first
@@ -129,7 +131,6 @@ function useHydrationReady(): boolean {
 }
 
 const Index = () => {
-  traceMount('Index');                               // ← homepage mount timestamp
 
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -143,7 +144,6 @@ const Index = () => {
   // Auto-play for featured products carousel
   useEffect(() => {
     if (!productsApi) return;
-    traceEffect('Index', 'carousel-autoplay setup');
     const interval = setInterval(() => {
       if (productsApi.canScrollNext()) {
         productsApi.scrollNext();
@@ -158,8 +158,7 @@ const Index = () => {
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
     queryKey: ['featured-products'],
     queryFn: async () => {
-      traceQuery('Index', 'featured-products', 'started');
-      const supabase = await getSupabase();
+      const [supabase, dedupeProducts] = await Promise.all([getSupabase(), getDedupeProducts()]);
       const { data, error } = await supabase
         .from('products_public')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
@@ -167,7 +166,6 @@ const Index = () => {
         .order('created_at', { ascending: false })
         .limit(12);
       if (error) throw error;
-      traceQuery('Index', 'featured-products', 'resolved');
       return dedupeProducts(data || []);
     },
     enabled: hydrationReady,
@@ -262,8 +260,12 @@ const Index = () => {
   }, [featuredProducts]);
 
   // ── Recently viewed — gated on hydration ────────────────────────────────
-  const { getRecentlyViewedIds } = useRecentlyViewed();
-  const recentlyViewedIds = getRecentlyViewedIds();
+  const recentlyViewedIds = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('recently_viewed');
+      return raw ? JSON.parse(raw) as string[] : [];
+    } catch { return []; }
+  }, []);
 
   const { data: recentlyViewedProducts } = useQuery({
     queryKey: ['recently-viewed-products', recentlyViewedIds],
@@ -295,7 +297,7 @@ const Index = () => {
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsletterEmail || !newsletterEmail.includes('@')) {
-      toast.error('Please enter a valid email address');
+      showToast('error', 'Please enter a valid email address');
       return;
     }
     setIsSubscribing(true);
@@ -306,17 +308,17 @@ const Index = () => {
         .insert({ email: newsletterEmail });
       if (error) {
         if (error.code === '23505') {
-          toast.info('You\'re already subscribed to our newsletter!');
+          showToast('info', 'You\'re already subscribed to our newsletter!');
         } else {
           throw error;
         }
       } else {
-        toast.success('Thanks for signing up! Check your inbox for 15% off.');
+        showToast('success', 'Thanks for signing up! Check your inbox for 15% off.');
         trackNewsletterSignup(newsletterEmail);
       }
       setNewsletterEmail('');
     } catch {
-      toast.error('Something went wrong. Please try again later.');
+      showToast('error', 'Something went wrong. Please try again later.');
     } finally {
       setIsSubscribing(false);
     }
@@ -337,8 +339,10 @@ const Index = () => {
         <meta name="twitter:title" content="GetPawsy | Trusted Pet Products with Fast US Shipping" />
         <meta name="twitter:description" content="Shop thoughtfully selected pet products for dogs and cats. Fast US shipping, free over $35, and 30-day hassle-free returns." />
       </Helmet>
-      <WebsiteSchema />
-      <LocalBusinessSchema />
+      <Suspense fallback={null}>
+        <WebsiteSchema />
+        <LocalBusinessSchema />
+      </Suspense>
 
       {/* ── HERO — zero JS animation, instant paint ─────────────────────── */}
       <section
@@ -357,13 +361,8 @@ const Index = () => {
             fetchPriority="high"
             decoding="async"
             className="hero-lcp-img"
-            onLoad={() => {
-              // This is the hero image load event — closest proxy to browser LCP
-              import('@/lib/lcp-render-trace').then(({ traceHeroImageLoad }) => traceHeroImageLoad());
-            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-background/30 pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent pointer-events-none" />
         </div>
 
         <div className="container relative z-10 px-4 md:px-6 py-16 md:py-24">
@@ -397,12 +396,14 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ── Most Loved Picks — Hero Conversion Block ──────────────── */}
-      <SectionErrorBoundary sectionName="Most Loved Picks">
-        <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
-          <MostLovedPicks />
-        </Suspense>
-      </SectionErrorBoundary>
+      {/* ── Most Loved Picks — gated to not block hero LCP ───────────── */}
+      {hydrationReady && (
+        <SectionErrorBoundary sectionName="Most Loved Picks">
+          <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
+            <MostLovedPicks />
+          </Suspense>
+        </SectionErrorBoundary>
+      )}
 
       {/* ── Homepage Authority Section — SEO category links ─────────── */}
       <SectionErrorBoundary sectionName="Authority Categories">
@@ -418,75 +419,77 @@ const Index = () => {
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* ── Popular Guides ───────────────────────────────────────────────── */}
-      <SectionErrorBoundary sectionName="Popular Guides">
-        <section className="py-20 bg-sand/30">
-          <div className="container px-4 md:px-6">
-            <FadeInView className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Trusted Buying Guides</h2>
-              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Vet-backed &amp; updated 2026 — expert-tested picks for your pet
-              </p>
-            </FadeInView>
-            <FadeInView className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {([
-                {
-                  slug: 'best-cat-litter-box-2026',
-                  title: 'Best Cat Litter Boxes (2026)',
-                  desc: '12 tested picks for odor control, large cats & multi-cat homes.',
-                  imageLoader: guideImageLoaders['best-cat-litter-box-2026'],
-                },
-                {
-                  slug: 'best-dog-bed-2026',
-                  title: 'Best Dog Beds (2026)',
-                  desc: 'Orthopedic, calming & durable picks tested by real dog owners.',
-                  imageLoader: guideImageLoaders['best-dog-bed-2026'],
-                },
-                {
-                  slug: 'best-cat-litter-box-furniture-enclosures-2026',
-                  title: 'Best Litter Box Furniture (2026)',
-                  desc: 'Hidden enclosures & cabinets that blend into your home décor.',
-                  imageLoader: guideImageLoaders['best-cat-litter-box-furniture-enclosures-2026'],
-                },
-              ]).map((guide) => (
-                <div key={guide.slug}>
-                  <Link
-                    to={`/guides/${guide.slug}`}
-                    className="group block bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-500 hover:-translate-y-1.5 border border-border/50"
-                  >
-                    <div className="relative aspect-[16/10] overflow-hidden">
-                      <LazyImage
-                        loader={guide.imageLoader}
-                        alt={guide.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        width={600}
-                        height={375}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                    </div>
-                    <div className="p-6">
-                      <h3 className="font-display font-bold text-lg text-foreground group-hover:text-primary transition-colors mb-2 leading-snug">
-                        {getAnchorText(guide.slug, 'hero-insert')}
-                      </h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-4">{guide.desc}</p>
-                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary group-hover:gap-2.5 transition-all duration-300">
-                        Read Guide <ArrowRight className="w-4 h-4" />
-                      </span>
-                    </div>
-                  </Link>
-                </div>
-              ))}
-            </FadeInView>
-            <div className="text-center mt-10">
-              <Link to="/guides">
-                <Button variant="outline" className="gap-2 rounded-full">
-                  View All Guides
-                </Button>
-              </Link>
+      {/* ── Popular Guides — deferred until hydration ─────────────────── */}
+      {hydrationReady && (
+        <SectionErrorBoundary sectionName="Popular Guides">
+          <section className="py-20 bg-sand/30">
+            <div className="container px-4 md:px-6">
+              <FadeInView className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Trusted Buying Guides</h2>
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                  Vet-backed &amp; updated 2026 — expert-tested picks for your pet
+                </p>
+              </FadeInView>
+              <FadeInView className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {([
+                  {
+                    slug: 'best-cat-litter-box-2026',
+                    title: 'Best Cat Litter Boxes (2026)',
+                    desc: '12 tested picks for odor control, large cats & multi-cat homes.',
+                    imageLoader: guideImageLoaders['best-cat-litter-box-2026'],
+                  },
+                  {
+                    slug: 'best-dog-bed-2026',
+                    title: 'Best Dog Beds (2026)',
+                    desc: 'Orthopedic, calming & durable picks tested by real dog owners.',
+                    imageLoader: guideImageLoaders['best-dog-bed-2026'],
+                  },
+                  {
+                    slug: 'best-cat-litter-box-furniture-enclosures-2026',
+                    title: 'Best Litter Box Furniture (2026)',
+                    desc: 'Hidden enclosures & cabinets that blend into your home décor.',
+                    imageLoader: guideImageLoaders['best-cat-litter-box-furniture-enclosures-2026'],
+                  },
+                ]).map((guide) => (
+                  <div key={guide.slug}>
+                    <Link
+                      to={`/guides/${guide.slug}`}
+                      className="group block bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-500 hover:-translate-y-1.5 border border-border/50"
+                    >
+                      <div className="relative aspect-[16/10] overflow-hidden">
+                        <LazyImage
+                          loader={guide.imageLoader}
+                          alt={guide.title}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          width={600}
+                          height={375}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                      </div>
+                      <div className="p-6">
+                        <h3 className="font-display font-bold text-lg text-foreground group-hover:text-primary transition-colors mb-2 leading-snug">
+                          {getAnchorText(guide.slug, 'hero-insert')}
+                        </h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed mb-4">{guide.desc}</p>
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary group-hover:gap-2.5 transition-all duration-300">
+                          Read Guide <ArrowRight className="w-4 h-4" />
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                ))}
+              </FadeInView>
+              <div className="text-center mt-10">
+                <Link to="/guides">
+                  <Button variant="outline" className="gap-2 rounded-full">
+                    View All Guides
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
-        </section>
-      </SectionErrorBoundary>
+          </section>
+        </SectionErrorBoundary>
+      )}
 
       {/* ── Bestsellers — lazy + gated ──────────────────────────────────── */}
       <SectionErrorBoundary sectionName="Bestsellers">
@@ -495,7 +498,8 @@ const Index = () => {
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* ── Categories ──────────────────────────────────────────────────── */}
+      {/* ── Categories — deferred ─────────────────────────────────────── */}
+      {hydrationReady && (
       <SectionErrorBoundary sectionName="Categories">
         <section id="categories" className="py-20">
           <div className="container px-4 md:px-6">
@@ -551,6 +555,7 @@ const Index = () => {
           </div>
         </section>
       </SectionErrorBoundary>
+      )}
 
       {/* ── Featured Products ────────────────────────────────────────────── */}
       <SectionErrorBoundary sectionName="Featured Products">
@@ -617,7 +622,8 @@ const Index = () => {
         </section>
       </SectionErrorBoundary>
 
-      {/* ── Why Choose GetPawsy ──────────────────────────────────────────── */}
+      {/* ── Why Choose GetPawsy — deferred ─────────────────────────────── */}
+      {hydrationReady && (
       <SectionErrorBoundary sectionName="Why Choose">
         <section className="py-20 bg-sand/30">
           <div className="container px-4 md:px-6">
@@ -654,6 +660,7 @@ const Index = () => {
           </div>
         </section>
       </SectionErrorBoundary>
+      )}
 
       {/* ── Revenue Niches — fully lazy + gated ─────────────────────────── */}
       <SectionErrorBoundary sectionName="Revenue Niches">
@@ -703,7 +710,8 @@ const Index = () => {
         </SectionErrorBoundary>
       )}
 
-      {/* ── Expert Guides ────────────────────────────────────────────────── */}
+      {/* ── Expert Guides — deferred ───────────────────────────────────── */}
+      {hydrationReady && (
       <SectionErrorBoundary sectionName="Expert Guides">
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
@@ -764,8 +772,10 @@ const Index = () => {
           </div>
         </section>
       </SectionErrorBoundary>
+      )}
 
-      {/* ── Newsletter CTA ───────────────────────────────────────────────── */}
+      {/* ── Newsletter CTA — deferred ────────────────────────────────────── */}
+      {hydrationReady && (
       <SectionErrorBoundary sectionName="Newsletter">
         <section className="py-20">
           <div className="container px-4 md:px-6">
@@ -807,6 +817,7 @@ const Index = () => {
           </div>
         </section>
       </SectionErrorBoundary>
+      )}
     </Layout>
   );
 };
