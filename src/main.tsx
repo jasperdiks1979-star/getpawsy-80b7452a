@@ -136,7 +136,14 @@ try {
   (window as any).__BOOT_OK__ = true;
   console.log("BOOT SUCCESS");
 
-  // === STEP 5: Load deferred analytics AFTER mount ===
+  // === STEP 5: Payload guard (dev/preview only) ===
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(() => {
+      import('./lib/image-optimizer').then(m => m.runPayloadGuard()).catch(() => {});
+    }, { timeout: 8000 });
+  }
+
+  // === STEP 6: Load deferred analytics AFTER mount ===
   // This was previously in index.html <head> and caused TDZ errors on iOS Safari
   import("./lib/deferred-analytics").then(m => {
     if ('requestIdleCallback' in window) {

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, forwardRef, memo } from 'react';
 import { cn } from '@/lib/utils';
+import { buildOptimizedImageUrl, buildOptimizedSrcSet, normalizeImageUrl, RESPONSIVE_SIZES } from '@/lib/image-optimizer';
 
 interface OptimizedImageProps {
   src: string;
@@ -113,20 +114,21 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
       {isInView && (
         <img
           ref={(el) => onImgRef?.(el)}
-          src={hasError ? '/placeholder.svg' : src}
+          src={hasError ? '/placeholder.svg' : buildOptimizedImageUrl(src, { w: width, q: 80 })}
+          srcSet={hasError ? undefined : (buildOptimizedSrcSet(src, [320, 480, 640, 960]) || undefined)}
           alt={alt}
           width={width}
           height={height}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           fetchPriority={priority ? 'high' : 'auto'}
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          sizes={RESPONSIVE_SIZES.gridThumb}
           onLoad={handleLoad}
           onError={handleError}
           className={cn(
             'w-full h-full object-cover',
             priority 
-              ? 'opacity-100' // No transition on LCP-path images
+              ? 'opacity-100'
               : isLoaded ? 'opacity-100' : 'opacity-0',
             !priority && 'transition-opacity duration-200',
             className

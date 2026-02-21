@@ -7,6 +7,7 @@ Allow: /
 
 # Block private/internal routes
 Disallow: /admin
+Disallow: /diagnostics
 Disallow: /dashboard
 Disallow: /checkout
 Disallow: /auth
