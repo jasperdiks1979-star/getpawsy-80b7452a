@@ -22,12 +22,14 @@ const CATEGORY_COMPARISONS: Record<string, { title: string; rows: ComparisonRow[
     ],
   },
   'cat-condos': {
-    title: 'Cat Condo Style Comparison',
+    title: 'Cat Condo Style Comparison – Find Your Best Match',
     rows: [
+      { type: 'Small / Compact', bestFor: 'Apartments, kittens, senior cats', waterproof: 'N/A', washable: '✅ Removable pads', priceRange: '$25–$80' },
       { type: 'Multi-Level Tower', bestFor: 'Active cats, multi-cat homes', waterproof: 'N/A', washable: '⚠️ Spot clean', priceRange: '$60–$200' },
-      { type: 'Wall-Mounted', bestFor: 'Small apartments, space saving', waterproof: 'N/A', washable: '✅ Removable pads', priceRange: '$40–$120' },
-      { type: 'Modern Wooden', bestFor: 'Style-conscious owners', waterproof: 'N/A', washable: '✅ Wipeable', priceRange: '$80–$250' },
-      { type: 'Enclosed Hideaway', bestFor: 'Shy or anxious cats', waterproof: 'N/A', washable: '✅ Machine wash', priceRange: '$30–$90' },
+      { type: 'Modern / Designer', bestFor: 'Style-conscious owners, small rooms', waterproof: 'N/A', washable: '✅ Wipeable', priceRange: '$70–$200' },
+      { type: 'Large Cat Condo', bestFor: 'Maine Coons, Ragdolls (20+ lbs)', waterproof: 'N/A', washable: '⚠️ Spot clean', priceRange: '$80–$250' },
+      { type: 'Wooden / Natural', bestFor: 'Eco-friendly, long-lasting', waterproof: 'N/A', washable: '✅ Wipeable', priceRange: '$80–$250' },
+      { type: 'Luxury / Premium', bestFor: 'Interior design integration', waterproof: 'N/A', washable: '✅ Machine wash covers', priceRange: '$150–$400+' },
     ],
   },
   'best-dog-car-seats': {
