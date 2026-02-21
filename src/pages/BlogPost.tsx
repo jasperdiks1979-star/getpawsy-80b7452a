@@ -316,8 +316,12 @@ const BlogPostPage = () => {
         <meta name="twitter:description" content={metaDescription} />
         {post.featured_image && <meta name="twitter:image" content={post.featured_image} />}
         
-        {/* Additional SEO */}
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+        {/* Additional SEO — noindex non-core verticals to concentrate authority on Dogs + Cats */}
+        <meta name="robots" content={
+          ['Fish', 'Birds', 'Reptiles', 'Small Pets'].includes(post.category)
+            ? 'noindex, follow'
+            : 'index, follow, max-image-preview:large, max-snippet:-1'
+        } />
         <meta name="author" content={post.author_name} />
         <meta name="article:modified_time" content={post.published_at} />
         
