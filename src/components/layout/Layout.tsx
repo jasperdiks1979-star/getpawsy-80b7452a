@@ -3,6 +3,7 @@ import { Footer } from './Footer';
 import { ScrollToTop } from '../ui/scroll-to-top';
 import { PageTransition } from '../ui/page-transition';
 import { MarketingErrorBoundary } from '../error/MarketingErrorBoundary';
+import { BuildBadge } from '../ui/BuildBadge';
 import { lazy, Suspense, useState, useEffect } from 'react';
 
 // Lazy-load all non-critical marketing/overlay widgets
@@ -94,6 +95,7 @@ export const Layout = ({ children }: LayoutProps) => {
           </Suspense>
         </MarketingErrorBoundary>
       )}
+      <BuildBadge />
     </div>
   );
 };

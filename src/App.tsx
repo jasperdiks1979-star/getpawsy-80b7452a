@@ -210,6 +210,7 @@ const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
 const GrowthVerification = lazyWithRetry(() => import("./pages/GrowthVerification"));
+const Healthz = lazyWithRetry(() => import("./pages/Healthz"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -278,6 +279,7 @@ const App = () => {
                   <RouteErrorBoundary>
                     <Routes>
                       <Route path="/" element={<Index />} />
+                      <Route path="/healthz" element={<Suspense fallback={null}><Healthz /></Suspense>} />
                       <Route path="/products" element={<Suspense fallback={<RouteLoader />}><Products /></Suspense>} />
                       <Route path="/product/:id" element={<Suspense fallback={<RouteLoader />}><ProductDetail /></Suspense>} />
                       <Route path="/cart" element={<Suspense fallback={<RouteLoader />}><Cart /></Suspense>} />
