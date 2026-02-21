@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { getCategoryCollectionUrl } from '@/lib/category-collection-map';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -68,7 +69,7 @@ export const SubcategoryGrid = ({ subcategories, parentCategoryName, isLoading }
             transition={{ delay: index * 0.05, duration: 0.3 }}
           >
             <Link
-              to={`/products?category=${encodeURIComponent(subcategory.slug)}`}
+              to={getCategoryCollectionUrl(subcategory.slug)}
               className="group block"
             >
               <div className="relative aspect-square rounded-xl overflow-hidden bg-muted border border-border/50 transition-all duration-300 group-hover:border-primary/30 group-hover:shadow-lg group-hover:shadow-primary/10">

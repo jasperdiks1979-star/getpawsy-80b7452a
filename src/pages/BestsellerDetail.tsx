@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { getCategoryCollectionUrl } from '@/lib/category-collection-map';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileProductGallery } from '@/components/products/MobileProductGallery';
@@ -909,7 +910,7 @@ const BestsellerDetail = () => {
                 <div className="flex items-center gap-3 flex-wrap">
                   {product.category && (
                     <Link 
-                      to={`/products?category=${encodeURIComponent(product.category)}`}
+                      to={getCategoryCollectionUrl(product.category)}
                       className="text-primary text-sm font-medium hover:underline"
                     >
                       {product.category}

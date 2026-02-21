@@ -40,4 +40,4 @@ Disallow: /*?*utm_
 Disallow: /*?*gclid=
 Disallow: /*?*fbclid=
 
-Sitemap: https://getpawsy.pet/sitemap.xml
+Sitemap: https://getpawsy.pet/sitemap-index.xml
