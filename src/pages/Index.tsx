@@ -26,6 +26,7 @@ import type { CarouselApi } from '@/components/ui/carousel';
 
 // ── Below-fold page sections — lazy-loaded ───────────────────────────────
 const AnimatedTrustBadges = lazy(() => import('@/components/home/AnimatedTrustBadges'));
+const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAuthoritySection'));
 const BestsellersSection = lazy(() => import('@/components/home/BestsellersSection').then(m => ({ default: m.BestsellersSection })));
 const PremiumNicheGrid = lazy(() => import('@/components/home/PremiumNicheGrid').then(m => ({ default: m.PremiumNicheGrid })));
 
@@ -394,6 +395,13 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* ── Homepage Authority Section — SEO category links ─────────── */}
+      <SectionErrorBoundary sectionName="Authority Categories">
+        <Suspense fallback={<div className="py-16" style={{ minHeight: 300 }} />}>
+          {hydrationReady && <HomepageAuthoritySection />}
+        </Suspense>
+      </SectionErrorBoundary>
 
       {/* ── Trust Badges — lazy-loaded, mounts after hero paint ─────────── */}
       <SectionErrorBoundary sectionName="Features">

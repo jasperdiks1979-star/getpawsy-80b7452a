@@ -116,6 +116,20 @@ export const Footer = () => {
       { label: 'Bestsellers 2026', href: '/bestsellers' },
       { label: 'All Products', href: '/products' },
     ],
+    popularCategories: [
+      { label: 'Dog Beds for Large Dogs', href: '/collections/best-dog-beds-for-large-dogs' },
+      { label: 'Orthopedic Dog Beds', href: '/collections/best-orthopedic-dog-beds' },
+      { label: 'Memory Foam Dog Beds', href: '/collections/memory-foam-dog-beds' },
+      { label: 'Calming Beds for Anxiety', href: '/collections/dog-beds-for-anxiety' },
+      { label: 'Cat Trees for Apartments', href: '/collections/best-cat-trees-for-small-apartments' },
+      { label: 'Modern Cat Trees', href: '/collections/modern-cat-trees' },
+      { label: 'Large Cat Condos', href: '/collections/cat-condos-for-large-cats' },
+      { label: 'Wall-Mounted Cat Furniture', href: '/collections/wall-mounted-cat-furniture' },
+      { label: 'Luxury Cat Towers', href: '/collections/luxury-cat-towers' },
+      { label: 'Waterproof Dog Beds', href: '/collections/waterproof-dog-beds' },
+      { label: 'Indestructible Dog Toys', href: '/collections/indestructible-dog-chew-toys' },
+      { label: 'Self-Cleaning Litter Boxes', href: '/collections/self-cleaning-litter-box-guide' },
+    ],
     support: [
       { label: 'Contact', href: '/contact' },
       { label: 'Shipping', href: '/shipping', noFollow: true },
@@ -323,6 +337,22 @@ export const Footer = () => {
               </ul>
             </div>
 
+          </div>
+          {/* Popular Pet Categories — SEO internal link block */}
+          <div className="mt-12 pt-8 border-t border-background/10">
+            <h4 className="font-display font-semibold text-lg mb-4">Popular Pet Categories</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-8 gap-y-2">
+              {footerLinks.popularCategories.map((link) => (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
+                >
+                  <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                  <span>{link.label}</span>
+                </Link>
+              ))}
+            </div>
           </div>
           {/* Expert Pet Buying Guides — SEO Cornerstone Link Section */}
           <div className="mt-12 pt-8 border-t border-background/10">

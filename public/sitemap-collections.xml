@@ -36,7 +36,7 @@
   <url><loc>https://getpawsy.pet/collections/best-interactive-cat-toys</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
   <url><loc>https://getpawsy.pet/collections/best-dog-travel-water-bottles</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
   <url><loc>https://getpawsy.pet/collections/best-cat-carriers</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <!-- New programmatic long-tail pages -->
+  <!-- Programmatic long-tail pages -->
   <url><loc>https://getpawsy.pet/collections/dog-bed-for-70-pound-dog</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
   <url><loc>https://getpawsy.pet/collections/dog-bed-for-senior-dogs</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
   <url><loc>https://getpawsy.pet/collections/best-dog-toys-for-puppies</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
@@ -60,4 +60,15 @@
   <url><loc>https://getpawsy.pet/collections/best-dog-toy-for-separation-anxiety</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
   <url><loc>https://getpawsy.pet/collections/best-cat-scratching-pad</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
   <url><loc>https://getpawsy.pet/collections/best-dog-water-bowl-for-messy-drinkers</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <!-- Commercial cluster pages -->
+  <url><loc>https://getpawsy.pet/collections/best-dog-beds-for-large-dogs</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/best-orthopedic-dog-beds</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/memory-foam-dog-beds</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/waterproof-dog-beds</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/dog-beds-for-anxiety</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/best-cat-trees-for-small-apartments</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/modern-cat-trees</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/cat-condos-for-large-cats</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/wall-mounted-cat-furniture</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/luxury-cat-towers</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
 </urlset>
