@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
-import { trackGoogleAdsAddToCart } from '@/lib/analytics';
+// ⚡ Analytics deferred — not needed for initial render
+const trackAddToCart = (productId: string, productName: string, price: number, qty?: number) =>
+  import('@/lib/analytics').then(m => m.trackAddToCart(productId, productName, price, qty));
+const trackRemoveFromCart = (productId: string, productName: string, price: number, qty?: number) =>
+  import('@/lib/analytics').then(m => m.trackRemoveFromCart(productId, productName, price, qty));
+const trackGoogleAdsAddToCart = (productId: string, productName: string, price: number, qty?: number) =>
+  import('@/lib/analytics').then(m => m.trackGoogleAdsAddToCart(productId, productName, price, qty));
 // ⚡ supabase is NOT imported at top level — dynamic import keeps ~138KB SDK off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { PRODUCTION_DOMAINS } from '@/lib/constants';

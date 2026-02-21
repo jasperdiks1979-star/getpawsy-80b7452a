@@ -1,13 +1,25 @@
 import { Link } from 'react-router-dom';
 import { PaymentBadges } from '@/components/shared/PaymentBadges';
-import { Mail, MapPin, Instagram, Facebook, Twitter, Youtube, Heart, ArrowRight, RotateCcw, Cookie, Clock } from 'lucide-react';
+// ── Lucide: per-icon deep imports — eliminates full lucide barrel from critical chunk ──
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import Facebook from 'lucide-react/dist/esm/icons/facebook';
+import Twitter from 'lucide-react/dist/esm/icons/twitter';
+import Youtube from 'lucide-react/dist/esm/icons/youtube';
+import Heart from 'lucide-react/dist/esm/icons/heart';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
+import Cookie from 'lucide-react/dist/esm/icons/cookie';
+import Clock from 'lucide-react/dist/esm/icons/clock';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-// framer-motion removed — CSS transitions used instead (perf: critical path)
-import { supabase } from '@/integrations/supabase/client';
-import { z } from 'zod';
+// ⚡ supabase NOT imported at top-level — dynamic import keeps ~138KB SDK off critical path
+const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
+// ⚡ zod deferred — validation only needed on form submit
+const getEmailSchema = () => import('zod').then(m => m.z.string().trim().email({ message: 'Invalid email address' }).max(255));
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +51,7 @@ import {
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
 
-const emailSchema = z.string().trim().email({ message: 'Invalid email address' }).max(255);
+// emailSchema loaded lazily — see handleNewsletterSubmit
 
 export const Footer = () => {
   const [email, setEmail] = useState('');
@@ -48,6 +60,7 @@ export const Footer = () => {
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const emailSchema = await getEmailSchema();
     const result = emailSchema.safeParse(email);
     if (!result.success) {
       toast.error(result.error.errors[0].message);
@@ -57,6 +70,7 @@ export const Footer = () => {
     setIsSubmitting(true);
     
     try {
+      const supabase = await getSupabase();
       const { error } = await supabase
         .from('newsletter_subscribers')
         .insert({ email: result.data });
@@ -73,7 +87,7 @@ export const Footer = () => {
         // Send confirmation email (don't block on this)
         supabase.functions.invoke('send-newsletter-confirmation', {
           body: { email: result.data },
-        }).catch((emailError) => {
+        }).catch((emailError: any) => {
           console.error('Failed to send confirmation email:', emailError);
         });
       }
