@@ -51,6 +51,7 @@ import { RelatedGuides } from '@/components/guides/RelatedGuides';
 import { BuyingGuideBlock } from '@/components/seo/BuyingGuideBlock';
 import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
 import { HeroProductBoost } from '@/components/products/HeroProductBoost';
+import { ProductBundleUpsell } from '@/components/products/ProductBundleUpsell';
 import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
@@ -1025,6 +1026,15 @@ const ProductDetail = () => {
             >
               <TrustMicrocopy />
             </motion.div>
+
+            {/* Bundle Upsell — contextual companion product */}
+            {product.slug && (
+              <ProductBundleUpsell
+                productSlug={product.slug}
+                mainProductPrice={product.price}
+                mainProductName={product.name}
+              />
+            )}
 
             {/* Trust Features - Complementary to above microcopy */}
             <motion.div 
