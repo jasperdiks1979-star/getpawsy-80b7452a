@@ -63,24 +63,18 @@ try {
   console.error('[BOOT_FAIL] Env validation threw:', e);
 }
 
-// === STEP 3: Web Vitals + Perf Logger — deferred, non-blocking ===
-import { initVitalsCollector } from "./lib/vitals-collector";
-import { initLCPDebug } from "./lib/lcp-debug";
-// Perf logger: zero-cost when ?perf=1 absent (checked inside)
-import { initPerfLogger } from "./lib/perf-logger";
+// === STEP 3: Web Vitals + Perf Logger — fully deferred, non-blocking ===
 if (typeof window !== 'undefined') {
-  // Init perf logger immediately (it self-gates on ?perf param)
-  initPerfLogger();
+  // All monitoring deferred to after mount — none of this is needed for first paint
+  const initMonitoring = () => {
+    import("./lib/vitals-collector").then(m => m.initVitalsCollector()).catch(() => {});
+    import("./lib/lcp-debug").then(m => m.initLCPDebug()).catch(() => {});
+    import("./lib/perf-logger").then(m => m.initPerfLogger()).catch(() => {});
+  };
   if ('requestIdleCallback' in window) {
-    (window as any).requestIdleCallback(() => {
-      initVitalsCollector();
-      initLCPDebug();
-    });
+    (window as any).requestIdleCallback(initMonitoring, { timeout: 5000 });
   } else {
-    setTimeout(() => {
-      initVitalsCollector();
-      initLCPDebug();
-    }, 0);
+    setTimeout(initMonitoring, 2000);
   }
 }
 
@@ -103,10 +97,13 @@ try {
     (window as any).__lcpTrace.createRootAt = ts;
   }
 
-  import('./lib/lcp-render-trace').then(({ traceReactMount, scheduleTraceSummary }) => {
-    traceReactMount();
-    scheduleTraceSummary();
-  });
+  // LCP trace — fully deferred, only loads module when ?lcpTrace is present
+  if (isTracing) {
+    import('./lib/lcp-render-trace').then(({ traceReactMount, scheduleTraceSummary }) => {
+      traceReactMount();
+      scheduleTraceSummary();
+    });
+  }
 
   const root = createRoot(rootEl);
 
