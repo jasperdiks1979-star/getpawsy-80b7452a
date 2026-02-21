@@ -130,7 +130,7 @@ const generateBreadcrumbJsonLd = (collection: SeoCollectionData, parentCollectio
     {
       '@type': 'ListItem' as const,
       position: 2,
-      name: 'Cat Furniture',
+      name: 'Products',
       item: 'https://getpawsy.pet/products'
     },
   ];
@@ -477,7 +477,7 @@ const SeoCollection = () => {
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/products">Cat Furniture</Link>
+                <Link to="/products">Products</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             {parentCollection && (
@@ -507,9 +507,17 @@ const SeoCollection = () => {
           <h1 className="text-3xl md:text-4xl font-display font-bold mb-4">
             {collection.name}
           </h1>
-          <p className="text-muted-foreground text-lg leading-relaxed max-w-4xl">
-            {collection.seo_intro}
-          </p>
+          <div 
+            className="text-muted-foreground text-base leading-relaxed max-w-4xl prose prose-headings:text-foreground prose-headings:font-display prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-2 prose-p:mb-4"
+            dangerouslySetInnerHTML={{ 
+              __html: collection.seo_intro
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/^(?!<[h])(.+)/gm, (match) => match.startsWith('<') ? match : `<p>${match}</p>`)
+                .replace(/<p><\/p>/g, '')
+            }}
+          />
           
           {/* Secondary Keywords as Tags */}
           {collection.secondary_keywords.length > 0 && (

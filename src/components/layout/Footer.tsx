@@ -91,11 +91,11 @@ export const Footer = () => {
   const footerLinks = {
     shop: [
       { label: 'Bestsellers', href: '/bestsellers' },
+      { label: 'Dogs', href: '/collections/dogs' },
+      { label: 'Cats', href: '/collections/cats' },
       { label: 'Best Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
       { label: 'Best Dog Toys', href: '/collections/best-interactive-dog-toys' },
       { label: 'All Products', href: '/products' },
-      { label: 'Dogs', href: '/products?category=dogs' },
-      { label: 'Cats', href: '/products?category=cats' },
     ],
     support: [
       { label: 'Contact', href: '/contact' },
