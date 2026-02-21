@@ -89,12 +89,32 @@ export const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
-    shop: [
-      { label: 'Bestsellers', href: '/bestsellers' },
-      { label: 'Dogs', href: '/collections/dogs' },
-      { label: 'Cats', href: '/collections/cats' },
-      { label: 'Best Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
-      { label: 'Best Dog Toys', href: '/collections/best-interactive-dog-toys' },
+    shopDogs: [
+      { label: 'All Dog Products', href: '/collections/dogs' },
+      { label: 'Dog Beds', href: '/collections/orthopedic-calming-dog-beds' },
+      { label: 'Dog Toys', href: '/collections/best-interactive-dog-toys' },
+      { label: 'Indestructible Dog Toys', href: '/collections/indestructible-dog-chew-toys' },
+      { label: 'Slow Feeder Bowls', href: '/collections/best-slow-feeder-dog-bowls' },
+      { label: 'Dog Car Safety', href: '/collections/dog-car-travel-safety-seats' },
+      { label: 'Dog Travel Gear', href: '/collections/dog-travel-accessories' },
+    ],
+    shopCats: [
+      { label: 'All Cat Products', href: '/collections/cats' },
+      { label: 'Cat Condos & Trees', href: '/collections/cat-condos' },
+      { label: 'Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
+      { label: 'Cat Toys', href: '/collections/best-cat-toys-for-indoor-cats' },
+      { label: 'Automatic Feeders', href: '/collections/automatic-cat-feeders' },
+      { label: 'Indoor Cat Enrichment', href: '/collections/indoor-cat-enrichment' },
+    ],
+    topGuides: [
+      { label: 'Best Cat Litter Box 2026', href: '/guides/best-cat-litter-box-2026' },
+      { label: 'Best Cat Trees for Apartments', href: '/guides/best-cat-trees-small-apartments' },
+      { label: 'Best Litter Box Furniture', href: '/guides/best-cat-litter-box-furniture-enclosures-2026' },
+      { label: 'How Many Litter Boxes Per Cat', href: '/guides/how-many-litter-boxes-per-cat' },
+      { label: 'Best Extra Large Litter Boxes', href: '/guides/best-extra-large-litter-boxes' },
+    ],
+    bestsellers: [
+      { label: 'Bestsellers 2026', href: '/bestsellers' },
       { label: 'All Products', href: '/products' },
     ],
     support: [
@@ -105,6 +125,10 @@ export const Footer = () => {
     ],
     company: [
       { label: 'About Us', href: '/about' },
+      { label: 'About the Author', href: '/about-the-author' },
+      { label: 'Why Trust Our Reviews', href: '/why-trust-our-reviews' },
+      { label: 'How We Test Products', href: '/how-we-test-products' },
+      { label: 'Editorial Guidelines', href: '/editorial-guidelines' },
       { label: 'Blog', href: '/blog' },
       { label: 'Privacy Policy', href: '/privacy' },
       { label: 'Terms of Service', href: '/terms' },
@@ -162,7 +186,7 @@ export const Footer = () => {
       {/* Main Footer */}
       <div className="bg-foreground text-background w-full">
         <div className="container px-4 md:px-6 py-16 max-w-full">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-10">
             {/* Brand Column */}
             <div className="col-span-2 md:col-span-2 space-y-6">
               <Link to="/" className="inline-flex items-center gap-3 group">
@@ -194,7 +218,7 @@ export const Footer = () => {
                 ))}
               </div>
 
-              {/* Contact Info - Enhanced with response time */}
+              {/* Contact Info */}
               <div className="space-y-3 pt-2">
                 <a href={`mailto:${SUPPORT_EMAIL}`} className="flex items-center gap-3 text-sm text-background/70 hover:text-primary transition-colors">
                   <Mail className="w-4 h-4" />
@@ -218,16 +242,25 @@ export const Footer = () => {
               </div>
             </div>
 
-            {/* Shop Links */}
+            {/* Shop by Dog */}
             <div>
-              <h4 className="font-display font-semibold text-lg mb-5">Shop</h4>
+              <h4 className="font-display font-semibold text-lg mb-5">Shop Dogs</h4>
               <ul className="space-y-3">
-                {footerLinks.shop.map((link) => (
+                {footerLinks.shopDogs.map((link) => (
                   <li key={link.href}>
-                    <Link 
-                      to={link.href} 
-                      className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
-                    >
+                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      <span>{link.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+
+              <h4 className="font-display font-semibold text-lg mt-8 mb-5">Shop Cats</h4>
+              <ul className="space-y-3">
+                {footerLinks.shopCats.map((link) => (
+                  <li key={link.href}>
+                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                       <span>{link.label}</span>
                     </Link>
@@ -253,18 +286,27 @@ export const Footer = () => {
                   </li>
                 ))}
               </ul>
+
+              <h4 className="font-display font-semibold text-lg mt-8 mb-5">Bestsellers</h4>
+              <ul className="space-y-3">
+                {footerLinks.bestsellers.map((link) => (
+                  <li key={link.href}>
+                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      <span>{link.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            {/* Company Links */}
+            {/* Company + Trust Links */}
             <div>
-              <h4 className="font-display font-semibold text-lg mb-5">Company</h4>
+              <h4 className="font-display font-semibold text-lg mb-5">Company & Trust</h4>
               <ul className="space-y-3">
                 {footerLinks.company.map((link) => (
                   <li key={link.href}>
-                    <Link 
-                      to={link.href} 
-                      className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
-                    >
+                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                       <span>{link.label}</span>
                     </Link>

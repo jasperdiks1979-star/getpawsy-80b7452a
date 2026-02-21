@@ -211,6 +211,11 @@ const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
 const GrowthVerification = lazyWithRetry(() => import("./pages/GrowthVerification"));
 const Healthz = lazyWithRetry(() => import("./pages/Healthz"));
+const WhyTrustOurReviews = lazyWithRetry(() => import("./pages/WhyTrustOurReviews"));
+const AboutTheAuthor = lazyWithRetry(() => import("./pages/AboutTheAuthor"));
+const HowWeTestProducts = lazyWithRetry(() => import("./pages/HowWeTestProducts"));
+const EditorialGuidelines = lazyWithRetry(() => import("./pages/EditorialGuidelines"));
+const AffiliateDisclosure = lazyWithRetry(() => import("./pages/AffiliateDisclosure"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -307,6 +312,11 @@ const App = () => {
                       <Route path="/blog/:slug" element={<Suspense fallback={<RouteLoader />}><BlogPost /></Suspense>} />
                       <Route path="/founder-mode" element={<Suspense fallback={<RouteLoader />}><FounderMode /></Suspense>} />
                       <Route path="/slow-feeder-dog-bowls" element={<Suspense fallback={<RouteLoader />}><SlowFeederDogBowls /></Suspense>} />
+                      <Route path="/why-trust-our-reviews" element={<Suspense fallback={<RouteLoader />}><WhyTrustOurReviews /></Suspense>} />
+                      <Route path="/about-the-author" element={<Suspense fallback={<RouteLoader />}><AboutTheAuthor /></Suspense>} />
+                      <Route path="/how-we-test-products" element={<Suspense fallback={<RouteLoader />}><HowWeTestProducts /></Suspense>} />
+                      <Route path="/editorial-guidelines" element={<Suspense fallback={<RouteLoader />}><EditorialGuidelines /></Suspense>} />
+                      <Route path="/affiliate-disclosure" element={<Suspense fallback={<RouteLoader />}><AffiliateDisclosure /></Suspense>} />
                       
                       {/* Guide pages */}
                       <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />
