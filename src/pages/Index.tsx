@@ -353,7 +353,7 @@ const Index = () => {
           <img
             src="/hero-dog.webp"
             srcSet="/hero-dog-600.webp 600w, /hero-dog-900.webp 900w, /hero-dog.webp 1200w"
-            sizes="100vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px"
             alt="Happy dog relaxing at home with premium pet products"
             width={1200}
             height={675}
@@ -412,12 +412,14 @@ const Index = () => {
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* ── Trust Badges — lazy-loaded, mounts after hero paint ─────────── */}
-      <SectionErrorBoundary sectionName="Features">
-        <Suspense fallback={<div className="py-6 md:py-10 bg-sand/50 border-y border-border/30" style={{ minHeight: 80 }} />}>
-          <AnimatedTrustBadges />
-        </Suspense>
-      </SectionErrorBoundary>
+      {/* ── Trust Badges — gated behind hydration to not block LCP ─────────── */}
+      {hydrationReady && (
+        <SectionErrorBoundary sectionName="Features">
+          <Suspense fallback={<div className="py-6 md:py-10 bg-sand/50 border-y border-border/30" style={{ minHeight: 80 }} />}>
+            <AnimatedTrustBadges />
+          </Suspense>
+        </SectionErrorBoundary>
+      )}
 
       {/* ── Popular Guides — deferred until hydration ─────────────────── */}
       {hydrationReady && (
@@ -557,7 +559,8 @@ const Index = () => {
       </SectionErrorBoundary>
       )}
 
-      {/* ── Featured Products ────────────────────────────────────────────── */}
+      {/* ── Featured Products — gated behind hydration ────────────────── */}
+      {hydrationReady && (
       <SectionErrorBoundary sectionName="Featured Products">
         <section className="py-20 bg-sand/40">
           <div className="container px-4 md:px-6">
@@ -580,13 +583,7 @@ const Index = () => {
               </div>
             )}
 
-            {!productsLoading && !hydrationReady && (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            )}
-
-            {hydrationReady && !productsLoading && safeFeaturedProducts.length > 0 && (
+            {!productsLoading && safeFeaturedProducts.length > 0 && (
               <FadeInView>
                 <Suspense fallback={<div className="h-80" />}>
                   <Carousel
@@ -608,7 +605,7 @@ const Index = () => {
               </FadeInView>
             )}
 
-            {hydrationReady && !productsLoading && safeFeaturedProducts.length === 0 && (
+            {!productsLoading && safeFeaturedProducts.length === 0 && (
               <div className="text-center py-16 bg-card rounded-3xl shadow-soft">
                 <p className="text-muted-foreground mb-4">
                   No products available yet. Import products via the admin page.
@@ -621,6 +618,7 @@ const Index = () => {
           </div>
         </section>
       </SectionErrorBoundary>
+      )}
 
       {/* ── Why Choose GetPawsy — deferred ─────────────────────────────── */}
       {hydrationReady && (
