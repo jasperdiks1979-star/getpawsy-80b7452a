@@ -50,6 +50,7 @@ import { CustomersAlsoBought } from '@/components/products/CustomersAlsoBought';
 import { RelatedGuides } from '@/components/guides/RelatedGuides';
 import { BuyingGuideBlock } from '@/components/seo/BuyingGuideBlock';
 import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
+import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
   DELIVERY_TIME_STANDARD,
@@ -1375,6 +1376,15 @@ const ProductDetail = () => {
 
         {/* Popular Buying Guides — cornerstone authority block */}
         <PopularGuidesBlock compact />
+
+        {/* Explore More in Category — silo closure */}
+        {product?.category && (
+          <ExploreMoreCategory 
+            category={product.category}
+            currentProductId={product.id}
+            currentProductSlug={product.slug}
+          />
+        )}
 
         {/* Frequently Bought Together */}
         {(relatedLoading || (relatedProducts && relatedProducts.length >= 2)) && (

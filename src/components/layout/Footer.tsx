@@ -89,42 +89,30 @@ export const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
-    shopDogs: [
+    // Top Dog Categories — curated, no duplication
+    topDogs: [
       { label: 'All Dog Products', href: '/collections/dogs' },
-      { label: 'Dog Beds for Large Dogs', href: '/collections/best-dog-beds-large-dogs' },
       { label: 'Orthopedic Dog Beds', href: '/collections/orthopedic-calming-dog-beds' },
-      { label: 'Elevated Dog Beds', href: '/collections/best-elevated-dog-bed' },
       { label: 'Interactive Dog Toys', href: '/collections/best-interactive-dog-toys' },
-      { label: 'Indestructible Dog Toys', href: '/collections/indestructible-dog-chew-toys' },
-      { label: 'Puppy Toys', href: '/collections/best-dog-toys-for-puppies' },
       { label: 'Slow Feeder Bowls', href: '/collections/best-slow-feeder-dog-bowls' },
       { label: 'No-Pull Harnesses', href: '/collections/best-dog-harnesses' },
-      { label: 'Dog Car Seats', href: '/collections/best-dog-car-seats' },
-      { label: 'Dog Travel Gear', href: '/collections/dog-travel-accessories' },
-      { label: 'Dog Grooming Kits', href: '/collections/best-dog-grooming-kits' },
     ],
-    shopCats: [
+    // Top Cat Categories
+    topCats: [
       { label: 'All Cat Products', href: '/collections/cats' },
       { label: 'Cat Condos & Trees', href: '/collections/cat-condos' },
-      { label: 'Cat Trees for Large Cats', href: '/collections/cat-tree-for-large-cats' },
-      { label: 'Cat Trees for Two Cats', href: '/collections/cat-tree-for-two-cats' },
       { label: 'Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
-      { label: 'Self-Cleaning Litter Boxes', href: '/collections/self-cleaning-litter-box-guide' },
-      { label: 'Litter Box Furniture', href: '/collections/cat-litter-box-furniture-guide' },
       { label: 'Cat Toys', href: '/collections/best-cat-toys-for-indoor-cats' },
       { label: 'Cat Scratching Posts', href: '/collections/best-cat-scratching-posts' },
-      { label: 'Automatic Cat Feeders', href: '/collections/automatic-cat-feeders' },
-      { label: 'Cat Carriers', href: '/collections/best-cat-carriers' },
-      { label: 'Cat Window Perches', href: '/collections/best-cat-window-perches' },
     ],
-    topGuides: [
+    // Buying Guides
+    guides: [
       { label: 'Best Cat Litter Box 2026', href: '/guides/best-cat-litter-box-2026' },
       { label: 'Best Cat Trees for Apartments', href: '/guides/best-cat-trees-small-apartments' },
-      { label: 'Best Litter Box Furniture', href: '/guides/best-cat-litter-box-furniture-enclosures-2026' },
       { label: 'How Many Litter Boxes Per Cat', href: '/guides/how-many-litter-boxes-per-cat' },
-      { label: 'Best Extra Large Litter Boxes', href: '/guides/best-extra-large-litter-boxes' },
     ],
-    bestsellers: [
+    // Best of 2026
+    bestOf: [
       { label: 'Bestsellers 2026', href: '/bestsellers' },
       { label: 'All Products', href: '/products' },
     ],
@@ -136,10 +124,7 @@ export const Footer = () => {
     ],
     company: [
       { label: 'About Us', href: '/about' },
-      { label: 'About the Author', href: '/about-the-author' },
       { label: 'Why Trust Our Reviews', href: '/why-trust-our-reviews' },
-      { label: 'How We Test Products', href: '/how-we-test-products' },
-      { label: 'Editorial Guidelines', href: '/editorial-guidelines' },
       { label: 'Blog', href: '/blog' },
       { label: 'Privacy Policy', href: '/privacy' },
       { label: 'Terms of Service', href: '/terms' },
@@ -253,11 +238,11 @@ export const Footer = () => {
               </div>
             </div>
 
-            {/* Shop by Dog */}
+            {/* Top Dog Categories */}
             <div>
-              <h4 className="font-display font-semibold text-lg mb-5">Shop Dogs</h4>
+              <h4 className="font-display font-semibold text-lg mb-5">Top Dog Categories</h4>
               <ul className="space-y-3">
-                {footerLinks.shopDogs.map((link) => (
+                {footerLinks.topDogs.map((link) => (
                   <li key={link.href}>
                     <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
@@ -267,9 +252,9 @@ export const Footer = () => {
                 ))}
               </ul>
 
-              <h4 className="font-display font-semibold text-lg mt-8 mb-5">Shop Cats</h4>
+              <h4 className="font-display font-semibold text-lg mt-8 mb-5">Top Cat Categories</h4>
               <ul className="space-y-3">
-                {footerLinks.shopCats.map((link) => (
+                {footerLinks.topCats.map((link) => (
                   <li key={link.href}>
                     <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
@@ -280,7 +265,7 @@ export const Footer = () => {
               </ul>
             </div>
 
-            {/* Support Links */}
+            {/* Support + Best Of */}
             <div>
               <h4 className="font-display font-semibold text-lg mb-5">Customer Service</h4>
               <ul className="space-y-3">
@@ -298,9 +283,21 @@ export const Footer = () => {
                 ))}
               </ul>
 
-              <h4 className="font-display font-semibold text-lg mt-8 mb-5">Bestsellers</h4>
+              <h4 className="font-display font-semibold text-lg mt-8 mb-5">Best of 2026</h4>
               <ul className="space-y-3">
-                {footerLinks.bestsellers.map((link) => (
+                {footerLinks.bestOf.map((link) => (
+                  <li key={link.href}>
+                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      <span>{link.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+
+              <h4 className="font-display font-semibold text-lg mt-8 mb-5">Buying Guides</h4>
+              <ul className="space-y-3">
+                {footerLinks.guides.map((link) => (
                   <li key={link.href}>
                     <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />

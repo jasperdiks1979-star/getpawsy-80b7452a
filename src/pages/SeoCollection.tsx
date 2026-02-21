@@ -38,6 +38,9 @@ import {
   generateCollectionMetaTitle, 
   generateCollectionMetaDescription 
 } from '@/lib/seo-longtail-keywords';
+import { CategoryRelatedGuides } from '@/components/seo/CategoryRelatedGuides';
+import { CategoryPopularProducts } from '@/components/seo/CategoryPopularProducts';
+import { CategoryClusterLinks } from '@/components/seo/CategoryClusterLinks';
 
 interface FAQItem {
   question: string;
@@ -679,6 +682,27 @@ const SeoCollection = () => {
         <SoftEmailCapture 
           variant="collection" 
           className="mb-12"
+        />
+
+        {/* Related Guides — dynamic keyword-matched blog posts */}
+        <CategoryRelatedGuides 
+          categoryName={collection.name}
+          categorySlug={collection.slug}
+          primaryKeyword={collection.primary_keyword}
+        />
+
+        {/* Popular in this Category — best-selling products with anchor variation */}
+        <CategoryPopularProducts 
+          categoryName={collection.name}
+          products={products}
+        />
+
+        {/* Cluster Links — contextual paragraph linking to supporting pages */}
+        <CategoryClusterLinks 
+          categoryName={collection.name}
+          categorySlug={collection.slug}
+          relatedSlugs={collection.related_collection_slugs}
+          subCollections={subCollections}
         />
 
         {/* Section D: Internal Links */}
