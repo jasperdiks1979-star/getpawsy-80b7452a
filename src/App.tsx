@@ -216,6 +216,7 @@ const AboutTheAuthor = lazyWithRetry(() => import("./pages/AboutTheAuthor"));
 const HowWeTestProducts = lazyWithRetry(() => import("./pages/HowWeTestProducts"));
 const EditorialGuidelines = lazyWithRetry(() => import("./pages/EditorialGuidelines"));
 const AffiliateDisclosure = lazyWithRetry(() => import("./pages/AffiliateDisclosure"));
+const DogBedSizeChart = lazyWithRetry(() => import("./pages/DogBedSizeChart"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -317,6 +318,7 @@ const App = () => {
                       <Route path="/how-we-test-products" element={<Suspense fallback={<RouteLoader />}><HowWeTestProducts /></Suspense>} />
                       <Route path="/editorial-guidelines" element={<Suspense fallback={<RouteLoader />}><EditorialGuidelines /></Suspense>} />
                       <Route path="/affiliate-disclosure" element={<Suspense fallback={<RouteLoader />}><AffiliateDisclosure /></Suspense>} />
+                      <Route path="/resources/dog-bed-size-chart" element={<Suspense fallback={<RouteLoader />}><DogBedSizeChart /></Suspense>} />
                       
                       {/* Guide pages */}
                       <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />
