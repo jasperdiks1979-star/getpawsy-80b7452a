@@ -132,8 +132,9 @@ export const Footer = () => {
     ],
     popularCategories: [
       { label: 'Dog Beds for Large Dogs', href: '/collections/best-dog-beds-for-large-dogs' },
-      { label: 'Orthopedic Dog Beds', href: '/collections/best-orthopedic-dog-beds' },
+      { label: 'Orthopedic Dog Beds', href: '/collections/orthopedic-dog-beds' },
       { label: 'Memory Foam Dog Beds', href: '/collections/memory-foam-dog-beds' },
+      { label: 'Joint Support Collection', href: '/collections/best-orthopedic-dog-beds' },
       { label: 'Calming Beds for Anxiety', href: '/collections/dog-beds-for-anxiety' },
       { label: 'Cat Trees for Apartments', href: '/collections/best-cat-trees-for-small-apartments' },
       { label: 'Modern Cat Trees', href: '/collections/modern-cat-trees' },
