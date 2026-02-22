@@ -214,6 +214,9 @@ const AdminDashboardOverview = lazyWithRetry(() => import("./pages/admin/AdminDa
 const SlowFeederDogBowls = lazyWithRetry(() => import("./pages/SlowFeederDogBowls"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const OrthopedicDogBeds = lazyWithRetry(() => import("./pages/collections/OrthopedicDogBeds"));
+const CatTreesForLargeCats = lazyWithRetry(() => import("./pages/collections/CatTreesForLargeCats"));
+const DogCarTravelSafety = lazyWithRetry(() => import("./pages/collections/DogCarTravelSafety"));
+const ClusterRevenueEngine = lazyWithRetry(() => import("./pages/admin/ClusterRevenueEngine"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
 const GrowthVerification = lazyWithRetry(() => import("./pages/GrowthVerification"));
@@ -334,6 +337,10 @@ const App = () => {
                       {/* Dedicated mega landing pages */}
                       <Route path="/collections/orthopedic-dog-beds" element={<Suspense fallback={<RouteLoader />}><OrthopedicDogBeds /></Suspense>} />
                       <Route path="/orthopedic-dog-beds" element={<Suspense fallback={<RouteLoader />}><OrthopedicDogBeds /></Suspense>} />
+                      <Route path="/collections/cat-trees-for-large-cats" element={<Suspense fallback={<RouteLoader />}><CatTreesForLargeCats /></Suspense>} />
+                      <Route path="/cat-trees-for-large-cats" element={<Suspense fallback={<RouteLoader />}><CatTreesForLargeCats /></Suspense>} />
+                      <Route path="/collections/dog-car-travel-safety" element={<Suspense fallback={<RouteLoader />}><DogCarTravelSafety /></Suspense>} />
+                      <Route path="/dog-car-travel-safety" element={<Suspense fallback={<RouteLoader />}><DogCarTravelSafety /></Suspense>} />
 
                       {/* SEO Collection pages — /collections/:slug */}
                       <Route path="/collections/:slug" element={<Suspense fallback={<RouteLoader />}><SeoCollection /></Suspense>} />
@@ -418,6 +425,7 @@ const App = () => {
                         <Route path="perf" element={<Suspense fallback={<RouteLoader />}><PerfAuditPage /></Suspense>} />
                         <Route path="seo-agent" element={<Suspense fallback={<RouteLoader />}><SeoAgentControlCenter /></Suspense>} />
                         <Route path="commerce-intelligence" element={<Suspense fallback={<RouteLoader />}><CommerceIntelligencePage /></Suspense>} />
+                        <Route path="cluster-revenue-engine" element={<Suspense fallback={<RouteLoader />}><ClusterRevenueEngine /></Suspense>} />
                         <Route path="cat-condo-growth" element={<Suspense fallback={<RouteLoader />}><CatCondoGrowthDashboard /></Suspense>} />
                         <Route path="seo-agent-auto" element={<Suspense fallback={<RouteLoader />}><SeoAgentAutonomous /></Suspense>} />
                         <Route path="seo-acceleration" element={<Suspense fallback={<RouteLoader />}><SeoAccelerationPage /></Suspense>} />

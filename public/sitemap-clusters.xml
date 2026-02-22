@@ -3,6 +3,10 @@
   <!-- ══════ PILLAR PAGES (Tier 1 — Priority 0.90) ══════ -->
   <!-- Orthopedic Dog Beds Pillar (PRIMARY AUTHORITY PAGE) -->
   <url><loc>https://getpawsy.pet/collections/orthopedic-dog-beds</loc><changefreq>weekly</changefreq><priority>0.90</priority></url>
+  <!-- Cat Trees for Large Cats Pillar -->
+  <url><loc>https://getpawsy.pet/collections/cat-trees-for-large-cats</loc><changefreq>weekly</changefreq><priority>0.90</priority></url>
+  <!-- Dog Car Travel Safety Pillar -->
+  <url><loc>https://getpawsy.pet/collections/dog-car-travel-safety</loc><changefreq>weekly</changefreq><priority>0.90</priority></url>
   <!-- Dog Beds Pillar -->
   <url><loc>https://getpawsy.pet/collections/orthopedic-calming-dog-beds</loc><changefreq>weekly</changefreq><priority>0.90</priority></url>
   <!-- Cat Furniture Pillar -->
@@ -38,7 +42,19 @@
   <url><loc>https://getpawsy.pet/collections/cooling-orthopedic-dog-bed</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
   <url><loc>https://getpawsy.pet/collections/waterproof-orthopedic-dog-bed</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
 
-  <!-- ══════ ORTHOPEDIC BLOG SUPPORT CLUSTER (Tier 3 — Priority 0.80) ══════ -->
+  <!-- ══════ CAT TREES CLUSTER (Tier 2 — Priority 0.85) ══════ -->
+  <url><loc>https://getpawsy.pet/collections/extra-large-cat-trees</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/heavy-duty-cat-tree</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/cat-tree-for-maine-coon</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/best-cat-tree-for-multiple-cats</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+
+  <!-- ══════ DOG CAR SAFETY CLUSTER (Tier 2 — Priority 0.85) ══════ -->
+  <url><loc>https://getpawsy.pet/collections/dog-car-seats</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/dog-car-harness</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/dog-booster-seat</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/dog-car-seat-cover</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+
+  <!-- ══════ BLOG SUPPORT CLUSTERS (Tier 3 — Priority 0.80) ══════ -->
   <url><loc>https://getpawsy.pet/guides/do-orthopedic-dog-beds-help-arthritis</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
   <url><loc>https://getpawsy.pet/guides/signs-dog-needs-joint-support</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
   <url><loc>https://getpawsy.pet/guides/orthopedic-vs-memory-foam-dog-beds</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
