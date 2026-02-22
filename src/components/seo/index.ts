@@ -9,3 +9,4 @@ export { EventSchema, createSaleEvent, COMMON_SALE_EVENTS } from './EventSchema'
 export { WebsiteSchema } from './WebsiteSchema';
 export { AggregateRatingSchema, calculateAggregateRating } from './AggregateRatingSchema';
 export { LocalBusinessSchema } from './LocalBusinessSchema';
+export { CollectionPillarLinks } from './CollectionPillarLinks';

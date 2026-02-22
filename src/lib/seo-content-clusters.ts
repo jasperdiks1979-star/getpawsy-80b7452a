@@ -269,16 +269,104 @@ export const SEO_CONTENT_CLUSTERS: ContentCluster[] = [
     ],
   },
 
-  // ===================== DE-PRIORITIZED CLUSTERS =====================
+  // ===================== DOG BEDS CLUSTER (MONEY PAGE) =====================
+  {
+    name: 'Dog Beds',
+    pillarSlug: 'orthopedic-calming-dog-beds',
+    pillarKeyword: 'best dog beds',
+    priority: 'critical',
+    secondaryKeywords: [
+      'orthopedic dog beds',
+      'calming dog beds',
+      'memory foam dog beds',
+      'dog beds for large dogs',
+      'waterproof dog beds',
+    ],
+    blogTopics: [
+      {
+        slug: 'best-orthopedic-dog-beds-2026',
+        title: 'Best Orthopedic Dog Beds (2026) – Vet-Approved Picks',
+        targetKeyword: 'best orthopedic dog beds',
+        searchIntent: 'commercial',
+        linkedCollection: 'orthopedic-calming-dog-beds',
+      },
+      {
+        slug: 'how-to-choose-dog-bed-size',
+        title: 'How to Choose the Right Dog Bed Size – Complete Guide',
+        targetKeyword: 'dog bed size guide',
+        searchIntent: 'informational',
+        linkedCollection: 'orthopedic-calming-dog-beds',
+      },
+    ],
+    internalLinkAnchors: [
+      'best dog beds',
+      'orthopedic dog beds',
+      'calming dog beds',
+      'dog beds for large dogs',
+    ],
+  },
+
+  // ===================== DOG GROOMING CLUSTER =====================
+  {
+    name: 'Dog Grooming',
+    pillarSlug: 'best-dog-grooming-kits',
+    pillarKeyword: 'dog grooming kit',
+    priority: 'high',
+    secondaryKeywords: [
+      'pet grooming vacuum',
+      'dog grooming at home',
+      'grooming supplies for dogs',
+    ],
+    blogTopics: [
+      {
+        slug: 'dog-grooming-at-home-tips',
+        title: 'Dog Grooming at Home: Step-by-Step Guide',
+        targetKeyword: 'dog grooming at home',
+        searchIntent: 'informational',
+        linkedCollection: 'best-dog-grooming-kits',
+      },
+    ],
+    internalLinkAnchors: [
+      'dog grooming kits',
+      'grooming supplies',
+      'at-home dog grooming',
+    ],
+  },
+
+  // ===================== DOG TRAVEL CLUSTER =====================
   {
     name: 'Dog Travel',
     pillarSlug: 'dog-travel-accessories',
     pillarKeyword: 'dog travel accessories',
-    priority: 'low',
-    secondaryKeywords: ['dog car seat', 'pet travel carrier'],
+    priority: 'high',
+    secondaryKeywords: ['dog car seat', 'pet travel carrier', 'dog travel water bottle'],
     blogTopics: [],
-    internalLinkAnchors: ['dog travel gear', 'pet carrier'],
+    internalLinkAnchors: ['dog travel gear', 'dog car seat', 'pet travel accessories'],
   },
+
+  // ===================== CAT BEDS CLUSTER =====================
+  {
+    name: 'Cat Beds',
+    pillarSlug: 'best-cat-beds',
+    pillarKeyword: 'best cat beds',
+    priority: 'medium',
+    secondaryKeywords: ['calming cat bed', 'cat bed for kittens', 'cave cat bed'],
+    blogTopics: [],
+    internalLinkAnchors: ['best cat beds', 'calming cat beds', 'cozy cat beds'],
+  },
+
+  // ===================== DOG WALKING & HARNESSES =====================
+  {
+    name: 'Dog Harnesses',
+    pillarSlug: 'best-dog-harnesses',
+    pillarKeyword: 'best dog harnesses',
+    priority: 'medium',
+    secondaryKeywords: ['no pull dog harness', 'dog harness for pulling'],
+    blogTopics: [],
+    internalLinkAnchors: ['best dog harnesses', 'no-pull harnesses', 'dog walking gear'],
+  },
+
+  // ===================== DE-PRIORITIZED CLUSTERS =====================
   {
     name: 'Pet Comfort',
     pillarSlug: 'pet-comfort-beds',
