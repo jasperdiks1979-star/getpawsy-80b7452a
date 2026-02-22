@@ -181,12 +181,11 @@ Deno.serve(async (req) => {
     if (!sitemap.ok) warnings.push(`sitemap.xml returned ${sitemap.status || 'error'}`);
     if (!merchantFeed.ok) warnings.push(`merchant-feed.xml returned ${merchantFeed.status || 'error'}`);
 
-    // Check www redirect (Lovable platform uses 302; 301 preferred but 302 is acceptable)
-    if (wwwRedirect.status !== 301 && wwwRedirect.status !== 302) {
-      warnings.push(`www redirect returned ${wwwRedirect.status} instead of 301/302`);
-    } else if (wwwRedirect.status === 302) {
-      // Platform limitation — not a warning, just informational
-      resolvedIssues.push('www redirect is 302 (Lovable platform behavior, not configurable per-project)');
+    // Check www redirect — MUST be 301 (permanent). 302 or 421 are errors.
+    if (wwwRedirect.status === 421) {
+      warnings.push('CRITICAL: www.getpawsy.pet returns 421 (Misdirected Request) — www hostname not bound at edge. Add www.getpawsy.pet in Settings → Domains.');
+    } else if (wwwRedirect.status !== 301) {
+      warnings.push(`www redirect returned ${wwwRedirect.status} instead of 301 — check domain bindings`);
     }
     if (wwwRedirect.location && !wwwRedirect.location.includes("getpawsy.pet")) {
       warnings.push(`www redirect location unexpected: ${wwwRedirect.location}`);
