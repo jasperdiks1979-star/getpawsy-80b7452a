@@ -213,6 +213,7 @@ const CommerceIntelligencePage = lazyWithRetry(() => import("./pages/admin/Comme
 const AdminDashboardOverview = lazyWithRetry(() => import("./pages/admin/AdminDashboardOverview"));
 const SlowFeederDogBowls = lazyWithRetry(() => import("./pages/SlowFeederDogBowls"));
 const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
+const OrthopedicDogBeds = lazyWithRetry(() => import("./pages/collections/OrthopedicDogBeds"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
 const GrowthVerification = lazyWithRetry(() => import("./pages/GrowthVerification"));
@@ -330,6 +331,9 @@ const App = () => {
                       <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />
                       <Route path="/guides/:slug" element={<Suspense fallback={<RouteLoader />}><GuidePage /></Suspense>} />
                       
+                      {/* Dedicated mega landing pages */}
+                      <Route path="/collections/orthopedic-dog-beds" element={<Suspense fallback={<RouteLoader />}><OrthopedicDogBeds /></Suspense>} />
+
                       {/* SEO Collection pages — /collections/:slug */}
                       <Route path="/collections/:slug" element={<Suspense fallback={<RouteLoader />}><SeoCollection /></Suspense>} />
                       
