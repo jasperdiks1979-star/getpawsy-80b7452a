@@ -1,20 +1,39 @@
 # GetPawsy Pet Products - Robots.txt
 # Premium pet supplies, dog beds, cat trees, pet toys & accessories
-# Last updated: 2026-02-21
+# Last updated: 2026-02-22
 
 User-agent: *
 Allow: /
+Allow: /products
+Allow: /product/
+Allow: /collections/
+Allow: /blog/
+Allow: /guides/
+Allow: /bestsellers
+Allow: /about
+Allow: /contact
+Allow: /shipping
+Allow: /returns
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /resources/
 
-# Block private/internal routes
+# ── Block ALL query-string URLs (catch-all) ──
+# This prevents crawl waste on filter, sort, pagination, tracking params
+Disallow: /*?*
+
+# ── Block private/internal routes ──
 Disallow: /admin
 Disallow: /diagnostics
 Disallow: /dashboard
 Disallow: /checkout
+Disallow: /cart
 Disallow: /auth
 Disallow: /api/
-Disallow: /cart
 Disallow: /profile
 Disallow: /orders
+Disallow: /account
 Disallow: /payment-success
 Disallow: /track
 Disallow: /google-review
@@ -30,21 +49,22 @@ Disallow: /download-ads
 Disallow: /technical-declaration
 Disallow: /appeal-response
 Disallow: /search
-# /cookies is a real policy page — allowed for indexing
 Disallow: /privacy-policy-iframe
 Disallow: /terms-iframe
 
-# Block category parameter pages (canonical lives at /collections/*)
-Disallow: /*?*category=
-
-# Block filter and sort parameters (crawl waste)
-Disallow: /*?*sort=
-Disallow: /*?*filter=
-Disallow: /*?*page=
-
-# Block tracking/query parameters (including mid-querystring)
-Disallow: /*?*utm_
-Disallow: /*?*gclid=
-Disallow: /*?*fbclid=
+# Googlebot-specific: same rules
+User-agent: Googlebot
+Allow: /
+Allow: /product/
+Allow: /collections/
+Allow: /blog/
+Allow: /guides/
+Disallow: /*?*
+Disallow: /admin
+Disallow: /cart
+Disallow: /checkout
+Disallow: /account
+Disallow: /auth
+Disallow: /search
 
 Sitemap: https://getpawsy.pet/sitemap-index.xml
