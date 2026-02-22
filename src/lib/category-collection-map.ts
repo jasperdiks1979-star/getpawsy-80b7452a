@@ -12,10 +12,16 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
 
   // Dog subcategories
   'dog-beds': '/collections/orthopedic-calming-dog-beds',
+  'orthopedic-dog-beds': '/collections/best-orthopedic-dog-beds',
+  'orthopedic-beds': '/collections/best-orthopedic-dog-beds',
+  'memory-foam-dog-beds': '/collections/memory-foam-orthopedic-dog-bed',
+  'senior-dog-beds': '/collections/orthopedic-dog-bed-senior-dogs',
   'dog-toys': '/collections/best-interactive-dog-toys',
   'dog-training': '/collections/dog-enrichment-toys',
   'dog-collars-leashes': '/collections/best-dog-harnesses',
   'dog-carriers': '/collections/dog-travel-accessories',
+  'dog-car-seats': '/collections/best-dog-car-seats',
+  'dog-car-safety': '/collections/dog-car-travel-safety-seats',
   'dog-houses': '/collections/dogs',
   'dog-bowls-feeders': '/collections/best-slow-feeder-dog-bowls',
   'dog-food-treats': '/collections/dogs',
