@@ -156,4 +156,42 @@ export const KNOWN_RISKS: CannibalizationRisk[] = [
     severity: 'medium',
     recommendation: 'Pillar targets "best dog beds" (head). Sub-collection differentiates with "anxiety relief dog beds" or "dog beds for anxious dogs".',
   },
+  {
+    keyword: 'orthopedic dog bed',
+    pages: [
+      { url: '/collections/orthopedic-calming-dog-beds', pageType: 'pillar' },
+      { url: '/collections/best-orthopedic-dog-beds', pageType: 'collection' },
+      { url: '/blog/best-dog-bed-for-hip-dysplasia', pageType: 'blog' },
+    ],
+    severity: 'medium',
+    recommendation: 'Pillar owns head term "orthopedic dog beds". Sub-collection targets "best orthopedic dog beds [year]". Blog targets "dog beds for hip dysplasia" (condition-specific long-tail).',
+  },
+  {
+    keyword: 'cat tree',
+    pages: [
+      { url: '/collections/cat-condos', pageType: 'pillar' },
+      { url: '/collections/modern-cat-trees', pageType: 'collection' },
+      { url: '/blog/best-cat-trees-guide', pageType: 'blog' },
+    ],
+    severity: 'medium',
+    recommendation: 'Pillar owns "cat condos & cat trees". Sub-collection differentiates with "modern cat trees". Blog targets "how to choose a cat tree" (informational).',
+  },
+  {
+    keyword: 'dog car seat',
+    pages: [
+      { url: '/collections/dog-car-travel-safety-seats', pageType: 'collection' },
+      { url: '/collections/best-dog-car-seats', pageType: 'collection' },
+    ],
+    severity: 'high',
+    recommendation: 'Merge these two collections or 301-redirect "dog-car-travel-safety-seats" to "best-dog-car-seats". One canonical URL per intent.',
+  },
+  {
+    keyword: 'slow feeder dog bowl',
+    pages: [
+      { url: '/collections/best-slow-feeder-dog-bowls', pageType: 'pillar' },
+      { url: '/collections/best-slow-feeder-for-dogs-who-eat-too-fast', pageType: 'collection' },
+    ],
+    severity: 'medium',
+    recommendation: 'Pillar owns "slow feeder dog bowls". Sub-collection must differentiate with specific modifier: "for fast eaters" or "anti-bloat bowls".',
+  },
 ];
