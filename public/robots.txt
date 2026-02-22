@@ -20,8 +20,18 @@ Allow: /cookies
 Allow: /resources/
 
 # ── Block ALL query-string URLs (catch-all) ──
-# This prevents crawl waste on filter, sort, pagination, tracking params
 Disallow: /*?*
+
+# ── Block specific tracking / faceted parameters ──
+Disallow: /*?*gclid=
+Disallow: /*?*utm_
+Disallow: /*?*fbclid=
+Disallow: /*?*sort=
+Disallow: /*?*filter=
+Disallow: /*?*variant=
+Disallow: /*?*session=
+Disallow: /*?*page=
+Disallow: /*?*category=
 
 # ── Block private/internal routes ──
 Disallow: /admin
@@ -52,7 +62,7 @@ Disallow: /search
 Disallow: /privacy-policy-iframe
 Disallow: /terms-iframe
 
-# Googlebot-specific: same rules
+# Googlebot-specific
 User-agent: Googlebot
 Allow: /
 Allow: /product/
@@ -60,6 +70,13 @@ Allow: /collections/
 Allow: /blog/
 Allow: /guides/
 Disallow: /*?*
+Disallow: /*?*gclid=
+Disallow: /*?*utm_
+Disallow: /*?*fbclid=
+Disallow: /*?*sort=
+Disallow: /*?*filter=
+Disallow: /*?*variant=
+Disallow: /*?*session=
 Disallow: /admin
 Disallow: /cart
 Disallow: /checkout
@@ -67,4 +84,4 @@ Disallow: /account
 Disallow: /auth
 Disallow: /search
 
-Sitemap: https://getpawsy.pet/sitemap-index.xml
+Sitemap: https://getpawsy.pet/sitemap.xml

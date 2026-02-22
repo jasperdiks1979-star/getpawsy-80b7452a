@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CANONICAL_HOST = "https://getpawsy.pet";
-const MAX_URLS_PER_SITEMAP = 5000;
+const MAX_URLS_PER_SITEMAP = 500;
 
 serve(async (req) => {
   try {
@@ -85,7 +85,7 @@ serve(async (req) => {
     <loc>${escapeXml(loc)}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
+    <priority>0.80</priority>
   </url>`;
     });
 
