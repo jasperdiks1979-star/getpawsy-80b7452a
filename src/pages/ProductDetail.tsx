@@ -1507,9 +1507,9 @@ const ProductDetail = () => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] safe-area-bottom"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] safe-area-bottom"
           >
-            <div className="px-4 py-3 flex items-center gap-3">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
               {/* Price */}
               <div className="flex-shrink-0">
                 <div className="flex items-baseline gap-1.5">
@@ -1527,6 +1527,15 @@ const ProductDetail = () => {
                 ) : (
                   <span className="text-xs text-destructive">Out of Stock</span>
                 )}
+              </div>
+
+              {/* Trust badge - desktop only */}
+              <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground flex-shrink-0">
+                <Truck className="w-3.5 h-3.5 text-primary" />
+                <span>Free US Shipping $35+</span>
+                <span className="mx-1">•</span>
+                <Shield className="w-3.5 h-3.5 text-primary" />
+                <span>30-Day Returns</span>
               </div>
 
               {/* Quantity Selector */}
@@ -1559,7 +1568,7 @@ const ProductDetail = () => {
 
               {/* Add to Cart Button */}
               <Button
-                className="flex-1 gap-2 rounded-full font-semibold shadow-soft"
+                className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-semibold shadow-soft"
                 size="lg"
                 onClick={handleAddToCart}
                 disabled={!inStock}
@@ -1582,8 +1591,8 @@ const ProductDetail = () => {
         )}
       </AnimatePresence>
 
-      {/* Spacer for sticky bar on mobile */}
-      <div className={`md:hidden transition-all ${showStickyBar ? 'h-20' : 'h-0'}`} />
+      {/* Spacer for sticky bar */}
+      <div className={`transition-all ${showStickyBar ? 'h-20' : 'h-0'}`} />
     </Layout>
   );
 };
