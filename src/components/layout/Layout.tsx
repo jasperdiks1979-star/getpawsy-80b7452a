@@ -5,6 +5,7 @@ import { PageTransition } from '../ui/page-transition';
 import { MarketingErrorBoundary } from '../error/MarketingErrorBoundary';
 
 import { lazy, Suspense, useState, useEffect } from 'react';
+import { TrendingNowStrip } from '../marketing/TrendingNowStrip';
 
 // Lazy-load all non-critical marketing/overlay widgets
 const WelcomePopup = lazy(() => import('../marketing/WelcomePopup').then(m => ({ default: m.WelcomePopup })).catch(() => ({ default: () => null })));
@@ -72,6 +73,7 @@ export const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen min-h-[100dvh] flex flex-col w-full max-w-[100vw] overflow-x-hidden">
       <Navbar />
+      <TrendingNowStrip />
       <PageTransition>
         <main className="flex-1 w-full max-w-[100vw] overflow-x-hidden pb-safe">{children}</main>
       </PageTransition>
