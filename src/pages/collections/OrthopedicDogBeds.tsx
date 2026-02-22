@@ -24,14 +24,18 @@ import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
 import orthopedicHero from '@/assets/orthopedic-hero.jpg';
 
 const CANONICAL = 'https://getpawsy.pet/collections/orthopedic-dog-beds';
+// Also served at /orthopedic-dog-beds/ — canonical always points here
 const BASE = 'https://getpawsy.pet';
 
 const FAQ_DATA = [
-  { question: 'Do orthopedic dog beds help arthritis?', answer: 'Yes. Orthopedic dog beds made with high-density memory foam distribute your dog\'s weight evenly, reducing pressure on inflamed joints. Veterinarians frequently recommend orthopedic beds for dogs with arthritis, hip dysplasia, and post-surgery recovery. The key is choosing a bed with at least 4 inches of supportive foam.' },
-  { question: 'What thickness is best for large dogs?', answer: 'For large and giant breeds (60+ lbs), look for orthopedic beds with 5–7 inches of total foam thickness. This ensures adequate support without bottoming out. A combination of memory foam top layer and high-density base foam provides the best pressure relief for heavy dogs.' },
-  { question: 'Are orthopedic dog bed covers washable?', answer: 'Most quality orthopedic dog beds feature removable, machine-washable covers with waterproof liners. Look for covers with heavy-duty zippers and pre-shrunk fabric. We recommend washing covers every 2–4 weeks to maintain hygiene and extend bed life.' },
-  { question: 'How long do orthopedic dog beds last?', answer: 'A high-quality orthopedic dog bed typically lasts 3–5 years with proper care. Premium memory foam retains its supportive properties longer than cheap alternatives. Signs it\'s time to replace: visible sagging, the foam doesn\'t bounce back, or your dog seems less comfortable.' },
-  { question: 'Is memory foam better than regular foam for dogs?', answer: 'Memory foam is significantly better for dogs with joint issues. Unlike regular foam, memory foam conforms to your dog\'s body shape, providing customized pressure relief. It responds to body heat and weight, creating a supportive cradle effect that standard polyester or polyurethane foam cannot match.' },
+  { question: 'Are orthopedic dog beds worth it?', answer: 'Yes. High-density memory foam orthopedic beds cost $60–$200 upfront but last 3–5 years versus 6–12 months for standard polyester beds. For dogs over 40 lbs, senior dogs, or breeds prone to joint issues, the therapeutic benefit and long-term cost savings make orthopedic beds one of the smartest investments in canine comfort.' },
+  { question: 'Do vets recommend orthopedic dog beds?', answer: 'Veterinary orthopedic specialists consistently recommend memory foam beds as part of arthritis and joint care management plans. The American Kennel Club and veterinary orthopedic foundations cite proper sleep-surface support as a key factor in reducing joint inflammation and improving daytime mobility by up to 40%.' },
+  { question: 'How thick should memory foam be for a dog bed?', answer: 'Dogs under 50 lbs need at least 3–4 inches. Dogs 50–90 lbs need 5 inches minimum. Dogs over 90 lbs benefit from 6–7 inches with a supportive base layer. Foam density (1.8+ lb/ft³) is equally important — low-density thick foam compresses faster than high-density thin foam.' },
+  { question: 'Are orthopedic dog beds good for large dogs?', answer: 'Orthopedic beds are essential for large dogs. Breeds like Labradors, German Shepherds, and Golden Retrievers put 3x more pressure per square inch on joints than small breeds. High-density memory foam distributes this weight evenly, preventing the pressure point damage that standard beds cause in large dogs within weeks.' },
+  { question: 'How long do orthopedic dog beds last?', answer: 'A quality orthopedic bed with high-density foam (1.8+ lb/ft³) lasts 3–5 years with proper care. Signs it needs replacing: foam doesn\'t spring back within 10 seconds, visible body impression that doesn\'t recover, or persistent odor despite regular cover washing. Standard polyester beds last only 6–12 months.' },
+  { question: 'Are orthopedic dog beds washable?', answer: 'Most quality orthopedic dog beds feature removable, machine-washable covers with waterproof liners. Look for covers with heavy-duty zippers and pre-shrunk fabric. The foam core itself should never be machine washed — spot clean only. Wash covers every 2–4 weeks to maintain hygiene and extend bed life.' },
+  { question: 'Do orthopedic dog beds help arthritis?', answer: 'Yes. Orthopedic memory foam beds distribute your dog\'s weight evenly, reducing pressure on inflamed joints by up to 40%. Veterinarians frequently recommend them for dogs with arthritis, hip dysplasia, and post-surgery recovery. The key is choosing a bed with at least 4 inches of high-density supportive foam.' },
+  { question: 'What is the difference between orthopedic and regular dog beds?', answer: 'Standard polyester-fill beds compress flat within weeks, offering minimal joint support. Orthopedic beds use viscoelastic memory foam that conforms to your dog\'s body shape, distributes weight evenly, and springs back after each use. The result: genuine pressure relief, spinal alignment, and 3–5 years of consistent support versus 6–12 months.' },
 ];
 
 const COMPARISON_ROWS = [
@@ -237,10 +241,56 @@ export default function OrthopedicDogBeds() {
           </Button>
         </section>
 
-        {/* ─── SECTION 3: SCIENCE & AUTHORITY ─── */}
+        {/* ─── SECTION 3: EEAT EDUCATIONAL AUTHORITY ─── */}
         <section className="mb-16">
-          <h2 className="text-2xl md:text-3xl font-display font-bold mb-2">Why Orthopedic Memory Foam Works</h2>
-          <p className="text-muted-foreground mb-8 max-w-2xl">Veterinary orthopedic specialists have studied memory foam's impact on canine joint health. Here's what makes it the gold standard for dogs with mobility issues.</p>
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-2">Why Dogs Need Orthopedic Support</h2>
+          <p className="text-muted-foreground mb-8 max-w-3xl">
+            Understanding canine joint mechanics explains why orthopedic beds aren't just a luxury — they're a medical-grade investment in your dog's long-term mobility and comfort.
+          </p>
+
+          {/* Joint Pressure Explanation */}
+          <div className="bg-card border rounded-2xl p-6 md:p-8 mb-6">
+            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+              <span className="text-2xl">⚖️</span> Joint Pressure & Weight Distribution
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              Large breed dogs carry significantly more weight on their joints than small breeds. A 90-pound Labrador puts roughly <strong>3x the pressure per square inch</strong> on hip and elbow joints compared to a 30-pound Beagle. This constant load compresses standard polyester-fill beds flat within weeks, leaving your dog essentially sleeping on the floor.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Memory foam addresses this by distributing body weight across the entire surface area, eliminating concentrated pressure points at the hips, shoulders, and elbows — the joints most vulnerable to arthritis and dysplasia.
+            </p>
+          </div>
+
+          {/* Hip Dysplasia Overview */}
+          <div className="bg-card border rounded-2xl p-6 md:p-8 mb-6">
+            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+              <span className="text-2xl">🦴</span> Hip Dysplasia & Joint Disease in Dogs
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              Hip dysplasia is a hereditary condition where the hip joint doesn't develop properly, causing the ball and socket to grind instead of gliding smoothly. It affects up to <strong>50% of large and giant breeds</strong>, including German Shepherds, Golden Retrievers, Rottweilers, and Great Danes.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              Combined with osteoarthritis — which affects 25% of all dogs over age 7 — these conditions make sleep surface quality critical. Dogs spend 12–14 hours per day resting, and every hour on an unsupportive surface compounds joint inflammation and cartilage degradation.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              For a detailed guide on how orthopedic beds help arthritic dogs specifically, see our expert article: <Link to="/guides/do-orthopedic-dog-beds-help-arthritis" className="text-primary hover:underline font-medium">Do Orthopedic Dog Beds Help Arthritis?</Link>
+            </p>
+          </div>
+
+          {/* Memory Foam Density */}
+          <div className="bg-card border rounded-2xl p-6 md:p-8 mb-6">
+            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+              <span className="text-2xl">🎯</span> Why Memory Foam Density Is the #1 Spec
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              The single most important specification in an orthopedic dog bed is <strong>foam density</strong>, measured in lb/ft³. High-density foam (1.8+ lb/ft³) maintains its structure and therapeutic properties for 3–5 years. Low-density foam (under 1.5 lb/ft³) compresses permanently within months, regardless of thickness.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              A common mistake is prioritizing thickness over density. A 6-inch bed with low-density foam will flatten faster than a 4-inch bed with high-density foam. For a complete breakdown, read our <Link to="/guides/how-thick-should-a-dog-bed-be" className="text-primary hover:underline font-medium">thickness guide by dog weight</Link> and our <Link to="/guides/memory-foam-vs-standard-dog-bed" className="text-primary hover:underline font-medium">memory foam vs standard bed comparison</Link>.
+            </p>
+          </div>
+
+          {/* Science Points Grid */}
           <div className="grid sm:grid-cols-2 gap-4">
             {SCIENCE_POINTS.map(sp => (
               <div key={sp.title} className="bg-card border rounded-2xl p-6">
@@ -250,12 +300,91 @@ export default function OrthopedicDogBeds() {
               </div>
             ))}
           </div>
+
           <div className="mt-6 bg-secondary/50 border border-secondary rounded-2xl p-6">
             <p className="text-sm font-medium flex items-start gap-2">
               <CheckCircle className="w-5 h-5 text-secondary-foreground shrink-0 mt-0.5" />
               <span><strong>Why vets recommend orthopedic beds:</strong> The American Kennel Club and veterinary orthopedic foundations recommend memory foam beds for dogs with arthritis, hip dysplasia, and post-surgical recovery. Proper joint support during rest reduces inflammation and improves daytime mobility by up to 40%.</span>
             </p>
           </div>
+        </section>
+
+        {/* ─── BUYER INTENT BLOCKS ─── */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Find the Right Orthopedic Bed for Your Dog</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                title: 'Orthopedic Dog Bed for Large Dogs',
+                desc: 'Large breeds (60+ lbs) like Labradors, German Shepherds, and Golden Retrievers need 5–7 inches of high-density foam to prevent bottoming out. Look for reinforced stitching and XL sizing that accommodates a full stretch-out position. The best large-breed orthopedic beds have a dual-layer construction: firm support base topped with contouring memory foam.',
+                link: '/collections/best-orthopedic-dog-bed-large-dogs',
+                linkText: 'See Best Orthopedic Beds for Large Dogs →',
+              },
+              {
+                title: 'Orthopedic Dog Bed for Senior Dogs',
+                desc: 'Senior dogs (7+ years) often develop arthritis, stiffness, and reduced mobility. An orthopedic bed with a low entry point makes it easier to get on and off. Bolstered edges provide head and neck support. Gel-infused options reduce heat retention for older dogs that overheat easily. Pairing an orthopedic bed with joint supplements creates a comprehensive comfort plan.',
+                link: '/collections/orthopedic-dog-bed-senior-dogs',
+                linkText: 'See Best Orthopedic Beds for Senior Dogs →',
+              },
+              {
+                title: 'Cooling Orthopedic Dog Beds',
+                desc: 'Standard memory foam retains body heat, which can be uncomfortable for dogs with thick coats or in warm climates. Gel-infused memory foam and open-cell foam designs dissipate heat while maintaining full orthopedic support. The best cooling orthopedic beds combine phase-change gel layers with breathable, moisture-wicking covers.',
+                link: '/collections/cooling-orthopedic-dog-bed',
+                linkText: 'See Best Cooling Orthopedic Beds →',
+              },
+              {
+                title: 'Waterproof Orthopedic Dog Beds',
+                desc: 'Waterproof protection is essential for puppies, senior dogs with incontinence, and heavy droolers. Quality waterproof orthopedic beds feature a sealed inner liner between the foam core and outer cover — protecting the foam from permanent odor damage while keeping the bed fully washable and hygienic.',
+                link: '/collections/waterproof-orthopedic-dog-bed',
+                linkText: 'See Best Waterproof Orthopedic Beds →',
+              },
+            ].map(block => (
+              <div key={block.title} className="bg-card border rounded-2xl p-6">
+                <h3 className="font-semibold text-lg mb-3">{block.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{block.desc}</p>
+                <Link to={block.link} className="text-sm text-primary hover:underline font-medium inline-flex items-center gap-1">
+                  {block.linkText}
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── ORTHOPEDIC VS REGULAR COMPARISON ─── */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Orthopedic vs Regular Dog Bed Comparison</h2>
+          <div className="overflow-x-auto border rounded-2xl">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left p-3 font-semibold">Feature</th>
+                  <th className="text-left p-3 font-semibold">Orthopedic (Memory Foam)</th>
+                  <th className="text-left p-3 font-semibold">Standard (Polyester Fill)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { feature: 'Joint Support', ortho: 'Distributes weight evenly, eliminates pressure points', standard: 'Minimal — compresses flat under weight' },
+                  { feature: 'Lifespan', ortho: '3–5 years', standard: '6–12 months' },
+                  { feature: 'Price Range', ortho: '$60–$200', standard: '$20–$60' },
+                  { feature: 'Cost Over 3 Years', ortho: '$60–$200 (one purchase)', standard: '$120–$360 (4–6 replacements)' },
+                  { feature: 'Foam Density', ortho: '1.8+ lb/ft³ viscoelastic', standard: 'N/A — polyester fill' },
+                  { feature: 'Recovery After Compression', ortho: 'Springs back fully', standard: 'Stays flat permanently' },
+                  { feature: 'Best For', ortho: 'Senior dogs, large breeds, arthritis, recovery', standard: 'Puppies, small dogs, travel/backup beds' },
+                  { feature: 'Vet Recommended', ortho: '✅ Yes — for joint conditions', standard: '❌ Not for therapeutic use' },
+                ].map((row, i) => (
+                  <tr key={i} className={i % 2 === 0 ? 'bg-card' : 'bg-muted/20'}>
+                    <td className="p-3 font-medium">{row.feature}</td>
+                    <td className="p-3 text-muted-foreground">{row.ortho}</td>
+                    <td className="p-3 text-muted-foreground">{row.standard}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">
+            For a deeper dive into foam types and their performance differences, read our <Link to="/guides/memory-foam-vs-standard-dog-bed" className="text-primary hover:underline font-medium">Memory Foam vs Standard Dog Bed</Link> guide.
+          </p>
         </section>
 
         {/* ─── SECTION 4: COMPARISON TABLE ─── */}
@@ -444,6 +573,27 @@ export default function OrthopedicDogBeds() {
             <Link to="/collections/dog-car-travel-safety" className="text-sm text-primary hover:underline font-medium">
               Dog Car Travel Safety →
             </Link>
+          </div>
+        </section>
+
+        {/* ─── SECTION 10: EXPLORE JOINT SUPPORT GUIDES ─── */}
+        <section className="mb-16 bg-muted/30 rounded-2xl p-6 md:p-10">
+          <h2 className="text-2xl font-display font-bold mb-2">Explore More Joint Support Guides</h2>
+          <p className="text-muted-foreground text-sm mb-6">Expert articles to help you make the best decision for your dog's comfort and joint health.</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { slug: 'do-orthopedic-dog-beds-help-arthritis', title: 'Do Dogs Really Need Orthopedic Beds?', desc: 'Vet-backed evidence on when orthopedic support matters most.' },
+              { slug: 'how-to-stop-dog-waking-up-stiff', title: 'Signs Your Dog Needs Joint Support', desc: 'Morning stiffness, limping after naps — what these signs mean.' },
+              { slug: 'memory-foam-vs-standard-dog-bed', title: 'Orthopedic vs Memory Foam Dog Beds', desc: 'Understanding the difference and which your dog actually needs.' },
+              { slug: 'best-orthopedic-dog-bed', title: 'Best Dog Bed for Hip Dysplasia', desc: 'Foam density and thickness recommendations by breed and weight.' },
+              { slug: 'how-thick-should-a-dog-bed-be', title: 'How Thick Should a Dog Bed Be?', desc: 'Complete thickness guide by dog weight and age.' },
+              { slug: 'memory-foam-vs-egg-crate-foam-dog-bed', title: 'Memory Foam vs Egg Crate Foam', desc: 'Which foam type provides better orthopedic support?' },
+            ].map(guide => (
+              <Link key={guide.slug} to={`/guides/${guide.slug}`} className="group bg-background border rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition-all">
+                <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors">{guide.title}</h3>
+                <p className="text-xs text-muted-foreground">{guide.desc}</p>
+              </Link>
+            ))}
           </div>
         </section>
 

@@ -58,6 +58,40 @@ export function generateTitleVariants(
   const brand = 'GetPawsy';
   const cleanName = productName.replace(/^(Premium|High Quality|Best)\s+/i, '');
   
+  // Orthopedic dog bed specific title format
+  const isOrthopedic = cleanName.toLowerCase().includes('orthopedic') || 
+                        cleanName.toLowerCase().includes('memory foam') ||
+                        primaryKeyword.toLowerCase().includes('orthopedic');
+  
+  if (isOrthopedic) {
+    // Extract size from product name or variant
+    const sizeMatch = cleanName.match(/\b(Small|Medium|Large|XL|Extra Large|Giant)\b/i);
+    const size = sizeMatch ? sizeMatch[1] : variant || '';
+    const thicknessMatch = cleanName.match(/(\d+["″]?\s*(?:inch|in)?)/i);
+    const thickness = thicknessMatch ? thicknessMatch[1] : '';
+    
+    return [
+      {
+        variant: 'A',
+        format: 'Orthopedic Dog Bed for [Size] – [Thickness] Memory Foam | Brand',
+        example: `Orthopedic Dog Bed for ${size || 'Large Dogs'} – ${thickness || '5"'} Memory Foam | ${brand}`,
+        strategy: 'Keyword-first with size and foam spec. Targets high-intent commercial queries.',
+      },
+      {
+        variant: 'B',
+        format: 'Primary Keyword + Joint Support + Size',
+        example: `${primaryKeyword} – Joint & Hip Support${size ? ` | ${size}` : ''} | ${brand}`,
+        strategy: 'Benefit-led framing targeting joint pain search intent.',
+      },
+      {
+        variant: 'C',
+        format: 'Best + Keyword + Use Case + Feature',
+        example: `Best ${primaryKeyword} for Senior Dogs – ${feature}${size ? ` (${size})` : ''} | ${brand}`,
+        strategy: 'Emotional trigger + specificity for broad match discovery.',
+      },
+    ];
+  }
+  
   return [
     {
       variant: 'A',

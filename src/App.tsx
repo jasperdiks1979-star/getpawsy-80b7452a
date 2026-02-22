@@ -333,6 +333,7 @@ const App = () => {
                       
                       {/* Dedicated mega landing pages */}
                       <Route path="/collections/orthopedic-dog-beds" element={<Suspense fallback={<RouteLoader />}><OrthopedicDogBeds /></Suspense>} />
+                      <Route path="/orthopedic-dog-beds" element={<Suspense fallback={<RouteLoader />}><OrthopedicDogBeds /></Suspense>} />
 
                       {/* SEO Collection pages — /collections/:slug */}
                       <Route path="/collections/:slug" element={<Suspense fallback={<RouteLoader />}><SeoCollection /></Suspense>} />

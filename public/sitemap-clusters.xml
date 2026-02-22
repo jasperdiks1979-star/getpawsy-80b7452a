@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- ══════ PILLAR PAGES (Tier 1 — Priority 0.90) ══════ -->
+  <!-- Orthopedic Dog Beds Pillar (PRIMARY AUTHORITY PAGE) -->
+  <url><loc>https://getpawsy.pet/collections/orthopedic-dog-beds</loc><changefreq>weekly</changefreq><priority>0.90</priority></url>
   <!-- Dog Beds Pillar -->
   <url><loc>https://getpawsy.pet/collections/orthopedic-calming-dog-beds</loc><changefreq>weekly</changefreq><priority>0.90</priority></url>
   <!-- Cat Furniture Pillar -->
@@ -28,4 +30,18 @@
 
   <!-- ══════ GUIDE / RESOURCE PAGES (Tier 2 — Priority 0.85) ══════ -->
   <url><loc>https://getpawsy.pet/resources/dog-bed-size-chart</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+
+  <!-- ══════ ORTHOPEDIC DOG BED CLUSTER (Tier 2 — Priority 0.85) ══════ -->
+  <url><loc>https://getpawsy.pet/collections/best-orthopedic-dog-bed-large-dogs</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/orthopedic-dog-bed-senior-dogs</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/memory-foam-dog-beds</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/cooling-orthopedic-dog-bed</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/collections/waterproof-orthopedic-dog-bed</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+
+  <!-- ══════ ORTHOPEDIC BLOG SUPPORT CLUSTER (Tier 3 — Priority 0.80) ══════ -->
+  <url><loc>https://getpawsy.pet/guides/do-orthopedic-dog-beds-help-arthritis</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://getpawsy.pet/guides/signs-dog-needs-joint-support</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://getpawsy.pet/guides/orthopedic-vs-memory-foam-dog-beds</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://getpawsy.pet/guides/best-dog-bed-hip-dysplasia</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://getpawsy.pet/guides/how-thick-should-a-dog-bed-be</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
 </urlset>
