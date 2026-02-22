@@ -217,6 +217,15 @@ const OrthopedicDogBeds = lazyWithRetry(() => import("./pages/collections/Orthop
 const CatTreesForLargeCats = lazyWithRetry(() => import("./pages/collections/CatTreesForLargeCats"));
 const DogCarTravelSafety = lazyWithRetry(() => import("./pages/collections/DogCarTravelSafety"));
 const ClusterRevenueEngine = lazyWithRetry(() => import("./pages/admin/ClusterRevenueEngine"));
+const OrthopedicLargeDogs = lazyWithRetry(() => import("./pages/collections/sub-intent/OrthopedicLargeDogs"));
+const WaterproofOrthopedicBed = lazyWithRetry(() => import("./pages/collections/sub-intent/WaterproofOrthopedicBed"));
+const MemoryFoamDogBeds = lazyWithRetry(() => import("./pages/collections/sub-intent/MemoryFoamDogBeds"));
+const CatTreeMaineCoon = lazyWithRetry(() => import("./pages/collections/sub-intent/CatTreeMaineCoon"));
+const HeavyDutyCatTree = lazyWithRetry(() => import("./pages/collections/sub-intent/HeavyDutyCatTree"));
+const LargeCatCondo = lazyWithRetry(() => import("./pages/collections/sub-intent/LargeCatCondo"));
+const DogCarSeatSmallDogs = lazyWithRetry(() => import("./pages/collections/sub-intent/DogCarSeatSmallDogs"));
+const DogBoosterSeat = lazyWithRetry(() => import("./pages/collections/sub-intent/DogBoosterSeat"));
+const DogCarHarness = lazyWithRetry(() => import("./pages/collections/sub-intent/DogCarHarness"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
 const GrowthVerification = lazyWithRetry(() => import("./pages/GrowthVerification"));
@@ -341,6 +350,16 @@ const App = () => {
                       <Route path="/cat-trees-for-large-cats" element={<Suspense fallback={<RouteLoader />}><CatTreesForLargeCats /></Suspense>} />
                       <Route path="/collections/dog-car-travel-safety" element={<Suspense fallback={<RouteLoader />}><DogCarTravelSafety /></Suspense>} />
                       <Route path="/dog-car-travel-safety" element={<Suspense fallback={<RouteLoader />}><DogCarTravelSafety /></Suspense>} />
+                      {/* Sub-intent pages */}
+                      <Route path="/collections/best-orthopedic-dog-bed-large-dogs" element={<Suspense fallback={<RouteLoader />}><OrthopedicLargeDogs /></Suspense>} />
+                      <Route path="/collections/waterproof-orthopedic-dog-bed" element={<Suspense fallback={<RouteLoader />}><WaterproofOrthopedicBed /></Suspense>} />
+                      <Route path="/collections/memory-foam-dog-beds" element={<Suspense fallback={<RouteLoader />}><MemoryFoamDogBeds /></Suspense>} />
+                      <Route path="/collections/cat-tree-for-maine-coon" element={<Suspense fallback={<RouteLoader />}><CatTreeMaineCoon /></Suspense>} />
+                      <Route path="/collections/heavy-duty-cat-tree" element={<Suspense fallback={<RouteLoader />}><HeavyDutyCatTree /></Suspense>} />
+                      <Route path="/collections/cat-condos-for-large-cats" element={<Suspense fallback={<RouteLoader />}><LargeCatCondo /></Suspense>} />
+                      <Route path="/collections/dog-car-seats" element={<Suspense fallback={<RouteLoader />}><DogCarSeatSmallDogs /></Suspense>} />
+                      <Route path="/collections/dog-booster-seat" element={<Suspense fallback={<RouteLoader />}><DogBoosterSeat /></Suspense>} />
+                      <Route path="/collections/dog-car-harness" element={<Suspense fallback={<RouteLoader />}><DogCarHarness /></Suspense>} />
 
                       {/* SEO Collection pages — /collections/:slug */}
                       <Route path="/collections/:slug" element={<Suspense fallback={<RouteLoader />}><SeoCollection /></Suspense>} />
