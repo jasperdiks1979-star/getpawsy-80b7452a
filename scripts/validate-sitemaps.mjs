@@ -56,6 +56,12 @@ function validateIndex(filePath) {
   return { name, refs: locs, errors };
 }
 
+// Required files that MUST exist and be non-empty
+const REQUIRED_FILES = [
+  { file: "sitemap.xml", type: "index" },
+  { file: "sitemap-products-1.xml", type: "urlset", minUrls: 1 },
+];
+
 function main() {
   console.log("\n══════════════════════════════════════════");
   console.log("  Sitemap Validation Report");
@@ -65,13 +71,17 @@ function main() {
   let totalUrls = 0;
   const report = {};
 
-  // Validate sitemap index
-  const indexPath = path.join(PUBLIC_DIR, "sitemap.xml");
-  if (!fs.existsSync(indexPath)) {
-    console.error("FATAL: sitemap.xml does not exist in /public");
-    process.exit(1);
+  // ── Assert required files exist ──
+  for (const req of REQUIRED_FILES) {
+    const fp = path.join(PUBLIC_DIR, req.file);
+    if (!fs.existsSync(fp)) {
+      console.error(`FATAL: Required file ${req.file} does not exist in /public`);
+      process.exit(1);
+    }
   }
 
+  // Validate sitemap index
+  const indexPath = path.join(PUBLIC_DIR, "sitemap.xml");
   const indexResult = validateIndex(indexPath);
   allErrors.push(...indexResult.errors);
 
@@ -105,6 +115,16 @@ function main() {
     }
   }
 
+  // ── Assert minimum URL counts for required files ──
+  for (const req of REQUIRED_FILES) {
+    if (req.type === "urlset" && req.minUrls) {
+      const count = report[req.file] ?? 0;
+      if (count < req.minUrls) {
+        allErrors.push(`${req.file}: Has ${count} URLs but requires at least ${req.minUrls}. Product sitemap must not be empty.`);
+      }
+    }
+  }
+
   // Print report
   for (const [key, count] of Object.entries(report)) {
     const label = key.charAt(0).toUpperCase() + key.slice(1);
@@ -117,7 +137,7 @@ function main() {
   if (allErrors.length > 0) {
     console.log(`\n  ❌ ERRORS (${allErrors.length}):`);
     for (const e of allErrors) console.log(`     • ${e}`);
-    console.log("\n  Status: INVALID\n");
+    console.log("\n  Status: INVALID — BUILD SHOULD FAIL\n");
     console.log("══════════════════════════════════════════\n");
     process.exit(1);
   }

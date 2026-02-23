@@ -324,10 +324,39 @@ async function main() {
     sitemapIndexItems.push({ loc: `${BASE}/${name}`, lastmod: today });
   });
 
+  // ── Remove stale product sitemap chunks that are no longer needed ──
+  // e.g. if we previously had 3 chunks but now only 1, remove sitemap-products-2.xml and sitemap-products-3.xml
+  for (let i = productChunks.length + 1; i <= 10; i++) {
+    const staleName = `sitemap-products-${i}.xml`;
+    const stalePath = path.join(OUT_DIR, staleName);
+    if (fs.existsSync(stalePath)) {
+      fs.unlinkSync(stalePath);
+      console.log(`[sitemaps] ✗ Removed stale ${staleName}`);
+    }
+  }
+
   const indexXml = renderSitemapIndex(sitemapIndexItems);
   validateXmlBasics(indexXml, ["<sitemapindex", "</sitemapindex>"]);
   writeFile(path.join(OUT_DIR, "sitemap.xml"), indexXml);
   writeFile(path.join(OUT_DIR, "sitemap-index.xml"), indexXml);
+  // Also write sitemap_index.xml alias for GSC compatibility
+  writeFile(path.join(OUT_DIR, "sitemap_index.xml"), indexXml);
+
+  // ── Post-write assertions ──
+  const requiredFiles = ["sitemap.xml", "sitemap-products-1.xml"];
+  for (const rf of requiredFiles) {
+    const fp = path.join(OUT_DIR, rf);
+    if (!fs.existsSync(fp)) {
+      console.error(`[sitemaps] FATAL: Required file ${rf} was not written.`);
+      process.exit(1);
+    }
+    const content = fs.readFileSync(fp, "utf8");
+    if (!content.includes("<?xml")) {
+      console.error(`[sitemaps] FATAL: ${rf} is not valid XML.`);
+      process.exit(1);
+    }
+  }
+  console.log(`[sitemaps] ✓ Post-write assertions passed`);
 
   saveHistory(newHistory);
 
