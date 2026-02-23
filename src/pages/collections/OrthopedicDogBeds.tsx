@@ -188,13 +188,16 @@ export default function OrthopedicDogBeds() {
           <div className="max-w-2xl">
             <Badge className="mb-4 bg-primary text-primary-foreground">Vet Recommended · #1 Seller</Badge>
             <h1 className="text-3xl md:text-5xl font-display font-bold text-primary-foreground mb-4 leading-tight">
-              Stop Your Dog's Joint Pain Tonight.
+              Your Dog Deserves Pain-Free Sleep.
             </h1>
             <p className="text-lg md:text-xl text-primary-foreground/80 mb-2">
-              Orthopedic Memory Foam Beds Designed for Senior &amp; Large Dogs.
+              Orthopedic Memory Foam Support for Large &amp; Senior Dogs.
             </p>
-            <p className="text-sm text-primary-foreground/60 mb-6">
+            <p className="text-sm text-primary-foreground/60 mb-4">
               Free US Shipping • 30-Day Trial • Fast Delivery
+            </p>
+            <p className="text-xs text-primary-foreground/50 mb-6 flex items-center gap-1.5">
+              <Heart className="w-3.5 h-3.5" /> Over 2,000 happy dog owners served
             </p>
 
             {/* Trust badges */}
@@ -600,6 +603,25 @@ export default function OrthopedicDogBeds() {
             <p className="text-sm text-muted-foreground leading-relaxed mt-2">
               <strong>After 2 weeks on an orthopedic memory foam bed:</strong> Charlie started getting up without hesitation. His morning stiffness visibly decreased, and he began seeking out his bed for naps instead of the cold tile floor. His owners report he's more playful and energetic during walks.
             </p>
+          </div>
+        </section>
+
+        {/* ─── WHY CHOOSE GETPAWSY ─── */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Why Choose GetPawsy?</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { icon: '🔬', title: 'Foam Density Tested', desc: 'Every bed is rated for foam density (lb/ft³) so you know exactly what you\'re getting.' },
+              { icon: '🇺🇸', title: 'US-Based Support', desc: 'Real people, real answers. Our pet care team is based in the United States.' },
+              { icon: '🐕', title: 'Breed-Specific Guidance', desc: 'Size guides and breed recommendations so your dog gets the right fit.' },
+              { icon: '💯', title: '30-Day Guarantee', desc: 'Not the right bed? Return it within 30 days for a full refund. No questions.' },
+            ].map(item => (
+              <div key={item.title} className="bg-card border rounded-xl p-5 text-center">
+                <span className="text-3xl mb-3 block">{item.icon}</span>
+                <h3 className="font-semibold text-sm mb-1">{item.title}</h3>
+                <p className="text-xs text-muted-foreground">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </section>
 
