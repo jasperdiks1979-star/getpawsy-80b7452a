@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import {
   ensureDir,
@@ -14,6 +15,7 @@ import {
 const BASE = "https://getpawsy.pet";
 const OUT_DIR = joinRoot("public");
 const CHUNK_SIZE = 5000;
+const HISTORY_PATH = joinRoot("data", "sitemap-history.json");
 
 // Supabase REST API config
 const SUPABASE_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co";
@@ -50,15 +52,6 @@ function filterIndexable(entries) {
   return (Array.isArray(entries) ? entries : []).filter((e) => e && e.path && !e.noindex);
 }
 
-function makeUrlEntries(entries, defaults = {}) {
-  return entries.map((e) => ({
-    loc: absUrl(BASE, e.path),
-    lastmod: toIsoDate(e.lastmod) ?? defaults.lastmod ?? null,
-    changefreq: e.changefreq ?? defaults.changefreq ?? null,
-    priority: e.priority !== undefined ? e.priority : defaults.priority,
-  }));
-}
-
 function validateXmlBasics(xml, mustContain) {
   if (!xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')) {
     throw new Error("XML does not start with required header.");
@@ -68,7 +61,6 @@ function validateXmlBasics(xml, mustContain) {
   }
 }
 
-// ── Excluded paths: never include in any sitemap ──
 const EXCLUDED_PATHS = new Set([
   "/cart", "/checkout", "/account", "/profile", "/search",
   "/login", "/register", "/admin", "/dashboard", "/404",
@@ -77,17 +69,66 @@ const EXCLUDED_PATHS = new Set([
 function isExcluded(p) {
   if (!p) return true;
   if (EXCLUDED_PATHS.has(p)) return true;
-  // Block parameter/query URLs and fragments
   if (p.includes("?") || p.includes("#")) return true;
-  // Block admin sub-routes
   if (p.startsWith("/admin/") || p.startsWith("/dashboard/")) return true;
   return false;
+}
+
+// ── Delta-based lastmod tracking ──
+function loadHistory() {
+  try {
+    const raw = fs.readFileSync(HISTORY_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveHistory(history) {
+  fs.writeFileSync(HISTORY_PATH, JSON.stringify(history, null, 2), "utf8");
+}
+
+function resolveLastmod(urlPath, currentUpdatedAt, history, today) {
+  const currentDate = toIsoDate(currentUpdatedAt) ?? today;
+  const prev = history[urlPath];
+
+  if (!prev) {
+    // New URL — use current timestamp
+    return currentDate;
+  }
+
+  if (prev.updatedAt === currentUpdatedAt) {
+    // Content unchanged — preserve previous lastmod
+    return prev.lastmod;
+  }
+
+  // Content changed — use actual updatedAt
+  return currentDate;
+}
+
+function makeUrlEntriesDelta(entries, defaults, history, today) {
+  return entries.map((e) => {
+    const urlPath = e.path;
+    const lastmod = resolveLastmod(urlPath, e.lastmod, history, today);
+
+    return {
+      loc: absUrl(BASE, urlPath),
+      lastmod,
+      changefreq: e.changefreq ?? defaults.changefreq ?? null,
+      priority: e.priority !== undefined ? e.priority : defaults.priority,
+      _path: urlPath,
+      _updatedAt: e.lastmod ?? null,
+    };
+  });
 }
 
 async function main() {
   ensureDir(OUT_DIR);
   const today = nowIsoDate();
   const generatedAt = new Date().toISOString();
+  const history = loadHistory();
+  const newHistory = {};
 
   const safeRead = (p, fallback) => {
     try { return readJson(p); } catch { return fallback; }
@@ -111,11 +152,11 @@ async function main() {
 
   // ── FAIL-SAFE: products must not be empty ──
   if (products.length === 0) {
-    console.error("[sitemaps] FATAL: 0 products fetched. Aborting build to prevent empty sitemap deployment.");
+    console.error("[sitemaps] FATAL: 0 products fetched. Aborting build.");
     process.exit(1);
   }
 
-  // ── Collections: live REST API → JSON fallback ──
+  // ── Collections ──
   let collectionsRaw = await fetchFromSupabase(
     "seo_collections",
     "select=slug,updated_at&is_active=eq.true&order=updated_at.desc"
@@ -131,10 +172,10 @@ async function main() {
     console.log(`[sitemaps] Collections from JSON fallback: ${collections.length}`);
   }
   if (collections.length === 0) {
-    console.warn("[sitemaps] WARNING: 0 collections found. Continuing but this may indicate an issue.");
+    console.warn("[sitemaps] WARNING: 0 collections found.");
   }
 
-  // ── Blog: live REST API → JSON fallback ──
+  // ── Blog ──
   let blogRaw = await fetchFromSupabase(
     "blog_posts",
     "select=slug,published_at&is_published=eq.true&order=published_at.desc"
@@ -156,53 +197,86 @@ async function main() {
   const clusters = filterIndexable(safeRead(joinRoot("data", "clusters.json"), []));
   console.log(`[sitemaps] Clusters from JSON: ${clusters.length}`);
 
-  // ── Sort all entries alphabetically by path for stable ordering ──
+  // ── Sort alphabetically for stable ordering ──
   products.sort((a, b) => a.path.localeCompare(b.path));
   collections.sort((a, b) => a.path.localeCompare(b.path));
   blog.sort((a, b) => a.path.localeCompare(b.path));
   guides.sort((a, b) => a.path.localeCompare(b.path));
   clusters.sort((a, b) => a.path.localeCompare(b.path));
 
-  // ── Static pages (crawl-budget priority ordering) ──
-  const staticPages = makeUrlEntries(
-    [
-      { path: "/", priority: 1.0, changefreq: "daily", lastmod: today },
-      { path: "/products", priority: 0.9, changefreq: "daily", lastmod: today },
-      { path: "/blog", priority: 0.85, changefreq: "daily", lastmod: today },
-      { path: "/guides", priority: 0.85, changefreq: "weekly", lastmod: today },
-      { path: "/bestsellers", priority: 0.80, changefreq: "weekly", lastmod: today },
-      { path: "/about", priority: 0.60, changefreq: "monthly", lastmod: today },
-      { path: "/about-the-author", priority: 0.60, changefreq: "monthly", lastmod: today },
-      { path: "/contact", priority: 0.50, changefreq: "monthly", lastmod: today },
-      { path: "/shipping", priority: 0.40, changefreq: "monthly", lastmod: today },
-      { path: "/returns", priority: 0.40, changefreq: "monthly", lastmod: today },
-      { path: "/cookies", priority: 0.30, changefreq: "yearly", lastmod: today },
-      { path: "/privacy", priority: 0.30, changefreq: "yearly", lastmod: today },
-      { path: "/terms", priority: 0.30, changefreq: "yearly", lastmod: today },
-    ],
-    { lastmod: today }
-  );
+  // ── Static pages ──
+  const staticPages = [
+    { path: "/", priority: 1.0, changefreq: "daily", lastmod: today },
+    { path: "/products", priority: 0.9, changefreq: "daily", lastmod: today },
+    { path: "/blog", priority: 0.85, changefreq: "daily", lastmod: today },
+    { path: "/guides", priority: 0.85, changefreq: "weekly", lastmod: today },
+    { path: "/bestsellers", priority: 0.80, changefreq: "weekly", lastmod: today },
+    { path: "/about", priority: 0.60, changefreq: "monthly", lastmod: today },
+    { path: "/about-the-author", priority: 0.60, changefreq: "monthly", lastmod: today },
+    { path: "/contact", priority: 0.50, changefreq: "monthly", lastmod: today },
+    { path: "/shipping", priority: 0.40, changefreq: "monthly", lastmod: today },
+    { path: "/returns", priority: 0.40, changefreq: "monthly", lastmod: today },
+    { path: "/cookies", priority: 0.30, changefreq: "yearly", lastmod: today },
+    { path: "/privacy", priority: 0.30, changefreq: "yearly", lastmod: today },
+    { path: "/terms", priority: 0.30, changefreq: "yearly", lastmod: today },
+  ].map((e) => ({
+    loc: absUrl(BASE, e.path),
+    lastmod: e.lastmod,
+    changefreq: e.changefreq,
+    priority: e.priority,
+    _path: e.path,
+    _updatedAt: e.lastmod,
+  }));
 
-  const collectionEntries = makeUrlEntries(collections, { changefreq: "weekly", priority: 0.8, lastmod: today });
-  const blogEntries = makeUrlEntries(blog, { changefreq: "monthly", priority: 0.6, lastmod: today });
-  const guideEntries = makeUrlEntries(guides, { changefreq: "weekly", priority: 0.7, lastmod: today });
-  const clusterEntries = makeUrlEntries(clusters, { changefreq: "weekly", priority: 0.65, lastmod: today });
-  const productEntriesAll = makeUrlEntries(products, { changefreq: "weekly", priority: 0.75, lastmod: today });
+  // ── Build delta-aware entries ──
+  const collectionEntries = makeUrlEntriesDelta(collections, { changefreq: "weekly", priority: 0.8 }, history, today);
+  const blogEntries = makeUrlEntriesDelta(blog, { changefreq: "monthly", priority: 0.6 }, history, today);
+  const guideEntries = makeUrlEntriesDelta(guides, { changefreq: "weekly", priority: 0.7 }, history, today);
+  const clusterEntries = makeUrlEntriesDelta(clusters, { changefreq: "weekly", priority: 0.65 }, history, today);
+  const productEntriesAll = makeUrlEntriesDelta(products, { changefreq: "weekly", priority: 0.75 }, history, today);
 
-  const productChunks = chunk(productEntriesAll, CHUNK_SIZE);
+  // ── Record new history ──
+  const allEntries = [...staticPages, ...collectionEntries, ...blogEntries, ...guideEntries, ...clusterEntries, ...productEntriesAll];
+  for (const e of allEntries) {
+    newHistory[e._path] = { lastmod: e.lastmod, updatedAt: e._updatedAt };
+  }
+  saveHistory(newHistory);
+
+  // ── Strip internal fields before rendering ──
+  const clean = (entries) => entries.map(({ loc, lastmod, changefreq, priority }) => ({ loc, lastmod, changefreq, priority }));
+
+  const productChunks = chunk(clean(productEntriesAll), CHUNK_SIZE);
 
   // ── Write urlset sitemaps ──
+  const childLastmods = {};
   const writeChecked = (filename, xml, mustContain) => {
     validateXmlBasics(xml, mustContain);
     writeFile(path.join(OUT_DIR, filename), xml);
     console.log(`[sitemaps] ✓ ${filename} (${xml.length} bytes)`);
   };
 
-  writeChecked("sitemap-static.xml", renderUrlset(staticPages), ["<urlset", "</urlset>"]);
-  writeChecked("sitemap-collections.xml", renderUrlset(collectionEntries), ["<urlset", "</urlset>"]);
-  writeChecked("sitemap-blog.xml", renderUrlset(blogEntries), ["<urlset", "</urlset>"]);
-  writeChecked("sitemap-guides.xml", renderUrlset(guideEntries), ["<urlset", "</urlset>"]);
-  writeChecked("sitemap-clusters.xml", renderUrlset(clusterEntries), ["<urlset", "</urlset>"]);
+  // Track whether child content changed vs history
+  const didChildChange = (filename, entries) => {
+    const key = `__child__${filename}`;
+    const prevHash = history[key]?.hash;
+    const currentHash = entries.map((e) => `${e.loc}|${e.lastmod}`).join("\n");
+    newHistory[key] = { hash: currentHash };
+    return prevHash !== currentHash;
+  };
+
+  const staticClean = clean(staticPages);
+  const collClean = clean(collectionEntries);
+  const blogClean = clean(blogEntries);
+  const guideClean = clean(guideEntries);
+  const clusterClean = clean(clusterEntries);
+
+  writeChecked("sitemap-static.xml", renderUrlset(staticClean), ["<urlset", "</urlset>"]);
+  childLastmods["sitemap-static.xml"] = didChildChange("sitemap-static.xml", staticClean) ? today : (history["__child__sitemap-static.xml"]?.lastmod ?? today);
+
+  writeChecked("sitemap-collections.xml", renderUrlset(collClean), ["<urlset", "</urlset>"]);
+  writeChecked("sitemap-blog.xml", renderUrlset(blogClean), ["<urlset", "</urlset>"]);
+  writeChecked("sitemap-guides.xml", renderUrlset(guideClean), ["<urlset", "</urlset>"]);
+  writeChecked("sitemap-clusters.xml", renderUrlset(clusterClean), ["<urlset", "</urlset>"]);
 
   const sitemapIndexItems = [
     { loc: `${BASE}/sitemap-static.xml`, lastmod: today },
@@ -227,12 +301,15 @@ async function main() {
   writeFile(path.join(OUT_DIR, "sitemap.xml"), indexXml);
   writeFile(path.join(OUT_DIR, "sitemap-index.xml"), indexXml);
 
-  // ── Summary report ──
+  // ── Save updated history ──
+  saveHistory(newHistory);
+
+  // ── Summary ──
   const totalUrls = staticPages.length + collectionEntries.length + blogEntries.length
     + guideEntries.length + clusterEntries.length + productEntriesAll.length;
 
   console.log(`\n[sitemaps] ══════════════════════════════════════`);
-  console.log(`[sitemaps] Generation complete at ${generatedAt}`);
+  console.log(`[sitemaps] Generation complete at ${new Date().toISOString()}`);
   console.log(`[sitemaps] Products:    ${products.length}`);
   console.log(`[sitemaps] Collections: ${collections.length}`);
   console.log(`[sitemaps] Blog:        ${blog.length}`);
@@ -242,6 +319,7 @@ async function main() {
   console.log(`[sitemaps] Total URLs:  ${totalUrls}`);
   console.log(`[sitemaps] Chunks:      ${productChunks.length} (max ${CHUNK_SIZE}/chunk)`);
   console.log(`[sitemaps] Index refs:  ${sitemapIndexItems.length}`);
+  console.log(`[sitemaps] Delta tracking: ${Object.keys(newHistory).length} entries recorded`);
   console.log(`[sitemaps] ══════════════════════════════════════\n`);
 }
 
