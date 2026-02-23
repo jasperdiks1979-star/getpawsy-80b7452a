@@ -38,6 +38,7 @@ export const NOINDEX_PATHS = new Set([
   '/diagnostics',
   '/wishlist',
   '/payment-success',
+  '/thank-you',
   '/track',
   '/my-claims',
   '/unsubscribe',

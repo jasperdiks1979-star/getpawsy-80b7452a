@@ -156,7 +156,7 @@ async function validateRobotsTxt(): Promise<{
         res.status === 200 &&
         ct.includes("text/plain") &&
         !!sitemapUrl &&
-        sitemapUrl.includes("sitemap-index.xml") &&
+        (sitemapUrl.includes("sitemap.xml") || sitemapUrl.includes("sitemap-index.xml")) &&
         !body.includes("lovable.app"),
       error: null,
     };
@@ -235,12 +235,30 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Build enriched response for diagnostics UI
+    const endpoints = sitemapResults.map(r => ({
+      url: r.url,
+      status: r.status,
+      contentType: r.contentType,
+      xmlValid: r.valid,
+      urlCount: r.urlCount,
+      hasHtml: r.hasHtml,
+      hasScript: r.hasScriptTags,
+      hasMeta: r.hasMetaTags,
+      hasWww: r.hasWwwUrls,
+      hasParams: r.hasParameterUrls,
+      error: r.error,
+    }));
+
     return new Response(
       JSON.stringify(
         {
           timestamp: new Date().toISOString(),
           crawl_integrity_score: score,
           stability_level: stabilityLevel,
+          endpoints,
+          robotsValid: robotsResult.valid,
+          robotsSitemapRef: robotsResult.sitemapUrl,
           summary: {
             total_endpoints: totalEndpoints,
             valid_endpoints: validCount,
@@ -250,7 +268,7 @@ Deno.serve(async (req: Request) => {
           robots_txt: robotsResult,
           sitemaps: sitemapResults,
           curl_verification: [
-            `curl -I ${SITE}/sitemap-index.xml`,
+            `curl -I ${SITE}/sitemap.xml`,
             `curl -I ${SITE}/sitemap-blog-1.xml`,
             `curl -I ${SITE}/robots.txt`,
           ],

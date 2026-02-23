@@ -35,6 +35,12 @@ if (typeof window !== 'undefined') {
   enforceCanonicalHost();
 }
 
+// === STEP 0c: URL normalizer — uppercase, double-slash, trailing-slash, tracking params ===
+import { normalizeUrl } from "./lib/url-normalizer";
+if (typeof window !== 'undefined') {
+  normalizeUrl();
+}
+
 // === STEP 1: Install boot error handlers BEFORE anything else ===
 import {
   initBootDiagnostics,
