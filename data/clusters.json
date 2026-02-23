@@ -1,0 +1,18 @@
+[
+  { "path": "/dog/orthopedic-dog-beds", "lastmod": "2026-02-23", "changefreq": "weekly", "priority": 0.90 },
+  { "path": "/cat/cat-trees-for-large-cats", "lastmod": "2026-02-23", "changefreq": "weekly", "priority": 0.90 },
+  { "path": "/dog/dog-car-seats", "lastmod": "2026-02-23", "changefreq": "weekly", "priority": 0.90 },
+  { "path": "/dog/elevated-dog-beds", "lastmod": "2026-02-23", "changefreq": "weekly", "priority": 0.90 },
+  { "path": "/cat/self-cleaning-litter-box", "lastmod": "2026-02-23", "changefreq": "weekly", "priority": 0.90 },
+  { "path": "/dog/interactive-dog-toys", "lastmod": "2026-02-23", "changefreq": "weekly", "priority": 0.90 },
+  { "path": "/dog/no-pull-dog-harness", "lastmod": "2026-02-23", "changefreq": "weekly", "priority": 0.85 },
+  { "path": "/cat/cat-water-fountains", "lastmod": "2026-02-23", "changefreq": "weekly", "priority": 0.85 },
+  { "path": "/dog/slow-feeder-dog-bowls", "lastmod": "2026-02-23", "changefreq": "weekly", "priority": 0.85 },
+  { "path": "/guides/cluster/best-no-pull-harness-large-dogs", "lastmod": "2026-02-23" },
+  { "path": "/guides/cluster/best-self-cleaning-litter-box-multi-cat", "lastmod": "2026-02-23" },
+  { "path": "/guides/cluster/best-dog-car-seat-small-dogs-2026", "lastmod": "2026-02-23" },
+  { "path": "/guides/cluster/slow-feeder-dog-bowl-large-dogs", "lastmod": "2026-02-23" },
+  { "path": "/guides/cluster/best-interactive-toys-puppies", "lastmod": "2026-02-23" },
+  { "path": "/guides/cluster/elevated-dog-bed-vs-orthopedic", "lastmod": "2026-02-23" },
+  { "path": "/guides/cluster/best-cat-water-fountain-stainless-steel", "lastmod": "2026-02-23" }
+]

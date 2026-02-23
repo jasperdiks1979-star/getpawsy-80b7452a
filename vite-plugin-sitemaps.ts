@@ -729,7 +729,7 @@ export default function sitemapPlugin(): Plugin {
         'sitemap-guides.xml',
         'merchant-feed.xml', 'merchant-diagnostics.xml',
       ];
-      const FALLBACK_INDEX = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <sitemap><loc>${BASE_URL}/sitemap-static.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-products-1.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-products-2.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-collections.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-clusters.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-blog-1.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-guides.xml</loc></sitemap>\n</sitemapindex>`;
+      const FALLBACK_INDEX = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <sitemap><loc>${BASE_URL}/sitemap-static.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-hubs.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-products-1.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-products-2.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-collections.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-clusters.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-blog-1.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-guides.xml</loc></sitemap>\n</sitemapindex>`;
       for (const name of fallbackNames) {
         let fallback: string;
         if (name.includes('merchant-feed')) {
@@ -764,7 +764,7 @@ export default function sitemapPlugin(): Plugin {
 
             // Build index with actual chunk counts
             const index = await buildSitemapIndex(today, productChunks.length, blog_chunks.length).catch(
-              () => `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>`
+              () => `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n</sitemapindex>`
             );
 
             const files: [string, string][] = [
