@@ -41,14 +41,28 @@ const FAQ_DATA = [
   { question: 'Are orthopedic dog beds washable?', answer: 'Most quality orthopedic dog beds feature removable, machine-washable covers with waterproof liners. Look for covers with heavy-duty zippers and pre-shrunk fabric. The foam core itself should never be machine washed — spot clean only. Wash covers every 2–4 weeks to maintain hygiene and extend bed life.' },
   { question: 'Do orthopedic dog beds help arthritis?', answer: 'Yes. Orthopedic memory foam beds distribute your dog\'s weight evenly, reducing pressure on inflamed joints by up to 40%. Veterinarians frequently recommend them for dogs with arthritis, hip dysplasia, and post-surgery recovery. The key is choosing a bed with at least 4 inches of high-density supportive foam.' },
   { question: 'What is the difference between orthopedic and regular dog beds?', answer: 'Standard polyester-fill beds compress flat within weeks, offering minimal joint support. Orthopedic beds use viscoelastic memory foam that conforms to your dog\'s body shape, distributes weight evenly, and springs back after each use. The result: genuine pressure relief, spinal alignment, and 3–5 years of consistent support versus 6–12 months.' },
+  { question: 'What is the best orthopedic bed for a dog with hip dysplasia?', answer: 'Dogs with hip dysplasia need beds with at least 5 inches of high-density foam (1.8+ lb/ft³) and a low entry point under 4 inches high. Bolstered edges provide hip cradling support. Dual-layer construction — a firm base with a contouring top — prevents the hip joint from sinking to the floor. Gel-infused options help reduce inflammation-related heat buildup.' },
+  { question: 'Can puppies use orthopedic dog beds?', answer: 'Puppies of large and giant breeds (expected adult weight 60+ lbs) benefit from orthopedic beds starting at 4–6 months old. Early joint support helps prevent developmental issues. However, puppies are more likely to chew, so choose a bed with a chew-resistant 1000D Oxford fabric cover and a waterproof liner for accidents.' },
+  { question: 'What size orthopedic bed does my dog need?', answer: 'Measure your dog from nose to tail base while lying in their natural sleep position, then add 6–12 inches. Dogs under 25 lbs: Small (24×18"). 25–60 lbs: Medium (36×28"). 60–90 lbs: Large (42×32"). 90+ lbs: XL (48×36" or larger). Dogs that sleep stretched out need longer beds; curlers can go one size down.' },
+  { question: 'Is memory foam or egg crate foam better for dogs?', answer: 'Memory foam is superior for orthopedic support. It conforms to your dog\'s body, distributes weight evenly, and lasts 3–5 years. Egg crate foam provides initial comfort but lacks true pressure relief — it compresses flat within 3–6 months and doesn\'t support heavy dogs. For dogs over 30 lbs or with joint issues, always choose memory foam.' },
+  { question: 'How often should I replace my dog\'s orthopedic bed?', answer: 'High-density memory foam beds (1.8+ lb/ft³) last 3–5 years. Replace when: the foam doesn\'t spring back within 10 seconds after pressing, you see a permanent body impression, the cover develops persistent odor despite washing, or your dog starts avoiding the bed. Wash the cover every 2–4 weeks to extend the bed\'s lifespan.' },
+  { question: 'Are orthopedic dog beds chew-proof?', answer: 'No bed is truly chew-proof, but heavy-duty orthopedic beds use 1000D Oxford or ballistic nylon covers with reinforced stitching that resist casual chewing. For aggressive chewers, look for beds with hidden zippers, double-stitched seams, and a bitter-apple-compatible cover. Address the root cause of chewing (anxiety, boredom) alongside the bed upgrade.' },
+  { question: 'Do orthopedic beds help dogs after surgery?', answer: 'Yes. Veterinarians frequently recommend orthopedic memory foam beds for post-surgical recovery, especially after TPLO, FHO, or hip replacement surgery. The foam distributes weight away from surgical sites, reduces pressure on incisions, and supports proper healing alignment. A waterproof liner is essential during the recovery period.' },
+  { question: 'What is CertiPUR-US foam certification?', answer: 'CertiPUR-US is an independent certification program that verifies foam is made without harmful chemicals including formaldehyde, heavy metals, phthalates, and ozone depleters. It also tests for low VOC emissions. Always choose CertiPUR-US certified foam for your dog\'s bed — uncertified foam may off-gas toxic chemicals that are harmful to pets.' },
+  { question: 'Can I wash the memory foam core of an orthopedic bed?', answer: 'Never machine wash or fully submerge memory foam — it absorbs water, takes days to dry, and can develop mold. For accidents, blot immediately, then spot clean with a mild enzyme cleaner. Sprinkle baking soda on the surface, let sit for 30 minutes, then vacuum. This is why a waterproof liner between the foam and cover is essential.' },
+  { question: 'What\'s the return policy on orthopedic dog beds?', answer: 'We offer a 30-day comfort guarantee on all orthopedic beds. If your dog doesn\'t take to the bed within 30 days, return it for a full refund — no questions asked. We recommend giving your dog at least 7–14 days to adjust, as most dogs show noticeable improvement in mobility within this period.' },
+  { question: 'Do you ship orthopedic beds from a US warehouse?', answer: 'Yes. Our most popular orthopedic beds ship from US-based warehouses, with delivery typically within 3–7 business days. Orders over $35 qualify for free standard shipping. We also offer expedited shipping options for urgent needs, such as post-surgery recovery beds.' },
+  { question: 'Are heated orthopedic beds safe for dogs?', answer: 'Heated orthopedic beds can benefit dogs with severe arthritis, but should only be used under veterinary guidance. Look for beds with auto-shutoff timers, chew-resistant cords, and low-voltage heating elements. Never leave a heated bed on unsupervised. For most dogs, standard memory foam provides sufficient warmth through body heat retention.' },
 ];
 
 const COMPARISON_ROWS = [
-  { model: 'Memory Foam Classic', bestFor: 'Senior dogs, joint pain', thickness: '5"', waterproof: '✅', price: '$45–$90', badge: 'Most Popular', slug: '' },
-  { model: 'Gel-Infused Cooling', bestFor: 'Hot climates, overheating', thickness: '6"', waterproof: '✅', price: '$55–$120', badge: '', slug: '' },
-  { model: 'Bolster Orthopedic', bestFor: 'Anxious dogs, head support', thickness: '4"', waterproof: '⚠️', price: '$35–$80', badge: 'Best for Large Dogs', slug: '' },
-  { model: 'XL Heavy-Duty', bestFor: 'Giant breeds (90+ lbs)', thickness: '7"', waterproof: '✅', price: '$70–$150', badge: '', slug: '' },
-  { model: 'Budget Egg Crate', bestFor: 'Entry-level joint relief', thickness: '3"', waterproof: '❌', price: '$20–$50', badge: 'Budget Pick', slug: '' },
+  { model: 'Memory Foam Classic', bestFor: 'Senior dogs, joint pain', foamType: 'Viscoelastic Memory Foam', thickness: '5"', waterproof: '✅', coverWashable: '✅', usWarehouse: '✅', price: '$45–$90', badge: 'Most Popular', slug: '' },
+  { model: 'Gel-Infused Cooling', bestFor: 'Hot climates, overheating', foamType: 'Gel Memory Foam', thickness: '6"', waterproof: '✅', coverWashable: '✅', usWarehouse: '✅', price: '$55–$120', badge: '', slug: '' },
+  { model: 'Bolster Orthopedic', bestFor: 'Anxious dogs, head support', foamType: 'Memory Foam + Fiber Bolster', thickness: '4"', waterproof: '⚠️', coverWashable: '✅', usWarehouse: '✅', price: '$35–$80', badge: 'Best for Large Dogs', slug: '' },
+  { model: 'XL Heavy-Duty', bestFor: 'Giant breeds (90+ lbs)', foamType: 'Dual-Layer High-Density', thickness: '7"', waterproof: '✅', coverWashable: '✅', usWarehouse: '✅', price: '$70–$150', badge: '', slug: '' },
+  { model: 'Budget Egg Crate', bestFor: 'Entry-level joint relief', foamType: 'Egg Crate Foam', thickness: '3"', waterproof: '❌', coverWashable: '✅', usWarehouse: '⚠️', price: '$20–$50', badge: 'Budget Pick', slug: '' },
+  { model: 'Therapeutic Pro', bestFor: 'Post-surgery recovery', foamType: 'Medical-Grade Memory Foam', thickness: '6"', waterproof: '✅', coverWashable: '✅', usWarehouse: '✅', price: '$90–$180', badge: 'Vet Choice', slug: '' },
+  { model: 'Small Dog Orthopedic', bestFor: 'Dogs under 25 lbs', foamType: 'Contour Memory Foam', thickness: '3"', waterproof: '✅', coverWashable: '✅', usWarehouse: '✅', price: '$30–$60', badge: '', slug: '' },
 ];
 
 const SIZE_GUIDE = [
@@ -193,6 +207,9 @@ export default function OrthopedicDogBeds() {
 
           <div className="max-w-2xl">
             <Badge className="mb-4 bg-primary text-primary-foreground">Vet Recommended · #1 Seller</Badge>
+            <div className="mb-3 inline-flex items-center gap-1.5 text-xs text-primary-foreground/60 bg-primary-foreground/10 rounded-full px-3 py-1">
+              <span>📅</span> Last Updated: February 2026
+            </div>
             <h1 className="text-3xl md:text-5xl font-display font-bold text-primary-foreground mb-4 leading-tight">
               Your Dog Deserves Pain-Free Sleep.
             </h1>
@@ -437,17 +454,20 @@ export default function OrthopedicDogBeds() {
           </p>
         </section>
 
-        {/* ─── SECTION 4: COMPARISON TABLE ─── */}
+        {/* ─── SECTION 4: COMPARISON TABLE (ABOVE-THE-FOLD PRIORITY) ─── */}
         <section id="comparison" className="mb-16">
-          <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Orthopedic Dog Bed Comparison</h2>
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Orthopedic Dog Bed Comparison Matrix</h2>
           <div className="overflow-x-auto border rounded-2xl">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50">
                   <th className="text-left p-3 font-semibold">Model</th>
                   <th className="text-left p-3 font-semibold">Best For</th>
+                  <th className="text-left p-3 font-semibold">Foam Type</th>
                   <th className="text-left p-3 font-semibold">Thickness</th>
                   <th className="text-left p-3 font-semibold">Waterproof</th>
+                  <th className="text-left p-3 font-semibold">Cover Washable</th>
+                  <th className="text-left p-3 font-semibold">US Warehouse</th>
                   <th className="text-left p-3 font-semibold">Price</th>
                   <th className="p-3 font-semibold"></th>
                 </tr>
@@ -455,13 +475,16 @@ export default function OrthopedicDogBeds() {
               <tbody>
                 {COMPARISON_ROWS.map((row, i) => (
                   <tr key={i} className={i % 2 === 0 ? 'bg-card' : 'bg-muted/20'}>
-                    <td className="p-3 font-medium">
+                    <td className="p-3 font-medium whitespace-nowrap">
                       {row.model}
                       {row.badge && <Badge className="ml-2 text-[10px]" variant={row.badge === 'Most Popular' ? 'default' : 'secondary'}>{row.badge}</Badge>}
                     </td>
                     <td className="p-3 text-muted-foreground">{row.bestFor}</td>
+                    <td className="p-3 text-muted-foreground text-xs">{row.foamType}</td>
                     <td className="p-3">{row.thickness}</td>
                     <td className="p-3">{row.waterproof}</td>
+                    <td className="p-3">{row.coverWashable}</td>
+                    <td className="p-3">{row.usWarehouse}</td>
                     <td className="p-3">{row.price}</td>
                     <td className="p-3">
                       <Button size="sm" variant="outline" asChild><a href="#products">Shop</a></Button>
@@ -470,6 +493,104 @@ export default function OrthopedicDogBeds() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+
+        {/* ─── JUMP LINKS NAVIGATION ─── */}
+        <nav className="mb-16 bg-card border rounded-2xl p-6" aria-label="Page sections">
+          <h2 className="text-lg font-semibold mb-3">Jump to Section</h2>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'comparison', label: 'Comparison Matrix' },
+              { id: 'products', label: 'Shop Beds' },
+              { id: 'size-guide', label: 'Size Guide' },
+              { id: 'use-cases', label: 'Best For Your Dog' },
+              { id: 'buyer-mistakes', label: 'Common Mistakes' },
+              { id: 'faq', label: 'FAQ (20 Questions)' },
+            ].map(link => (
+              <a key={link.id} href={`#${link.id}`} className="text-sm text-primary hover:underline bg-primary/5 border border-primary/20 rounded-full px-4 py-1.5 transition-colors hover:bg-primary/10">
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </nav>
+
+        {/* ─── USE-CASE SEGMENTATION ─── */}
+        <section id="use-cases" className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-2">Best Orthopedic Dog Bed by Need</h2>
+          <p className="text-muted-foreground mb-6 max-w-3xl">Every dog is different. Find the right orthopedic bed based on your dog's specific size, age, and health needs.</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { title: 'Best for Large Dogs (60+ lbs)', icon: '🐕‍🦺', desc: 'Large breeds need 5–7 inches of high-density foam (1.8+ lb/ft³) to prevent bottoming out. Look for reinforced stitching, XL sizing (42×32" minimum), and dual-layer construction with a firm support base. Breeds: Labrador, German Shepherd, Golden Retriever, Rottweiler.', link: '/collections/best-orthopedic-dog-bed-large-dogs', linkText: 'Best for Large Dogs →' },
+              { title: 'Best for Small Dogs (Under 25 lbs)', icon: '🐕', desc: 'Small breeds need 3 inches of supportive foam minimum. Don\'t over-buy on thickness — focus on density. Bolstered edges provide security and head support that small dogs love. Choose beds sized 24×18" for Dachshunds, Chihuahuas, and Shih Tzus.', link: '#products', linkText: 'Shop Small Dog Beds →' },
+              { title: 'Best for Senior Dogs (7+ years)', icon: '🦮', desc: 'Low entry height (under 4") is critical for dogs with reduced mobility. Bolstered edges help with head/neck support. Waterproof liner is essential for incontinence. Gel-infused foam reduces heat buildup that worsens inflammation in older dogs.', link: '/collections/orthopedic-dog-bed-senior-dogs', linkText: 'Best for Senior Dogs →' },
+              { title: 'Best for Hip Dysplasia', icon: '🦴', desc: 'Hip dysplasia affects up to 50% of large and giant breeds. The bed must support the hip socket without allowing the joint to sink to the floor. Dual-layer foam with a firm base and contouring top layer is essential. Low entry point reduces pain when getting on/off.', link: '/guides/best-dog-bed-hip-dysplasia', linkText: 'Hip Dysplasia Guide →' },
+              { title: 'Budget Option (Under $50)', icon: '💰', desc: 'Quality orthopedic support doesn\'t require $150+. Our under-$50 picks use medium-density foam (1.5–1.7 lb/ft³) that lasts 1–2 years for dogs under 60 lbs. Best for pet parents who want genuine improvement over polyester-fill beds without a premium price tag.', link: '/dog/orthopedic-dog-beds/memory-foam-under-100', linkText: 'Budget Picks Under $100 →' },
+              { title: 'Premium Option ($100+)', icon: '💎', desc: 'Premium orthopedic beds feature medical-grade foam (2.0+ lb/ft³), CertiPUR-US certification, sealed TPU waterproof liners, and covers rated for 200+ wash cycles. Expected lifespan: 5–7 years. Best for giant breeds, severe joint disease, or post-surgical recovery.', link: '#products', linkText: 'Shop Premium Beds →' },
+            ].map(block => (
+              <div key={block.title} className="bg-card border rounded-2xl p-6">
+                <span className="text-3xl mb-3 block">{block.icon}</span>
+                <h3 className="font-semibold text-lg mb-2">{block.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{block.desc}</p>
+                <Link to={block.link} className="text-sm text-primary hover:underline font-medium inline-flex items-center gap-1">
+                  {block.linkText}
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── COMMON BUYER MISTAKES ─── */}
+        <section id="buyer-mistakes" className="mb-16 bg-destructive/5 border border-destructive/20 rounded-2xl p-6 md:p-10">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle className="w-6 h-6 text-destructive" />
+            <h2 className="text-2xl md:text-3xl font-display font-bold">7 Common Mistakes When Buying an Orthopedic Dog Bed</h2>
+          </div>
+          <div className="space-y-4">
+            {[
+              { mistake: 'Prioritizing thickness over density', fix: 'A 6" bed with 1.0 lb/ft³ foam flattens faster than a 4" bed with 1.8 lb/ft³ foam. Always check density first.' },
+              { mistake: 'Trusting "orthopedic" marketing labels', fix: 'The term "orthopedic" is unregulated. Any bed can claim it. Verify memory foam density specs and CertiPUR-US certification.' },
+              { mistake: 'Skipping waterproof protection', fix: 'One accident permanently ruins memory foam. Insist on a sealed TPU liner between foam and cover — not just a "water-resistant" coating.' },
+              { mistake: 'Buying too small', fix: 'Measure your dog nose-to-tail while lying down and add 6–12 inches. A cramped bed forces unnatural sleeping positions that worsen joint problems.' },
+              { mistake: 'Ignoring entry height for senior dogs', fix: 'Thick foam beds can be hard for arthritic dogs to step into. Senior dogs need entry heights under 4 inches.' },
+              { mistake: 'Choosing non-removable covers', fix: 'Dog beds need washing every 2–4 weeks. Non-removable covers become hygiene hazards. Always choose zip-off, machine-washable covers.' },
+              { mistake: 'Expecting instant results', fix: 'Most dogs need 7–14 days to adjust to a new sleep surface. Don\'t return the bed after 2 days — give the foam time to work.' },
+            ].map((item, i) => (
+              <div key={i} className="bg-background rounded-xl p-4 flex gap-3">
+                <span className="text-destructive font-bold text-lg shrink-0">#{i + 1}</span>
+                <div>
+                  <p className="font-medium text-sm mb-1">{item.mistake}</p>
+                  <p className="text-xs text-muted-foreground">{item.fix}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── WARRANTY & DURABILITY ─── */}
+        <section className="mb-16 bg-card border rounded-2xl p-6 md:p-10">
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-4">Durability & Warranty Guide</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-semibold text-lg mb-2">How Long Should an Orthopedic Bed Last?</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                Foam density directly determines lifespan. Low-density foam (under 1.5 lb/ft³) lasts 3–6 months. Medium-density (1.5–1.7 lb/ft³) lasts 1–2 years. High-density (1.8+ lb/ft³) lasts 3–5 years. Premium medical-grade foam (2.3+ lb/ft³) can last 5–7 years with proper cover maintenance.
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                The cover wears faster than the foam. Choose beds with replaceable covers to extend total bed life by 50% or more.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg mb-2">What Voids a Warranty</h3>
+              <ul className="text-sm text-muted-foreground space-y-2">
+                <li className="flex items-start gap-2"><span className="text-destructive mt-0.5">✗</span> Machine washing the foam core</li>
+                <li className="flex items-start gap-2"><span className="text-destructive mt-0.5">✗</span> Using without a cover (direct foam contact)</li>
+                <li className="flex items-start gap-2"><span className="text-destructive mt-0.5">✗</span> Pet chewing damage</li>
+                <li className="flex items-start gap-2"><span className="text-destructive mt-0.5">✗</span> Exceeding weight rating</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">✓</span> Normal compression under weight rating is covered</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">✓</span> Seam separation within 1 year is covered</li>
+              </ul>
+            </div>
           </div>
         </section>
 
