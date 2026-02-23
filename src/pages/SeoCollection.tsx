@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
@@ -173,8 +173,37 @@ const generateBreadcrumbJsonLd = (collection: SeoCollectionData, parentCollectio
   };
 };
 
+/**
+ * Slugs that have dedicated static route components.
+ * SeoCollection must NEVER handle these — they have their own pages.
+ * If React Router accidentally matches /:slug or /collections/:slug for these,
+ * we redirect to the correct static route.
+ */
+const RESERVED_CLUSTER_SLUGS = new Set([
+  // Pillar pages
+  'orthopedic-dog-beds',
+  'cat-trees-for-large-cats',
+  'dog-car-travel-safety',
+  // Sub-intent pages
+  'best-orthopedic-dog-bed-large-dogs',
+  'waterproof-orthopedic-dog-bed',
+  'memory-foam-dog-beds',
+  'cat-tree-for-maine-coon',
+  'heavy-duty-cat-tree',
+  'cat-condos-for-large-cats',
+  'dog-car-seats',
+  'dog-booster-seat',
+  'dog-car-harness',
+]);
+
 const SeoCollection = () => {
   const { slug } = useParams<{ slug: string }>();
+
+  // GUARD: If this slug has a dedicated static component, redirect there.
+  // This prevents SeoCollection from ever intercepting cluster page routes.
+  if (slug && RESERVED_CLUSTER_SLUGS.has(slug)) {
+    return <Navigate to={`/collections/${slug}`} replace />;
+  }
 
   // Fetch collection data
   const { data: collection, isLoading: collectionLoading, error } = useQuery({
