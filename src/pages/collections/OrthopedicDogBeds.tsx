@@ -60,16 +60,16 @@ const TESTIMONIALS = [
 ];
 
 const ATTACK_PAGES = [
-  { slug: 'best-orthopedic-dog-bed-large-dogs', label: 'Orthopedic Beds for Large Dogs' },
-  { slug: 'orthopedic-dog-bed-arthritis', label: 'Beds for Dogs with Arthritis' },
-  { slug: 'memory-foam-orthopedic-dog-bed', label: 'Memory Foam Dog Beds' },
-  { slug: 'waterproof-orthopedic-dog-bed', label: 'Waterproof Orthopedic Beds' },
-  { slug: 'orthopedic-dog-bed-senior-dogs', label: 'Senior Dog Beds' },
-  { slug: 'indestructible-orthopedic-dog-bed', label: 'Indestructible Orthopedic Beds' },
-  { slug: 'cooling-orthopedic-dog-bed', label: 'Cooling Orthopedic Beds' },
-  { slug: 'orthopedic-dog-bed-under-100', label: 'Best Under $100' },
-  { slug: 'premium-orthopedic-dog-bed-comparison', label: 'Premium Bed Comparison' },
-  { slug: 'big-dog-orthopedic-bed-xl', label: 'XL Beds for Big Dogs' },
+  { href: '/dog/orthopedic-dog-beds/best-for-large-dogs', label: 'Orthopedic Beds for Large Dogs' },
+  { href: '/dog/orthopedic-dog-beds/waterproof', label: 'Waterproof Orthopedic Beds' },
+  { href: '/dog/orthopedic-dog-beds/memory-foam', label: 'Memory Foam Dog Beds' },
+  { href: '/collections/orthopedic-dog-bed-arthritis', label: 'Beds for Dogs with Arthritis' },
+  { href: '/collections/orthopedic-dog-bed-senior-dogs', label: 'Senior Dog Beds' },
+  { href: '/collections/indestructible-orthopedic-dog-bed', label: 'Indestructible Orthopedic Beds' },
+  { href: '/collections/cooling-orthopedic-dog-bed', label: 'Cooling Orthopedic Beds' },
+  { href: '/collections/orthopedic-dog-bed-under-100', label: 'Best Under $100' },
+  { href: '/collections/premium-orthopedic-dog-bed-comparison', label: 'Premium Bed Comparison' },
+  { href: '/collections/big-dog-orthopedic-bed-xl', label: 'XL Beds for Big Dogs' },
 ];
 
 const PAIN_POINTS = [
@@ -551,8 +551,8 @@ export default function OrthopedicDogBeds() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {ATTACK_PAGES.map(page => (
               <Link
-                key={page.slug}
-                to={`/collections/${page.slug}`}
+                key={page.href}
+                to={page.href}
                 className="group flex items-center justify-between bg-card border rounded-xl p-4 hover:border-primary/50 hover:shadow-md transition-all"
               >
                 <span className="font-medium text-sm group-hover:text-primary transition-colors">{page.label}</span>
@@ -564,14 +564,17 @@ export default function OrthopedicDogBeds() {
             <Link to="/collections/best-dog-beds-for-large-dogs" className="text-sm text-primary hover:underline font-medium">
               Large Dog Beds →
             </Link>
-            <Link to="/collections/waterproof-orthopedic-dog-bed" className="text-sm text-primary hover:underline font-medium">
+            <Link to="/dog/orthopedic-dog-beds/waterproof" className="text-sm text-primary hover:underline font-medium">
               Waterproof Dog Beds →
             </Link>
             <Link to="/blog" className="text-sm text-primary hover:underline font-medium">
               Dog Arthritis Care Articles →
             </Link>
-            <Link to="/collections/dog-car-travel-safety" className="text-sm text-primary hover:underline font-medium">
+            <Link to="/dog/dog-car-travel-safety" className="text-sm text-primary hover:underline font-medium">
               Dog Car Travel Safety →
+            </Link>
+            <Link to="/cat/cat-trees-for-large-cats" className="text-sm text-primary hover:underline font-medium">
+              Cat Trees for Large Cats →
             </Link>
           </div>
         </section>

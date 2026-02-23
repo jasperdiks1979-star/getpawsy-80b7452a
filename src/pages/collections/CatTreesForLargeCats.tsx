@@ -164,13 +164,13 @@ export default function CatTreesForLargeCats() {
               {
                 title: 'Heavy Duty Cat Trees',
                 desc: 'Built with solid wood frames, thick sisal posts, and anti-tip hardware. These cat trees are rated for 40+ lbs and designed to withstand aggressive play from large and active cats. Many include wall-anchor systems for maximum stability.',
-                link: '/collections/heavy-duty-cat-tree',
+                link: '/cat/cat-trees-for-large-cats/heavy-duty',
                 linkText: 'Shop Heavy Duty Cat Trees →',
               },
               {
                 title: 'Cat Trees for Maine Coons',
                 desc: 'Purpose-designed for the largest domestic breed. Features include 18"+ platforms, 12"+ condo openings, reinforced hammocks rated for 25 lbs, and extra-tall scratching posts that accommodate a full stretch. Built to handle 20–30 lb cats comfortably.',
-                link: '/collections/cat-tree-for-maine-coon',
+                link: '/cat/cat-trees-for-large-cats/for-maine-coon',
                 linkText: 'Shop Maine Coon Cat Trees →',
               },
               {
@@ -261,9 +261,9 @@ export default function CatTreesForLargeCats() {
             ))}
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/collections/orthopedic-dog-beds" className="text-sm text-primary hover:underline font-medium">Orthopedic Dog Beds →</Link>
-            <Link to="/collections/dog-car-travel-safety" className="text-sm text-primary hover:underline font-medium">Dog Car Travel Safety →</Link>
-            <Link to="/collections/cat-condos-for-large-cats" className="text-sm text-primary hover:underline font-medium">Large Cat Condos →</Link>
+            <Link to="/dog/orthopedic-dog-beds" className="text-sm text-primary hover:underline font-medium">Orthopedic Dog Beds →</Link>
+            <Link to="/dog/dog-car-travel-safety" className="text-sm text-primary hover:underline font-medium">Dog Car Travel Safety →</Link>
+            <Link to="/cat/cat-trees-for-large-cats/large-cat-condos" className="text-sm text-primary hover:underline font-medium">Large Cat Condos →</Link>
           </div>
         </section>
       </div>
