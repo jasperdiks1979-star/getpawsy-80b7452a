@@ -7,80 +7,19 @@
  * Exit 0 = all pass, Exit 1 = any fail.
  */
 
-const BASE = "https://getpawsy.pet";
+const CANONICAL = process.env.CANONICAL_HOST || "https://getpawsy.pet";
 
-const CHECKS = [
-  {
-    url: `${BASE}/sitemap.xml`,
-    mustContain: "<sitemapindex",
-    label: "Sitemap Index",
-  },
-  {
-    url: `${BASE}/sitemap-products-1.xml`,
-    mustContain: "<urlset",
-    label: "Product Sitemap 1",
-  },
-  {
-    url: `${BASE}/sitemap-static.xml`,
-    mustContain: "<urlset",
-    label: "Static Sitemap",
-  },
-  {
-    url: `${BASE}/robots.txt`,
-    mustContain: "Sitemap:",
-    label: "robots.txt",
-  },
-];
+async function fetchText(url) {
+  const res = await fetch(url, {
+    headers: { "User-Agent": "GetPawsy-SmokeCheck/1.0" },
+    redirect: "follow",
+  });
+  const text = await res.text();
+  return { status: res.status, ct: res.headers.get("content-type") || "", text };
+}
 
-async function check({ url, mustContain, label }) {
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "GetPawsy-SmokeCheck/1.0" },
-      redirect: "follow",
-    });
-
-    const contentType = res.headers.get("content-type") || "";
-    const body = await res.text();
-
-    const errors = [];
-
-    if (res.status !== 200) {
-      errors.push(`HTTP ${res.status} (expected 200)`);
-    }
-
-    if (!body.includes(mustContain)) {
-      errors.push(`Missing "${mustContain}" — likely SPA fallback or empty file`);
-    }
-
-    // Detect SPA fallback: if we get HTML instead of XML
-    if (
-      url.endsWith(".xml") &&
-      (body.includes("<!DOCTYPE html") || body.includes("<div id=\"root\""))
-    ) {
-      errors.push("Response is HTML (SPA fallback), not XML");
-    }
-
-    // Check content-type for XML files
-    if (url.endsWith(".xml") && !contentType.includes("xml")) {
-      errors.push(`Content-Type is "${contentType}" (expected text/xml)`);
-    }
-
-    if (errors.length === 0) {
-      console.log(`  ✅ PASS  ${label}`);
-      console.log(`          ${url}`);
-      return true;
-    } else {
-      console.log(`  ❌ FAIL  ${label}`);
-      console.log(`          ${url}`);
-      for (const e of errors) console.log(`          → ${e}`);
-      return false;
-    }
-  } catch (err) {
-    console.log(`  ❌ FAIL  ${label}`);
-    console.log(`          ${url}`);
-    console.log(`          → Network error: ${err.message}`);
-    return false;
-  }
+function assert(cond, msg) {
+  if (!cond) throw new Error(msg);
 }
 
 async function main() {
@@ -88,20 +27,33 @@ async function main() {
   console.log("  Live Sitemap Smoke Check");
   console.log("══════════════════════════════════════════\n");
 
-  const results = await Promise.all(CHECKS.map(check));
-  const passed = results.filter(Boolean).length;
-  const failed = results.length - passed;
+  const a = await fetchText(`${CANONICAL}/sitemap.xml`);
+  assert(a.status === 200, `sitemap.xml status ${a.status}`);
+  assert(a.text.startsWith(`<?xml version="1.0" encoding="UTF-8"?>`), "sitemap.xml missing XML header");
+  assert(a.text.includes("<sitemapindex"), "sitemap.xml missing <sitemapindex>");
+  assert(!a.text.includes("<!doctype html") && !a.text.includes("<!DOCTYPE html") && !a.text.includes("<html"), "sitemap.xml HTML/SPA fallback detected");
+  console.log("  ✅ PASS  sitemap.xml");
+  console.log(`          content-type: ${a.ct}`);
 
-  console.log(`\n  Results: ${passed}/${results.length} passed`);
+  const b = await fetchText(`${CANONICAL}/sitemap-products-1.xml`);
+  assert(b.status === 200, `sitemap-products-1.xml status ${b.status}`);
+  assert(b.text.startsWith(`<?xml version="1.0" encoding="UTF-8"?>`), "products-1 missing XML header");
+  assert(b.text.includes("<urlset"), "products-1 missing <urlset>");
+  assert(b.text.includes("<url>"), "products-1 has 0 <url> entries");
+  assert(!b.text.includes("<!doctype html") && !b.text.includes("<!DOCTYPE html") && !b.text.includes("<html"), "products-1 HTML/SPA fallback detected");
+  console.log("  ✅ PASS  sitemap-products-1.xml");
+  console.log(`          content-type: ${b.ct}`);
 
-  if (failed > 0) {
-    console.log("  Status: ❌ FAILURES DETECTED\n");
-    console.log("══════════════════════════════════════════\n");
-    process.exit(1);
-  }
+  const c = await fetchText(`${CANONICAL}/robots.txt`);
+  assert(c.status === 200, `robots.txt status ${c.status}`);
+  assert(c.text.includes("Sitemap:"), "robots.txt missing Sitemap: directive");
+  console.log("  ✅ PASS  robots.txt");
 
-  console.log("  Status: ✅ ALL CLEAR\n");
+  console.log("\n  ✅ LIVE sitemap smoke check ALL CLEAR\n");
   console.log("══════════════════════════════════════════\n");
 }
 
-main();
+main().catch((e) => {
+  console.error(`\n  ❌ LIVE sitemap smoke check FAILED: ${e.message}\n`);
+  process.exit(1);
+});

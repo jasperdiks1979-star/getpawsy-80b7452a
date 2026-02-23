@@ -12,8 +12,14 @@ export function toIsoDate(input) {
   return d.toISOString().slice(0, 10);
 }
 
+export function isoDate(date = new Date()) {
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return new Date().toISOString().slice(0, 10);
+  return d.toISOString().slice(0, 10);
+}
+
 export function escapeXml(s) {
-  return String(s)
+  return String(s ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -26,6 +32,7 @@ export function renderUrlset(urlEntries) {
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
   const body = urlEntries
+    .filter((e) => e && e.loc)
     .map((e) => {
       const loc = `<loc>${escapeXml(e.loc)}</loc>`;
       const lastmod = e.lastmod ? `<lastmod>${escapeXml(e.lastmod)}</lastmod>` : "";
@@ -53,6 +60,7 @@ export function renderSitemapIndex(sitemaps) {
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
   const body = sitemaps
+    .filter((sm) => sm && sm.loc)
     .map((sm) => {
       const loc = `<loc>${escapeXml(sm.loc)}</loc>`;
       const lastmod = sm.lastmod ? `<lastmod>${escapeXml(sm.lastmod)}</lastmod>` : "";
@@ -64,8 +72,13 @@ export function renderSitemapIndex(sitemaps) {
 }
 
 export function writeFile(outPath, contents) {
-  // UTF-8 without BOM
   fs.writeFileSync(outPath, contents, { encoding: "utf8" });
+}
+
+export function writeFileEnsured(filePath, content) {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath, content, "utf8");
 }
 
 export function chunk(array, size) {
@@ -73,6 +86,8 @@ export function chunk(array, size) {
   for (let i = 0; i < array.length; i += size) out.push(array.slice(i, i + size));
   return out;
 }
+
+export { chunk as chunkArray };
 
 export function normalizePath(p) {
   if (!p) return "/";
@@ -93,4 +108,16 @@ export function readJson(filePath) {
 
 export function joinRoot(...parts) {
   return path.join(process.cwd(), ...parts);
+}
+
+export function assertLooksLikeXml(content, mustContain) {
+  if (!content.startsWith(`<?xml version="1.0" encoding="UTF-8"?>`)) {
+    throw new Error("XML header missing.");
+  }
+  if (!content.includes(mustContain)) {
+    throw new Error(`XML missing required token: ${mustContain}`);
+  }
+  if (content.includes("<!doctype html") || content.includes("<!DOCTYPE html") || content.includes("<html") || content.includes("</script>")) {
+    throw new Error("HTML/SPA fallback detected in XML output.");
+  }
 }
