@@ -188,13 +188,13 @@ export default function OrthopedicDogBeds() {
           <div className="max-w-2xl">
             <Badge className="mb-4 bg-primary text-primary-foreground">Vet Recommended · #1 Seller</Badge>
             <h1 className="text-3xl md:text-5xl font-display font-bold text-primary-foreground mb-4 leading-tight">
-              Orthopedic Dog Beds That Relieve Joint Pain Instantly
+              Stop Your Dog's Joint Pain Tonight.
             </h1>
             <p className="text-lg md:text-xl text-primary-foreground/80 mb-2">
-              Premium memory foam support designed for arthritis, hip dysplasia &amp; senior dogs.
+              Orthopedic Memory Foam Beds Designed for Senior &amp; Large Dogs.
             </p>
             <p className="text-sm text-primary-foreground/60 mb-6">
-              US Fast Shipping • Vet Recommended • 30-Day Risk-Free Trial
+              Free US Shipping • 30-Day Trial • Fast Delivery
             </p>
 
             {/* Trust badges */}
@@ -218,6 +218,14 @@ export default function OrthopedicDogBeds() {
               <Button size="lg" variant="outline" className="text-base border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
                 <a href="#size-guide">Find the Right Size ↓</a>
               </Button>
+            </div>
+
+            {/* Payment method logos */}
+            <div className="mt-6 flex items-center gap-3 flex-wrap">
+              <span className="text-xs text-primary-foreground/50">Accepted:</span>
+              {['Visa', 'Mastercard', 'Amex', 'Apple Pay', 'PayPal'].map(m => (
+                <span key={m} className="text-[11px] font-medium text-primary-foreground/70 bg-primary-foreground/10 rounded px-2 py-0.5">{m}</span>
+              ))}
             </div>
           </div>
         </div>
@@ -482,6 +490,30 @@ export default function OrthopedicDogBeds() {
           ) : (
             <p className="text-center text-muted-foreground py-12">Products loading…</p>
           )}
+        </section>
+
+        {/* ─── FREQUENTLY BOUGHT TOGETHER ─── */}
+        <section className="mb-12 bg-card border rounded-2xl p-6 md:p-8">
+          <h3 className="text-lg font-semibold mb-1">🛒 Frequently Bought Together</h3>
+          <p className="text-sm text-muted-foreground mb-4">Complete your dog's comfort setup and save.</p>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {[
+              { name: 'Orthopedic Memory Foam Bed', note: 'Joint relief for 60+ lb dogs', price: '$69', tag: 'You\'re viewing' },
+              { name: 'Waterproof Dog Blanket', note: 'Protect your bed from accidents', price: '$29', tag: 'Add for 15% off' },
+              { name: 'Calming Dog Donut Bed', note: 'Perfect secondary nap spot', price: '$39', tag: 'Popular pair' },
+            ].map(item => (
+              <div key={item.name} className="bg-muted/30 rounded-xl p-4 relative">
+                <Badge variant="secondary" className="text-[10px] mb-2">{item.tag}</Badge>
+                <h4 className="font-medium text-sm mb-1">{item.name}</h4>
+                <p className="text-xs text-muted-foreground mb-2">{item.note}</p>
+                <p className="text-sm font-bold">{item.price}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <Button size="sm" asChild><a href="#products">View All Beds <ArrowRight className="w-3.5 h-3.5 ml-1" /></a></Button>
+            <span className="text-xs text-muted-foreground">Bundle discount applied at checkout</span>
+          </div>
         </section>
 
         {/* ─── URGENCY BLOCK ─── */}
