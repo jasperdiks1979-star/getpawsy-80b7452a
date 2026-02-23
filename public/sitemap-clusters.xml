@@ -20,20 +20,23 @@
   <!-- ══════ GUIDE / RESOURCE PAGES (Tier 2 — Priority 0.85) ══════ -->
   <url><loc>https://getpawsy.pet/resources/dog-bed-size-chart</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
 
-  <!-- ══════ ORTHOPEDIC DOG BED CLUSTER — Namespaced (Tier 2 — Priority 0.85) ══════ -->
+  <!-- ══════ ORTHOPEDIC DOG BED CLUSTER — 4 intents (Tier 2 — Priority 0.85) ══════ -->
   <url><loc>https://getpawsy.pet/dog/orthopedic-dog-beds/best-for-large-dogs</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://getpawsy.pet/dog/orthopedic-dog-beds/waterproof</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://getpawsy.pet/dog/orthopedic-dog-beds/memory-foam</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/dog/orthopedic-dog-beds/for-senior-dogs</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/dog/orthopedic-dog-beds/washable-covers</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/dog/orthopedic-dog-beds/memory-foam-vs-egg-crate</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
 
-  <!-- ══════ CAT TREES CLUSTER — Namespaced (Tier 2 — Priority 0.85) ══════ -->
-  <url><loc>https://getpawsy.pet/cat/cat-trees-for-large-cats/for-maine-coon</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <!-- ══════ CAT TREES CLUSTER — 4 intents (Tier 2 — Priority 0.85) ══════ -->
   <url><loc>https://getpawsy.pet/cat/cat-trees-for-large-cats/heavy-duty</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://getpawsy.pet/cat/cat-trees-for-large-cats/large-cat-condos</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/cat/cat-trees-for-large-cats/for-multiple-cats</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/cat/cat-trees-for-large-cats/tall-vs-wide</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/cat/cat-trees-for-large-cats/apartments-small-spaces</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
 
-  <!-- ══════ DOG CAR SAFETY CLUSTER — Namespaced (Tier 2 — Priority 0.85) ══════ -->
-  <url><loc>https://getpawsy.pet/dog/dog-car-travel-safety/car-seats</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <!-- ══════ DOG CAR SAFETY CLUSTER — 4 intents (Tier 2 — Priority 0.85) ══════ -->
+  <url><loc>https://getpawsy.pet/dog/dog-car-travel-safety/crash-tested-seat-belts</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
   <url><loc>https://getpawsy.pet/dog/dog-car-travel-safety/booster-seats</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://getpawsy.pet/dog/dog-car-travel-safety/harness-safety</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/dog/dog-car-travel-safety/back-seat-hammocks</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://getpawsy.pet/dog/dog-car-travel-safety/anxious-dog-road-trips</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
 
   <!-- ══════ BLOG SUPPORT CLUSTERS (Tier 3 — Priority 0.80) ══════ -->
   <url><loc>https://getpawsy.pet/guides/do-orthopedic-dog-beds-help-arthritis</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
