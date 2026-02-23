@@ -210,6 +210,7 @@ const GscChecklist = lazyWithRetry(() => import("./pages/diagnostics/GscChecklis
 const SeoHostDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/SeoHostDiagnostics"));
 const SitemapHealthDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/SitemapHealthDiagnostics"));
 const CrawlBudgetDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/CrawlBudgetDiagnostics"));
+const IndexControlDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/IndexControlDiagnostics"));
 const DomainHealthPage = lazyWithRetry(() => import("./pages/admin/DomainHealthPage"));
 const Gsc4xxTriagePage = lazyWithRetry(() => import("./pages/admin/Gsc4xxTriagePage"));
 const StructuredDataPage = lazyWithRetry(() => import("./pages/admin/StructuredDataPage"));
@@ -419,6 +420,7 @@ const App = () => {
                       <Route path="/diagnostics/seo-hosts" element={<Suspense fallback={<RouteLoader />}><SeoHostDiagnostics /></Suspense>} />
                       <Route path="/diagnostics/sitemap-health" element={<Suspense fallback={<RouteLoader />}><SitemapHealthDiagnostics /></Suspense>} />
                       <Route path="/diagnostics/crawl-budget" element={<Suspense fallback={<RouteLoader />}><CrawlBudgetDiagnostics /></Suspense>} />
+                      <Route path="/diagnostics/index-control" element={<Suspense fallback={<RouteLoader />}><IndexControlDiagnostics /></Suspense>} />
                       
                       {/* Parent category routes */}
                       <Route path="/dogs" element={<Navigate to="/products?category=dogs" replace />} />

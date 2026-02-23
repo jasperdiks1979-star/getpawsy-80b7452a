@@ -73,11 +73,11 @@ Deno.serve(async (req: Request) => {
     const SITE = "https://getpawsy.pet";
     const childSitemaps = [
       "sitemap-static.xml",
-      "sitemap-products.xml",
-      "sitemap-categories.xml",
-      "sitemap-bestsellers.xml",
+      "sitemap-products-1.xml",
+      "sitemap-products-2.xml",
       "sitemap-collections.xml",
-      "sitemap-blog.xml",
+      "sitemap-clusters.xml",
+      "sitemap-blog-1.xml",
       "sitemap-guides.xml",
     ];
 

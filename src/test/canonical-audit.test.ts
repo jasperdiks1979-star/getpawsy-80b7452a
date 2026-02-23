@@ -18,7 +18,7 @@ describe('Canonical & Redirect Audit', () => {
     expect(SITE_URL.startsWith('https://')).toBe(true);
   });
 
-  it('robots.txt references apex sitemap', async () => {
+  it('robots.txt references apex sitemap.xml', async () => {
     const fs = await import('fs');
     const path = await import('path');
     const robotsPath = path.resolve(__dirname, '../../public/robots.txt');
@@ -28,5 +28,22 @@ describe('Canonical & Redirect Audit', () => {
     expect(sitemapMatch).not.toBeNull();
     expect(sitemapMatch![1].trim()).toBe('https://getpawsy.pet/sitemap.xml');
     expect(sitemapMatch![1]).not.toContain('www.');
+    expect(sitemapMatch![1]).not.toContain('lovable.app');
+  });
+
+  it('robots.txt blocks /thank-you', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const robotsPath = path.resolve(__dirname, '../../public/robots.txt');
+    const content = fs.readFileSync(robotsPath, 'utf-8');
+    expect(content).toContain('Disallow: /thank-you');
+  });
+
+  it('robots.txt blocks ?ref= parameter', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const robotsPath = path.resolve(__dirname, '../../public/robots.txt');
+    const content = fs.readFileSync(robotsPath, 'utf-8');
+    expect(content).toContain('ref=');
   });
 });
