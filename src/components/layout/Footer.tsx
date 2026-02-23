@@ -356,8 +356,39 @@ export const Footer = () => {
             </div>
 
           </div>
-          {/* Popular Pet Categories — SEO internal link block */}
+          {/* Top Pet Solutions — Money Hub SEO Section */}
           <div className="mt-12 pt-8 border-t border-background/10">
+            <h4 className="font-display font-semibold text-lg mb-4">Top Pet Solutions</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+              <div>
+                <Link to="/dog/orthopedic-dog-beds" className="text-sm font-medium text-primary hover:underline">
+                  Best Orthopedic Dog Beds →
+                </Link>
+                <p className="text-xs text-background/50 mt-1">
+                  Vet-recommended memory foam beds for joint pain, arthritis & senior dogs.
+                </p>
+              </div>
+              <div>
+                <Link to="/cat/cat-trees-for-large-cats" className="text-sm font-medium text-primary hover:underline">
+                  Heavy Duty Cat Trees for Large Cats →
+                </Link>
+                <p className="text-xs text-background/50 mt-1">
+                  Anti-tip tested, 25+ lb rated cat trees for Maine Coons & large breeds.
+                </p>
+              </div>
+              <div>
+                <Link to="/dog/dog-car-travel-safety" className="text-sm font-medium text-primary hover:underline">
+                  Crash-Tested Dog Car Safety Gear →
+                </Link>
+                <p className="text-xs text-background/50 mt-1">
+                  CPS-certified car seats, harnesses & booster seats for safe travel.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Popular Pet Categories — SEO internal link block */}
+          <div className="mt-8 pt-8 border-t border-background/10">
             <h4 className="font-display font-semibold text-lg mb-4">Popular Pet Categories</h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-8 gap-y-2">
               {footerLinks.popularCategories.map((link) => (

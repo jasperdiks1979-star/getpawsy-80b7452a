@@ -35,6 +35,7 @@ const BestsellersSection = lazy(() => import('@/components/home/BestsellersSecti
 const PremiumNicheGrid = lazy(() => import('@/components/home/PremiumNicheGrid').then(m => ({ default: m.PremiumNicheGrid })));
 const MostLovedPicks = lazy(() => import('@/components/home/MostLovedPicks'));
 const SalesAccelerationBanner = lazy(() => import('@/components/home/SalesAccelerationBanner').then(m => ({ default: m.SalesAccelerationBanner })));
+const MoneyHubBlocks = lazy(() => import('@/components/home/MoneyHubBlocks').then(m => ({ default: m.MoneyHubBlocks })));
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 
@@ -412,6 +413,15 @@ const Index = () => {
           {hydrationReady && <HomepageAuthoritySection />}
         </Suspense>
       </SectionErrorBoundary>
+
+      {/* ── Money Hub SEO Blocks — 3 niche authority pillars ────────── */}
+      {hydrationReady && (
+        <SectionErrorBoundary sectionName="Money Hubs">
+          <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
+            <MoneyHubBlocks />
+          </Suspense>
+        </SectionErrorBoundary>
+      )}
 
       {/* ── Sales Acceleration — Priority Category Spotlights ─────────── */}
       {hydrationReady && (

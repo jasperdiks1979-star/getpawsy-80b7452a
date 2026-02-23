@@ -271,6 +271,25 @@ export default function DogCarTravelSafety() {
           </div>
         </section>
 
+        {/* ─── WHY CHOOSE GETPAWSY ─── */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Why Choose GetPawsy for Dog Car Safety?</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { icon: '🚚', title: 'Fast US Shipping', desc: '3–7 day delivery across the US. Free shipping on orders over $35.' },
+              { icon: '🔄', title: '30-Day Safety Guarantee', desc: 'Not satisfied? Return within 30 days for a full refund.' },
+              { icon: '🛡️', title: 'Crash-Test Informed', desc: 'We only stock products with documented safety credentials and CPS-level testing.' },
+              { icon: '🏥', title: 'Vet-Approved Materials', desc: 'Padded, non-toxic materials safe for dogs of all sizes and breeds.' },
+            ].map(item => (
+              <div key={item.title} className="bg-card border rounded-2xl p-5 text-center">
+                <span className="text-3xl mb-3 block">{item.icon}</span>
+                <h3 className="font-semibold text-sm mb-1">{item.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <ConversionTrustBlock categoryName="Dog Car Safety" />
 
         <div className="mb-16">
