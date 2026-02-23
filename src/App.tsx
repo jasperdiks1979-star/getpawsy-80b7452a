@@ -232,6 +232,7 @@ const CatTreesForLargeCats = lazyWithRetry(() => import("./pages/collections/Cat
 const DogCarTravelSafety = lazyWithRetry(() => import("./pages/collections/DogCarTravelSafety"));
 const DogTrainingBehaviorTools = lazyWithRetry(() => import("./pages/collections/DogTrainingBehaviorTools"));
 const TrainingClusterArticle = lazyWithRetry(() => import("./pages/collections/cluster/TrainingClusterArticle"));
+const LockdownClusterArticle = lazyWithRetry(() => import("./pages/collections/cluster/LockdownClusterArticle"));
 const ClusterRevenueEngine = lazyWithRetry(() => import("./pages/admin/ClusterRevenueEngine"));
 const OrthopedicLargeDogs = lazyWithRetry(() => import("./pages/collections/sub-intent/OrthopedicLargeDogs"));
 const WaterproofOrthopedicBed = lazyWithRetry(() => import("./pages/collections/sub-intent/WaterproofOrthopedicBed"));
@@ -365,6 +366,8 @@ const App = () => {
                       {/* Guide pages */}
                       <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />
                       <Route path="/guides/:slug" element={<Suspense fallback={<RouteLoader />}><GuidePage /></Suspense>} />
+                      {/* Lockdown cluster articles — generic JSON-driven renderer */}
+                      <Route path="/guides/cluster/:slug" element={<Suspense fallback={<RouteLoader />}><LockdownClusterArticle /></Suspense>} />
                       
                       {/* ═══ NAMESPACED SEO CLUSTER ROUTES ═══ */}
                       {/* Dog pillars — dedicated components for existing pages */}

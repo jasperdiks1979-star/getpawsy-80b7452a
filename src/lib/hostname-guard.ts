@@ -29,44 +29,66 @@ export function isLovableAppHost(): boolean {
  * - Injects noindex meta (in case redirect doesn't fire fast enough for Googlebot)
  * - Redirects to apex
  */
+/**
+ * Call at boot. If on a non-canonical host (www or lovable.app):
+ * - Injects noindex meta (belt-and-suspenders for Googlebot)
+ * - Builds a single normalized target URL (lowercase, no trailing slash, stripped params)
+ * - Redirects in ONE hop (no double redirect from hostname + normalizer)
+ */
 export function enforceCanonicalHost(): void {
   if (typeof window === 'undefined') return;
 
   const host = window.location.hostname;
+  const needsRedirect = host.startsWith('www.') || host.endsWith('.lovable.app');
 
-  // www → apex (already handled in main.tsx, but belt-and-suspenders)
-  if (host.startsWith('www.')) {
-    window.location.replace(
-      `${SITE_URL}${window.location.pathname}${window.location.search}${window.location.hash}`
-    );
-    return;
-  }
+  if (!needsRedirect) return;
 
-  // lovable.app → inject noindex + redirect to apex
+  // Inject noindex immediately (in case redirect doesn't fire before Googlebot snapshots)
   if (host.endsWith('.lovable.app')) {
-    // 1) Inject noindex meta immediately
     const meta = document.createElement('meta');
     meta.name = 'robots';
     meta.content = 'noindex, nofollow, noarchive';
     document.head.appendChild(meta);
 
-    // 2) Override any existing robots meta
     const existingRobots = document.querySelector('meta[name="robots"]');
     if (existingRobots && existingRobots !== meta) {
       existingRobots.setAttribute('content', 'noindex, nofollow, noarchive');
     }
 
-    // 3) Set canonical to apex
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
     if (canonical) {
       canonical.href = `${SITE_URL}${window.location.pathname.replace(/\/+$/, '') || ''}`;
     }
-
-    // 4) Redirect to apex (preserving path + query + hash)
-    window.location.replace(
-      `${SITE_URL}${window.location.pathname}${window.location.search}${window.location.hash}`
-    );
   }
+
+  // Build fully normalized target URL in ONE hop:
+  // - apex domain
+  // - lowercase path
+  // - no double slashes
+  // - no trailing slash (except root)
+  // - stripped tracking params
+  let path = window.location.pathname;
+  path = path.replace(/\/{2,}/g, '/');          // double slashes
+  path = path.toLowerCase();                     // lowercase
+  if (path.length > 1 && path.endsWith('/')) {
+    path = path.replace(/\/+$/, '');             // trailing slash
+  }
+
+  // Strip tracking params
+  let search = window.location.search;
+  if (search) {
+    const STRIP = new Set(['gclid', 'fbclid', 'ref', 'session', 'sort', 'filter', 'variant']);
+    const params = new URLSearchParams(search);
+    const toDelete: string[] = [];
+    params.forEach((_, key) => {
+      if (STRIP.has(key) || key.startsWith('utm_')) toDelete.push(key);
+    });
+    toDelete.forEach(k => params.delete(k));
+    const remaining = params.toString();
+    search = remaining ? `?${remaining}` : '';
+  }
+
+  window.location.replace(`${SITE_URL}${path}${search}${window.location.hash}`);
 }
 
 /**
