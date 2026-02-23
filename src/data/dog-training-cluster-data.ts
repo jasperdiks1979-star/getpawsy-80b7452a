@@ -674,12 +674,103 @@ export const HIJACK_CLUSTER: TrainingClusterData[] = [
 ];
 
 // ═══════════════════════════════════════════════════════════════
+// CLUSTER 4 — LEASH PULLING (BEHAVIORAL)
+// ═══════════════════════════════════════════════════════════════
+
+export const PULLING_CLUSTER: TrainingClusterData[] = [
+  {
+    slug: 'stop-pulling-on-leash',
+    title: 'How to Stop Your Dog Pulling on the Leash — Complete Training Guide (2026)',
+    metaTitle: 'How to Stop Dog Pulling on Leash — Expert Training Guide | GetPawsy',
+    metaDescription: 'Stop your dog pulling on the leash with proven positive-reinforcement methods. Step-by-step loose leash walking guide backed by certified trainers. Works for all breeds.',
+    heroSubtitle: 'Pulling is the #1 walking problem dog owners face. This guide covers exactly why dogs pull, the proven methods to stop it, and which equipment actually helps — no pain-based tools required.',
+    canonical: `${BASE}/dog/dog-training/stop-pulling-on-leash`,
+    breadcrumbLabel: 'Stop Leash Pulling',
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    relatedLinks: [
+      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front Clip vs Back Clip Harness' },
+      { href: '/dog/dog-training/best-harness-large-dogs', label: 'Best Harness for Large Dogs' },
+      { href: '/dog/dog-training/harness-vs-collar', label: 'Harness vs Collar' },
+      { href: '/collections/no-pull-dog-harness', label: 'Shop No-Pull Harnesses' },
+    ],
+    sections: [
+      {
+        heading: 'Why Dogs Pull on the Leash',
+        content: `Dogs pull because it works. Every time your dog lunges forward and gets where they want to go, pulling is reinforced. It\'s not dominance, stubbornness, or disrespect — it\'s simple operant conditioning. The environment rewards pulling with forward movement, new smells, and exciting destinations.\n\nDogs also walk naturally faster than humans. Their comfortable pace is 2–3x our walking speed. Add exciting scents, other dogs, and squirrels to the equation, and pulling becomes the default behavior for virtually every untrained dog.\n\nThe good news: because pulling is a learned behavior, it can be unlearned through consistent positive-reinforcement training. Most dogs show significant improvement within 1–2 weeks of daily practice.`,
+      },
+      {
+        heading: 'The "Be a Tree" Method — Foundation Technique',
+        content: `This is the single most effective technique for stopping leash pulling, endorsed by certified professional dog trainers (CPDT-KA) and veterinary behaviorists worldwide.\n\n**How it works:**\n1. Walk at a normal pace with your dog on a 4–6 foot leash.\n2. The instant the leash goes taut (before your arm extends fully), stop completely. Plant your feet. Become a tree.\n3. Wait. Don\'t pull back, don\'t jerk, don\'t talk. Just wait.\n4. The moment your dog creates slack in the leash — even slightly — mark it ("Yes!") and immediately resume walking.\n5. Repeat every single time the leash tightens.\n\n**Why it works:** Walking stops when the dog pulls. Walking resumes when the dog doesn\'t pull. The dog learns that loose leash = forward movement (reward) and tight leash = nothing happens (no reward). This is negative punishment — removing the desired outcome (walking) to decrease the unwanted behavior (pulling).\n\n**Expected timeline:** Days 1–3: Lots of stopping. Days 4–7: Noticeable reduction. Days 7–14: Significantly fewer stops. Week 3+: Loose leash becomes the default, with occasional reminders needed in high-distraction environments.`,
+      },
+      {
+        heading: 'The "Penalty Yards" Method — For Strong Pullers',
+        content: `For dogs who don\'t respond quickly to the Be a Tree method, Penalty Yards adds a stronger consequence.\n\n**How it works:**\n1. Walk forward normally.\n2. When the leash tightens, stop.\n3. Take 3–5 steps backward (away from where your dog wants to go).\n4. Wait for your dog to return to your side and give eye contact.\n5. Mark ("Yes!") and resume walking forward.\n\n**Why it\'s more effective for some dogs:** Not only does pulling stop forward progress, it actually loses ground. For strongly motivated dogs, this loss of progress is a more salient consequence than simply stopping. The backward steps create an additional cost to pulling.\n\n**When to use:** If the Be a Tree method alone doesn\'t show improvement after 5–7 days of consistent practice. Also useful for dogs who are extremely motivated by specific triggers (other dogs, cats, squirrels).`,
+      },
+      {
+        heading: 'Choosing the Right Equipment',
+        content: `The right equipment makes training easier but never replaces training. Equipment is a management tool that buys you time while behavior modification takes effect.\n\n**Front-clip harness (recommended):** Redirects pulling momentum to the side, making forward lunging mechanically disadvantageous. Reduces pull force by 40–60%. Safe, humane, and effective. The #1 recommendation from certified trainers.\n\n**Standard 4–6 foot leash:** Fixed length provides consistent feedback. Never use retractable leashes — they teach dogs that pulling extends their range.\n\n**Head halter (advanced):** Provides maximum steering control by guiding the dog\'s head. Requires a 1–2 week conditioning period. Most dogs dislike them initially. Use only if a front-clip harness alone isn\'t sufficient.\n\n**What NOT to use:**\n- Choke chains: Risk of tracheal damage, cervical spine injury\n- Prong collars: Cause pain, increase stress reactivity\n- Shock collars: Banned in many countries, cause fear and aggression\n- Retractable leashes: Reinforce pulling behavior`,
+      },
+      {
+        heading: 'Training Session Structure',
+        content: `Consistency trumps duration. Short, focused sessions beat long, frustrating walks.\n\n**Beginner schedule (Weeks 1–2):**\n- 2 dedicated training walks per day, 10–15 minutes each\n- Walk in low-distraction environments (quiet residential streets)\n- End on a success — stop the session after a good 30-second stretch of loose leash\n- Separate training walks from "business" walks where your dog can sniff freely on a long line\n\n**Intermediate schedule (Weeks 3–4):**\n- Extend training walks to 20–30 minutes\n- Introduce moderate distractions (busier streets, parks with distant dogs)\n- Practice transitions between training mode and free-sniff mode\n\n**Advanced schedule (Month 2+):**\n- All regular walks become training reinforcement opportunities\n- Practice in high-distraction environments (dog parks perimeter, pet stores)\n- Loose leash becomes the expected default with treats fading to intermittent reinforcement`,
+      },
+      {
+        heading: 'Common Mistakes That Make Pulling Worse',
+        content: `**Inconsistency:** If pulling works even 20% of the time, the behavior is reinforced on a variable schedule — the strongest reinforcement schedule in behavioral science. Everyone who walks the dog must apply the same rules.\n\n**Pulling back on the leash:** Creates an opposition reflex. Dogs naturally lean into pressure. The harder you pull back, the harder they pull forward. Stop and wait instead.\n\n**Using a retractable leash:** Teaches dogs that pulling = more distance. The constant tension reinforces the exact behavior you\'re trying to eliminate.\n\n**Punishing after the fact:** Jerking the leash, yelling, or correcting after the dog has already pulled doesn\'t teach anything useful. Timing must be immediate — stop the instant the leash tightens.\n\n**Skipping warm-up:** Dogs are most excited at the start of a walk. Do 2 minutes of calm sits and hand targets at your front door before starting. This lowers initial arousal.`,
+      },
+      {
+        heading: 'Special Scenarios: Reactive Dogs & Triggers',
+        content: `Some dogs don\'t just pull — they lunge, bark, or spin at specific triggers (other dogs, bikes, skateboarders). This is reactivity, and it requires a modified approach.\n\n**Management:** Increase distance from triggers. If your dog loses control at 20 feet, practice at 40 feet. Use "Find It" (scatter treats on the ground) to redirect attention before the dog hits threshold.\n\n**Counter-conditioning:** Pair the appearance of the trigger with high-value treats. Trigger appears at safe distance → treat party. Over weeks, the dog\'s emotional response shifts from "threat" to "treat predictor."\n\n**When to seek help:** If your dog\'s lunging is intense, dangerous, or involves aggression, consult a certified veterinary behaviorist (DACVB) or certified applied animal behaviorist (CAAB). A no-pull harness manages the symptom; behavior modification addresses the cause.`,
+      },
+      {
+        heading: 'How Long Does It Take to Stop Leash Pulling?',
+        content: `**Realistic timelines based on dog factors:**\n\n- Young puppy (under 6 months): 1–2 weeks with consistent daily practice\n- Adolescent dog (6–18 months): 2–4 weeks — hormonal changes and high energy make this the hardest age\n- Adult dog with mild pulling: 2–3 weeks of consistent practice\n- Adult dog with established pulling habit: 4–8 weeks — years of reinforcement take longer to undo\n- Reactive dog: 2–6 months of combined management and behavior modification\n\n**Success accelerators:**\n1. Use a front-clip harness from Day 1\n2. Every person who walks the dog follows the same protocol\n3. Training walks are separate from "business" walks\n4. High-value treats (real chicken, cheese) for initial training\n5. Keep sessions short and end on success`,
+      },
+    ],
+    comparison: {
+      title: 'Walking Equipment Comparison',
+      rows: [
+        { feature: 'Pull Reduction', optionA: 'Front-clip harness: 40–60%', optionB: 'Back-clip harness: 0–10%', winner: 'Front-clip harness' },
+        { feature: 'Safety', optionA: 'Harness: Chest distribution', optionB: 'Collar: Neck pressure', winner: 'Harness' },
+        { feature: 'Training Value', optionA: 'Front-clip: Redirects momentum', optionB: 'Retractable: Reinforces pulling', winner: 'Front-clip' },
+        { feature: 'Dog Comfort', optionA: 'Padded harness: Minimal chafing', optionB: 'Choke chain: Pain-based', winner: 'Padded harness' },
+        { feature: 'Speed of Results', optionA: 'Harness + Be a Tree: 1–2 weeks', optionB: 'Collar only: 4–8 weeks', winner: 'Harness + Be a Tree' },
+      ],
+    },
+    faq: [
+      { question: 'How do I stop my dog from pulling on the leash?', answer: 'Use the "Be a Tree" method: stop walking every time the leash tightens, wait for slack, then resume. Pair with a front-clip no-pull harness for mechanical advantage. Most dogs show significant improvement within 1–2 weeks of consistent daily practice.' },
+      { question: 'Why does my dog pull on the leash?', answer: 'Pulling works — every time your dog pulls and gets where they want to go, the behavior is reinforced. Dogs also walk naturally 2–3x faster than humans. It\'s not stubbornness or dominance; it\'s simple learning. The environment has taught your dog that pulling = forward movement.' },
+      { question: 'Do no-pull harnesses really stop pulling?', answer: 'Front-clip harnesses reduce pulling force by 40–60% by redirecting forward momentum sideways. They don\'t stop pulling entirely — they\'re a management tool that makes training easier. Combine a harness with consistent training (Be a Tree method) for lasting behavior change.' },
+      { question: 'Is it too late to stop my adult dog from pulling?', answer: 'No. Dogs learn at every age. Adult dogs with years of pulling habit may take 4–8 weeks instead of 1–2 weeks, but the same positive-reinforcement methods work. Consistency is more important than your dog\'s age.' },
+      { question: 'Should I use a choke collar to stop pulling?', answer: 'No. Choke chains risk tracheal collapse, cervical spine injury, and increased fear/aggression. They suppress behavior through pain, not learning. Veterinary behaviorists, the ASPCA, and certified trainers all recommend force-free alternatives like front-clip harnesses.' },
+      { question: 'What is the best leash for a dog that pulls?', answer: 'A standard 4–6 foot fixed-length leash paired with a front-clip harness. Never use retractable leashes — they reinforce pulling by extending when the dog pulls. The fixed length provides consistent feedback that the dog can learn from.' },
+      { question: 'How long does loose leash training take?', answer: 'Puppies: 1–2 weeks. Adolescent dogs: 2–4 weeks. Adults with mild pulling: 2–3 weeks. Adults with established habits: 4–8 weeks. Reactive dogs: 2–6 months. These timelines assume consistent daily practice with a front-clip harness.' },
+      { question: 'Can I train my dog to walk without pulling without treats?', answer: 'Eventually, yes. But treats dramatically accelerate learning by clearly communicating which behavior earns rewards. Start with frequent high-value treats, then fade to intermittent reinforcement over 4–6 weeks. The walk itself becomes the reward once loose leash is the default.' },
+      { question: 'Why does my dog pull more at the start of walks?', answer: 'Dogs are most aroused and excited at the beginning of a walk. Do 2 minutes of calm sits, hand targets, and eye contact at your front door before stepping outside. This lower starting arousal reduces initial pulling dramatically.' },
+      { question: 'What if my dog pulls toward other dogs?', answer: 'This is reactivity or over-excitement, not simple pulling. Increase distance from other dogs. Use "Find It" (scatter treats on ground) to redirect attention before your dog hits threshold. If lunging is intense, consult a certified dog trainer or veterinary behaviorist.' },
+      { question: 'Front-clip vs back-clip harness for pulling?', answer: 'Front-clip is significantly better. When your dog pulls, the front attachment redirects them sideways, making forward lunging mechanically disadvantageous. Back-clip harnesses actually encourage pulling — like a sled dog setup. Always use front-clip for training.' },
+      { question: 'Do head halters stop pulling?', answer: 'Yes, head halters provide maximum steering control. However, most dogs resist them initially and need 1–2 weeks of positive conditioning before use. Start with a front-clip harness; use a head halter only if the harness alone isn\'t sufficient for your dog\'s strength.' },
+      { question: 'Can a puppy learn to walk without pulling?', answer: 'Yes, and starting young is ideal. Begin leash familiarization at 8 weeks (indoors), first outdoor walks at 10–12 weeks after initial vaccinations. Puppies learn loose leash walking faster than adult dogs because they haven\'t developed pulling habits yet.' },
+      { question: 'How do I stop my dog pulling on walks with distractions?', answer: 'Train in low-distraction environments first, then gradually increase difficulty. Only advance when success rate is 90%+ at the current level. In high-distraction scenarios, use higher-value treats, increase your rate of reinforcement, and be prepared to increase distance from triggers.' },
+      { question: 'Does the "Be a Tree" method work for large dogs?', answer: 'Yes, but pair it with a front-clip harness for large breeds. Without a harness, a 100-lb dog can physically drag a handler forward. The harness reduces pull force by 40–60%, making the Be a Tree method mechanically possible for any handler-dog size combination.' },
+      { question: 'Why does my dog walk perfectly with the trainer but pull with me?', answer: 'Dogs discriminate between handlers. Your trainer is consistently applying consequences for pulling. You may be inconsistently reinforcing pulling (letting your dog pull sometimes). The fix: apply the same rules every walk, every time. Dogs respond to whoever is most consistent.' },
+      { question: 'Are prong collars effective for pulling?', answer: 'Prong collars suppress pulling through pain, but don\'t teach an alternative behavior. They risk neck injury, increase stress reactivity, and can create negative associations with walks, other dogs, and their handler. Certified trainers and veterinary behaviorists do not recommend them.' },
+      { question: 'How many training walks per day should I do?', answer: 'Start with 2 dedicated training walks per day, 10–15 minutes each. These are separate from "business" walks where your dog can sniff freely. As your dog improves (weeks 3–4), extend to 20–30 minutes and integrate training into all regular walks.' },
+      { question: 'What treats work best for leash training?', answer: 'Use high-value, soft treats your dog can eat quickly: small pieces of real chicken, cheese, hot dog, or freeze-dried liver. Treat size should be pea-sized (you\'ll use many). Avoid hard crunchy treats — they take too long to eat and break training rhythm.' },
+      { question: 'Do no-pull harnesses ship from US warehouses?', answer: 'Our no-pull harnesses ship from US-based warehouses with standard delivery in 3–7 business days. Free shipping on orders over $49. All harnesses include a sizing guarantee — exchange for free if the fit isn\'t right.' },
+    ],
+    productKeywords: ['no pull', 'harness', 'front clip', 'training leash', 'treat pouch', 'walking'],
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════
 // ALL CLUSTERS COMBINED — for easy article lookup by slug
 // ═══════════════════════════════════════════════════════════════
 export const ALL_TRAINING_CLUSTERS: TrainingClusterData[] = [
   ...HARNESS_CLUSTER,
   ...LEASH_CLUSTER,
   ...HIJACK_CLUSTER,
+  ...PULLING_CLUSTER,
 ];
 
 export function getTrainingClusterBySlug(slug: string): TrainingClusterData | undefined {
