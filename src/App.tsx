@@ -232,6 +232,7 @@ const ClusterRevenueEngine = lazyWithRetry(() => import("./pages/admin/ClusterRe
 const OrthopedicLargeDogs = lazyWithRetry(() => import("./pages/collections/sub-intent/OrthopedicLargeDogs"));
 const WaterproofOrthopedicBed = lazyWithRetry(() => import("./pages/collections/sub-intent/WaterproofOrthopedicBed"));
 const MemoryFoamDogBeds = lazyWithRetry(() => import("./pages/collections/sub-intent/MemoryFoamDogBeds"));
+const OrthopedicClusterArticle = lazyWithRetry(() => import("./pages/collections/cluster/OrthopedicClusterArticle"));
 const CatTreeMaineCoon = lazyWithRetry(() => import("./pages/collections/sub-intent/CatTreeMaineCoon"));
 const HeavyDutyCatTree = lazyWithRetry(() => import("./pages/collections/sub-intent/HeavyDutyCatTree"));
 const LargeCatCondo = lazyWithRetry(() => import("./pages/collections/sub-intent/LargeCatCondo"));
@@ -365,10 +366,14 @@ const App = () => {
                       <Route path="/dog/orthopedic-dog-beds/best-for-large-dogs" element={<Suspense fallback={<RouteLoader />}><OrthopedicLargeDogs /></Suspense>} />
                       <Route path="/dog/orthopedic-dog-beds/waterproof" element={<Suspense fallback={<RouteLoader />}><WaterproofOrthopedicBed /></Suspense>} />
                       <Route path="/dog/orthopedic-dog-beds/memory-foam" element={<Suspense fallback={<RouteLoader />}><MemoryFoamDogBeds /></Suspense>} />
-                      {/* New orthopedic dog bed intents — generic data-driven */}
-                      <Route path="/dog/orthopedic-dog-beds/for-senior-dogs" element={<Suspense fallback={<RouteLoader />}><DogIntentPage /></Suspense>} />
+                      {/* New orthopedic cluster articles — content-first authority */}
+                      <Route path="/dog/orthopedic-dog-beds/memory-foam-under-100" element={<Suspense fallback={<RouteLoader />}><OrthopedicClusterArticle /></Suspense>} />
+                      <Route path="/dog/orthopedic-dog-beds/signs-dog-needs-orthopedic-bed" element={<Suspense fallback={<RouteLoader />}><OrthopedicClusterArticle /></Suspense>} />
+                      <Route path="/dog/orthopedic-dog-beds/memory-foam-vs-egg-crate" element={<Suspense fallback={<RouteLoader />}><OrthopedicClusterArticle /></Suspense>} />
+                      <Route path="/dog/orthopedic-dog-beds/cooling" element={<Suspense fallback={<RouteLoader />}><OrthopedicClusterArticle /></Suspense>} />
+                      <Route path="/dog/orthopedic-dog-beds/for-senior-dogs" element={<Suspense fallback={<RouteLoader />}><OrthopedicClusterArticle /></Suspense>} />
+                      {/* Legacy orthopedic intents */}
                       <Route path="/dog/orthopedic-dog-beds/washable-covers" element={<Suspense fallback={<RouteLoader />}><DogIntentPage /></Suspense>} />
-                      <Route path="/dog/orthopedic-dog-beds/memory-foam-vs-egg-crate" element={<Suspense fallback={<RouteLoader />}><DogIntentPage /></Suspense>} />
                       {/* Dog car travel safety — dedicated + new intents */}
                       <Route path="/dog/dog-car-travel-safety" element={<Suspense fallback={<RouteLoader />}><DogCarTravelSafety /></Suspense>} />
                       <Route path="/dog/dog-car-travel-safety/car-seats" element={<Suspense fallback={<RouteLoader />}><DogCarSeatSmallDogs /></Suspense>} />
