@@ -23,6 +23,7 @@ Allow: /cat/
 
 # ── Block ALL query-string URLs (catch-all) ──
 Disallow: /*?*
+Disallow: /*&*
 
 # ── Block specific tracking / faceted parameters ──
 Disallow: /*?*gclid=

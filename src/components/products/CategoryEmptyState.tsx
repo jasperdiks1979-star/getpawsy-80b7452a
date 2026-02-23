@@ -78,7 +78,7 @@ export const CategoryEmptyState = ({
             {displaySubcategories.map((subcategory) => (
               <Link
                 key={subcategory.id}
-                to={`/products?category=${encodeURIComponent(subcategory.slug)}`}
+                to={`/collections/${encodeURIComponent(subcategory.slug)}`}
                 className="group p-4 rounded-lg border border-border bg-card hover:border-primary/30 hover:shadow-md transition-all text-center"
               >
                 <span className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
