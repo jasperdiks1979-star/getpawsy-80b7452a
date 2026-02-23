@@ -17,7 +17,7 @@ export function buildCanonicalUrl(path: string): string {
   // Remove query string
   const cleanPath = path.split('?')[0].split('#')[0];
   // Remove trailing slash (except root)
-  const normalizedPath = cleanPath === '/' ? '' : cleanPath.replace(/\/+$/, '');
+  const normalizedPath = cleanPath === '/' ? '/' : cleanPath.replace(/\/+$/, '');
   return `${SITE_URL}${normalizedPath}`;
 }
 
