@@ -186,20 +186,23 @@ export default function OrthopedicDogBeds() {
           </Breadcrumb>
 
           <div className="max-w-2xl">
-            <Badge className="mb-4 bg-primary text-primary-foreground">Vet Recommended</Badge>
+            <Badge className="mb-4 bg-primary text-primary-foreground">Vet Recommended · #1 Seller</Badge>
             <h1 className="text-3xl md:text-5xl font-display font-bold text-primary-foreground mb-4 leading-tight">
-              Best Orthopedic Dog Beds for Joint Support (2026)
+              Orthopedic Dog Beds That Relieve Joint Pain Instantly
             </h1>
-            <p className="text-lg md:text-xl text-primary-foreground/80 mb-6">
+            <p className="text-lg md:text-xl text-primary-foreground/80 mb-2">
               Premium memory foam support designed for arthritis, hip dysplasia &amp; senior dogs.
+            </p>
+            <p className="text-sm text-primary-foreground/60 mb-6">
+              US Fast Shipping • Vet Recommended • 30-Day Risk-Free Trial
             </p>
 
             {/* Trust badges */}
             <div className="flex flex-wrap gap-3 mb-8">
               {[
-                { icon: <Star className="w-4 h-4 fill-current" />, text: '4.8/5 Rated' },
-                { icon: <Truck className="w-4 h-4" />, text: 'Fast US Shipping (3–7 Days)' },
-                { icon: <ShieldCheck className="w-4 h-4" />, text: '30-Day Comfort Guarantee' },
+                { icon: <Star className="w-4 h-4 fill-current" />, text: '4.8★ Customer Rating' },
+                { icon: <Truck className="w-4 h-4" />, text: 'Free US Shipping $35+' },
+                { icon: <ShieldCheck className="w-4 h-4" />, text: '30-Day Returns' },
                 { icon: <Lock className="w-4 h-4" />, text: 'Secure Checkout' },
               ].map(b => (
                 <span key={b.text} className="inline-flex items-center gap-1.5 text-sm text-primary-foreground/90 bg-primary-foreground/10 backdrop-blur-sm rounded-full px-3 py-1.5">
@@ -209,11 +212,11 @@ export default function OrthopedicDogBeds() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button size="lg" className="text-base" asChild>
-                <a href="#products">Shop Orthopedic Beds</a>
+              <Button size="lg" className="text-base font-semibold" asChild>
+                <a href="#products">Shop Orthopedic Beds Now <ArrowRight className="w-4 h-4 ml-1" /></a>
               </Button>
               <Button size="lg" variant="outline" className="text-base border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
-                <a href="#size-guide">Find the Right Size for Your Dog ↓</a>
+                <a href="#size-guide">Find the Right Size ↓</a>
               </Button>
             </div>
           </div>
@@ -306,6 +309,36 @@ export default function OrthopedicDogBeds() {
               <CheckCircle className="w-5 h-5 text-secondary-foreground shrink-0 mt-0.5" />
               <span><strong>Why vets recommend orthopedic beds:</strong> The American Kennel Club and veterinary orthopedic foundations recommend memory foam beds for dogs with arthritis, hip dysplasia, and post-surgical recovery. Proper joint support during rest reduces inflammation and improves daytime mobility by up to 40%.</span>
             </p>
+          </div>
+        </section>
+
+        {/* ─── 3 KEY BENEFITS ─── */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Why Orthopedic Makes the Difference</h2>
+          <div className="grid md:grid-cols-3 gap-6 mb-10">
+            {[
+              {
+                icon: '🧠',
+                title: 'Pressure-Relieving Memory Foam',
+                desc: 'High-density viscoelastic foam (1.8+ lb/ft³) conforms to your dog\'s body, distributing weight evenly across the entire surface. Eliminates pressure points on hips, elbows, and shoulders — reducing joint inflammation by up to 40%.',
+              },
+              {
+                icon: '🐕',
+                title: 'Ideal for Senior Dogs & Large Breeds',
+                desc: 'Dogs over 50 lbs and seniors (7+ years) need 5–7" of supportive foam. Our curated selection includes XL beds rated for 120+ lbs with low-entry edges for dogs with limited mobility.',
+              },
+              {
+                icon: '🧼',
+                title: 'Washable & Durable Covers',
+                desc: 'Every bed features removable, machine-washable covers with waterproof liners. Heavy-duty zippers and pre-shrunk fabric survive 100+ wash cycles. The foam core lasts 3–5 years.',
+              },
+            ].map(b => (
+              <div key={b.title} className="bg-card border rounded-2xl p-6 text-center">
+                <span className="text-4xl mb-4 block">{b.icon}</span>
+                <h3 className="font-semibold text-lg mb-3">{b.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -450,6 +483,35 @@ export default function OrthopedicDogBeds() {
             <p className="text-center text-muted-foreground py-12">Products loading…</p>
           )}
         </section>
+
+        {/* ─── URGENCY BLOCK ─── */}
+        <div className="mb-8 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 flex items-center gap-4">
+          <div className="shrink-0 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+            <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Limited Stock — High Demand Item</p>
+            <p className="text-xs text-amber-700/70 dark:text-amber-400/70">Orthopedic dog beds are our fastest-selling category. Orders ship within 1–2 business days.</p>
+          </div>
+        </div>
+
+        {/* ─── BUNDLE SUGGESTION ─── */}
+        <div className="mb-16 bg-primary/5 border border-primary/20 rounded-2xl p-6 md:p-8">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <span className="text-2xl">🎁</span>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold mb-1">Bundle & Save 15%</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Add a <Link to="/products?category=dog-blankets" className="text-primary hover:underline font-medium">Waterproof Dog Blanket</Link> to protect your orthopedic bed and save 15% on the combination. Most popular pairing among our customers.
+              </p>
+              <Button size="sm" variant="outline" asChild>
+                <a href="#products">View Bundle Options <ArrowRight className="w-3.5 h-3.5 ml-1" /></a>
+              </Button>
+            </div>
+          </div>
+        </div>
 
         {/* Inline CTA */}
         <div className="mb-16 bg-primary/5 border border-primary/20 rounded-2xl p-8 text-center">
