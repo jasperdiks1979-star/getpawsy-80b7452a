@@ -47,6 +47,7 @@ import { CompleteTheLook } from '@/components/products/CompleteTheLook';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
 import { CustomersAlsoBought } from '@/components/products/CustomersAlsoBought';
+import { CustomersAlsoTrainWith } from '@/components/products/CustomersAlsoTrainWith';
 import { RelatedGuides } from '@/components/guides/RelatedGuides';
 import { BuyingGuideBlock } from '@/components/seo/BuyingGuideBlock';
 import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
@@ -1465,6 +1466,14 @@ const ProductDetail = () => {
             crossSellType="related_products"
           />
         </div>
+
+        {/* Customers Also Train With - Training-specific cross-sell */}
+        <CustomersAlsoTrainWith
+          productId={product.id}
+          productName={product.name}
+          productCategory={product.category || ''}
+          maxItems={4}
+        />
 
         {/* Customers Also Bought - Based on Real Purchase Data */}
         <div className="mt-16">
