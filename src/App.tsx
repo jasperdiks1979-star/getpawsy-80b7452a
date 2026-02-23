@@ -343,23 +343,37 @@ const App = () => {
                       <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />
                       <Route path="/guides/:slug" element={<Suspense fallback={<RouteLoader />}><GuidePage /></Suspense>} />
                       
-                      {/* Dedicated mega landing pages */}
-                      <Route path="/collections/orthopedic-dog-beds" element={<Suspense fallback={<RouteLoader />}><OrthopedicDogBeds /></Suspense>} />
-                      <Route path="/orthopedic-dog-beds" element={<Suspense fallback={<RouteLoader />}><OrthopedicDogBeds /></Suspense>} />
-                      <Route path="/collections/cat-trees-for-large-cats" element={<Suspense fallback={<RouteLoader />}><CatTreesForLargeCats /></Suspense>} />
-                      <Route path="/cat-trees-for-large-cats" element={<Suspense fallback={<RouteLoader />}><CatTreesForLargeCats /></Suspense>} />
-                      <Route path="/collections/dog-car-travel-safety" element={<Suspense fallback={<RouteLoader />}><DogCarTravelSafety /></Suspense>} />
-                      <Route path="/dog-car-travel-safety" element={<Suspense fallback={<RouteLoader />}><DogCarTravelSafety /></Suspense>} />
-                      {/* Sub-intent pages */}
-                      <Route path="/collections/best-orthopedic-dog-bed-large-dogs" element={<Suspense fallback={<RouteLoader />}><OrthopedicLargeDogs /></Suspense>} />
-                      <Route path="/collections/waterproof-orthopedic-dog-bed" element={<Suspense fallback={<RouteLoader />}><WaterproofOrthopedicBed /></Suspense>} />
-                      <Route path="/collections/memory-foam-dog-beds" element={<Suspense fallback={<RouteLoader />}><MemoryFoamDogBeds /></Suspense>} />
-                      <Route path="/collections/cat-tree-for-maine-coon" element={<Suspense fallback={<RouteLoader />}><CatTreeMaineCoon /></Suspense>} />
-                      <Route path="/collections/heavy-duty-cat-tree" element={<Suspense fallback={<RouteLoader />}><HeavyDutyCatTree /></Suspense>} />
-                      <Route path="/collections/cat-condos-for-large-cats" element={<Suspense fallback={<RouteLoader />}><LargeCatCondo /></Suspense>} />
-                      <Route path="/collections/dog-car-seats" element={<Suspense fallback={<RouteLoader />}><DogCarSeatSmallDogs /></Suspense>} />
-                      <Route path="/collections/dog-booster-seat" element={<Suspense fallback={<RouteLoader />}><DogBoosterSeat /></Suspense>} />
-                      <Route path="/collections/dog-car-harness" element={<Suspense fallback={<RouteLoader />}><DogCarHarness /></Suspense>} />
+                      {/* ═══ NAMESPACED SEO CLUSTER ROUTES ═══ */}
+                      {/* Dog pillars */}
+                      <Route path="/dog/orthopedic-dog-beds" element={<Suspense fallback={<RouteLoader />}><OrthopedicDogBeds /></Suspense>} />
+                      <Route path="/dog/orthopedic-dog-beds/best-for-large-dogs" element={<Suspense fallback={<RouteLoader />}><OrthopedicLargeDogs /></Suspense>} />
+                      <Route path="/dog/orthopedic-dog-beds/waterproof" element={<Suspense fallback={<RouteLoader />}><WaterproofOrthopedicBed /></Suspense>} />
+                      <Route path="/dog/orthopedic-dog-beds/memory-foam" element={<Suspense fallback={<RouteLoader />}><MemoryFoamDogBeds /></Suspense>} />
+                      <Route path="/dog/dog-car-travel-safety" element={<Suspense fallback={<RouteLoader />}><DogCarTravelSafety /></Suspense>} />
+                      <Route path="/dog/dog-car-travel-safety/car-seats" element={<Suspense fallback={<RouteLoader />}><DogCarSeatSmallDogs /></Suspense>} />
+                      <Route path="/dog/dog-car-travel-safety/booster-seats" element={<Suspense fallback={<RouteLoader />}><DogBoosterSeat /></Suspense>} />
+                      <Route path="/dog/dog-car-travel-safety/harness-safety" element={<Suspense fallback={<RouteLoader />}><DogCarHarness /></Suspense>} />
+                      {/* Cat pillars */}
+                      <Route path="/cat/cat-trees-for-large-cats" element={<Suspense fallback={<RouteLoader />}><CatTreesForLargeCats /></Suspense>} />
+                      <Route path="/cat/cat-trees-for-large-cats/for-maine-coon" element={<Suspense fallback={<RouteLoader />}><CatTreeMaineCoon /></Suspense>} />
+                      <Route path="/cat/cat-trees-for-large-cats/heavy-duty" element={<Suspense fallback={<RouteLoader />}><HeavyDutyCatTree /></Suspense>} />
+                      <Route path="/cat/cat-trees-for-large-cats/large-cat-condos" element={<Suspense fallback={<RouteLoader />}><LargeCatCondo /></Suspense>} />
+                      {/* ═══ LEGACY CLUSTER REDIRECTS (301-equivalent) ═══ */}
+                      <Route path="/orthopedic-dog-beds" element={<Navigate to="/dog/orthopedic-dog-beds" replace />} />
+                      <Route path="/cat-trees-for-large-cats" element={<Navigate to="/cat/cat-trees-for-large-cats" replace />} />
+                      <Route path="/dog-car-travel-safety" element={<Navigate to="/dog/dog-car-travel-safety" replace />} />
+                      <Route path="/collections/orthopedic-dog-beds" element={<Navigate to="/dog/orthopedic-dog-beds" replace />} />
+                      <Route path="/collections/cat-trees-for-large-cats" element={<Navigate to="/cat/cat-trees-for-large-cats" replace />} />
+                      <Route path="/collections/dog-car-travel-safety" element={<Navigate to="/dog/dog-car-travel-safety" replace />} />
+                      <Route path="/collections/best-orthopedic-dog-bed-large-dogs" element={<Navigate to="/dog/orthopedic-dog-beds/best-for-large-dogs" replace />} />
+                      <Route path="/collections/waterproof-orthopedic-dog-bed" element={<Navigate to="/dog/orthopedic-dog-beds/waterproof" replace />} />
+                      <Route path="/collections/memory-foam-dog-beds" element={<Navigate to="/dog/orthopedic-dog-beds/memory-foam" replace />} />
+                      <Route path="/collections/cat-tree-for-maine-coon" element={<Navigate to="/cat/cat-trees-for-large-cats/for-maine-coon" replace />} />
+                      <Route path="/collections/heavy-duty-cat-tree" element={<Navigate to="/cat/cat-trees-for-large-cats/heavy-duty" replace />} />
+                      <Route path="/collections/cat-condos-for-large-cats" element={<Navigate to="/cat/cat-trees-for-large-cats/large-cat-condos" replace />} />
+                      <Route path="/collections/dog-car-seats" element={<Navigate to="/dog/dog-car-travel-safety/car-seats" replace />} />
+                      <Route path="/collections/dog-booster-seat" element={<Navigate to="/dog/dog-car-travel-safety/booster-seats" replace />} />
+                      <Route path="/collections/dog-car-harness" element={<Navigate to="/dog/dog-car-travel-safety/harness-safety" replace />} />
 
                       {/* SEO Collection pages — /collections/:slug */}
                       <Route path="/collections/:slug" element={<Suspense fallback={<RouteLoader />}><SeoCollection /></Suspense>} />

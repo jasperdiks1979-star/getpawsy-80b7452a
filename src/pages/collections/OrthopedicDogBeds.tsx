@@ -23,7 +23,7 @@ import { ScrollProgressIndicator } from '@/components/ui/ScrollProgressIndicator
 import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
 import orthopedicHero from '@/assets/orthopedic-hero.jpg';
 
-const CANONICAL = 'https://getpawsy.pet/collections/orthopedic-dog-beds';
+const CANONICAL = 'https://getpawsy.pet/dog/orthopedic-dog-beds';
 // Also served at /orthopedic-dog-beds/ — canonical always points here
 const BASE = 'https://getpawsy.pet';
 

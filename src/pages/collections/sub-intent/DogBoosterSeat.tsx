@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function DogBoosterSeat() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/collections/dog-booster-seat"
+      canonical="https://getpawsy.pet/dog/dog-car-travel-safety/booster-seats"
       title="Best Dog Booster Seats – Elevated View & Secure (2026)"
       metaDesc="Shop dog booster seats that raise small dogs to window height for calmer, safer car rides. Padded platforms with tether systems. 3–7 day US shipping."
       h1="Best Dog Booster Seats — Elevated View for Calmer Car Rides (2026)"
@@ -13,10 +13,11 @@ export default function DogBoosterSeat() {
       trustBadges={['Elevated Window View', '3–7 Day US Shipping', '30-Day Guarantee']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Dog Car Travel Safety', href: '/collections/dog-car-travel-safety' },
+        { label: 'Dog', href: '/dog/dog-car-travel-safety' },
+        { label: 'Dog Car Travel Safety', href: '/dog/dog-car-travel-safety' },
         { label: 'Booster Seats' },
       ]}
-      pillarLink={{ label: 'Dog Car Travel Safety Guide', href: '/collections/dog-car-travel-safety' }}
+      pillarLink={{ label: 'Dog Car Travel Safety Guide', href: '/dog/dog-car-travel-safety' }}
       productQuery="name.ilike.%booster%,name.ilike.%car seat%small%,name.ilike.%elevated%dog%"
       contentBlocks={[
         {
@@ -47,9 +48,9 @@ For maximum safety: A full enclosed car seat with a 5-point harness provides the
         { slug: 'best-orthopedic-dog-bed', title: 'Comfort at Home Too', desc: 'Memory foam beds for recovery after adventures.' },
       ]}
       crossLinks={[
-        { label: 'Dog Car Safety Hub', href: '/collections/dog-car-travel-safety' },
-        { label: 'Dog Car Seats', href: '/collections/dog-car-seats' },
-        { label: 'Dog Car Harnesses', href: '/collections/dog-car-harness' },
+        { label: 'Dog Car Safety Hub', href: '/dog/dog-car-travel-safety' },
+        { label: 'Dog Car Seats', href: '/dog/dog-car-travel-safety/car-seats' },
+        { label: 'Dog Car Harnesses', href: '/dog/dog-car-travel-safety/harness-safety' },
       ]}
     />
   );

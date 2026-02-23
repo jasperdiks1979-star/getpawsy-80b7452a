@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/products/ProductCard";
 
-const CANONICAL = 'https://getpawsy.pet/collections/cat-trees-for-large-cats';
+const CANONICAL = 'https://getpawsy.pet/cat/cat-trees-for-large-cats';
 const PAGE_TITLE = 'Best Cat Trees for Large Cats – Heavy Duty & Extra Tall (2026)';
 const META_DESC = 'Find the best cat trees built for large cats, Maine Coons, and multi-cat homes. Sturdy, heavy-duty cat trees with wide platforms and thick posts. Free US shipping.';
 
