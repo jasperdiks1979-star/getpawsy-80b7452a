@@ -11,11 +11,18 @@ const CANONICAL = process.env.CANONICAL_HOST || "https://getpawsy.pet";
 
 async function fetchText(url) {
   const res = await fetch(url, {
-    headers: { "User-Agent": "GetPawsy-SmokeCheck/1.0" },
+    headers: { "User-Agent": "GetPawsy-SmokeCheck/1.0", "Accept": "application/xml, text/xml" },
     redirect: "follow",
   });
   const text = await res.text();
   return { status: res.status, ct: res.headers.get("content-type") || "", text };
+}
+
+function assertContentType(ct, label) {
+  const lower = ct.toLowerCase();
+  if (!lower.includes("xml") && !lower.includes("text/xml") && !lower.includes("application/xml")) {
+    throw new Error(`${label} Content-Type is "${ct}" — expected application/xml or text/xml`);
+  }
 }
 
 function assert(cond, msg) {
@@ -35,6 +42,7 @@ async function main() {
   assert(!a.text.toLowerCase().includes("<!doctype html") && !a.text.toLowerCase().includes("<html"), "sitemap.xml HTML/SPA fallback detected");
   // Plaintext detection: must have XML tags if it has URLs
   assert(!a.text.includes("http") || a.text.includes("<sitemap>"), "sitemap.xml plaintext detected (URLs without XML tags)");
+  assertContentType(a.ct, "sitemap.xml");
   console.log("  ✅ PASS  sitemap.xml");
   console.log(`          content-type: ${a.ct}`);
 
@@ -45,6 +53,7 @@ async function main() {
   assert(b.text.includes("<url>"), "products-1 has 0 <url> entries");
   assert(!b.text.toLowerCase().includes("<!doctype html") && !b.text.toLowerCase().includes("<html"), "products-1 HTML/SPA fallback detected");
   assert(!b.text.includes("http") || b.text.includes("<url>"), "products-1 plaintext detected (URLs without XML tags)");
+  assertContentType(b.ct, "sitemap-products-1.xml");
   console.log("  ✅ PASS  sitemap-products-1.xml");
   console.log(`          content-type: ${b.ct}`);
 
