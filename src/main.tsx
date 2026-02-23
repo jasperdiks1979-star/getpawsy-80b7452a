@@ -28,9 +28,11 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// === STEP 0b: www → apex redirect (app-level fallback for platform 302) ===
-if (typeof window !== 'undefined' && window.location.hostname.startsWith('www.')) {
-  window.location.replace('https://getpawsy.pet' + window.location.pathname + window.location.search + window.location.hash);
+// === STEP 0b: Hostname guard — redirect non-canonical hosts to apex ===
+// Handles: www.getpawsy.pet → apex, getpawsy.lovable.app → apex + noindex
+import { enforceCanonicalHost } from "./lib/hostname-guard";
+if (typeof window !== 'undefined') {
+  enforceCanonicalHost();
 }
 
 // === STEP 1: Install boot error handlers BEFORE anything else ===

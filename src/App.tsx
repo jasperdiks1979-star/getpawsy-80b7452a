@@ -9,6 +9,7 @@ import { CartAnimationProvider } from "@/contexts/CartAnimationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
+import { HostnameGuard } from "@/components/seo/HostnameGuard";
 // Marketing/tracking components — lazy-loaded, not needed for first paint
 const LiveCheckoutWidget = lazy(() => import("@/components/admin/LiveCheckoutWidget").then(m => ({ default: m.LiveCheckoutWidget })));
 const SafePinterestTag = lazy(() => import("@/components/tracking/SafePinterestTag").then(m => ({ default: m.SafePinterestTag })));
@@ -205,6 +206,7 @@ const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagno
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
 const PerformanceDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/PerformanceDiagnostics"));
 const GscChecklist = lazyWithRetry(() => import("./pages/diagnostics/GscChecklist"));
+const SeoHostDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/SeoHostDiagnostics"));
 const DomainHealthPage = lazyWithRetry(() => import("./pages/admin/DomainHealthPage"));
 const Gsc4xxTriagePage = lazyWithRetry(() => import("./pages/admin/Gsc4xxTriagePage"));
 const StructuredDataPage = lazyWithRetry(() => import("./pages/admin/StructuredDataPage"));
@@ -296,6 +298,7 @@ const App = () => {
                 <BrowserRouter>
                   <Suspense fallback={null}><LiveCheckoutWidget /></Suspense>
                   <ScrollToTop />
+                  <HostnameGuard />
                   <MarketingErrorBoundary>
                     <Suspense fallback={null}>
                       <SafePinterestTag />
@@ -410,6 +413,7 @@ const App = () => {
                       <Route path="/diagnostics/headers" element={<Suspense fallback={<RouteLoader />}><HeadersDiagnostics /></Suspense>} />
                       <Route path="/diagnostics/performance" element={<Suspense fallback={<RouteLoader />}><PerformanceDiagnostics /></Suspense>} />
                       <Route path="/diagnostics/gsc" element={<Suspense fallback={<RouteLoader />}><GscChecklist /></Suspense>} />
+                      <Route path="/diagnostics/seo-hosts" element={<Suspense fallback={<RouteLoader />}><SeoHostDiagnostics /></Suspense>} />
                       
                       {/* Parent category routes */}
                       <Route path="/dogs" element={<Navigate to="/products?category=dogs" replace />} />
