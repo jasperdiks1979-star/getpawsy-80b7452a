@@ -215,6 +215,7 @@ const LinkEquityDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/Li
 const SerpWarDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/SerpWarDiagnostics"));
 const RevenueWarMachine = lazyWithRetry(() => import("./pages/diagnostics/RevenueWarMachine"));
 const NicheMonopoly = lazyWithRetry(() => import("./pages/diagnostics/NicheMonopoly"));
+const AutoExpansion = lazyWithRetry(() => import("./pages/diagnostics/AutoExpansion"));
 const DomainHealthPage = lazyWithRetry(() => import("./pages/admin/DomainHealthPage"));
 const Gsc4xxTriagePage = lazyWithRetry(() => import("./pages/admin/Gsc4xxTriagePage"));
 const StructuredDataPage = lazyWithRetry(() => import("./pages/admin/StructuredDataPage"));
@@ -429,6 +430,7 @@ const App = () => {
                       <Route path="/diagnostics/serp-war" element={<Suspense fallback={<RouteLoader />}><SerpWarDiagnostics /></Suspense>} />
                       <Route path="/diagnostics/revenue-war-machine" element={<Suspense fallback={<RouteLoader />}><RevenueWarMachine /></Suspense>} />
                       <Route path="/diagnostics/niche-monopoly" element={<Suspense fallback={<RouteLoader />}><NicheMonopoly /></Suspense>} />
+                      <Route path="/diagnostics/auto-expansion" element={<Suspense fallback={<RouteLoader />}><AutoExpansion /></Suspense>} />
                       
                       {/* Parent category routes */}
                       <Route path="/dogs" element={<Navigate to="/products?category=dogs" replace />} />
