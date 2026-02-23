@@ -17,6 +17,7 @@ function main() {
 
   const index = read("sitemap.xml");
   assertLooksLikeXml(index, "<sitemapindex");
+  if (!index.includes("<sitemap>")) throw new Error("sitemap.xml has 0 <sitemap> entries.");
 
   const p1 = read("sitemap-products-1.xml");
   assertLooksLikeXml(p1, "<urlset");

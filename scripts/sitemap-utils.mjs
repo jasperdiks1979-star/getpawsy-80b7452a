@@ -114,10 +114,15 @@ export function assertLooksLikeXml(content, mustContain) {
   if (!content.startsWith(`<?xml version="1.0" encoding="UTF-8"?>`)) {
     throw new Error("XML header missing.");
   }
-  if (!content.includes(mustContain)) {
+  if (mustContain && !content.includes(mustContain)) {
     throw new Error(`XML missing required token: ${mustContain}`);
   }
-  if (content.includes("<!doctype html") || content.includes("<!DOCTYPE html") || content.includes("<html") || content.includes("</script>")) {
+  const lower = content.toLowerCase();
+  if (lower.includes("<!doctype html") || lower.includes("<html") || lower.includes("</script>")) {
     throw new Error("HTML/SPA fallback detected in XML output.");
+  }
+  // Reject plaintext formats that contain URLs but no XML tags
+  if (content.includes("http") && !content.includes("<url") && !content.includes("<sitemap")) {
+    throw new Error("Plaintext sitemap detected (URLs without XML tags).");
   }
 }
