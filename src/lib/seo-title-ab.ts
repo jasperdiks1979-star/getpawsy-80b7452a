@@ -33,21 +33,9 @@ const TITLE_AB_TESTS: Record<string, TitleABConfig> = {
     rotationStartDate: '2026-02-13',
     winner: null,
     variants: [
-      {
-        id: 'A',
-        title: 'Outdoor Dog Games (2026) – 15 Vet-Approved Ideas',
-        description: 'Number + authority trigger + year. Standard high-CTR format.',
-      },
-      {
-        id: 'B',
-        title: '15 Best Outdoor Dog Games (2026 Guide)',
-        description: 'List-first format. Emphasizes completeness.',
-      },
-      {
-        id: 'C',
-        title: 'Outdoor Dog Games Dogs Actually Love (2026)',
-        description: 'Emotional/curiosity trigger. Benefit-driven.',
-      },
+      { id: 'A', title: 'Outdoor Dog Games (2026) – 15 Vet-Approved Ideas', description: 'Number + authority trigger + year.' },
+      { id: 'B', title: '15 Best Outdoor Dog Games (2026 Guide)', description: 'List-first format.' },
+      { id: 'C', title: 'Outdoor Dog Games Dogs Actually Love (2026)', description: 'Emotional/curiosity trigger.' },
     ],
   },
   'best-dog-bed-2026': {
@@ -57,21 +45,9 @@ const TITLE_AB_TESTS: Record<string, TitleABConfig> = {
     rotationStartDate: '2026-02-13',
     winner: null,
     variants: [
-      {
-        id: 'A',
-        title: 'Best Dog Beds (2026) – 10 Tested Picks by Foam & Breed',
-        description: 'Number + method + specificity. Expert credibility.',
-      },
-      {
-        id: 'B',
-        title: '10 Best Dog Beds (2026) – Orthopedic & Calming Tested',
-        description: 'List-first + category callout. Commercial intent match.',
-      },
-      {
-        id: 'C',
-        title: 'Best Dog Beds That Actually Last (2026 Review)',
-        description: 'Durability hook. Addresses #1 buyer concern.',
-      },
+      { id: 'A', title: 'Best Dog Beds (2026) – 10 Tested Picks by Foam & Breed', description: 'Number + method.' },
+      { id: 'B', title: '10 Best Dog Beds (2026) – Orthopedic & Calming Tested', description: 'List-first.' },
+      { id: 'C', title: 'Best Dog Beds That Actually Last (2026 Review)', description: 'Durability hook.' },
     ],
   },
   'best-cat-litter-box-2026': {
@@ -81,21 +57,9 @@ const TITLE_AB_TESTS: Record<string, TitleABConfig> = {
     rotationStartDate: '2026-02-13',
     winner: null,
     variants: [
-      {
-        id: 'A',
-        title: 'Best Cat Litter Box (2026) – 12 Tested for Odor & Size',
-        description: 'Number + testing method + top pain points.',
-      },
-      {
-        id: 'B',
-        title: '12 Best Cat Litter Boxes (2026) – Odor Control Ranked',
-        description: 'List-first + specific benefit. Commercial hook.',
-      },
-      {
-        id: 'C',
-        title: 'Best Cat Litter Box That Controls Odor (2026)',
-        description: 'Benefit-first. Addresses primary search intent.',
-      },
+      { id: 'A', title: 'Best Cat Litter Box (2026) – 12 Tested for Odor & Size', description: 'Number + testing method.' },
+      { id: 'B', title: '12 Best Cat Litter Boxes (2026) – Odor Control Ranked', description: 'List-first.' },
+      { id: 'C', title: 'Best Cat Litter Box That Controls Odor (2026)', description: 'Benefit-first.' },
     ],
   },
   'best-orthopedic-dog-bed': {
@@ -105,21 +69,77 @@ const TITLE_AB_TESTS: Record<string, TitleABConfig> = {
     rotationStartDate: '2026-02-13',
     winner: null,
     variants: [
-      {
-        id: 'A',
-        title: 'Best Orthopedic Dog Bed (2026) – Vet-Approved Picks',
-        description: 'Authority trigger + year. Trust-driven format.',
-      },
-      {
-        id: 'B',
-        title: 'Orthopedic Dog Beds (2026) – Foam Density Tested',
-        description: 'Method-driven. Differentiates from generic reviews.',
-      },
-      {
-        id: 'C',
-        title: 'Best Orthopedic Dog Bed for Joint Pain (2026)',
-        description: 'Problem-specific. High intent match for arthritis queries.',
-      },
+      { id: 'A', title: 'Best Orthopedic Dog Beds for Joint Support (2026)', description: 'Authority + year.' },
+      { id: 'B', title: 'Best Orthopedic Dog Beds – Stop Joint Pain Fast (Vet Tested 2026)', description: 'Outcome + differentiator + year.' },
+      { id: 'C', title: 'Best Orthopedic Dog Bed for Joint Pain (2026)', description: 'Problem-specific intent match.' },
+    ],
+  },
+
+  // ═══ POSITION 1 DOMINATION — CTR OUTPERFORMANCE VARIANTS ═══
+  'orthopedic-dog-beds': {
+    slug: 'orthopedic-dog-beds',
+    activeVariantId: 'A',
+    rotationIntervalDays: 7,
+    rotationStartDate: '2026-02-23',
+    winner: null,
+    variants: [
+      { id: 'A', title: '7 Best Orthopedic Dog Beds – Stop Joint Pain Fast (Vet Tested 2026)', description: 'Outcome + authority + urgency.' },
+      { id: 'B', title: 'Best Orthopedic Dog Beds (2026) – Memory Foam Tested by Weight', description: 'Method-driven specificity.' },
+    ],
+  },
+  'cat-trees-for-large-cats': {
+    slug: 'cat-trees-for-large-cats',
+    activeVariantId: 'A',
+    rotationIntervalDays: 7,
+    rotationStartDate: '2026-02-23',
+    winner: null,
+    variants: [
+      { id: 'A', title: 'Best Cat Trees for Large Cats – Won\'t Tip or Wobble (2026)', description: 'Pain point + outcome + year.' },
+      { id: 'B', title: 'Heavy Duty Cat Trees for 25+ lb Cats – Stability Tested (2026)', description: 'Specificity + testing credibility.' },
+    ],
+  },
+  'best-dog-car-seats': {
+    slug: 'best-dog-car-seats',
+    activeVariantId: 'A',
+    rotationIntervalDays: 7,
+    rotationStartDate: '2026-02-23',
+    winner: null,
+    variants: [
+      { id: 'A', title: 'Best Dog Car Seats – Crash-Tested & Safe for All Sizes (2026)', description: 'Safety outcome + coverage + year.' },
+      { id: 'B', title: '10 Best Dog Car Seats (2026) – Booster & Harness Tested', description: 'List + method + type coverage.' },
+    ],
+  },
+  'best-elevated-dog-bed': {
+    slug: 'best-elevated-dog-bed',
+    activeVariantId: 'A',
+    rotationIntervalDays: 7,
+    rotationStartDate: '2026-02-23',
+    winner: null,
+    variants: [
+      { id: 'A', title: 'Best Elevated Dog Beds – Cooling Airflow for Hot Dogs (2026)', description: 'Benefit-first + problem.' },
+      { id: 'B', title: '8 Best Elevated Dog Beds (2026) – Indoor & Outdoor Tested', description: 'List + versatility + year.' },
+    ],
+  },
+  'self-cleaning-litter-box-guide': {
+    slug: 'self-cleaning-litter-box-guide',
+    activeVariantId: 'A',
+    rotationIntervalDays: 7,
+    rotationStartDate: '2026-02-23',
+    winner: null,
+    variants: [
+      { id: 'A', title: 'Best Self-Cleaning Litter Boxes – Zero Daily Scooping (2026)', description: 'Outcome promise + year.' },
+      { id: 'B', title: '7 Best Self-Cleaning Litter Boxes (2026) – Odor & Noise Tested', description: 'List + testing method.' },
+    ],
+  },
+  'best-interactive-dog-toys': {
+    slug: 'best-interactive-dog-toys',
+    activeVariantId: 'A',
+    rotationIntervalDays: 7,
+    rotationStartDate: '2026-02-23',
+    winner: null,
+    variants: [
+      { id: 'A', title: 'Best Interactive Dog Toys – End Boredom & Destruction (2026)', description: 'Outcome-driven + year.' },
+      { id: 'B', title: '12 Best Interactive Dog Toys (2026) – Puzzle & Treat Tested', description: 'List + category + method.' },
     ],
   },
 };
