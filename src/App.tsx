@@ -251,6 +251,7 @@ const HowWeTestProducts = lazyWithRetry(() => import("./pages/HowWeTestProducts"
 const EditorialGuidelines = lazyWithRetry(() => import("./pages/EditorialGuidelines"));
 const AffiliateDisclosure = lazyWithRetry(() => import("./pages/AffiliateDisclosure"));
 const DogBedSizeChart = lazyWithRetry(() => import("./pages/DogBedSizeChart"));
+const TrainingLandingPage = lazyWithRetry(() => import("./pages/landing/TrainingLandingPage"));
 
 // Generic SEO pages — wrapper components that pass namespace prop
 import { DogPillarPage, CatPillarPage, DogIntentPage, CatIntentPage } from './pages/seo/SeoPageWrappers';
@@ -351,6 +352,7 @@ const App = () => {
                       <Route path="/blog/:slug" element={<Suspense fallback={<RouteLoader />}><BlogPost /></Suspense>} />
                       <Route path="/founder-mode" element={<Suspense fallback={<RouteLoader />}><FounderMode /></Suspense>} />
                       <Route path="/slow-feeder-dog-bowls" element={<Suspense fallback={<RouteLoader />}><SlowFeederDogBowls /></Suspense>} />
+                      <Route path="/landing/:slug" element={<Suspense fallback={<RouteLoader />}><TrainingLandingPage /></Suspense>} />
                       <Route path="/why-trust-our-reviews" element={<Suspense fallback={<RouteLoader />}><WhyTrustOurReviews /></Suspense>} />
                       <Route path="/about-the-author" element={<Suspense fallback={<RouteLoader />}><AboutTheAuthor /></Suspense>} />
                       <Route path="/how-we-test-products" element={<Suspense fallback={<RouteLoader />}><HowWeTestProducts /></Suspense>} />
