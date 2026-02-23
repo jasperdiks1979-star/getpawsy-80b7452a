@@ -103,9 +103,9 @@ export default function DogTrainingBehaviorTools() {
     <Layout>
       <ScrollProgressIndicator />
       <Helmet>
-        <title>Dog Training & Behavior Tools | Stop Pulling & Train Smarter | GetPawsy</title>
-        <meta name="description" content="High-quality no-pull harnesses, long training leashes, recall gear & positive reinforcement tools. Stop pulling, train recall, build confidence. Fast US shipping." />
-        <meta name="keywords" content="dog training tools, no pull harness, training leash, dog clicker, treat pouch, recall training, puppy training, dog behavior, positive reinforcement, no pull dog harness" />
+        <title>Stop Dog Pulling Fast — Best Training Tools & No-Pull Harnesses (2026) | GetPawsy</title>
+        <meta name="description" content="Trainer-approved no-pull harnesses, recall leashes & positive reinforcement tools. Reduce pulling 40–60% on first walk. Free US shipping over $35. 30-day guarantee." />
+        <meta name="keywords" content="dog training tools, no pull harness, training leash, dog clicker, treat pouch, recall training, puppy training, dog behavior, positive reinforcement, no pull dog harness, stop dog pulling, best harness for large dogs" />
         <link rel="canonical" href={CANONICAL} />
         <link rel="alternate" hrefLang="en" href={CANONICAL} />
         <link rel="alternate" hrefLang="x-default" href={CANONICAL} />
@@ -362,6 +362,81 @@ export default function DogTrainingBehaviorTools() {
           <p>
             <strong>Reactive dogs:</strong> Dogs that bark, lunge, or freeze around triggers (other dogs, strangers, bicycles) need a different approach. A <Link to="/dog/dog-training/best-harness-large-dogs" className="text-primary hover:underline">tactical harness with dual handles</Link> provides emergency control during reactive episodes. Training focuses on counter-conditioning (changing the emotional response to triggers) rather than obedience commands.
           </p>
+        </div>
+      </section>
+
+      {/* ─── BREED-SPECIFIC RECOMMENDATIONS ─── */}
+      <section className="container max-w-4xl py-12 md:py-16">
+        <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Training Tools by Breed Size</h2>
+        <div className="grid md:grid-cols-3 gap-4">
+          {[
+            { breed: 'Small Dogs (Under 25 lbs)', breeds: 'Chihuahua, Pomeranian, Dachshund, French Bulldog', tools: ['Lightweight back-clip harness', 'Standard 6ft leash', 'Small-size clicker', 'Treat pouch with small compartments'], link: '/collections/puppy-training-tools', cta: 'Shop Small Dog Gear' },
+            { breed: 'Medium Dogs (25–60 lbs)', breeds: 'Beagle, Border Collie, Australian Shepherd, Cocker Spaniel', tools: ['Front-clip no-pull harness', 'Biothane 15ft long line', 'Dual-tone clicker', 'Quick-access treat pouch'], link: '/collections/no-pull-dog-harness', cta: 'Shop Medium Dog Gear' },
+            { breed: 'Large Dogs (60+ lbs)', breeds: 'Labrador, German Shepherd, Golden Retriever, Pit Bull', tools: ['Tactical dual-handle harness', '30ft recall long line', 'Heavy-duty biothane leash', 'XL treat pouch'], link: '/dog/dog-training/best-harness-large-dogs', cta: 'Shop Large Dog Gear' },
+          ].map((item, i) => (
+            <div key={i} className="p-5 rounded-xl border border-border bg-background">
+              <h3 className="font-semibold text-foreground mb-1">{item.breed}</h3>
+              <p className="text-xs text-muted-foreground mb-3">{item.breeds}</p>
+              <ul className="space-y-1.5 mb-4">
+                {item.tools.map((t, j) => (
+                  <li key={j} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <CheckCircle className="w-3 h-3 text-primary flex-shrink-0 mt-0.5" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+              <Button asChild variant="outline" size="sm" className="w-full text-xs">
+                <Link to={item.link}>{item.cta}</Link>
+              </Button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── TRAINING TIMELINE ─── */}
+      <section className="bg-muted/30 py-12 md:py-16">
+        <div className="container max-w-4xl">
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-center mb-8">Realistic Training Timeline</h2>
+          <div className="space-y-4">
+            {[
+              { week: 'Week 1–2', title: 'Equipment Transition', desc: 'Introduce no-pull harness. Practice short walks (5–10 min). Mark and reward every few steps of loose leash. Expect 40–60% pulling reduction from harness alone.', color: 'bg-primary/10 border-primary/20' },
+              { week: 'Week 3–4', title: 'Consistent Loose-Leash Walking', desc: 'Extend walks to 15–20 min. Reduce treat frequency to every 10–15 steps. Begin "Be a Tree" method for remaining pulling. Start recall practice with 15ft long line in low-distraction areas.', color: 'bg-primary/10 border-primary/20' },
+              { week: 'Week 5–8', title: 'Distraction Proofing', desc: 'Practice near other dogs, squirrels, and busy environments. Increase long line distance to 30ft for recall. Dog should walk on loose leash 80%+ of the time in familiar areas.', color: 'bg-primary/10 border-primary/20' },
+              { week: 'Week 9–12', title: 'Reliability Phase', desc: 'Walk with loose leash in most environments. Reliable recall in familiar areas. Can switch to back-clip attachment for casual walks. Consider graduating to standard leash walks.', color: 'bg-primary/10 border-primary/20' },
+            ].map((phase, i) => (
+              <div key={i} className={`flex gap-4 items-start p-4 rounded-xl border ${phase.color}`}>
+                <Badge variant="default" className="mt-0.5 whitespace-nowrap text-[10px]">{phase.week}</Badge>
+                <div>
+                  <h3 className="font-semibold text-foreground text-sm mb-1">{phase.title}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{phase.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── COMMON MISTAKES PREVENTION ─── */}
+      <section className="container max-w-4xl py-12 md:py-16">
+        <h2 className="text-2xl md:text-3xl font-display font-bold text-center mb-8">5 Training Mistakes That Set You Back</h2>
+        <div className="grid md:grid-cols-2 gap-4">
+          {[
+            { mistake: 'Using a retractable leash for training', fix: 'Retractable leashes teach dogs that pulling = more freedom. Use a fixed 6ft leash for walks and a long line for recall.', icon: '❌' },
+            { mistake: 'Inconsistent reward timing', fix: 'Mark the behavior within 1 second. Use a clicker or "yes!" then deliver the treat. Late rewards confuse the learning.', icon: '⏱️' },
+            { mistake: 'Too much too fast', fix: 'Don\'t practice recall in a dog park before your dog succeeds in the backyard. Build difficulty gradually over weeks, not days.', icon: '🏃' },
+            { mistake: 'Low-value treats for high distractions', fix: 'Use the "treat hierarchy": kibble for easy tasks, cheese for medium, real chicken for hard situations near big distractions.', icon: '🧀' },
+            { mistake: 'Skipping the harness transition period', fix: 'Let your dog wear the new harness at home for 2-3 sessions before walking. Pair it with treats so the harness predicts good things.', icon: '🦺' },
+          ].map((item, i) => (
+            <div key={i} className="p-4 rounded-xl border border-border">
+              <div className="flex items-start gap-2 mb-2">
+                <span className="text-lg">{item.icon}</span>
+                <h3 className="font-semibold text-foreground text-sm">{item.mistake}</h3>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed ml-7">
+                <strong className="text-foreground">Fix:</strong> {item.fix}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
