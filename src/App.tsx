@@ -228,6 +228,8 @@ const SeoCollection = lazyWithRetry(() => import("./pages/SeoCollection"));
 const OrthopedicDogBeds = lazyWithRetry(() => import("./pages/collections/OrthopedicDogBeds"));
 const CatTreesForLargeCats = lazyWithRetry(() => import("./pages/collections/CatTreesForLargeCats"));
 const DogCarTravelSafety = lazyWithRetry(() => import("./pages/collections/DogCarTravelSafety"));
+const DogTrainingBehaviorTools = lazyWithRetry(() => import("./pages/collections/DogTrainingBehaviorTools"));
+const TrainingClusterArticle = lazyWithRetry(() => import("./pages/collections/cluster/TrainingClusterArticle"));
 const ClusterRevenueEngine = lazyWithRetry(() => import("./pages/admin/ClusterRevenueEngine"));
 const OrthopedicLargeDogs = lazyWithRetry(() => import("./pages/collections/sub-intent/OrthopedicLargeDogs"));
 const WaterproofOrthopedicBed = lazyWithRetry(() => import("./pages/collections/sub-intent/WaterproofOrthopedicBed"));
@@ -376,6 +378,17 @@ const App = () => {
                       <Route path="/dog/orthopedic-dog-beds/washable-covers" element={<Suspense fallback={<RouteLoader />}><DogIntentPage /></Suspense>} />
                       {/* Dog car travel safety — dedicated + new intents */}
                       <Route path="/dog/dog-car-travel-safety" element={<Suspense fallback={<RouteLoader />}><DogCarTravelSafety /></Suspense>} />
+                      {/* Dog training & behavior — hub + cluster articles */}
+                      <Route path="/dog/dog-training-behavior-tools" element={<Suspense fallback={<RouteLoader />}><DogTrainingBehaviorTools /></Suspense>} />
+                      <Route path="/dog/dog-training/front-clip-vs-back-clip-harness" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      <Route path="/dog/dog-training/best-harness-large-dogs" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      <Route path="/dog/dog-training/how-to-stop-pulling-without-choking" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      <Route path="/dog/dog-training/harness-sizing-guide" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      <Route path="/dog/dog-training/harness-vs-collar" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      <Route path="/dog/dog-training/15ft-vs-30ft-training-leash" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      <Route path="/dog/dog-training/how-to-train-recall" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      <Route path="/dog/dog-training/common-recall-mistakes" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      <Route path="/dog/dog-training/off-leash-training-safely" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
                       <Route path="/dog/dog-car-travel-safety/car-seats" element={<Suspense fallback={<RouteLoader />}><DogCarSeatSmallDogs /></Suspense>} />
                       <Route path="/dog/dog-car-travel-safety/booster-seats" element={<Suspense fallback={<RouteLoader />}><DogBoosterSeat /></Suspense>} />
                       <Route path="/dog/dog-car-travel-safety/harness-safety" element={<Suspense fallback={<RouteLoader />}><DogCarHarness /></Suspense>} />
