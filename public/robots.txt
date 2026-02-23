@@ -84,4 +84,4 @@ Disallow: /account
 Disallow: /auth
 Disallow: /search
 
-Sitemap: https://getpawsy.pet/sitemap.xml
+Sitemap: https://getpawsy.pet/sitemap-index.xml
