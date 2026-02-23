@@ -3,64 +3,74 @@
 ## Architecture Overview
 
 - **Framework**: Vite + React SPA (client-side rendering)
-- **XML Generation**: Build-time via `vite-plugin-sitemaps.ts`
+- **Sitemap Generation**: Prebuild Node script `scripts/generate-sitemaps.mjs` → writes into `/public`
+- **Merchant Feed**: Build-time via `vite-plugin-sitemaps.ts` (merchant feed only, NO sitemaps)
 - **Hosting**: Lovable Cloud (static files served from `dist/`)
 - **Error Handling**: `AppErrorBoundary` (root) + `RouteErrorBoundary` (routes) + ProdSafe guards
 
-## XML Files
+## Sitemap System (Single Authority)
 
-All XML files are **generated at build time** and written to `dist/`:
+**Generator**: `node scripts/generate-sitemaps.mjs`
+
+This is the ONLY sitemap generator. It:
+1. Queries Supabase REST API for live product/collection/blog data
+2. Falls back to static JSON files in `/data/*.json` if API is unavailable
+3. Writes valid XML files into `/public`
+4. Vite copies `/public` → `/dist` during build
+
+**Build flow**: `prebuild (generate-sitemaps.mjs)` → `vite build` → deploy `/dist`
+
+**Data files** (fallback sources in `/data/`):
+- `products.json` — empty array (live REST is primary source for 562+ products)
+- `collections.json` — SEO collections
+- `blog.json` — published blog posts
+- `guides.json` — guide pages
+- `clusters.json` — cluster/pillar pages
+
+## XML Files
 
 | File | Source |
 |------|--------|
-| `sitemap-index.xml` | Master sitemap index pointing to sub-sitemaps |
-| `sitemap.xml` | Alias of sitemap-index.xml (backward compat) |
-| `sitemap-static.xml` | Static pages (/, /products, /bestsellers, etc.) |
-| `sitemap-products-{N}.xml` | Products split into 500-URL chunks from `products_public` |
+| `sitemap.xml` | Sitemap index (sitemapindex) referencing all child sitemaps |
+| `sitemap-index.xml` | Alias of sitemap.xml |
+| `sitemap-static.xml` | Static pages (/, /products, /blog, etc.) |
+| `sitemap-products-{N}.xml` | Products split into 5000-URL chunks |
 | `sitemap-collections.xml` | Active SEO collections |
-| `sitemap-clusters.xml` | Namespaced pillar + intent pages (/dog/*, /cat/*) |
+| `sitemap-clusters.xml` | Pillar + intent pages |
 | `sitemap-blog.xml` | Published blog posts |
-| `sitemap-hubs.xml` | Money hub pages (orthopedic dog beds, cat trees, car safety) |
-| `sitemap-guides.xml` | Guide pages (static list + DB articles) |
-| `merchant-feed.xml` | Google Merchant Center RSS 2.0 feed |
+| `sitemap-guides.xml` | Guide pages |
+| `sitemap-hubs.xml` | Money hub pages (static file in /public) |
+| `merchant-feed.xml` | Google Merchant Center RSS 2.0 feed (vite plugin) |
 
-## Regenerating XML Snapshots
+## Regenerating Sitemaps
+
+### Manual
+```bash
+node scripts/generate-sitemaps.mjs
+```
 
 ### Automatic (every deploy)
-XML files regenerate automatically on every build/deploy. The Vite plugin queries the database REST API at build time.
-
-### Manual Trigger
-1. Go to Lovable editor
-2. Make any small change (e.g., add a comment) and save
-3. This triggers a new build which regenerates all XML files
+Add to package.json: `"prebuild": "node scripts/generate-sitemaps.mjs"`
 
 ### Fallback Behavior
-If the database query fails during build:
-- Sitemap files fall back to a minimal valid empty `<urlset/>`
-- Merchant feed falls back to a minimal valid empty `<channel/>`
+If Supabase REST API fails during generation:
+- Script falls back to `/data/*.json` files
+- If those are also empty, generates valid empty `<urlset></urlset>` XML
 - Build **never fails** due to XML generation errors
 
 ## Troubleshooting
 
 ### XML shows HTML instead of XML
 **Cause**: The SPA router caught the request instead of serving the static file.
-**Fix**: The `GuideSlugRedirect.tsx` component already bypasses `.xml` paths. If this still happens, check that the static file exists in `dist/`.
+**Fix**: Ensure the static `.xml` file exists in `dist/`.
 
-### White Screen
-**Cause**: JavaScript error in React rendering.
-**Fix**: Already mitigated by:
-1. `AppErrorBoundary` — catches fatal errors at root level, shows branded recovery UI
-2. `RouteErrorBoundary` — catches per-route errors with Refresh/Go Back buttons
-3. `ProdSafe` mode — all module-level inits wrapped in try/catch
-4. `lazyWithRetry` — lazy imports with error logging
-
-### sitemap.xml is empty or minimal
-**Cause**: Database query failed during build.
-**Fix**: Check build logs for `[xml-plugin]` messages. Verify Supabase REST API is accessible.
+### sitemap-products-*.xml shows 0 discovered pages in GSC
+**Cause**: XML was empty or had invalid structure.
+**Fix**: Run `node scripts/generate-sitemaps.mjs` and verify output contains `<url>` entries.
 
 ### Merchant feed has 0 products
-**Cause**: `products_public` view returned no data.
-**Fix**: Check that `products_public` view exists and `is_active=true` products are present.
+**Cause**: `products_public` view returned no data during vite build.
+**Fix**: Check build logs for `[xml-plugin]` messages. Verify Supabase REST API is accessible.
 
 ## robots.txt
 
@@ -72,14 +82,11 @@ Located at `public/robots.txt` (static file).
 - Admin/internal pages blocked: `/dashboard`, `/admin`, `/profile`, etc.
 - Sitemap declared: `Sitemap: https://getpawsy.pet/sitemap.xml`
 
-**⚠️ Warning**: The `Disallow: /*?*` rule blocks ALL query-string URLs. This is intentional to prevent crawl waste, but ensure canonical URLs never contain query parameters.
-
 ## Domain Configuration
 
 - Primary: `https://getpawsy.pet`
 - www variant: `https://www.getpawsy.pet` (DNS A-record → Lovable)
 - Cloudflare: DNS-only mode (grey cloud) for SSL compatibility
-- No client-side hostname redirects (removed to prevent loops)
 
 ## Diagnostics
 
