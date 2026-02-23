@@ -34,6 +34,7 @@ const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAu
 const BestsellersSection = lazy(() => import('@/components/home/BestsellersSection').then(m => ({ default: m.BestsellersSection })));
 const PremiumNicheGrid = lazy(() => import('@/components/home/PremiumNicheGrid').then(m => ({ default: m.PremiumNicheGrid })));
 const MostLovedPicks = lazy(() => import('@/components/home/MostLovedPicks'));
+const SalesAccelerationBanner = lazy(() => import('@/components/home/SalesAccelerationBanner').then(m => ({ default: m.SalesAccelerationBanner })));
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 
@@ -411,6 +412,15 @@ const Index = () => {
           {hydrationReady && <HomepageAuthoritySection />}
         </Suspense>
       </SectionErrorBoundary>
+
+      {/* ── Sales Acceleration — Priority Category Spotlights ─────────── */}
+      {hydrationReady && (
+        <SectionErrorBoundary sectionName="Sales Acceleration">
+          <Suspense fallback={<div className="py-10" style={{ minHeight: 200 }} />}>
+            <SalesAccelerationBanner />
+          </Suspense>
+        </SectionErrorBoundary>
+      )}
 
       {/* ── Trust Badges — gated behind hydration to not block LCP ─────────── */}
       {hydrationReady && (
