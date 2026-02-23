@@ -1,0 +1,81 @@
+import { AffiliateProduct } from '@/components/affiliate/AffiliateProductCard';
+
+/**
+ * Curated Amazon affiliate orthopedic dog bed picks.
+ * Replace affiliateUrl with tagged Amazon links when Associate account is live.
+ * When AFFILIATE_MODE flips to false, these are no longer rendered.
+ */
+export const AFFILIATE_ORTHOPEDIC_BEDS: AffiliateProduct[] = [
+  {
+    name: 'Bedsure Orthopedic Dog Bed – Memory Foam Waterproof',
+    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400&h=400&fit=crop',
+    priceRange: '$39–$69',
+    rating: 4.5,
+    reviewCount: 48200,
+    bestFor: 'Best overall value for medium to large dogs',
+    badge: 'Best Seller',
+    pros: ['High-density egg crate foam', 'Waterproof liner included', 'Machine-washable cover'],
+    cons: ['Foam could be denser for giant breeds'],
+    affiliateUrl: 'https://www.amazon.com/s?k=bedsure+orthopedic+dog+bed&tag=getpawsy-20',
+  },
+  {
+    name: 'Big Barker 7" Pillow Top Orthopedic Dog Bed',
+    image: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=400&h=400&fit=crop',
+    priceRange: '$169–$299',
+    rating: 4.7,
+    reviewCount: 12800,
+    bestFor: 'Giant breeds & dogs over 90 lbs',
+    badge: 'Premium Pick',
+    pros: ['7-inch American-made foam', '10-year warranty', 'Calibrated for large dogs'],
+    cons: ['Premium price point'],
+    affiliateUrl: 'https://www.amazon.com/s?k=big+barker+orthopedic+dog+bed&tag=getpawsy-20',
+  },
+  {
+    name: 'PetFusion Ultimate Dog Bed – Memory Foam',
+    image: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&h=400&fit=crop',
+    priceRange: '$79–$139',
+    rating: 4.6,
+    reviewCount: 22500,
+    bestFor: 'Senior dogs with arthritis',
+    badge: 'Vet Recommended',
+    pros: ['4-inch memory foam base', 'Bolstered edges for head support', 'CertiPUR-US certified'],
+    cons: ['Cover zippers may snag over time'],
+    affiliateUrl: 'https://www.amazon.com/s?k=petfusion+ultimate+dog+bed&tag=getpawsy-20',
+  },
+  {
+    name: 'Furhaven Orthopedic Cooling Gel Dog Bed',
+    image: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=400&h=400&fit=crop',
+    priceRange: '$29–$79',
+    rating: 4.4,
+    reviewCount: 95300,
+    bestFor: 'Budget-friendly cooling option',
+    badge: 'Budget Pick',
+    pros: ['Gel-infused foam for cooling', 'Multiple sizes S–XXL', 'Removable washable cover'],
+    cons: ['Thinner foam may compress for heavy dogs'],
+    affiliateUrl: 'https://www.amazon.com/s?k=furhaven+orthopedic+cooling+dog+bed&tag=getpawsy-20',
+  },
+  {
+    name: 'BarksBar Snuggly Sleeper Orthopedic Dog Bed',
+    image: 'https://images.unsplash.com/photo-1534361960057-19889db9621e?w=400&h=400&fit=crop',
+    priceRange: '$39–$59',
+    rating: 4.5,
+    reviewCount: 38700,
+    bestFor: 'Dogs that like bolster/nest-style beds',
+    badge: 'Best Bolster',
+    pros: ['Cotton-padded bolster rim', 'Orthopedic foam base', 'Non-slip rubber bottom'],
+    cons: ['Not fully waterproof'],
+    affiliateUrl: 'https://www.amazon.com/s?k=barksbar+orthopedic+dog+bed&tag=getpawsy-20',
+  },
+  {
+    name: 'K9 Ballistics Tough Orthopedic Dog Bed',
+    image: 'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=400&h=400&fit=crop',
+    priceRange: '$129–$199',
+    rating: 4.6,
+    reviewCount: 8400,
+    bestFor: 'Heavy chewers & destructive dogs',
+    badge: 'Chew-Proof',
+    pros: ['Ripstop ballistic cover', '5-inch orthopedic foam', 'Chew-proof guarantee'],
+    cons: ['Limited color options'],
+    affiliateUrl: 'https://www.amazon.com/s?k=k9+ballistics+orthopedic+dog+bed&tag=getpawsy-20',
+  },
+];

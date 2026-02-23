@@ -21,6 +21,11 @@ import {
 } from '@/components/ui/accordion';
 import { ScrollProgressIndicator } from '@/components/ui/ScrollProgressIndicator';
 import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
+import { AffiliateProductGrid } from '@/components/affiliate/AffiliateProductCard';
+import { AFFILIATE_ORTHOPEDIC_BEDS } from '@/data/affiliate-orthopedic-beds';
+import { useAffiliateMode } from '@/hooks/useAffiliateMode';
+import { MedicalDisclaimer } from '@/components/affiliate/AffiliateDisclaimer';
+import { AuthorityAuthorBox } from '@/components/affiliate/AuthorityAuthorBox';
 import orthopedicHero from '@/assets/orthopedic-hero.jpg';
 
 const CANONICAL = 'https://getpawsy.pet/dog/orthopedic-dog-beds';
@@ -60,16 +65,16 @@ const TESTIMONIALS = [
 ];
 
 const ATTACK_PAGES = [
-  { href: '/dog/orthopedic-dog-beds/best-for-large-dogs', label: 'Orthopedic Beds for Large Dogs' },
+  { href: '/dog/orthopedic-dog-beds/best-for-large-dogs', label: 'Best Orthopedic Beds for Large Dogs' },
+  { href: '/dog/orthopedic-dog-beds/memory-foam-under-100', label: 'Best Memory Foam Beds Under $100' },
+  { href: '/dog/orthopedic-dog-beds/for-senior-dogs', label: 'Orthopedic Beds for Senior Dogs' },
+  { href: '/dog/orthopedic-dog-beds/memory-foam-vs-egg-crate', label: 'Memory Foam vs Egg Crate Beds' },
+  { href: '/dog/orthopedic-dog-beds/cooling', label: 'Best Cooling Orthopedic Beds' },
+  { href: '/dog/orthopedic-dog-beds/signs-dog-needs-orthopedic-bed', label: 'Signs Your Dog Needs an Orthopedic Bed' },
   { href: '/dog/orthopedic-dog-beds/waterproof', label: 'Waterproof Orthopedic Beds' },
   { href: '/dog/orthopedic-dog-beds/memory-foam', label: 'Memory Foam Dog Beds' },
   { href: '/collections/orthopedic-dog-bed-arthritis', label: 'Beds for Dogs with Arthritis' },
-  { href: '/collections/orthopedic-dog-bed-senior-dogs', label: 'Senior Dog Beds' },
-  { href: '/collections/indestructible-orthopedic-dog-bed', label: 'Indestructible Orthopedic Beds' },
-  { href: '/collections/cooling-orthopedic-dog-bed', label: 'Cooling Orthopedic Beds' },
-  { href: '/collections/orthopedic-dog-bed-under-100', label: 'Best Under $100' },
   { href: '/collections/premium-orthopedic-dog-bed-comparison', label: 'Premium Bed Comparison' },
-  { href: '/collections/big-dog-orthopedic-bed-xl', label: 'XL Beds for Big Dogs' },
 ];
 
 const PAIN_POINTS = [
@@ -88,6 +93,7 @@ const SCIENCE_POINTS = [
 ];
 
 export default function OrthopedicDogBeds() {
+  const { isAffiliate } = useAffiliateMode();
   // Fetch products
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['ortho-beds-products'],
@@ -467,13 +473,82 @@ export default function OrthopedicDogBeds() {
           </div>
         </section>
 
-        {/* ─── PRODUCTS GRID ─── */}
+        {/* ─── VET INSIGHTS: SENIOR DOG PAIN SIGNS ─── */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-2">Signs Your Dog Needs an Orthopedic Bed</h2>
+          <p className="text-muted-foreground mb-6 max-w-3xl">Veterinarians recommend watching for these warning signs — especially in dogs over 5 years old or breeds predisposed to joint disease.</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { sign: 'Stiffness after sleeping or resting', desc: 'Your dog takes several steps before moving normally. This often indicates overnight joint compression on an unsupportive surface.' },
+              { sign: 'Reluctance to jump or climb stairs', desc: 'Avoidance of elevation changes signals hip or knee discomfort that worsens with poor sleep posture.' },
+              { sign: 'Visible limping or favoring a leg', desc: 'Intermittent lameness after rest is a classic sign of osteoarthritis, affecting 25% of dogs over age 7.' },
+              { sign: 'Licking or chewing at joints', desc: 'Dogs self-soothe inflamed joints by licking. If focused on hips, elbows, or wrists, joint pain is likely.' },
+              { sign: 'Difficulty lying down or getting up', desc: 'Circling repeatedly before lying down, or needing multiple attempts to stand, indicates joint stiffness.' },
+              { sign: 'Changes in sleep position', desc: 'Switching from curled to sprawled sleeping may indicate your dog is trying to reduce joint pressure.' },
+            ].map(item => (
+              <div key={item.sign} className="bg-card border rounded-xl p-4">
+                <h3 className="font-semibold text-sm mb-1 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> {item.sign}
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            For a complete guide, read: <Link to="/guides/signs-dog-needs-joint-support" className="text-primary hover:underline font-medium">6 Signs Your Dog Needs Joint Support</Link>
+          </p>
+        </section>
+
+        {/* ─── FOAM DENSITY COMPARISON TABLE ─── */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-2">Memory Foam Density Comparison</h2>
+          <p className="text-muted-foreground mb-6 max-w-3xl">Foam density (lb/ft³) is the single most important spec. Here's what each tier actually means for your dog.</p>
+          <div className="overflow-x-auto border rounded-2xl">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left p-3 font-semibold">Density</th>
+                  <th className="text-left p-3 font-semibold">Rating</th>
+                  <th className="text-left p-3 font-semibold">Lifespan</th>
+                  <th className="text-left p-3 font-semibold">Best For</th>
+                  <th className="text-left p-3 font-semibold">Price Range</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { density: '1.0–1.4 lb/ft³', rating: '⚠️ Low', life: '3–6 months', best: 'Temporary use, puppies', price: '$20–$40' },
+                  { density: '1.5–1.7 lb/ft³', rating: '✅ Medium', life: '1–2 years', best: 'Small dogs under 30 lbs', price: '$40–$70' },
+                  { density: '1.8–2.2 lb/ft³', rating: '🏆 High', life: '3–5 years', best: 'Medium to large dogs, arthritis', price: '$60–$130' },
+                  { density: '2.3+ lb/ft³', rating: '💎 Premium', life: '5–7 years', best: 'Giant breeds, severe joint disease', price: '$120–$300' },
+                ].map((row, i) => (
+                  <tr key={i} className={i % 2 === 0 ? 'bg-card' : 'bg-muted/20'}>
+                    <td className="p-3 font-medium">{row.density}</td>
+                    <td className="p-3">{row.rating}</td>
+                    <td className="p-3">{row.life}</td>
+                    <td className="p-3 text-muted-foreground">{row.best}</td>
+                    <td className="p-3">{row.price}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">
+            Learn more: <Link to="/guides/how-thick-should-a-dog-bed-be" className="text-primary hover:underline font-medium">How Thick Should a Dog Bed Be?</Link> · <Link to="/guides/memory-foam-vs-egg-crate-foam-dog-bed" className="text-primary hover:underline font-medium">Memory Foam vs Egg Crate Foam</Link>
+          </p>
+        </section>
+
+        {/* ─── PRODUCTS / AFFILIATE GRID ─── */}
         <section id="products" className="mb-16">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl md:text-3xl font-display font-bold">Shop Orthopedic Dog Beds</h2>
-            <span className="text-muted-foreground text-sm">{products.length} products</span>
+            <h2 className="text-2xl md:text-3xl font-display font-bold">
+              {isAffiliate ? 'Top-Rated Orthopedic Dog Beds (2026)' : 'Shop Orthopedic Dog Beds'}
+            </h2>
+            {!isAffiliate && <span className="text-muted-foreground text-sm">{products.length} products</span>}
           </div>
-          {isLoading ? (
+
+          {isAffiliate ? (
+            <AffiliateProductGrid products={AFFILIATE_ORTHOPEDIC_BEDS} />
+          ) : isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {[...Array(8)].map((_, i) => <Skeleton key={i} className="aspect-square rounded-xl" />)}
             </div>
@@ -645,6 +720,14 @@ export default function OrthopedicDogBeds() {
           </div>
         </section>
 
+        {/* ─── AUTHORITY AUTHOR BOX ─── */}
+        <section className="mb-16">
+          <AuthorityAuthorBox />
+        </section>
+
+        {/* ─── MEDICAL DISCLAIMER ─── */}
+        <MedicalDisclaimer />
+
         {/* ─── SECTION 8: FAQ ─── */}
         <section id="faq" className="mb-16 bg-muted/30 rounded-2xl p-6 md:p-10">
           <div className="flex items-center gap-2 mb-6">
@@ -695,10 +778,31 @@ export default function OrthopedicDogBeds() {
           </div>
         </section>
 
-        {/* ─── SECTION 10: EXPLORE JOINT SUPPORT GUIDES ─── */}
+        {/* ─── CLUSTER ARTICLE HUB LINKS ─── */}
+        <section className="mb-16 bg-primary/5 border border-primary/20 rounded-2xl p-6 md:p-10">
+          <h2 className="text-2xl font-display font-bold mb-2">Orthopedic Dog Bed Authority Hub</h2>
+          <p className="text-muted-foreground text-sm mb-6">Deep-dive guides from our research team — everything you need to make the right decision.</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { href: '/dog/orthopedic-dog-beds/best-for-large-dogs', title: 'Best Orthopedic Beds for Large Dogs', desc: 'Foam thickness, edge support, and weight ratings for 60–120+ lb breeds.' },
+              { href: '/dog/orthopedic-dog-beds/memory-foam-under-100', title: 'Best Memory Foam Beds Under $100', desc: 'Budget picks that actually deliver genuine orthopedic support.' },
+              { href: '/dog/orthopedic-dog-beds/signs-dog-needs-orthopedic-bed', title: 'Signs Your Dog Needs an Orthopedic Bed', desc: '8 warning signs veterinarians watch for — from stiffness to sleep changes.' },
+              { href: '/dog/orthopedic-dog-beds/memory-foam-vs-egg-crate', title: 'Memory Foam vs Egg Crate Beds', desc: 'Honest comparison of support, durability, cooling & price.' },
+              { href: '/dog/orthopedic-dog-beds/cooling', title: 'Best Cooling Orthopedic Beds', desc: 'Gel-infused foam for hot climates and thick-coated breeds.' },
+              { href: '/dog/orthopedic-dog-beds/for-senior-dogs', title: 'Orthopedic Beds for Senior Dogs', desc: 'Low-entry design, arthritis management, and incontinence protection.' },
+            ].map(guide => (
+              <Link key={guide.href} to={guide.href} className="group bg-background border rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition-all">
+                <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors">{guide.title}</h3>
+                <p className="text-xs text-muted-foreground">{guide.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── SECTION 10: EXPLORE MORE GUIDES ─── */}
         <section className="mb-16 bg-muted/30 rounded-2xl p-6 md:p-10">
           <h2 className="text-2xl font-display font-bold mb-2">Explore More Joint Support Guides</h2>
-          <p className="text-muted-foreground text-sm mb-6">Expert articles to help you make the best decision for your dog's comfort and joint health.</p>
+          <p className="text-muted-foreground text-sm mb-6">Expert articles from our blog to complement your research.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { slug: 'do-orthopedic-dog-beds-help-arthritis', title: 'Do Dogs Really Need Orthopedic Beds?', desc: 'Vet-backed evidence on when orthopedic support matters most.' },
