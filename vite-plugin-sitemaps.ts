@@ -1,6 +1,10 @@
 /**
- * Vite plugin that generates sitemap + merchant-feed XML files at build time
- * by querying the Supabase REST API directly — NO edge functions needed.
+ * Vite plugin that generates merchant-feed XML files at build time
+ * by querying the Supabase REST API directly.
+ *
+ * SITEMAP GENERATION HAS BEEN REMOVED.
+ * Sitemaps are now generated exclusively by: node scripts/generate-sitemaps.mjs
+ * which writes into /public before vite build copies them to /dist.
  */
 import type { Plugin } from 'vite';
 import { writeFileSync, mkdirSync } from 'fs';
@@ -15,7 +19,7 @@ const FREE_SHIPPING_THRESHOLD = 35;
 
 async function supaRest<T>(table: string, params: string): Promise<T[]> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout per request
+  const timeout = setTimeout(() => controller.abort(), 15000);
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
       headers: {
@@ -53,164 +57,6 @@ function truncate(text: string, max: number): string {
   return text.length <= max ? text : text.substring(0, max - 3) + '...';
 }
 
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function urlTag(loc: string, lastmod: string, changefreq: string, priority: string): string {
-  return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
-}
-
-// ── Sitemap generation ────────────────────────────────────────────────
-
-interface ProductRow { id: string; slug: string | null; updated_at: string; }
-interface CategoryRow { slug: string; name: string; }
-interface BestsellersRow { slug: string; updated_at: string; }
-interface CollectionsRow { slug: string; updated_at: string; }
-interface BlogRow { slug: string; published_at: string; }
-
-const CLEAN_CATEGORY_SLUGS: Record<string, string> = {
-  'cat-trees-and-condos': 'cat-trees-condos',
-  'dog-beds': 'dog-beds',
-  'cat-litter-boxes': 'cat-litter-boxes',
-  'dog-toys': 'dog-toys',
-  'cat-toys': 'cat-toys',
-  'dog-collars-leashes': 'dog-collars-leashes',
-  'dog-carriers': 'dog-carriers',
-  'cat-carriers': 'cat-carriers',
-  'dog-grooming': 'dog-grooming',
-  'guinea-pig-cages': 'guinea-pig-cages',
-};
-
-const FALLBACK_GUIDES = [
-  "best-cat-litter-box-2026","how-many-litter-boxes-per-cat",
-  "best-cat-litter-box-furniture-enclosures-2026","best-litter-boxes-multi-cat",
-  "best-extra-large-litter-boxes","best-cat-trees-small-apartments",
-  "best-litter-box-small-apartments","best-litter-box-odor-bathroom",
-  "best-low-tracking-litter-box","best-litter-box-kittens",
-  "best-litter-box-senior-cats","best-litter-box-under-100",
-  "best-litter-box-studio-apartment","best-high-sided-litter-box",
-  "how-to-choose-guinea-pig-cage","guinea-pig-cage-vs-playpen",
-  "cat-condo-vs-cat-tower","choosing-safe-cat-tree-indoor",
-  "outdoor-dog-games-enrichment",
-];
-
-const MAX_URLS_PER_SITEMAP = 500;
-
-function wrapUrlset(urls: string[]): string {
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
-}
-
-/** Split URL tags into chunks of MAX_URLS_PER_SITEMAP */
-function chunkUrls(urls: string[]): string[][] {
-  const chunks: string[][] = [];
-  for (let i = 0; i < urls.length; i += MAX_URLS_PER_SITEMAP) {
-    chunks.push(urls.slice(i, i + MAX_URLS_PER_SITEMAP));
-  }
-  return chunks.length ? chunks : [[]];
-}
-
-async function buildSitemapIndex(today: string, productChunkCount: number, blogChunkCount: number): Promise<string> {
-  const entries: string[] = [];
-  entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-static.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
-  entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-hubs.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
-  for (let i = 1; i <= productChunkCount; i++) {
-    entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-products-${i}.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
-  }
-  entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-collections.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
-  entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-clusters.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
-  for (let i = 1; i <= blogChunkCount; i++) {
-    entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-blog-${i}.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
-  }
-  entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-guides.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</sitemapindex>`;
-}
-
-function buildStaticSitemap(today: string): string {
-  // NOTE: /cat-trees-condos removed — already in sitemap-categories.xml (duplicate)
-  // NOTE: /bestsellers kept here as index-worthy listing page (individual /bestseller/:slug are noindex)
-  const pages: [string,string,string][] = [
-    ['/',   'daily','1.0'],
-    ['/products','daily','0.95'],
-    ['/bestsellers','daily','0.90'],
-    ['/blog','daily','0.80'],
-    ['/guides','daily','0.85'],
-  ];
-  const urls = pages.map(([p,cf,pr]) => urlTag(`${BASE_URL}${p}`, today, cf, pr)).join('\n');
-  return wrapUrlset([urls]);
-}
-
-async function buildProductsSitemaps(today: string): Promise<string[]> {
-  const rows = await supaRest<ProductRow>('products_public',
-    'select=id,slug,updated_at&is_active=eq.true&is_duplicate=eq.false&order=updated_at.desc&limit=5000');
-  const urls = rows.map((p, i) => {
-    const lm = p.updated_at?.split('T')[0] || today;
-    const path = p.slug || p.id;
-    const pri = i < 100 ? '0.95' : i < 500 ? '0.85' : '0.75';
-    return urlTag(`${BASE_URL}/product/${path}`, lm, 'weekly', pri);
-  });
-  const chunks = chunkUrls(urls);
-  console.log(`[xml-plugin] Products: ${rows.length} URLs → ${chunks.length} sitemap(s)`);
-  return chunks.map(chunk => wrapUrlset(chunk));
-}
-
-async function buildCategoriesSitemap(today: string): Promise<string> {
-  const cats = await supaRest<CategoryRow>('categories', 'select=slug,name');
-  const toSlug = (s: string) => s.toLowerCase().trim().replace(/&/g,'and').replace(/[^\w\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
-  const seen = new Set<string>();
-  const urls: string[] = [];
-  for (const c of cats) {
-    const sl = c.slug || toSlug(c.name);
-    if (seen.has(sl)) continue;
-    seen.add(sl);
-    const clean = CLEAN_CATEGORY_SLUGS[sl];
-    if (clean) urls.push(urlTag(`${BASE_URL}/${clean}`, today, 'weekly', '0.85'));
-  }
-  console.log(`[xml-plugin] Categories sitemap: ${urls.length} URLs`);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
-}
-
-async function buildBestsellersSitemap(today: string): Promise<string> {
-  const rows = await supaRest<BestsellersRow>('bestsellers', 'select=slug,updated_at&is_active=eq.true');
-  const urls = rows.map(b => urlTag(`${BASE_URL}/bestseller/${b.slug}`, b.updated_at?.split('T')[0] || today, 'weekly', '0.9'));
-  console.log(`[xml-plugin] Bestsellers sitemap: ${rows.length} URLs`);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
-}
-
-async function buildCollectionsSitemap(today: string): Promise<string> {
-  const rows = await supaRest<CollectionsRow>('seo_collections', 'select=slug,updated_at&is_active=eq.true');
-  const urls = rows.map(c => urlTag(`${BASE_URL}/collections/${c.slug}`, c.updated_at?.split('T')[0] || today, 'weekly', '0.85'));
-  console.log(`[xml-plugin] Collections sitemap: ${rows.length} URLs`);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
-}
-
-async function buildBlogSitemaps(today: string): Promise<string[]> {
-  const rows = await supaRest<BlogRow>('blog_posts', 'select=slug,published_at&is_published=eq.true&order=published_at.desc');
-  const urls = rows.map(p => urlTag(`${BASE_URL}/blog/${p.slug}`, p.published_at?.split('T')[0] || today, 'monthly', '0.6'));
-  const chunks = chunkUrls(urls);
-  console.log(`[xml-plugin] Blog: ${rows.length} URLs → ${chunks.length} sitemap(s)`);
-  return chunks.map(chunk => wrapUrlset(chunk));
-}
-
-async function buildGuidesSitemap(today: string): Promise<string> {
-  // Combine static fallback guides + published cluster articles from DB
-  const dbArticles = await supaRest<{ slug: string; updated_at: string }>(
-    'cluster_articles',
-    'select=slug,updated_at&status=eq.published&order=updated_at.desc&limit=500'
-  );
-  const dbSlugs = new Set(dbArticles.map(a => a.slug));
-  
-  const urls = [
-    urlTag(`${BASE_URL}/guides`, today, 'weekly', '0.8'),
-    ...FALLBACK_GUIDES
-      .filter(slug => !dbSlugs.has(slug))
-      .map(slug => urlTag(`${BASE_URL}/guides/${slug}`, today, 'monthly', slug.startsWith('best-') ? '0.8' : '0.7')),
-    ...dbArticles.map(a => urlTag(`${BASE_URL}/guides/${a.slug}`, a.updated_at?.split('T')[0] || today, 'weekly', '0.8')),
-  ];
-  console.log(`[xml-plugin] Guides sitemap: ${urls.length - 1} URLs (${FALLBACK_GUIDES.length} static + ${dbArticles.length} from DB)`);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
-}
-
 // ── Merchant Feed generation ──────────────────────────────────────────
 
 interface MerchantProduct {
@@ -231,7 +77,6 @@ interface MerchantProduct {
 
 // ── Title optimization helpers ────────────────────────────────────────
 
-/** Remove filler words and CJ junk from product names */
 function cleanProductName(name: string): string {
   return name
     .replace(/,?\s*premium quality/gi, '')
@@ -279,9 +124,7 @@ function extractBenefit(name: string, desc: string | null): string {
   return 'Everyday Comfort';
 }
 
-/** Extract a size/variant hint from the product name */
 function extractVariant(name: string): string | null {
-  // Look for size patterns like S/M/L/XL, dimensions, or color keywords
   const sizeMatch = name.match(/\b(X{0,2}[SML]|XXL|Small|Medium|Large|Extra Large)\b/i);
   if (sizeMatch) return sizeMatch[0];
   const dimMatch = name.match(/\b(\d+["'']?\s*[xX×]\s*\d+)/);
@@ -289,7 +132,6 @@ function extractVariant(name: string): string | null {
   return null;
 }
 
-/** Category-to-primary-keyword map for feed title optimization */
 const CATEGORY_PRIMARY_KEYWORDS: Record<string, string> = {
   'dog-toys': 'Dog Toy',
   'dog-bowls-feeders': 'Dog Bowl',
@@ -317,7 +159,6 @@ const CATEGORY_PRIMARY_KEYWORDS: Record<string, string> = {
   'bird-bowls-feeders': 'Bird Feeder',
 };
 
-/** Detect high-intent keyword qualifiers from name/description */
 function getKeywordQualifier(name: string, desc: string | null): string | null {
   const n = name.toLowerCase(); const d = (desc||'').toLowerCase();
   if (n.includes('interactive') || d.includes('interactive')) return 'Interactive';
@@ -335,31 +176,23 @@ function getKeywordQualifier(name: string, desc: string | null): string | null {
   return null;
 }
 
-/** Build optimized title: [Primary Keyword] – [Benefit] | [Variant] */
 function buildOptimizedTitle(p: MerchantProduct): string {
   const cleanName = cleanProductName(p.name);
   const pet = getPetType(p.category);
   const benefit = extractBenefit(p.name, p.description);
   const variant = extractVariant(p.name);
   const catSlug = (p.category || '').toLowerCase().replace(/\s+/g, '-');
-
-  // Get primary keyword from category map
   const primaryKw = CATEGORY_PRIMARY_KEYWORDS[catSlug];
   const qualifier = getKeywordQualifier(p.name, p.description);
 
   let title: string;
   if (primaryKw && qualifier) {
-    // "Interactive Dog Toy – Clean Name – Benefit"
     title = `${qualifier} ${primaryKw} – ${cleanName} – ${benefit}`;
   } else if (primaryKw) {
-    // "Dog Toy – Clean Name – Benefit"
     title = `${primaryKw} – ${cleanName} – ${benefit}`;
   } else {
-    // Fallback: "Clean Name for Dogs – Benefit"
     title = `${cleanName} for ${pet} – ${benefit}`;
   }
-
-  // Append variant if it fits
   if (variant && title.length + variant.length + 3 <= 150) {
     title += ` | ${variant}`;
   }
@@ -368,50 +201,39 @@ function buildOptimizedTitle(p: MerchantProduct): string {
 
 // ── Description optimization ──────────────────────────────────────────
 
-/** Strip HTML, CJ image URLs, supplier references, and formatting junk */
 function cleanDescription(html: string | null): string {
   if (!html) return '';
   return html
-    // Remove img tags (CJ product images in descriptions)
     .replace(/<img[^>]*>/gi, '')
-    // Remove CJ/supplier URLs
     .replace(/https?:\/\/[^\s<"']*cj(dropshipping|\.com)[^\s<"']*/gi, '')
     .replace(/https?:\/\/oss-cf\.[^\s<"']*/gi, '')
-    // Remove common CJ formatting headers
     .replace(/<b>\s*Product Image:?\s*<\/b>/gi, '')
     .replace(/<b>\s*Packing list:?\s*<\/b>/gi, '')
     .replace(/<b>\s*Product information:?\s*<\/b>/gi, '')
-    // Strip remaining HTML
     .replace(/<[^>]*>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    // Clean up whitespace
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-/** Extract meaningful specs from the cleaned description */
 function extractSpecs(cleaned: string): string[] {
   const specs: string[] = [];
-  // Look for "Material: X" patterns
   const materialMatch = cleaned.match(/Material:\s*([^,.\n]+)/i);
   if (materialMatch) specs.push(`Made with ${materialMatch[1].trim()}`);
-  // Look for "Size: X" patterns
   const sizeMatch = cleaned.match(/Size[s]?:\s*([^.\n]+)/i);
   if (sizeMatch) specs.push(`Available sizes: ${sizeMatch[1].trim()}`);
   return specs;
 }
 
-/** Build a problem → benefit → bullets → shipping description */
 function buildOptimizedDescription(p: MerchantProduct): string {
   const pet = getPetType(p.category).toLowerCase();
   const benefit = extractBenefit(p.name, p.description);
   const cleaned = cleanDescription(p.description);
   const specs = extractSpecs(cleaned);
 
-  // Problem statement based on category
   const problems: Record<string, string> = {
     'dogs': 'Finding the right product for your dog can be overwhelming.',
     'cats': 'Your cat deserves products designed for their unique needs.',
@@ -422,12 +244,10 @@ function buildOptimizedDescription(p: MerchantProduct): string {
   };
   const problem = problems[pet] || problems['pets'];
 
-  // Build benefit bullets
   const bullets: string[] = [
     `✓ ${benefit} for your ${pet}`,
   ];
   if (cleaned.length > 30) {
-    // Extract first meaningful sentence from cleaned description
     const firstSentence = cleaned.split(/[.!?]/).filter(s => s.trim().length > 15)[0];
     if (firstSentence) bullets.push(`✓ ${truncate(firstSentence.trim(), 80)}`);
   }
@@ -436,7 +256,6 @@ function buildOptimizedDescription(p: MerchantProduct): string {
   if (p.price >= FREE_SHIPPING_THRESHOLD) {
     bullets.push('✓ FREE US shipping included');
   }
-  // Cap at 6 bullets
   const finalBullets = bullets.slice(0, 6);
 
   let desc = `${problem} The ${cleanProductName(p.name)} delivers ${benefit.toLowerCase()} that ${pet} love. `;
@@ -505,7 +324,6 @@ function getAvailability(stock: number | null, isActive: boolean | null): string
   return (stock !== null && stock !== undefined && stock > 0) ? 'in stock' : 'out of stock';
 }
 
-/** Determine current season for custom_label_2 */
 function getCurrentSeason(): string {
   const month = new Date().getMonth() + 1;
   if (month >= 3 && month <= 5) return 'Spring';
@@ -540,18 +358,11 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): string
 
   const avail = getAvailability(p.stock, p.is_active);
   const season = getCurrentSeason();
-
-  // Custom labels per spec
-  // custom_label_0: margin tier (based on price vs compare_at_price)
   const margin = p.compare_at_price && p.compare_at_price > 0
     ? ((p.compare_at_price - p.price) / p.compare_at_price * 100)
     : 0;
   const marginTier = margin >= 40 ? 'High-Margin' : margin >= 20 ? 'Mid-Margin' : 'Low-Margin';
-
-  // custom_label_1: bestseller flag
   const isBestseller = bestsellersSet.has(p.id);
-
-  // Shipping element (US, 3-7 business days)
   const shippingCost = p.price >= FREE_SHIPPING_THRESHOLD ? '0.00' : '5.99';
 
   return `    <item>
@@ -579,7 +390,6 @@ ${extra}      <g:product_type>${esc(getProductType(p.category))}</g:product_type
 }
 
 async function buildMerchantFeed(): Promise<string> {
-  // Fetch products + bestsellers in parallel
   const [products, bestsellers] = await Promise.all([
     supaRest<MerchantProduct>(
       'products_public',
@@ -616,42 +426,32 @@ async function buildMerchantDiagnostics(): Promise<string> {
 
   const issues: string[] = [];
   const titlesSeen = new Map<string, string[]>();
-
   const imagesSeen = new Map<string, string[]>();
 
   for (const p of products) {
     const pid = p.id;
     const name = p.name || '(unnamed)';
-
-    // Missing GTIN / SKU
     if (!p.sku) {
       issues.push(`    <issue type="missing_gtin" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" />`);
     }
-    // Missing image
     if (!p.image_url && (!p.images || p.images.length === 0)) {
       issues.push(`    <issue type="missing_image" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" />`);
     }
-    // Overlength title (raw name > 150 chars)
     if (name.length > 150) {
       issues.push(`    <issue type="overlength_title" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" length="${name.length}" />`);
     }
-    // Short title (under 40 chars)
     if (name.length < 40) {
       issues.push(`    <issue type="short_title" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" length="${name.length}" />`);
     }
-    // Out of stock
     if (!p.stock || p.stock <= 0) {
       issues.push(`    <issue type="out_of_stock" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" stock="${p.stock ?? 'null'}" />`);
     }
-    // Missing compare_at_price (no margin data)
     if (!p.compare_at_price || p.compare_at_price <= 0) {
       issues.push(`    <issue type="missing_compare_at_price" product_id="${esc(pid)}" name="${esc(truncate(name, 80))}" />`);
     }
-    // Track duplicate titles
     const normTitle = name.toLowerCase().replace(/[^a-z0-9]/g, '');
     if (!titlesSeen.has(normTitle)) titlesSeen.set(normTitle, []);
     titlesSeen.get(normTitle)!.push(pid);
-    // Track duplicate images
     const primaryImg = p.image_url || '';
     if (primaryImg) {
       if (!imagesSeen.has(primaryImg)) imagesSeen.set(primaryImg, []);
@@ -659,13 +459,11 @@ async function buildMerchantDiagnostics(): Promise<string> {
     }
   }
 
-  // Add duplicate title issues
   for (const [, ids] of titlesSeen) {
     if (ids.length > 1) {
       issues.push(`    <issue type="duplicate_title" product_ids="${ids.join(',')}" count="${ids.length}" />`);
     }
   }
-  // Add duplicate image issues
   for (const [imgUrl, ids] of imagesSeen) {
     if (ids.length > 1) {
       issues.push(`    <issue type="duplicate_image" image_url="${esc(truncate(imgUrl, 120))}" product_ids="${ids.join(',')}" count="${ids.length}" />`);
@@ -704,13 +502,12 @@ ${issues.join('\n')}
 
 // ── Vite Plugin ───────────────────────────────────────────────────────
 
-const FALLBACK_EMPTY = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n</urlset>`;
 const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel><title>GetPawsy Product Feed</title><link>https://getpawsy.pet/</link><description>Google Merchant Center feed for GetPawsy.</description></channel></rss>`;
 
-export default function sitemapPlugin(): Plugin {
+export default function merchantFeedPlugin(): Plugin {
   let resolvedOutDir = 'dist';
   return {
-    name: 'generate-static-xml',
+    name: 'generate-merchant-feed',
     apply: 'build',
     configResolved(config) {
       resolvedOutDir = config.build.outDir || 'dist';
@@ -718,88 +515,51 @@ export default function sitemapPlugin(): Plugin {
     async closeBundle() {
       const outDir = resolvedOutDir;
       mkdirSync(outDir, { recursive: true });
-      console.log('[xml-plugin] Generating static XML files...');
+      console.log('[xml-plugin] Generating merchant feed XML files...');
 
-      // Write fallback files FIRST so build always has valid XML
-      const fallbackNames = [
-        'sitemap-index.xml', 'sitemap.xml', 'sitemap-static.xml',
-        'sitemap-products-1.xml', 'sitemap-products-2.xml',
-        'sitemap-collections.xml', 'sitemap-clusters.xml',
-        'sitemap-blog-1.xml', 'sitemap-blog-2.xml',
-        'sitemap-guides.xml',
-        'merchant-feed.xml', 'merchant-diagnostics.xml',
-      ];
-      const FALLBACK_INDEX = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <sitemap><loc>${BASE_URL}/sitemap-static.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-hubs.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-products-1.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-products-2.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-collections.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-clusters.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-blog-1.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-guides.xml</loc></sitemap>\n</sitemapindex>`;
+      // Write fallback files FIRST
+      const fallbackNames = ['merchant-feed.xml', 'merchant-diagnostics.xml'];
       for (const name of fallbackNames) {
         let fallback: string;
         if (name.includes('merchant-feed')) {
           fallback = FALLBACK_FEED;
-        } else if (name.includes('merchant-diagnostics')) {
-          fallback = `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`;
-        } else if (name === 'sitemap-index.xml' || name === 'sitemap.xml') {
-          fallback = FALLBACK_INDEX;
         } else {
-          fallback = FALLBACK_EMPTY;
+          fallback = `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`;
         }
         writeFileSync(join(outDir, name), fallback, 'utf-8');
       }
-      console.log('[xml-plugin] ✓ Fallback XML files written');
+      console.log('[xml-plugin] ✓ Fallback merchant files written');
 
-      // Now try to generate real XML from Supabase (non-blocking)
+      // NOTE: Sitemaps are NOT generated here.
+      // They are generated by: node scripts/generate-sitemaps.mjs
+      // which writes into /public before vite build copies them to /dist.
+
       try {
         await Promise.race([
           (async () => {
-            const today = new Date().toISOString().split('T')[0];
-
-            const [stat, productChunks, collections, blog_chunks, guides, feed, diagnostics] =
-              await Promise.all([
-                Promise.resolve(buildStaticSitemap(today)),
-                buildProductsSitemaps(today).catch(() => [FALLBACK_EMPTY]),
-                buildCollectionsSitemap(today).catch(() => FALLBACK_EMPTY),
-                buildBlogSitemaps(today).catch(() => [FALLBACK_EMPTY]),
-                buildGuidesSitemap(today).catch(() => FALLBACK_EMPTY),
-                buildMerchantFeed().catch(() => FALLBACK_FEED),
-                buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
-              ]);
-
-            // Build index with actual chunk counts
-            const index = await buildSitemapIndex(today, productChunks.length, blog_chunks.length).catch(
-              () => `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n</sitemapindex>`
-            );
+            const [feed, diagnostics] = await Promise.all([
+              buildMerchantFeed().catch(() => FALLBACK_FEED),
+              buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
+            ]);
 
             const files: [string, string][] = [
-              ['sitemap-index.xml', index],
-              ['sitemap.xml', index], // keep sitemap.xml as alias for backward compat
-              ['sitemap-static.xml', stat],
-              ['sitemap-collections.xml', collections],
-              ['sitemap-guides.xml', guides],
               ['merchant-feed.xml', feed],
               ['merchant-diagnostics.xml', diagnostics],
             ];
-
-            // Write product chunk files
-            productChunks.forEach((xml, i) => {
-              files.push([`sitemap-products-${i + 1}.xml`, xml]);
-            });
-
-            // Write blog chunk files
-            blog_chunks.forEach((xml, i) => {
-              files.push([`sitemap-blog-${i + 1}.xml`, xml]);
-            });
 
             for (const [name, xml] of files) {
               writeFileSync(join(outDir, name), xml, 'utf-8');
               console.log(`[xml-plugin] ✓ ${name} (${xml.length} bytes)`);
             }
 
-            console.log('[xml-plugin] Done — all XML files generated.');
+            console.log('[xml-plugin] Done — merchant feed files generated.');
           })(),
           new Promise<void>((_, reject) =>
-            setTimeout(() => reject(new Error('XML generation timed out')), 30000)
+            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
           ),
         ]);
       } catch (err) {
-        console.warn('[xml-plugin] ⚠️ XML generation failed/timed out, fallbacks in place:', err);
+        console.warn('[xml-plugin] ⚠️ Merchant feed generation failed/timed out, fallbacks in place:', err);
       }
     },
   };
