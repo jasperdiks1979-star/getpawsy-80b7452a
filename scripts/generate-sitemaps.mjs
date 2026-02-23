@@ -17,7 +17,6 @@ const OUT_DIR = joinRoot("public");
 const CHUNK_SIZE = 5000;
 const HISTORY_PATH = joinRoot("data", "sitemap-history.json");
 
-// Supabase REST API config
 const SUPABASE_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc";
 
@@ -26,39 +25,26 @@ async function fetchFromSupabase(table, params) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      },
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
       signal: controller.signal,
     });
     clearTimeout(timeout);
-    if (!res.ok) {
-      console.warn(`[sitemaps] REST error ${table}: ${res.status}`);
-      return null;
-    }
+    if (!res.ok) { console.warn(`[sitemaps] REST error ${table}: ${res.status}`); return null; }
     return await res.json();
-  } catch (err) {
-    console.warn(`[sitemaps] REST fetch failed for ${table}:`, err.message);
-    return null;
-  }
+  } catch (err) { console.warn(`[sitemaps] REST fetch failed ${table}:`, err.message); return null; }
 }
 
-function nowIsoDate() {
-  return new Date().toISOString().slice(0, 10);
-}
+function nowIsoDate() { return new Date().toISOString().slice(0, 10); }
 
 function filterIndexable(entries) {
   return (Array.isArray(entries) ? entries : []).filter((e) => e && e.path && !e.noindex);
 }
 
 function validateXmlBasics(xml, mustContain) {
-  if (!xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')) {
+  if (!xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>'))
     throw new Error("XML does not start with required header.");
-  }
-  for (const token of mustContain) {
+  for (const token of mustContain)
     if (!xml.includes(token)) throw new Error(`XML missing required token: ${token}`);
-  }
 }
 
 const EXCLUDED_PATHS = new Set([
@@ -74,67 +60,134 @@ function isExcluded(p) {
   return false;
 }
 
-// ── Delta-based lastmod tracking ──
+// ── Delta lastmod ──
 function loadHistory() {
-  try {
-    const raw = fs.readFileSync(HISTORY_PATH, "utf8");
-    const parsed = JSON.parse(raw);
-    return typeof parsed === "object" && parsed !== null ? parsed : {};
-  } catch {
-    return {};
-  }
+  try { const p = JSON.parse(fs.readFileSync(HISTORY_PATH, "utf8")); return typeof p === "object" && p ? p : {}; }
+  catch { return {}; }
 }
-
-function saveHistory(history) {
-  fs.writeFileSync(HISTORY_PATH, JSON.stringify(history, null, 2), "utf8");
-}
+function saveHistory(h) { fs.writeFileSync(HISTORY_PATH, JSON.stringify(h, null, 2), "utf8"); }
 
 function resolveLastmod(urlPath, currentUpdatedAt, history, today) {
   const currentDate = toIsoDate(currentUpdatedAt) ?? today;
   const prev = history[urlPath];
-
-  if (!prev) {
-    // New URL — use current timestamp
-    return currentDate;
-  }
-
-  if (prev.updatedAt === currentUpdatedAt) {
-    // Content unchanged — preserve previous lastmod
-    return prev.lastmod;
-  }
-
-  // Content changed — use actual updatedAt
+  if (!prev) return currentDate;
+  if (prev.updatedAt === currentUpdatedAt) return prev.lastmod;
   return currentDate;
 }
 
-function makeUrlEntriesDelta(entries, defaults, history, today) {
-  return entries.map((e) => {
-    const urlPath = e.path;
-    const lastmod = resolveLastmod(urlPath, e.lastmod, history, today);
+// ── Revenue-weighted priority ──
+function computeProductPriority(slug, revenueData, bestsellers, gscByPath) {
+  let priority = 0.60;
 
-    return {
-      loc: absUrl(BASE, urlPath),
-      lastmod,
-      changefreq: e.changefreq ?? defaults.changefreq ?? null,
-      priority: e.priority !== undefined ? e.priority : defaults.priority,
-      _path: urlPath,
-      _updatedAt: e.lastmod ?? null,
-    };
-  });
+  // Bestseller boost
+  if (bestsellers.has(slug)) priority += 0.20;
+
+  // Revenue boost from order data
+  const rev = revenueData.get(slug);
+  if (rev) {
+    if (rev.revenue > 200) priority += 0.15;
+    else if (rev.revenue > 50) priority += 0.10;
+    if (rev.orderCount >= 3) priority += 0.05;
+  }
+
+  // Stock status
+  // (stock info not in products_public view by default, handled via separate query if available)
+
+  // GSC position boost
+  const gsc = gscByPath[`/product/${slug}`];
+  if (gsc) {
+    if (gsc.position >= 4 && gsc.position <= 8) priority += 0.03;
+    else if (gsc.position > 0 && gsc.position <= 3) priority += 0.05;
+  }
+
+  return Math.round(Math.min(0.90, Math.max(0.40, priority)) * 100) / 100;
+}
+
+function computeCollectionPriority(slug, topRevenueCollections) {
+  if (topRevenueCollections.has(slug)) return 0.90;
+  return 0.80;
+}
+
+// ── Load GSC metrics ──
+function loadGscMetrics() {
+  try {
+    const data = JSON.parse(fs.readFileSync(joinRoot("data", "gsc-metrics.json"), "utf8"));
+    const map = {};
+    if (data && Array.isArray(data.rows)) {
+      for (const r of data.rows) {
+        try { const p = new URL(r.page).pathname; map[p] = r; } catch { /* skip */ }
+      }
+    }
+    return map;
+  } catch { return {}; }
 }
 
 async function main() {
   ensureDir(OUT_DIR);
   const today = nowIsoDate();
-  const generatedAt = new Date().toISOString();
   const history = loadHistory();
   const newHistory = {};
+  const gscByPath = loadGscMetrics();
 
-  const safeRead = (p, fallback) => {
-    try { return readJson(p); } catch { return fallback; }
-  };
+  const safeRead = (p, fallback) => { try { return readJson(p); } catch { return fallback; } };
 
-  // ── Products: live REST API → JSON fallback ──
+  // ── Fetch bestsellers set ──
+  const bestsellersRaw = await fetchFromSupabase("bestsellers", "select=slug&is_active=eq.true");
+  const bestsellers = new Set((bestsellersRaw || []).map((b) => b.slug));
+  console.log(`[sitemaps] Bestsellers loaded: ${bestsellers.size}`);
+
+  // ── Fetch order revenue data (last 30 days) ──
+  const revenueData = new Map();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+  const ordersRaw = await fetchFromSupabase(
+    "orders",
+    `select=items,total_amount&status=eq.paid&created_at=gte.${thirtyDaysAgo}&limit=1000`
+  );
+  if (ordersRaw) {
+    for (const order of ordersRaw) {
+      const items = Array.isArray(order.items) ? order.items : [];
+      for (const item of items) {
+        // Extract slug from product name (items have id, name, price)
+        const id = item.id;
+        if (!id) continue;
+        const existing = revenueData.get(id) || { revenue: 0, orderCount: 0 };
+        existing.revenue += (item.price || 0) * (item.quantity || 1);
+        existing.orderCount += 1;
+        revenueData.set(id, existing);
+      }
+    }
+    console.log(`[sitemaps] Revenue data: ${revenueData.size} products from ${ordersRaw.length} orders`);
+  }
+
+  // ── Build product ID → slug map for revenue matching ──
+  const productIdSlugRaw = await fetchFromSupabase(
+    "products_public",
+    "select=id,slug&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&limit=5000"
+  );
+  const revenueBySlug = new Map();
+  if (productIdSlugRaw) {
+    for (const p of productIdSlugRaw) {
+      const rev = revenueData.get(p.id);
+      if (rev) revenueBySlug.set(p.slug, rev);
+    }
+  }
+
+  // ── Top revenue collection slugs ──
+  const topRevenueCollections = new Set();
+  // Collections containing bestsellers are top revenue
+  const collSlugRaw = await fetchFromSupabase("seo_collections", "select=slug&is_active=eq.true");
+  if (collSlugRaw) {
+    // Heuristic: top 10 collections by slug matching common high-value terms
+    for (const c of collSlugRaw) {
+      if (bestsellers.size > 0) {
+        // Mark collections that appear in GSC top positions
+        const gsc = gscByPath[`/collections/${c.slug}`];
+        if (gsc && gsc.impressions > 200) topRevenueCollections.add(c.slug);
+      }
+    }
+  }
+
+  // ── Products ──
   let productsRaw = await fetchFromSupabase(
     "products_public",
     "select=slug,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc&limit=5000"
@@ -143,68 +196,74 @@ async function main() {
   if (productsRaw && productsRaw.length > 0) {
     products = productsRaw
       .filter((p) => p.slug && p.slug.trim() !== "" && !isExcluded(`/product/${p.slug}`))
-      .map((p) => ({ path: `/product/${p.slug}`, lastmod: p.updated_at, priority: 0.75 }));
+      .map((p) => ({
+        path: `/product/${p.slug}`,
+        lastmod: p.updated_at,
+        priority: computeProductPriority(p.slug, revenueBySlug, bestsellers, gscByPath),
+      }));
     console.log(`[sitemaps] Products from REST API: ${products.length}`);
   } else {
     products = filterIndexable(safeRead(joinRoot("data", "products.json"), []));
     console.log(`[sitemaps] Products from JSON fallback: ${products.length}`);
   }
 
-  // ── FAIL-SAFE: products must not be empty ──
   if (products.length === 0) {
     console.error("[sitemaps] FATAL: 0 products fetched. Aborting build.");
     process.exit(1);
   }
 
   // ── Collections ──
-  let collectionsRaw = await fetchFromSupabase(
-    "seo_collections",
-    "select=slug,updated_at&is_active=eq.true&order=updated_at.desc"
-  );
+  let collectionsRaw = await fetchFromSupabase("seo_collections", "select=slug,updated_at&is_active=eq.true&order=updated_at.desc");
   let collections;
   if (collectionsRaw && collectionsRaw.length > 0) {
     collections = collectionsRaw
       .filter((c) => !isExcluded(`/collections/${c.slug}`))
-      .map((c) => ({ path: `/collections/${c.slug}`, lastmod: c.updated_at }));
+      .map((c) => ({
+        path: `/collections/${c.slug}`,
+        lastmod: c.updated_at,
+        priority: computeCollectionPriority(c.slug, topRevenueCollections),
+      }));
     console.log(`[sitemaps] Collections from REST API: ${collections.length}`);
   } else {
     collections = filterIndexable(safeRead(joinRoot("data", "collections.json"), []));
     console.log(`[sitemaps] Collections from JSON fallback: ${collections.length}`);
   }
-  if (collections.length === 0) {
-    console.warn("[sitemaps] WARNING: 0 collections found.");
-  }
+  if (collections.length === 0) console.warn("[sitemaps] WARNING: 0 collections found.");
 
   // ── Blog ──
-  let blogRaw = await fetchFromSupabase(
-    "blog_posts",
-    "select=slug,published_at&is_published=eq.true&order=published_at.desc"
-  );
+  let blogRaw = await fetchFromSupabase("blog_posts", "select=slug,published_at&is_published=eq.true&order=published_at.desc");
   let blog;
   if (blogRaw && blogRaw.length > 0) {
-    blog = blogRaw
-      .filter((b) => !isExcluded(`/blog/${b.slug}`))
-      .map((b) => ({ path: `/blog/${b.slug}`, lastmod: b.published_at }));
+    blog = blogRaw.filter((b) => !isExcluded(`/blog/${b.slug}`)).map((b) => ({ path: `/blog/${b.slug}`, lastmod: b.published_at }));
     console.log(`[sitemaps] Blog from REST API: ${blog.length}`);
   } else {
     blog = filterIndexable(safeRead(joinRoot("data", "blog.json"), []));
     console.log(`[sitemaps] Blog from JSON fallback: ${blog.length}`);
   }
 
-  // ── Guides & Clusters: JSON only ──
   const guides = filterIndexable(safeRead(joinRoot("data", "guides.json"), []));
   console.log(`[sitemaps] Guides from JSON: ${guides.length}`);
   const clusters = filterIndexable(safeRead(joinRoot("data", "clusters.json"), []));
   console.log(`[sitemaps] Clusters from JSON: ${clusters.length}`);
 
-  // ── Sort alphabetically for stable ordering ──
+  // ── Sort alphabetically ──
   products.sort((a, b) => a.path.localeCompare(b.path));
   collections.sort((a, b) => a.path.localeCompare(b.path));
   blog.sort((a, b) => a.path.localeCompare(b.path));
   guides.sort((a, b) => a.path.localeCompare(b.path));
   clusters.sort((a, b) => a.path.localeCompare(b.path));
 
-  // ── Static pages ──
+  // ── Build entries with delta lastmod ──
+  const makeDelta = (entries, defaults) => entries.map((e) => {
+    const lastmod = resolveLastmod(e.path, e.lastmod, history, today);
+    return {
+      loc: absUrl(BASE, e.path), lastmod,
+      changefreq: e.changefreq ?? defaults.changefreq ?? null,
+      priority: e.priority !== undefined ? e.priority : defaults.priority,
+      _path: e.path, _updatedAt: e.lastmod ?? null,
+    };
+  });
+
   const staticPages = [
     { path: "/", priority: 1.0, changefreq: "daily", lastmod: today },
     { path: "/products", priority: 0.9, changefreq: "daily", lastmod: today },
@@ -220,63 +279,34 @@ async function main() {
     { path: "/privacy", priority: 0.30, changefreq: "yearly", lastmod: today },
     { path: "/terms", priority: 0.30, changefreq: "yearly", lastmod: today },
   ].map((e) => ({
-    loc: absUrl(BASE, e.path),
-    lastmod: e.lastmod,
-    changefreq: e.changefreq,
-    priority: e.priority,
-    _path: e.path,
-    _updatedAt: e.lastmod,
+    loc: absUrl(BASE, e.path), lastmod: e.lastmod, changefreq: e.changefreq, priority: e.priority,
+    _path: e.path, _updatedAt: e.lastmod,
   }));
 
-  // ── Build delta-aware entries ──
-  const collectionEntries = makeUrlEntriesDelta(collections, { changefreq: "weekly", priority: 0.8 }, history, today);
-  const blogEntries = makeUrlEntriesDelta(blog, { changefreq: "monthly", priority: 0.6 }, history, today);
-  const guideEntries = makeUrlEntriesDelta(guides, { changefreq: "weekly", priority: 0.7 }, history, today);
-  const clusterEntries = makeUrlEntriesDelta(clusters, { changefreq: "weekly", priority: 0.65 }, history, today);
-  const productEntriesAll = makeUrlEntriesDelta(products, { changefreq: "weekly", priority: 0.75 }, history, today);
+  const collectionEntries = makeDelta(collections, { changefreq: "weekly", priority: 0.8 });
+  const blogEntries = makeDelta(blog, { changefreq: "monthly", priority: 0.6 });
+  const guideEntries = makeDelta(guides, { changefreq: "weekly", priority: 0.7 });
+  const clusterEntries = makeDelta(clusters, { changefreq: "weekly", priority: 0.65 });
+  const productEntriesAll = makeDelta(products, { changefreq: "weekly", priority: 0.75 });
 
-  // ── Record new history ──
+  // ── Record history ──
   const allEntries = [...staticPages, ...collectionEntries, ...blogEntries, ...guideEntries, ...clusterEntries, ...productEntriesAll];
-  for (const e of allEntries) {
-    newHistory[e._path] = { lastmod: e.lastmod, updatedAt: e._updatedAt };
-  }
-  saveHistory(newHistory);
+  for (const e of allEntries) newHistory[e._path] = { lastmod: e.lastmod, updatedAt: e._updatedAt };
 
-  // ── Strip internal fields before rendering ──
   const clean = (entries) => entries.map(({ loc, lastmod, changefreq, priority }) => ({ loc, lastmod, changefreq, priority }));
-
   const productChunks = chunk(clean(productEntriesAll), CHUNK_SIZE);
 
-  // ── Write urlset sitemaps ──
-  const childLastmods = {};
   const writeChecked = (filename, xml, mustContain) => {
     validateXmlBasics(xml, mustContain);
     writeFile(path.join(OUT_DIR, filename), xml);
     console.log(`[sitemaps] ✓ ${filename} (${xml.length} bytes)`);
   };
 
-  // Track whether child content changed vs history
-  const didChildChange = (filename, entries) => {
-    const key = `__child__${filename}`;
-    const prevHash = history[key]?.hash;
-    const currentHash = entries.map((e) => `${e.loc}|${e.lastmod}`).join("\n");
-    newHistory[key] = { hash: currentHash };
-    return prevHash !== currentHash;
-  };
-
-  const staticClean = clean(staticPages);
-  const collClean = clean(collectionEntries);
-  const blogClean = clean(blogEntries);
-  const guideClean = clean(guideEntries);
-  const clusterClean = clean(clusterEntries);
-
-  writeChecked("sitemap-static.xml", renderUrlset(staticClean), ["<urlset", "</urlset>"]);
-  childLastmods["sitemap-static.xml"] = didChildChange("sitemap-static.xml", staticClean) ? today : (history["__child__sitemap-static.xml"]?.lastmod ?? today);
-
-  writeChecked("sitemap-collections.xml", renderUrlset(collClean), ["<urlset", "</urlset>"]);
-  writeChecked("sitemap-blog.xml", renderUrlset(blogClean), ["<urlset", "</urlset>"]);
-  writeChecked("sitemap-guides.xml", renderUrlset(guideClean), ["<urlset", "</urlset>"]);
-  writeChecked("sitemap-clusters.xml", renderUrlset(clusterClean), ["<urlset", "</urlset>"]);
+  writeChecked("sitemap-static.xml", renderUrlset(clean(staticPages)), ["<urlset", "</urlset>"]);
+  writeChecked("sitemap-collections.xml", renderUrlset(clean(collectionEntries)), ["<urlset", "</urlset>"]);
+  writeChecked("sitemap-blog.xml", renderUrlset(clean(blogEntries)), ["<urlset", "</urlset>"]);
+  writeChecked("sitemap-guides.xml", renderUrlset(clean(guideEntries)), ["<urlset", "</urlset>"]);
+  writeChecked("sitemap-clusters.xml", renderUrlset(clean(clusterEntries)), ["<urlset", "</urlset>"]);
 
   const sitemapIndexItems = [
     { loc: `${BASE}/sitemap-static.xml`, lastmod: today },
@@ -288,30 +318,35 @@ async function main() {
   ];
 
   if (productChunks.length === 0) productChunks.push([]);
-
   productChunks.forEach((chunkEntries, idx) => {
     const name = `sitemap-products-${idx + 1}.xml`;
     writeChecked(name, renderUrlset(chunkEntries), ["<urlset", "</urlset>"]);
     sitemapIndexItems.push({ loc: `${BASE}/${name}`, lastmod: today });
   });
 
-  // ── Write sitemap index ──
   const indexXml = renderSitemapIndex(sitemapIndexItems);
   validateXmlBasics(indexXml, ["<sitemapindex", "</sitemapindex>"]);
   writeFile(path.join(OUT_DIR, "sitemap.xml"), indexXml);
   writeFile(path.join(OUT_DIR, "sitemap-index.xml"), indexXml);
 
-  // ── Save updated history ──
   saveHistory(newHistory);
 
   // ── Summary ──
   const totalUrls = staticPages.length + collectionEntries.length + blogEntries.length
     + guideEntries.length + clusterEntries.length + productEntriesAll.length;
 
+  // Priority distribution
+  const priDist = { high: 0, mid: 0, low: 0 };
+  for (const e of productEntriesAll) {
+    if (e.priority >= 0.80) priDist.high++;
+    else if (e.priority >= 0.65) priDist.mid++;
+    else priDist.low++;
+  }
+
   console.log(`\n[sitemaps] ══════════════════════════════════════`);
   console.log(`[sitemaps] Generation complete at ${new Date().toISOString()}`);
-  console.log(`[sitemaps] Products:    ${products.length}`);
-  console.log(`[sitemaps] Collections: ${collections.length}`);
+  console.log(`[sitemaps] Products:    ${products.length} (high:${priDist.high} mid:${priDist.mid} low:${priDist.low})`);
+  console.log(`[sitemaps] Collections: ${collections.length} (top revenue: ${topRevenueCollections.size})`);
   console.log(`[sitemaps] Blog:        ${blog.length}`);
   console.log(`[sitemaps] Guides:      ${guides.length}`);
   console.log(`[sitemaps] Clusters:    ${clusters.length}`);
@@ -319,7 +354,8 @@ async function main() {
   console.log(`[sitemaps] Total URLs:  ${totalUrls}`);
   console.log(`[sitemaps] Chunks:      ${productChunks.length} (max ${CHUNK_SIZE}/chunk)`);
   console.log(`[sitemaps] Index refs:  ${sitemapIndexItems.length}`);
-  console.log(`[sitemaps] Delta tracking: ${Object.keys(newHistory).length} entries recorded`);
+  console.log(`[sitemaps] Bestsellers: ${bestsellers.size}`);
+  console.log(`[sitemaps] Delta tracking: ${Object.keys(newHistory).length} entries`);
   console.log(`[sitemaps] ══════════════════════════════════════\n`);
 }
 
