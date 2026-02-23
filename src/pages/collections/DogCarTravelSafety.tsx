@@ -6,10 +6,12 @@ import { CheckCircle, ArrowRight, Shield, Truck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/products/ProductCard";
+import { PriorityCategoryWidget } from "@/components/seo/PriorityCategoryWidget";
+import { ConversionTrustBlock } from "@/components/seo/ConversionTrustBlock";
 
 const CANONICAL = 'https://getpawsy.pet/dog/dog-car-travel-safety';
-const PAGE_TITLE = 'Best Dog Car Seats & Travel Safety Gear – Crash Tested (2026)';
-const META_DESC = 'Shop crash-tested dog car seats, harnesses, and booster seats. Vet-approved travel safety solutions for dogs of all sizes. Free US shipping + 30-day guarantee.';
+const PAGE_TITLE = 'Crash-Tested Dog Car Seats & Safety Gear (2026)';
+const META_DESC = 'Your dog rides unrestrained? A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day guarantee + free US shipping.';
 
 const FAQ_DATA = [
   { question: 'Are dog car seats actually safe?', answer: 'Yes, when properly designed and installed. Crash-tested dog car seats from reputable brands (tested at CPS-certified facilities) reduce injury risk by up to 80% compared to unrestrained dogs. Always look for "crash tested" certification — many budget seats only restrain, they don\'t protect during impact.' },
@@ -56,8 +58,55 @@ export default function DogCarTravelSafety() {
     '@context': 'https://schema.org', '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://getpawsy.pet' },
-      { '@type': 'ListItem', position: 2, name: 'Dog Car Travel Safety', item: CANONICAL },
+      { '@type': 'ListItem', position: 2, name: 'Dog Products', item: 'https://getpawsy.pet/collections/dogs' },
+      { '@type': 'ListItem', position: 3, name: 'Dog Car Travel Safety', item: CANONICAL },
     ],
+  };
+
+  const collectionSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': `${CANONICAL}#collection`,
+    name: 'Crash-Tested Dog Car Seats & Travel Safety Gear',
+    description: META_DESC,
+    url: CANONICAL,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: products?.length || 0,
+      itemListElement: (products || []).slice(0, 8).map((p: any, i: number) => ({
+        '@type': 'ListItem', position: i + 1,
+        item: {
+          '@type': 'Product',
+          '@id': `https://getpawsy.pet/product/${p.slug || p.id}`,
+          name: p.name,
+          image: p.images?.[0],
+          offers: {
+            '@type': 'Offer',
+            price: (p.price || 0).toFixed(2),
+            priceCurrency: 'USD',
+            availability: p.status === 'active' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            shippingDetails: {
+              '@type': 'OfferShippingDetails',
+              shippingRate: { '@type': 'MonetaryAmount', value: '0', currency: 'USD' },
+              shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'US' },
+              deliveryTime: {
+                '@type': 'ShippingDeliveryTime',
+                handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' },
+                transitTime: { '@type': 'QuantitativeValue', minValue: 3, maxValue: 7, unitCode: 'DAY' },
+              },
+            },
+          },
+        },
+      })),
+    },
+  };
+
+  const orgSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'GetPawsy',
+    url: 'https://getpawsy.pet',
+    aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', bestRating: '5', worstRating: '1', ratingCount: '198', reviewCount: '198' },
   };
 
   return (
@@ -71,6 +120,11 @@ export default function DogCarTravelSafety() {
         <meta property="og:url" content={CANONICAL} />
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(collectionSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(orgSchema)}</script>
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="GetPawsy" />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
       </Helmet>
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -83,7 +137,7 @@ export default function DogCarTravelSafety() {
         {/* ─── HERO ─── */}
         <section className="mb-12">
           <h1 className="text-3xl md:text-4xl font-display font-bold leading-tight mb-4">
-            Best Dog Car Seats & Travel Safety — Crash Tested (2026 Guide)
+            Crash-Tested Dog Car Seats &amp; Travel Safety Gear
           </h1>
           <p className="text-lg text-muted-foreground max-w-3xl mb-6">
             Crash-tested car seats, harnesses, and booster seats designed to keep your dog safe on every ride. From quick errands to cross-country road trips.
@@ -216,6 +270,12 @@ export default function DogCarTravelSafety() {
             <Link to="/blog" className="text-sm text-primary hover:underline font-medium">Expert Pet Guides →</Link>
           </div>
         </section>
+
+        <ConversionTrustBlock categoryName="Dog Car Safety" />
+
+        <div className="mb-16">
+          <PriorityCategoryWidget exclude="dog-car" />
+        </div>
       </div>
     </Layout>
   );
