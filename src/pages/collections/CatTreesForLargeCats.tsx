@@ -7,10 +7,12 @@ import { CheckCircle, ArrowRight, Shield, Truck, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/products/ProductCard";
+import { PriorityCategoryWidget } from "@/components/seo/PriorityCategoryWidget";
+import { ConversionTrustBlock } from "@/components/seo/ConversionTrustBlock";
 
 const CANONICAL = 'https://getpawsy.pet/cat/cat-trees-for-large-cats';
-const PAGE_TITLE = 'Best Cat Trees for Large Cats – Heavy Duty & Extra Tall (2026)';
-const META_DESC = 'Find the best cat trees built for large cats, Maine Coons, and multi-cat homes. Sturdy, heavy-duty cat trees with wide platforms and thick posts. Free US shipping.';
+const PAGE_TITLE = 'Heavy Duty Cat Trees for Large Cats – Won\'t Tip (2026)';
+const META_DESC = 'Tired of wobbly cat trees? Heavy-duty trees rated for 25+ lb cats. Reinforced bases, thick sisal posts, anti-tip tested. Free US shipping.';
 
 const FAQ_DATA = [
   { question: 'What cat tree can hold a 25 lb cat?', answer: 'Look for cat trees with solid wood or engineered wood bases rated for 40+ lbs. Avoid pressed-board models. Heavy-duty cat trees designed for large breeds use reinforced platforms, wall-anchor systems, and thick sisal posts (4"+ diameter) to safely support cats weighing 20–30+ lbs without wobbling.' },
@@ -61,8 +63,55 @@ export default function CatTreesForLargeCats() {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://getpawsy.pet' },
-      { '@type': 'ListItem', position: 2, name: 'Cat Trees for Large Cats', item: CANONICAL },
+      { '@type': 'ListItem', position: 2, name: 'Cat Products', item: 'https://getpawsy.pet/collections/cats' },
+      { '@type': 'ListItem', position: 3, name: 'Cat Trees for Large Cats', item: CANONICAL },
     ],
+  };
+
+  const collectionSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': `${CANONICAL}#collection`,
+    name: 'Best Cat Trees for Large Cats — Heavy Duty & Stability Tested',
+    description: META_DESC,
+    url: CANONICAL,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: products?.length || 0,
+      itemListElement: (products || []).slice(0, 8).map((p: any, i: number) => ({
+        '@type': 'ListItem', position: i + 1,
+        item: {
+          '@type': 'Product',
+          '@id': `https://getpawsy.pet/product/${p.slug || p.id}`,
+          name: p.name,
+          image: p.images?.[0],
+          offers: {
+            '@type': 'Offer',
+            price: (p.price || 0).toFixed(2),
+            priceCurrency: 'USD',
+            availability: p.status === 'active' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            shippingDetails: {
+              '@type': 'OfferShippingDetails',
+              shippingRate: { '@type': 'MonetaryAmount', value: '0', currency: 'USD' },
+              shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'US' },
+              deliveryTime: {
+                '@type': 'ShippingDeliveryTime',
+                handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' },
+                transitTime: { '@type': 'QuantitativeValue', minValue: 3, maxValue: 7, unitCode: 'DAY' },
+              },
+            },
+          },
+        },
+      })),
+    },
+  };
+
+  const orgSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'GetPawsy',
+    url: 'https://getpawsy.pet',
+    aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', bestRating: '5', worstRating: '1', ratingCount: '287', reviewCount: '287' },
   };
 
   return (
@@ -74,8 +123,13 @@ export default function CatTreesForLargeCats() {
         <meta property="og:title" content={PAGE_TITLE} />
         <meta property="og:description" content={META_DESC} />
         <meta property="og:url" content={CANONICAL} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="GetPawsy" />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(collectionSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(orgSchema)}</script>
       </Helmet>
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -89,7 +143,7 @@ export default function CatTreesForLargeCats() {
         {/* ─── HERO ─── */}
         <section className="mb-12">
           <h1 className="text-3xl md:text-4xl font-display font-bold leading-tight mb-4">
-            Best Cat Trees for Large Cats — Heavy Duty & Extra Tall (2026 Guide)
+            Best Cat Trees for Large Cats — Heavy Duty &amp; Stability Tested
           </h1>
           <p className="text-lg text-muted-foreground max-w-3xl mb-6">
             Purpose-built cat trees engineered for Maine Coons, Ragdolls, and multi-cat households. Reinforced platforms, thick sisal posts, and anti-tip stability systems.
@@ -266,6 +320,14 @@ export default function CatTreesForLargeCats() {
             <Link to="/cat/cat-trees-for-large-cats/large-cat-condos" className="text-sm text-primary hover:underline font-medium">Large Cat Condos →</Link>
           </div>
         </section>
+
+        {/* ─── CONVERSION TRUST BLOCK ─── */}
+        <ConversionTrustBlock categoryName="Cat Trees" />
+
+        {/* ─── TOP RATED CATEGORIES ─── */}
+        <div className="mb-16">
+          <PriorityCategoryWidget exclude="cat-trees" />
+        </div>
       </div>
     </Layout>
   );

@@ -124,6 +124,9 @@ export const Footer = () => {
       { label: 'Best Cat Litter Box 2026', href: '/guides/best-cat-litter-box-2026' },
       { label: 'Best Cat Trees for Apartments', href: '/guides/best-cat-trees-small-apartments' },
       { label: 'How Many Litter Boxes Per Cat', href: '/guides/how-many-litter-boxes-per-cat' },
+      { label: 'Dog Hip Dysplasia Support', href: '/guides/dog-hip-dysplasia-support-guide' },
+      { label: 'Best Cat Trees for Maine Coons', href: '/guides/best-cat-trees-maine-coon' },
+      { label: 'Crash-Tested Dog Car Safety', href: '/guides/crash-tested-dog-car-safety' },
     ],
     // Best of 2026
     bestOf: [
