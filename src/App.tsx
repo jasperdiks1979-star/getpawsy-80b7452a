@@ -214,6 +214,7 @@ const IndexControlDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/
 const LinkEquityDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/LinkEquityDiagnostics"));
 const SerpWarDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/SerpWarDiagnostics"));
 const Top3BoostDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/Top3BoostDiagnostics"));
+const Top3LockdownDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/Top3LockdownDiagnostics"));
 const RevenueWarMachine = lazyWithRetry(() => import("./pages/diagnostics/RevenueWarMachine"));
 const NicheMonopoly = lazyWithRetry(() => import("./pages/diagnostics/NicheMonopoly"));
 const AutoExpansion = lazyWithRetry(() => import("./pages/diagnostics/AutoExpansion"));
@@ -456,6 +457,7 @@ const App = () => {
                       <Route path="/diagnostics/link-equity" element={<Suspense fallback={<RouteLoader />}><LinkEquityDiagnostics /></Suspense>} />
                       <Route path="/diagnostics/serp-war" element={<Suspense fallback={<RouteLoader />}><SerpWarDiagnostics /></Suspense>} />
                       <Route path="/diagnostics/top3-boost" element={<Suspense fallback={<RouteLoader />}><Top3BoostDiagnostics /></Suspense>} />
+                      <Route path="/diagnostics/top3-lockdown" element={<Suspense fallback={<RouteLoader />}><Top3LockdownDiagnostics /></Suspense>} />
                       <Route path="/diagnostics/revenue-war-machine" element={<Suspense fallback={<RouteLoader />}><RevenueWarMachine /></Suspense>} />
                       <Route path="/diagnostics/niche-monopoly" element={<Suspense fallback={<RouteLoader />}><NicheMonopoly /></Suspense>} />
                       <Route path="/diagnostics/auto-expansion" element={<Suspense fallback={<RouteLoader />}><AutoExpansion /></Suspense>} />
