@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function CatTreeMaineCoon() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/collections/cat-tree-for-maine-coon"
+      canonical="https://getpawsy.pet/cat/cat-trees-for-large-cats/for-maine-coon"
       title="Best Cat Tree for Maine Coon – Heavy Duty & Extra Wide (2026)"
       metaDesc="Find the best cat trees built specifically for Maine Coons. Wide platforms, 25+ lb capacity, thick sisal posts, and anti-tip stability. Expert reviewed."
       h1="Best Cat Tree for Maine Coon — Heavy Duty & Extra Wide (2026)"
@@ -13,10 +13,11 @@ export default function CatTreeMaineCoon() {
       trustBadges={['Rated for 25+ lb Cats', '3–7 Day US Shipping', '30-Day Guarantee']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Cat Trees for Large Cats', href: '/collections/cat-trees-for-large-cats' },
+        { label: 'Cat', href: '/cat/cat-trees-for-large-cats' },
+        { label: 'Cat Trees for Large Cats', href: '/cat/cat-trees-for-large-cats' },
         { label: 'Maine Coon' },
       ]}
-      pillarLink={{ label: 'Cat Trees for Large Cats Guide', href: '/collections/cat-trees-for-large-cats' }}
+      pillarLink={{ label: 'Cat Trees for Large Cats Guide', href: '/cat/cat-trees-for-large-cats' }}
       productQuery="name.ilike.%cat tree%,name.ilike.%cat tower%large%,name.ilike.%cat condo%"
       contentBlocks={[
         {
@@ -53,7 +54,7 @@ Scratching area: Multiple scratching posts distributed across the tree prevent c
         },
       ]}
       faq={[
-        { question: 'What size cat tree does a Maine Coon need?', answer: 'Maine Coons need cat trees at least 60 inches tall with 18\"+ wide platforms, 12\"+ condo openings, and 4\"+ diameter sisal posts. The base should weigh 15+ lbs or include wall-anchor hardware. Standard "large" cat trees are usually undersized for adult Maine Coons.' },
+        { question: 'What size cat tree does a Maine Coon need?', answer: 'Maine Coons need cat trees at least 60 inches tall with 18"+ wide platforms, 12"+ condo openings, and 4"+ diameter sisal posts. The base should weigh 15+ lbs or include wall-anchor hardware. Standard "large" cat trees are usually undersized for adult Maine Coons.' },
         { question: 'Can a Maine Coon use a regular cat tree?', answer: 'Not safely for long. Standard cat trees are rated for 15–25 lbs of static weight. A 20-lb Maine Coon jumping creates 80+ lbs of dynamic force, which will cause wobbling, tipping, and eventual structural failure. Invest in a heavy-duty tree from day one.' },
         { question: 'How much weight should a Maine Coon cat tree hold?', answer: 'At minimum, 40 lbs of static weight capacity. For multi-cat homes, 60+ lbs. Always check the manufacturer\'s weight rating and choose models with solid wood or reinforced construction rather than pressed particleboard.' },
       ]}
@@ -62,9 +63,9 @@ Scratching area: Multiple scratching posts distributed across the tree prevent c
         { slug: 'signs-dog-needs-joint-support', title: 'Signs Your Pet Needs Joint Support', desc: 'Applies to large cats too — mobility matters.' },
       ]}
       crossLinks={[
-        { label: 'Cat Trees for Large Cats Hub', href: '/collections/cat-trees-for-large-cats' },
-        { label: 'Heavy Duty Cat Trees', href: '/collections/heavy-duty-cat-tree' },
-        { label: 'Multi-Cat Cat Trees', href: '/collections/best-cat-tree-for-multiple-cats' },
+        { label: 'Cat Trees for Large Cats Hub', href: '/cat/cat-trees-for-large-cats' },
+        { label: 'Heavy Duty Cat Trees', href: '/cat/cat-trees-for-large-cats/heavy-duty' },
+        { label: 'Large Cat Condos', href: '/cat/cat-trees-for-large-cats/large-cat-condos' },
       ]}
     />
   );

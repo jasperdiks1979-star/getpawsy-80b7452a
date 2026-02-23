@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/products/ProductCard";
 
-const CANONICAL = 'https://getpawsy.pet/collections/dog-car-travel-safety';
+const CANONICAL = 'https://getpawsy.pet/dog/dog-car-travel-safety';
 const PAGE_TITLE = 'Best Dog Car Seats & Travel Safety Gear – Crash Tested (2026)';
 const META_DESC = 'Shop crash-tested dog car seats, harnesses, and booster seats. Vet-approved travel safety solutions for dogs of all sizes. Free US shipping + 30-day guarantee.';
 

@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function HeavyDutyCatTree() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/collections/heavy-duty-cat-tree"
+      canonical="https://getpawsy.pet/cat/cat-trees-for-large-cats/heavy-duty"
       title="Heavy Duty Cat Trees – Built for 25+ lb Cats (2026)"
       metaDesc="Shop heavy duty cat trees with solid wood frames, thick sisal posts, and anti-tip systems. Engineered for large breeds and multi-cat homes. Free US shipping."
       h1="Heavy Duty Cat Trees — Solid Construction for Large & Active Cats (2026)"
@@ -13,10 +13,11 @@ export default function HeavyDutyCatTree() {
       trustBadges={['40+ lb Weight Rating', 'Solid Wood Frames', '30-Day Guarantee']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Cat Trees for Large Cats', href: '/collections/cat-trees-for-large-cats' },
+        { label: 'Cat', href: '/cat/cat-trees-for-large-cats' },
+        { label: 'Cat Trees for Large Cats', href: '/cat/cat-trees-for-large-cats' },
         { label: 'Heavy Duty' },
       ]}
-      pillarLink={{ label: 'Cat Trees for Large Cats Guide', href: '/collections/cat-trees-for-large-cats' }}
+      pillarLink={{ label: 'Cat Trees for Large Cats Guide', href: '/cat/cat-trees-for-large-cats' }}
       productQuery="name.ilike.%cat tree%,name.ilike.%cat tower%,name.ilike.%cat condo%"
       contentBlocks={[
         {
@@ -27,7 +28,7 @@ Frame material: Solid wood or reinforced engineered wood instead of pressed part
 
 Joint construction: Metal hardware (bolts and brackets) at all connection points instead of wooden dowels. Dowel joints loosen over time and are the #1 failure point in standard cat trees.
 
-Base engineering: Wide, weighted bases (24\"+ x 24\") with optional wall-anchor hardware. Floor-to-ceiling tension poles provide maximum stability for the tallest models.`,
+Base engineering: Wide, weighted bases (24"+ x 24") with optional wall-anchor hardware. Floor-to-ceiling tension poles provide maximum stability for the tallest models.`,
         },
         {
           heading: 'Weight Capacity and Safety Standards',
@@ -37,7 +38,7 @@ For single large cat (15–25 lbs): Choose trees rated for 40+ lbs static.
 For two large cats: Choose trees rated for 60+ lbs static.
 For three+ cats or 25+ lb breeds: Consider floor-to-ceiling tension models.
 
-Always anchor tall cat trees (60\"+) to the wall, regardless of base weight. Tipping injuries are serious and entirely preventable.`,
+Always anchor tall cat trees (60"+) to the wall, regardless of base weight. Tipping injuries are serious and entirely preventable.`,
         },
         {
           heading: 'Durability and Long-Term Value',
@@ -51,17 +52,17 @@ When calculating value, heavy-duty trees also prevent injury risk, reduce furnit
         },
       ]}
       faq={[
-        { question: 'What is the most sturdy cat tree?', answer: 'The sturdiest cat trees use solid wood frames, 4\"+ diameter sisal posts, wide platforms with raised edges, and wall-anchor hardware. Floor-to-ceiling tension pole models provide the highest stability for multi-cat households with large breeds.' },
+        { question: 'What is the most sturdy cat tree?', answer: 'The sturdiest cat trees use solid wood frames, 4"+ diameter sisal posts, wide platforms with raised edges, and wall-anchor hardware. Floor-to-ceiling tension pole models provide the highest stability for multi-cat households with large breeds.' },
         { question: 'How much should a heavy duty cat tree cost?', answer: 'Quality heavy-duty cat trees range from $120–$300. Under $100 typically means pressed particleboard that won\'t support large cats long-term. The $150–$250 range offers the best balance of construction quality and features for most large-cat households.' },
-        { question: 'How do I stop my cat tree from wobbling?', answer: 'First, tighten all hardware connections. If wobbling persists, the base may be too narrow for the height — add a wider base plate or use wall-anchor hardware. For tall trees (60\"+), wall anchoring is essential regardless of base width, especially with large or multiple cats.' },
+        { question: 'How do I stop my cat tree from wobbling?', answer: 'First, tighten all hardware connections. If wobbling persists, the base may be too narrow for the height — add a wider base plate or use wall-anchor hardware. For tall trees (60"+), wall anchoring is essential regardless of base width, especially with large or multiple cats.' },
       ]}
       relatedArticles={[
         { slug: 'best-orthopedic-dog-bed', title: 'Orthopedic Dog Beds Guide', desc: 'Similar quality-first approach for canine comfort.' },
       ]}
       crossLinks={[
-        { label: 'Cat Trees for Large Cats Hub', href: '/collections/cat-trees-for-large-cats' },
-        { label: 'Maine Coon Cat Trees', href: '/collections/cat-tree-for-maine-coon' },
-        { label: 'Multi-Cat Cat Trees', href: '/collections/best-cat-tree-for-multiple-cats' },
+        { label: 'Cat Trees for Large Cats Hub', href: '/cat/cat-trees-for-large-cats' },
+        { label: 'Maine Coon Cat Trees', href: '/cat/cat-trees-for-large-cats/for-maine-coon' },
+        { label: 'Large Cat Condos', href: '/cat/cat-trees-for-large-cats/large-cat-condos' },
       ]}
     />
   );

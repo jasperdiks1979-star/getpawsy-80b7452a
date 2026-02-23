@@ -3,7 +3,7 @@ import { SubIntentPage } from '@/components/seo/SubIntentPage';
 export default function MemoryFoamDogBeds() {
   return (
     <SubIntentPage
-      canonical="https://getpawsy.pet/collections/memory-foam-dog-beds"
+      canonical="https://getpawsy.pet/dog/orthopedic-dog-beds/memory-foam"
       title="Best Memory Foam Dog Beds (2026) – High-Density Comfort"
       metaDesc="Shop high-density memory foam dog beds tested for joint support and durability. 3–7 inch options for all dog sizes. Expert-reviewed with foam density ratings."
       h1="Best Memory Foam Dog Beds — High-Density Joint Support (2026)"
@@ -13,10 +13,11 @@ export default function MemoryFoamDogBeds() {
       trustBadges={['Foam Density Tested', '3–7 Day US Shipping', '30-Day Comfort Guarantee']}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'Orthopedic Dog Beds', href: '/collections/orthopedic-dog-beds' },
+        { label: 'Dog', href: '/dog/orthopedic-dog-beds' },
+        { label: 'Orthopedic Dog Beds', href: '/dog/orthopedic-dog-beds' },
         { label: 'Memory Foam' },
       ]}
-      pillarLink={{ label: 'Orthopedic Dog Beds Guide', href: '/collections/orthopedic-dog-beds' }}
+      pillarLink={{ label: 'Orthopedic Dog Beds Guide', href: '/dog/orthopedic-dog-beds' }}
       productQuery="name.ilike.%memory foam%,name.ilike.%orthopedic%memory%"
       contentBlocks={[
         {
@@ -61,9 +62,9 @@ CertiPUR-US certification: Look for this label — it ensures the foam is free f
         { slug: 'best-dog-bed-hip-dysplasia', title: 'Best Dog Bed for Hip Dysplasia', desc: 'Targeted recommendations for joint conditions.' },
       ]}
       crossLinks={[
-        { label: 'Orthopedic Dog Beds Hub', href: '/collections/orthopedic-dog-beds' },
-        { label: 'Large Dog Orthopedic Beds', href: '/collections/best-orthopedic-dog-bed-large-dogs' },
-        { label: 'Waterproof Orthopedic Beds', href: '/collections/waterproof-orthopedic-dog-bed' },
+        { label: 'Orthopedic Dog Beds Hub', href: '/dog/orthopedic-dog-beds' },
+        { label: 'Large Dog Orthopedic Beds', href: '/dog/orthopedic-dog-beds/best-for-large-dogs' },
+        { label: 'Waterproof Orthopedic Beds', href: '/dog/orthopedic-dog-beds/waterproof' },
       ]}
     />
   );
