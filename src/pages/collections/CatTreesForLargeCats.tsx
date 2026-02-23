@@ -9,6 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/products/ProductCard";
 import { PriorityCategoryWidget } from "@/components/seo/PriorityCategoryWidget";
 import { ConversionTrustBlock } from "@/components/seo/ConversionTrustBlock";
+import { getDominationConfig } from "@/data/domination-config";
+import { FeaturedSnippetBlock } from "@/components/seo/FeaturedSnippetBlock";
+import { StickyJumpNav } from "@/components/seo/StickyJumpNav";
+import { PAASection } from "@/components/seo/PAASection";
 
 const CANONICAL = 'https://getpawsy.pet/cat/cat-trees-for-large-cats';
 const PAGE_TITLE = 'Heavy Duty Cat Trees for Large Cats – Won\'t Tip (2026)';

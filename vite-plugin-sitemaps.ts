@@ -113,6 +113,7 @@ function chunkUrls(urls: string[]): string[][] {
 async function buildSitemapIndex(today: string, productChunkCount: number, blogChunkCount: number): Promise<string> {
   const entries: string[] = [];
   entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-static.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
+  entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-hubs.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
   for (let i = 1; i <= productChunkCount; i++) {
     entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-products-${i}.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
   }
@@ -703,7 +704,7 @@ ${issues.join('\n')}
 
 // ── Vite Plugin ───────────────────────────────────────────────────────
 
-const FALLBACK_EMPTY = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>`;
+const FALLBACK_EMPTY = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n</urlset>`;
 const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel><title>GetPawsy Product Feed</title><link>https://getpawsy.pet/</link><description>Google Merchant Center feed for GetPawsy.</description></channel></rss>`;
 
 export default function sitemapPlugin(): Plugin {
