@@ -1,0 +1,33 @@
+{
+  "slug": "cat-tree-stability-guide",
+  "title": "Cat Tree Stability Guide — How to Stop Your Cat Tree From Wobbling",
+  "seoTitle": "Cat Tree Stability Guide – Stop Wobbling & Tipping (2026)",
+  "metaDescription": "Wobbly cat tree? Learn why cat trees tip over and how to fix it. Base width, wall anchors, weight ratings, and anti-tip hardware explained.",
+  "category": "Cat Trees",
+  "tags": ["cat tree stability", "cat tree wobble", "anti-tip cat tree", "heavy duty cat tree"],
+  "author": "GetPawsy Pet Care Team",
+  "publishedAt": "2026-02-23",
+  "updatedAt": "2026-02-23",
+  "readingTime": 7,
+  "content": [
+    { "type": "heading", "level": 2, "text": "Why Cat Trees Wobble (Physics, Not Quality)" },
+    { "type": "paragraph", "text": "A tall, narrow structure with a heavy weight on top is inherently unstable. When a 15-lb cat launches off the top platform, the force multiplies — a quick jump creates 3–4x the cat's body weight in lateral force. Cheap cat trees use particle board bases that are too small relative to the tree's height, creating a high center of gravity that tips easily." },
+    { "type": "heading", "level": 2, "text": "The Base-to-Height Ratio Rule" },
+    { "type": "paragraph", "text": "For stability, the base should be at least 40% of the tree's height in the widest dimension. A 60-inch tree needs a minimum 24×24 inch base. A 72-inch tree needs at least 28×28 inches. Most wobbly trees violate this ratio — they're tall with undersized bases to save on materials." },
+    { "type": "heading", "level": 2, "text": "Wall Anchoring: The Best Fix" },
+    { "type": "paragraph", "text": "Even well-designed trees benefit from wall anchoring. Most quality cat trees include an L-bracket and strap system. Mount into a wall stud (not just drywall) for maximum hold. This single step eliminates virtually all tip-over risk, even with aggressive play from heavy cats." },
+    { "type": "heading", "level": 2, "text": "Weight Capacity: Don't Trust Marketing" },
+    { "type": "paragraph", "text": "Many trees claim '30 lb capacity' but wobble with a 12-lb cat. Real stability depends on platform thickness (¾ inch MDF minimum), post diameter (3.5+ inches), and joint construction (bolts, not press-fit dowels). Look for solid wood or thick MDF over particle board." },
+    { "type": "heading", "level": 2, "text": "Our Stability-Tested Picks" },
+    { "type": "paragraph", "text": "Every tree in our [heavy-duty cat trees](/cat/cat-trees-for-large-cats/heavy-duty) collection is rated for 40+ lbs with reinforced bases and wall-anchor hardware included. For the largest breeds, see our [cat trees for large cats](/cat/cat-trees-for-large-cats) collection." }
+  ],
+  "faq": [
+    { "question": "How do I stop my cat tree from wobbling?", "answer": "Three fixes: (1) Anchor it to a wall stud with an L-bracket; (2) Place it in a corner for two-wall support; (3) Add weight to the base with sandbags or a heavy flat stone. Wall anchoring alone eliminates 95% of wobble." },
+    { "question": "What makes a cat tree heavy duty?", "answer": "Solid wood or thick MDF frame (not hollow particle board), 3.5+ inch diameter posts, bolt-through joint construction, a base-to-height ratio of at least 40%, and a static weight rating of 40+ lbs." },
+    { "question": "Can a cat tree fall on my cat?", "answer": "It's rare but possible with poorly constructed trees. Always use wall anchors, especially for trees over 48 inches. Choose trees rated for at least 2x your cat's weight to account for jumping forces." }
+  ],
+  "internalLinks": [
+    { "text": "heavy-duty cat trees", "url": "/cat/cat-trees-for-large-cats/heavy-duty" },
+    { "text": "cat trees for large cats", "url": "/cat/cat-trees-for-large-cats" }
+  ]
+}
