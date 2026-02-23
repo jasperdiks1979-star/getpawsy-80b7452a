@@ -19,7 +19,8 @@ All XML files are **generated at build time** and written to `dist/`:
 | `sitemap-products-{N}.xml` | Products split into 500-URL chunks from `products_public` |
 | `sitemap-collections.xml` | Active SEO collections |
 | `sitemap-clusters.xml` | Namespaced pillar + intent pages (/dog/*, /cat/*) |
-| `sitemap-blog-{N}.xml` | Published blog posts split into 500-URL chunks |
+| `sitemap-blog.xml` | Published blog posts |
+| `sitemap-hubs.xml` | Money hub pages (orthopedic dog beds, cat trees, car safety) |
 | `sitemap-guides.xml` | Guide pages (static list + DB articles) |
 | `merchant-feed.xml` | Google Merchant Center RSS 2.0 feed |
 

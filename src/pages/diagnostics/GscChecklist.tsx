@@ -112,7 +112,7 @@ export default function GscChecklist() {
         <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
           <h2 className="font-semibold text-sm mb-2">Step 1: Resubmit Sitemap</h2>
           <p className="font-mono text-xs bg-background border rounded px-3 py-2 select-all">
-            {CANONICAL}/sitemap-index.xml
+            {CANONICAL}/sitemap.xml
           </p>
         </div>
 
