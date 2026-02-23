@@ -50,7 +50,7 @@ const navLinks = [
 
 const promoItems = [
   { label: 'Free Shipping', icon: Truck, href: '/products' },
-  { label: 'New Arrivals', icon: Gift, href: '/products?sort=newest' },
+  { label: 'New Arrivals', icon: Gift, href: '/products' },
 ];
 
 interface Category {
