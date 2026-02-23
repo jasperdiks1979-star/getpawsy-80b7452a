@@ -146,22 +146,22 @@ export default function OrthopedicDogBeds() {
     <Layout>
       <ScrollProgressIndicator />
       <Helmet>
-        <title>Best Orthopedic Dog Beds 2026 – Vet-Approved Joint Relief</title>
-        <meta name="description" content="Your dog wakes up stiff? Orthopedic memory foam beds relieve joint pain in 7 days. Vet-approved, waterproof, 30-day guarantee. Free US shipping." />
+        <title>7 Best Orthopedic Dog Beds for Joint Support (2026)</title>
+        <meta name="description" content="Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day guarantee. Free US shipping over $35." />
         <meta name="keywords" content="orthopedic dog beds, memory foam dog bed, dog bed for arthritis, orthopedic dog bed large dogs, senior dog bed, joint pain dog bed, waterproof orthopedic dog bed, best orthopedic dog bed 2026" />
         <link rel="canonical" href={CANONICAL} />
         <link rel="alternate" hrefLang="en" href={CANONICAL} />
         <link rel="alternate" hrefLang="x-default" href={CANONICAL} />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Best Orthopedic Dog Beds — Vet-Approved Joint Relief (2026)" />
+        <meta property="og:title" content="7 Best Orthopedic Dog Beds for Joint Support (2026)" />
         <meta property="og:description" content="Premium memory foam dog beds for arthritis & hip dysplasia. Trusted by 10,000+ pet parents. Free US shipping over $35." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={CANONICAL} />
         <meta property="og:site_name" content="GetPawsy" />
         <meta property="og:image" content={`${BASE}/og-image.png`} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Best Orthopedic Dog Beds 2026 – Vet-Approved Joint Relief" />
-        <meta name="twitter:description" content="Your dog wakes up stiff? Memory foam beds relieve joint pain in 7 days. Vet-approved, 30-day guarantee." />
+        <meta name="twitter:title" content="7 Best Orthopedic Dog Beds for Joint Support (2026)" />
+        <meta name="twitter:description" content="Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day guarantee." />
         <script type="application/ld+json">{JSON.stringify(collectionSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
@@ -188,7 +188,7 @@ export default function OrthopedicDogBeds() {
           <div className="max-w-2xl">
             <Badge className="mb-4 bg-primary text-primary-foreground">Vet Recommended</Badge>
             <h1 className="text-3xl md:text-5xl font-display font-bold text-primary-foreground mb-4 leading-tight">
-              Best Orthopedic Dog Beds — Vet-Approved Joint Relief
+              Best Orthopedic Dog Beds for Joint Support (2026)
             </h1>
             <p className="text-lg md:text-xl text-primary-foreground/80 mb-6">
               Premium memory foam support designed for arthritis, hip dysplasia &amp; senior dogs.
