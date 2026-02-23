@@ -391,6 +391,11 @@ const App = () => {
                       <Route path="/dog/dog-training/how-to-train-recall" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
                       <Route path="/dog/dog-training/common-recall-mistakes" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
                       <Route path="/dog/dog-training/off-leash-training-safely" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      {/* Keyword hijack articles */}
+                      <Route path="/dog/dog-training/anti-pull-harness-big-dogs" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      <Route path="/dog/dog-training/no-pull-harness-vs-head-halter" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      <Route path="/dog/dog-training/no-pull-harness-small-dogs" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
+                      <Route path="/dog/dog-training/puppy-training-leash-guide" element={<Suspense fallback={<RouteLoader />}><TrainingClusterArticle /></Suspense>} />
                       <Route path="/dog/dog-car-travel-safety/car-seats" element={<Suspense fallback={<RouteLoader />}><DogCarSeatSmallDogs /></Suspense>} />
                       <Route path="/dog/dog-car-travel-safety/booster-seats" element={<Suspense fallback={<RouteLoader />}><DogBoosterSeat /></Suspense>} />
                       <Route path="/dog/dog-car-travel-safety/harness-safety" element={<Suspense fallback={<RouteLoader />}><DogCarHarness /></Suspense>} />

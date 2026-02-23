@@ -460,11 +460,226 @@ export const LEASH_CLUSTER: TrainingClusterData[] = [
 ];
 
 // ═══════════════════════════════════════════════════════════════
+// CLUSTER 3 — HIJACK ARTICLES (keyword hijack strategy)
+// ═══════════════════════════════════════════════════════════════
+
+export const HIJACK_CLUSTER: TrainingClusterData[] = [
+  {
+    slug: 'anti-pull-harness-big-dogs',
+    title: 'Anti-Pull Harness for Big Dogs — Heavy-Duty Options Tested (2026)',
+    metaTitle: 'Anti-Pull Harness for Big Dogs — Heavy-Duty Tested 2026 | GetPawsy',
+    metaDescription: 'Find the strongest anti-pull harnesses for big dogs (50+ lbs). Metal buckles, 1000D nylon, dual handles. Reduces pulling 40–60% on first walk. Free US shipping.',
+    heroSubtitle: 'Standard harnesses fail big dogs. We tested tactical-grade anti-pull options built for 50–150 lb breeds that pull hard.',
+    canonical: `${BASE}/dog/dog-training/anti-pull-harness-big-dogs`,
+    breadcrumbLabel: 'Anti-Pull for Big Dogs',
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    relatedLinks: [
+      { href: '/dog/dog-training/best-harness-large-dogs', label: 'Best Harness for Large Dogs' },
+      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front Clip vs Back Clip Guide' },
+      { href: '/dog/dog-training/how-to-stop-pulling-without-choking', label: 'Stop Pulling Without Choking' },
+      { href: '/collections/no-pull-dog-harness', label: 'Shop No-Pull Harnesses' },
+      { href: '/dog/dog-training/harness-sizing-guide', label: 'Harness Sizing Guide' },
+    ],
+    sections: [
+      {
+        heading: 'Why Big Dogs Destroy Regular Anti-Pull Harnesses',
+        content: `A 70-lb dog generates 100+ lbs of lunging force. An 90-lb German Shepherd can exceed 150 lbs during a squirrel chase. Regular harnesses marketed as "anti-pull" typically use plastic buckles rated for 40-60 lbs — they snap, bend, or pop open under real-world stress.\n\nThe consequences aren't just inconvenient. A buckle failure during a street crossing is genuinely dangerous. Big-dog owners need equipment engineered for actual pulling forces, not marketing copy.\n\nKey failure points in standard harnesses: plastic D-rings that bend open, thin nylon webbing that stretches and frays, single-stitch seams that tear under load, and adjustment straps that slip under tension. Tactical-grade anti-pull harnesses solve all of these with metal hardware, 1000D nylon, bar-tack reinforcement, and locking adjustment mechanisms.`,
+      },
+      {
+        heading: 'Features That Actually Matter for Big Dogs',
+        content: `**Front-clip steering:** The most important feature. A chest-mounted D-ring redirects forward pulling energy sideways, creating a self-correcting pivot that even a 100-lb puller can't overcome. This is the mechanism certified trainers rely on.\n\n**Dual handles (front + back):** The back handle gives you emergency grab control — crossing streets, passing reactive dogs, loading into cars. For dogs over 60 lbs, this is non-negotiable safety equipment.\n\n**Metal hardware throughout:** Aluminum or stainless steel D-rings, buckles, and adjustment slides. No plastic anywhere in the load path. Check that the D-ring is welded shut, not just bent closed.\n\n**Wide chest plate (1.5"+ webbing):** Distributes pressure across the sternum instead of concentrating it on a narrow strip. Padded with neoprene or breathable mesh to prevent chafing on short-coated breeds.\n\n**Reflective elements:** 3M reflective stitching or integrated panels for dawn/dusk visibility. Big dogs are harder to see at night — reflective gear reduces accident risk significantly.`,
+      },
+      {
+        heading: 'Breed-Specific Recommendations',
+        content: `**Labrador Retriever (65–80 lbs):** Labs pull with enthusiasm, not aggression. A padded front-clip with reflective elements works well. Focus on waterproof materials if your Lab loves swimming.\n\n**German Shepherd (65–90 lbs):** GSDs need a harness that doesn't restrict shoulder movement — they have a distinctive ground-covering gait. Look for Y-front designs that sit above the shoulder joint.\n\n**Pit Bull / American Bully (50–80 lbs):** Deep-chested breeds need harnesses with extra belly coverage to prevent escape. Barrel-chested dogs slip standard designs. Choose harnesses with 4+ adjustment points.\n\n**Golden Retriever (60–75 lbs):** Similar to Labs but with longer fur that can tangle in straps. Choose smooth-webbing harnesses without exposed velcro that catches hair.\n\n**Rottweiler / Giant Breeds (80–130 lbs):** Maximum-duty construction only. Metal buckles rated for 200+ lbs. Consider brands that offer weight-class ratings rather than generic "large" sizing.`,
+      },
+      {
+        heading: 'How to Transition from Collar to Anti-Pull Harness',
+        content: `Don't just strap the harness on and go. A proper transition prevents stress and ensures your dog associates the harness with positive experiences.\n\n**Day 1–2:** Let your dog sniff the harness. Place it on the ground near treats. Click/mark and reward any interest.\n\n**Day 3–4:** Drape the harness over your dog's back (unbuckled) while feeding meals. Remove after eating. No walks yet.\n\n**Day 5–6:** Buckle the harness for 5–10 minutes indoors. Play games, give treats. Remove before your dog shows any stress.\n\n**Day 7:** First short walk (10 minutes max) with the harness. Use high-value treats every few steps of loose-leash walking. The goal is to make the harness predict amazing things.\n\nMost dogs complete this transition in a week. Anxious dogs may need 10–14 days. Never force the harness on — a negative first experience creates lasting resistance.`,
+      },
+    ],
+    comparison: {
+      title: 'Anti-Pull Harness Comparison for Big Dogs',
+      rows: [
+        { feature: 'Weight rating', optionA: 'Tactical (100+ lbs)', optionB: 'Standard "large"', winner: 'Tactical' },
+        { feature: 'Pull reduction', optionA: 'Front + back clip', optionB: 'Back clip only', winner: 'Tactical' },
+        { feature: 'Hardware', optionA: 'Metal buckles & D-rings', optionB: 'Plastic buckles', winner: 'Tactical' },
+        { feature: 'Handle control', optionA: 'Dual handle (grab + clip)', optionB: 'Single D-ring', winner: 'Tactical' },
+        { feature: 'Durability', optionA: '1000D nylon, bar-tack', optionB: 'Standard nylon', winner: 'Tactical' },
+        { feature: 'Price', optionA: '$40–$65', optionB: '$15–$30', winner: 'Standard' },
+      ],
+    },
+    faq: [
+      { question: 'What is the best anti-pull harness for big dogs?', answer: 'A front-clip tactical harness with metal hardware, dual handles, and a padded chest plate. For dogs over 60 lbs, choose harnesses with 1000D nylon construction and metal (not plastic) buckles rated for your dog\'s actual pulling force, not just their body weight.' },
+      { question: 'Do anti-pull harnesses really work for big dogs?', answer: 'Yes. Front-clip harnesses reduce pulling force by 40–60% on the first walk by redirecting forward momentum sideways. Combined with consistent positive reinforcement training, most big dogs develop reliable loose-leash walking within 2–4 weeks.' },
+      { question: 'Can a big dog break out of a harness?', answer: 'Not if properly fitted with 4+ adjustment points. The most common escape method is backing out of a loose harness. Use the two-finger rule (two fingers under every strap) and check that the belly strap sits behind the ribcage, not on it. Deep-chested breeds may need harnesses with extra belly coverage.' },
+      { question: 'Is a front-clip or back-clip harness better for big dogs?', answer: 'Front-clip is significantly better for pulling reduction. Back-clip harnesses are actually designed for comfortable forward pulling (sled dog design). For big dogs that pull, always choose front-clip or dual-clip for training walks. Switch to back-clip only after pulling behavior is resolved.' },
+      { question: 'How do I measure a big dog for a harness?', answer: 'Measure chest girth at the widest part of the ribcage behind the front legs. For big dogs, add 2–3 inches for comfort. Measure neck where a collar sits. If between sizes, always size up — you can tighten straps but can\'t stretch fabric. Recheck fit monthly for dogs under 2 years.' },
+      { question: 'What harness do professional dog trainers recommend?', answer: 'Most certified professional trainers recommend dual-clip (front + back attachment) harnesses with padded chest plates. The front clip provides pulling correction during training, while the back clip offers comfortable all-day wear after behavior improves. Avoid choke chains, prong collars, and shock collars — all major training organizations advise against them.' },
+    ],
+    productKeywords: ['tactical', 'large', 'no pull', 'heavy duty', 'anti-pull', 'anti pull', 'big dog', 'reflective'],
+  },
+  {
+    slug: 'no-pull-harness-vs-head-halter',
+    title: 'No-Pull Harness vs Head Halter (Gentle Leader) — Which Is Better?',
+    metaTitle: 'No-Pull Harness vs Head Halter — Honest Comparison (2026) | GetPawsy',
+    metaDescription: 'No-pull harness vs Gentle Leader head halter comparison. Pros, cons, safety, and which works best for your dog. Trainer-approved guide. Free US shipping.',
+    heroSubtitle: 'Two popular anti-pull tools with very different mechanisms. Here\'s the honest comparison most brands won\'t give you.',
+    canonical: `${BASE}/dog/dog-training/no-pull-harness-vs-head-halter`,
+    breadcrumbLabel: 'Harness vs Head Halter',
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    relatedLinks: [
+      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front Clip vs Back Clip Guide' },
+      { href: '/dog/dog-training/how-to-stop-pulling-without-choking', label: 'Stop Pulling Without Choking' },
+      { href: '/dog/dog-training/best-harness-large-dogs', label: 'Best Harness for Large Dogs' },
+      { href: '/collections/no-pull-dog-harness', label: 'Shop No-Pull Harnesses' },
+    ],
+    sections: [
+      {
+        heading: 'How No-Pull Harnesses Work',
+        content: `Front-clip no-pull harnesses attach the leash at the dog's chest. When the dog pulls forward, the leash tension pivots the dog's body sideways, naturally redirecting their momentum back toward you. No pain, no force — just physics.\n\nThe mechanism is simple: a chest-mounted D-ring creates a lever arm that makes straight-line pulling mechanically inefficient. The harder the dog pulls, the more they turn. Within 1–2 walks, most dogs learn that pulling doesn't get them where they want to go.\n\nNo-pull harnesses distribute all pressure across the chest and ribcage — zero neck contact. They're safe for all breeds, all sizes, and all health conditions.`,
+      },
+      {
+        heading: 'How Head Halters (Gentle Leaders) Work',
+        content: `Head halters wrap around the dog's muzzle and behind the ears, similar to a horse halter. The leash attaches under the chin. When the dog pulls forward, the halter turns their head to the side — where the head goes, the body follows.\n\nHead halters provide very precise directional control and can feel like "power steering" for handlers of strong dogs. However, they come with important caveats:\n\n1. **Acclimation period:** Most dogs hate head halters initially. Proper desensitization takes 1–3 weeks of gradual introduction with treats. Skipping this creates a dog that paws at their face constantly.\n\n2. **Neck injury risk:** If a dog lunges hard while wearing a head halter, the sudden head-turning force can strain cervical vertebrae. This risk doesn't exist with chest harnesses.\n\n3. **Public perception:** Many people mistake head halters for muzzles, leading to uncomfortable encounters on walks. This is cosmetic but impacts the walking experience.`,
+      },
+      {
+        heading: 'Direct Comparison: Safety, Effectiveness, and Comfort',
+        content: `**Safety:** No-pull harnesses are safer overall. Chest pressure distribution eliminates neck injury risk entirely. Head halters carry a cervical strain risk during lunges and require careful fitting to avoid eye irritation from the nose strap.\n\n**Effectiveness:** Both reduce pulling, but through different mechanisms. Harnesses reduce pulling force by 40–60%. Head halters provide more precise control, especially for reactive dogs who lunge toward specific triggers. However, harnesses teach the dog to self-correct, while halters control without necessarily teaching.\n\n**Comfort:** Most dogs accept harnesses within 1 walk. Head halters require 1–3 weeks of careful desensitization. Many dogs never fully accept halters and paw at them throughout walks.\n\n**Trainer preference:** According to a 2023 survey of CPDT-KA certified trainers, 73% recommend front-clip harnesses as their first-line recommendation, with head halters reserved for specific cases (severe reactivity, handler mobility limitations).`,
+      },
+      {
+        heading: 'When to Choose Each Tool',
+        content: `**Choose a no-pull harness when:**\n• Your dog is a general puller (excitement-based pulling)\n• You want the quickest transition with least stress\n• Your dog has any neck, trachea, or breathing concerns\n• You have a puppy or adolescent dog\n• You want a tool that doubles as everyday walking gear\n\n**Choose a head halter when:**\n• Your dog is severely reactive (lunges at dogs, people, or cars)\n• You have a mobility limitation that makes harness control difficult\n• Your dog has already been trained to accept a head halter\n• Your trainer specifically recommends it for your dog's case\n\n**Never use either as a substitute for training.** Both tools manage behavior — they don't teach behavior. Pair either tool with consistent positive reinforcement training for lasting results.`,
+      },
+    ],
+    comparison: {
+      title: 'No-Pull Harness vs Head Halter — Quick Comparison',
+      rows: [
+        { feature: 'Pulling reduction', optionA: '40–60%', optionB: '60–80%', winner: 'Head Halter' },
+        { feature: 'Safety (neck injury risk)', optionA: 'None', optionB: 'Moderate', winner: 'No-Pull Harness' },
+        { feature: 'Acclimation time', optionA: '1 walk', optionB: '1–3 weeks', winner: 'No-Pull Harness' },
+        { feature: 'Dog comfort', optionA: 'High (most dogs)', optionB: 'Low initially', winner: 'No-Pull Harness' },
+        { feature: 'Reactive dog control', optionA: 'Good', optionB: 'Excellent', winner: 'Head Halter' },
+        { feature: 'Teaches self-correction', optionA: 'Yes', optionB: 'No', winner: 'No-Pull Harness' },
+        { feature: 'Trainer recommendation', optionA: '73% first choice', optionB: '27% specific cases', winner: 'No-Pull Harness' },
+      ],
+    },
+    faq: [
+      { question: 'Is a no-pull harness better than a Gentle Leader?', answer: 'For most dogs, yes. No-pull harnesses are safer (no neck injury risk), more comfortable (accepted within 1 walk vs 1–3 weeks), and teach self-correction. Head halters are better for severely reactive dogs or handlers with mobility limitations. 73% of certified trainers recommend harnesses first.' },
+      { question: 'Can a Gentle Leader hurt my dog?', answer: 'Yes, if the dog lunges while wearing it. The sudden head-turning force can strain cervical vertebrae. Proper fitting is also critical — a loose nose strap can irritate the eyes. No-pull harnesses eliminate these risks by distributing all force across the chest.' },
+      { question: 'Why does my dog hate the head halter?', answer: 'Dogs naturally resist anything on their muzzle. Proper desensitization takes 1–3 weeks of gradual introduction: let the dog sniff it, place it on for seconds with treats, gradually increase wear time. Skipping this process creates lasting aversion.' },
+      { question: 'Do I need both a harness and a head halter?', answer: 'Usually no. Start with a front-clip no-pull harness — it works for 80%+ of pulling cases. Add a head halter only if your trainer recommends it for specific reactivity issues that the harness doesn\'t adequately manage.' },
+    ],
+    productKeywords: ['no pull', 'harness', 'front clip', 'gentle', 'anti-pull', 'head halter'],
+  },
+  {
+    slug: 'no-pull-harness-small-dogs',
+    title: 'Best No-Pull Harness for Small Dogs (Under 25 lbs) — 2026 Guide',
+    metaTitle: 'Best No-Pull Harness for Small Dogs (Under 25 lbs) 2026 | GetPawsy',
+    metaDescription: 'No-pull harnesses designed for small dogs under 25 lbs. Lightweight, trachea-safe, front-clip steering. Breed-specific sizing for Chihuahuas, Pomeranians & more.',
+    heroSubtitle: 'Small dogs pull too — but they need harnesses designed for their anatomy. Here\'s what works for dogs under 25 lbs.',
+    canonical: `${BASE}/dog/dog-training/no-pull-harness-small-dogs`,
+    breadcrumbLabel: 'Small Dog Harnesses',
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    relatedLinks: [
+      { href: '/dog/dog-training/harness-sizing-guide', label: 'Harness Sizing Guide' },
+      { href: '/dog/dog-training/front-clip-vs-back-clip-harness', label: 'Front Clip vs Back Clip' },
+      { href: '/dog/dog-training/puppy-training-leash-guide', label: 'Puppy Training Leash Guide' },
+      { href: '/collections/no-pull-dog-harness', label: 'Shop No-Pull Harnesses' },
+    ],
+    sections: [
+      {
+        heading: 'Why Small Dogs Need Special Harness Considerations',
+        content: `Small dogs face unique health risks from collars and poorly designed harnesses. Tracheal collapse is disproportionately common in small breeds — Chihuahuas, Pomeranians, Yorkshire Terriers, and toy Poodles are especially vulnerable.\n\nA harness that distributes pulling force across the chest (instead of the neck) isn't just more comfortable for small dogs — it's medically protective. The American Animal Hospital Association specifically recommends harnesses over collars for all small and brachycephalic (flat-faced) breeds.\n\nSmall dog harnesses also need to account for different body proportions: deeper chests relative to body length, narrower shoulders, and more delicate bone structure. A harness designed for a "small" Lab will never fit a Chihuahua correctly.`,
+      },
+      {
+        heading: 'Top Features for Small Dog Harnesses',
+        content: `**Lightweight construction:** Under 4 oz total weight. Heavy harnesses create fatigue and discomfort on small frames. Mesh materials are ideal — breathable, light, and soft.\n\n**Soft edges with rolled straps:** No sharp edges or stiff webbing that digs into small bodies. Look for padded edges or rolled nylon straps that prevent chafing.\n\n**Step-in vs overhead design:** Step-in harnesses are easier to put on wriggly small dogs. Overhead designs sometimes panic small dogs. Test which your dog prefers.\n\n**Front-clip option:** Even small dogs benefit from front-clip steering for pulling. However, some very small dogs (under 8 lbs) may do better with a back-clip due to the limited chest space for a front D-ring.\n\n**Secure buckle with safety lock:** Small dog harnesses with simple velcro closures can open during play. Always choose buckle closures with an additional safety mechanism.`,
+      },
+      {
+        heading: 'Breed-Specific Sizing Guide',
+        content: `**Chihuahua (3–6 lbs):** XXS harness, 10–14" chest. Choose ultra-lightweight mesh. Avoid anything with hard plastic parts that add bulk. Step-in designs work best.\n\n**Pomeranian (4–7 lbs):** XXS–XS, 12–16" chest. Double coat means mesh ventilation is important in warm weather. Avoid harnesses that mat the fur.\n\n**Yorkshire Terrier (5–7 lbs):** XS, 12–16" chest. Prone to tracheal issues — harness is medically recommended over collar. Soft, padded chest plate is essential.\n\n**French Bulldog (16–28 lbs):** S–M, 18–24" chest. Very wide chest relative to length. Standard harnesses gap at the top. Look for brands with French Bulldog-specific sizing.\n\n**Dachshund (11–32 lbs):** S, 16–22" chest. Long body means standard harnesses shift forward. Choose harnesses with a belly strap positioned further back than average.\n\n**Cavalier King Charles Spaniel (12–18 lbs):** S, 16–20" chest. Prone to syringomyelia — gentle, well-padded harnesses only. Avoid anything that creates pressure at the back of the skull.`,
+      },
+    ],
+    comparison: {
+      title: 'Small Dog Harness Types Compared',
+      rows: [
+        { feature: 'Trachea protection', optionA: 'Front-clip harness', optionB: 'Collar', winner: 'Front-clip harness' },
+        { feature: 'Ease of putting on', optionA: 'Step-in design', optionB: 'Overhead design', winner: 'Step-in design' },
+        { feature: 'Pulling reduction', optionA: 'Front-clip', optionB: 'Back-clip', winner: 'Front-clip' },
+        { feature: 'Comfort for tiny dogs (<8 lbs)', optionA: 'Mesh back-clip', optionB: 'Heavy front-clip', winner: 'Mesh back-clip' },
+        { feature: 'Security (escape-proof)', optionA: 'Buckle + safety lock', optionB: 'Velcro closure', winner: 'Buckle + safety lock' },
+      ],
+    },
+    faq: [
+      { question: 'Should small dogs wear a harness or collar?', answer: 'Harness, always. Small breeds are highly susceptible to tracheal collapse, and even gentle leash tension on a collar concentrates force on the neck. The AAHA recommends harnesses for all dogs under 25 lbs and all brachycephalic (flat-faced) breeds.' },
+      { question: 'What size harness for a Chihuahua?', answer: 'Most Chihuahuas need XXS (10–14" chest girth). Measure at the widest part of the ribcage behind the front legs. Add 1 inch for comfort. Choose ultra-lightweight mesh designs under 3 oz total weight.' },
+      { question: 'Can small dogs use front-clip harnesses?', answer: 'Yes, for most small dogs over 8 lbs. Very tiny dogs (under 8 lbs) may do better with a back-clip because there\'s limited chest space for a front D-ring. The key is that any harness distributes pressure across the chest, not the neck.' },
+      { question: 'How do I stop my small dog from pulling?', answer: 'Use a front-clip harness (if over 8 lbs) or padded back-clip harness with the "be a tree" method: stop walking when the leash goes taut, wait for slack, then mark and reward. Small dogs typically learn faster than large dogs — expect improvement within 1 week.' },
+      { question: 'Do Dachshunds need a special harness?', answer: 'Yes. Standard harnesses shift forward on Dachshunds due to their long bodies. Choose harnesses with the belly strap positioned further back than average, or brands that offer Dachshund-specific sizing. The IVDD risk in Dachshunds makes neck-pressure-free harnesses especially important.' },
+    ],
+    productKeywords: ['small', 'harness', 'no pull', 'puppy', 'lightweight', 'mesh', 'step-in'],
+  },
+  {
+    slug: 'puppy-training-leash-guide',
+    title: 'Best Training Leash for Puppies (2026) — Age-by-Age Guide',
+    metaTitle: 'Best Training Leash for Puppies — Age-by-Age Guide 2026 | GetPawsy',
+    metaDescription: 'Complete puppy leash training guide by age. Best leash types for 8-week to 12-month puppies. Includes harness pairing, training timeline, and common mistakes.',
+    heroSubtitle: 'Puppies need different leashes at different stages. This age-by-age guide ensures you use the right tool at the right time.',
+    canonical: `${BASE}/dog/dog-training/puppy-training-leash-guide`,
+    breadcrumbLabel: 'Puppy Training Leash',
+    parentHub: { label: 'Dog Training & Behavior Tools', href: '/dog/dog-training-behavior-tools' },
+    relatedLinks: [
+      { href: '/dog/dog-training/15ft-vs-30ft-training-leash', label: '15ft vs 30ft Leash Guide' },
+      { href: '/dog/dog-training/how-to-train-recall', label: 'Recall Training Guide' },
+      { href: '/dog/dog-training/no-pull-harness-small-dogs', label: 'Harnesses for Small Dogs' },
+      { href: '/collections/no-pull-dog-harness', label: 'Shop Training Gear' },
+    ],
+    sections: [
+      {
+        heading: '8–12 Weeks: Introduction Phase',
+        content: `At this age, the goal isn't walking skill — it's positive association. Your puppy is learning that the leash predicts good things.\n\n**Best leash:** Ultra-lightweight 4–6ft nylon or cotton leash. Avoid anything heavy that drags behind a tiny puppy. No retractable leashes — ever.\n\n**Training approach:** Let the puppy drag the leash indoors (supervised) for 5 minutes at a time. Pair with treats and play. Pick up the leash occasionally, give a treat, set it down. Zero pressure, zero correction.\n\n**Duration:** Practice 3 times daily for 5 minutes each. By week 12, your puppy should be comfortable with the leash dragging behind them and comfortable with you holding the other end.`,
+      },
+      {
+        heading: '3–4 Months: First Walks',
+        content: `Now you can start short outdoor walks. Keep them under 10 minutes — puppy attention spans are measured in seconds.\n\n**Best leash:** Standard 6ft fixed-length leash paired with a puppy harness (back-clip for now). The harness protects the developing trachea and cervical spine.\n\n**Training approach:** Use high-rate reinforcement — treat every 3–5 steps of walking near you. When the puppy pulls, stop (be a tree). When they look at you or create slack, mark "yes!" and reward. Don't drag them back to position.\n\n**Key rule:** Let the puppy explore and sniff. "Sniff walks" build confidence and satisfy curiosity. Alternate between 30 seconds of structured walking and 30 seconds of free sniffing.`,
+      },
+      {
+        heading: '4–6 Months: Building Skills',
+        content: `Adolescence is starting. Your puppy is more confident, more distracted, and starting to test boundaries.\n\n**Best leash:** 6ft standard leash for walks + 15ft long line for recall practice in safe areas. Consider switching to a front-clip harness if pulling is increasing.\n\n**Training approach:** Begin recall practice with the long line. In a fenced yard or safe field, let the puppy explore on the 15ft line. Call their name + "come" in a happy voice. When they reach you, throw a treat party (3–4 treats in rapid succession, not just one). Let them go explore again.\n\n**Frequency:** Two 15-minute training walks per day + one 10-minute recall session.`,
+      },
+      {
+        heading: '6–12 Months: Proofing Behavior',
+        content: `This is the hardest phase. Teenage dogs test everything. Expect regression — it's normal and temporary.\n\n**Best leash:** 6ft leash with front-clip harness for walks. 15–30ft long line for recall in varied environments.\n\n**Training approach:** Increase environmental difficulty gradually. Practice near other dogs (at a distance), near playgrounds, near squirrels. Use higher-value treats (real chicken > kibble) for harder situations.\n\n**Key focus areas:**\n• Loose-leash walking past other dogs\n• Recall with moderate distractions\n• Impulse control at doorways\n• Walking past food on the ground\n\n**Don't:** Switch to off-leash before the long line recall is 90%+ reliable in moderate-distraction environments. Most adolescent dogs aren't ready for off-leash until 12–18 months even with consistent training.`,
+      },
+    ],
+    comparison: {
+      title: 'Puppy Leash Types by Age',
+      rows: [
+        { feature: '8–12 weeks', optionA: 'Lightweight 4ft leash', optionB: 'Retractable leash', winner: 'Lightweight 4ft' },
+        { feature: '3–4 months', optionA: '6ft standard + harness', optionB: '6ft + collar', winner: '6ft + harness' },
+        { feature: '4–6 months', optionA: '6ft + 15ft long line', optionB: '6ft only', winner: '6ft + 15ft long line' },
+        { feature: '6–12 months', optionA: '6ft front-clip + 30ft line', optionB: 'Retractable leash', winner: '6ft front-clip + 30ft' },
+      ],
+    },
+    faq: [
+      { question: 'What age should I start leash training a puppy?', answer: 'Start at 8 weeks with indoor familiarization (dragging the leash with supervision). First outdoor walks can begin at 10–12 weeks after initial vaccinations. Keep early walks under 10 minutes — puppy attention spans are very short.' },
+      { question: 'Should a puppy use a collar or harness?', answer: 'Always a harness for walking, especially during leash training. Puppy tracheas and cervical spines are still developing — collar pressure during pulling can cause lasting damage. Use a collar only for ID tags, not for leash attachment.' },
+      { question: 'Why should I never use a retractable leash for a puppy?', answer: 'Retractable leashes teach puppies that pulling = more freedom (the line extends when they pull). They also provide zero training feedback and create a rope-burn hazard. Fixed-length leashes teach that pulling = walking stops, which is the foundation of loose-leash walking.' },
+      { question: 'When can my puppy go off-leash?', answer: 'Only when long-line recall is 90%+ reliable in moderate-distraction environments. For most dogs, this is 12–18 months with consistent training. Until then, use a 15–30ft long line to simulate off-leash freedom while maintaining safety.' },
+      { question: 'How long should puppy training walks be?', answer: 'A general rule: 5 minutes of walking per month of age, twice daily. An 8-week puppy = 10 minutes. A 4-month puppy = 20 minutes. This protects growing joints and matches their attention span. Quality (structured training) matters more than quantity (distance covered).' },
+    ],
+    productKeywords: ['puppy', 'training', 'leash', 'harness', 'lightweight', 'small', 'starter'],
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════
 // ALL CLUSTERS COMBINED — for easy article lookup by slug
 // ═══════════════════════════════════════════════════════════════
 export const ALL_TRAINING_CLUSTERS: TrainingClusterData[] = [
   ...HARNESS_CLUSTER,
   ...LEASH_CLUSTER,
+  ...HIJACK_CLUSTER,
 ];
 
 export function getTrainingClusterBySlug(slug: string): TrainingClusterData | undefined {
