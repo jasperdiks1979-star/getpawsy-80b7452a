@@ -6,6 +6,15 @@
  * Produces actionable displacement gaps and counter-strategies.
  */
 
+import {
+  NO_PULL_HARNESS_COMPETITORS,
+  LONG_LINE_COMPETITORS,
+  STOP_PULLING_COMPETITORS,
+  RECALL_LEASH_COMPETITORS,
+  LARGE_DOG_HARNESS_COMPETITORS,
+  GETPAWSY_TRAINING_METRICS,
+} from '@/data/dog-training-competitor-data';
+
 export interface CompetitorProfile {
   domain: string;
   estimatedPosition: number;
@@ -215,5 +224,19 @@ export function runCompetitorDisplacementAnalysis(): ClusterDisplacementPlan[] {
       40,
       ['Product', 'FAQ', 'Breadcrumb', 'Review', 'Collection', 'Organization'],
     ),
+  ];
+}
+
+// ── DOG TRAINING NICHE WAR ANALYSIS ──
+
+export function runTrainingNicheDisplacementAnalysis(): ClusterDisplacementPlan[] {
+  const m = GETPAWSY_TRAINING_METRICS;
+
+  return [
+    buildDisplacementPlan('No-Pull Dog Harness', 'no-pull-dog-harness', NO_PULL_HARNESS_COMPETITORS, m.noPullHarness.wordCount, m.noPullHarness.internalLinks, m.noPullHarness.schemas),
+    buildDisplacementPlan('Long Training Leash', 'long-training-leash', LONG_LINE_COMPETITORS, m.longLine.wordCount, m.longLine.internalLinks, m.longLine.schemas),
+    buildDisplacementPlan('Stop Dog Pulling', 'stop-dog-pulling', STOP_PULLING_COMPETITORS, m.stopPulling.wordCount, m.stopPulling.internalLinks, m.stopPulling.schemas),
+    buildDisplacementPlan('Recall Training Leash', 'recall-training-leash', RECALL_LEASH_COMPETITORS, m.recallLeash.wordCount, m.recallLeash.internalLinks, m.recallLeash.schemas),
+    buildDisplacementPlan('Large Dog Harness', 'large-dog-harness', LARGE_DOG_HARNESS_COMPETITORS, m.largeDogHarness.wordCount, m.largeDogHarness.internalLinks, m.largeDogHarness.schemas),
   ];
 }
