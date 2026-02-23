@@ -26,6 +26,10 @@ import { AFFILIATE_ORTHOPEDIC_BEDS } from '@/data/affiliate-orthopedic-beds';
 import { useAffiliateMode } from '@/hooks/useAffiliateMode';
 import { MedicalDisclaimer } from '@/components/affiliate/AffiliateDisclaimer';
 import { AuthorityAuthorBox } from '@/components/affiliate/AuthorityAuthorBox';
+import { FeaturedSnippetBlock } from '@/components/seo/FeaturedSnippetBlock';
+import { StickyJumpNav } from '@/components/seo/StickyJumpNav';
+import { PAASection } from '@/components/seo/PAASection';
+import { getDominationConfig } from '@/data/domination-config';
 import orthopedicHero from '@/assets/orthopedic-hero.jpg';
 
 const CANONICAL = 'https://getpawsy.pet/dog/orthopedic-dog-beds';
@@ -108,6 +112,7 @@ const SCIENCE_POINTS = [
 
 export default function OrthopedicDogBeds() {
   const { isAffiliate } = useAffiliateMode();
+  const domConfig = getDominationConfig('orthopedic-dog-beds');
   // Fetch products
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['ortho-beds-products'],
@@ -155,6 +160,7 @@ export default function OrthopedicDogBeds() {
     }
   };
   const faqSchema = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: FAQ_DATA.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) };
+  const howToSchema = domConfig?.howTo ? { '@context': 'https://schema.org', '@type': 'HowTo', name: domConfig.howTo.name, description: domConfig.howTo.description, totalTime: domConfig.howTo.totalTime, step: domConfig.howTo.steps.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s.name, text: s.text })) } : null;
   const breadcrumbSchema = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Home', item: BASE },
     { '@type': 'ListItem', position: 2, name: 'Products', item: `${BASE}/products` },
@@ -165,6 +171,7 @@ export default function OrthopedicDogBeds() {
   return (
     <Layout>
       <ScrollProgressIndicator />
+      {domConfig && <StickyJumpNav items={domConfig.jumpNavItems} />}
       <Helmet>
         <title>7 Best Orthopedic Dog Beds for Joint Support (2026)</title>
         <meta name="description" content="Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day guarantee. Free US shipping over $35." />
@@ -186,6 +193,7 @@ export default function OrthopedicDogBeds() {
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(reviewSchema)}</script>
+        {howToSchema && <script type="application/ld+json">{JSON.stringify(howToSchema)}</script>}
       </Helmet>
 
       {/* ─── SECTION 1: HERO ─── */}
@@ -258,6 +266,15 @@ export default function OrthopedicDogBeds() {
       </section>
 
       <div className="container py-10 md:py-16">
+
+        {/* Domination: Featured Snippet Block */}
+        {domConfig && (
+          <FeaturedSnippetBlock
+            directAnswer={domConfig.directAnswer}
+            bulletUSPs={domConfig.bulletUSPs}
+            quickComparison={domConfig.quickComparison}
+          />
+        )}
 
         {/* ─── SECTION 2: PAIN AGITATION ─── */}
         <section className="mb-16 bg-destructive/5 border border-destructive/20 rounded-2xl p-6 md:p-10">

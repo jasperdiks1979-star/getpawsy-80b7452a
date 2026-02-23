@@ -47,6 +47,11 @@ import { ComparisonTable, getComparisonData } from '@/components/seo/ComparisonT
 import { CollectionTableOfContents, getCollectionTocItems } from '@/components/seo/CollectionTableOfContents';
 import { ScrollProgressIndicator } from '@/components/ui/ScrollProgressIndicator';
 import { RelatedCategoriesBlock } from '@/components/seo/RelatedCategoriesBlock';
+import { FeaturedSnippetBlock } from '@/components/seo/FeaturedSnippetBlock';
+import { StickyJumpNav } from '@/components/seo/StickyJumpNav';
+import { PAASection } from '@/components/seo/PAASection';
+import { MidContentCTA } from '@/components/seo/MidContentCTA';
+import { getDominationConfig } from '@/data/domination-config';
 
 interface FAQItem {
   question: string;
@@ -463,10 +468,26 @@ const SeoCollection = () => {
   const comparisonData = getComparisonData(collection.slug);
   const tocItems = getCollectionTocItems(!!comparisonData, collection.faq.length > 0);
   const isPriorityCategory = !!comparisonData; // has comparison = priority category
+  const domConfig = getDominationConfig(collection.slug);
 
+  // HowTo schema for domination pages
+  const howToSchema = domConfig?.howTo ? {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: domConfig.howTo.name,
+    description: domConfig.howTo.description,
+    totalTime: domConfig.howTo.totalTime,
+    step: domConfig.howTo.steps.map((s, i) => ({
+      '@type': 'HowToStep',
+      position: i + 1,
+      name: s.name,
+      text: s.text,
+    })),
+  } : null;
   return (
     <Layout>
-      {isPriorityCategory && <ScrollProgressIndicator />}
+      {(isPriorityCategory || domConfig) && <ScrollProgressIndicator />}
+      {domConfig && <StickyJumpNav items={domConfig.jumpNavItems} />}
       <Helmet>
         <title>{collection.meta_title || generateCollectionMetaTitle(collection.primary_keyword)}</title>
         <meta 
@@ -501,6 +522,11 @@ const SeoCollection = () => {
         {faqJsonLd && (
           <script type="application/ld+json">
             {JSON.stringify(faqJsonLd)}
+          </script>
+        )}
+        {howToSchema && (
+          <script type="application/ld+json">
+            {JSON.stringify(howToSchema)}
           </script>
         )}
       </Helmet>
@@ -574,6 +600,15 @@ const SeoCollection = () => {
             </div>
           )}
         </header>
+
+        {/* Domination: Featured Snippet Block (direct answer + comparison + USPs) */}
+        {domConfig && (
+          <FeaturedSnippetBlock
+            directAnswer={domConfig.directAnswer}
+            bulletUSPs={domConfig.bulletUSPs}
+            quickComparison={domConfig.quickComparison}
+          />
+        )}
 
         {/* Phase 2: Expert Block + ToC + Comparison for priority categories */}
         {isPriorityCategory && (
@@ -721,6 +756,21 @@ const SeoCollection = () => {
             <p className="text-xs text-muted-foreground">Quality tested for safety</p>
           </div>
         </section>
+
+        {/* Domination: PAA Expansion Section */}
+        {domConfig && domConfig.paaQuestions.length > 0 && (
+          <PAASection questions={domConfig.paaQuestions} />
+        )}
+
+        {/* Domination: Mid-Content CTA */}
+        {domConfig && (
+          <MidContentCTA
+            headline={`Find the Best ${collection.name.replace(/^Best\s+/i, '').replace(/\s–.*$/, '')} for Your Pet`}
+            subtext="Browse our curated selection — every product is quality-tested with free US shipping over $35."
+            ctaText="Shop Now"
+            ctaHref="#products"
+          />
+        )}
 
         {/* Section C: Mini FAQ */}
         {collection.faq.length > 0 && (

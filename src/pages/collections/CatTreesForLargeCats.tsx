@@ -63,6 +63,8 @@ export default function CatTreesForLargeCats() {
     },
   });
 
+  const domConfig = getDominationConfig('cat-trees-for-large-cats');
+
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -130,6 +132,7 @@ export default function CatTreesForLargeCats() {
 
   return (
     <Layout>
+      {domConfig && <StickyJumpNav items={domConfig.jumpNavItems} />}
       <Helmet>
         <title>{PAGE_TITLE}</title>
         <meta name="description" content={META_DESC} />
@@ -144,6 +147,7 @@ export default function CatTreesForLargeCats() {
         <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(collectionSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(orgSchema)}</script>
+        {domConfig?.howTo && <script type="application/ld+json">{JSON.stringify({ '@context': 'https://schema.org', '@type': 'HowTo', name: domConfig.howTo.name, description: domConfig.howTo.description, totalTime: domConfig.howTo.totalTime, step: domConfig.howTo.steps.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s.name, text: s.text })) })}</script>}
       </Helmet>
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -175,6 +179,15 @@ export default function CatTreesForLargeCats() {
             <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-primary" /> 30-Day Satisfaction Guarantee</span>
           </div>
         </section>
+
+        {/* Domination: Featured Snippet Block */}
+        {domConfig && (
+          <FeaturedSnippetBlock
+            directAnswer={domConfig.directAnswer}
+            bulletUSPs={domConfig.bulletUSPs}
+            quickComparison={domConfig.quickComparison}
+          />
+        )}
 
         {/* ─── WHY LARGE CATS NEED SPECIAL TREES ─── */}
         <section className="mb-16">
@@ -295,6 +308,9 @@ export default function CatTreesForLargeCats() {
             </div>
           </section>
         )}
+
+        {/* Domination: PAA Expansion */}
+        {domConfig && <PAASection questions={domConfig.paaQuestions} />}
 
         {/* ─── FAQ ─── */}
         <section className="mb-16">
