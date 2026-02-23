@@ -728,12 +728,18 @@ export default function sitemapPlugin(): Plugin {
         'sitemap-guides.xml',
         'merchant-feed.xml', 'merchant-diagnostics.xml',
       ];
+      const FALLBACK_INDEX = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <sitemap><loc>${BASE_URL}/sitemap-static.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-products-1.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-products-2.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-collections.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-clusters.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-blog-1.xml</loc></sitemap>\n  <sitemap><loc>${BASE_URL}/sitemap-guides.xml</loc></sitemap>\n</sitemapindex>`;
       for (const name of fallbackNames) {
-        const fallback = name.includes('merchant-feed') ? FALLBACK_FEED
-          : name.includes('merchant-diagnostics') ? `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`
-          : name.includes('sitemap-index') || name.includes('sitemap.xml') && !name.includes('-')
-            ? `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>`
-            : FALLBACK_EMPTY;
+        let fallback: string;
+        if (name.includes('merchant-feed')) {
+          fallback = FALLBACK_FEED;
+        } else if (name.includes('merchant-diagnostics')) {
+          fallback = `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`;
+        } else if (name === 'sitemap-index.xml' || name === 'sitemap.xml') {
+          fallback = FALLBACK_INDEX;
+        } else {
+          fallback = FALLBACK_EMPTY;
+        }
         writeFileSync(join(outDir, name), fallback, 'utf-8');
       }
       console.log('[xml-plugin] ✓ Fallback XML files written');
