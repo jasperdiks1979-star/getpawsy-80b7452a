@@ -321,6 +321,25 @@ export default function CatTreesForLargeCats() {
           </div>
         </section>
 
+        {/* ─── WHY CHOOSE GETPAWSY ─── */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Why Choose GetPawsy for Cat Trees?</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { icon: '🚚', title: 'Fast US Shipping', desc: 'Most orders ship within 1–2 business days. Free shipping on orders over $35.' },
+              { icon: '🔄', title: '30-Day Returns', desc: 'Not the right fit? Return hassle-free within 30 days. No questions asked.' },
+              { icon: '🐾', title: 'Stability Tested', desc: 'Every cat tree is rated for large breeds. No wobbly pressed-board models.' },
+              { icon: '⭐', title: 'Expert Reviewed', desc: 'Our team tests with real cats before listing. Only the best make the cut.' },
+            ].map(item => (
+              <div key={item.title} className="bg-card border rounded-2xl p-5 text-center">
+                <span className="text-3xl mb-3 block">{item.icon}</span>
+                <h3 className="font-semibold text-sm mb-1">{item.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* ─── CONVERSION TRUST BLOCK ─── */}
         <ConversionTrustBlock categoryName="Cat Trees" />
 
