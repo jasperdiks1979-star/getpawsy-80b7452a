@@ -95,12 +95,34 @@ const FALLBACK_GUIDES = [
   "outdoor-dog-games-enrichment",
 ];
 
-async function buildSitemapIndex(today: string): Promise<string> {
-  const subs = ['static','products','categories','bestsellers','collections','blog','guides'];
-  const entries = subs.map(s =>
-    `  <sitemap>\n    <loc>${BASE_URL}/sitemap-${s}.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`
-  ).join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</sitemapindex>`;
+const MAX_URLS_PER_SITEMAP = 500;
+
+function wrapUrlset(urls: string[]): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
+}
+
+/** Split URL tags into chunks of MAX_URLS_PER_SITEMAP */
+function chunkUrls(urls: string[]): string[][] {
+  const chunks: string[][] = [];
+  for (let i = 0; i < urls.length; i += MAX_URLS_PER_SITEMAP) {
+    chunks.push(urls.slice(i, i + MAX_URLS_PER_SITEMAP));
+  }
+  return chunks.length ? chunks : [[]];
+}
+
+async function buildSitemapIndex(today: string, productChunkCount: number, blogChunkCount: number): Promise<string> {
+  const entries: string[] = [];
+  entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-static.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
+  for (let i = 1; i <= productChunkCount; i++) {
+    entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-products-${i}.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
+  }
+  entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-collections.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
+  entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-clusters.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
+  for (let i = 1; i <= blogChunkCount; i++) {
+    entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-blog-${i}.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
+  }
+  entries.push(`  <sitemap>\n    <loc>${BASE_URL}/sitemap-guides.xml</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</sitemapindex>`;
 }
 
 function buildStaticSitemap(today: string): string {
@@ -114,20 +136,21 @@ function buildStaticSitemap(today: string): string {
     ['/guides','daily','0.85'],
   ];
   const urls = pages.map(([p,cf,pr]) => urlTag(`${BASE_URL}${p}`, today, cf, pr)).join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
+  return wrapUrlset([urls]);
 }
 
-async function buildProductsSitemap(today: string): Promise<string> {
+async function buildProductsSitemaps(today: string): Promise<string[]> {
   const rows = await supaRest<ProductRow>('products_public',
     'select=id,slug,updated_at&is_active=eq.true&is_duplicate=eq.false&order=updated_at.desc&limit=5000');
   const urls = rows.map((p, i) => {
     const lm = p.updated_at?.split('T')[0] || today;
     const path = p.slug || p.id;
     const pri = i < 100 ? '0.95' : i < 500 ? '0.85' : '0.75';
-    return urlTag(`${BASE_URL}/product/${path}`, lm, 'daily', pri);
+    return urlTag(`${BASE_URL}/product/${path}`, lm, 'weekly', pri);
   });
-  console.log(`[xml-plugin] Products sitemap: ${rows.length} URLs`);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
+  const chunks = chunkUrls(urls);
+  console.log(`[xml-plugin] Products: ${rows.length} URLs → ${chunks.length} sitemap(s)`);
+  return chunks.map(chunk => wrapUrlset(chunk));
 }
 
 async function buildCategoriesSitemap(today: string): Promise<string> {
@@ -160,11 +183,12 @@ async function buildCollectionsSitemap(today: string): Promise<string> {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
 }
 
-async function buildBlogSitemap(today: string): Promise<string> {
+async function buildBlogSitemaps(today: string): Promise<string[]> {
   const rows = await supaRest<BlogRow>('blog_posts', 'select=slug,published_at&is_published=eq.true&order=published_at.desc');
   const urls = rows.map(p => urlTag(`${BASE_URL}/blog/${p.slug}`, p.published_at?.split('T')[0] || today, 'monthly', '0.6'));
-  console.log(`[xml-plugin] Blog sitemap: ${rows.length} URLs`);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
+  const chunks = chunkUrls(urls);
+  console.log(`[xml-plugin] Blog: ${rows.length} URLs → ${chunks.length} sitemap(s)`);
+  return chunks.map(chunk => wrapUrlset(chunk));
 }
 
 async function buildGuidesSitemap(today: string): Promise<string> {
@@ -696,56 +720,65 @@ export default function sitemapPlugin(): Plugin {
       console.log('[xml-plugin] Generating static XML files...');
 
       // Write fallback files FIRST so build always has valid XML
-      const fallbackFiles: [string, string][] = [
-        ['sitemap.xml', FALLBACK_EMPTY],
-        ['sitemap-static.xml', FALLBACK_EMPTY],
-        ['sitemap-products.xml', FALLBACK_EMPTY],
-        ['sitemap-categories.xml', FALLBACK_EMPTY],
-        ['sitemap-bestsellers.xml', FALLBACK_EMPTY],
-        ['sitemap-collections.xml', FALLBACK_EMPTY],
-        ['sitemap-blog.xml', FALLBACK_EMPTY],
-        ['sitemap-guides.xml', FALLBACK_EMPTY],
-        ['merchant-feed.xml', FALLBACK_FEED],
-        ['merchant-diagnostics.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`],
+      const fallbackNames = [
+        'sitemap-index.xml', 'sitemap.xml', 'sitemap-static.xml',
+        'sitemap-products-1.xml', 'sitemap-products-2.xml',
+        'sitemap-collections.xml', 'sitemap-clusters.xml',
+        'sitemap-blog-1.xml', 'sitemap-blog-2.xml',
+        'sitemap-guides.xml',
+        'merchant-feed.xml', 'merchant-diagnostics.xml',
       ];
-      for (const [name, xml] of fallbackFiles) {
-        writeFileSync(join(outDir, name), xml, 'utf-8');
+      for (const name of fallbackNames) {
+        const fallback = name.includes('merchant-feed') ? FALLBACK_FEED
+          : name.includes('merchant-diagnostics') ? `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`
+          : name.includes('sitemap-index') || name.includes('sitemap.xml') && !name.includes('-')
+            ? `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>`
+            : FALLBACK_EMPTY;
+        writeFileSync(join(outDir, name), fallback, 'utf-8');
       }
       console.log('[xml-plugin] ✓ Fallback XML files written');
 
       // Now try to generate real XML from Supabase (non-blocking)
-      // Use a short 30s timeout to avoid build hangs
       try {
         await Promise.race([
           (async () => {
             const today = new Date().toISOString().split('T')[0];
 
-            const [index, stat, products, categories, bestsellers, collections, blog, guides, feed, diagnostics] =
+            const [stat, productChunks, collections, blog_chunks, guides, feed, diagnostics] =
               await Promise.all([
-                buildSitemapIndex(today).catch(() => FALLBACK_EMPTY),
                 Promise.resolve(buildStaticSitemap(today)),
-                buildProductsSitemap(today).catch(() => FALLBACK_EMPTY),
-                buildCategoriesSitemap(today).catch(() => FALLBACK_EMPTY),
-                buildBestsellersSitemap(today).catch(() => FALLBACK_EMPTY),
+                buildProductsSitemaps(today).catch(() => [FALLBACK_EMPTY]),
                 buildCollectionsSitemap(today).catch(() => FALLBACK_EMPTY),
-                buildBlogSitemap(today).catch(() => FALLBACK_EMPTY),
+                buildBlogSitemaps(today).catch(() => [FALLBACK_EMPTY]),
                 buildGuidesSitemap(today).catch(() => FALLBACK_EMPTY),
                 buildMerchantFeed().catch(() => FALLBACK_FEED),
                 buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
               ]);
 
+            // Build index with actual chunk counts
+            const index = await buildSitemapIndex(today, productChunks.length, blog_chunks.length).catch(
+              () => `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>`
+            );
+
             const files: [string, string][] = [
-              ['sitemap.xml', index],
+              ['sitemap-index.xml', index],
+              ['sitemap.xml', index], // keep sitemap.xml as alias for backward compat
               ['sitemap-static.xml', stat],
-              ['sitemap-products.xml', products],
-              ['sitemap-categories.xml', categories],
-              ['sitemap-bestsellers.xml', bestsellers],
               ['sitemap-collections.xml', collections],
-              ['sitemap-blog.xml', blog],
               ['sitemap-guides.xml', guides],
               ['merchant-feed.xml', feed],
               ['merchant-diagnostics.xml', diagnostics],
             ];
+
+            // Write product chunk files
+            productChunks.forEach((xml, i) => {
+              files.push([`sitemap-products-${i + 1}.xml`, xml]);
+            });
+
+            // Write blog chunk files
+            blog_chunks.forEach((xml, i) => {
+              files.push([`sitemap-blog-${i + 1}.xml`, xml]);
+            });
 
             for (const [name, xml] of files) {
               writeFileSync(join(outDir, name), xml, 'utf-8');
