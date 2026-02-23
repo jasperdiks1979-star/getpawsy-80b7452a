@@ -193,6 +193,7 @@ const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDomina
 const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/AnalyticsTrafficDocs"));
 const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsPage"));
 const GrowthExecutionPage = lazyWithRetry(() => import("./pages/admin/GrowthExecutionPage"));
+const GrowthIntelligencePage = lazyWithRetry(() => import("./pages/admin/GrowthIntelligencePage"));
 const BacklinkEnginePage = lazyWithRetry(() => import("./pages/admin/BacklinkEnginePage"));
 const AdminResourcesPage = lazyWithRetry(() => import("./pages/admin/AdminResourcesPage"));
 const IndexingDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/IndexingDiagnosticsPage"));
@@ -469,6 +470,7 @@ const App = () => {
                         <Route path="analytics-traffic" element={<Suspense fallback={<RouteLoader />}><AnalyticsTrafficDocs /></Suspense>} />
                         <Route path="reports" element={<Suspense fallback={<RouteLoader />}><AdminReportsPage /></Suspense>} />
                         <Route path="growth-execution" element={<Suspense fallback={<RouteLoader />}><GrowthExecutionPage /></Suspense>} />
+                        <Route path="growth-intelligence" element={<Suspense fallback={<RouteLoader />}><GrowthIntelligencePage /></Suspense>} />
                         <Route path="backlink-engine" element={<Suspense fallback={<RouteLoader />}><BacklinkEnginePage /></Suspense>} />
                         <Route path="resources" element={<Suspense fallback={<RouteLoader />}><AdminResourcesPage /></Suspense>} />
                         <Route path="indexing-diagnostics" element={<Suspense fallback={<RouteLoader />}><IndexingDiagnosticsPage /></Suspense>} />
