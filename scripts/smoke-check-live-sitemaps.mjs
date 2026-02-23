@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Post-deploy smoke check: verifies live sitemap XML endpoints
- * return valid XML (not HTML from SPA fallback).
+ * return valid XML (not HTML from SPA fallback, not plaintext).
  *
  * Usage:  node scripts/smoke-check-live-sitemaps.mjs
  * Exit 0 = all pass, Exit 1 = any fail.
@@ -31,7 +31,10 @@ async function main() {
   assert(a.status === 200, `sitemap.xml status ${a.status}`);
   assert(a.text.startsWith(`<?xml version="1.0" encoding="UTF-8"?>`), "sitemap.xml missing XML header");
   assert(a.text.includes("<sitemapindex"), "sitemap.xml missing <sitemapindex>");
-  assert(!a.text.includes("<!doctype html") && !a.text.includes("<!DOCTYPE html") && !a.text.includes("<html"), "sitemap.xml HTML/SPA fallback detected");
+  assert(a.text.includes("<sitemap>"), "sitemap.xml has 0 <sitemap> entries");
+  assert(!a.text.toLowerCase().includes("<!doctype html") && !a.text.toLowerCase().includes("<html"), "sitemap.xml HTML/SPA fallback detected");
+  // Plaintext detection: must have XML tags if it has URLs
+  assert(!a.text.includes("http") || a.text.includes("<sitemap>"), "sitemap.xml plaintext detected (URLs without XML tags)");
   console.log("  ✅ PASS  sitemap.xml");
   console.log(`          content-type: ${a.ct}`);
 
@@ -40,7 +43,8 @@ async function main() {
   assert(b.text.startsWith(`<?xml version="1.0" encoding="UTF-8"?>`), "products-1 missing XML header");
   assert(b.text.includes("<urlset"), "products-1 missing <urlset>");
   assert(b.text.includes("<url>"), "products-1 has 0 <url> entries");
-  assert(!b.text.includes("<!doctype html") && !b.text.includes("<!DOCTYPE html") && !b.text.includes("<html"), "products-1 HTML/SPA fallback detected");
+  assert(!b.text.toLowerCase().includes("<!doctype html") && !b.text.toLowerCase().includes("<html"), "products-1 HTML/SPA fallback detected");
+  assert(!b.text.includes("http") || b.text.includes("<url>"), "products-1 plaintext detected (URLs without XML tags)");
   console.log("  ✅ PASS  sitemap-products-1.xml");
   console.log(`          content-type: ${b.ct}`);
 
