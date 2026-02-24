@@ -5,32 +5,17 @@ import { HomeProductGridSection } from './HomeProductGridSection';
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
 /**
- * TrendingProducts — crawl-optimized "Best Sellers" product grid.
- * Uses real <a href="/product/..."> links for SEO crawl depth.
+ * New Arrivals — fetches the 12 newest active products.
+ * Renders real <a href> links for crawl discovery.
  */
-export function TrendingProducts() {
+export function NewArrivalsSection() {
   const { data: products, isLoading } = useQuery({
-    queryKey: ['trending-products-seo'],
+    queryKey: ['homepage-new-arrivals'],
     queryFn: async () => {
       const supabase = await getSupabase();
-      // Prefer bestsellers table for true best-seller ordering
-      const { data: bestsellers } = await supabase
-        .from('bestsellers')
-        .select('product_id, rank, products:product_id (id, name, slug, image_url, price, category)')
-        .eq('is_active', true)
-        .order('rank', { ascending: true })
-        .limit(16);
-
-      if (bestsellers && bestsellers.length >= 8) {
-        return bestsellers
-          .map((b: any) => b.products)
-          .filter((p: any) => p && p.slug && p.name);
-      }
-
-      // Fallback: newest active products
       const { data, error } = await supabase
         .from('products_public')
-        .select('id, name, slug, image_url, price, category')
+        .select('id, name, slug, image_url, price, category, created_at')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(16);
@@ -43,14 +28,14 @@ export function TrendingProducts() {
   const items = useMemo(() => (products || []).slice(0, 12), [products]);
 
   if (!isLoading && products && products.length < 8) {
-    console.error(`TrendingProducts: only ${products.length} products (minimum 8 for SEO crawl depth)`);
+    console.error(`NewArrivalsSection: only ${products.length} products (minimum 8 for SEO)`);
   }
 
   if (isLoading) {
     return (
       <section className="py-14 md:py-16">
         <div className="container px-4 md:px-6">
-          <div className="h-8 w-56 bg-muted rounded mb-8 animate-pulse" />
+          <div className="h-8 w-48 bg-muted rounded mb-8 animate-pulse" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ aspectRatio: '3/4' }} />
@@ -65,14 +50,14 @@ export function TrendingProducts() {
 
   return (
     <HomeProductGridSection
-      title="Best Sellers"
-      subtitle="Our most popular products — loved by pet owners across the US"
+      title="New Arrivals"
+      subtitle="Just landed — the latest picks for your pet"
       products={items}
-      trackingKey="best-sellers"
-      seeAllHref="/bestsellers"
-      seeAllLabel="Shop All Best Sellers"
+      trackingKey="new-arrivals"
+      seeAllHref="/products?sort=newest"
+      seeAllLabel="Shop All New"
     />
   );
 }
 
-export default TrendingProducts;
+export default NewArrivalsSection;
