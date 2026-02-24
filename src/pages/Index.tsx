@@ -38,6 +38,7 @@ const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts')
 const NewArrivalsSection = lazy(() => import('@/components/home/NewArrivalsSection'));
 const ShopByCategoryLinks = lazy(() => import('@/components/home/ShopByCategoryLinks'));
 const MostPopularMonthly = lazy(() => import('@/components/home/MostPopularMonthly'));
+const TopPicksSection = lazy(() => import('@/components/home/TopPicksSection'));
 const SalesAccelerationBanner = lazy(() => import('@/components/home/SalesAccelerationBanner').then(m => ({ default: m.SalesAccelerationBanner })));
 const MoneyHubBlocks = lazy(() => import('@/components/home/MoneyHubBlocks').then(m => ({ default: m.MoneyHubBlocks })));
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
@@ -408,6 +409,13 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* ── Top Picks — 20 curated products for internal link authority ── */}
+      <SectionErrorBoundary sectionName="Top Picks">
+        <Suspense fallback={<div className="py-16" style={{ minHeight: 500 }} />}>
+          <TopPicksSection />
+        </Suspense>
+      </SectionErrorBoundary>
 
       {/* ── Trending Products — crawl-optimized SEO product grid ────── */}
       <SectionErrorBoundary sectionName="Trending Products">
