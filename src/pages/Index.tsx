@@ -169,15 +169,17 @@ const Index = () => {
   }, [productsApi]);
 
   // ── Featured products — only starts fetching after hydration gate ──
+  // Featured products: ONLY Cat Trees/Condos + Small Animal Cages (topical authority focus)
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
-    queryKey: ['featured-products'],
+    queryKey: ['featured-products-focused'],
     queryFn: async () => {
       const [supabase, dedupeProducts] = await Promise.all([getSupabase(), getDedupeProducts()]);
       const { data, error } = await supabase
         .from('products_public')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
         .eq('is_active', true)
-        .order('created_at', { ascending: false })
+        .in('category', ['Cat Trees & Condos', 'Cat Furniture', 'Hamster Cages', 'Rabbit Cages'])
+        .order('price', { ascending: false })
         .limit(12);
       if (error) throw error;
       return dedupeProducts(data || []);

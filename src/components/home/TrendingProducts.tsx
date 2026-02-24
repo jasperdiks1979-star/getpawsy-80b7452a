@@ -13,26 +13,31 @@ export function TrendingProducts() {
     queryKey: ['trending-products-seo'],
     queryFn: async () => {
       const supabase = await getSupabase();
+      // Only show products from focused niches (Cat Trees & Small Animal Cages)
+      const FOCUS_CATEGORIES = ['Cat Trees & Condos', 'Cat Furniture', 'Hamster Cages', 'Rabbit Cages'];
+
       // Prefer bestsellers table for true best-seller ordering
       const { data: bestsellers } = await supabase
         .from('bestsellers')
         .select('product_id, rank, products:product_id (id, name, slug, image_url, price, category)')
         .eq('is_active', true)
         .order('rank', { ascending: true })
-        .limit(16);
+        .limit(30);
 
-      if (bestsellers && bestsellers.length >= 8) {
-        return bestsellers
+      if (bestsellers && bestsellers.length > 0) {
+        const focused = bestsellers
           .map((b: any) => b.products)
-          .filter((p: any) => p && p.slug && p.name);
+          .filter((p: any) => p && p.slug && p.name && FOCUS_CATEGORIES.includes(p.category));
+        if (focused.length >= 4) return focused.slice(0, 12);
       }
 
-      // Fallback: newest active products
+      // Fallback: focused niche products
       const { data, error } = await supabase
         .from('products_public')
         .select('id, name, slug, image_url, price, category')
         .eq('is_active', true)
-        .order('created_at', { ascending: false })
+        .in('category', FOCUS_CATEGORIES)
+        .order('price', { ascending: false })
         .limit(16);
       if (error) throw error;
       return (data || []).filter(p => !!p.slug && !!p.name);
