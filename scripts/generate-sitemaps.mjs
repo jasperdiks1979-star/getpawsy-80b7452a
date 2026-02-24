@@ -338,9 +338,15 @@ async function main() {
   const indexXml = renderSitemapIndex(sitemapIndexItems);
   validateXmlBasics(indexXml, ["<sitemapindex", "</sitemapindex>"]);
   writeFile(path.join(OUT_DIR, "sitemap.xml"), indexXml);
-  writeFile(path.join(OUT_DIR, "sitemap-index.xml"), indexXml);
-  // Also write sitemap_index.xml alias for GSC compatibility
-  writeFile(path.join(OUT_DIR, "sitemap_index.xml"), indexXml);
+
+  // Clean up legacy alias files that may have stale references
+  for (const alias of ["sitemap-index.xml", "sitemap_index.xml"]) {
+    const aliasPath = path.join(OUT_DIR, alias);
+    if (fs.existsSync(aliasPath)) {
+      fs.unlinkSync(aliasPath);
+      console.log(`[sitemaps] ✗ Removed legacy alias ${alias}`);
+    }
+  }
 
   // ── Post-write assertions ──
   const requiredFiles = ["sitemap.xml", "sitemap-products-1.xml"];
