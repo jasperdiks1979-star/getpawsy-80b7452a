@@ -82,7 +82,7 @@ export function RunAllControls() {
 
   const doRun = async (mode: 'dryrun' | 'fullstack') => {
     setConfirmOpen(false);
-    const result = await triggerRun(mode);
+    const result = await triggerRun(mode, forceOverride);
     if (result?.ok) {
       toast.success(mode === 'dryrun' ? 'Dry Run started' : 'Full Stack pipeline started');
     } else if (result?.reauthRequired) {

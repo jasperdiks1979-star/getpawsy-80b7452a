@@ -108,16 +108,18 @@ export function GovernorStatusDisplay({ mode, onForceOverrideChange, forceOverri
         )}
       </div>
 
-      {/* Force override toggle (only for soft limits) */}
-      {!status.hardBlock && !status.allowed && onForceOverrideChange && (
+      {/* Force override toggle (for both soft limits and overridable hard blocks) */}
+      {!status.allowed && onForceOverrideChange && (
         <label className="flex items-center gap-1.5 cursor-pointer select-none pl-1">
           <Switch
             checked={forceOverride}
             onCheckedChange={onForceOverrideChange}
             className="scale-[0.65] origin-left"
           />
-          <Zap className="h-3 w-3 text-yellow-500" />
-          <span className="text-[10px] text-muted-foreground">Force Run (bypass soft limits)</span>
+          <Zap className={cn("h-3 w-3", status.hardBlock ? "text-destructive" : "text-yellow-500")} />
+          <span className="text-[10px] text-muted-foreground">
+            {status.hardBlock ? 'Force Override (unsafe)' : 'Force Run (bypass soft limits)'}
+          </span>
         </label>
       )}
     </div>

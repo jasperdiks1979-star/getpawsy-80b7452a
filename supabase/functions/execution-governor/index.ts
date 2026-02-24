@@ -90,20 +90,23 @@ Deno.serve(async (req) => {
     const h1ago = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
     const m20ago = new Date(now.getTime() - 20 * 60 * 1000).toISOString();
 
-    // A. API Health — check recent run failures
+    // A. API Health — check recent run failures (TIME-WINDOWED, not last-N)
+    // Only count runs from the last 24h to prevent stale failures from permanently blocking
     const { data: recentRuns } = await supabase
       .from('job_runs')
-      .select('id, status, duration_ms, error_message, finished_at')
+      .select('id, status, duration_ms, error_message, finished_at, created_at')
+      .gte('created_at', h24ago)
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(20);
 
     const failedRecentRuns = (recentRuns || []).filter(
       r => r.status === 'failed' && r.finished_at && r.finished_at >= h1ago
     ).length;
 
-    const httpErrorRate = recentRuns && recentRuns.length > 0
-      ? (recentRuns.filter(r => r.status === 'failed').length / recentRuns.length)
-      : 0;
+    // Error rate: only from runs in the last 24h; if no runs, rate is 0 (not blocking)
+    const runsInWindow = (recentRuns || []).length;
+    const failedInWindow = (recentRuns || []).filter(r => r.status === 'failed').length;
+    const httpErrorRate = runsInWindow >= 2 ? (failedInWindow / runsInWindow) : 0;
 
     // GSC token validity — check if last GSC step succeeded
     const { data: lastGscStep } = await supabase
@@ -239,11 +242,20 @@ Deno.serve(async (req) => {
         nextSafeRunInSeconds: 1800, signals,
       };
     } else if (httpErrorRate > 0.2) {
-      decision = {
-        allowed: false, recommendedMode: 'dryrun', hardBlock: true,
-        reason: `Edge error rate ${(httpErrorRate * 100).toFixed(0)}% exceeds 20% threshold.`,
-        nextSafeRunInSeconds: 900, signals,
-      };
+      // High error rate — but allow force override (unlike other hard blocks)
+      if (forceOverride) {
+        decision = {
+          allowed: true, recommendedMode: requestedMode as 'dryrun' | 'fullstack', hardBlock: false,
+          reason: `Force override: error rate ${(httpErrorRate * 100).toFixed(0)}% bypassed. Proceed with caution.`,
+          nextSafeRunInSeconds: 0, signals,
+        };
+      } else {
+        decision = {
+          allowed: false, recommendedMode: 'dryrun', hardBlock: true,
+          reason: `Edge error rate ${(httpErrorRate * 100).toFixed(0)}% exceeds 20% threshold. Use Force Override to bypass.`,
+          nextSafeRunInSeconds: 900, signals,
+        };
+      }
     }
     // SOFT LIMITS (force override CAN bypass)
     else if ((indexingSubs6h || 0) > 20 || (contentChanges12h || 0) > 50 || (manualRuns20m || 0) >= 2) {

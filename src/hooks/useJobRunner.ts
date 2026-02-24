@@ -88,14 +88,14 @@ export function useJobRunner() {
     }, 3000);
   }, [fetchStatus]);
 
-  const triggerRun = useCallback(async (mode: 'dryrun' | 'fullstack' = 'fullstack') => {
+  const triggerRun = useCallback(async (mode: 'dryrun' | 'fullstack' = 'fullstack', forceOverride = false) => {
     setState(prev => ({ ...prev, triggering: true, error: null, reauthRequired: false, traceId: null }));
 
     const { data, error } = await invokeFunction<{
       ok: boolean; runId?: string; reason?: string; nextAllowedAt?: string; activeRunId?: string;
       traceId?: string; reauthRequired?: boolean;
     }>('run-all', {
-      body: JSON.stringify({ source: 'manual', mode }),
+      body: JSON.stringify({ source: 'manual', mode, forceOverride }),
       silent: true,
     });
 
