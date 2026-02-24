@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-02-24T21:15:00Z",
+  "indexPolicy": {
+    "INDEXED": {
+      "description": "Pages with index, follow — included in sitemaps",
+      "pages": [
+        { "type": "homepage", "url": "/", "count": 1 },
+        { "type": "catTreeCollections", "count": 17, "note": "All active cat tree/condo collections" },
+        { "type": "litterCollections", "count": 5, "note": "All active litter box collections" },
+        { "type": "otherCatCollections", "count": 8, "note": "Cat furniture, toys, enrichment" },
+        { "type": "guineaPigCollections", "count": 3, "note": "Maintained as Tier A secondary" },
+        { "type": "tierAProducts", "count": 153, "note": "Core focus products in sitemaps" },
+        { "type": "tierB1Products", "count": 162, "note": "Secondary products in sitemaps" },
+        { "type": "highQualityGuides", "count": 18, "note": "Niche-filtered guides" },
+        { "type": "nicheBlogPosts", "count": 30, "note": "Niche-filtered blog posts" },
+        { "type": "staticPages", "count": 5, "note": "/, /products, /blog, /bestsellers, /about" }
+      ],
+      "estimatedTotal": "~400 URLs in sitemaps"
+    },
+    "INDEXED_NO_SITEMAP": {
+      "description": "Pages with index, follow — but NOT in sitemaps (Tier B2 crawl budget control)",
+      "count": 196,
+      "note": "Tier B2 products: dog training gear, toys, grooming. Indexed if Google finds them via internal links, but we don't proactively invite crawling."
+    },
+    "NOINDEXED": {
+      "description": "Pages with noindex, follow — never in sitemaps",
+      "pages": [
+        { "type": "tierCProducts", "count": 173, "note": "Generic accessories, low-margin items" },
+        { "type": "thinCollections", "note": "Collections with < 6 products AND < 250 words intro" },
+        { "type": "duplicateIntentCollections", "note": "Collections targeting same query as a stronger page" },
+        { "type": "utilityPages", "examples": ["/cart", "/checkout", "/account", "/auth", "/admin", "/search", "/wishlist"] },
+        { "type": "parameterPages", "note": "Any URL with query parameters" }
+      ]
+    }
+  },
+  "sitemapStructure": {
+    "sitemapIndex": "https://getpawsy.pet/sitemap.xml",
+    "childSitemaps": [
+      { "file": "sitemap-static.xml", "content": "Homepage + static pages" },
+      { "file": "sitemap-collections.xml", "content": "Active, niche-filtered SEO collections" },
+      { "file": "sitemap-core-products.xml", "content": "Tier A products" },
+      { "file": "sitemap-secondary-products.xml", "content": "Tier B1 products" },
+      { "file": "sitemap-guides.xml", "content": "Niche-filtered guides" },
+      { "file": "sitemap-blog.xml", "content": "Niche-filtered blog posts" },
+      { "file": "sitemap-clusters.xml", "content": "Cluster/pillar pages" }
+    ],
+    "excluded": [
+      "No sitemap-index.xml alias (avoid duplicate entrypoints)",
+      "No Tier B2 or C products in any sitemap",
+      "No non-niche blog posts or guides"
+    ]
+  },
+  "robotsTxt": {
+    "current": "Correct — single Sitemap reference, minimal disallow rules",
+    "status": "OK — no changes needed"
+  },
+  "collectionConsolidationPlan": [
+    {
+      "action": "MERGE",
+      "keep": "cat-tree-for-large-cats",
+      "merge": ["heavy-duty-cat-tree-large-cats", "cat-tree-overweight-cats"],
+      "reason": "3 collections targeting same 'large cat tree' intent. Keep the one with broadest keyword, redirect others."
+    },
+    {
+      "action": "MERGE", 
+      "keep": "cat-condos-for-large-cats",
+      "merge": ["large-cat-condos"],
+      "reason": "Duplicate intent: 'large cat condos' vs 'cat condos for large cats'"
+    },
+    {
+      "action": "KEEP_SEPARATE",
+      "pages": ["modern-cat-trees", "modern-cat-condos"],
+      "reason": "Slightly different products despite similar aesthetic intent"
+    },
+    {
+      "action": "KEEP_INACTIVE",
+      "page": "cat-tree-small-apartment",
+      "reason": "Already inactive, duplicate of best-cat-trees-for-small-apartments"
+    }
+  ]
+}

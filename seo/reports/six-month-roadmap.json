@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-02-24T21:15:00Z",
+  "roadmap": {
+    "month1": {
+      "title": "Foundation & Repositioning",
+      "tasks": [
+        { "type": "content", "task": "Update homepage hero to feature Cat Trees as primary, Litter Boxes as secondary", "priority": "P0" },
+        { "type": "content", "task": "Enrich 'cat-trees-and-condos' hub with 800-1000 word buyer-intent copy, comparison matrix, FAQ", "priority": "P0" },
+        { "type": "content", "task": "Enrich 'best-cat-litter-boxes' hub with expanded copy and FAQ schema", "priority": "P1" },
+        { "type": "guide", "task": "Write: best-cat-tree-large-cats (buyer guide)", "priority": "P0" },
+        { "type": "guide", "task": "Write: best-cat-tree-small-apartment (buyer guide)", "priority": "P0" },
+        { "type": "guide", "task": "Write: modern-cat-tree-design-guide (inspiration guide)", "priority": "P1" },
+        { "type": "comparison", "task": "Write: cat-tree-vs-scratching-post (comparison post)", "priority": "P1" },
+        { "type": "comparison", "task": "Write: self-cleaning-vs-manual-litter-box (comparison post)", "priority": "P1" },
+        { "type": "comparison", "task": "Write: sisal-vs-carpet-cat-tree-material (comparison post)", "priority": "P2" },
+        { "type": "technical", "task": "Consolidate overlapping 'large cat' collections (6 → 3)", "priority": "P0" },
+        { "type": "technical", "task": "Update internal linking: 25+ links to cat trees hub", "priority": "P0" },
+        { "type": "technical", "task": "Update navigation: Indoor Cat categories as primary nav", "priority": "P1" }
+      ]
+    },
+    "month2": {
+      "title": "Content Depth & Schema",
+      "tasks": [
+        { "type": "content", "task": "Create 'Best Self-Cleaning Litter Box 2026' comprehensive guide (even with 2 products, position as informational authority)", "priority": "P0" },
+        { "type": "guide", "task": "Write: how-to-choose-cat-tree-height", "priority": "P1" },
+        { "type": "guide", "task": "Write: wall-mounted-cat-furniture-safety", "priority": "P1" },
+        { "type": "guide", "task": "Write: where-to-place-cat-tree-living-room", "priority": "P1" },
+        { "type": "guide", "task": "Write: cat-litter-box-placement-guide", "priority": "P1" },
+        { "type": "guide", "task": "Write: indoor-cat-enrichment-complete-guide", "priority": "P2" },
+        { "type": "guide", "task": "Write: cat-tree-maintenance-cleaning-guide", "priority": "P2" },
+        { "type": "technical", "task": "Add Product schema (JSON-LD) on all Tier A product pages", "priority": "P0" },
+        { "type": "technical", "task": "Add BreadcrumbList schema on all collection and guide pages", "priority": "P0" },
+        { "type": "technical", "task": "CTR optimization pass: rewrite titles for top 20 impressions pages", "priority": "P1" },
+        { "type": "outreach", "task": "Build initial backlink prospect list: 30 cat blogs, 10 pet review sites", "priority": "P2" }
+      ]
+    },
+    "month3": {
+      "title": "Authority Expansion",
+      "tasks": [
+        { "type": "guide", "task": "Write: best-cat-tree-maine-coon-guide (expanded version)", "priority": "P1" },
+        { "type": "guide", "task": "Write: multi-cat-household-furniture-guide", "priority": "P1" },
+        { "type": "guide", "task": "Write: cat-condo-vs-cat-tree-differences", "priority": "P1" },
+        { "type": "guide", "task": "Write: best-cat-furniture-for-senior-cats", "priority": "P1" },
+        { "type": "guide", "task": "Write: enclosed-litter-box-vs-open-comparison", "priority": "P2" },
+        { "type": "guide", "task": "Write: hidden-litter-box-furniture-guide", "priority": "P2" },
+        { "type": "guide", "task": "Write: cat-scratching-post-vs-tree-guide", "priority": "P2" },
+        { "type": "guide", "task": "Write: best-cat-bed-for-anxious-cats", "priority": "P2" },
+        { "type": "technical", "task": "Expand comparison tables on hub pages with user review data", "priority": "P1" },
+        { "type": "technical", "task": "CTR A/B testing: variant titles for top 10 pages", "priority": "P1" },
+        { "type": "technical", "task": "Internal link audit: ensure 30+ links to primary hubs", "priority": "P0" }
+      ]
+    },
+    "month4to6": {
+      "title": "Domination & Conversion Optimization",
+      "tasks": [
+        { "type": "content", "task": "15 additional cluster articles across cat tree, litter, and furniture niches", "priority": "P1" },
+        { "type": "interactive", "task": "Cat Tree Size Calculator concept page (breed → height → recommendations)", "priority": "P2" },
+        { "type": "interactive", "task": "Litter Box Finder quiz (cats count → placement → budget → recommendations)", "priority": "P2" },
+        { "type": "technical", "task": "Strengthen internal linking to 30+ links per hub page", "priority": "P0" },
+        { "type": "technical", "task": "Title refresh for CTR testing on all hub pages", "priority": "P1" },
+        { "type": "content", "task": "Create seasonal content: 'Holiday Cat Tree Gift Guide', 'Spring Cleaning Litter Guide'", "priority": "P2" },
+        { "type": "conversion", "task": "Add mid-content CTA blocks in all guides", "priority": "P1" },
+        { "type": "conversion", "task": "Add bundle offers on product pages", "priority": "P1" },
+        { "type": "conversion", "task": "Trust badge standardization across all product pages", "priority": "P1" },
+        { "type": "outreach", "task": "Execute backlink outreach to top 20 prospects", "priority": "P1" },
+        { "type": "technical", "task": "Full pruning audit: noindex thin pages, consolidate duplicates", "priority": "P0" }
+      ]
+    }
+  },
+  "kpis": {
+    "90day": {
+      "catTreeQueriesAvgPosition": "Target: <15 (from current ~25-40)",
+      "litterBoxQueriesAvgPosition": "Target: <20",
+      "organicClicksCatQueries": "Target: +30% vs baseline",
+      "crawlBudgetConcentration": "Target: 70%+ of crawled URLs are indoor cat content"
+    },
+    "180day": {
+      "page1Rankings": "Target: 5-10 long-tail cat tree queries",
+      "organicTrafficCatCategory": "Target: +100% vs baseline",
+      "averageOrderValue": "Target: $145+ (up from current ~$130)",
+      "conversionRate": "Target: 2.5%+ on cat tree pages"
+    }
+  }
+}
