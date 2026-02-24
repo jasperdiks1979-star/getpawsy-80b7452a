@@ -257,8 +257,12 @@ Deno.serve(async (req) => {
       const body: PingRequest = await req.json();
       
       if (body.urls && body.urls.length > 0) {
-        // Direct URL submission
-        urls = body.urls.map(url => url.startsWith("http") ? url : `${BASE_URL}${url}`);
+        // Direct URL submission (array)
+        urls = body.urls.map((url: string) => url.startsWith("http") ? url : `${BASE_URL}${url}`);
+        pingType = "direct";
+      } else if (body.url && typeof body.url === "string") {
+        // Single URL submission (backwards compat / fallback)
+        urls = [body.url.startsWith("http") ? body.url : `${BASE_URL}${body.url}`];
         pingType = "direct";
       } else if (body.productId) {
         // Single product update

@@ -228,6 +228,13 @@ Deno.serve(async (req) => {
       } catch (err) {
         const duration = Date.now() - stepStart;
         const errMsg = err instanceof Error ? err.message : String(err);
+        const errStack = err instanceof Error ? err.stack : undefined;
+
+        // Structured error logging for diagnostics
+        console.error(JSON.stringify({
+          phase: 'step_execution', step: step.key, stepLabel: step.label,
+          error: errMsg, stack: errStack, duration_ms: duration, runId, traceId,
+        }));
 
         await supabase.from('job_run_steps')
           .update({ status: 'failed', finished_at: new Date().toISOString(), duration_ms: duration, error_message: errMsg })
@@ -257,8 +264,30 @@ Deno.serve(async (req) => {
     const finishedAt = new Date().toISOString();
     const totalDuration = Date.now() - new Date(startedAt).getTime();
 
+    // Runtime integrity check
+    const suspiciouslyFast = totalDuration < 8000 && mode === 'fullstack';
+    if (suspiciouslyFast) {
+      await log(supabase, run.id, null, 'warn',
+        `⚠️ SUSPICIOUS: Full stack run completed in ${totalDuration}ms (<8s). Possible fake execution or all steps skipped.`);
+    }
+
+    // Count step outcomes
+    const { data: stepOutcomes } = await supabase
+      .from('job_run_steps')
+      .select('status')
+      .eq('run_id', run.id);
+    const skippedCount = stepOutcomes?.filter(s => s.status === 'skipped').length || 0;
+    const failedCount = stepOutcomes?.filter(s => s.status === 'failed').length || 0;
+    const successCount = stepOutcomes?.filter(s => s.status === 'success').length || 0;
+
     report.mode = mode;
     report.traceId = traceId;
+    report._meta = {
+      totalDuration,
+      suspiciouslyFast,
+      stepOutcomes: { success: successCount, failed: failedCount, skipped: skippedCount, total: STEPS.length },
+    };
+
     await supabase.from('job_runs').update({
       status: allSuccess ? 'success' : 'failed',
       finished_at: finishedAt,
@@ -267,12 +296,14 @@ Deno.serve(async (req) => {
     }).eq('id', run.id);
 
     await log(supabase, run.id, null, allSuccess ? 'info' : 'error',
-      `Run completed: ${allSuccess ? 'SUCCESS' : 'FAILED'} (${totalDuration}ms, traceId=${traceId})`);
+      `Run completed: ${allSuccess ? 'SUCCESS' : 'FAILED'} (${totalDuration}ms, ${successCount}✓ ${failedCount}✗ ${skippedCount}⊘, traceId=${traceId})`);
 
     return jsonResponse({
       ok: true, runId: run.id, traceId,
       status: allSuccess ? 'success' : 'failed',
       duration_ms: totalDuration,
+      suspiciouslyFast,
+      stepOutcomes: { success: successCount, failed: failedCount, skipped: skippedCount },
     });
   } catch (err) {
     console.error(`[run-all][${traceId}] Fatal:`, err);
@@ -614,38 +645,56 @@ async function executeStep(
 
       for (const url of toSubmit) {
         try {
+          const pingStart = Date.now();
           const res = await fetch(`${baseUrl}/functions/v1/indexnow-ping`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url }),
+            body: JSON.stringify({ urls: [url] }),  // FIX: was { url } — indexnow-ping expects { urls: [] }
           });
           const data = await res.json().catch(() => ({}));
+          const pingDuration = Date.now() - pingStart;
+
+          // Validate that Google API actually processed the URL
+          const googleResult = data?.results?.google;
+          const googleProcessed = googleResult?.urlsProcessed ?? 0;
+          const actuallySubmitted = googleProcessed > 0 || (data?.results?.indexNow?.some?.((r: { success: boolean }) => r.success));
+          const submissionStatus = actuallySubmitted ? 'submitted' : (res.ok ? 'submitted_no_confirmation' : 'failed');
 
           await supabase.from('indexing_submissions').insert({
-            url, run_id: runId, status: res.ok ? 'submitted' : 'failed',
-            response_json: data,
+            url, run_id: runId, status: submissionStatus,
+            response_json: { ...data, _pingDurationMs: pingDuration, _googleUrlsProcessed: googleProcessed },
           });
 
-          submitted.push({ url, status: res.ok ? 'submitted' : 'failed', response: data });
+          await log(supabase, runId, 'indexing_submit', googleProcessed > 0 ? 'info' : 'warn',
+            `Indexing ${url}: Google processed=${googleProcessed}, status=${res.status}, duration=${pingDuration}ms`);
+
+          submitted.push({ url, status: submissionStatus, response: data, googleProcessed, pingDuration });
         } catch (e) {
+          const errMsg = e instanceof Error ? e.message : String(e);
+          console.error(JSON.stringify({ phase: 'indexing_submit', endpoint: 'indexnow-ping', error: errMsg, url }));
           await supabase.from('indexing_submissions').insert({
             url, run_id: runId, status: 'error',
-            response_json: { error: String(e) },
+            response_json: { error: errMsg },
           });
           submitted.push({ url, status: 'error' });
         }
       }
 
-      await log(supabase, runId, 'indexing_submit', 'info',
-        `Indexing: ${submitted.length} submitted, ${skippedDedupe.length} deduped, ${allowlisted.length} total candidates`);
+      // Calculate total URLs actually processed by Google
+      const totalGoogleProcessed = submitted.reduce((sum, s) => sum + ((s as any).googleProcessed || 0), 0);
+
+      await log(supabase, runId, 'indexing_submit', totalGoogleProcessed > 0 ? 'info' : 'warn',
+        `Indexing: ${submitted.length} sent, ${totalGoogleProcessed} confirmed by Google, ${skippedDedupe.length} deduped, ${allowlisted.length} total candidates`);
 
       return {
         submitted: submitted.length,
+        googleConfirmed: totalGoogleProcessed,
         deduped: skippedDedupe.length,
         totalCandidates: allowlisted.length,
         maxPerRun: MAX_INDEXING_URLS,
         details: submitted,
         skippedUrls: skippedDedupe,
+        indexingEffective: totalGoogleProcessed > 0,
       };
     }
 
