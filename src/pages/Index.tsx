@@ -37,6 +37,7 @@ const MostLovedPicks = lazy(() => import('@/components/home/MostLovedPicks'));
 const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
 const NewArrivalsSection = lazy(() => import('@/components/home/NewArrivalsSection'));
 const ShopByCategoryLinks = lazy(() => import('@/components/home/ShopByCategoryLinks'));
+const MostPopularMonthly = lazy(() => import('@/components/home/MostPopularMonthly'));
 const SalesAccelerationBanner = lazy(() => import('@/components/home/SalesAccelerationBanner').then(m => ({ default: m.SalesAccelerationBanner })));
 const MoneyHubBlocks = lazy(() => import('@/components/home/MoneyHubBlocks').then(m => ({ default: m.MoneyHubBlocks })));
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
@@ -426,6 +427,13 @@ const Index = () => {
       <SectionErrorBoundary sectionName="Shop by Category Links">
         <Suspense fallback={<div className="py-10" style={{ minHeight: 80 }} />}>
           <ShopByCategoryLinks />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ── Most Popular This Month — money product SEO block ────── */}
+      <SectionErrorBoundary sectionName="Most Popular Monthly">
+        <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
+          <MostPopularMonthly />
         </Suspense>
       </SectionErrorBoundary>
 

@@ -54,6 +54,9 @@ import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
 import { HeroProductBoost } from '@/components/products/HeroProductBoost';
 import { ProductBundleUpsell } from '@/components/products/ProductBundleUpsell';
 import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
+import { ProductUseCases } from '@/components/products/ProductUseCases';
+import { ProductComparisonTable } from '@/components/products/ProductComparisonTable';
+import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
   DELIVERY_TIME_STANDARD,
@@ -1336,8 +1339,17 @@ const ProductDetail = () => {
           </Tabs>
         </motion.div>
 
+        {/* Use Case Segmentation — "Best For" */}
+        <ProductUseCases productName={product.name} category={product.category || ''} />
+
+        {/* Comparison Table — GetPawsy vs Generic */}
+        <ProductComparisonTable productName={product.name} />
+
+        {/* Visible FAQ Accordion — 10 Questions */}
+        <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
+
         {/* Reviews Section */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.55 }}
