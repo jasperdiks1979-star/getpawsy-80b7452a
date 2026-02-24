@@ -4973,6 +4973,99 @@ export type Database = {
           },
         ]
       }
+      seo_actions_queue: {
+        Row: {
+          action_type: string
+          cluster_id: string | null
+          created_at: string
+          executed_at: string | null
+          executed_by: string | null
+          id: string
+          payload: Json
+          run_id: string | null
+          status: string
+          target_url: string
+        }
+        Insert: {
+          action_type: string
+          cluster_id?: string | null
+          created_at?: string
+          executed_at?: string | null
+          executed_by?: string | null
+          id?: string
+          payload?: Json
+          run_id?: string | null
+          status?: string
+          target_url: string
+        }
+        Update: {
+          action_type?: string
+          cluster_id?: string | null
+          created_at?: string
+          executed_at?: string | null
+          executed_by?: string | null
+          id?: string
+          payload?: Json
+          run_id?: string | null
+          status?: string
+          target_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_actions_queue_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "seo_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seo_actions_queue_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "seo_engine_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_clusters: {
+        Row: {
+          created_at: string
+          id: string
+          intent: string
+          keywords: Json
+          label: string
+          primary_keyword: string
+          primary_url: string | null
+          secondary_urls: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intent?: string
+          keywords?: Json
+          label: string
+          primary_keyword: string
+          primary_url?: string | null
+          secondary_urls?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intent?: string
+          keywords?: Json
+          label?: string
+          primary_keyword?: string
+          primary_url?: string | null
+          secondary_urls?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       seo_collections: {
         Row: {
           created_at: string
@@ -5030,6 +5123,193 @@ export type Database = {
           seo_intro?: string
           slug?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      seo_content_drafts: {
+        Row: {
+          action_id: string | null
+          approved_at: string | null
+          approved_by: string | null
+          cluster_id: string | null
+          content_type: string
+          created_at: string
+          id: string
+          internal_links: Json | null
+          markdown: string | null
+          meta_description: string | null
+          published_at: string | null
+          run_id: string | null
+          schema_json: Json | null
+          status: string
+          title: string
+          updated_at: string
+          url: string
+          word_count: number | null
+        }
+        Insert: {
+          action_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          cluster_id?: string | null
+          content_type?: string
+          created_at?: string
+          id?: string
+          internal_links?: Json | null
+          markdown?: string | null
+          meta_description?: string | null
+          published_at?: string | null
+          run_id?: string | null
+          schema_json?: Json | null
+          status?: string
+          title: string
+          updated_at?: string
+          url: string
+          word_count?: number | null
+        }
+        Update: {
+          action_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          cluster_id?: string | null
+          content_type?: string
+          created_at?: string
+          id?: string
+          internal_links?: Json | null
+          markdown?: string | null
+          meta_description?: string | null
+          published_at?: string | null
+          run_id?: string | null
+          schema_json?: Json | null
+          status?: string
+          title?: string
+          updated_at?: string
+          url?: string
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_content_drafts_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "seo_actions_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seo_content_drafts_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "seo_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seo_content_drafts_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "seo_engine_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_engine_config: {
+        Row: {
+          approval_required: boolean
+          auto_publish: boolean
+          id: string
+          max_indexing_per_day: number
+          max_new_urls_per_week: number
+          max_title_rewrites_per_week: number
+          max_updates_per_week: number
+          min_impressions_quick_win: number
+          min_words_blog: number
+          min_words_guide: number
+          quick_win_pos_max: number
+          quick_win_pos_min: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          approval_required?: boolean
+          auto_publish?: boolean
+          id?: string
+          max_indexing_per_day?: number
+          max_new_urls_per_week?: number
+          max_title_rewrites_per_week?: number
+          max_updates_per_week?: number
+          min_impressions_quick_win?: number
+          min_words_blog?: number
+          min_words_guide?: number
+          quick_win_pos_max?: number
+          quick_win_pos_min?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          approval_required?: boolean
+          auto_publish?: boolean
+          id?: string
+          max_indexing_per_day?: number
+          max_new_urls_per_week?: number
+          max_title_rewrites_per_week?: number
+          max_updates_per_week?: number
+          min_impressions_quick_win?: number
+          min_words_blog?: number
+          min_words_guide?: number
+          quick_win_pos_max?: number
+          quick_win_pos_min?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      seo_engine_runs: {
+        Row: {
+          actions_planned: number | null
+          clusters_found: number | null
+          created_at: string
+          drafts_generated: number | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          mode: string
+          started_at: string
+          status: string
+          summary: Json | null
+          triggered_by: string | null
+          urls_indexed: number | null
+          urls_published: number | null
+        }
+        Insert: {
+          actions_planned?: number | null
+          clusters_found?: number | null
+          created_at?: string
+          drafts_generated?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string
+          status?: string
+          summary?: Json | null
+          triggered_by?: string | null
+          urls_indexed?: number | null
+          urls_published?: number | null
+        }
+        Update: {
+          actions_planned?: number | null
+          clusters_found?: number | null
+          created_at?: string
+          drafts_generated?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string
+          status?: string
+          summary?: Json | null
+          triggered_by?: string | null
+          urls_indexed?: number | null
+          urls_published?: number | null
         }
         Relationships: []
       }
