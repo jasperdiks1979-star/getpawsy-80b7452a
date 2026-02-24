@@ -243,7 +243,7 @@ export default function IndexControlDiagnostics() {
 {`curl -I https://getpawsy.pet/sitemap.xml
 # Expect: HTTP 200, Content-Type: text/xml
 
-curl -I https://getpawsy.pet/sitemap-index.xml
+curl -I https://getpawsy.pet/sitemap-products-1.xml
 # Expect: HTTP 200, Content-Type: text/xml
 
 curl -I https://getpawsy.pet/robots.txt

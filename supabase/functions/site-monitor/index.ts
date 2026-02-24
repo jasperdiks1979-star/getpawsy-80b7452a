@@ -56,7 +56,7 @@ interface RobotsIntegrityResult {
 
 async function checkRobotsIntegrity(): Promise<RobotsIntegrityResult> {
   const requiredDirectives = [
-    "Sitemap: https://getpawsy.pet/sitemap-index.xml",
+    "Sitemap: https://getpawsy.pet/sitemap.xml",
     "Disallow: /admin",
     "Disallow: /cart",
     "Disallow: /*?*gclid=",
