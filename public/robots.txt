@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /cart
+Disallow: /*?*gclid=
 Sitemap: https://getpawsy.pet/sitemap.xml
 Sitemap: https://getpawsy.pet/sitemap-index.xml
