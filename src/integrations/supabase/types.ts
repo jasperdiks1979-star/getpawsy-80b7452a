@@ -656,6 +656,7 @@ export type Database = {
           excerpt: string
           featured_image: string | null
           id: string
+          is_noindexed: boolean | null
           is_published: boolean | null
           meta_description: string | null
           meta_keywords: string[] | null
@@ -676,6 +677,7 @@ export type Database = {
           excerpt: string
           featured_image?: string | null
           id?: string
+          is_noindexed?: boolean | null
           is_published?: boolean | null
           meta_description?: string | null
           meta_keywords?: string[] | null
@@ -696,6 +698,7 @@ export type Database = {
           excerpt?: string
           featured_image?: string | null
           id?: string
+          is_noindexed?: boolean | null
           is_published?: boolean | null
           meta_description?: string | null
           meta_keywords?: string[] | null
