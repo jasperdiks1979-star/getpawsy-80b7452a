@@ -303,19 +303,19 @@ async function main() {
   };
 
   writeChecked("sitemap-static.xml", renderUrlset(clean(staticPages)), ["<urlset", "</urlset>"]);
-  writeChecked("sitemap-collections.xml", renderUrlset(clean(collectionEntries)), ["<urlset", "</urlset>"]);
-  writeChecked("sitemap-blog.xml", renderUrlset(clean(blogEntries)), ["<urlset", "</urlset>"]);
-  writeChecked("sitemap-guides.xml", renderUrlset(clean(guideEntries)), ["<urlset", "</urlset>"]);
-  writeChecked("sitemap-clusters.xml", renderUrlset(clean(clusterEntries)), ["<urlset", "</urlset>"]);
+  if (collectionEntries.length > 0) writeChecked("sitemap-collections.xml", renderUrlset(clean(collectionEntries)), ["<urlset", "</urlset>"]);
+  if (blogEntries.length > 0) writeChecked("sitemap-blog.xml", renderUrlset(clean(blogEntries)), ["<urlset", "</urlset>"]);
+  if (guideEntries.length > 0) writeChecked("sitemap-guides.xml", renderUrlset(clean(guideEntries)), ["<urlset", "</urlset>"]);
+  if (clusterEntries.length > 0) writeChecked("sitemap-clusters.xml", renderUrlset(clean(clusterEntries)), ["<urlset", "</urlset>"]);
 
+  // Build sitemapindex dynamically — only reference files that were actually written
   const sitemapIndexItems = [
     { loc: `${BASE}/sitemap-static.xml`, lastmod: today },
-    { loc: `${BASE}/sitemap-hubs.xml`, lastmod: today },
-    { loc: `${BASE}/sitemap-collections.xml`, lastmod: today },
-    { loc: `${BASE}/sitemap-blog.xml`, lastmod: today },
-    { loc: `${BASE}/sitemap-guides.xml`, lastmod: today },
-    { loc: `${BASE}/sitemap-clusters.xml`, lastmod: today },
   ];
+  if (collectionEntries.length > 0) sitemapIndexItems.push({ loc: `${BASE}/sitemap-collections.xml`, lastmod: today });
+  if (blogEntries.length > 0) sitemapIndexItems.push({ loc: `${BASE}/sitemap-blog.xml`, lastmod: today });
+  if (guideEntries.length > 0) sitemapIndexItems.push({ loc: `${BASE}/sitemap-guides.xml`, lastmod: today });
+  if (clusterEntries.length > 0) sitemapIndexItems.push({ loc: `${BASE}/sitemap-clusters.xml`, lastmod: today });
 
   if (productChunks.length === 0) productChunks.push([]);
   productChunks.forEach((chunkEntries, idx) => {
