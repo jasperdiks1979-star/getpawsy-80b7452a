@@ -178,7 +178,7 @@ const Index = () => {
         .from('products_public')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
         .eq('is_active', true)
-        .in('category', ['Cat Trees & Condos', 'Cat Furniture', 'Hamster Cages', 'Rabbit Cages'])
+        .in('category', ['Cat Trees & Condos', 'Cat Furniture', 'Cat Houses', 'Cat Scratching Posts', 'Cat Beds', 'Cat Litter Boxes'])
         .order('price', { ascending: false })
         .limit(12);
       if (error) throw error;
@@ -635,7 +635,7 @@ const Index = () => {
             <FadeInView className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Shop by Category</h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Find exactly what your beloved companion needs, from nutritious food to cozy accessories
+                Everything your indoor cat needs — from climbing furniture to enrichment essentials
               </p>
             </FadeInView>
 
@@ -693,8 +693,8 @@ const Index = () => {
           <div className="container px-4 md:px-6">
             <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
               <div>
-                <h2 className="text-3xl md:text-4xl font-display font-bold mb-2">Featured Favorites</h2>
-                <p className="text-muted-foreground text-lg">Handpicked selections loved by pets everywhere</p>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-2">Featured Cat Furniture</h2>
+                <p className="text-muted-foreground text-lg">Stability-tested picks for indoor cats of all sizes</p>
               </div>
               <Link to="/products">
                 <Button variant="outline" className="gap-2 rounded-full">
@@ -753,9 +753,9 @@ const Index = () => {
         <section className="py-20 bg-sand/30">
           <div className="container px-4 md:px-6">
             <FadeInView className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Why Pet Parents Choose GetPawsy</h2>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Why Cat Parents Choose GetPawsy</h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                We believe every pet deserves quality — without the premium markup
+                We believe every indoor cat deserves stability-tested furniture — without the premium markup
               </p>
             </FadeInView>
             <FadeInView className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -860,8 +860,8 @@ const Index = () => {
             <FadeInView className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 { slug: 'best-cat-litter-box-2026', badge: 'Cornerstone Guide', desc: '12 tested picks for odor control, large cats & multi-cat homes — with pros & cons.' },
-                { slug: 'best-dog-bed-2026', badge: 'Cornerstone Guide', desc: 'Orthopedic, calming & durable beds tested with real dogs of all sizes.' },
                 { slug: 'best-cat-trees-2026', badge: 'Cornerstone Guide', desc: '9 cat trees tested for stability, enrichment & value. Large cats, budget picks & condos vs trees.' },
+                { slug: 'cat-condo-vs-cat-tree-difference', badge: 'Comparison Guide', desc: 'Cat condo vs cat tree: size, cost, features compared. Which is best for your space?' },
               ].map((guide) => (
                 <Link
                   key={guide.slug}
@@ -877,9 +877,9 @@ const Index = () => {
               ))}
               {[
                 { slug: 'how-many-litter-boxes-per-cat', badge: 'Expert Advice', desc: 'The vet-backed n+1 rule explained with real placement tips.' },
-                { slug: 'best-orthopedic-dog-bed', badge: 'Buying Guide', desc: 'Joint-support beds tested for senior dogs and large breeds.' },
                 { slug: 'best-cat-trees-small-apartments', badge: 'Space-Saving', desc: '7 compact cat trees tested in real apartments under 600 sq ft.' },
                 { slug: 'best-cat-litter-box-furniture-enclosures-2026', badge: 'Buying Guide', desc: '8 litter box enclosures tested for odor control and home décor.' },
+                { slug: 'self-cleaning-litter-box-worth-it', badge: 'Cost Analysis', desc: 'Honest breakdown: are self-cleaning litter boxes worth the investment?' },
               ].map((guide) => (
                 <Link
                   key={guide.slug}

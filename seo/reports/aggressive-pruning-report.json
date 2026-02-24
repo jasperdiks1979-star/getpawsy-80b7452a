@@ -1,0 +1,191 @@
+{
+  "generatedAt": "2026-02-24T22:10:00Z",
+  "mode": "AGGRESSIVE_DOMINANCE",
+  "objective": "Indoor Cat Authority — Maximum Crawl Budget Concentration",
+
+  "beforeState": {
+    "totalActiveProducts": 618,
+    "tierBreakdown": {
+      "A": { "count": 153, "note": "Mixed: cat trees, hamster cages, rabbit cages" },
+      "B1": { "count": 162, "note": "Dog beds, cat litter, carriers, bird cages" },
+      "B2": { "count": 196, "note": "Dog toys, training, bowls, grooming" },
+      "C": { "count": 107, "note": "Generic pet supplies, collars" }
+    },
+    "sitemapUrls": "~400 (Tier A + B1 all in sitemap)",
+    "blogIndexed": 323,
+    "catProductPercentage": "31%",
+    "topicalDilution": "SEVERE — 69% of indexed content is non-cat"
+  },
+
+  "afterState": {
+    "totalActiveProducts": 618,
+    "tierBreakdown": {
+      "A": { "count": 143, "categories": "Cat Trees (59), Cat Litter (46), Cat Houses (14), Cat Scratching Posts (13), Cat Beds (10), Cat Furniture (1)", "note": "100% CAT PRODUCTS" },
+      "B1": { "count": 186, "categories": "Dog Beds (65), Cat Toys (29), Dog Carriers (25), Hamster Cages (41), Rabbit Cages (15), Cat Carriers (7), Cat Bowls (7), Cat Grooming (4), Bird Cages (9), Others", "note": "Mixed support tier" },
+      "C": { "count": 289, "categories": "Dog Toys, Dog Training, Dog Houses, Dog Bowls, Dog Grooming, Dog Food, Bird items, Reptiles, Generic supplies, Collars", "note": "All non-cat commodity products NOINDEXED" }
+    },
+    "sitemapUrls": "~329 (Tier A: 143 + B1: 186)",
+    "blogIndexed": 100,
+    "blogNoindexed": 223,
+    "catProductPercentage": "100% of Tier A",
+    "topicalConcentration": "MAXIMUM — Tier A is exclusively cat products"
+  },
+
+  "pruningActions": {
+    "productsDowngraded": {
+      "toTierC": [
+        { "category": "Dog Toys", "count": 48, "reason": "Non-cat, B2→C" },
+        { "category": "Dog Training", "count": 24, "reason": "Non-cat, B2→C" },
+        { "category": "Dog Houses", "count": 27, "reason": "Non-cat, B2→C" },
+        { "category": "Dog Bowls & Feeders", "count": 16, "reason": "Non-cat, B2→C" },
+        { "category": "Dog Food & Treats", "count": 15, "reason": "Non-cat, B2→C" },
+        { "category": "Dog Grooming", "count": 15, "reason": "Non-cat, B2→C" },
+        { "category": "Bird Bowls & Feeders", "count": 15, "reason": "Non-cat, B2→C" },
+        { "category": "Bird Cages", "count": 9, "reason": "Non-cat, B1→C" },
+        { "category": "Bird Toys", "count": 5, "reason": "Non-cat, B2→C" },
+        { "category": "Bird Nests", "count": 4, "reason": "Non-cat, B1→C" },
+        { "category": "Bird Perches", "count": 3, "reason": "Non-cat, C stays C" },
+        { "category": "Reptile Terrariums", "count": 4, "reason": "Non-cat, B1→C" },
+        { "category": "Pet generic categories", "count": 52, "reason": "Generic supplies, collars, shoes → C" },
+        { "category": "Price < $40 non-cat", "count": "various", "reason": "Aggressive low-value pruning" }
+      ],
+      "totalNoindexed": 289
+    },
+    "productsPromoted": {
+      "toTierA": [
+        { "category": "Cat Litter Boxes", "count": 46, "reason": "Secondary revenue engine, B1→A" }
+      ],
+      "toTierB1": [
+        { "category": "Cat Toys", "count": 29, "reason": "Indoor cat support, B2→B1" },
+        { "category": "Cat Bowls & Feeders", "count": 7, "reason": "Indoor cat support, B2→B1" },
+        { "category": "Cat Grooming", "count": 4, "reason": "Indoor cat support, B2→B1" }
+      ]
+    },
+    "blogPruning": {
+      "totalNoindexed": 223,
+      "kept": 100,
+      "reductionPercentage": "69%",
+      "criteria": "Noindexed all posts not related to cats/litter/kittens/feline"
+    }
+  },
+
+  "crawlBudgetProjection": {
+    "before": {
+      "sitemapUrls": 400,
+      "indexedBlog": 323,
+      "totalCrawlableEstimate": 800
+    },
+    "after": {
+      "sitemapUrls": 329,
+      "indexedBlog": 100,
+      "totalCrawlableEstimate": 450,
+      "reduction": "44%"
+    },
+    "crawlEfficiencyGain": "44% fewer URLs competing for crawl budget",
+    "topicalSignalStrength": "Tier A is now 100% cat products vs 60% before"
+  },
+
+  "urlComparison": {
+    "sitemapBefore": {
+      "sitemap-core-products.xml": 153,
+      "sitemap-secondary-products.xml": 162,
+      "sitemap-collections.xml": "~33",
+      "sitemap-blog.xml": 30,
+      "sitemap-guides.xml": "~18",
+      "sitemap-static.xml": 7,
+      "total": "~403"
+    },
+    "sitemapAfter": {
+      "sitemap-core-products.xml": "143 (100% cat)",
+      "sitemap-secondary-products.xml": "186 (cat support + legacy)",
+      "sitemap-collections.xml": "~20 (cat-only filtered)",
+      "sitemap-blog.xml": "~15 (cat-only filtered)",
+      "sitemap-guides.xml": "~12 (cat-only filtered)",
+      "sitemap-static.xml": 7,
+      "total": "~329"
+    }
+  },
+
+  "collectionMergePlan": [
+    {
+      "action": "MERGE",
+      "keep": "cat-trees-and-condos",
+      "merge": ["cat-tree-for-large-cats", "heavy-duty-cat-tree-large-cats", "cat-tree-overweight-cats", "best-cat-tree-maine-coon"],
+      "reason": "4+ collections targeting same 'large cat tree' intent. Consolidate to primary pillar."
+    },
+    {
+      "action": "MERGE",
+      "keep": "best-cat-litter-boxes",
+      "merge": ["best-litter-box-for-large-cats", "best-litter-box-for-odor-control"],
+      "reason": "Sub-intent collections merged into primary litter hub"
+    },
+    {
+      "action": "KEEP_SEPARATE",
+      "pages": ["modern-cat-trees", "cat-condos"],
+      "reason": "Different product types despite similar category"
+    },
+    {
+      "action": "NOINDEX",
+      "pages": ["All non-cat collections"],
+      "reason": "dog-beds, dog-carriers, hamster-cages, rabbit-cages etc. removed from sitemap"
+    }
+  ],
+
+  "internalLinkMap": {
+    "catTreesHub": {
+      "targetUrl": "/collections/cat-trees-and-condos",
+      "minimumLinks": 35,
+      "anchorDistribution": {
+        "partialMatch": "40%",
+        "semantic": "30%",
+        "branded": "20%",
+        "exactMatch": "10%"
+      },
+      "linkSources": [
+        "Homepage (3 links)",
+        "All cat tree sub-collections (8+)",
+        "All cat tree guides (8+)",
+        "Top 5 cat tree blog posts",
+        "Top cat tree product pages (5+)",
+        "Footer navigation"
+      ]
+    },
+    "litterHub": {
+      "targetUrl": "/collections/best-cat-litter-boxes",
+      "minimumLinks": 25,
+      "anchorDistribution": {
+        "partialMatch": "40%",
+        "semantic": "30%",
+        "branded": "20%",
+        "exactMatch": "10%"
+      }
+    },
+    "catFurnitureHub": {
+      "targetUrl": "/products?category=cat-furniture",
+      "minimumLinks": 15
+    },
+    "removedCrossLinks": [
+      "All hamster/rabbit references from core navigation",
+      "All dog references from homepage sections",
+      "All bird/reptile/fish references from guide sections",
+      "Random cross-animal linking in product pages"
+    ]
+  },
+
+  "homepageChanges": [
+    "H1: 'Premium Cat Trees, Condos & Indoor Cat Living' (already set)",
+    "Hero CTAs: Cat Trees + Litter Boxes only",
+    "3 pillar blocks: Cat Trees, Litter Boxes, Indoor Cat Furniture",
+    "Featured products: Cat-only categories",
+    "Expert guides: Dog bed guide replaced with cat condo comparison",
+    "Why section: 'Pet Parents' → 'Cat Parents'",
+    "Category description: Updated to indoor cat focus"
+  ],
+
+  "schemaConsolidation": [
+    "Product schema: Only Tier A products get enhanced Product schema",
+    "AggregateRating: Only if valid reviews exist",
+    "Tier C products: noindex meta tag applied via ProductSchema component",
+    "FAQ schema: Active on hub collection pages only"
+  ]
+}

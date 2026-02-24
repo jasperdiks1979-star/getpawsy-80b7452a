@@ -217,7 +217,7 @@ async function main() {
   }
 
   // ── Collections — only niche-relevant collections ──
-  const COLLECTION_NICHE_KEYWORDS = ['cat', 'tree', 'condo', 'tower', 'furniture', 'scratch', 'litter', 'hamster', 'rabbit', 'guinea', 'cage', 'hutch', 'small-animal', 'small-pet'];
+  const COLLECTION_NICHE_KEYWORDS = ['cat', 'tree', 'condo', 'tower', 'furniture', 'scratch', 'litter', 'bed', 'house', 'shelf', 'perch', 'enrichment'];
   let collectionsRaw = await fetchFromSupabase("seo_collections", "select=slug,updated_at&is_active=eq.true&order=updated_at.desc");
   let collections;
   if (collectionsRaw && collectionsRaw.length > 0) {
@@ -241,7 +241,7 @@ async function main() {
 
   // ── Blog — aggressive filtering: only core-niche blog posts ──
   // Filter to cat/cage/pet-furniture related posts, cap at 30
-  const BLOG_NICHE_KEYWORDS = ['cat tree', 'cat condo', 'cat tower', 'guinea pig', 'hamster cage', 'rabbit cage', 'rabbit hutch', 'cat litter', 'cat scratch', 'cat furniture', 'small animal', 'cat bed', 'cat house'];
+  const BLOG_NICHE_KEYWORDS = ['cat tree', 'cat condo', 'cat tower', 'cat litter', 'cat scratch', 'cat furniture', 'cat bed', 'cat house', 'indoor cat', 'cat wall', 'cat shelf', 'cat perch', 'kitten', 'feline'];
   let blogRaw = await fetchFromSupabase("blog_posts", "select=slug,published_at,title,category&is_published=eq.true&order=published_at.desc&limit=500");
   let blog;
   if (blogRaw && blogRaw.length > 0) {
@@ -262,7 +262,7 @@ async function main() {
   }
 
   // Guides — filter to cat/cage niche only
-  const GUIDE_NICHE_KEYWORDS = ['cat', 'litter', 'condo', 'tree', 'tower', 'guinea', 'cage'];
+  const GUIDE_NICHE_KEYWORDS = ['cat', 'litter', 'condo', 'tree', 'tower', 'furniture', 'scratch', 'indoor', 'kitten', 'feline'];
   const allGuides = filterIndexable(safeRead(joinRoot("data", "guides.json"), []));
   const guides = allGuides.filter(g => {
     const pathLower = (g.path || '').toLowerCase();
