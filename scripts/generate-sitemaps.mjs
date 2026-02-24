@@ -430,7 +430,7 @@ async function main() {
 
   console.log(`\n[sitemaps] ══════════════════════════════════════`);
   console.log(`[sitemaps] Generation complete at ${new Date().toISOString()}`);
-  console.log(`[sitemaps] Products:    ${products.length} (Tier A: ${tierAProducts.length}, Tier B: ${tierBProducts.length}, Tier C: ${products.length - tierAProducts.length - tierBProducts.length} noindex)`);
+  console.log(`[sitemaps] Products:    ${products.length} (Tier A: ${tierAProducts.length}, Tier B1: ${tierB1Products.length}, Tier B2: ${tierB2Products.length}, Tier C: ${tierCProducts.length} noindex)`);
   console.log(`[sitemaps] Indexed:     ${productEntriesAll.length} (in sitemaps)`);
   console.log(`[sitemaps] Noindexed:   ${products.length - productEntriesAll.length} (Tier C, excluded from sitemaps)`);
   console.log(`[sitemaps] Collections: ${collections.length} (top revenue: ${topRevenueCollections.size})`);
