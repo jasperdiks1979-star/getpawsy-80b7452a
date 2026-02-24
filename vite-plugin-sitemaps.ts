@@ -537,6 +537,8 @@ export default function merchantFeedPlugin(): Plugin {
     },
 
     // ── PHASE 1: Generate sitemaps into /public BEFORE Vite copies to /dist ──
+    // CRITICAL: No try/catch around generator — if it fails, the BUILD MUST FAIL.
+    // There are NO fallback files in /public (all stale XMLs have been deleted).
     buildStart() {
       const publicDir = join(process.cwd(), 'public');
 
@@ -544,29 +546,21 @@ export default function merchantFeedPlugin(): Plugin {
       console.log('[sitemaps] Phase 1: Generating sitemaps into /public');
       console.log('[sitemaps] ═══════════════════════════════════════════');
 
-      try {
-        execSync('node scripts/generate-sitemaps.mjs', {
-          cwd: process.cwd(),
-          stdio: 'inherit',
-          timeout: 60_000,
-        });
-        console.log('[sitemaps] ✓ generate-sitemaps.mjs completed');
-      } catch (err: any) {
-        // If the generator fails, fallback files in /public must still be valid
-        console.warn('[sitemaps] ⚠ Generator script failed, checking fallback files:', err.message);
-      }
+      // FAIL-HARD: Generator must succeed — no fallback files exist
+      execSync('node scripts/generate-sitemaps.mjs', {
+        cwd: process.cwd(),
+        stdio: 'inherit',
+        timeout: 60_000,
+      });
+      console.log('[sitemaps] ✓ generate-sitemaps.mjs completed');
 
-      // Run validation script
-      try {
-        execSync('node scripts/validate-sitemaps.mjs', {
-          cwd: process.cwd(),
-          stdio: 'inherit',
-          timeout: 30_000,
-        });
-        console.log('[sitemaps] ✓ validate-sitemaps.mjs passed');
-      } catch (err: any) {
-        console.warn('[sitemaps] ⚠ Validation script result:', err.message);
-      }
+      // FAIL-HARD: Validation must pass
+      execSync('node scripts/validate-sitemaps.mjs', {
+        cwd: process.cwd(),
+        stdio: 'inherit',
+        timeout: 30_000,
+      });
+      console.log('[sitemaps] ✓ validate-sitemaps.mjs passed');
 
       // HARD ASSERTIONS — build FAILS if these don't pass
       const sitemapXml = join(publicDir, 'sitemap.xml');
@@ -588,15 +582,15 @@ export default function merchantFeedPlugin(): Plugin {
         throw new Error('[sitemaps] FATAL: sitemap-products-1.xml has 0 <url> entries');
       }
 
-      // Verify no stale references
-      const refs = indexContent.match(/sitemap-products-\d+\.xml/g) || [];
-      for (const ref of refs) {
+      // Verify ALL referenced child sitemaps actually exist
+      const allRefs = indexContent.match(/sitemap-[a-z]+-?\d*\.xml/g) || [];
+      for (const ref of allRefs) {
         if (!existsSync(join(publicDir, ref))) {
           throw new Error(`[sitemaps] FATAL: sitemap.xml references ${ref} but file is missing in /public`);
         }
       }
 
-      console.log(`[sitemaps] ✅ All sitemaps validated (${sitemapCount} index entries)`);
+      console.log(`[sitemaps] ✅ All sitemaps validated (${sitemapCount} index entries, ${allRefs.length} child files verified)`);
       console.log('[sitemaps] ═══════════════════════════════════════════\n');
     },
 
@@ -648,23 +642,25 @@ export default function merchantFeedPlugin(): Plugin {
       }
 
       // ── PHASE 3: Post-build dist verification for sitemaps ──
+      // FAIL-HARD: If dist doesn't have valid sitemaps, abort the build
       console.log('[sitemaps] Verifying dist/ sitemap files...');
       const distSitemap = join(outDir, 'sitemap.xml');
       const distProducts = join(outDir, 'sitemap-products-1.xml');
 
-      if (existsSync(distSitemap)) {
-        assertSitemapFileValid(distSitemap, '<sitemapindex', 'dist/sitemap.xml');
-        console.log('[sitemaps] ✓ dist/sitemap.xml verified');
-      } else {
-        console.warn('[sitemaps] ⚠ dist/sitemap.xml not found — Vite may not have copied /public yet');
+      // Both files MUST exist in dist after Vite copies /public
+      assertSitemapFileValid(distSitemap, '<sitemapindex', 'dist/sitemap.xml');
+      console.log('[sitemaps] ✓ dist/sitemap.xml verified');
+
+      assertSitemapFileValid(distProducts, '<urlset', 'dist/sitemap-products-1.xml');
+      console.log('[sitemaps] ✓ dist/sitemap-products-1.xml verified');
+
+      // Verify dist products has actual <url> entries
+      const distProductsContent = readFileSync(distProducts, 'utf8');
+      if (!distProductsContent.includes('<url>')) {
+        throw new Error('[sitemaps] FATAL: dist/sitemap-products-1.xml has 0 <url> entries');
       }
 
-      if (existsSync(distProducts)) {
-        assertSitemapFileValid(distProducts, '<urlset', 'dist/sitemap-products-1.xml');
-        console.log('[sitemaps] ✓ dist/sitemap-products-1.xml verified');
-      } else {
-        console.warn('[sitemaps] ⚠ dist/sitemap-products-1.xml not found');
-      }
+      console.log('[sitemaps] ✅ dist/ sitemap verification complete');
     },
   };
 }
