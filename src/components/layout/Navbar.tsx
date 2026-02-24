@@ -43,9 +43,11 @@ import logoIcon from '@/assets/logo-getpawsy.png';
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/products', label: 'Shop' },
+  { href: '/collections/cat-trees-and-condos', label: 'Cat Trees' },
+  { href: '/collections/best-cat-litter-boxes', label: 'Litter Boxes' },
+  { href: '/products?category=cat-furniture', label: 'Cat Furniture' },
+  { href: '/guides', label: 'Guides' },
   { href: '/bestsellers', label: 'Bestsellers', icon: Award, highlight: true },
-  { href: '/blog', label: 'Blog' },
 ];
 
 const promoItems = [
@@ -450,18 +452,18 @@ export const Navbar = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-64">
                 <DropdownMenuItem asChild>
-                  <Link to="/bestsellers" className="flex items-center gap-3 py-2">
-                    <Star className="w-4 h-4 text-amber-500" />
+                  <Link to="/collections/cat-trees-and-condos" className="flex items-center gap-3 py-2">
+                    <span className="text-lg">🏔️</span>
                     <div>
-                      <p className="font-medium">Bestsellers</p>
-                      <p className="text-xs text-muted-foreground">Our most popular picks</p>
+                      <p className="font-medium">Cat Trees & Condos</p>
+                      <p className="text-xs text-muted-foreground">Heavy-duty, stability-tested</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/collections/best-cat-litter-boxes" className="flex items-center gap-3 py-2">
-                    <span className="text-lg">🐱</span>
+                    <span className="text-lg">✨</span>
                     <div>
                       <p className="font-medium">Best Cat Litter Boxes</p>
                       <p className="text-xs text-muted-foreground">Expert-tested 2026 picks</p>
@@ -470,11 +472,11 @@ export const Navbar = () => {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/collections/best-interactive-dog-toys" className="flex items-center gap-3 py-2">
-                    <span className="text-lg">🐶</span>
+                  <Link to="/bestsellers" className="flex items-center gap-3 py-2">
+                    <Star className="w-4 h-4 text-amber-500" />
                     <div>
-                      <p className="font-medium">Best Interactive Dog Toys</p>
-                      <p className="text-xs text-muted-foreground">Enrichment & puzzle toys</p>
+                      <p className="font-medium">All Bestsellers</p>
+                      <p className="text-xs text-muted-foreground">Our most popular picks</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>
