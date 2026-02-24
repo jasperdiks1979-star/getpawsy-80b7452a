@@ -1,0 +1,88 @@
+{
+  "generatedAt": "2026-02-24T21:15:00Z",
+  "currentState": {
+    "totalActiveProducts": 564,
+    "indoorCatProducts": 144,
+    "indoorCatPercentage": "25.5%",
+    "nonCatProducts": 420,
+    "nonCatPercentage": "74.5%",
+    "note": "The majority of inventory is non-cat (dog kennels, small animal cages, bird cages, chicken coops, agility equipment). However, the site's existing SEO collections are HEAVILY cat-focused (30+ cat-related collections vs ~15 for all other animals combined)."
+  },
+  "scenarios": {
+    "A_noPivot": {
+      "description": "Continue as general pet store with broad category coverage",
+      "pros": [
+        "No risk of losing existing non-cat traffic",
+        "Larger product catalog for long-tail queries",
+        "Guinea pig cage niche remains supported"
+      ],
+      "cons": [
+        "Topical dilution: Google sees 684 products across 15+ animal types",
+        "No category authority — competing with Chewy, Amazon, PetSmart on every front",
+        "Crawl budget wasted on 420 'OTHER' products with weak ranking potential",
+        "Brand identity is unclear to users and search engines"
+      ],
+      "expectedOutcome": "Slow, incremental growth. Unlikely to reach page 1 for any competitive term within 12 months."
+    },
+    "B_indoorCatFocus": {
+      "description": "Reposition as Indoor Cat Authority: Cat Trees (primary), Litter Boxes (secondary), Cat Wall Systems (tertiary). Non-cat products remain but are de-prioritized.",
+      "pros": [
+        "Strong topical authority signal to Google for 'indoor cat' cluster",
+        "64 cat trees + 44 litter products = sufficient depth for silo architecture",
+        "20+ existing collections already target these queries",
+        "Higher AOV in cat trees ($162 avg) vs general products ($130 avg)",
+        "Clear brand differentiation from generalist competitors"
+      ],
+      "cons": [
+        "Some existing traffic from dog/small animal queries may see reduced internal linking",
+        "Only 2 self-cleaning litter boxes — cannot build a full primary silo around this",
+        "Only 3 wall systems — cannot be a standalone differentiation pillar",
+        "Guinea pig cage niche (current Tier A secondary) gets less prominence"
+      ],
+      "expectedOutcome": "Measurable ranking improvement for cat tree/litter queries within 60-90 days. Page 1 positions for 5-10 long-tail cat tree queries within 6 months."
+    }
+  },
+  "recommendation": {
+    "chosenScenario": "B_MODIFIED",
+    "rationale": "Indoor cat focus is correct, but the original 3-pillar structure must be adjusted based on actual inventory:",
+    "adjustedPillars": [
+      {
+        "pillar": "Cat Trees & Condos",
+        "role": "PRIMARY — Authority Builder + Revenue Engine",
+        "products": 64,
+        "collections": "17+",
+        "viability": "EXCELLENT"
+      },
+      {
+        "pillar": "Cat Litter Boxes (All Types)",
+        "role": "SECONDARY — Broader litter category including enclosures, furniture-style, and the 2 self-cleaning units",
+        "products": 46,
+        "collections": "5+",
+        "viability": "GOOD — Sufficient depth when combining all litter types"
+      },
+      {
+        "pillar": "Cat Furniture & Enrichment",
+        "role": "TERTIARY — Catios, wall systems, beds, tunnels, scratchers combined into one supporting pillar",
+        "products": 34,
+        "collections": "5+",
+        "viability": "ADEQUATE — Enough for supporting content but not standalone authority"
+      }
+    ],
+    "doNOT": [
+      "Do NOT build a dedicated 'Self-Cleaning Litter Box' primary hub with only 2 products — it will look thin and hurt trust",
+      "Do NOT build a standalone 'Cat Wall Systems' pillar with only 3 products",
+      "Do NOT delete or noindex non-cat products — they still capture long-tail traffic"
+    ]
+  },
+  "riskAssessment": {
+    "overallRisk": "LOW",
+    "shortTermRankingFluctuation": "Minimal. We're reorganizing internal links and navigation, not removing content. Existing URLs remain intact.",
+    "ninetyDayVisibilityShift": "+15-25% for cat tree queries, +10-15% for litter queries. Non-cat queries: -5% max (reduced internal linking only).",
+    "mitigations": [
+      "Keep all existing URLs and products active",
+      "Maintain guinea pig cage collections as Tier A secondary",
+      "Only change: navigation prominence, internal link density, and homepage hero content",
+      "Non-cat products stay indexed at current tier level"
+    ]
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-02-24T21:15:00Z",
+  "hubLinkTargets": {
+    "catTreesHub": {
+      "targetUrl": "/collections/cat-trees-and-condos",
+      "minimumLinks": 25,
+      "linkSources": [
+        { "type": "homepage", "count": 2, "anchors": ["Cat Trees & Condos", "Browse Cat Trees"] },
+        { "type": "subCollections", "count": 8, "pages": [
+          "/collections/cat-tree-for-large-cats",
+          "/collections/best-cat-trees-for-small-apartments",
+          "/collections/modern-cat-trees",
+          "/collections/cat-condos",
+          "/collections/cat-tree-for-two-cats",
+          "/collections/best-cat-tree-maine-coon",
+          "/collections/luxury-cat-condos",
+          "/collections/extra-stable-cat-tree"
+        ]},
+        { "type": "guides", "count": 8, "pages": [
+          "/guides/best-cat-tree-large-cats",
+          "/guides/best-cat-tree-small-apartment",
+          "/guides/modern-cat-tree-design-guide",
+          "/guides/cat-tree-vs-scratching-post",
+          "/guides/how-to-choose-cat-tree-height",
+          "/guides/cat-tree-materials-sisal-vs-carpet",
+          "/guides/where-to-place-cat-tree-living-room",
+          "/guides/wall-mounted-cat-furniture-safety"
+        ]},
+        { "type": "blogPosts", "count": 5, "note": "Top 5 cat tree related blog posts should link to hub" },
+        { "type": "productPages", "count": 2, "note": "Top 2 cat tree product pages link back to hub" }
+      ],
+      "anchorDiversity": {
+        "exactMatch": ["cat trees and condos", "best cat trees"],
+        "partialMatch": ["cat tree collection", "indoor cat trees", "browse our cat trees"],
+        "semantic": ["climbing furniture for cats", "cat activity towers", "multi-level cat furniture", "cat tower options"]
+      }
+    },
+    "litterBoxesHub": {
+      "targetUrl": "/collections/best-cat-litter-boxes",
+      "minimumLinks": 20,
+      "linkSources": [
+        { "type": "homepage", "count": 1 },
+        { "type": "subCollections", "count": 5, "pages": [
+          "/collections/cat-litter-box-furniture-guide",
+          "/collections/best-litter-box-for-large-cats",
+          "/collections/best-litter-box-for-odor-control",
+          "/collections/self-cleaning-litter-box-guide",
+          "/collections/self-cleaning-litter-box"
+        ]},
+        { "type": "guides", "count": 6 },
+        { "type": "blogPosts", "count": 5 },
+        { "type": "productPages", "count": 3 }
+      ]
+    },
+    "catFurnitureHub": {
+      "targetUrl": "/collections/cats",
+      "minimumLinks": 15,
+      "linkSources": [
+        { "type": "homepage", "count": 1 },
+        { "type": "subCollections", "count": 4 },
+        { "type": "guides", "count": 4 },
+        { "type": "blogPosts", "count": 4 },
+        { "type": "productPages", "count": 2 }
+      ]
+    }
+  },
+  "crossLinkingRules": [
+    "Every cat tree sub-collection links UP to cat-trees-and-condos hub",
+    "Every litter sub-collection links UP to best-cat-litter-boxes hub",
+    "Every guide links to its parent hub AND 2-3 product pages",
+    "No guide links to noindexed pages",
+    "Anchor text follows 30/40/30 rule: exact/partial/semantic"
+  ],
+  "pagesToRemoveCrossLinks": [
+    "Remove internal links from cat content to dog/bird/chicken products",
+    "Remove links from primary navigation to low-performing non-cat categories",
+    "Keep non-cat categories accessible via footer or secondary nav only"
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-02-24T21:15:00Z",
+  "summary": {
+    "totalProducts": 684,
+    "activeNonDuplicate": 564,
+    "tierBreakdown": { "A": 153, "B1": 162, "B2": 196, "C": 173 }
+  },
+  "indoorCatCategories": {
+    "LITTER_SELF_CLEANING": {
+      "count": 2,
+      "avgPrice": 160.97,
+      "minPrice": 52.95,
+      "maxPrice": 268.99,
+      "thinDescriptions": 0,
+      "indexable": 2,
+      "siloViability": "LOW — Only 2 products. Cannot sustain a full hub page or comparison matrix. Recommend: expand inventory before building dedicated silo. Use existing 'self-cleaning-litter-box-guide' collection as supporting content under broader Litter category.",
+      "topSKUs": [
+        { "name": "60L Automatic Cat Litter Box, Smart App Control, Deodorizing, Infrared Sensor, Suitable For Multiple Cats", "price": 268.99, "tier": "B1" }
+      ]
+    },
+    "LITTER_STANDARD": {
+      "count": 44,
+      "avgPrice": 127.53,
+      "minPrice": 25.99,
+      "maxPrice": 350.99,
+      "thinDescriptions": 0,
+      "indexable": 44,
+      "siloViability": "MEDIUM — Sufficient for hub page. Includes litter box enclosures, furniture-style, and standard boxes. Strong collection coverage already exists (6+ active collections).",
+      "existingCollections": [
+        "best-cat-litter-boxes",
+        "cat-litter-box-furniture-guide",
+        "best-litter-box-for-large-cats",
+        "best-litter-box-for-odor-control",
+        "self-cleaning-litter-box-guide"
+      ]
+    },
+    "CAT_TREES": {
+      "count": 64,
+      "avgPrice": 162.83,
+      "minPrice": 37.38,
+      "maxPrice": 604.99,
+      "thinDescriptions": 7,
+      "indexable": 64,
+      "siloViability": "HIGH — 64 products with strong price range and diversity. 20+ existing collections cover sub-intents (large cats, modern, Maine Coon, small apartments, multi-cat). This is the strongest silo candidate.",
+      "existingCollections": [
+        "cat-trees-and-condos",
+        "cat-condos",
+        "cat-tree-for-large-cats",
+        "best-cat-trees-for-small-apartments",
+        "best-cat-tree-maine-coon",
+        "cat-tree-for-two-cats",
+        "modern-cat-trees",
+        "luxury-cat-tree-large-breeds",
+        "heavy-duty-cat-tree-large-cats",
+        "extra-stable-cat-tree",
+        "cat-tree-overweight-cats",
+        "multi-level-cat-condos",
+        "luxury-cat-condos",
+        "modern-cat-condos",
+        "multi-cat-condos",
+        "cat-condos-for-large-cats",
+        "large-cat-condos"
+      ],
+      "comparisonTableCandidates": [
+        "Flower Cat Tree ($604.99) vs Multi-Level Pear Wood ($226.99) vs Corner Modern ($218.99)",
+        "Large Cats: Heavy Duty towers vs Maine Coon specific vs Overweight cat trees",
+        "Budget: Under $100 compact trees vs $100-200 mid-range vs $200+ luxury"
+      ]
+    },
+    "CAT_WALL_SYSTEMS": {
+      "count": 3,
+      "avgPrice": 115.99,
+      "minPrice": 81.99,
+      "maxPrice": 171.99,
+      "thinDescriptions": 0,
+      "indexable": 3,
+      "siloViability": "VERY LOW — Only 3 products. Cannot differentiate as a standalone pillar. Recommend: fold into Cat Furniture misc or a 'Space-Saving Cat Solutions' angle under Cat Trees silo."
+    },
+    "CAT_FURNITURE_MISC": {
+      "count": 31,
+      "avgPrice": 121.92,
+      "minPrice": 9.99,
+      "maxPrice": 471.99,
+      "thinDescriptions": 2,
+      "indexable": 31,
+      "siloViability": "MEDIUM — Includes catios, cat houses, scratchers, beds, tunnels. Good supporting category but too diverse for a single focused silo."
+    }
+  },
+  "OTHER": {
+    "count": 420,
+    "note": "Includes dog products, small animal cages, bird cages, chicken coops, fish tanks, general accessories. This represents 74% of active inventory and should NOT be deleted but can be de-prioritized in navigation and internal linking."
+  },
+  "top20RevenuePotenial": [
+    { "category": "CAT_TREES", "name": "Flower Cat Tree", "price": 604.99, "rationale": "Unique design, highest price point, strong visual appeal for social sharing" },
+    { "category": "CAT_TREES", "name": "4.6ft Dark Gray Cat Tree Tower (3 Condos, 11 Posts)", "price": 318.99, "rationale": "Feature-rich, multi-cat, high conversion keywords" },
+    { "category": "CAT_TREES", "name": "69\" Multi-Level Cat Tower (2 Condos, 3 Hammocks)", "price": 309.99, "rationale": "Multi-cat target, high search volume keywords" },
+    { "category": "LITTER_SELF_CLEANING", "name": "60L Automatic Cat Litter Box (Smart App)", "price": 268.99, "rationale": "Only smart litter box in inventory, high search volume category" },
+    { "category": "CAT_FURNITURE_MISC", "name": "Outdoor Catio (6 Platforms, Scratching Post)", "price": 471.99, "rationale": "Unique product type, low competition" },
+    { "category": "CAT_TREES", "name": "Multi-Level Natural Pear Wood Cat Tree", "price": 226.99, "rationale": "Premium material differentiator, luxury buyer intent" },
+    { "category": "CAT_TREES", "name": "65\" Corner Modern Cat Tree", "price": 218.99, "rationale": "Corner/space-saving + modern aesthetic, dual intent" },
+    { "category": "CAT_TREES", "name": "49\" UFO Top Perch Cat Tree", "price": 207.99, "rationale": "Unique design element, Instagram-worthy" },
+    { "category": "CAT_TREES", "name": "Modern Indoor Cat Tree Wooden Tower", "price": 205.99, "rationale": "Modern furniture style, home decor crossover audience" },
+    { "category": "CAT_TREES", "name": "74\" Flower Cat Tree Large Tower (Pink)", "price": 203.99, "rationale": "Gender-targeted variant, gift market" },
+    { "category": "LITTER_STANDARD", "name": "Cat Litter Box Enclosure (2 Rooms, Black)", "price": 284.99, "rationale": "Furniture-style, hides litter box, home decor buyers" },
+    { "category": "LITTER_STANDARD", "name": "32\" Litter Box Enclosure with Scratching Mat", "price": 206.99, "rationale": "Dual-function, high perceived value" },
+    { "category": "CAT_TREES", "name": "81\" Cat Tree (Scratching Posts, Condos, Hammocks)", "price": 233.99, "rationale": "Tallest tree, impressive feature list" },
+    { "category": "CAT_WALL_SYSTEMS", "name": "Wall Mounted Cat Shelf Set", "price": 171.99, "rationale": "Only wall system at premium price, low competition" },
+    { "category": "CAT_FURNITURE_MISC", "name": "74\" Wooden Outdoor Cat House Catio", "price": 431.99, "rationale": "Premium outdoor, unique positioning" },
+    { "category": "CAT_TREES", "name": "Cat Tree 3-Level (Badminton Toys)", "price": 205.99, "rationale": "Interactive element differentiator" },
+    { "category": "CAT_TREES", "name": "Luxury Cat Tree for Large Breeds", "price": 195.99, "rationale": "Luxury + large breed double targeting" },
+    { "category": "CAT_TREES", "name": "Heavy Duty Cat Tree (No Wobble)", "price": 189.99, "rationale": "Stability USP addresses top buyer concern" },
+    { "category": "CAT_TREES", "name": "Extra Stable Cat Tree (Wide Base)", "price": 179.99, "rationale": "Stability niche, repeat buyer concern" },
+    { "category": "LITTER_SELF_CLEANING", "name": "Smart Self-Cleaning Litter Box", "price": 52.95, "rationale": "Budget entry point for self-cleaning, high conversion potential" }
+  ],
+  "bundleOpportunities": [
+    { "bundle": "Complete Indoor Cat Starter", "products": ["Mid-range cat tree", "Litter box enclosure", "Scratching pad"], "estimatedValue": "$350-450" },
+    { "bundle": "Multi-Cat Tower Package", "products": ["Large multi-level tree", "Extra scratching post", "Cat bed"], "estimatedValue": "$280-380" },
+    { "bundle": "Smart Litter Solution", "products": ["Self-cleaning litter box", "Litter mat", "Deodorizer"], "estimatedValue": "$300-350", "note": "Limited by only 2 self-cleaning products" }
+  ],
+  "duplicateIntentProducts": [
+    { "intent": "Large cat trees", "collections": ["cat-tree-for-large-cats", "heavy-duty-cat-tree-large-cats", "luxury-cat-tree-large-breeds", "cat-tree-overweight-cats", "large-cat-condos", "cat-condos-for-large-cats"], "risk": "6 overlapping collections targeting near-identical intent. Consolidate to 2-3 max." },
+    { "intent": "Small apartment cat trees", "collections": ["best-cat-trees-for-small-apartments", "cat-tree-small-apartment (inactive)"], "risk": "Duplicate inactive page exists. Keep deactivated." },
+    { "intent": "Modern/stylish cat trees", "collections": ["modern-cat-trees", "modern-cat-condos", "luxury-cat-condos"], "risk": "Overlap between modern and luxury. Consider consolidating modern-cat-condos into modern-cat-trees." }
+  ]
+}
