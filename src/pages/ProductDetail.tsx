@@ -660,6 +660,7 @@ const ProductDetail = () => {
           category: product.category,
           stock: product.stock,
           sku: product.sku,
+          seo_tier: (product as any).seo_tier || null,
         }}
         reviews={reviews}
       />

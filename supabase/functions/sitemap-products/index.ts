@@ -15,12 +15,13 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceKey);
 
-    // Fetch all active, non-duplicate products with slugs
+    // Fetch all active, non-duplicate products with slugs (exclude Tier C from sitemaps)
     const { data: products, error } = await sb
       .from("products")
-      .select("slug, updated_at, is_active, is_duplicate, stock, name")
+      .select("slug, updated_at, is_active, is_duplicate, stock, name, seo_tier")
       .eq("is_active", true)
       .not("slug", "is", null)
+      .neq("seo_tier", "C")
       .order("updated_at", { ascending: false })
       .limit(10000);
 
