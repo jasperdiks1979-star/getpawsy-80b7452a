@@ -234,7 +234,7 @@ export default function CrawlBudgetDiagnostics() {
             <CardTitle className="text-lg">curl Verification Commands</CardTitle>
           </CardHeader>
           <CardContent>
-            <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto whitespace-pre">{`curl -I https://getpawsy.pet/sitemap-index.xml
+            <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto whitespace-pre">{`curl -I https://getpawsy.pet/sitemap.xml
 # Expect: HTTP/2 200, content-type: text/xml
 
 curl -I https://getpawsy.pet/robots.txt

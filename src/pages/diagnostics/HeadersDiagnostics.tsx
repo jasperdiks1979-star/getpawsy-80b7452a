@@ -15,7 +15,7 @@ interface HeaderCheck {
 const TEST_URLS = [
   '/',
   '/collections/cat-enrichment',
-  '/sitemap-index.xml',
+  '/sitemap.xml',
   '/robots.txt',
 ];
 

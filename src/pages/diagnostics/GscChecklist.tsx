@@ -83,7 +83,7 @@ export default function GscChecklist() {
     `# Generated: ${new Date().toISOString()}`,
     '',
     '## Sitemap Resubmission',
-    `${CANONICAL}/sitemap-index.xml`,
+    `${CANONICAL}/sitemap.xml`,
     '',
     '## URL Inspection Priority (Top 20)',
     ...urls.map((u, i) => `${i + 1}. [${u.category}] ${u.url}`),
