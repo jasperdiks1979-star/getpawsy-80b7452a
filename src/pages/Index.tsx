@@ -35,6 +35,8 @@ const BestsellersSection = lazy(() => import('@/components/home/BestsellersSecti
 const PremiumNicheGrid = lazy(() => import('@/components/home/PremiumNicheGrid').then(m => ({ default: m.PremiumNicheGrid })));
 const MostLovedPicks = lazy(() => import('@/components/home/MostLovedPicks'));
 const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
+const NewArrivalsSection = lazy(() => import('@/components/home/NewArrivalsSection'));
+const ShopByCategoryLinks = lazy(() => import('@/components/home/ShopByCategoryLinks'));
 const SalesAccelerationBanner = lazy(() => import('@/components/home/SalesAccelerationBanner').then(m => ({ default: m.SalesAccelerationBanner })));
 const MoneyHubBlocks = lazy(() => import('@/components/home/MoneyHubBlocks').then(m => ({ default: m.MoneyHubBlocks })));
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
@@ -140,6 +142,13 @@ const Index = () => {
 
   // Gate — non-critical queries only run after first paint / idle
   const hydrationReady = useHydrationReady();
+
+  // Dev-only crawl heatmap logger
+  useEffect(() => {
+    if (hydrationReady) {
+      import('@/utils/crawlHeatmap').then(m => m.logHomepageCrawlStats()).catch(() => {});
+    }
+  }, [hydrationReady]);
 
   // Featured products carousel state
   const [productsApi, setProductsApi] = useState<CarouselApi>();
@@ -403,6 +412,20 @@ const Index = () => {
       <SectionErrorBoundary sectionName="Trending Products">
         <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
           <TrendingProducts />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ── New Arrivals — crawl-optimized newest products grid ────── */}
+      <SectionErrorBoundary sectionName="New Arrivals">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 400 }} />}>
+          <NewArrivalsSection />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ── Shop by Category — mid-page discovery bridge ────────────── */}
+      <SectionErrorBoundary sectionName="Shop by Category Links">
+        <Suspense fallback={<div className="py-10" style={{ minHeight: 80 }} />}>
+          <ShopByCategoryLinks />
         </Suspense>
       </SectionErrorBoundary>
 
