@@ -216,37 +216,59 @@ async function main() {
     process.exit(1);
   }
 
-  // ── Collections ──
+  // ── Collections — only niche-relevant collections ──
+  const COLLECTION_NICHE_KEYWORDS = ['cat', 'tree', 'condo', 'tower', 'furniture', 'scratch', 'litter', 'hamster', 'rabbit', 'guinea', 'cage', 'hutch', 'small-animal', 'small-pet'];
   let collectionsRaw = await fetchFromSupabase("seo_collections", "select=slug,updated_at&is_active=eq.true&order=updated_at.desc");
   let collections;
   if (collectionsRaw && collectionsRaw.length > 0) {
     collections = collectionsRaw
-      .filter((c) => !isExcluded(`/collections/${c.slug}`))
+      .filter((c) => {
+        if (isExcluded(`/collections/${c.slug}`)) return false;
+        const slugLower = (c.slug || '').toLowerCase();
+        return COLLECTION_NICHE_KEYWORDS.some(kw => slugLower.includes(kw));
+      })
       .map((c) => ({
         path: `/collections/${c.slug}`,
         lastmod: c.updated_at,
         priority: computeCollectionPriority(c.slug, topRevenueCollections),
       }));
-    console.log(`[sitemaps] Collections from REST API: ${collections.length}`);
+    console.log(`[sitemaps] Collections from REST API: ${collectionsRaw.length} total, ${collections.length} niche-filtered`);
   } else {
     collections = filterIndexable(safeRead(joinRoot("data", "collections.json"), []));
     console.log(`[sitemaps] Collections from JSON fallback: ${collections.length}`);
   }
   if (collections.length === 0) console.warn("[sitemaps] WARNING: 0 collections found.");
 
-  // ── Blog ──
-  let blogRaw = await fetchFromSupabase("blog_posts", "select=slug,published_at&is_published=eq.true&order=published_at.desc");
+  // ── Blog — aggressive filtering: only core-niche blog posts ──
+  // Filter to cat/cage/pet-furniture related posts, cap at 30
+  const BLOG_NICHE_KEYWORDS = ['cat tree', 'cat condo', 'cat tower', 'guinea pig', 'hamster cage', 'rabbit cage', 'rabbit hutch', 'cat litter', 'cat scratch', 'cat furniture', 'small animal', 'cat bed', 'cat house'];
+  let blogRaw = await fetchFromSupabase("blog_posts", "select=slug,published_at,title,category&is_published=eq.true&order=published_at.desc&limit=500");
   let blog;
   if (blogRaw && blogRaw.length > 0) {
-    blog = blogRaw.filter((b) => !isExcluded(`/blog/${b.slug}`)).map((b) => ({ path: `/blog/${b.slug}`, lastmod: b.published_at }));
-    console.log(`[sitemaps] Blog from REST API: ${blog.length}`);
+    blog = blogRaw
+      .filter((b) => {
+        if (!b.slug || isExcluded(`/blog/${b.slug}`)) return false;
+        // Include only posts relevant to core niches
+        const titleLower = (b.title || '').toLowerCase();
+        const catLower = (b.category || '').toLowerCase();
+        return BLOG_NICHE_KEYWORDS.some(kw => titleLower.includes(kw) || catLower.includes(kw) || catLower.includes('cats') || catLower.includes('small pets'));
+      })
+      .slice(0, 30) // Hard cap: max 30 blog posts in sitemap
+      .map((b) => ({ path: `/blog/${b.slug}`, lastmod: b.published_at }));
+    console.log(`[sitemaps] Blog from REST API: ${blogRaw.length} total, ${blog.length} niche-filtered for sitemap`);
   } else {
-    blog = filterIndexable(safeRead(joinRoot("data", "blog.json"), []));
+    blog = filterIndexable(safeRead(joinRoot("data", "blog.json"), [])).slice(0, 30);
     console.log(`[sitemaps] Blog from JSON fallback: ${blog.length}`);
   }
 
-  const guides = filterIndexable(safeRead(joinRoot("data", "guides.json"), []));
-  console.log(`[sitemaps] Guides from JSON: ${guides.length}`);
+  // Guides — filter to cat/cage niche only
+  const GUIDE_NICHE_KEYWORDS = ['cat', 'litter', 'condo', 'tree', 'tower', 'guinea', 'cage'];
+  const allGuides = filterIndexable(safeRead(joinRoot("data", "guides.json"), []));
+  const guides = allGuides.filter(g => {
+    const pathLower = (g.path || '').toLowerCase();
+    return GUIDE_NICHE_KEYWORDS.some(kw => pathLower.includes(kw));
+  });
+  console.log(`[sitemaps] Guides from JSON: ${allGuides.length} total, ${guides.length} niche-filtered`);
   const clusters = filterIndexable(safeRead(joinRoot("data", "clusters.json"), []));
   console.log(`[sitemaps] Clusters from JSON: ${clusters.length}`);
 
@@ -268,20 +290,15 @@ async function main() {
     };
   });
 
+  // ── Static pages — only essential pages ──
   const staticPages = [
     { path: "/", priority: 1.0, changefreq: "daily", lastmod: today },
     { path: "/products", priority: 0.9, changefreq: "daily", lastmod: today },
-    { path: "/blog", priority: 0.85, changefreq: "daily", lastmod: today },
-    { path: "/guides", priority: 0.85, changefreq: "weekly", lastmod: today },
     { path: "/bestsellers", priority: 0.80, changefreq: "weekly", lastmod: today },
-    { path: "/about", priority: 0.60, changefreq: "monthly", lastmod: today },
-    { path: "/about-the-author", priority: 0.60, changefreq: "monthly", lastmod: today },
-    { path: "/contact", priority: 0.50, changefreq: "monthly", lastmod: today },
-    { path: "/shipping", priority: 0.40, changefreq: "monthly", lastmod: today },
-    { path: "/returns", priority: 0.40, changefreq: "monthly", lastmod: today },
-    { path: "/cookies", priority: 0.30, changefreq: "yearly", lastmod: today },
-    { path: "/privacy", priority: 0.30, changefreq: "yearly", lastmod: today },
-    { path: "/terms", priority: 0.30, changefreq: "yearly", lastmod: today },
+    { path: "/about", priority: 0.50, changefreq: "monthly", lastmod: today },
+    { path: "/contact", priority: 0.40, changefreq: "monthly", lastmod: today },
+    { path: "/shipping", priority: 0.30, changefreq: "monthly", lastmod: today },
+    { path: "/returns", priority: 0.30, changefreq: "monthly", lastmod: today },
   ].map((e) => ({
     loc: absUrl(BASE, e.path), lastmod: e.lastmod, changefreq: e.changefreq, priority: e.priority,
     _path: e.path, _updatedAt: e.lastmod,

@@ -15,15 +15,20 @@ interface SeoCollection {
  * Renders 8–12 real <a href="/collections/..."> links.
  */
 export function ShopByCategoryLinks() {
+  // Only show collections related to Cat Trees/Condos and Small Animal Cages
+  const FOCUS_SLUGS = [
+    'cat-trees-and-condos', 'cat-furniture', 'cat-scratching-posts', 'cat-houses',
+    'cat-beds', 'cat-litter-boxes', 'hamster-cages', 'rabbit-cages',
+  ];
   const { data: collections } = useQuery<SeoCollection[]>({
-    queryKey: ['homepage-seo-collections-links'],
+    queryKey: ['homepage-seo-collections-links-focused'],
     queryFn: async () => {
       const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('seo_collections')
         .select('id, slug, name')
-        .order('name', { ascending: true })
-        .limit(16);
+        .in('slug', FOCUS_SLUGS)
+        .order('name', { ascending: true });
       if (error) throw error;
       return data || [];
     },

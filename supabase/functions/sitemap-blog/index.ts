@@ -8,8 +8,10 @@ const corsHeaders = {
 
 const SITE = "https://getpawsy.pet";
 
-// Non-core categories that should be excluded from sitemap (noindex)
+// Non-core categories excluded from sitemap (noindex)
 const NOINDEX_CATEGORIES = ["Fish", "Birds", "Reptiles", "Small Pets"];
+// Only include blog posts relevant to primary niches
+const NICHE_KEYWORDS = ["cat tree", "cat condo", "cat tower", "guinea pig", "hamster cage", "rabbit cage", "cat litter", "cat scratch", "cat furniture", "small animal", "cat bed", "cat house"];
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -26,7 +28,7 @@ Deno.serve(async (req: Request) => {
     // Fetch all published blog posts (up to 1000)
     const { data: posts, error } = await supabase
       .from("blog_posts")
-      .select("slug, published_at, updated_at, category")
+      .select("slug, published_at, updated_at, category, title")
       .eq("is_published", true)
       .order("published_at", { ascending: false })
       .limit(1000);
@@ -39,10 +41,13 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Filter out non-core categories
-    const indexablePosts = (posts || []).filter(
-      (p) => !NOINDEX_CATEGORIES.includes(p.category)
-    );
+    // Filter: exclude non-core categories AND only include niche-relevant posts
+    const indexablePosts = (posts || []).filter((p) => {
+      if (NOINDEX_CATEGORIES.includes(p.category)) return false;
+      const titleLower = (p.title || "").toLowerCase();
+      const catLower = (p.category || "").toLowerCase();
+      return NICHE_KEYWORDS.some(kw => titleLower.includes(kw) || catLower.includes("cats") || catLower.includes("small pets"));
+    }).slice(0, 30); // Hard cap
 
     const urls = indexablePosts.map((post) => {
       const lastmod = post.updated_at || post.published_at || new Date().toISOString();
