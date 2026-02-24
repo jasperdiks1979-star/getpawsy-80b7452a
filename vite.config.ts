@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import buildIdPlugin from "./vite-plugin-build-id";
+import sitemapsPlugin from "./vite-plugin-sitemaps";
 
 export default defineConfig(({ mode }) => ({
   server: {
@@ -96,6 +97,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     buildIdPlugin(),
+    sitemapsPlugin(),
   ].filter(Boolean),
   resolve: {
     alias: {

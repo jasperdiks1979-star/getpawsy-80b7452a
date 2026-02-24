@@ -1,14 +1,15 @@
 /**
- * Vite plugin that generates merchant-feed XML files at build time
- * by querying the Supabase REST API directly.
+ * Vite plugin that:
+ * 1. Runs sitemap generation at buildStart (writes into /public so Vite copies to /dist)
+ * 2. Generates merchant-feed XML at closeBundle (writes into /dist directly)
  *
- * SITEMAP GENERATION HAS BEEN REMOVED.
- * Sitemaps are now generated exclusively by: node scripts/generate-sitemaps.mjs
- * which writes into /public before vite build copies them to /dist.
+ * Sitemap generation is embedded here because Lovable Cloud does NOT run
+ * package.json "prebuild" scripts. This ensures sitemaps are always fresh.
  */
 import type { Plugin } from 'vite';
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync, readFileSync, existsSync, readdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
+import { execSync } from 'child_process';
 
 const BASE_URL = 'https://getpawsy.pet';
 const SUPABASE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co';
@@ -500,6 +501,28 @@ ${issues.join('\n')}
 </merchant_diagnostics>`;
 }
 
+// ── Sitemap build-time validation ─────────────────────────────────────
+
+function assertSitemapFileValid(filePath: string, requiredToken: string, label: string): void {
+  if (!existsSync(filePath)) {
+    throw new Error(`[sitemaps] FATAL: ${label} not found at ${filePath}`);
+  }
+  const content = readFileSync(filePath, 'utf8');
+  if (!content.startsWith('<?xml version="1.0" encoding="UTF-8"?>')) {
+    throw new Error(`[sitemaps] FATAL: ${label} missing XML header. First 200 chars: ${content.slice(0, 200)}`);
+  }
+  if (!content.includes(requiredToken)) {
+    throw new Error(`[sitemaps] FATAL: ${label} missing required token: ${requiredToken}`);
+  }
+  const lower = content.toLowerCase();
+  if (lower.includes('<!doctype html') || lower.includes('<html')) {
+    throw new Error(`[sitemaps] FATAL: ${label} contains HTML (SPA fallback)`);
+  }
+  if (content.includes('http') && !content.includes('<url') && !content.includes('<sitemap')) {
+    throw new Error(`[sitemaps] FATAL: ${label} is plaintext (URLs without XML tags)`);
+  }
+}
+
 // ── Vite Plugin ───────────────────────────────────────────────────────
 
 const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel><title>GetPawsy Product Feed</title><link>https://getpawsy.pet/</link><description>Google Merchant Center feed for GetPawsy.</description></channel></rss>`;
@@ -507,11 +530,77 @@ const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0
 export default function merchantFeedPlugin(): Plugin {
   let resolvedOutDir = 'dist';
   return {
-    name: 'generate-merchant-feed',
+    name: 'generate-merchant-feed-and-sitemaps',
     apply: 'build',
     configResolved(config) {
       resolvedOutDir = config.build.outDir || 'dist';
     },
+
+    // ── PHASE 1: Generate sitemaps into /public BEFORE Vite copies to /dist ──
+    buildStart() {
+      const publicDir = join(process.cwd(), 'public');
+
+      console.log('[sitemaps] ═══════════════════════════════════════════');
+      console.log('[sitemaps] Phase 1: Generating sitemaps into /public');
+      console.log('[sitemaps] ═══════════════════════════════════════════');
+
+      try {
+        execSync('node scripts/generate-sitemaps.mjs', {
+          cwd: process.cwd(),
+          stdio: 'inherit',
+          timeout: 60_000,
+        });
+        console.log('[sitemaps] ✓ generate-sitemaps.mjs completed');
+      } catch (err: any) {
+        // If the generator fails, fallback files in /public must still be valid
+        console.warn('[sitemaps] ⚠ Generator script failed, checking fallback files:', err.message);
+      }
+
+      // Run validation script
+      try {
+        execSync('node scripts/validate-sitemaps.mjs', {
+          cwd: process.cwd(),
+          stdio: 'inherit',
+          timeout: 30_000,
+        });
+        console.log('[sitemaps] ✓ validate-sitemaps.mjs passed');
+      } catch (err: any) {
+        console.warn('[sitemaps] ⚠ Validation script result:', err.message);
+      }
+
+      // HARD ASSERTIONS — build FAILS if these don't pass
+      const sitemapXml = join(publicDir, 'sitemap.xml');
+      const productsXml = join(publicDir, 'sitemap-products-1.xml');
+
+      assertSitemapFileValid(sitemapXml, '<sitemapindex', 'public/sitemap.xml');
+      assertSitemapFileValid(productsXml, '<urlset', 'public/sitemap-products-1.xml');
+
+      // Verify at least 2 <sitemap> entries in index
+      const indexContent = readFileSync(sitemapXml, 'utf8');
+      const sitemapCount = (indexContent.match(/<sitemap>/g) || []).length;
+      if (sitemapCount < 2) {
+        throw new Error(`[sitemaps] FATAL: sitemap.xml has only ${sitemapCount} <sitemap> entries (need ≥2)`);
+      }
+
+      // Verify at least 1 <url> in products
+      const productsContent = readFileSync(productsXml, 'utf8');
+      if (!productsContent.includes('<url>')) {
+        throw new Error('[sitemaps] FATAL: sitemap-products-1.xml has 0 <url> entries');
+      }
+
+      // Verify no stale references
+      const refs = indexContent.match(/sitemap-products-\d+\.xml/g) || [];
+      for (const ref of refs) {
+        if (!existsSync(join(publicDir, ref))) {
+          throw new Error(`[sitemaps] FATAL: sitemap.xml references ${ref} but file is missing in /public`);
+        }
+      }
+
+      console.log(`[sitemaps] ✅ All sitemaps validated (${sitemapCount} index entries)`);
+      console.log('[sitemaps] ═══════════════════════════════════════════\n');
+    },
+
+    // ── PHASE 2: Generate merchant feed into /dist AFTER build ──
     async closeBundle() {
       const outDir = resolvedOutDir;
       mkdirSync(outDir, { recursive: true });
@@ -529,10 +618,6 @@ export default function merchantFeedPlugin(): Plugin {
         writeFileSync(join(outDir, name), fallback, 'utf-8');
       }
       console.log('[xml-plugin] ✓ Fallback merchant files written');
-
-      // NOTE: Sitemaps are NOT generated here.
-      // They are generated by: node scripts/generate-sitemaps.mjs
-      // which writes into /public before vite build copies them to /dist.
 
       try {
         await Promise.race([
@@ -560,6 +645,25 @@ export default function merchantFeedPlugin(): Plugin {
         ]);
       } catch (err) {
         console.warn('[xml-plugin] ⚠️ Merchant feed generation failed/timed out, fallbacks in place:', err);
+      }
+
+      // ── PHASE 3: Post-build dist verification for sitemaps ──
+      console.log('[sitemaps] Verifying dist/ sitemap files...');
+      const distSitemap = join(outDir, 'sitemap.xml');
+      const distProducts = join(outDir, 'sitemap-products-1.xml');
+
+      if (existsSync(distSitemap)) {
+        assertSitemapFileValid(distSitemap, '<sitemapindex', 'dist/sitemap.xml');
+        console.log('[sitemaps] ✓ dist/sitemap.xml verified');
+      } else {
+        console.warn('[sitemaps] ⚠ dist/sitemap.xml not found — Vite may not have copied /public yet');
+      }
+
+      if (existsSync(distProducts)) {
+        assertSitemapFileValid(distProducts, '<urlset', 'dist/sitemap-products-1.xml');
+        console.log('[sitemaps] ✓ dist/sitemap-products-1.xml verified');
+      } else {
+        console.warn('[sitemaps] ⚠ dist/sitemap-products-1.xml not found');
       }
     },
   };
