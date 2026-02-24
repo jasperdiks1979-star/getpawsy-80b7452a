@@ -34,6 +34,7 @@ const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAu
 const BestsellersSection = lazy(() => import('@/components/home/BestsellersSection').then(m => ({ default: m.BestsellersSection })));
 const PremiumNicheGrid = lazy(() => import('@/components/home/PremiumNicheGrid').then(m => ({ default: m.PremiumNicheGrid })));
 const MostLovedPicks = lazy(() => import('@/components/home/MostLovedPicks'));
+const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
 const SalesAccelerationBanner = lazy(() => import('@/components/home/SalesAccelerationBanner').then(m => ({ default: m.SalesAccelerationBanner })));
 const MoneyHubBlocks = lazy(() => import('@/components/home/MoneyHubBlocks').then(m => ({ default: m.MoneyHubBlocks })));
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
@@ -397,6 +398,13 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* ── Trending Products — crawl-optimized SEO product grid ────── */}
+      <SectionErrorBoundary sectionName="Trending Products">
+        <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
+          <TrendingProducts />
+        </Suspense>
+      </SectionErrorBoundary>
 
       {/* ── Most Loved Picks — gated to not block hero LCP ───────────── */}
       {hydrationReady && (
