@@ -16,6 +16,7 @@ interface ProductSchemaProps {
     category?: string | null;
     stock?: number | null;
     sku?: string | null;
+    seo_tier?: string | null;
   };
   reviews?: Array<{
     rating: number;
@@ -251,8 +252,8 @@ export function ProductSchema({
       <meta name="twitter:description" content={metaDescription} />
       <meta name="twitter:image" content={primaryImage} />
 
-      {/* Robots */}
-      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+      {/* Robots — Tier C products get noindex to reduce index bloat */}
+      <meta name="robots" content={product.seo_tier === 'C' ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'} />
 
       {/* JSON-LD Structured Data */}
       <script type="application/ld+json">

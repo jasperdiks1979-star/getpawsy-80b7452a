@@ -4344,6 +4344,7 @@ export type Database = {
           last_stock_sync_at: string | null
           name: string
           price: number
+          seo_tier: string
           shipping_time: string | null
           sku: string | null
           slug: string | null
@@ -4374,6 +4375,7 @@ export type Database = {
           last_stock_sync_at?: string | null
           name: string
           price: number
+          seo_tier?: string
           shipping_time?: string | null
           sku?: string | null
           slug?: string | null
@@ -4404,6 +4406,7 @@ export type Database = {
           last_stock_sync_at?: string | null
           name?: string
           price?: number
+          seo_tier?: string
           shipping_time?: string | null
           sku?: string | null
           slug?: string | null
@@ -6422,6 +6425,7 @@ export type Database = {
           last_stock_sync_at: string | null
           name: string | null
           price: number | null
+          seo_tier: string | null
           shipping_time: string | null
           sku: string | null
           slug: string | null
@@ -6450,6 +6454,7 @@ export type Database = {
           last_stock_sync_at?: string | null
           name?: string | null
           price?: number | null
+          seo_tier?: string | null
           shipping_time?: string | null
           sku?: string | null
           slug?: string | null
@@ -6478,6 +6483,7 @@ export type Database = {
           last_stock_sync_at?: string | null
           name?: string | null
           price?: number | null
+          seo_tier?: string | null
           shipping_time?: string | null
           sku?: string | null
           slug?: string | null
