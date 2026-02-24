@@ -309,10 +309,15 @@ async function main() {
   const guideEntries = makeDelta(guides, { changefreq: "weekly", priority: 0.7 });
   const clusterEntries = makeDelta(clusters, { changefreq: "weekly", priority: 0.65 });
 
-  // ── Tiered product entries (Tier C excluded from sitemaps entirely) ──
+  // ── Tiered product entries ──
+  // Tier A: core products → sitemap-core-products.xml
+  // Tier B1: support commercial → sitemap-secondary-products.xml
+  // Tier B2: index, follow but EXCLUDED from all sitemaps
+  // Tier C: noindex, follow — excluded from all sitemaps
   const tierAProducts = products.filter((p) => p.seo_tier === 'A');
-  const tierBProducts = products.filter((p) => p.seo_tier === 'B');
-  // Tier C: NOT in any sitemap (noindex, follow applied client-side)
+  const tierB1Products = products.filter((p) => p.seo_tier === 'B1');
+  const tierB2Products = products.filter((p) => p.seo_tier === 'B2');
+  const tierCProducts = products.filter((p) => p.seo_tier === 'C' || !['A', 'B1', 'B2'].includes(p.seo_tier));
 
   const makeDeltaProduct = (entries, defaultPriority) => entries.map((e) => {
     const lastmod = resolveLastmod(e.path, e.lastmod, history, today);
@@ -325,10 +330,10 @@ async function main() {
   });
 
   const coreProductEntries = makeDeltaProduct(tierAProducts, 0.90);
-  const secondaryProductEntries = makeDeltaProduct(tierBProducts, 0.60);
+  const secondaryProductEntries = makeDeltaProduct(tierB1Products, 0.60);
   const productEntriesAll = [...coreProductEntries, ...secondaryProductEntries];
 
-  console.log(`[sitemaps] Tier A (core): ${tierAProducts.length}, Tier B (secondary): ${tierBProducts.length}, Tier C (noindex): ${products.length - tierAProducts.length - tierBProducts.length}`);
+  console.log(`[sitemaps] Tier A (core): ${tierAProducts.length}, Tier B1 (secondary): ${tierB1Products.length}, Tier B2 (no sitemap): ${tierB2Products.length}, Tier C (noindex): ${tierCProducts.length}`);
 
   // ── Record history ──
   const allEntries = [...staticPages, ...collectionEntries, ...blogEntries, ...guideEntries, ...clusterEntries, ...productEntriesAll];
