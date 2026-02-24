@@ -889,5 +889,53 @@
     "updatedAt": "2026-02-23",
     "readingTime": 8,
     "relatedCategories": ["dog-beds", "orthopedic-dog-beds"]
+  },
+  {
+    "slug": "best-cat-trees-large-cats-2026",
+    "title": "Best Cat Trees for Large Cats (2026) — Heavy-Duty & Stability Tested",
+    "excerpt": "Heavy-duty cat trees built for Maine Coons, Ragdolls & large breeds. Stability-tested, anti-tip rated, and built to last.",
+    "category": "Cat Trees & Condos",
+    "keywords": ["best cat tree for large cats", "heavy duty cat tree", "cat tree for maine coon", "large cat tree"],
+    "publishedAt": "2026-02-24",
+    "updatedAt": "2026-02-24",
+    "featuredImage": "/images/guides/cat-trees-large-cats.jpg",
+    "readingTime": 12,
+    "relatedCategories": ["cat-trees-and-condos", "cat-furniture"]
+  },
+  {
+    "slug": "cat-condo-vs-cat-tree-difference",
+    "title": "Cat Condo vs Cat Tree — Which One Does Your Cat Need?",
+    "excerpt": "Understand the key differences between cat condos and cat trees so you can pick the right furniture for your indoor cat's personality.",
+    "category": "Cat Trees & Condos",
+    "keywords": ["cat condo vs cat tree", "difference cat condo cat tree", "cat tree or condo"],
+    "publishedAt": "2026-02-24",
+    "updatedAt": "2026-02-24",
+    "featuredImage": "/images/guides/cat-condo-vs-tree.jpg",
+    "readingTime": 8,
+    "relatedCategories": ["cat-trees-and-condos", "cat-furniture"]
+  },
+  {
+    "slug": "self-cleaning-litter-box-worth-it",
+    "title": "Are Self-Cleaning Litter Boxes Worth It? (Honest 2026 Review)",
+    "excerpt": "We break down the real costs, maintenance, and benefits of self-cleaning litter boxes to help you decide if the investment makes sense.",
+    "category": "Cat Litter Boxes",
+    "keywords": ["self cleaning litter box worth it", "automatic litter box review", "self cleaning litter box pros cons"],
+    "publishedAt": "2026-02-24",
+    "updatedAt": "2026-02-24",
+    "featuredImage": "/images/guides/self-cleaning-litter-box.jpg",
+    "readingTime": 10,
+    "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "best-litter-boxes-apartments-2026",
+    "title": "Best Litter Boxes for Apartments (2026) — Small Space Solutions",
+    "excerpt": "Space-saving litter boxes designed for apartments and studios. Compact designs, superior odor control, and furniture-style options.",
+    "category": "Cat Litter Boxes",
+    "keywords": ["best litter box for apartment", "small litter box", "litter box for studio apartment"],
+    "publishedAt": "2026-02-24",
+    "updatedAt": "2026-02-24",
+    "featuredImage": "/images/guides/litter-box-apartment.jpg",
+    "readingTime": 9,
+    "relatedCategories": ["cat-litter-boxes"]
   }
 ]

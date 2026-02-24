@@ -18,7 +18,8 @@ export function ShopByCategoryLinks() {
   // Only show collections related to Cat Trees/Condos and Small Animal Cages
   const FOCUS_SLUGS = [
     'cat-trees-and-condos', 'cat-furniture', 'cat-scratching-posts', 'cat-houses',
-    'cat-beds', 'cat-litter-boxes', 'hamster-cages', 'rabbit-cages',
+    'cat-beds', 'cat-litter-boxes', 'best-cat-litter-boxes',
+    'cat-tree-for-large-cats', 'modern-cat-trees', 'cat-condos',
   ];
   const { data: collections } = useQuery<SeoCollection[]>({
     queryKey: ['homepage-seo-collections-links-focused'],
