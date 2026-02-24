@@ -25,6 +25,7 @@ const navItems = [
   { to: '/admin/seo-command-center', label: 'SEO Command', icon: Target },
   { to: '/admin/autonomous-seo', label: 'Autonomous SEO', icon: Brain },
   { to: '/admin/seo-agent-auto', label: 'SEO Agent AI', icon: Activity },
+  { to: '/admin/seo-engine', label: 'SEO Engine Auto', icon: Zap },
   { to: '/admin/seo-dashboard', label: 'SEO Engine', icon: Zap },
   { to: '/admin/seo-intelligence', label: 'SEO Intelligence', icon: LineChart },
   { to: '/admin/commerce-intelligence', label: 'Commerce Intel', icon: BarChart3 },

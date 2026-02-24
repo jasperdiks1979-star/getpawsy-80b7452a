@@ -165,6 +165,7 @@ const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPag
 const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
 const RevenueScalingPage = lazyWithRetry(() => import("./pages/admin/RevenueScalingPage"));
 const AutonomousSeoPage = lazyWithRetry(() => import("./pages/admin/AutonomousSeoPage"));
+const AutonomousSeoEnginePage = lazyWithRetry(() => import("./pages/admin/AutonomousSeoEnginePage"));
 const SeoWarRoomPage = lazyWithRetry(() => import("./pages/admin/SeoWarRoomPage"));
 const CompetitiveIntelligencePage = lazyWithRetry(() => import("./pages/admin/CompetitiveIntelligencePage"));
 const AuthorityEnginePage = lazyWithRetry(() => import("./pages/admin/AuthorityEnginePage"));
@@ -540,6 +541,7 @@ const App = () => {
                         <Route path="seo-agent-auto" element={<Suspense fallback={<RouteLoader />}><SeoAgentAutonomous /></Suspense>} />
                         <Route path="seo-acceleration" element={<Suspense fallback={<RouteLoader />}><SeoAccelerationPage /></Suspense>} />
                         <Route path="progress" element={<Suspense fallback={<RouteLoader />}><ProgressDashboard /></Suspense>} />
+                        <Route path="seo-engine" element={<Suspense fallback={<RouteLoader />}><AutonomousSeoEnginePage /></Suspense>} />
                       </Route>
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
