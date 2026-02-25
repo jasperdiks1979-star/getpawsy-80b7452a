@@ -1,13 +1,11 @@
-import { Layout } from "@/components/layout/Layout";
 import { Helmet } from "react-helmet-async";
 import { DomainHealthChecker } from "@/components/admin/domain/DomainHealthChecker";
 
 export default function DomainHealthPage() {
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>Domain & Redirect Health | GetPawsy Admin</title>
-        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <div className="container py-8 space-y-6">
         <div>
@@ -20,6 +18,6 @@ export default function DomainHealthPage() {
         </div>
         <DomainHealthChecker />
       </div>
-    </Layout>
+    </>
   );
 }

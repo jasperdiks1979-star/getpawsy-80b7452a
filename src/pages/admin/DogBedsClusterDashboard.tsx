@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Crown, Shield, Link2, Eye, AlertTriangle, TrendingUp, Target, ChevronDown, ChevronUp } from 'lucide-react';
-import { Layout } from '@/components/layout/Layout';
+// Layout removed — AdminLayout provides admin shell
 import { useGuidesList } from '@/hooks/useGuides';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -113,11 +113,11 @@ const DogBedsClusterDashboard = () => {
 
   if (!clusterData) {
     return (
-      <Layout>
+      <>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -129,7 +129,7 @@ const DogBedsClusterDashboard = () => {
   };
 
   return (
-    <Layout>
+    <>
       <Helmet>
         <meta name="robots" content="noindex, follow" />
         <title>Dog Beds Cluster Dashboard | Admin</title>
@@ -328,7 +328,7 @@ const DogBedsClusterDashboard = () => {
           </Card>
         )}
       </div>
-    </Layout>
+    </>
   );
 };
 

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Layout } from '@/components/layout/Layout';
+// Layout removed — AdminLayout provides admin shell
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,18 +72,18 @@ export default function SeoAgentControlCenter() {
 
   if (!result) {
     return (
-      <Layout>
+      <>
         <div className="container max-w-7xl mx-auto py-8 px-4">
           <p className="text-muted-foreground text-center py-20">Loading SEO Agent Control Center…</p>
         </div>
-      </Layout>
+      </>
     );
   }
 
   const { agents, learningState, riskBudget, currentBatch, pendingApprovals, recentChanges, kpis, alerts, cannibalization, schedule, systemSummary } = result;
 
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>SEO Agent Control Center | Admin</title>
         <meta name="robots" content="noindex, nofollow" />
@@ -425,6 +425,6 @@ export default function SeoAgentControlCenter() {
           </CardContent>
         </Card>
       </div>
-    </Layout>
+    </>
   );
 }

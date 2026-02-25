@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Zap, Target, AlertTriangle, TrendingUp, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Layout } from '@/components/layout/Layout';
+// Layout removed — AdminLayout provides admin shell
 import { useGuidesList } from '@/hooks/useGuides';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -69,10 +69,10 @@ const MomentumAccelerationDashboard = () => {
     };
   }, [allGuides, cycleStartDate]);
 
-  if (!analysis) return <Layout><div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div></Layout>;
+  if (!analysis) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>;
 
   return (
-    <Layout>
+    <>
       <Helmet><meta name="robots" content="noindex, follow" /><title>Momentum Acceleration Dashboard | Admin</title></Helmet>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex items-center gap-3 mb-6">
@@ -190,7 +190,7 @@ const MomentumAccelerationDashboard = () => {
           <Link to="/admin/cat-litter-cluster" className="text-sm text-primary hover:underline">Cat Litter Cluster</Link>
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 
