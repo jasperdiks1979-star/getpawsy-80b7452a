@@ -11,10 +11,19 @@ interface Scenario {
   aov: number;
 }
 
+// Keyword-based revenue projections
+// Formula: keywords × avgVolume × CTR → visitors × convRate × AOV
 const SCENARIOS: Scenario[] = [
-  { label: 'Conservative', visitors: 5000, convRate: 1.5, aov: 160 },
-  { label: 'Moderate', visitors: 10000, convRate: 2.0, aov: 180 },
-  { label: 'Aggressive', visitors: 25000, convRate: 2.5, aov: 190 },
+  { label: 'Conservative', visitors: 2000, convRate: 1.0, aov: 165 },
+  { label: 'Moderate', visitors: 7200, convRate: 2.0, aov: 175 },
+  { label: 'Aggressive', visitors: 24000, convRate: 3.0, aov: 185 },
+];
+
+// Keyword-count scenario breakdown for display
+const KEYWORD_SCENARIOS = [
+  { label: 'Conservative', keywords: 5, ctr: 2, conv: 1, aov: 165 },
+  { label: 'Moderate', keywords: 10, ctr: 3, conv: 2, aov: 175 },
+  { label: 'Aggressive', keywords: 20, ctr: 5, conv: 3, aov: 185 },
 ];
 
 const CTR_CURVE: Record<string, number> = {
@@ -61,11 +70,16 @@ export function RevenueSimulationWidget() {
                   <Badge variant={s.label === 'Conservative' ? 'secondary' : s.label === 'Moderate' ? 'default' : 'destructive'} className="text-[10px] mb-1.5">
                     {s.label}
                   </Badge>
-                  <div className="text-lg font-bold">${rev.toLocaleString()}</div>
+              <div className="text-lg font-bold">${rev.toLocaleString()}</div>
                   <div className="text-[10px] text-muted-foreground">/month</div>
-                  <div className="text-[10px] text-muted-foreground mt-1">
-                    {s.visitors.toLocaleString()} vis · {s.convRate}% · ${s.aov}
-                  </div>
+                  {(() => {
+                    const ks = KEYWORD_SCENARIOS.find(k => k.label === s.label);
+                    return ks ? (
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        {ks.keywords} kw Top 10 · {ks.ctr}% CTR · {ks.conv}% CR
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               );
             })}
