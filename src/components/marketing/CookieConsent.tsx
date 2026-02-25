@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Cookie, X, Settings } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
@@ -8,8 +7,14 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getConsent, setConsent, type ConsentValue } from '@/lib/cookieConsent';
 import { markCookieBannerMounted, markCookieBannerInteractive } from '@/lib/lcp-debug';
 
+/**
+ * CookieConsent — Phase 2 CWV optimisation
+ * Replaced framer-motion (AnimatePresence + motion.div) with CSS transitions.
+ * Saves ~60KB gzip from cookie banner chunk on first load.
+ */
 export const CookieConsent = () => {
   const [showBanner, setShowBanner] = useState(false);
+  const [isVisible, setIsVisible] = useState(false); // controls CSS transition
   const [showSettings, setShowSettings] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
   const [prefs, setPrefs] = useState({ functional: true, analytics: true, marketing: true });
@@ -29,19 +34,17 @@ export const CookieConsent = () => {
   const shouldDisable = isMobile && isCheckoutRoute;
 
   // Show banner only if no consent stored — DEFERRED via requestIdleCallback
-  // to avoid blocking hero/grid paint. Falls back to rAF+setTimeout for Safari.
   useEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
     const existing = getConsent();
     if (!existing) {
-      // Use requestIdleCallback so banner mounts after main content paints,
-      // but within ~1-2s instead of the previous hard 2500ms delay.
-      // Fallback: double-rAF + 200ms setTimeout ensures post-first-paint mount.
       const mount = () => {
         requestAnimationFrame(() => {
           markCookieBannerMounted();
           setShowBanner(true);
+          // Trigger CSS transition on next frame
+          requestAnimationFrame(() => setIsVisible(true));
         });
       };
 
@@ -49,7 +52,6 @@ export const CookieConsent = () => {
       if ('requestIdleCallback' in window) {
         handle = (window as any).requestIdleCallback(mount, { timeout: 2000 });
       } else {
-        // Double-rAF ensures we're past the first paint frame
         handle = setTimeout(() => {
           requestAnimationFrame(() => {
             requestAnimationFrame(mount);
@@ -87,17 +89,24 @@ export const CookieConsent = () => {
       }
       setShowSettings(true);
       setShowBanner(true);
+      requestAnimationFrame(() => setIsVisible(true));
     };
     window.addEventListener('open-cookie-settings', handler);
     return () => window.removeEventListener('open-cookie-settings', handler);
   }, []);
 
+  const hideBanner = useCallback(() => {
+    setIsVisible(false);
+    // Wait for CSS transition to finish before unmounting
+    setTimeout(() => setShowBanner(false), 300);
+  }, []);
+
   const save = useCallback((value: ConsentValue, msg?: string) => {
     setConsent(value);
-    setShowBanner(false);
+    hideBanner();
     setShowSettings(false);
     if (msg) toast.success(msg);
-  }, []);
+  }, [hideBanner]);
 
   const acceptAll = useCallback(() => save('all', 'All cookies accepted! 🍪'), [save]);
   const acceptNecessary = useCallback(() => save('necessary', 'Only necessary cookies enabled 🍪'), [save]);
@@ -107,75 +116,73 @@ export const CookieConsent = () => {
   }, [prefs, save]);
 
   if (shouldDisable) return null;
+  if (!showBanner) return null;
 
   return (
-    <AnimatePresence>
-      {showBanner && (
-        <motion.div
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="fixed bottom-0 left-0 right-0 z-[100] p-4 pb-safe"
-          data-testid="cookie-banner"
-          data-cwvnolcp="true"
-        >
-          {/* Fixed min-height for stable CLS; no max-h constraint to avoid reflow */}
-          <div className="max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-xl overflow-hidden">
-            <div className="p-4 md:p-6">
-              <div className="flex items-start gap-4">
-                <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 flex-shrink-0">
-                  <Cookie className="w-6 h-6 text-primary" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground mb-2 text-sm sm:text-base">🍪 We use cookies</h3>
-
-                  {!showSettings ? (
-                    <>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        We use cookies to improve your experience.{' '}
-                        {showFullText ? (
-                          <>Analyze site traffic and personalize content. By clicking "Accept All", you consent to our use of cookies.{' '}</>
-                        ) : null}
-                        <button onClick={() => setShowFullText(v => !v)} className="text-primary hover:underline text-sm inline">
-                          {showFullText ? 'Less' : 'Read more'}
-                        </button>{' '}
-                        <Link to="/cookies" className="text-primary hover:underline">Cookie policy</Link>
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button onClick={acceptAll} size="sm">Accept All</Button>
-                        <Button onClick={acceptNecessary} variant="outline" size="sm">Necessary Only</Button>
-                        <Button onClick={() => setShowSettings(true)} variant="ghost" size="sm" className="gap-1">
-                          <Settings className="w-4 h-4" /> Customize
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="space-y-3 mb-4">
-                        <CookieToggle label="Necessary Cookies" description="Required for the website to function" checked disabled />
-                        <CookieToggle label="Functional" description="Remember your preferences" checked={prefs.functional} onChange={() => setPrefs(p => ({ ...p, functional: !p.functional }))} />
-                        <CookieToggle label="Analytics" description="Help us understand usage" checked={prefs.analytics} onChange={() => setPrefs(p => ({ ...p, analytics: !p.analytics }))} />
-                        <CookieToggle label="Marketing" description="Personalized ads" checked={prefs.marketing} onChange={() => setPrefs(p => ({ ...p, marketing: !p.marketing }))} />
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button onClick={saveCustom} size="sm">Save Preferences</Button>
-                        <Button onClick={() => setShowSettings(false)} variant="ghost" size="sm">Back</Button>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <button onClick={acceptNecessary} className="p-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0" aria-label="Close cookie banner">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+    <div
+      className="fixed bottom-0 left-0 right-0 z-[100] p-4 pb-safe"
+      style={{
+        transform: isVisible ? 'translateY(0)' : 'translateY(100%)',
+        opacity: isVisible ? 1 : 0,
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        willChange: 'transform, opacity',
+      }}
+      data-testid="cookie-banner"
+      data-cwvnolcp="true"
+    >
+      <div className="max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+        <div className="p-4 md:p-6">
+          <div className="flex items-start gap-4">
+            <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 flex-shrink-0">
+              <Cookie className="w-6 h-6 text-primary" />
             </div>
+
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-foreground mb-2 text-sm sm:text-base">🍪 We use cookies</h3>
+
+              {!showSettings ? (
+                <>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    We use cookies to improve your experience.{' '}
+                    {showFullText ? (
+                      <>Analyze site traffic and personalize content. By clicking "Accept All", you consent to our use of cookies.{' '}</>
+                    ) : null}
+                    <button onClick={() => setShowFullText(v => !v)} className="text-primary hover:underline text-sm inline">
+                      {showFullText ? 'Less' : 'Read more'}
+                    </button>{' '}
+                    <Link to="/cookies" className="text-primary hover:underline">Cookie policy</Link>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={acceptAll} size="sm">Accept All</Button>
+                    <Button onClick={acceptNecessary} variant="outline" size="sm">Necessary Only</Button>
+                    <Button onClick={() => setShowSettings(true)} variant="ghost" size="sm" className="gap-1">
+                      <Settings className="w-4 h-4" /> Customize
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-3 mb-4">
+                    <CookieToggle label="Necessary Cookies" description="Required for the website to function" checked disabled />
+                    <CookieToggle label="Functional" description="Remember your preferences" checked={prefs.functional} onChange={() => setPrefs(p => ({ ...p, functional: !p.functional }))} />
+                    <CookieToggle label="Analytics" description="Help us understand usage" checked={prefs.analytics} onChange={() => setPrefs(p => ({ ...p, analytics: !p.analytics }))} />
+                    <CookieToggle label="Marketing" description="Personalized ads" checked={prefs.marketing} onChange={() => setPrefs(p => ({ ...p, marketing: !p.marketing }))} />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={saveCustom} size="sm">Save Preferences</Button>
+                    <Button onClick={() => setShowSettings(false)} variant="ghost" size="sm">Back</Button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <button onClick={acceptNecessary} className="p-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0" aria-label="Close cookie banner">
+              <X className="w-5 h-5" />
+            </button>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        </div>
+      </div>
+    </div>
   );
 };
 

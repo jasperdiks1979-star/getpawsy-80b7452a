@@ -12,7 +12,8 @@ import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
 import Cookie from 'lucide-react/dist/esm/icons/cookie';
 import Clock from 'lucide-react/dist/esm/icons/clock';
-import { useState } from 'react';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -52,6 +53,29 @@ import {
 } from '@/lib/shipping-constants';
 
 // emailSchema loaded lazily — see handleNewsletterSubmit
+
+/**
+ * Collapsible footer section — collapses on mobile to reduce DOM/paint cost.
+ * Desktop: always expanded. Mobile: collapsed by default, expand on tap.
+ */
+const FooterSection = ({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className={className}>
+      <button
+        className="font-display font-semibold text-lg mb-5 w-full text-left flex items-center justify-between md:pointer-events-none"
+        onClick={() => setIsOpen(o => !o)}
+        aria-expanded={isOpen}
+      >
+        {title}
+        <ChevronDown className={`w-4 h-4 md:hidden transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      <div className={`${isOpen ? 'block' : 'hidden'} md:block`}>
+        {children}
+      </div>
+    </div>
+  );
+};
 
 export const Footer = () => {
   const [email, setEmail] = useState('');
@@ -278,9 +302,8 @@ export const Footer = () => {
               </div>
             </div>
 
-            {/* Cat Trees & Condos */}
-            <div>
-              <h4 className="font-display font-semibold text-lg mb-5">Cat Trees & Condos</h4>
+            {/* Cat Trees & Condos — collapsed on mobile */}
+            <FooterSection title="Cat Trees & Condos">
               <ul className="space-y-3">
                 {footerLinks.topCats.map((link) => (
                   <li key={link.href}>
@@ -292,22 +315,22 @@ export const Footer = () => {
                 ))}
               </ul>
 
-              <h4 className="font-display font-semibold text-lg mt-8 mb-5">Cat Litter Boxes</h4>
-              <ul className="space-y-3">
-                {footerLinks.catLitter.map((link) => (
-                  <li key={link.href}>
-                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
-                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                      <span>{link.label}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              <FooterSection title="Cat Litter Boxes" className="mt-8">
+                <ul className="space-y-3">
+                  {footerLinks.catLitter.map((link) => (
+                    <li key={link.href}>
+                      <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                        <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                        <span>{link.label}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </FooterSection>
+            </FooterSection>
 
-            {/* Support + Best Of */}
-            <div>
-              <h4 className="font-display font-semibold text-lg mb-5">Customer Service</h4>
+            {/* Support + Best Of — collapsed on mobile */}
+            <FooterSection title="Customer Service">
               <ul className="space-y-3">
                 {footerLinks.support.map((link) => (
                   <li key={link.href}>
@@ -323,34 +346,35 @@ export const Footer = () => {
                 ))}
               </ul>
 
-              <h4 className="font-display font-semibold text-lg mt-8 mb-5">Best of 2026</h4>
-              <ul className="space-y-3">
-                {footerLinks.bestOf.map((link) => (
-                  <li key={link.href}>
-                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
-                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                      <span>{link.label}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <FooterSection title="Best of 2026" className="mt-8">
+                <ul className="space-y-3">
+                  {footerLinks.bestOf.map((link) => (
+                    <li key={link.href}>
+                      <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                        <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                        <span>{link.label}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </FooterSection>
 
-              <h4 className="font-display font-semibold text-lg mt-8 mb-5">Buying Guides</h4>
-              <ul className="space-y-3">
-                {footerLinks.guides.map((link) => (
-                  <li key={link.href}>
-                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
-                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                      <span>{link.label}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              <FooterSection title="Buying Guides" className="mt-8">
+                <ul className="space-y-3">
+                  {footerLinks.guides.map((link) => (
+                    <li key={link.href}>
+                      <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                        <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                        <span>{link.label}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </FooterSection>
+            </FooterSection>
 
-            {/* Company + Trust Links */}
-            <div>
-              <h4 className="font-display font-semibold text-lg mb-5">Company & Trust</h4>
+            {/* Company + Trust Links — collapsed on mobile */}
+            <FooterSection title="Company & Trust">
               <ul className="space-y-3">
                 {footerLinks.company.map((link) => (
                   <li key={link.href}>
@@ -361,7 +385,7 @@ export const Footer = () => {
                   </li>
                 ))}
               </ul>
-            </div>
+            </FooterSection>
 
           </div>
           {/* Top Indoor Cat Solutions — Money Hub SEO Section */}
@@ -395,50 +419,52 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Popular Pet Categories — SEO internal link block */}
+          {/* Popular Pet Categories — collapsed on mobile */}
           <div className="mt-8 pt-8 border-t border-background/10">
-            <h4 className="font-display font-semibold text-lg mb-4">Popular Pet Categories</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-8 gap-y-2">
-              {footerLinks.popularCategories.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
-                >
-                  <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                  <span>{link.label}</span>
-                </Link>
-              ))}
-            </div>
+            <FooterSection title="Popular Pet Categories">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-8 gap-y-2">
+                {footerLinks.popularCategories.map((link) => (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
+                  >
+                    <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                    <span>{link.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </FooterSection>
           </div>
-          {/* Expert Pet Buying Guides — SEO Cornerstone Link Section */}
+          {/* Expert Pet Buying Guides — collapsed on mobile */}
           <div className="mt-12 pt-8 border-t border-background/10">
-            <h4 className="font-display font-semibold text-lg mb-4">Expert Pet Buying Guides</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
-              {[
-                { slug: 'best-cat-trees-large-cats-2026', label: 'Best Cat Trees for Large Cats – Stability Guide' },
-                { slug: 'best-cat-trees-2026', label: 'Best Cat Trees 2026 – Complete Buyer Guide' },
-                { slug: 'best-cat-litter-box-2026', label: 'Best Cat Litter Box 2026 – Complete Guide' },
-                { slug: 'best-cat-litter-box-furniture-enclosures-2026', label: 'Best Litter Box Furniture & Enclosures' },
-                { slug: 'best-self-cleaning-litter-box-2026', label: 'Best Self-Cleaning Litter Box 2026' },
-                { slug: 'best-extra-large-litter-boxes', label: 'Best Extra Large Litter Boxes for Big Cats' },
-                { slug: 'best-litter-boxes-multi-cat', label: 'Best Litter Boxes for Multi-Cat Homes' },
-                { slug: 'best-cat-trees-small-apartments', label: 'Best Cat Trees for Small Apartments' },
-                { slug: 'how-many-litter-boxes-per-cat', label: 'How Many Litter Boxes Per Cat? N+1 Rule' },
-                { slug: 'best-litter-box-kittens', label: 'Best Litter Box for Kittens – Starter Picks' },
-                { slug: 'best-litter-box-senior-cats', label: 'Best Litter Box for Senior Cats' },
-                { slug: 'best-low-tracking-litter-box', label: 'Best Low-Tracking Litter Box 2026' },
-              ].map((guide) => (
-                <Link
-                  key={guide.slug}
-                  to={`/guides/${guide.slug}`}
-                  className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
-                >
-                  <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                  <span>{guide.label}</span>
-                </Link>
-              ))}
-            </div>
+            <FooterSection title="Expert Pet Buying Guides">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
+                {[
+                  { slug: 'best-cat-trees-large-cats-2026', label: 'Best Cat Trees for Large Cats – Stability Guide' },
+                  { slug: 'best-cat-trees-2026', label: 'Best Cat Trees 2026 – Complete Buyer Guide' },
+                  { slug: 'best-cat-litter-box-2026', label: 'Best Cat Litter Box 2026 – Complete Guide' },
+                  { slug: 'best-cat-litter-box-furniture-enclosures-2026', label: 'Best Litter Box Furniture & Enclosures' },
+                  { slug: 'best-self-cleaning-litter-box-2026', label: 'Best Self-Cleaning Litter Box 2026' },
+                  { slug: 'best-extra-large-litter-boxes', label: 'Best Extra Large Litter Boxes for Big Cats' },
+                  { slug: 'best-litter-boxes-multi-cat', label: 'Best Litter Boxes for Multi-Cat Homes' },
+                  { slug: 'best-cat-trees-small-apartments', label: 'Best Cat Trees for Small Apartments' },
+                  { slug: 'how-many-litter-boxes-per-cat', label: 'How Many Litter Boxes Per Cat? N+1 Rule' },
+                  { slug: 'best-litter-box-kittens', label: 'Best Litter Box for Kittens – Starter Picks' },
+                  { slug: 'best-litter-box-senior-cats', label: 'Best Litter Box for Senior Cats' },
+                  { slug: 'best-low-tracking-litter-box', label: 'Best Low-Tracking Litter Box 2026' },
+                ].map((guide) => (
+                  <Link
+                    key={guide.slug}
+                    to={`/guides/${guide.slug}`}
+                    className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
+                  >
+                    <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                    <span>{guide.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </FooterSection>
           </div>
         </div>
 
