@@ -56,6 +56,10 @@ import { PAASection } from '@/components/seo/PAASection';
 import { MidContentCTA } from '@/components/seo/MidContentCTA';
 import { getDominationConfig } from '@/data/domination-config';
 import { CatTreesHubContent } from '@/components/seo/CatTreesHubContent';
+import { CollectionTrustBar } from '@/components/seo/CollectionTrustBar';
+import { CollectionMiniComparison } from '@/components/seo/CollectionMiniComparison';
+import { CollectionCROBadges, isMoneyCollection } from '@/components/seo/CollectionCROBadges';
+import { SoldCounter } from '@/components/seo/SoldCounter';
 
 interface FAQItem {
   question: string;
@@ -360,6 +364,7 @@ const SeoCollection = () => {
   const tocItems = getCollectionTocItems(!!comparisonData, collection.faq.length > 0);
   const isPriorityCategory = !!comparisonData; // has comparison = priority category
   const domConfig = getDominationConfig(collection.slug);
+  const isMoney = isMoneyCollection(collection.slug);
 
   // HowTo schema for domination pages
   const howToSchema = domConfig?.howTo ? {
@@ -517,6 +522,9 @@ const SeoCollection = () => {
         {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
 
         {/* Section B: Product Grid */}
+        {/* CRO: Trust Bar for money collections */}
+        {isMoney && <CollectionTrustBar />}
+
         <section id="products" className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold">
@@ -540,29 +548,48 @@ const SeoCollection = () => {
               ))}
             </div>
           ) : products.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {products.map((product, index) => (
-                <ProductCard
-                  key={product.id}
-                  product={{
-                    id: product.id,
-                    name: product.name,
-                    price: product.price,
-                    compare_at_price: product.compare_at_price,
-                    image_url: product.image_url,
-                    category: product.category,
-                    slug: product.slug,
-                    stock: product.stock,
-                    created_at: product.created_at,
-                    updated_at: product.updated_at
-                  }}
-                  listId="seo-collection"
-                  listName={collection.name}
-                  position={index + 1}
-                  popularChoice={isPriorityCategory && index < 3 && (product.stock ?? 0) > 0}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {products.map((product, index) => (
+                  <div key={product.id}>
+                    <ProductCard
+                      product={{
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        compare_at_price: product.compare_at_price,
+                        image_url: product.image_url,
+                        category: product.category,
+                        slug: product.slug,
+                        stock: product.stock,
+                        created_at: product.created_at,
+                        updated_at: product.updated_at
+                      }}
+                      listId="seo-collection"
+                      listName={collection.name}
+                      position={index + 1}
+                      popularChoice={isPriorityCategory && index < 3 && (product.stock ?? 0) > 0}
+                    />
+                    {/* CRO badges + sold counter for money collections */}
+                    {isMoney && (
+                      <div className="px-2 pb-2">
+                        <CollectionCROBadges
+                          collectionSlug={collection.slug}
+                          productName={product.name}
+                          productPrice={product.price}
+                        />
+                        <SoldCounter productId={product.id} productPrice={product.price} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* CRO: Mini comparison table after first 4 products */}
+              {isMoney && products.length >= 4 && (
+                <CollectionMiniComparison products={products} collectionSlug={collection.slug} />
+              )}
+            </>
           ) : (
             <div className="text-center py-12 bg-muted/30 rounded-2xl">
               <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
