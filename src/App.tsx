@@ -164,6 +164,7 @@ function CollectionRedirect() {
 const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPage"));
 const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
 const RevenueScalingPage = lazyWithRetry(() => import("./pages/admin/RevenueScalingPage"));
+const CRODashboardPage = lazyWithRetry(() => import("./pages/admin/CRODashboardPage"));
 const AutonomousSeoPage = lazyWithRetry(() => import("./pages/admin/AutonomousSeoPage"));
 const AutonomousSeoEnginePage = lazyWithRetry(() => import("./pages/admin/AutonomousSeoEnginePage"));
 const SeoWarRoomPage = lazyWithRetry(() => import("./pages/admin/SeoWarRoomPage"));
@@ -495,6 +496,7 @@ const App = () => {
                         <Route path="diagnostics" element={<Suspense fallback={<RouteLoader />}><DiagnosticsPage /></Suspense>} />
                         <Route path="seo-command-center" element={<Suspense fallback={<RouteLoader />}><SeoCommandCenterPage /></Suspense>} />
                         <Route path="revenue-scaling" element={<Suspense fallback={<RouteLoader />}><RevenueScalingPage /></Suspense>} />
+                        <Route path="cro-dashboard" element={<Suspense fallback={<RouteLoader />}><CRODashboardPage /></Suspense>} />
                         <Route path="autonomous-seo" element={<Suspense fallback={<RouteLoader />}><AutonomousSeoPage /></Suspense>} />
                         <Route path="seo-war-room" element={<Suspense fallback={<RouteLoader />}><SeoWarRoomPage /></Suspense>} />
                         <Route path="competitive-intelligence" element={<Suspense fallback={<RouteLoader />}><CompetitiveIntelligencePage /></Suspense>} />

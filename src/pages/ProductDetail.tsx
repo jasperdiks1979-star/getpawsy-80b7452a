@@ -60,6 +60,8 @@ import { PriceAnchoringSection } from '@/components/products/PriceAnchoringSecti
 import { FreeShippingBar } from '@/components/products/FreeShippingBar';
 import { ProductComparisonTable } from '@/components/products/ProductComparisonTable';
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
+import { SimilarProductsCompare } from '@/components/products/SimilarProductsCompare';
+import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
   DELIVERY_TIME_STANDARD,
@@ -970,6 +972,9 @@ const ProductDetail = () => {
               </span>
             </div>
 
+            {/* Low Stock Badge — real inventory driven */}
+            <LowStockBadge stock={product.stock} threshold={10} />
+
             {/* Stock Notification Form - Show when out of stock */}
             {!inStock && (
               <StockNotificationForm 
@@ -1066,6 +1071,22 @@ const ProductDetail = () => {
                 productSlug={product.slug}
                 mainProductPrice={product.price}
                 mainProductName={product.name}
+              />
+            )}
+
+            {/* Compare With Similar — mini comparison module */}
+            {relatedProducts && relatedProducts.length >= 2 && (
+              <SimilarProductsCompare
+                products={(relatedProducts || []).slice(0, 3).map(p => ({
+                  id: p.id,
+                  name: p.name,
+                  price: Number(p.price),
+                  image_url: p.image_url,
+                  slug: (p as any).slug,
+                  category: p.category,
+                  weight: p.weight ? Number(p.weight) : null,
+                }))}
+                currentProductName={safeString(product.name)}
               />
             )}
 
