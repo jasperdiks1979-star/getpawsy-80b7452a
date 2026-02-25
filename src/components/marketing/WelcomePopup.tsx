@@ -169,10 +169,11 @@ export function WelcomePopup() {
   const location = useLocation();
   const isMobile = useIsMobile();
 
-  // Disable popup on checkout/cart pages (all devices) and product pages (avoid CTA obstruction)
+  // Disable popup on checkout/cart, product, and admin pages (avoid CTA obstruction & admin click-blocking)
   const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
   const isProductRoute = location.pathname.startsWith('/product/') || location.pathname.startsWith('/bestseller/');
-  const shouldDisable = isCheckoutRoute || isProductRoute;
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const shouldDisable = isCheckoutRoute || isProductRoute || isAdminRoute;
 
   useEffect(() => {
     // Don't show on mobile checkout pages

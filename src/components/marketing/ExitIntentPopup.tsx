@@ -194,9 +194,10 @@ export function ExitIntentPopup() {
   const location = useLocation();
   const isMobile = useIsMobile();
 
-  // Check if we're on checkout/cart pages - disable popup on mobile for these routes
+  // Disable on checkout/cart pages (mobile) and admin pages (all devices — prevents click-blocking overlays)
   const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
-  const shouldDisable = isMobile && isCheckoutRoute;
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const shouldDisable = (isMobile && isCheckoutRoute) || isAdminRoute;
 
   const handleExitIntent = useCallback((e: MouseEvent) => {
     // Only trigger when mouse moves to top of viewport (exit intent)
