@@ -205,6 +205,7 @@ const SeoAgentAutonomous = lazyWithRetry(() => import("./pages/admin/SeoAgentAut
 const PerfAuditPage = lazyWithRetry(() => import("./pages/admin/PerfAuditPage"));
 const PerfDebugPage = lazyWithRetry(() => import("./pages/admin/PerfDebugPage"));
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
+const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
 
 // Diagnostics pages (hidden, noindex)
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
@@ -552,6 +553,7 @@ const App = () => {
                         <Route path="seo-acceleration" element={<Suspense fallback={<RouteLoader />}><SeoAccelerationPage /></Suspense>} />
                         <Route path="progress" element={<Suspense fallback={<RouteLoader />}><ProgressDashboard /></Suspense>} />
                         <Route path="seo-engine" element={<Suspense fallback={<RouteLoader />}><AutonomousSeoEnginePage /></Suspense>} />
+                        <Route path="seo-console" element={<Suspense fallback={<RouteLoader />}><SeoConsolePage /></Suspense>} />
                       </Route>
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />

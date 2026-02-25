@@ -1,5 +1,6 @@
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
 import { getCollectionConfig } from '@/config/collectionMap';
@@ -199,9 +200,25 @@ const RESERVED_CLUSTER_SLUGS = new Set([
 
 const SeoCollection = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const viewShop = searchParams.get('view') === 'shop';
+  const scrolledRef = useRef(false);
 
   // Dev-only integrity validator to catch broken collection mappings early
   useCollectionIntegrityCheck(import.meta.env.DEV);
+
+  // Auto-scroll to #products when coming from homepage CTA (?view=shop)
+  useEffect(() => {
+    if (viewShop && !scrolledRef.current) {
+      scrolledRef.current = true;
+      // Wait for products section to render
+      const timer = setTimeout(() => {
+        const el = document.getElementById('products');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [viewShop]);
 
   // GUARD: If this slug has a dedicated static component, redirect there.
   // This prevents SeoCollection from ever intercepting cluster page routes.
@@ -465,64 +482,21 @@ const SeoCollection = () => {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Section A: SEO Intro */}
-        <header className="mb-10">
-          <Badge variant="secondary" className="mb-4">
+        {/* Section A: Compact Header — products MUST be above fold */}
+        <header className="mb-6">
+          <Badge variant="secondary" className="mb-3">
             {collection.primary_keyword}
           </Badge>
-          <h1 className="text-3xl md:text-4xl font-display font-bold mb-4">
+          <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">
             {collection.name}
           </h1>
-          <div 
-            className="text-muted-foreground text-base leading-relaxed max-w-4xl prose prose-headings:text-foreground prose-headings:font-display prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-2 prose-p:mb-4 prose-a:text-primary prose-a:underline prose-strong:text-foreground"
-            dangerouslySetInnerHTML={{ 
-              __html: collection.seo_intro
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-                .replace(/\n\n/g, '</p><p>')
-                .replace(/^(?!<[h|s])(.+)/gm, (match) => match.startsWith('<') ? match : `<p>${match}</p>`)
-                .replace(/<p><\/p>/g, '')
-            }}
-          />
-          
-          {/* Secondary Keywords as Tags */}
-          {collection.secondary_keywords.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4">
-              {collection.secondary_keywords.slice(0, 5).map((keyword) => (
-                <Badge key={keyword} variant="outline" className="text-xs">
-                  {keyword}
-                </Badge>
-              ))}
-            </div>
-          )}
+          {/* Only show 1-2 line intro, NOT full seo_intro wall */}
+          <p className="text-muted-foreground text-base max-w-3xl">
+            {(collection.meta_description || collection.seo_intro || '').substring(0, 160).replace(/<[^>]*>/g, '')}
+          </p>
         </header>
 
-        {/* Domination: Featured Snippet Block (direct answer + comparison + USPs) */}
-        {domConfig && (
-          <FeaturedSnippetBlock
-            directAnswer={domConfig.directAnswer}
-            bulletUSPs={domConfig.bulletUSPs}
-            quickComparison={domConfig.quickComparison}
-          />
-        )}
-
-        {/* Phase 2: Expert Block + ToC + Comparison for priority categories */}
-        {isPriorityCategory && (
-          <ExpertBlock categoryName={collection.name.replace(/\s–.*$/, '')} />
-        )}
-        {isPriorityCategory && <CollectionTableOfContents items={tocItems} />}
-        {comparisonData && (
-          <div id="comparison">
-            <ComparisonTable title={comparisonData.title} rows={comparisonData.rows} />
-          </div>
-        )}
-
-        {/* Cat Trees Hub: 2000+ word authority content block */}
-        {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
-
-        {/* Section B: Product Grid */}
-        {/* CRO: Trust Bar for money collections */}
+        {/* CRO: Trust Bar for money collections — compact, above products */}
         {isMoney && <CollectionTrustBar />}
 
         <section id="products" className="mb-12">
@@ -602,6 +576,68 @@ const SeoCollection = () => {
             </div>
           )}
         </section>
+
+        {/* ── GUIDE CONTENT — below products, collapsible on mobile ── */}
+        {collection.seo_intro && collection.seo_intro.length > 200 && (
+          <section className="mb-12">
+            <Accordion type="single" collapsible defaultValue={viewShop ? undefined : 'guide-content'}>
+              <AccordionItem value="guide-content" className="border rounded-xl">
+                <AccordionTrigger className="px-5 py-4 text-lg font-semibold hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                    Buying Guide: {collection.name.replace(/\s–.*$/, '')}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-5 pb-6">
+                  <div 
+                    className="text-muted-foreground text-base leading-relaxed max-w-4xl prose prose-headings:text-foreground prose-headings:font-display prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-2 prose-p:mb-4 prose-a:text-primary prose-a:underline prose-strong:text-foreground"
+                    dangerouslySetInnerHTML={{ 
+                      __html: collection.seo_intro
+                        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                        .replace(/\n\n/g, '</p><p>')
+                        .replace(/^(?!<[h|s])(.+)/gm, (match) => match.startsWith('<') ? match : `<p>${match}</p>`)
+                        .replace(/<p><\/p>/g, '')
+                    }}
+                  />
+                  {/* Secondary Keywords as Tags */}
+                  {collection.secondary_keywords.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {collection.secondary_keywords.slice(0, 5).map((keyword) => (
+                        <Badge key={keyword} variant="outline" className="text-xs">
+                          {keyword}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </section>
+        )}
+
+        {/* Domination: Featured Snippet Block */}
+        {domConfig && (
+          <FeaturedSnippetBlock
+            directAnswer={domConfig.directAnswer}
+            bulletUSPs={domConfig.bulletUSPs}
+            quickComparison={domConfig.quickComparison}
+          />
+        )}
+
+        {/* Expert Block + Comparison for priority categories */}
+        {isPriorityCategory && (
+          <ExpertBlock categoryName={collection.name.replace(/\s–.*$/, '')} />
+        )}
+        {comparisonData && (
+          <div id="comparison">
+            <ComparisonTable title={comparisonData.title} rows={comparisonData.rows} />
+          </div>
+        )}
+
+        {/* Cat Trees Hub: authority content — BELOW products */}
+        {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
 
         {/* Expert Guides — curated guide links for this collection */}
         <div id="expert-guides">

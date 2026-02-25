@@ -4,6 +4,7 @@
  */
 
 const CONSENT_KEY = 'gp_cookie_consent';
+const CONSENT_VERSION = 'v1'; // bump to v2 to re-prompt users after policy change
 const COOKIE_MAX_AGE = 31536000; // 1 year in seconds
 
 export type ConsentValue = 'all' | 'necessary';
@@ -56,16 +57,29 @@ function setCookieValue(name: string, value: string): void {
   }
 }
 
+/** Parse a versioned consent string like "v1:all" */
+function parseVersionedConsent(raw: string | null): ConsentValue | null {
+  if (!raw) return null;
+  // Support versioned format "v1:all" and legacy format "all"
+  if (raw.startsWith(`${CONSENT_VERSION}:`)) {
+    const val = raw.slice(CONSENT_VERSION.length + 1);
+    if (val === 'all' || val === 'necessary') return val;
+  }
+  // Legacy unversioned — accept but migrate on next set
+  if (raw === 'all' || raw === 'necessary') return raw;
+  return null;
+}
+
 /** Read current consent from localStorage OR cookie. Returns null if not yet decided. */
 export function getConsent(): ConsentValue | null {
   // Check localStorage first (faster)
-  const ls = safeGetItem(CONSENT_KEY);
-  if (ls === 'all' || ls === 'necessary') return ls;
+  const ls = parseVersionedConsent(safeGetItem(CONSENT_KEY));
+  if (ls) return ls;
   // Fallback to cookie
-  const ck = getCookieValue(CONSENT_KEY);
-  if (ck === 'all' || ck === 'necessary') {
+  const ck = parseVersionedConsent(getCookieValue(CONSENT_KEY));
+  if (ck) {
     // Re-sync to localStorage if cookie exists but localStorage doesn't
-    safeSetItem(CONSENT_KEY, ck);
+    safeSetItem(CONSENT_KEY, `${CONSENT_VERSION}:${ck}`);
     return ck;
   }
   return null;
@@ -73,8 +87,9 @@ export function getConsent(): ConsentValue | null {
 
 /** Persist consent choice to both localStorage AND cookie, then update gtag. */
 export function setConsent(value: ConsentValue): void {
-  safeSetItem(CONSENT_KEY, value);
-  setCookieValue(CONSENT_KEY, value);
+  const versioned = `${CONSENT_VERSION}:${value}`;
+  safeSetItem(CONSENT_KEY, versioned);
+  setCookieValue(CONSENT_KEY, versioned);
   applyGtagConsent(value);
 }
 
