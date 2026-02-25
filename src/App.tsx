@@ -11,14 +11,25 @@ import { WishlistProvider } from "@/contexts/WishlistContext";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { HostnameGuard } from "@/components/seo/HostnameGuard";
 // Marketing/tracking components — lazy-loaded, not needed for first paint
-const LiveCheckoutWidget = lazy(() => import("@/components/admin/LiveCheckoutWidget").then(m => ({ default: m.LiveCheckoutWidget })));
+// LiveCheckoutWidget removed from global render — admin-only, was causing bundle leakage
 const SafePinterestTag = lazy(() => import("@/components/tracking/SafePinterestTag").then(m => ({ default: m.SafePinterestTag })));
 const SafeGlobalVisitorTracker = lazy(() => import("@/components/tracking/SafeGlobalVisitorTracker").then(m => ({ default: m.SafeGlobalVisitorTracker })));
 // RecentPurchaseNotification removed — fake geo-based purchase popups risk Google misrepresentation flags
 const InternalTrafficChip = lazy(() => import("@/components/tracking/InternalTrafficChip").then(m => ({ default: m.InternalTrafficChip })));
 import { MarketingErrorBoundary } from "@/components/error/MarketingErrorBoundary";
-import { AdminRouteGuard } from "@/components/auth/AdminRouteGuard";
-import { AdminLayout } from "@/components/admin/AdminLayout";
+// Admin guard + layout: lazy-loaded to keep admin code out of storefront bundle
+const LazyAdminShell = lazy(() =>
+  Promise.all([
+    import("@/components/auth/AdminRouteGuard"),
+    import("@/components/admin/AdminLayout"),
+  ]).then(([guardMod, layoutMod]) => ({
+    default: () => (
+      <guardMod.AdminRouteGuard>
+        <layoutMod.AdminLayout />
+      </guardMod.AdminRouteGuard>
+    ),
+  }))
+);
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import { Button } from "@/components/ui/button";
@@ -265,7 +276,11 @@ const IndoorCatCareResource = lazyWithRetry(() => import("./pages/IndoorCatCareR
 const TrainingLandingPage = lazyWithRetry(() => import("./pages/landing/TrainingLandingPage"));
 
 // Generic SEO pages — wrapper components that pass namespace prop
-import { DogPillarPage, CatPillarPage, DogIntentPage, CatIntentPage } from './pages/seo/SeoPageWrappers';
+// Generic SEO pages — lazy-loaded wrapper components
+const DogPillarPage = lazyWithRetry(() => import('./pages/seo/SeoPageWrappers').then(m => ({ default: m.DogPillarPage })));
+const CatPillarPage = lazyWithRetry(() => import('./pages/seo/SeoPageWrappers').then(m => ({ default: m.CatPillarPage })));
+const DogIntentPage = lazyWithRetry(() => import('./pages/seo/SeoPageWrappers').then(m => ({ default: m.DogIntentPage })));
+const CatIntentPage = lazyWithRetry(() => import('./pages/seo/SeoPageWrappers').then(m => ({ default: m.CatIntentPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -321,7 +336,7 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
-                  <Suspense fallback={null}><LiveCheckoutWidget /></Suspense>
+                  {/* LiveCheckoutWidget removed — admin-only widget, was leaking into storefront bundle */}
                   <ScrollToTop />
                   <HostnameGuard />
                   <MarketingErrorBoundary>
@@ -499,7 +514,7 @@ const App = () => {
                       <Route path="/shop" element={<Navigate to="/products" replace />} />
                       {/* Admin sub-routes */}
                       {/* Admin nested routes with layout + sidebar */}
-                      <Route path="/admin" element={<AdminRouteGuard><AdminLayout /></AdminRouteGuard>}>
+                      <Route path="/admin" element={<Suspense fallback={<RouteLoader />}><LazyAdminShell /></Suspense>}>
                         <Route index element={<Suspense fallback={<RouteLoader />}><AdminDashboardOverview /></Suspense>} />
                         <Route path="diagnostics" element={<Suspense fallback={<RouteLoader />}><DiagnosticsPage /></Suspense>} />
                         <Route path="seo-command-center" element={<Suspense fallback={<RouteLoader />}><SeoCommandCenterPage /></Suspense>} />
