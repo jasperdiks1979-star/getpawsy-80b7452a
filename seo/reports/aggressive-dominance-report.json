@@ -1,0 +1,135 @@
+{
+  "generatedAt": "2026-02-25T10:30:00Z",
+  "mode": "AGGRESSIVE_SEO_DOMINANCE",
+  "objective": "Indoor Cat Authority — Maximum Crawl Budget Concentration",
+
+  "tierDistribution": {
+    "tierA": {
+      "count": 143,
+      "label": "Core Focus — index, follow, in sitemap",
+      "categories": {
+        "Cat Trees & Condos": 59,
+        "Cat Litter Boxes": 46,
+        "Cat Houses": 14,
+        "Cat Scratching Posts": 13,
+        "Cat Beds": 10,
+        "Cat Furniture": 1
+      }
+    },
+    "tierB1": {
+      "count": 25,
+      "label": "Supporting Cat — index, follow, NOT in sitemap",
+      "categories": {
+        "Cat Toys": 16,
+        "Cat Bowls & Feeders": 4,
+        "Cat Carriers": 4,
+        "Cat Grooming": 1
+      }
+    },
+    "tierC": {
+      "count": 455,
+      "label": "Suppressed — noindex, follow, excluded from everything",
+      "note": "All non-cat products + cheap generic items. Remain purchasable but invisible to search."
+    }
+  },
+
+  "indexedUrlProjection": {
+    "sitemapTotal": "~200 URLs",
+    "breakdown": {
+      "staticPages": 7,
+      "collections": "~20 (cat-focused only)",
+      "coreProducts": 143,
+      "guides": "~15 (cat-focused only)",
+      "blogPosts": "~30 (cat-focused, capped)"
+    },
+    "excludedFromSitemap": {
+      "tierB1Products": 25,
+      "tierCProducts": 455,
+      "nonCatBlogPosts": 223,
+      "nonCatCollections": "all dog/bird/reptile/hamster collections"
+    }
+  },
+
+  "blogPruning": {
+    "totalPublished": 323,
+    "indexed": 100,
+    "noindexed": 223,
+    "reductionPercent": "69%",
+    "rule": "Only cat/kitten/feline/litter/indoor posts remain indexed"
+  },
+
+  "homepageChanges": [
+    "H1: 'Premium Cat Trees, Condos & Indoor Cat Living'",
+    "3 pillar blocks: Cat Trees | Litter Boxes | Indoor Cat Furniture",
+    "Non-cat category images removed from loaders",
+    "Hero alt text updated to cat-focused",
+    "Dog guide image loader removed",
+    "CTAs: /collections/cat-trees-and-condos + /collections/best-cat-litter-boxes"
+  ],
+
+  "navigationChanges": [
+    "Primary nav: Cat Trees | Litter Boxes | Cat Furniture | Guides | Bestsellers",
+    "Top Rated dropdown: Cat Trees + Litter Boxes + Bestsellers only",
+    "All non-cat categories removed from primary navigation"
+  ],
+
+  "noindexEnforcement": {
+    "productDetail": "Tier C products now get <meta name='robots' content='noindex, follow'> automatically",
+    "blogPosts": "223 non-cat posts marked is_noindexed=true in database",
+    "collections": "Non-cat collections filtered from sitemap generation",
+    "rule": "Any product where category NOT ILIKE '%cat%' → Tier C → noindex"
+  },
+
+  "sitemapStructure": {
+    "entry": "https://getpawsy.pet/sitemap.xml",
+    "children": [
+      "sitemap-static.xml (7 URLs)",
+      "sitemap-collections.xml (~20 cat collections)",
+      "sitemap-core-products.xml (143 Tier A products)",
+      "sitemap-guides.xml (~15 cat guides)",
+      "sitemap-blog.xml (~30 cat blog posts, hard cap)"
+    ],
+    "excluded": [
+      "sitemap-secondary-products.xml (REMOVED in aggressive mode)",
+      "All legacy sitemap-products-N.xml chunks"
+    ]
+  },
+
+  "internalLinkingTargets": {
+    "catTreesHub": {
+      "url": "/collections/cat-trees-and-condos",
+      "targetMinLinks": 35,
+      "sources": "guides, product pages, homepage, blog posts"
+    },
+    "litterHub": {
+      "url": "/collections/best-cat-litter-boxes",
+      "targetMinLinks": 25,
+      "sources": "guides, product pages, homepage, blog posts"
+    },
+    "anchorDistribution": {
+      "partial": "40%",
+      "semantic": "30%",
+      "branded": "20%",
+      "exact": "10%"
+    }
+  },
+
+  "robotsTxt": {
+    "status": "CORRECT",
+    "content": "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /cart\nDisallow: /*?*gclid=\nSitemap: https://getpawsy.pet/sitemap.xml"
+  },
+
+  "crawlBudgetProjection": {
+    "before": {
+      "sitemapUrls": "~400+",
+      "indexedProducts": "600+",
+      "topicalSignal": "Diluted (6 animal types)"
+    },
+    "after": {
+      "sitemapUrls": "~200",
+      "indexedProducts": 143,
+      "topicalSignal": "MAXIMUM (100% cat-focused)",
+      "efficiencyGain": "50%+ crawl budget concentration"
+    }
+  }
+}
