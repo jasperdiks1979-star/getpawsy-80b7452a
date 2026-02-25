@@ -111,13 +111,15 @@ export const Footer = () => {
       { label: 'Slow Feeder Bowls', href: '/collections/best-slow-feeder-dog-bowls' },
       { label: 'No-Pull Harnesses', href: '/collections/best-dog-harnesses' },
     ],
-    // Top Cat Categories
+    // Top Cat Categories — 60% link equity allocation to cat trees silo
     topCats: [
-      { label: 'All Cat Products', href: '/collections/cats' },
-      { label: 'Cat Condos & Trees', href: '/collections/cat-condos' },
+      { label: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos' },
+      { label: 'Cat Trees for Large Cats', href: '/cat/cat-trees-for-large-cats' },
+      { label: 'Heavy Duty Cat Trees', href: '/cat/cat-trees-for-large-cats/heavy-duty' },
       { label: 'Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
-      { label: 'Cat Toys', href: '/collections/best-cat-toys-for-indoor-cats' },
-      { label: 'Cat Scratching Posts', href: '/collections/best-cat-scratching-posts' },
+      { label: 'Cat Condos', href: '/collections/cat-condos' },
+      { label: 'Modern Cat Trees', href: '/collections/modern-cat-trees' },
+      { label: 'Cat Trees for Apartments', href: '/collections/best-cat-trees-for-small-apartments' },
     ],
     // Buying Guides
     guides: [
@@ -133,20 +135,24 @@ export const Footer = () => {
       { label: 'Bestsellers 2026', href: '/bestsellers' },
       { label: 'All Products', href: '/products' },
     ],
+    // Popular Categories — reweighted: 60% cat trees, 25% litter, 15% other
     popularCategories: [
-      { label: 'Dog Beds for Large Dogs', href: '/collections/best-dog-beds-for-large-dogs' },
-      { label: 'Orthopedic Dog Beds', href: '/dog/orthopedic-dog-beds' },
-      { label: 'Memory Foam Dog Beds', href: '/dog/orthopedic-dog-beds/memory-foam' },
-      { label: 'Joint Support Collection', href: '/collections/best-orthopedic-dog-beds' },
+      // Cat Trees silo (60%)
+      { label: 'Best Cat Trees 2026', href: '/collections/cat-trees-and-condos' },
+      { label: 'Cat Trees for Maine Coons', href: '/cat/cat-trees-for-large-cats/for-maine-coon' },
+      { label: 'Floor-to-Ceiling Cat Trees', href: '/cat/cat-trees-for-large-cats/heavy-duty' },
       { label: 'Cat Trees for Large Cats', href: '/cat/cat-trees-for-large-cats' },
-      { label: 'Heavy Duty Cat Trees', href: '/cat/cat-trees-for-large-cats/heavy-duty' },
-      { label: 'Dog Car Travel Safety', href: '/dog/dog-car-travel-safety' },
-      { label: 'Calming Beds for Anxiety', href: '/collections/dog-beds-for-anxiety' },
-      { label: 'Cat Trees for Apartments', href: '/collections/best-cat-trees-for-small-apartments' },
+      { label: 'Cat Trees for Small Apartments', href: '/collections/best-cat-trees-for-small-apartments' },
       { label: 'Modern Cat Trees', href: '/collections/modern-cat-trees' },
       { label: 'Large Cat Condos', href: '/cat/cat-trees-for-large-cats/large-cat-condos' },
-      { label: 'Waterproof Dog Beds', href: '/dog/orthopedic-dog-beds/waterproof' },
+      { label: 'Cat Tree Stability Guide', href: '/guides/cat-tree-stability-guide' },
+      // Litter silo (25%)
+      { label: 'Best Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
       { label: 'Self-Cleaning Litter Boxes', href: '/collections/self-cleaning-litter-box-guide' },
+      { label: 'Litter Box for Large Cats', href: '/collections/best-litter-box-for-large-cats' },
+      // Other (15%)
+      { label: 'Indoor Cat Care Resources', href: '/resources/indoor-cat-care' },
+      { label: 'Orthopedic Dog Beds', href: '/dog/orthopedic-dog-beds' },
     ],
     support: [
       { label: 'Contact', href: '/contact' },
