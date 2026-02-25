@@ -370,24 +370,29 @@ export const Navbar = () => {
 
   return (
     <>
-      {/* Promo Banner */}
-      {!isBannerDismissed && (
-        <div className="bg-primary text-primary-foreground text-sm font-medium overflow-hidden">
-          <div className="container flex items-center justify-center gap-2 py-2 px-4 relative">
-            <Truck className="w-4 h-4" />
-            <span>Free US shipping on orders over $35</span>
-            <span className="hidden sm:inline text-primary-foreground/80">•</span>
-            <span className="hidden sm:inline text-primary-foreground/80">Fast delivery 🚀</span>
-            <button
-              onClick={dismissBanner}
-              className="absolute right-4 p-1 hover:bg-primary-foreground/20 rounded-full transition-colors"
-              aria-label="Dismiss banner"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+      {/* Promo Banner — fixed height to prevent CLS on dismiss */}
+      <div
+        className="bg-primary text-primary-foreground text-sm font-medium overflow-hidden transition-[max-height,opacity] duration-300 ease-out"
+        style={{
+          maxHeight: isBannerDismissed ? 0 : 40,
+          opacity: isBannerDismissed ? 0 : 1,
+        }}
+        aria-hidden={isBannerDismissed}
+      >
+        <div className="container flex items-center justify-center gap-2 py-2 px-4 relative" style={{ height: 40 }}>
+          <Truck className="w-4 h-4" />
+          <span>Free US shipping on orders over $35</span>
+          <span className="hidden sm:inline text-primary-foreground/80">•</span>
+          <span className="hidden sm:inline text-primary-foreground/80">Fast delivery 🚀</span>
+          <button
+            onClick={dismissBanner}
+            className="absolute right-4 p-1 hover:bg-primary-foreground/20 rounded-full transition-colors"
+            aria-label="Dismiss banner"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-      )}
+      </div>
 
       <header 
         className={`sticky top-0 z-50 w-full max-w-[100vw] overflow-x-hidden transition-all duration-300 ${
