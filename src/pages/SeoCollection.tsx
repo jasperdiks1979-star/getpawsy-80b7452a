@@ -52,6 +52,7 @@ import { StickyJumpNav } from '@/components/seo/StickyJumpNav';
 import { PAASection } from '@/components/seo/PAASection';
 import { MidContentCTA } from '@/components/seo/MidContentCTA';
 import { getDominationConfig } from '@/data/domination-config';
+import { CatTreesHubContent } from '@/components/seo/CatTreesHubContent';
 
 interface FAQItem {
   question: string;
@@ -620,6 +621,9 @@ const SeoCollection = () => {
             <ComparisonTable title={comparisonData.title} rows={comparisonData.rows} />
           </div>
         )}
+
+        {/* Cat Trees Hub: 2000+ word authority content block */}
+        {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
 
         {/* Section B: Product Grid */}
         <section id="products" className="mb-12">
