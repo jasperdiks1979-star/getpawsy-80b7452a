@@ -393,13 +393,13 @@ const Index = () => {
               </p>
               <div className="flex flex-wrap items-center gap-4 pt-2 relative z-10 pointer-events-auto">
                 <Button asChild size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow duration-200">
-                  <Link to="/collections/cat-trees-and-condos?view=shop">
+                  <Link to="/collections/cat-trees-and-condos#product-grid">
                     Shop Cat Trees
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="gap-2 rounded-full px-8 py-6 text-base font-semibold">
-                  <Link to="/collections/best-cat-litter-boxes?view=shop">
+                  <Link to="/collections/best-cat-litter-boxes#product-grid">
                     Cat Litter Boxes
                   </Link>
                 </Button>
@@ -445,14 +445,14 @@ const Index = () => {
               {
                 title: 'Cat Trees & Condos',
                 desc: 'Heavy-duty designs built for Maine Coons, Ragdolls & multi-cat homes. Anti-tip tested, sisal-wrapped posts, 25+ lb rated.',
-                href: '/collections/cat-trees-and-condos?view=shop',
+                href: '/collections/cat-trees-and-condos#product-grid',
                 badges: ['25+ lb Rated', 'Anti-Tip Tested'],
                 accent: 'from-primary/10 to-primary/5',
               },
               {
                 title: 'Smart Litter Solutions',
                 desc: 'Self-cleaning technology meets elegant design. Top-rated for odor control, large cats & apartments.',
-                href: '/collections/best-cat-litter-boxes?view=shop',
+                href: '/collections/best-cat-litter-boxes#product-grid',
                 badges: ['Self-Cleaning', 'Odor Control'],
                 accent: 'from-secondary/20 to-secondary/10',
               },

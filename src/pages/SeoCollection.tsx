@@ -208,17 +208,17 @@ const SeoCollection = () => {
   // Dev-only integrity validator to catch broken collection mappings early
   useCollectionIntegrityCheck(import.meta.env.DEV);
 
-  // Auto-scroll to #products when coming from homepage CTA (?view=shop)
+  // Auto-scroll to product grid when coming from homepage CTA (hash or query param)
   useEffect(() => {
-    if (viewShop && !scrolledRef.current) {
-      scrolledRef.current = true;
-      // Wait for products section to render
-      const timer = setTimeout(() => {
-        const el = document.getElementById('products');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 300);
-      return () => clearTimeout(timer);
-    }
+    if (scrolledRef.current) return;
+    const shouldScroll = viewShop || window.location.hash === '#product-grid';
+    if (!shouldScroll) return;
+    scrolledRef.current = true;
+    const timer = setTimeout(() => {
+      const el = document.getElementById('product-grid');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 400);
+    return () => clearTimeout(timer);
   }, [viewShop]);
 
   // GUARD: If this slug has a dedicated static component, redirect there.
@@ -512,6 +512,7 @@ const SeoCollection = () => {
           <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Tested for Large Breeds</span>
         </div>
 
+        <div id="product-grid" />
         <section id="products" className="mb-8 md:mb-12">
           <div className="flex items-center justify-between mb-3 md:mb-6">
             <h2 className="text-lg md:text-2xl font-semibold">
