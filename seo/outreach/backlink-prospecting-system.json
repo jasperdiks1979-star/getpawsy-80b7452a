@@ -1,0 +1,141 @@
+{
+  "generatedAt": "2026-02-25T12:00:00Z",
+  "system": "Backlink Dominance Engine",
+
+  "targetAnchorProfile": {
+    "branded": "70% — 'GetPawsy', 'GetPawsy cat trees', 'GetPawsy guide'",
+    "partialMatch": "20% — 'best cat trees for large cats', 'indoor cat furniture guide'",
+    "exactMatch": "10% — 'cat trees and condos', 'self-cleaning litter box'"
+  },
+
+  "prospectCategories": {
+    "usCatBlogs": {
+      "count": 200,
+      "searchQueries": [
+        "cat blog write for us",
+        "indoor cat care blog guest post",
+        "cat furniture review blog",
+        "cat owner lifestyle blog",
+        "maine coon blog",
+        "cat enrichment tips blog",
+        "feline behavior blog",
+        "cat product review site",
+        "cat mom blog",
+        "multi-cat household blog"
+      ],
+      "qualificationCriteria": {
+        "DA": ">20",
+        "relevance": "Cat/pet focused",
+        "geo": "US-based or US-audience",
+        "activity": "Published in last 90 days",
+        "dofollow": "Accepts dofollow links in content"
+      }
+    },
+    "petComparisonSites": {
+      "count": 100,
+      "searchQueries": [
+        "best cat trees comparison 2026",
+        "cat product review site",
+        "pet product comparison",
+        "cat tree reviews roundup",
+        "litter box comparison guide",
+        "pet furniture reviews"
+      ]
+    },
+    "redditCommunities": {
+      "count": 50,
+      "targets": [
+        "r/cats", "r/CatAdvice", "r/MaineCoons", "r/catpictures",
+        "r/IndoorCats", "r/CatTree", "r/Pets", "r/PetAdvice",
+        "r/catcare", "r/catfood", "r/BengalCats", "r/ragdolls",
+        "r/SiberianCats", "r/NorwegianForestCats", "r/catbehavior",
+        "r/multicat", "r/kittens", "r/seniorkitties"
+      ]
+    },
+    "pinterestBoards": {
+      "count": 50,
+      "searchQueries": [
+        "cat tree ideas", "indoor cat enrichment",
+        "cat furniture DIY", "cat room inspiration",
+        "cat condo designs", "modern cat furniture"
+      ]
+    },
+    "mediumPublishers": {
+      "count": 50,
+      "searchQueries": [
+        "cat care medium publication",
+        "pet lifestyle medium",
+        "indoor cat tips medium"
+      ]
+    }
+  },
+
+  "guestPostTopics": [
+    "Why Stability Matters More Than Height in Cat Trees",
+    "The Science Behind Cat Scratching: Choosing the Right Post",
+    "Indoor Cat Enrichment: Beyond the Basics",
+    "Self-Cleaning Litter Boxes: A Veterinary Perspective",
+    "How to Choose a Cat Tree for a 20+ lb Cat",
+    "Multi-Cat Households: Vertical Space Solutions",
+    "Cat Trees for Senior Cats: Accessibility Guide",
+    "The Environmental Impact of Sustainable Cat Furniture",
+    "Apartment-Friendly Cat Trees Under $100",
+    "Maine Coon Furniture Guide: Built for Giants",
+    "Wall-Mounted vs Floor Cat Trees: Pros and Cons",
+    "How Often Should You Replace Your Cat Tree?",
+    "Litter Box Placement: The Science of Location",
+    "Natural Wood vs Carpet Cat Trees: Durability Tested",
+    "Indoor Cat Exercise: Creative Climbing Solutions",
+    "Cat Condo Buying Guide: What Matters Most",
+    "Odor-Free Living: Modern Litter Box Solutions",
+    "Cat Trees That Double as Home Décor",
+    "The Complete Kitten Furniture Setup Guide",
+    "Why Your Cat Ignores Their Cat Tree (And How to Fix It)"
+  ],
+
+  "dataDrivenLinkBait": [
+    "2026 US Indoor Cat Owner Behavior Report (Original Research)",
+    "Cat Tree Price vs Durability: 50-Product Analysis",
+    "Self-Cleaning Litter Box ROI Calculator: 12-Month Cost Study",
+    "Average Cat Tree Lifespan by Material Type (Data Study)",
+    "US Cat Furniture Market Size & Trends 2026",
+    "Survey: What Cat Owners Actually Spend on Furniture",
+    "Cat Scratching Preferences: 1,000 Cat Owner Survey Results",
+    "Weight Capacity Claims vs Reality: Cat Tree Load Testing",
+    "Indoor vs Outdoor Cats: Furniture Investment Comparison",
+    "Cat Tree Height Recommendations by Breed (Infographic)",
+    "Self-Cleaning Litter Box Reliability Report: Brand Rankings",
+    "Multi-Cat Household Furniture Budget Guide (Data-Backed)",
+    "Apartment Cat Furniture Space Calculator Tool",
+    "Cat Furniture Material Safety Guide: VOC Testing Results",
+    "Senior Cat Accessibility Index: Product Rankings"
+  ],
+
+  "comparisonResearchPieces": [
+    "Top 10 Cat Trees for Large Cats: Head-to-Head Comparison",
+    "Self-Cleaning Litter Boxes: Litter-Robot vs PetSafe vs CatGenie",
+    "Modern Cat Trees: Tuft + Paw vs Refined Feline vs GetPawsy",
+    "Cat Condos Under $200: Best Value Rankings",
+    "Wall-Mounted Cat Shelves: 8 Systems Compared",
+    "Sisal vs Carpet vs Jute: Scratching Surface Durability Test",
+    "Enclosed vs Open Litter Boxes: Which is Better?",
+    "Cat Trees for Apartments: Space-Saving Picks Compared",
+    "Heavy-Duty Cat Trees: Weight Capacity Showdown",
+    "Budget vs Premium Cat Furniture: Is It Worth Paying More?"
+  ],
+
+  "outreachTemplates": {
+    "guestPost": {
+      "subject": "Guest Post Idea: {topic} — for {siteName}",
+      "body": "Hi {firstName},\n\nI'm {senderName} from GetPawsy, a US-based indoor cat authority site. I noticed your readers love {relevantTopic} and wanted to suggest a guest article:\n\n**{topic}**\n\nThis would include:\n- Original data/insights from our product testing\n- Actionable tips your audience can use immediately\n- Professional images and comparison tables\n\nI'll handle all writing and can have a draft ready within 5 business days. Happy to adjust the angle to fit your editorial style.\n\nWould this be a good fit?\n\nBest,\n{senderName}\nGetPawsy.pet"
+    },
+    "resourceLink": {
+      "subject": "Resource that might help your {articleTitle} readers",
+      "body": "Hi {firstName},\n\nI came across your article on {articleTitle} — really helpful content!\n\nWe recently published a comprehensive {resourceType} that your readers might find valuable:\n\n{resourceUrl}\n\nIt includes {uniqueValue}.\n\nIf you think it'd be a good addition to your resource section, feel free to link to it. No obligation of course!\n\nCheers,\n{senderName}"
+    },
+    "brokenLink": {
+      "subject": "Quick heads up: broken link on {pageTitle}",
+      "body": "Hi {firstName},\n\nI was reading your excellent article on {pageTitle} and noticed the link to {brokenUrl} seems to be broken.\n\nWe have an up-to-date resource that covers the same topic:\n{replacementUrl}\n\nMight be a good replacement? Just wanted to flag it either way.\n\nBest,\n{senderName}"
+    }
+  }
+}

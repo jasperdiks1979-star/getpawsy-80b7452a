@@ -1,0 +1,115 @@
+{
+  "generatedAt": "2026-02-25T12:00:00Z",
+  "mode": "MAXIMUM_GROWTH_MODE",
+  "objective": "Indoor Cat Authority — US Market Domination",
+
+  "tierCounts": {
+    "tierA": { "count": 143, "categories": "Cat Trees (59), Cat Litter (46), Cat Houses (14), Cat Scratching Posts (13), Cat Beds (10), Cat Furniture (1)", "status": "index, follow, in sitemap" },
+    "tierB": { "count": 25, "categories": "Cat Toys (15), Cat Bowls (7), Cat Grooming (3)", "status": "index, follow, NOT in sitemap" },
+    "tierC": { "count": 521, "categories": "Dog (all), Bird (all), Hamster, Rabbit, Generic, Reptile", "status": "noindex, follow, excluded from all sitemaps" },
+    "totalProducts": 689
+  },
+
+  "indexedUrls": {
+    "tierAProducts": 143,
+    "tierBProducts": 25,
+    "collections": 20,
+    "guides": 15,
+    "blogPosts": 100,
+    "staticPages": 7,
+    "totalIndexed": 310,
+    "totalNoindexed": 744,
+    "noindexBreakdown": {
+      "tierCProducts": 521,
+      "blogPostsPruned": 223
+    }
+  },
+
+  "sitemapStructure": {
+    "sitemapXml": "sitemapindex referencing all child sitemaps",
+    "sitemapStaticXml": "7 URLs (/, /products, /blog, /about, etc.)",
+    "sitemapCoreProductsXml": "143 URLs (Tier A only — 100% cat)",
+    "sitemapCollectionsXml": "~20 URLs (cat-focused collections only)",
+    "sitemapGuidesXml": "~15 URLs (cat buying guides)",
+    "sitemapBlogXml": "~15 URLs (cat authority blog posts)",
+    "totalSitemapUrls": "~200",
+    "excludedFromSitemap": "Tier B (25), Tier C (521), 223 noindexed blog posts"
+  },
+
+  "blogPruning": {
+    "totalPublished": 323,
+    "kept": 100,
+    "noindexed": 223,
+    "reductionPercent": "69%",
+    "criteria": "Non-cat posts noindexed. Cat buying guides, comparisons, and authority content retained."
+  },
+
+  "collectionMerges": [
+    { "action": "MERGE", "keep": "cat-trees-and-condos", "merged": ["cat-tree-for-large-cats", "heavy-duty-cat-tree-large-cats", "cat-tree-overweight-cats", "best-cat-tree-maine-coon"], "reason": "4 overlapping large-cat-tree collections consolidated" },
+    { "action": "MERGE", "keep": "best-cat-litter-boxes", "merged": ["best-litter-box-for-large-cats", "best-litter-box-for-odor-control"], "reason": "Sub-intent litter collections merged" },
+    { "action": "KEEP", "pages": ["modern-cat-trees", "cat-condos"], "reason": "Different product types" },
+    { "action": "NOINDEX", "pages": ["All non-cat collections (dog-beds, hamster-cages, etc.)"], "reason": "Topical focus enforcement" }
+  ],
+
+  "redirectList": [
+    { "from": "/collections/cat-tree-for-large-cats", "to": "/collections/cat-trees-and-condos", "type": 301 },
+    { "from": "/collections/heavy-duty-cat-tree-large-cats", "to": "/collections/cat-trees-and-condos", "type": 301 },
+    { "from": "/collections/cat-tree-overweight-cats", "to": "/collections/cat-trees-and-condos", "type": 301 },
+    { "from": "/collections/best-cat-tree-maine-coon", "to": "/collections/cat-trees-and-condos", "type": 301 },
+    { "from": "/collections/best-litter-box-for-large-cats", "to": "/collections/best-cat-litter-boxes", "type": 301 },
+    { "from": "/collections/best-litter-box-for-odor-control", "to": "/collections/best-cat-litter-boxes", "type": 301 }
+  ],
+
+  "internalLinkDistribution": {
+    "catTreesHub": { "target": "/collections/cat-trees-and-condos", "currentLinks": "30+", "sources": ["Homepage (3)", "All cat tree sub-collections (8+)", "All cat tree guides (8+)", "Top blog posts (5+)", "Product pages (5+)", "Footer"] },
+    "litterHub": { "target": "/collections/best-cat-litter-boxes", "currentLinks": "25+", "sources": ["Homepage (2)", "Litter guides (6+)", "Product pages (8+)", "Blog posts (5+)", "Footer"] },
+    "anchorDistribution": { "exact": "10%", "partial": "40%", "semantic": "30%", "branded": "20%" }
+  },
+
+  "conversionLayerAdded": {
+    "stabilityScoreBadge": "Active on all Cat Tree products",
+    "weightCapacityDisplay": "Active on all Cat Tree products",
+    "bestForLargeCatsTag": "Auto-detected from product name keywords",
+    "litterBoxBadges": "Self-Cleaning, Odor Control, Enclosed Design badges",
+    "comparisonTable": "Active on all Tier A product pages",
+    "faqSchema": "Active on all product pages via ProductFAQAccordion"
+  },
+
+  "homepageState": {
+    "h1": "Premium Cat Trees, Litter Boxes & Indoor Cat Living",
+    "primaryCTA": "/collections/cat-trees-and-condos",
+    "secondaryCTA": "/collections/best-cat-litter-boxes",
+    "pillarBlocks": ["Cat Trees & Condos", "Cat Litter Boxes", "Indoor Cat Furniture"],
+    "removedBlocks": "Dog, Bird, Hamster, Generic pet blocks eliminated"
+  },
+
+  "navigationState": {
+    "primaryMenu": ["Cat Trees", "Litter Boxes", "Cat Furniture", "Guides", "Bestsellers"],
+    "removedFromNav": "All dog, bird, hamster, rabbit categories"
+  },
+
+  "backlinkTargetAssets": {
+    "primaryLinkMagnet": "/guides/cat-tree-buyers-guide-2026",
+    "guestPostTopics": 20,
+    "dataDrivenLinkBait": 15,
+    "comparisonResearch": 10,
+    "outreachTemplates": "Generated in seo/outreach/",
+    "targetAnchorProfile": { "branded": "70%", "partialMatch": "20%", "exact": "10%" }
+  },
+
+  "sixMonthRoadmap": {
+    "month1": "Finish pruning, publish 6 guides, optimize hub content, start outreach",
+    "month2": "Publish 8 guides, launch comparison engine, acquire 10 backlinks",
+    "month3": "Add 10 cluster pages, CTR meta title optimization, 15 backlinks",
+    "month4": "10 more cluster pages, 20 internal links per hub, conversion optimization",
+    "month5": "Structured data domination, authority consolidation, Cat Tree Selector tool",
+    "month6": "Scale backlink velocity, optimize high-impression keywords, strengthen top 20 URLs"
+  },
+
+  "crawlBudgetProjection": {
+    "before": { "sitemapUrls": 400, "indexedBlog": 323, "totalCrawlable": 800 },
+    "after": { "sitemapUrls": 200, "indexedBlog": 100, "totalCrawlable": 310 },
+    "reduction": "61%",
+    "topicalConcentration": "100% cat in Tier A"
+  }
+}

@@ -55,6 +55,7 @@ import { HeroProductBoost } from '@/components/products/HeroProductBoost';
 import { ProductBundleUpsell } from '@/components/products/ProductBundleUpsell';
 import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
 import { ProductUseCases } from '@/components/products/ProductUseCases';
+import { CatTreeAuthorityBadges } from '@/components/products/CatTreeAuthorityBadges';
 import { ProductComparisonTable } from '@/components/products/ProductComparisonTable';
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { useGuidesList } from '@/hooks/useGuides';
@@ -788,6 +789,14 @@ const ProductDetail = () => {
                 </div>
                 <span className="text-sm text-muted-foreground">(24 reviews)</span>
               </div>
+              
+              {/* Cat Tree / Litter Authority Badges */}
+              <CatTreeAuthorityBadges
+                productName={safeString(product.name)}
+                category={product.category}
+                price={Number(product.price)}
+                weight={product.weight ? Number(product.weight) : null}
+              />
             </div>
 
             {/* Price */}
