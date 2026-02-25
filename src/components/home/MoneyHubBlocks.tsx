@@ -8,8 +8,9 @@ const MONEY_HUBS = [
     href: '/collections/cat-trees-and-condos',
     anchor: 'premium cat trees and condos',
     content:
-      'Standard cat trees are built for cats under 12 lbs — but Maine Coons, Ragdolls, and Norwegian Forest Cats weigh 15–25 lbs and generate 4x their body weight in impact force when jumping. That\'s why we curate only heavy-duty cat trees with solid wood or reinforced engineered-wood frames, 4-inch diameter sisal posts, and platforms 18 inches or wider. Our large-cat collection includes wall-anchor hardware and anti-tip systems rated for 40+ lbs of dynamic load. Whether you need a floor-to-ceiling tension pole model for a multi-cat household or a compact heavy-duty tree for an apartment, every pick is stability-tested and backed by our 30-day satisfaction guarantee with free US shipping.',
+      'Standard cat trees are built for cats under 12 lbs — but Maine Coons, Ragdolls, and Norwegian Forest Cats weigh 15–25 lbs and generate 4x their body weight in impact force when jumping. That\'s why we curate only heavy-duty cat trees with solid wood or reinforced engineered-wood frames, 4-inch diameter sisal posts, and platforms 18 inches or wider. Our large-cat collection includes wall-anchor hardware and anti-tip systems rated for 40+ lbs of dynamic load. Whether you need a floor-to-ceiling tension pole model for a multi-cat household or a compact heavy-duty tree for an apartment, every pick is stability-tested and backed by our 30-day satisfaction guarantee with free US shipping. See our expert comparison of the 7 best cat trees for large cats in our 2026 stability guide.',
     badges: ['25+ lb Rated', 'Anti-Tip Tested', 'Free US Shipping'],
+    guideLink: '/guides/best-cat-trees-large-cats-2026',
   },
   {
     title: 'Best Cat Litter Boxes 2026',
@@ -65,13 +66,24 @@ export function MoneyHubBlocks() {
                   {hub.content}
                 </p>
 
-                <Link
-                  to={hub.href}
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline group"
-                >
-                  Shop {hub.anchor}
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                <div className="flex flex-col gap-2">
+                  <Link
+                    to={hub.href}
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline group"
+                  >
+                    Shop {hub.anchor}
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  {'guideLink' in hub && (hub as any).guideLink && (
+                    <Link
+                      to={(hub as any).guideLink}
+                      className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary hover:underline transition-colors"
+                    >
+                      📖 Read our expert buying guide
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  )}
+                </div>
               </div>
             </FadeInView>
           ))}
