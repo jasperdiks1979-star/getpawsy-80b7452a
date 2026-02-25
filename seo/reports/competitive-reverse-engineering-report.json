@@ -1,0 +1,456 @@
+{
+  "report_title": "Competitive Reverse-Engineering System — Indoor Cat Niche",
+  "generated_date": "2026-02-25",
+  "target_domain": "getpawsy.pet",
+
+  "section_1_serp_pattern_summary": {
+    "keyword_1": {
+      "query": "cat trees for large cats",
+      "search_intent": "commercial_comparison",
+      "top_10_ranking_urls": [
+        { "rank": 1, "url": "buzzfeed.com/best-cat-tree-for-large-cats", "page_type": "affiliate_listicle", "title_pattern": "15 Best Cat Trees For Large Cats", "h1": "15 Best Cat Trees For Large Cats", "faq": true, "comparison_table": true, "schema": "ItemList", "est_word_count": 3500, "internal_links_est": 40, "cta_pattern": "affiliate_buttons_per_product" },
+        { "rank": 2, "url": "cattreeking.com", "page_type": "brand_ecommerce", "title_pattern": "Cat Trees | Cat Towers & Tree Houses", "h1": "Cat Tree King", "faq": false, "comparison_table": false, "schema": "Product+Organization", "est_word_count": 1200, "internal_links_est": 60, "cta_pattern": "shop_now_hero" },
+        { "rank": 3, "url": "youtube.com/comfortedkitty", "page_type": "video", "title_pattern": "Best Cat Trees for Large Cats", "faq": false, "schema": "VideoObject", "est_word_count": 0, "cta_pattern": "description_links" },
+        { "rank": 4, "url": "cozycatfurniture.com/cat-trees-for-large-cats", "page_type": "niche_ecommerce", "title_pattern": "Cat Trees for Large Cats: Heavy Duty Cat Condos", "h1": "Cat Trees for Large Cats", "faq": true, "comparison_table": false, "schema": "Product+CollectionPage", "est_word_count": 2000, "internal_links_est": 45, "cta_pattern": "product_grid_add_to_cart" },
+        { "rank": 5, "url": "newcatcondos.com/extra-large-cat-tower", "page_type": "brand_ecommerce", "title_pattern": "XXL Heavy-Duty Cat Tree — Solid Wood", "h1": "XXL Heavy-Duty Cat Tree", "faq": false, "comparison_table": false, "schema": "Product", "est_word_count": 800, "internal_links_est": 25, "cta_pattern": "add_to_cart_sticky" },
+        { "rank": 6, "url": "newcatcondos.com/large-cat-trees/", "page_type": "brand_ecommerce_collection", "title_pattern": "Large Cat Trees | Sturdy Cat Towers", "h1": "Large Cat Trees", "faq": false, "comparison_table": false, "schema": "CollectionPage", "est_word_count": 1500, "internal_links_est": 35, "cta_pattern": "product_grid" },
+        { "rank": 7, "url": "catastrophicreations.com/collections/large-cat-trees", "page_type": "premium_ecommerce", "title_pattern": "Cat Trees for Large Cats", "h1": "Cat Trees for Large Cats", "faq": false, "comparison_table": false, "schema": "CollectionPage", "est_word_count": 600, "internal_links_est": 20, "cta_pattern": "quick_shop" },
+        { "rank": 8, "url": "amazon.com (various PDP)", "page_type": "marketplace", "schema": "Product+AggregateRating", "est_word_count": 1500, "internal_links_est": 100 },
+        { "rank": 9, "url": "chewy.com/cat trees", "page_type": "marketplace", "schema": "Product+AggregateRating+BreadcrumbList", "est_word_count": 2000, "internal_links_est": 80 },
+        { "rank": 10, "url": "petco.com/cat trees", "page_type": "marketplace", "schema": "Product+CollectionPage", "est_word_count": 1000, "internal_links_est": 60 }
+      ],
+      "pattern_summary": "Dominated by affiliate listicles (BuzzFeed, Cats.com) and niche brands (CatTreeKing, CozyCat, NewCatCondos). Listicles use 3000+ words, comparison tables, and ItemList schema. Niche brands win with deep product pages + authority content. Marketplaces (Amazon, Chewy) rank via domain authority. GAP: No pure ecommerce brand + authority hybrid in top 5."
+    },
+    "keyword_2": {
+      "query": "best cat tree 2026",
+      "search_intent": "commercial_comparison",
+      "top_rankers": [
+        { "rank": 1, "domain": "buzzfeed.com", "page_type": "affiliate_listicle" },
+        { "rank": 2, "domain": "cats.com", "page_type": "authority_review", "note": "11 Best Cat Trees — TESTED. 3500+ words, hands-on reviews, FAQ, comparison tables." },
+        { "rank": 3, "domain": "amazon.com", "page_type": "marketplace_new_releases" },
+        { "rank": 4, "domain": "bestreviews.guide", "page_type": "affiliate_aggregator" },
+        { "rank": 5, "domain": "yourbestdigs.com", "page_type": "review_site", "note": "7 Best Cat Trees — tested. Hands-on methodology focus." },
+        { "rank": 6, "domain": "thesprucepets.com", "page_type": "authority_media", "note": "10 Best Cat Trees Tested. 34 trees tested. Expert bylines + editorial trust." },
+        { "rank": 7, "domain": "cattreeking.com", "page_type": "brand_ecommerce" },
+        { "rank": 8, "domain": "chewy.com", "page_type": "marketplace_editorial" },
+        { "rank": 9, "domain": "wayfair.com", "page_type": "marketplace" },
+        { "rank": 10, "domain": "nytimes.com/wirecutter", "page_type": "authority_media" }
+      ],
+      "pattern_summary": "Highest-authority editorial sites dominate (SprucePets, Cats.com, Wirecutter). All top 5 use: 3000+ words, hands-on testing methodology, comparison tables, expert bylines, FAQ schema. Only cattreeking.com represents a niche ecommerce brand. GAP: Massive opportunity for ecommerce brand + testing authority hybrid."
+    },
+    "keyword_3": {
+      "query": "most stable cat tree",
+      "search_intent": "commercial_informational_hybrid",
+      "top_rankers": [
+        { "rank": 1, "domain": "mrbosscat.com", "page_type": "affiliate_blog", "note": "8 Best Heavy-Duty Cat Trees — buying guide, TOC, FAQ, 2500+ words" },
+        { "rank": 2, "domain": "thesprucepets.com", "page_type": "authority_media" },
+        { "rank": 3, "domain": "bestreviews.guide", "page_type": "affiliate_aggregator" },
+        { "rank": 4, "domain": "catfurnituresolutions.pro", "page_type": "niche_blog", "note": "Budget angle — 'Cat Trees That Don't Wobble Under $100'" },
+        { "rank": 5, "domain": "reddit.com/r/cats", "page_type": "ugc_forum", "note": "7400+ upvotes. Real recommendations from cat owners." },
+        { "rank": 6, "domain": "cats.com", "page_type": "authority_review" },
+        { "rank": 7, "domain": "amazon.com", "page_type": "marketplace" },
+        { "rank": 8, "domain": "chewy.com", "page_type": "marketplace_editorial" }
+      ],
+      "pattern_summary": "Affiliate blogs and niche content sites dominate. Reddit UGC ranks #5 showing Google values authentic user experience. Key differentiator: stability-focused buying guide with weight capacity data. GAP: GetPawsy's Stability Score system is unique — needs dedicated landing page to capture this query."
+    },
+    "keyword_4": {
+      "query": "best self cleaning litter box",
+      "search_intent": "commercial_comparison",
+      "top_rankers": [
+        { "rank": 1, "domain": "cats.com", "page_type": "authority_review", "note": "7 Best Automatic Litter Boxes — TESTED 31 models. Gold standard." },
+        { "rank": 2, "domain": "litter-robot.com", "page_type": "brand_pdp", "note": "Litter-Robot 4 PDP. 13,800+ reviews. Brand dominance." },
+        { "rank": 3, "domain": "bestproducts.com", "page_type": "editorial_review", "note": "7 Best Self-Cleaning — tested and researched." },
+        { "rank": 4, "domain": "cnn.com/underscored", "page_type": "authority_media", "note": "Tested and reviewed. High DA editorial." },
+        { "rank": 5, "domain": "thesprucepets.com", "page_type": "authority_media", "note": "9 Best Automatic — tested and reviewed." },
+        { "rank": 6, "domain": "litter-robot.com", "page_type": "brand_homepage" },
+        { "rank": 7, "domain": "reddit.com/r/CatAdvice", "page_type": "ugc_forum" },
+        { "rank": 8, "domain": "nytimes.com/wirecutter", "page_type": "authority_media" },
+        { "rank": 9, "domain": "amazon.com", "page_type": "marketplace" },
+        { "rank": 10, "domain": "petpivot.com", "page_type": "niche_ecommerce_blog" }
+      ],
+      "pattern_summary": "Dominated by high-DA editorial media (CNN, Wirecutter, SprucePets) and the category leader Litter-Robot (brand). All use: 3000-5000 words, hands-on testing claims, 10+ product comparisons, FAQ schema. Litter-Robot ranks for its own brand query AND the category query — dual position. GAP: Only petpivot.com represents a small ecommerce with editorial approach. Massive opportunity."
+    },
+    "keyword_5": {
+      "query": "cat tree vs cat condo",
+      "search_intent": "informational_comparison",
+      "top_rankers": [
+        { "rank": 1, "domain": "pawkitty.com", "page_type": "niche_ecommerce_blog", "note": "Cat Condos vs Cat Trees: Spot the Differences. Ecommerce blog!" },
+        { "rank": 2, "domain": "coolcatscatsitting.com", "page_type": "service_blog" },
+        { "rank": 3, "domain": "bestcattrees.org", "page_type": "affiliate_comparison", "note": "Comparison chart with specs." },
+        { "rank": 4, "domain": "wayfair.com", "page_type": "marketplace_guide" },
+        { "rank": 5, "domain": "youtube.com", "page_type": "video" },
+        { "rank": 6, "domain": "animalwellnessmagazine.com", "page_type": "editorial" },
+        { "rank": 7, "domain": "chewy.com", "page_type": "marketplace_editorial" }
+      ],
+      "pattern_summary": "WEAKEST COMPETITION of all 6 queries. PawKitty (small ecommerce) ranks #1. Low barrier to entry. Informational intent = opportunity for GetPawsy to create definitive comparison page with internal product links. Requires: 2000+ words, comparison matrix, FAQ schema, product recommendations."
+    },
+    "keyword_6": {
+      "query": "best litter box for apartment",
+      "search_intent": "commercial_comparison",
+      "top_rankers": [
+        { "rank": 1, "domain": "therefinedfeline.com", "page_type": "niche_ecommerce_blog", "note": "Ultimate Guide — long-form with reviews. 3000+ words." },
+        { "rank": 2, "domain": "catster.com", "page_type": "authority_media" },
+        { "rank": 3, "domain": "savingninelives.com", "page_type": "affiliate_blog", "note": "9 Best — Low Odor + Space-Saving." },
+        { "rank": 4, "domain": "furlifecare.com", "page_type": "niche_blog" },
+        { "rank": 5, "domain": "petpivot.com", "page_type": "niche_ecommerce_blog" },
+        { "rank": 6, "domain": "apartmenttherapy.com", "page_type": "lifestyle_media" },
+        { "rank": 7, "domain": "reddit.com", "page_type": "ugc_forum" }
+      ],
+      "pattern_summary": "Smaller niche sites dominate — therefinedfeline.com and petpivot.com are both small ecommerce brands ranking with editorial content. Lower DA competition = high opportunity. GAP: GetPawsy can rank here with a 2500+ word apartment litter box guide + product links."
+    }
+  },
+
+  "section_2_content_gap_matrix": {
+    "existing_coverage_assessment": {
+      "cat_trees_hub": "PARTIAL — collection page exists but lacks 1500+ word editorial depth",
+      "litter_box_hub": "PARTIAL — collection page exists but lacks comparison tables and editorial",
+      "cat_tree_vs_condo": "MISSING — no dedicated page",
+      "stability_guide": "MISSING — badges exist on PDP but no standalone guide",
+      "apartment_litter_guide": "MISSING — no dedicated page",
+      "self_cleaning_litter_guide": "MISSING — no dedicated page"
+    },
+    "gap_matrix": [
+      { "keyword": "cat trees for large cats", "intent": "commercial", "content_depth": "high", "comparison_table": true, "faq": true, "getpawsy_status": "PARTIAL", "gap_priority": "HIGH" },
+      { "keyword": "best cat tree 2026", "intent": "commercial", "content_depth": "very_high", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "HIGH" },
+      { "keyword": "most stable cat tree", "intent": "commercial_info", "content_depth": "high", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "HIGH" },
+      { "keyword": "best self cleaning litter box", "intent": "commercial", "content_depth": "very_high", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "HIGH" },
+      { "keyword": "cat tree vs cat condo", "intent": "informational", "content_depth": "medium", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "HIGH" },
+      { "keyword": "best litter box for apartment", "intent": "commercial", "content_depth": "high", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "HIGH" },
+      { "keyword": "best cat tree for small apartment", "intent": "commercial", "content_depth": "medium", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "HIGH" },
+      { "keyword": "cat tree for heavy cats 25 lbs", "intent": "commercial", "content_depth": "medium", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "HIGH" },
+      { "keyword": "litter robot vs petsafe vs catgenie", "intent": "comparison", "content_depth": "high", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "HIGH" },
+      { "keyword": "cat tree with hammock", "intent": "commercial", "content_depth": "medium", "comparison_table": false, "faq": false, "getpawsy_status": "MISSING", "gap_priority": "MEDIUM" },
+      { "keyword": "wall mounted cat tree", "intent": "commercial", "content_depth": "medium", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "MEDIUM" },
+      { "keyword": "cat tree for kittens", "intent": "commercial", "content_depth": "medium", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "MEDIUM" },
+      { "keyword": "how to choose a cat tree", "intent": "informational", "content_depth": "high", "comparison_table": false, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "HIGH" },
+      { "keyword": "are self cleaning litter boxes worth it", "intent": "informational_commercial", "content_depth": "high", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "HIGH" },
+      { "keyword": "cat tree for maine coon", "intent": "commercial", "content_depth": "high", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "HIGH" },
+      { "keyword": "enclosed vs open litter box", "intent": "informational", "content_depth": "medium", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "MEDIUM" },
+      { "keyword": "cat furniture for small spaces", "intent": "commercial", "content_depth": "medium", "comparison_table": true, "faq": false, "getpawsy_status": "MISSING", "gap_priority": "MEDIUM" },
+      { "keyword": "best cat scratching post", "intent": "commercial", "content_depth": "high", "comparison_table": true, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "MEDIUM" },
+      { "keyword": "multi cat litter box solutions", "intent": "commercial_info", "content_depth": "medium", "comparison_table": false, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "MEDIUM" },
+      { "keyword": "litter box odor control tips", "intent": "informational", "content_depth": "medium", "comparison_table": false, "faq": true, "getpawsy_status": "MISSING", "gap_priority": "LOW" }
+    ],
+    "missing_comparison_keywords_15": [
+      "litter robot 4 vs litter robot 3",
+      "petsafe scoopfree vs litter robot",
+      "cat genie vs litter robot",
+      "enclosed vs open cat tree",
+      "sisal vs carpet cat tree",
+      "wood vs particle board cat tree",
+      "floor cat tree vs wall mounted",
+      "cat tree vs cat shelves",
+      "automatic vs manual litter box",
+      "clumping vs crystal litter for auto box",
+      "top entry vs side entry litter box",
+      "large cat tree vs cat tower",
+      "real wood cat tree vs faux fur",
+      "budget vs premium cat tree durability",
+      "single cat vs multi cat litter setup"
+    ],
+    "missing_high_intent_modifiers_10": [
+      "for 20 lb cats",
+      "for senior cats",
+      "for bengal cats",
+      "with sisal posts",
+      "under $100",
+      "under $200",
+      "with washable covers",
+      "no smell",
+      "easy to assemble",
+      "modern design"
+    ],
+    "underserved_subtopics_5": [
+      "Cat tree placement guide (where to put it in your home)",
+      "How to transition cats to a self-cleaning litter box",
+      "Cat tree maintenance and replacement schedule",
+      "DIY cat tree stability improvements",
+      "Litter box training for adult cats"
+    ]
+  },
+
+  "section_3_backlink_prospect_list": {
+    "summary": "200 target prospects across 5 categories",
+    "categories": {
+      "cat_authority_blogs_50": {
+        "example_targets": [
+          "cats.com", "catster.com", "thecatsite.com", "purrcraze.com", "cattreeking.com",
+          "mrbosscat.com", "cozycatfurniture.com", "pawkitty.com", "catastrophicreations.com",
+          "comfortedkitty.com", "catfurnituresolutions.pro", "savingninelives.com",
+          "allaboutcats.com", "excitedcats.com", "hepper.com", "felineliving.net",
+          "cattitudedaily.com", "thecatsite.com", "moderncat.com", "catbehaviorassociates.com"
+        ],
+        "link_type": "guest_post, resource_mention, product_review",
+        "contact_method": "email_outreach, contact_form",
+        "estimated_authority": "DA 20-60"
+      },
+      "pet_review_editorial_40": {
+        "example_targets": [
+          "thesprucepets.com", "bestproducts.com", "nytimes.com/wirecutter", "cnn.com/underscored",
+          "buzzfeed.com", "yourbestdigs.com", "bestreviews.guide", "petpivot.com",
+          "therefinedfeline.com", "apartmenttherapy.com", "bhg.com/pets",
+          "goodhousekeeping.com/pets", "petmd.com", "akc.org/pet-products"
+        ],
+        "link_type": "product_inclusion, expert_quote, data_citation",
+        "contact_method": "PR_pitch, editor_email",
+        "estimated_authority": "DA 50-95"
+      },
+      "reddit_communities_50": {
+        "targets": [
+          "r/cats", "r/CatAdvice", "r/catpictures", "r/mainecoons", "r/bengalcats",
+          "r/Catloaf", "r/TheCatTrapIsWorking", "r/CatTreeKing", "r/Floof",
+          "r/seniorkitties", "r/catfruit", "r/IllegallySmolCats", "r/blackcats",
+          "r/standardissuecat", "r/tabby", "r/tortoiseshellcats",
+          "r/calicokittys", "r/CatTraining", "r/meowsertrousers", "r/Chonkers",
+          "r/indoorcats", "r/ApartmentCats", "r/CatsWithJobs", "r/CatSubscription",
+          "r/WhatsWrongWithYourCat", "r/PetAdvice", "r/Pets"
+        ],
+        "link_type": "genuine_recommendation, resource_share",
+        "strategy": "value_first_community_participation"
+      },
+      "pinterest_boards_30": {
+        "topics": [
+          "cat furniture ideas", "cat tree DIY", "modern cat trees", "cat room design",
+          "apartment cat setup", "cat litter solutions", "indoor cat living",
+          "cat tree placement", "small space cat furniture", "cat wall shelves"
+        ],
+        "strategy": "pin_product_images_to_boards, create_idea_pins_with_guides"
+      },
+      "medium_and_publishers_30": {
+        "targets": [
+          "Medium cat topic publications", "Substack pet newsletters", "Quora Spaces for cat owners",
+          "petlifestyle.com", "catnip.com", "catwatch.com", "iheartcats.com"
+        ],
+        "link_type": "syndicated_article, guest_contribution",
+        "strategy": "parasite_seo_articles_with_backlinks"
+      }
+    },
+    "guest_post_topics_15": [
+      "The Science Behind Cat Tree Stability: Engineering for 25+ lb Cats",
+      "Why Your Cat Ignores the Cat Tree (And How to Fix It)",
+      "Self-Cleaning Litter Box Technology: What Changed in 2026",
+      "The Complete Maine Coon Cat Tree Buying Checklist",
+      "Indoor Cat Exercise: How Cat Trees Prevent Obesity",
+      "Apartment Cat Setup: Complete Guide for First-Time Owners",
+      "Cat Tree Materials Compared: Sisal vs Carpet vs Wood",
+      "Multi-Cat Household Furniture Strategy: Beyond One Cat Tree",
+      "How to Evaluate Cat Tree Weight Capacity Claims",
+      "The Hidden Cost of Cheap Cat Trees: A Durability Study",
+      "Litter Box Placement Science: Reducing Stress in Multi-Cat Homes",
+      "Cat Furniture Trends 2026: Modern Design Meets Feline Needs",
+      "Why Heavy-Duty Cat Trees Are Worth the Investment",
+      "Self-Cleaning Litter Box vs Traditional: Total Cost of Ownership",
+      "The Cat Tree Safety Checklist Every Owner Needs"
+    ],
+    "data_driven_link_bait_10": [
+      "2026 US Cat Owner Survey: Indoor Cat Spending Habits (original data)",
+      "Cat Tree Stability Test Results: We Tested 20 Models (with video)",
+      "Self-Cleaning Litter Box Reliability Report: 6-Month Endurance Test",
+      "The True Cost of Cat Ownership in 2026: Complete Breakdown",
+      "Cat Tree Height vs Cat Happiness: Behavioral Study Summary",
+      "US Apartment Cat Population Growth: Data Visualization",
+      "Cat Furniture ROI Calculator: Interactive Tool",
+      "Weight Capacity Claims vs Reality: Lab Test Results",
+      "Litter Box Technology Evolution: 2010-2026 Timeline Infographic",
+      "Cat Tree Injury Report: Safety Analysis of 50 Popular Models"
+    ],
+    "authority_magnet_guides_5": [
+      "The Ultimate Cat Tree Buying Guide 2026 (5000+ words, downloadable PDF)",
+      "Indoor Cat Living Complete Setup Manual",
+      "Self-Cleaning Litter Box Encyclopedia: Every Model Compared",
+      "Cat Furniture Size Chart: By Breed, Space, and Budget",
+      "US Pet Owner Behavior Report: 2026 Indoor Cat Edition"
+    ]
+  },
+
+  "section_4_structural_weakness_map": {
+    "getpawsy_vs_competitors": {
+      "hub_depth": {
+        "getpawsy": "Collection pages with minimal editorial (~300 words)",
+        "competitors": "Cats.com: 3500+ words. SprucePets: 3000+ words. CozyCatFurniture: 2000+ words",
+        "gap": "CRITICAL — Need 1500+ word hubs with comparison tables, FAQ, buying criteria",
+        "priority": "P0"
+      },
+      "silo_purity": {
+        "getpawsy": "Improved after pruning — 3 primary silos active",
+        "competitors": "CatTreeKing: 100% cat trees only. Litter-Robot: 100% litter only",
+        "gap": "MODERATE — GetPawsy covers 3 niches which dilutes vs pure-play brands",
+        "priority": "P2"
+      },
+      "internal_link_density": {
+        "getpawsy": "Automated cross-linking active. ~15-25 links per hub page",
+        "competitors": "Cats.com: 40-60 contextual links per review. Chewy: 80+ per page",
+        "gap": "MODERATE — Need to increase to 40+ per hub, 30+ per guide",
+        "priority": "P1"
+      },
+      "comparison_module_usage": {
+        "getpawsy": "SimilarProductsCompare module exists (3 products). Basic.",
+        "competitors": "Cats.com: Full 10+ product comparison tables with specs. BestCatTrees.org: Sortable charts",
+        "gap": "HIGH — Need comprehensive comparison tables on hub/guide pages",
+        "priority": "P1"
+      },
+      "faq_schema": {
+        "getpawsy": "ProductFAQAccordion exists with 10 cat-specific Q&As + schema",
+        "competitors": "Top rankers: 8-15 FAQs with schema. Some use PAA targeting.",
+        "gap": "LOW — Existing implementation is competitive. Expand to hub/guide pages.",
+        "priority": "P2"
+      },
+      "page_length": {
+        "getpawsy": "Product pages: 800-1200 words. Hub pages: 300-600 words",
+        "competitors": "Top rankers: 2500-5000 words for guides, 1500-2000 for collection pages",
+        "gap": "CRITICAL — Hub and guide pages need 2x-4x more content",
+        "priority": "P0"
+      },
+      "conversion_elements": {
+        "getpawsy": "Strong — Stability Score, Price Anchoring, Free Shipping Bar, Authority Badges, Bundle Upsell",
+        "competitors": "Litter-Robot: 13,800 reviews. CatTreeKing: Trust badges + 20yr history. Cats.com: Testing methodology credibility",
+        "gap": "MODERATE — Review volume is the biggest gap. Testing/hands-on credibility missing.",
+        "priority": "P1"
+      },
+      "content_freshness_signals": {
+        "getpawsy": "No visible 'Updated on' or 'Tested by' signals",
+        "competitors": "All top rankers: 'Updated Dec 2025', 'Tested 34 models', expert bylines",
+        "gap": "HIGH — Add last-updated dates, testing methodology, expert bylines",
+        "priority": "P1"
+      }
+    }
+  },
+
+  "section_5_internal_link_blueprint_v3": {
+    "hub_link_quotas": {
+      "cat_trees_hub": {
+        "min_contextual_links": 40,
+        "breakdown": {
+          "to_tier_a_products": 15,
+          "to_buying_guides": 6,
+          "to_comparison_pages": 4,
+          "to_collection_subcategories": 5,
+          "to_blog_articles": 5,
+          "to_bundle_pages": 3,
+          "from_homepage": 2
+        }
+      },
+      "litter_box_hub": {
+        "min_contextual_links": 30,
+        "breakdown": {
+          "to_tier_a_products": 10,
+          "to_buying_guides": 5,
+          "to_comparison_pages": 3,
+          "to_collection_subcategories": 4,
+          "to_blog_articles": 4,
+          "to_bundle_pages": 2,
+          "from_homepage": 2
+        }
+      },
+      "cat_furniture_hub": {
+        "min_contextual_links": 20,
+        "breakdown": {
+          "to_tier_a_products": 8,
+          "to_buying_guides": 4,
+          "to_comparison_pages": 2,
+          "to_collection_subcategories": 3,
+          "to_blog_articles": 3
+        }
+      }
+    },
+    "guide_linking_protocol": {
+      "each_guide_must_link_to": {
+        "tier_a_products": 5,
+        "collections": 2,
+        "comparison_guides": 1,
+        "bundle_page": 1
+      },
+      "each_tier_a_product_must_link_to": {
+        "parent_hub": 1,
+        "related_tier_a_products": 3,
+        "relevant_guide": 1,
+        "comparison_page": 1
+      }
+    },
+    "anchor_distribution": {
+      "exact_match": "30%",
+      "partial_match": "40%",
+      "semantic_branded": "30%",
+      "examples": {
+        "exact": "best cat tree for large cats",
+        "partial": "top-rated cat trees for heavy cats",
+        "semantic": "explore our cat tree collection, find the perfect perch"
+      }
+    }
+  },
+
+  "section_6_authority_acceleration_20_pages": [
+    { "id": 1, "title": "Best Cat Trees for Large Cats 2026", "type": "best_x_for_y", "target_keyword": "cat trees for large cats", "min_words": 2500, "priority": "P0" },
+    { "id": 2, "title": "Best Self-Cleaning Litter Box 2026: Tested & Compared", "type": "best_x", "target_keyword": "best self cleaning litter box", "min_words": 3000, "priority": "P0" },
+    { "id": 3, "title": "Cat Tree vs Cat Condo: Complete Comparison Guide", "type": "x_vs_y", "target_keyword": "cat tree vs cat condo", "min_words": 2000, "priority": "P0" },
+    { "id": 4, "title": "Most Stable Cat Trees: Engineered for Heavy Cats", "type": "stability_guide", "target_keyword": "most stable cat tree", "min_words": 2000, "priority": "P0" },
+    { "id": 5, "title": "Best Litter Box for Apartments: Space-Saving Picks", "type": "best_x_for_y", "target_keyword": "best litter box for apartment", "min_words": 2500, "priority": "P0" },
+    { "id": 6, "title": "Are Self-Cleaning Litter Boxes Worth It? Cost Analysis", "type": "worth_it", "target_keyword": "are self cleaning litter boxes worth it", "min_words": 2000, "priority": "P0" },
+    { "id": 7, "title": "Best Cat Tree for Maine Coons 2026", "type": "best_x_for_y", "target_keyword": "cat tree for maine coon", "min_words": 2000, "priority": "P1" },
+    { "id": 8, "title": "Cat Tree Weight Capacity Guide: What You Need to Know", "type": "weight_capacity_guide", "target_keyword": "cat tree weight capacity", "min_words": 2000, "priority": "P1" },
+    { "id": 9, "title": "Best Cat Trees Under $100 That Won't Wobble", "type": "best_x_under_price", "target_keyword": "best cat tree under 100", "min_words": 2000, "priority": "P1" },
+    { "id": 10, "title": "Litter Robot 4 vs PetSafe ScoopFree: Head-to-Head", "type": "x_vs_y", "target_keyword": "litter robot vs petsafe", "min_words": 2000, "priority": "P1" },
+    { "id": 11, "title": "Best Cat Trees for Small Apartments 2026", "type": "best_x_for_y", "target_keyword": "cat tree for small apartment", "min_words": 2000, "priority": "P1" },
+    { "id": 12, "title": "Cat Tree for Senior Cats: Comfort & Accessibility Guide", "type": "best_x_for_y", "target_keyword": "cat tree for senior cats", "min_words": 2000, "priority": "P1" },
+    { "id": 13, "title": "How to Choose a Cat Tree: Complete Buyer's Guide 2026", "type": "how_to_choose", "target_keyword": "how to choose a cat tree", "min_words": 2500, "priority": "P1" },
+    { "id": 14, "title": "Multi-Cat Litter Box Solutions: Setup Guide", "type": "solution_guide", "target_keyword": "multi cat litter box", "min_words": 2000, "priority": "P1" },
+    { "id": 15, "title": "Cat Tree Stability Test: How We Rate Sturdiness", "type": "methodology", "target_keyword": "sturdy cat tree test", "min_words": 2000, "priority": "P2" },
+    { "id": 16, "title": "Wall Mounted Cat Trees vs Floor Standing: Pros & Cons", "type": "x_vs_y", "target_keyword": "wall mounted vs floor cat tree", "min_words": 2000, "priority": "P2" },
+    { "id": 17, "title": "Best Cat Furniture for Modern Homes 2026", "type": "best_x", "target_keyword": "modern cat furniture", "min_words": 2000, "priority": "P2" },
+    { "id": 18, "title": "Enclosed vs Open Litter Box: What Cats Actually Prefer", "type": "x_vs_y", "target_keyword": "enclosed vs open litter box", "min_words": 2000, "priority": "P2" },
+    { "id": 19, "title": "Cat Tree Materials Guide: Sisal vs Carpet vs Wood", "type": "comparison_guide", "target_keyword": "sisal vs carpet cat tree", "min_words": 2000, "priority": "P2" },
+    { "id": 20, "title": "Indoor Cat Exercise: Why Cat Trees Prevent Obesity", "type": "informational_authority", "target_keyword": "indoor cat exercise", "min_words": 2000, "priority": "P2" }
+  ],
+
+  "section_7_six_month_takeover_timeline": {
+    "month_1": {
+      "content": ["Publish pages #1, #2, #3, #4, #5, #6 (all P0)"],
+      "internal_linking": ["Implement 40-link quota on Cat Trees hub", "Implement 30-link quota on Litter hub"],
+      "outreach": ["Start 20 guest post pitches", "Begin Reddit community participation"],
+      "technical": ["Add 'Updated on' + 'Tested by' signals to all guides", "Expand hub pages to 1500+ words"],
+      "target_backlinks": 5
+    },
+    "month_2": {
+      "content": ["Publish pages #7, #8, #9, #10, #11, #12, #13, #14 (all P1)"],
+      "internal_linking": ["Wire all new pages into hub cross-links", "Update product→guide contextual mapping"],
+      "outreach": ["Secure 10 guest post placements", "Publish 3 Medium parasite articles"],
+      "target_backlinks": 10
+    },
+    "month_3": {
+      "content": ["Optimize CTR titles for pages ranking 5-20", "Expand comparison tables on all guides"],
+      "internal_linking": ["Audit and increase cross-links to 50+ per hub"],
+      "outreach": ["Pitch data study to 20 editorial sites", "Launch Pinterest content strategy"],
+      "target_backlinks": 15
+    },
+    "month_4": {
+      "content": ["Publish pages #15, #16, #17, #18, #19, #20 (all P2)", "Refresh Month 1 content with updated data"],
+      "internal_linking": ["Build 20+ internal links per new page"],
+      "outreach": ["Pitch US Cat Owner Behavior Report", "Scale Reddit presence"],
+      "target_backlinks": 15
+    },
+    "month_5": {
+      "content": ["Add interactive tools (Cat Tree Selector, Litter Box Size Calculator)", "Create downloadable PDF buying guides"],
+      "authority": ["Submit for product testing roundup inclusion", "Structured data expansion (HowTo, ItemList)"],
+      "target_backlinks": 10
+    },
+    "month_6": {
+      "content": ["Full content refresh pass on all 20 guides", "Optimize top 20 ranking URLs for conversion"],
+      "authority": ["Scale backlink velocity", "Pitch to Wirecutter/SprucePets for product inclusion"],
+      "target_backlinks": 10,
+      "total_backlinks_target": "60-65 total"
+    }
+  },
+
+  "section_8_priority_execution_order": [
+    { "rank": 1, "action": "Expand Cat Trees hub to 1500+ words with comparison table + FAQ", "type": "content_depth", "impact": "HIGH" },
+    { "rank": 2, "action": "Expand Litter Box hub to 1500+ words with comparison table + FAQ", "type": "content_depth", "impact": "HIGH" },
+    { "rank": 3, "action": "Create 'Cat Tree vs Cat Condo' comparison page (WEAKEST SERP)", "type": "new_page", "impact": "HIGH" },
+    { "rank": 4, "action": "Create 'Best Self-Cleaning Litter Box 2026' guide", "type": "new_page", "impact": "HIGH" },
+    { "rank": 5, "action": "Create 'Most Stable Cat Trees' landing page", "type": "new_page", "impact": "HIGH" },
+    { "rank": 6, "action": "Create 'Best Litter Box for Apartments' guide", "type": "new_page", "impact": "HIGH" },
+    { "rank": 7, "action": "Add 'Updated on' + expert byline signals to all content", "type": "trust_signal", "impact": "MEDIUM" },
+    { "rank": 8, "action": "Increase internal links to 40+ per hub page", "type": "internal_linking", "impact": "MEDIUM" },
+    { "rank": 9, "action": "Begin guest post outreach to 20 cat blogs", "type": "backlinks", "impact": "MEDIUM" },
+    { "rank": 10, "action": "Create data-driven link bait (Stability Test Results)", "type": "authority", "impact": "HIGH" }
+  ]
+}
