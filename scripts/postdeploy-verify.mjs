@@ -21,6 +21,7 @@ const run = (label, cmd) => {
 };
 
 run('📊 Impact Model', 'node scripts/impact-model.mjs');
+run('🧪 Collection Health Validation', 'node scripts/validate-collections.mjs');
 run('📱 Lighthouse Mobile Audit', 'node scripts/lighthouse-audit.mjs mobile');
 run('🖥️  Lighthouse Desktop Audit', 'node scripts/lighthouse-audit.mjs desktop');
 
@@ -28,9 +29,11 @@ console.log('\n' + '═'.repeat(60));
 console.log('  ✅ Post-Deploy Verification Complete');
 console.log('═'.repeat(60));
 console.log('\n📂 Outputs:');
-console.log('   • Impact model:     printed above');
-console.log('   • Lighthouse HTML:  ./audits/*.report.html');
-console.log('   • Lighthouse JSON:  ./audits/*.report.json');
+console.log('   • Impact model:         printed above');
+console.log('   • Collection health:    ./seo/reports/collection-health.json');
+console.log('   • Recovery report:      ./seo/reports/collection-recovery-report.json');
+console.log('   • Lighthouse HTML:      ./audits/*.report.html');
+console.log('   • Lighthouse JSON:      ./audits/*.report.json');
 console.log('\n📋 Next Steps:');
 console.log('   1. Review docs/post-deploy-verification.md');
 console.log('   2. Run GSC URL Inspection on key pages');

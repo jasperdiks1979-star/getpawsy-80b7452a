@@ -1,0 +1,55 @@
+{
+  "generatedAt": "2026-02-25T18:19:00Z",
+  "totals": {
+    "activeProducts": 568,
+    "activeSellableWithImage": 568,
+    "collectionsAudited": 3,
+    "fallbackTriggers": 0
+  },
+  "collections": {
+    "cat-trees-and-condos": {
+      "count": 66,
+      "healthy": true,
+      "fallbackTriggered": false,
+      "filters": [
+        "is_active = true",
+        "is_duplicate = false",
+        "price > 0",
+        "image_url IS NOT NULL",
+        "category/name keyword matching"
+      ]
+    },
+    "best-cat-litter-boxes": {
+      "count": 45,
+      "healthy": true,
+      "fallbackTriggered": false,
+      "filters": [
+        "is_active = true",
+        "is_duplicate = false",
+        "price > 0",
+        "image_url IS NOT NULL",
+        "category/name keyword matching"
+      ]
+    },
+    "modern-cat-trees": {
+      "count": 66,
+      "healthy": true,
+      "fallbackTriggered": false,
+      "filters": [
+        "is_active = true",
+        "is_duplicate = false",
+        "price > 0",
+        "image_url IS NOT NULL",
+        "normalized slug + semantic keyword matching"
+      ]
+    }
+  },
+  "routeChecks": [
+    { "route": "/collections/cat-trees-and-condos", "count": 66, "ok": true },
+    { "route": "/collections/best-cat-litter-boxes", "count": 45, "ok": true },
+    { "route": "/collections/modern-cat-trees", "count": 66, "ok": true },
+    { "route": "/cat-trees-for-large-cats", "count": 66, "ok": true },
+    { "route": "/orthopedic-dog-beds", "count": 52, "ok": true }
+  ],
+  "collectionsStillThin": []
+}
