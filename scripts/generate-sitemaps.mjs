@@ -330,8 +330,8 @@ async function main() {
   });
 
   const coreProductEntries = makeDeltaProduct(tierAProducts, 0.90);
-  const secondaryProductEntries = makeDeltaProduct(tierB1Products, 0.60);
-  const productEntriesAll = [...coreProductEntries, ...secondaryProductEntries];
+  // AGGRESSIVE MODE: Only Tier A in sitemap. Tier B1 excluded for crawl budget concentration.
+  const productEntriesAll = [...coreProductEntries];
 
   console.log(`[sitemaps] Tier A (core): ${tierAProducts.length}, Tier B1 (secondary): ${tierB1Products.length}, Tier B2 (no sitemap): ${tierB2Products.length}, Tier C (noindex): ${tierCProducts.length}`);
 
@@ -362,17 +362,14 @@ async function main() {
   if (guideEntries.length > 0) sitemapIndexItems.push({ loc: `${BASE}/sitemap-guides.xml`, lastmod: today });
   if (clusterEntries.length > 0) sitemapIndexItems.push({ loc: `${BASE}/sitemap-clusters.xml`, lastmod: today });
 
-  // ── Tiered product sitemaps ──
+  // ── Tiered product sitemaps — AGGRESSIVE MODE: Tier A only ──
   // Core products (Tier A) → sitemap-core-products.xml (priority 0.9)
   if (coreProductEntries.length > 0) {
     writeChecked("sitemap-core-products.xml", renderUrlset(clean(coreProductEntries)), ["<urlset", "</urlset>"]);
     sitemapIndexItems.push({ loc: `${BASE}/sitemap-core-products.xml`, lastmod: today });
   }
-  // Secondary products (Tier B) → sitemap-secondary-products.xml (priority 0.6)
-  if (secondaryProductEntries.length > 0) {
-    writeChecked("sitemap-secondary-products.xml", renderUrlset(clean(secondaryProductEntries)), ["<urlset", "</urlset>"]);
-    sitemapIndexItems.push({ loc: `${BASE}/sitemap-secondary-products.xml`, lastmod: today });
-  }
+  // Secondary products (Tier B1) — EXCLUDED from sitemap in aggressive mode
+  // They remain index,follow but are not submitted to search engines
 
   // ── Remove stale legacy product sitemap chunks ──
   for (let i = 1; i <= 10; i++) {

@@ -66,19 +66,15 @@ const trackNewsletterSignup = (email: string) =>
   import('@/lib/analytics').then(m => m.trackNewsletterSignup(email));
 
 // ── Category image loaders — never in initial bundle ─────────────────────
+// Only cat-focused category images — non-cat categories suppressed from homepage
 const categoryImageLoaders: Record<string, () => Promise<string>> = {
-  'Dogs': () => import('@/assets/categories/dogs.jpg').then(m => m.default),
   'Cats': () => import('@/assets/categories/cats.jpg').then(m => m.default),
-  'Birds': () => import('@/assets/categories/birds.jpg').then(m => m.default),
-  'Fish & Aquarium': () => import('@/assets/categories/fish.jpg').then(m => m.default),
-  'Small Pets': () => import('@/assets/categories/small-pets-new.jpg').then(m => m.default),
-  'Reptiles': () => import('@/assets/categories/reptiles.jpg').then(m => m.default),
 };
 
 // Guide image loaders
+// Only cat-focused guide images
 const guideImageLoaders: Record<string, () => Promise<string>> = {
   'best-cat-litter-box-2026': () => import('@/assets/guides/guide-cat-litter.jpg').then(m => m.default),
-  'best-dog-bed-2026': () => import('@/assets/guides/guide-dog-beds.jpg').then(m => m.default),
   'best-cat-litter-box-furniture-enclosures-2026': () => import('@/assets/guides/guide-litter-furniture.jpg').then(m => m.default),
 };
 
@@ -370,7 +366,7 @@ const Index = () => {
             src="/hero-dog.webp"
             srcSet="/hero-dog-600.webp 600w, /hero-dog-900.webp 900w, /hero-dog.webp 1200w"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px"
-            alt="Happy dog relaxing at home with premium pet products"
+            alt="Premium cat trees and indoor cat furniture for large breeds"
             width={1200}
             height={675}
             loading="eager"
