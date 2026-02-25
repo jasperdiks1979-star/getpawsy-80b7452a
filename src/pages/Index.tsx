@@ -339,17 +339,17 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Premium Cat Trees, Condos & Indoor Cat Furniture | GetPawsy</title>
-        <meta name="description" content="Shop premium cat trees, condos, litter boxes & indoor cat furniture. Heavy-duty builds for large cats. Free US shipping over $35. 30-day returns." />
+        <title>Premium Indoor Cat Living – Luxury Cat Trees & Smart Litter Solutions | GetPawsy</title>
+        <meta name="description" content="Luxury cat trees, self-cleaning litter boxes & indoor cat furniture. Stability-tested, engineered for large cats. Free US shipping over $35. 30-day guarantee." />
         <link rel="canonical" href="https://getpawsy.pet" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Premium Cat Trees, Condos & Indoor Cat Furniture | GetPawsy" />
-        <meta property="og:description" content="Shop premium cat trees, condos, litter boxes & indoor cat furniture. Heavy-duty builds for large cats. Free US shipping over $35." />
+        <meta property="og:title" content="Premium Indoor Cat Living – Luxury Cat Trees & Smart Litter | GetPawsy" />
+        <meta property="og:description" content="Stability-tested cat trees, smart litter solutions & modern cat furniture. Engineered for large cats. Free US shipping." />
         <meta property="og:url" content="https://getpawsy.pet" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Premium Cat Trees, Condos & Indoor Cat Furniture | GetPawsy" />
-        <meta name="twitter:description" content="Shop premium cat trees, condos, litter boxes & indoor cat furniture. Heavy-duty builds for large cats. Free US shipping over $35." />
+        <meta name="twitter:title" content="Premium Indoor Cat Living – Luxury Cat Trees & Smart Litter | GetPawsy" />
+        <meta name="twitter:description" content="Stability-tested cat trees, smart litter solutions & modern cat furniture. Engineered for large cats. Free US shipping." />
       </Helmet>
       <Suspense fallback={null}>
         <WebsiteSchema />
@@ -381,14 +381,15 @@ const Index = () => {
           <div className="max-w-2xl">
             {/* instant=true — no JS state/observer needed, paints at 0ms */}
             <FadeInView instant className="space-y-6">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
-                Premium Cat Trees, Condos
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">Curated for Modern Cat Homes</p>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.05] tracking-tight">
+                Premium Indoor Cat Living
                 <br />
-                <span className="text-primary">& Indoor Cat Living</span>
+                <span className="text-primary">Luxury Cat Trees & Smart Litter Solutions</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
-                Heavy-duty cat furniture built for stability &amp; large breeds.
-                Expert-tested litter solutions &amp; enrichment. Free US shipping over $35.
+                Engineered stability. Designed elegance. Built for modern cat homes.
+                Heavy-duty furniture rated for 25+ lbs — smart litter solutions that just work.
               </p>
               <div className="flex flex-wrap items-center gap-4 pt-2 relative z-10 pointer-events-auto">
                 <Button asChild size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow duration-200">
@@ -408,56 +409,75 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ── Indoor Cat Authority — 3 Pillar Category Blocks ────────── */}
-      <section className="py-14 md:py-16 bg-muted/20">
+      {/* ── Brand Values Strip ────────────────────────────────────── */}
+      <section className="py-6 border-y border-border/40 bg-card/60">
         <div className="container px-4 md:px-6">
-          <FadeInView className="text-center mb-10">
+          <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 text-sm font-medium text-muted-foreground">
+            {[
+              { icon: '🛡️', label: 'Stability First' },
+              { icon: '🐈', label: 'Designed for Large Cats' },
+              { icon: '🇺🇸', label: 'US Warehouse Shipping' },
+              { icon: '🔩', label: 'Built to Last' },
+              { icon: '↩️', label: '30-Day Guarantee' },
+            ].map((v) => (
+              <span key={v.label} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                <span>{v.icon}</span> {v.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Indoor Cat Authority — 3 Pillar Category Blocks ────────── */}
+      <section className="py-16 md:py-20">
+        <div className="container px-4 md:px-6">
+          <FadeInView className="text-center mb-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-2">The Three Pillars</p>
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">
-              Your Indoor Cat Deserves the Best
+              Indoor Cat Living, Elevated
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Three pillars of indoor cat living — stability-tested furniture, expert-rated litter solutions, and enrichment designed for active cats.
+              Stability-tested furniture. Expert-rated litter solutions. Enrichment designed for active cats.
             </p>
           </FadeInView>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
                 title: 'Cat Trees & Condos',
-                desc: 'Heavy-duty cat trees built for Maine Coons, Ragdolls & multi-cat homes. Anti-tip tested, sisal-wrapped posts, 25+ lb rated.',
+                desc: 'Heavy-duty designs built for Maine Coons, Ragdolls & multi-cat homes. Anti-tip tested, sisal-wrapped posts, 25+ lb rated.',
                 href: '/collections/cat-trees-and-condos',
                 badges: ['25+ lb Rated', 'Anti-Tip Tested'],
-                emoji: '🏔️',
+                accent: 'from-primary/10 to-primary/5',
               },
               {
-                title: 'Cat Litter Boxes',
-                desc: 'Top-rated litter boxes for odor control, large cats & small apartments. Self-cleaning, enclosed & furniture-style options.',
+                title: 'Smart Litter Solutions',
+                desc: 'Self-cleaning technology meets elegant design. Top-rated for odor control, large cats & apartments.',
                 href: '/collections/best-cat-litter-boxes',
-                badges: ['Odor Control', 'Large Cat Friendly'],
-                emoji: '✨',
+                badges: ['Self-Cleaning', 'Odor Control'],
+                accent: 'from-secondary/20 to-secondary/10',
               },
               {
                 title: 'Indoor Cat Furniture',
-                desc: 'Wall-mounted shelves, scratching towers, window perches & enrichment for active indoor cats. Modern designs that blend with your décor.',
+                desc: 'Wall-mounted shelves, window perches & modern scratching towers. Designs that elevate your space.',
                 href: '/products?category=cat-furniture',
-                badges: ['Wall-Mountable', 'Space-Saving'],
-                emoji: '🪑',
+                badges: ['Modern Design', 'Space-Saving'],
+                accent: 'from-accent/30 to-accent/15',
               },
             ].map((pillar) => (
               <FadeInView key={pillar.href}>
                 <a
                   href={pillar.href}
-                  className="group block bg-card border border-border/50 rounded-2xl p-6 md:p-8 h-full hover:border-primary/30 hover:shadow-md transition-all duration-300"
+                  className={`group block bg-gradient-to-br ${pillar.accent} border border-border/30 rounded-2xl p-8 md:p-10 h-full hover:border-primary/40 hover:shadow-lg transition-all duration-500`}
                 >
-                  <div className="text-4xl mb-4">{pillar.emoji}</div>
-                  <div className="flex flex-wrap gap-2 mb-3">
+                  <div className="flex flex-wrap gap-2 mb-4">
                     {pillar.badges.map((b) => (
-                      <span key={b} className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">{b}</span>
+                      <span key={b} className="text-[11px] font-semibold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full">{b}</span>
                     ))}
                   </div>
-                  <h3 className="text-xl font-display font-bold mb-2 group-hover:text-primary transition-colors">{pillar.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{pillar.desc}</p>
-                  <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary group-hover:gap-2.5 transition-all">
-                    Browse Collection <ArrowRight className="w-4 h-4" />
+                  <h3 className="text-2xl font-display font-bold mb-3 group-hover:text-primary transition-colors">{pillar.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-6">{pillar.desc}</p>
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary group-hover:gap-3 transition-all duration-300">
+                    Explore Collection <ArrowRight className="w-4 h-4" />
                   </span>
                 </a>
               </FadeInView>
@@ -743,36 +763,37 @@ const Index = () => {
       </SectionErrorBoundary>
       )}
 
-      {/* ── Why Choose GetPawsy — deferred ─────────────────────────────── */}
+      {/* ── Why Choose GetPawsy — Luxury Positioning ──────────────────── */}
       {hydrationReady && (
       <SectionErrorBoundary sectionName="Why Choose">
         <section className="py-20 bg-sand/30">
           <div className="container px-4 md:px-6">
-            <FadeInView className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Why Cat Parents Choose GetPawsy</h2>
+            <FadeInView className="text-center mb-14">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-2">The GetPawsy Difference</p>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Why Discerning Cat Parents Choose Us</h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                We believe every indoor cat deserves stability-tested furniture — without the premium markup
+                Premium indoor cat living — without the premium markup. Every product stability-tested, every detail considered.
               </p>
             </FadeInView>
-            <FadeInView className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <FadeInView className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
-                { iconKey: 'ShieldCheck' as const, title: 'Tested & Vetted', desc: 'Every product is researched and evaluated before it hits our shelves. No filler, no junk.' },
-                { iconKey: 'Truck' as const, title: 'Free US Shipping Over $35', desc: 'Fast, reliable delivery across the US. Most orders ship within 1–2 business days.' },
-                { iconKey: 'RotateCcw' as const, title: '30-Day Easy Returns', desc: 'Not the right fit? Send it back hassle-free. We make returns simple and painless.' },
-                { iconKey: 'Heart' as const, title: 'Built for Pet Parents', desc: 'Our buying guides, expert reviews, and hand-picked products help you choose with confidence.' },
+                { iconKey: 'ShieldCheck' as const, title: 'Stability Tested', desc: 'Every cat tree is evaluated for anti-tip stability and weight capacity before approval. No compromises.' },
+                { iconKey: 'Truck' as const, title: 'US Warehouse Shipping', desc: 'Ships from US warehouses within 1–2 business days. Free shipping on orders over $35.' },
+                { iconKey: 'RotateCcw' as const, title: '30-Day Guarantee', desc: 'Full refund or exchange, no questions asked. We stand behind every product we curate.' },
+                { iconKey: 'Heart' as const, title: 'Expert Curated', desc: 'Hand-picked inventory backed by buying guides, comparison data, and real owner insights.' },
               ].map((item) => {
                 const Icon = BELOW_FOLD_ICONS[item.iconKey];
                 return (
                   <div
                     key={item.title}
-                    className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-soft-lg transition-shadow duration-300 border border-border/50 text-center"
+                    className="bg-card rounded-2xl p-8 shadow-soft hover:shadow-lg transition-all duration-500 border border-border/30 text-center group"
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <div className="w-16 h-16 rounded-2xl bg-primary/8 flex items-center justify-center mx-auto mb-5 group-hover:bg-primary/15 transition-colors duration-300">
                       <Suspense fallback={<div className="w-7 h-7" />}>
                         <Icon className="w-7 h-7 text-primary" />
                       </Suspense>
                     </div>
-                    <h3 className="font-display font-semibold text-lg mb-2">{item.title}</h3>
+                    <h3 className="font-display font-bold text-lg mb-2">{item.title}</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                   </div>
                 );
