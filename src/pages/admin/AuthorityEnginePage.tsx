@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Layout } from '@/components/layout/Layout';
+// Layout removed — AdminLayout provides admin shell
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -122,7 +122,7 @@ export default function AuthorityEnginePage() {
   const activeCluster = clusters.find(c => c.id === selectedCluster);
 
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>Authority Engine | GetPawsy Admin</title>
         <meta name="robots" content="noindex, nofollow" />
@@ -359,6 +359,6 @@ export default function AuthorityEnginePage() {
           </Card>
         )}
       </div>
-    </Layout>
+    </>
   );
 }

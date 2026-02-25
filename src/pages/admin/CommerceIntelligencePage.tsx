@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Layout } from "@/components/layout/Layout";
+// Layout removed — AdminLayout provides admin shell
 import { Helmet } from "react-helmet-async";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -211,7 +211,7 @@ export default function CommerceIntelligencePage() {
   const isLoading = demandQuery.isLoading;
 
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>Commerce Intelligence | GetPawsy Admin</title>
         <meta name="robots" content="noindex, nofollow" />
@@ -240,6 +240,6 @@ export default function CommerceIntelligencePage() {
           <TabsContent value="ads"><AdsTab report={adsReport} /></TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </>
   );
 }

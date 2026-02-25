@@ -1,4 +1,4 @@
-import { Layout } from "@/components/layout/Layout";
+// Layout removed — AdminLayout provides admin shell
 import { Helmet } from "react-helmet-async";
 import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,7 +70,7 @@ export default function Gsc4xxTriagePage() {
   };
 
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>GSC 4xx URL Triage | GetPawsy Admin</title>
         <meta name="robots" content="noindex, nofollow" />
@@ -227,6 +227,6 @@ export default function Gsc4xxTriagePage() {
           </CardContent>
         </Card>
       </div>
-    </Layout>
+    </>
   );
 }

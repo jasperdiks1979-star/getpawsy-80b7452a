@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Layout } from '@/components/layout/Layout';
+// Layout removed — AdminLayout provides admin shell
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -122,7 +122,7 @@ const BundlesPage = () => {
   const bundleSavings = bundleTotal * (newDiscount / 100);
 
   return (
-    <Layout>
+    <>
       <div className="container px-4 md:px-6 py-8 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -231,7 +231,7 @@ const BundlesPage = () => {
           </div>
         )}
       </div>
-    </Layout>
+    </>
   );
 };
 

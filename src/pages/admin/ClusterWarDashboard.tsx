@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Swords, Shield, Target, AlertTriangle, Link2, Zap, Lock } from 'lucide-react';
-import { Layout } from '@/components/layout/Layout';
+// Layout removed — AdminLayout provides admin shell
 import { useGuidesList } from '@/hooks/useGuides';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -123,16 +123,16 @@ const ClusterWarDashboard = () => {
 
   if (!analysis) {
     return (
-      <Layout>
+      <>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <Helmet>
         <meta name="robots" content="noindex, follow" />
         <title>Cluster War Dashboard | Admin</title>
@@ -360,7 +360,7 @@ const ClusterWarDashboard = () => {
           <Link to="/admin/snippet-monitor" className="text-sm text-primary hover:underline">→ Snippet Monitor</Link>
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 

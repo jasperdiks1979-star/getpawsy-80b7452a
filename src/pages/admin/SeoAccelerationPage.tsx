@@ -1,4 +1,3 @@
-import { Layout } from "@/components/layout/Layout";
 import { Helmet } from "react-helmet-async";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RankingPushDashboard } from "@/components/admin/RankingPushDashboard";
@@ -7,10 +6,9 @@ import { Target, Flame } from "lucide-react";
 
 export default function SeoAccelerationPage() {
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>SEO Acceleration Engine | GetPawsy Admin</title>
-        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-6">
@@ -44,6 +42,6 @@ export default function SeoAccelerationPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </>
   );
 }

@@ -1,4 +1,3 @@
-import { Layout } from "@/components/layout/Layout";
 import { Helmet } from "react-helmet-async";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RedirectVerifier } from "@/components/admin/edge/RedirectVerifier";
@@ -6,10 +5,9 @@ import { EdgeHeadersReport } from "@/components/admin/edge/EdgeHeadersReport";
 
 export default function EdgeDiagnosticsPage() {
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>Edge Diagnostics | GetPawsy Admin</title>
-        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <div className="container py-8 space-y-6">
         <div>
@@ -35,6 +33,6 @@ export default function EdgeDiagnosticsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </>
   );
 }

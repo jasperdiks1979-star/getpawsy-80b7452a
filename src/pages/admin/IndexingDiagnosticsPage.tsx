@@ -1,4 +1,3 @@
-import { Layout } from "@/components/layout/Layout";
 import { Helmet } from "react-helmet-async";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlCrawler } from "@/components/admin/indexing/UrlCrawler";
@@ -8,10 +7,9 @@ import { HeadersReport } from "@/components/admin/indexing/HeadersReport";
 
 export default function IndexingDiagnosticsPage() {
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>Indexing Diagnostics | GetPawsy Admin</title>
-        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <div className="container py-8 space-y-6">
         <div>
@@ -45,6 +43,6 @@ export default function IndexingDiagnosticsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </>
   );
 }

@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Layout } from '@/components/layout/Layout';
 import {
   TrendingUp,
   Target,
@@ -71,10 +70,9 @@ export default function AdminDashboardOverview() {
   const navigate = useNavigate();
 
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>Admin Dashboard | GetPawsy</title>
-        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <div className="container py-8 space-y-8 max-w-6xl">
         <div>
@@ -114,6 +112,6 @@ export default function AdminDashboardOverview() {
           </div>
         ))}
       </div>
-    </Layout>
+    </>
   );
 }

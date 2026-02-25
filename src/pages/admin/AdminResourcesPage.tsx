@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Layout } from '@/components/layout/Layout';
+// Layout removed — AdminLayout provides admin shell
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -122,7 +122,7 @@ export default function AdminResourcesPage() {
   }
 
   return (
-    <Layout>
+    <>
       <Helmet><title>Resources | Admin</title></Helmet>
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <div>
@@ -207,6 +207,6 @@ export default function AdminResourcesPage() {
           </Card>
         )}
       </div>
-    </Layout>
+    </>
   );
 }

@@ -1,13 +1,11 @@
-import { Layout } from "@/components/layout/Layout";
 import { Helmet } from "react-helmet-async";
 import { PerfAuditWidget } from "@/components/admin/perf/PerfAuditWidget";
 
 export default function PerfAuditPage() {
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>Performance Audit | GetPawsy Admin</title>
-        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <div className="container py-8 space-y-6">
         <div>
@@ -20,6 +18,6 @@ export default function PerfAuditPage() {
         </div>
         <PerfAuditWidget />
       </div>
-    </Layout>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { Layout } from "@/components/layout/Layout";
+// Layout removed — AdminLayout provides admin shell
 import { Helmet } from "react-helmet-async";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -114,7 +114,7 @@ export default function ProgressDashboard() {
   const lastHealth = healthChecks?.[0];
 
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>Progress Dashboard | GetPawsy Admin</title>
         <meta name="robots" content="noindex, nofollow" />
@@ -238,6 +238,6 @@ export default function ProgressDashboard() {
           )}
         </section>
       </div>
-    </Layout>
+    </>
   );
 }

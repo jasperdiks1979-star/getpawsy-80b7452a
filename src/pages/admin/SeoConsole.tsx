@@ -3,7 +3,7 @@
  * Shows: pages per niche, keywords assigned, internal link graph, missing meta/schema.
  * Access: /admin/seo-console (dev/admin only)
  */
-import { Layout } from '@/components/layout/Layout';
+// Layout removed — AdminLayout provides admin shell
 import { NICHE_KEYWORD_RESEARCH } from '@/data/niche-keyword-research';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +20,7 @@ export default function SeoConsole() {
   const uniqueInternalLinks = new Set(allInternalLinks);
 
   return (
-    <Layout>
+    <>
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <title>SEO Console | GetPawsy Admin</title>
@@ -98,6 +98,6 @@ export default function SeoConsole() {
           );
         })}
       </div>
-    </Layout>
+    </>
   );
 }
