@@ -1,0 +1,660 @@
+{
+  "report_title": "Position 6–12 → Top 3 Attack Plan — Indoor Cat Niche",
+  "generated_date": "2026-02-25",
+  "attack_mode": "RANKING_DISPLACEMENT",
+  "target_domain": "getpawsy.pet",
+
+  "qualifying_target_pages": [
+    {
+      "id": "T1",
+      "page": "/collections/cat-trees-for-large-cats",
+      "primary_keyword": "cat trees for large cats",
+      "estimated_position": "6-10",
+      "page_type": "collection_hub",
+      "current_word_count_est": 600,
+      "existing_faq": false,
+      "existing_comparison_table": false,
+      "existing_schema": "CollectionPage"
+    },
+    {
+      "id": "T2",
+      "page": "/collections/self-cleaning-litter-box",
+      "primary_keyword": "best self cleaning litter box",
+      "estimated_position": "8-12",
+      "page_type": "collection_hub",
+      "current_word_count_est": 500,
+      "existing_faq": false,
+      "existing_comparison_table": false,
+      "existing_schema": "CollectionPage"
+    },
+    {
+      "id": "T3",
+      "page": "/collections/cat-trees-and-condos",
+      "primary_keyword": "cat trees and condos",
+      "estimated_position": "7-12",
+      "page_type": "collection_hub",
+      "current_word_count_est": 800,
+      "existing_faq": true,
+      "existing_comparison_table": false,
+      "existing_schema": "CollectionPage+FAQPage"
+    },
+    {
+      "id": "T4",
+      "page": "/guides/how-tall-should-cat-tree-be",
+      "primary_keyword": "how tall should a cat tree be",
+      "estimated_position": "6-10",
+      "page_type": "informational_guide",
+      "current_word_count_est": 700,
+      "existing_faq": true,
+      "existing_comparison_table": false,
+      "existing_schema": "Article+FAQPage"
+    },
+    {
+      "id": "T5",
+      "page": "/guides/cluster/best-cat-tree-maine-coon-2026",
+      "primary_keyword": "best cat tree for maine coon",
+      "estimated_position": "6-12",
+      "page_type": "cluster_guide",
+      "current_word_count_est": 900,
+      "existing_faq": true,
+      "existing_comparison_table": false,
+      "existing_schema": "Article+FAQPage"
+    }
+  ],
+
+  "phase_1_gap_reports": {
+    "T1_cat_trees_large_cats": {
+      "page": "/collections/cat-trees-for-large-cats",
+      "top_3_competitors": [
+        {
+          "rank": 1,
+          "domain": "buzzfeed.com",
+          "word_count": 3500,
+          "h2_count": 16,
+          "faq_count": 8,
+          "comparison_table": true,
+          "schema": "ItemList+FAQPage",
+          "internal_links_est": 40,
+          "title": "15 Best Cat Trees For Large Cats That Are So Worth It",
+          "strengths": "High DA, listicle format, visual-heavy, affiliate buttons per product"
+        },
+        {
+          "rank": 2,
+          "domain": "cattreeking.com",
+          "word_count": 1200,
+          "h2_count": 6,
+          "faq_count": 0,
+          "comparison_table": false,
+          "schema": "Product+Organization",
+          "internal_links_est": 60,
+          "title": "Cat Trees | Cat Towers & Tree Houses – Cat Tree King",
+          "strengths": "Pure niche brand, 20yr trust, massive product catalog, all internal links"
+        },
+        {
+          "rank": 3,
+          "domain": "cozycatfurniture.com",
+          "word_count": 2000,
+          "h2_count": 10,
+          "faq_count": 5,
+          "comparison_table": false,
+          "schema": "Product+CollectionPage",
+          "internal_links_est": 45,
+          "title": "Cat Trees for Large Cats: Heavy Duty Cat Condos",
+          "strengths": "Niche ecommerce, editorial + shop hybrid, weight capacity specs"
+        }
+      ],
+      "gap_analysis": {
+        "word_count_gap": "-2900 words vs #1",
+        "faq_gap": "0 vs 8 (#1)",
+        "comparison_table_gap": "MISSING vs PRESENT (#1)",
+        "schema_gap": "CollectionPage only vs ItemList+FAQPage (#1)",
+        "internal_link_gap": "-15 links vs average top 3",
+        "title_gap": "Generic collection title vs keyword-rich listicle title",
+        "content_depth_gap": "No buying guide, no use-case segments, no stability data"
+      }
+    },
+    "T2_self_cleaning_litter_box": {
+      "page": "/collections/self-cleaning-litter-box",
+      "top_3_competitors": [
+        {
+          "rank": 1,
+          "domain": "cats.com",
+          "word_count": 5000,
+          "h2_count": 20,
+          "faq_count": 12,
+          "comparison_table": true,
+          "schema": "Article+ItemList+FAQPage+AggregateRating",
+          "internal_links_est": 50,
+          "title": "7 Best Automatic Litter Boxes (We Tested 31 Models)",
+          "strengths": "Hands-on testing methodology, 31 models tested claim, expert bylines, video reviews"
+        },
+        {
+          "rank": 2,
+          "domain": "litter-robot.com",
+          "word_count": 2500,
+          "h2_count": 12,
+          "faq_count": 15,
+          "comparison_table": false,
+          "schema": "Product+AggregateRating (13800 reviews)",
+          "internal_links_est": 30,
+          "title": "Litter-Robot 4 | Automatic Self-Cleaning Litter Box",
+          "strengths": "Brand authority, 13800+ reviews, category creator status"
+        },
+        {
+          "rank": 3,
+          "domain": "bestproducts.com",
+          "word_count": 3000,
+          "h2_count": 14,
+          "faq_count": 6,
+          "comparison_table": true,
+          "schema": "Article+ItemList+FAQPage",
+          "internal_links_est": 35,
+          "title": "7 Best Self-Cleaning Litter Boxes of 2026, Tested",
+          "strengths": "High DA editorial, tested claim, comparison charts"
+        }
+      ],
+      "gap_analysis": {
+        "word_count_gap": "-4500 words vs #1",
+        "faq_gap": "0 vs 12 (#1)",
+        "comparison_table_gap": "MISSING vs PRESENT (#1 and #3)",
+        "schema_gap": "CollectionPage only vs Article+ItemList+FAQPage+AggregateRating (#1)",
+        "testing_methodology_gap": "CRITICAL — No testing claims vs 'Tested 31 Models'",
+        "review_volume_gap": "CRITICAL — No reviews vs 13,800 (#2)"
+      }
+    },
+    "T4_how_tall_cat_tree": {
+      "page": "/guides/how-tall-should-cat-tree-be",
+      "top_3_competitors": [
+        {
+          "rank": 1,
+          "domain": "hepper.com",
+          "word_count": 2200,
+          "h2_count": 8,
+          "faq_count": 6,
+          "comparison_table": false,
+          "schema": "Article+FAQPage",
+          "internal_links_est": 25,
+          "title": "How Tall Should a Cat Tree Be? Vet-Reviewed Size Guide",
+          "strengths": "Vet-reviewed badge, breed-specific height chart, visual infographic"
+        },
+        {
+          "rank": 2,
+          "domain": "catster.com",
+          "word_count": 1800,
+          "h2_count": 7,
+          "faq_count": 4,
+          "comparison_table": false,
+          "schema": "Article+FAQPage",
+          "internal_links_est": 20,
+          "title": "How Tall Should a Cat Tree Be? Vet Approved Guide",
+          "strengths": "Vet-approved authority, clean layout, breed examples"
+        }
+      ],
+      "gap_analysis": {
+        "word_count_gap": "-1500 words vs #1",
+        "expert_authority_gap": "No vet/expert byline vs 'Vet-Reviewed' (#1 and #2)",
+        "visual_gap": "No height chart infographic vs visual size guide (#1)",
+        "breed_specificity_gap": "Generic vs breed-specific recommendations"
+      }
+    },
+    "T5_maine_coon_cat_tree": {
+      "page": "/guides/cluster/best-cat-tree-maine-coon-2026",
+      "top_3_competitors": [
+        {
+          "rank": 1,
+          "domain": "cats.com",
+          "word_count": 3500,
+          "h2_count": 15,
+          "faq_count": 10,
+          "comparison_table": true,
+          "schema": "Article+ItemList+FAQPage",
+          "internal_links_est": 40,
+          "title": "Best Cat Trees for Maine Coons (Tested & Reviewed)",
+          "strengths": "Tested claim, hands-on methodology, video, product photos"
+        },
+        {
+          "rank": 2,
+          "domain": "mainecooncentral.com",
+          "word_count": 2800,
+          "h2_count": 12,
+          "faq_count": 8,
+          "comparison_table": true,
+          "schema": "Article+FAQPage",
+          "internal_links_est": 30,
+          "title": "Best Cat Trees for Maine Coons 2026 – Expert Picks",
+          "strengths": "Breed-specific authority, dedicated niche site, detailed specs"
+        }
+      ],
+      "gap_analysis": {
+        "word_count_gap": "-2600 words vs #1",
+        "comparison_table_gap": "MISSING vs PRESENT (#1 and #2)",
+        "testing_claim_gap": "No testing methodology vs 'Tested & Reviewed'",
+        "product_specificity_gap": "Generic product names vs real named products with specs"
+      }
+    }
+  },
+
+  "phase_2_content_expansion_plans": {
+    "T1_cat_trees_large_cats": {
+      "target_word_count": 2500,
+      "expansion_delta": "+1900 words",
+      "new_sections": [
+        "H2: How to Choose a Cat Tree for Large Cats (buying criteria: stability, platform width, weight capacity, post diameter)",
+        "H2: What Makes a Cat Tree 'Heavy Duty'? (engineering breakdown: base width, joint reinforcement, material density)",
+        "H2: Best Cat Trees for Large Cats by Use Case (subsections: Multi-Cat, Apartment, Maine Coon, Senior Large Cat)",
+        "H2: Stability Score Explained — How We Rate Cat Trees (unique methodology differentiator)",
+        "H2: Weight Capacity Guide — What the Numbers Really Mean (static vs dynamic load explanation)",
+        "H2: Comparison: Top 5 Cat Trees for Large Cats (comparison matrix table)",
+        "H2: Common Mistakes When Buying Cat Trees for Heavy Cats (problem/solution format)",
+        "H2: Cat Tree Maintenance for Large Cats (post replacement, tightening, cleaning)",
+        "H2: Buyer Decision Tree (flowchart: apartment? → narrow. Multi-cat? → multi-tier. Heavy cat? → wall-anchor)"
+      ],
+      "faq_expansion": [
+        "What size cat tree for a 20 lb cat?",
+        "How much weight can a cat tree hold?",
+        "Do large cats need taller cat trees?",
+        "Are wall-mounted cat trees better for large cats?",
+        "How to stop a cat tree from wobbling?",
+        "What is the most stable cat tree brand?",
+        "Can two large cats share one cat tree?",
+        "How tall should a cat tree be for a Maine Coon?",
+        "Are cat trees with hammocks safe for large cats?",
+        "How often should you replace a cat tree?",
+        "What diameter scratching posts do large cats need?",
+        "Is a cat tree or cat condo better for large cats?",
+        "Do heavy duty cat trees need wall anchors?",
+        "What base size prevents cat tree tipping?",
+        "How to assemble a large cat tree safely?",
+        "Are real wood cat trees more stable?",
+        "What's the difference between a cat tree and cat tower?",
+        "Can overweight cats use standard cat trees?",
+        "What materials are safest for large cat trees?",
+        "How to choose between carpet and sisal cat trees?"
+      ],
+      "schema_additions": ["ItemList", "FAQPage", "HowTo (buyer decision tree)"],
+      "updated_date": "2026-02-25"
+    },
+    "T2_self_cleaning_litter_box": {
+      "target_word_count": 2200,
+      "expansion_delta": "+1700 words",
+      "new_sections": [
+        "H2: How Self-Cleaning Litter Boxes Work (mechanism breakdown: rotating, raking, sifting)",
+        "H2: Best Self-Cleaning Litter Box by Situation (Multi-Cat, Apartment, Budget, Smart Home)",
+        "H2: Self-Cleaning Litter Box Comparison Chart (5+ products: price, waste capacity, noise, WiFi, weight limit)",
+        "H2: Are Self-Cleaning Litter Boxes Worth the Investment? (cost-per-year analysis vs manual)",
+        "H2: Odor Control Technology Explained (carbon filters, sealed chambers, UV sanitization)",
+        "H2: Transition Guide — How to Switch Your Cat to Auto-Clean (step-by-step)",
+        "H2: Maintenance Schedule for Self-Cleaning Litter Boxes",
+        "H2: Common Problems and How to Fix Them"
+      ],
+      "faq_expansion": [
+        "How often do you empty a self-cleaning litter box?",
+        "Can two cats share one self-cleaning litter box?",
+        "Do self-cleaning litter boxes smell?",
+        "What litter works best with self-cleaning boxes?",
+        "How loud are self-cleaning litter boxes?",
+        "Are self-cleaning litter boxes safe for kittens?",
+        "How long do self-cleaning litter boxes last?",
+        "Do self-cleaning litter boxes use special bags?",
+        "What size self-cleaning litter box for large cats?",
+        "Can you use clumping litter in a self-cleaning box?",
+        "How much electricity does a self-cleaning litter box use?",
+        "Do cats like self-cleaning litter boxes?",
+        "What happens if the sensor fails?",
+        "Are WiFi-connected litter boxes worth it?",
+        "How to clean a self-cleaning litter box motor?",
+        "What's the best self-cleaning box for apartments?",
+        "Do vets recommend self-cleaning litter boxes?",
+        "Can you use crystal litter in automatic boxes?",
+        "What warranty do self-cleaning litter boxes have?",
+        "How to reduce tracking with self-cleaning boxes?"
+      ],
+      "schema_additions": ["ItemList", "FAQPage"],
+      "updated_date": "2026-02-25"
+    },
+    "T4_how_tall_cat_tree": {
+      "target_word_count": 2000,
+      "expansion_delta": "+1300 words",
+      "new_sections": [
+        "H2: Cat Tree Height by Breed (table: Breed → Recommended Height → Platform Width)",
+        "H2: Ceiling Height Calculation — The 80% Rule Explained (with visual examples)",
+        "H2: Height vs Stability Tradeoff (taller = more tipping risk, mitigation strategies)",
+        "H2: Best Heights for Multi-Cat Homes (territory psychology + tier spacing)",
+        "H2: Wall-Mounted vs Floor: Height Alternatives for Small Spaces",
+        "H2: Safety Considerations for Tall Cat Trees (wall anchoring, base requirements)"
+      ],
+      "faq_expansion": [
+        "How tall is too tall for a cat tree?",
+        "What height cat tree for a kitten?",
+        "Do cats prefer tall or short cat trees?",
+        "How tall should a cat tree be for a Bengal?",
+        "Can a cat tree touch the ceiling?",
+        "What height cat tree for a Ragdoll?",
+        "How to stabilize a tall cat tree?",
+        "Is a 3-foot cat tree tall enough?",
+        "What height cat tree for a senior cat?",
+        "Do floor-to-ceiling cat trees need special installation?",
+        "What's the tallest cat tree you can buy?",
+        "How much floor space does a tall cat tree need?",
+        "Are tension-pole cat trees stable?",
+        "What height for a cat tree in a room with 9-foot ceilings?",
+        "Do cats use the top of tall cat trees?"
+      ],
+      "schema_additions": ["HowTo (height calculation)", "FAQPage expansion"],
+      "updated_date": "2026-02-25"
+    },
+    "T5_maine_coon_cat_tree": {
+      "target_word_count": 2500,
+      "expansion_delta": "+1600 words",
+      "new_sections": [
+        "H2: Maine Coon Size Data — Why Regular Cat Trees Fail (weight, length, impact force calculations)",
+        "H2: Comparison Matrix — Top 5 Maine Coon Cat Trees (Height, Platform Width, Weight Rating, Post Diameter, Price)",
+        "H2: Platform Width Guide — Why 18\" is the Minimum (with photo comparison)",
+        "H2: Best Cat Trees for Maine Coon Kittens vs Adults",
+        "H2: Multi-Maine-Coon Household Setup (how many trees, spacing, territory management)",
+        "H2: Maine Coon Cat Tree Placement Guide (room positioning for enrichment)"
+      ],
+      "faq_expansion": [
+        "How heavy should a cat tree be for a Maine Coon?",
+        "Do Maine Coons need special scratching posts?",
+        "Can a Maine Coon use a regular cat tree?",
+        "What platform size for a 25 lb Maine Coon?",
+        "How many cat trees does a Maine Coon need?",
+        "Are wooden cat trees better for Maine Coons?",
+        "What's the best wall-mounted option for Maine Coons?",
+        "How to prevent a Maine Coon from tipping a cat tree?",
+        "Do Maine Coon kittens need a smaller tree?",
+        "What's the best budget cat tree for Maine Coons?",
+        "How long do cat trees last with Maine Coons?",
+        "Can Maine Coons use hammock-style cat trees?",
+        "What post diameter is best for Maine Coon scratching?",
+        "Are floor-to-ceiling trees safe for Maine Coons?",
+        "How to choose between a cat tree and cat wall for Maine Coons?"
+      ],
+      "schema_additions": ["ItemList (comparison)", "FAQPage expansion"],
+      "updated_date": "2026-02-25"
+    }
+  },
+
+  "phase_3_internal_link_surge": {
+    "strategy": "10+ new contextual links per target page within 14 days",
+    "anchor_distribution": {
+      "partial_match": "40%",
+      "semantic": "30%",
+      "branded": "20%",
+      "exact_match": "10%"
+    },
+    "link_map": {
+      "T1_cat_trees_large_cats": {
+        "from_homepage": {
+          "section": "Category pillars / Best Sellers",
+          "anchor": "premium cat trees built for large cats",
+          "type": "partial"
+        },
+        "from_guides": [
+          { "source": "/guides/how-tall-should-cat-tree-be", "anchor": "cat trees for large cats", "type": "exact" },
+          { "source": "/guides/cluster/best-cat-tree-maine-coon-2026", "anchor": "browse our full large cat tree collection", "type": "semantic" },
+          { "source": "/guides/cluster/heavy-duty-vs-standard-cat-tree", "anchor": "heavy-duty cat trees designed for large breeds", "type": "partial" },
+          { "source": "/guides/cluster/cat-tree-apartment-large-cat", "anchor": "explore large cat tree options", "type": "semantic" },
+          { "source": "/guides/cluster/budget-cat-tree-large-cat", "anchor": "top-rated trees for big cats", "type": "partial" }
+        ],
+        "from_collections": [
+          { "source": "/collections/cat-trees-and-condos", "anchor": "large cat trees with stability ratings", "type": "partial" },
+          { "source": "/collections/cat-wall-systems", "anchor": "floor-standing cat trees for large cats", "type": "partial" }
+        ],
+        "from_product_descriptions": [
+          { "source": "3 highest-priced cat tree PDPs", "anchor": "view all GetPawsy large cat trees", "type": "branded" },
+          { "source": "cat condo PDPs", "anchor": "see our stability-rated cat trees", "type": "semantic" }
+        ],
+        "total_new_links": 11
+      },
+      "T2_self_cleaning_litter_box": {
+        "from_homepage": {
+          "section": "Smart Litter Solutions pillar",
+          "anchor": "smart self-cleaning litter boxes",
+          "type": "partial"
+        },
+        "from_guides": [
+          { "source": "/guides/cluster/best-self-cleaning-litter-box-multi-cat", "anchor": "self-cleaning litter box collection", "type": "partial" },
+          { "source": "/blog posts mentioning litter", "anchor": "automatic litter box solutions", "type": "semantic" },
+          { "source": "NEW: /guides/are-self-cleaning-litter-boxes-worth-it", "anchor": "shop self-cleaning litter boxes", "type": "semantic" },
+          { "source": "NEW: /guides/best-litter-box-for-apartment", "anchor": "explore our self-cleaning collection", "type": "semantic" },
+          { "source": "NEW: /guides/multi-cat-litter-solutions", "anchor": "best automatic litter boxes for multi-cat homes", "type": "partial" }
+        ],
+        "from_collections": [
+          { "source": "/collections/cat-litter-boxes", "anchor": "self-cleaning options", "type": "partial" },
+          { "source": "/collections/cat-trees-and-condos", "anchor": "pair with a self-cleaning litter box", "type": "semantic" }
+        ],
+        "from_product_descriptions": [
+          { "source": "litter box PDPs", "anchor": "view all GetPawsy self-cleaning litter boxes", "type": "branded" },
+          { "source": "cat furniture PDPs", "anchor": "complete your setup with smart litter solutions", "type": "semantic" }
+        ],
+        "total_new_links": 10
+      },
+      "T4_how_tall_cat_tree": {
+        "from_guides": [
+          { "source": "/guides/cluster/best-cat-tree-maine-coon-2026", "anchor": "cat tree height guide", "type": "exact" },
+          { "source": "/guides/cluster/cat-tree-apartment-large-cat", "anchor": "how to choose the right height", "type": "semantic" },
+          { "source": "/guides/cluster/heavy-duty-vs-standard-cat-tree", "anchor": "height and stability recommendations", "type": "partial" },
+          { "source": "/guides/cluster/best-cat-tree-ragdoll", "anchor": "see our complete height guide", "type": "semantic" }
+        ],
+        "from_collections": [
+          { "source": "/collections/cat-trees-for-large-cats", "anchor": "read our cat tree height guide", "type": "partial" },
+          { "source": "/collections/cat-trees-and-condos", "anchor": "not sure what height? See our guide", "type": "semantic" }
+        ],
+        "from_product_descriptions": [
+          { "source": "tall cat tree PDPs (60\"+)", "anchor": "learn about ideal cat tree heights", "type": "semantic" },
+          { "source": "floor-to-ceiling cat trees", "anchor": "height selection guide", "type": "partial" }
+        ],
+        "from_homepage": {
+          "section": "Helpful guides block",
+          "anchor": "cat tree height guide",
+          "type": "exact"
+        },
+        "from_blog": [
+          { "source": "cat enrichment blog posts", "anchor": "choosing the right cat tree height", "type": "partial" }
+        ],
+        "total_new_links": 10
+      },
+      "T5_maine_coon_cat_tree": {
+        "from_guides": [
+          { "source": "/guides/how-tall-should-cat-tree-be", "anchor": "Maine Coon cat tree picks", "type": "partial" },
+          { "source": "/guides/cluster/heavy-duty-vs-standard-cat-tree", "anchor": "best trees for Maine Coons", "type": "partial" },
+          { "source": "/guides/cluster/cat-tree-apartment-large-cat", "anchor": "Maine Coon-specific recommendations", "type": "semantic" }
+        ],
+        "from_collections": [
+          { "source": "/collections/cat-trees-for-large-cats", "anchor": "see our Maine Coon cat tree guide", "type": "partial" },
+          { "source": "/collections/cat-trees-and-condos", "anchor": "Maine Coon owners: find your perfect tree", "type": "semantic" }
+        ],
+        "from_product_descriptions": [
+          { "source": "XL cat tree PDPs", "anchor": "recommended for Maine Coons", "type": "semantic" },
+          { "source": "heavy-duty cat tree PDPs", "anchor": "see all Maine Coon-tested trees", "type": "partial" }
+        ],
+        "from_homepage": {
+          "section": "Category or guide block",
+          "anchor": "best cat trees for Maine Coons",
+          "type": "exact"
+        },
+        "from_blog": [
+          { "source": "large cat breed posts", "anchor": "our Maine Coon furniture guide", "type": "semantic" },
+          { "source": "cat enrichment posts", "anchor": "breed-specific cat tree picks", "type": "partial" }
+        ],
+        "total_new_links": 11
+      }
+    }
+  },
+
+  "phase_4_ctr_hijacking": {
+    "title_rewrites": {
+      "T1": {
+        "current": "Cat Trees for Large Cats | GetPawsy",
+        "variant_a": "Best Cat Trees for Large Cats – Stability Tested & Rated (2026)",
+        "variant_b": "Cat Trees for Large Cats – Heavy Duty, Wobble-Free Picks (2026)",
+        "meta_a": "Stability-rated cat trees for 20+ lb cats. Reinforced platforms, 4\" sisal posts, wall-anchor kits. Ships from US warehouse. 30-day guarantee.",
+        "meta_b": "Heavy-duty cat trees built for large breeds. Weight capacity tested, wobble-free designs. Free shipping over $49. Compare our top picks."
+      },
+      "T2": {
+        "current": "Self-Cleaning Litter Boxes | GetPawsy",
+        "variant_a": "Best Self-Cleaning Litter Box – Odor-Sealed, Multi-Cat Ready (2026)",
+        "variant_b": "Self-Cleaning Litter Boxes – Automatic & Tested for 2+ Cats (2026)",
+        "meta_a": "Automatic litter boxes with sealed waste chambers and WiFi alerts. 15-20 day capacity for multi-cat homes. US shipping, 30-day guarantee.",
+        "meta_b": "Top-rated self-cleaning litter boxes tested for reliability. Quiet motors, large waste drawers, odor control. Compare features & prices."
+      },
+      "T4": {
+        "current": "How Tall Should a Cat Tree Be? Complete Height Guide",
+        "variant_a": "How Tall Should a Cat Tree Be? Height Guide by Breed & Room (2026)",
+        "variant_b": "Cat Tree Height Guide – Exact Sizes for Every Cat & Room Size",
+        "meta_a": "Cat trees should be 80% of ceiling height. Get exact recommendations by cat breed, weight, and room size. Includes the 80% Rule and multi-cat tips.",
+        "meta_b": "Stop guessing cat tree height. See exact size recommendations for Maine Coons, Bengals, kittens, and apartments. Free height calculator included."
+      },
+      "T5": {
+        "current": "Best Cat Tree for Maine Coons (2026) – Stability Tested",
+        "variant_a": "Best Cat Tree for Maine Coons – 25+ lb Tested, Won't Wobble (2026)",
+        "variant_b": "5 Best Maine Coon Cat Trees – Heavy Duty & Stability Rated (2026)",
+        "meta_a": "Maine Coons need 18\"+ platforms and 4\" posts. We tested 10 cat trees — 5 survived. See stability scores, weight ratings, and pricing.",
+        "meta_b": "Stop buying cat trees that break under your Maine Coon. Our top 5 picks are stability-tested for 25+ lb cats. US shipping, 30-day guarantee."
+      }
+    }
+  },
+
+  "phase_5_behavioral_signal_boost": {
+    "all_target_pages": {
+      "jump_to_section_links": true,
+      "sticky_comparison_bar": "Show on scroll past hero — compact bar with top 3 picks + quick-add buttons",
+      "related_guide_block": "3 related guides at 60% scroll depth",
+      "video_embed_placeholder": "YouTube embed placeholder: 'Cat Tree Stability Test' or 'Self-Cleaning Litter Box Explained'",
+      "visual_stability_breakdown": "Infographic: weight capacity diagram, force calculation visual",
+      "scannability_improvements": {
+        "max_paragraph_length": "3 sentences",
+        "bullet_sections": "All feature lists converted to bullets",
+        "bold_key_terms": "First mention of technical terms bolded",
+        "numbered_picks": "Product recommendations numbered with badges",
+        "highlight_boxes": "Key stats in colored callout boxes"
+      }
+    }
+  },
+
+  "phase_6_backlink_velocity": {
+    "30_day_targets_per_page": {
+      "contextual_backlinks": 5,
+      "guest_posts": 2,
+      "resource_mentions": 3,
+      "total": 10
+    },
+    "anchor_strategy": {
+      "branded_url": "70%",
+      "partial_match": "20%",
+      "exact_match": "10%"
+    },
+    "priority_outreach_targets": {
+      "guest_post_sites": [
+        "cats.com (pitch: stability testing methodology)",
+        "catster.com (pitch: Maine Coon furniture guide)",
+        "mrbosscat.com (pitch: weight capacity truth)",
+        "moderncat.com (pitch: indoor cat enrichment)",
+        "hepper.com (pitch: cat tree safety checklist)"
+      ],
+      "resource_page_targets": [
+        "thesprucepets.com/cat-furniture-guide",
+        "catbehaviorassociates.com/environment",
+        "indoorpet.osu.edu (academic resource page)",
+        "aspca.org/pet-care/cat-care",
+        "humanesociety.org/cats"
+      ],
+      "roundup_inclusion_pitches": [
+        "bestproducts.com — 'Best Cat Trees' roundup",
+        "buzzfeed.com — 'Cat Products That Are Worth It'",
+        "cnn.com/underscored — 'Best Self-Cleaning Litter Boxes'",
+        "nytimes.com/wirecutter — 'Best Cat Trees'"
+      ]
+    }
+  },
+
+  "phase_7_freshness_schedule": {
+    "30_day_cycle": {
+      "week_1": "Add 1 new FAQ to each target page",
+      "week_2": "Update 1 comparison entry (new product or price update)",
+      "week_3": "Add 1 new internal link from freshly published content",
+      "week_4": "Refresh 1 content section + update published date"
+    },
+    "automated_triggers": {
+      "publish_date_update": "Auto-set 'updatedAt' on any content edit",
+      "faq_rotation": "Queue of 5 standby FAQs per page, deploy 1 per month",
+      "comparison_refresh": "Quarterly price/feature audit of comparison tables",
+      "content_refresh": "Monthly update of 1 section per target page"
+    }
+  },
+
+  "phase_8_30_day_attack_calendar": {
+    "week_1": {
+      "day_1_2": "Expand T1 (/collections/cat-trees-for-large-cats) to 2500 words + 20 FAQs + comparison table",
+      "day_3_4": "Expand T2 (/collections/self-cleaning-litter-box) to 2200 words + 20 FAQs + comparison table",
+      "day_5": "Implement CTR title rewrites for T1 and T2",
+      "day_6_7": "Add jump links + sticky comparison bar to T1 and T2"
+    },
+    "week_2": {
+      "day_8_9": "Expand T4 (height guide) to 2000 words + 15 FAQs + breed height table",
+      "day_10_11": "Expand T5 (Maine Coon guide) to 2500 words + 15 FAQs + comparison matrix",
+      "day_12": "Implement CTR title rewrites for T4 and T5",
+      "day_13_14": "Deploy internal link surge — all 42 new links across all targets"
+    },
+    "week_3": {
+      "day_15_17": "Begin guest post outreach (5 pitches sent)",
+      "day_18_19": "Add behavioral boost elements (related guides, video placeholders)",
+      "day_20_21": "Submit all updated URLs for crawling"
+    },
+    "week_4": {
+      "day_22_24": "Follow up on outreach, secure first 2-3 backlinks",
+      "day_25_27": "Publish 2 supporting articles linking to target pages",
+      "day_28_30": "Performance audit — check position movement, CTR changes, crawl status"
+    }
+  },
+
+  "phase_9_projected_ranking_movement": {
+    "T1_cat_trees_large_cats": {
+      "current_estimated": "6-10",
+      "30_day_projection": "4-7",
+      "60_day_projection": "2-5",
+      "90_day_projection": "1-3",
+      "confidence": "HIGH — WEAKEST SERP among all targets. Niche ecommerce brands rank, not high-DA editorial. Content depth + stability angle is unique differentiator.",
+      "risk_factors": "BuzzFeed DA advantage. CatTreeKing 20yr brand history."
+    },
+    "T2_self_cleaning_litter_box": {
+      "current_estimated": "8-12",
+      "30_day_projection": "6-9",
+      "60_day_projection": "4-7",
+      "90_day_projection": "3-5",
+      "confidence": "MEDIUM — High-DA editorial dominance (CNN, Wirecutter, Cats.com). Content expansion alone won't displace. Need backlink velocity + testing methodology claims.",
+      "risk_factors": "Litter-Robot brand dominance. Cats.com '31 models tested' authority. DA gap."
+    },
+    "T4_how_tall_cat_tree": {
+      "current_estimated": "6-10",
+      "30_day_projection": "3-6",
+      "60_day_projection": "1-4",
+      "90_day_projection": "1-3",
+      "confidence": "HIGH — Informational query with moderate competition. Breed-specific height table + visual guide will differentiate. Vet authority claims needed.",
+      "risk_factors": "Hepper.com and catster.com have vet-reviewed badges."
+    },
+    "T5_maine_coon_cat_tree": {
+      "current_estimated": "6-12",
+      "30_day_projection": "4-8",
+      "60_day_projection": "2-5",
+      "90_day_projection": "1-3",
+      "confidence": "HIGH — Breed-specific niche query. Adding comparison matrix + weight testing data will be decisive. Few dedicated ecommerce brands compete here.",
+      "risk_factors": "Cats.com editorial authority. mainecooncentral.com breed-specific niche."
+    }
+  },
+
+  "execution_priority_order": [
+    { "rank": 1, "action": "Expand T1 (cat trees for large cats) — HIGHEST impact, weakest SERP competition", "effort": "4h", "impact": "CRITICAL" },
+    { "rank": 2, "action": "Expand T5 (Maine Coon cat tree) — breed-specific niche, high purchase intent", "effort": "4h", "impact": "HIGH" },
+    { "rank": 3, "action": "Expand T4 (height guide) — informational gateway to commercial pages", "effort": "3h", "impact": "HIGH" },
+    { "rank": 4, "action": "Expand T2 (self-cleaning litter box) — harder SERP but high AOV products", "effort": "4h", "impact": "HIGH" },
+    { "rank": 5, "action": "Deploy all CTR title rewrites", "effort": "1h", "impact": "MEDIUM" },
+    { "rank": 6, "action": "Execute internal link surge (42 links)", "effort": "2h", "impact": "HIGH" },
+    { "rank": 7, "action": "Add behavioral elements (jump links, sticky bar, video placeholders)", "effort": "3h", "impact": "MEDIUM" },
+    { "rank": 8, "action": "Begin outreach campaign (10 pitches)", "effort": "ongoing", "impact": "HIGH" },
+    { "rank": 9, "action": "Submit updated URLs for crawling", "effort": "0.5h", "impact": "MEDIUM" },
+    { "rank": 10, "action": "Set up 30-day freshness rotation", "effort": "1h", "impact": "MEDIUM" }
+  ]
+}
