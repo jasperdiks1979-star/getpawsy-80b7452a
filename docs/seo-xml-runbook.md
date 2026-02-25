@@ -13,15 +13,15 @@
 **Generator**: `node scripts/generate-sitemaps.mjs`
 
 This is the ONLY sitemap generator. It:
-1. Queries Supabase REST API for live product/collection/blog data
+1. Queries REST API for ALL active products, collections, blog posts
 2. Falls back to static JSON files in `/data/*.json` if API is unavailable
 3. Writes valid XML files into `/public`
 4. Vite copies `/public` → `/dist` during build
 
-**Build flow**: `prebuild (generate-sitemaps.mjs)` → `vite build` → deploy `/dist`
+**Build flow**: `buildStart (vite-plugin-sitemaps.ts)` → `generate-sitemaps.mjs` → `vite build` → deploy `/dist`
 
 **Data files** (fallback sources in `/data/`):
-- `products.json` — empty array (live REST is primary source for 562+ products)
+- `products.json` — empty array (live REST is primary source for 568+ products)
 - `collections.json` — SEO collections
 - `blog.json` — published blog posts
 - `guides.json` — guide pages
@@ -29,34 +29,33 @@ This is the ONLY sitemap generator. It:
 
 ## XML Files
 
-| File | Source |
-|------|--------|
-| `sitemap.xml` | Sitemap index (sitemapindex) referencing all child sitemaps |
-| `sitemap-index.xml` | Alias of sitemap.xml |
-| `sitemap-static.xml` | Static pages (/, /products, /blog, etc.) |
-| `sitemap-products-{N}.xml` | Products split into 5000-URL chunks |
-| `sitemap-collections.xml` | Active SEO collections |
-| `sitemap-clusters.xml` | Pillar + intent pages |
-| `sitemap-blog.xml` | Published blog posts |
-| `sitemap-guides.xml` | Guide pages |
-| `sitemap-hubs.xml` | Money hub pages (static file in /public) |
-| `merchant-feed.xml` | Google Merchant Center RSS 2.0 feed (vite plugin) |
+| File | Source | Expected URLs |
+|------|--------|---------------|
+| `sitemap.xml` | Sitemapindex referencing all child sitemaps | N/A (index) |
+| `sitemap-pages.xml` | Static pages (/, /products, /about, etc.) | ~9 |
+| `sitemap-products-1.xml` | ALL active non-duplicate products | ~568 |
+| `sitemap-collections.xml` | ALL active SEO collections | ~94 |
+| `sitemap-guides.xml` | ALL guides + clusters | ~19+ |
+| `sitemap-blog.xml` | ALL published blog posts | ~323 |
+| `merchant-feed.xml` | Google Merchant Center RSS 2.0 feed (vite plugin) | ~568 |
 
-## Regenerating Sitemaps
+**No tier filtering** — all indexable content is included.
 
-### Manual
-```bash
-node scripts/generate-sitemaps.mjs
-```
+## robots.txt
 
-### Automatic (every deploy)
-Add to package.json: `"prebuild": "node scripts/generate-sitemaps.mjs"`
+Located at `public/robots.txt` (static file).
 
-### Fallback Behavior
-If Supabase REST API fails during generation:
-- Script falls back to `/data/*.json` files
-- If those are also empty, generates valid empty `<urlset></urlset>` XML
-- Build **never fails** due to XML generation errors
+**Key rules:**
+- All pages allowed by default
+- Admin/internal pages blocked: `/admin`, `/dashboard`, `/profile`, `/cart`, `/checkout`, etc.
+- Parameter URLs blocked: `gclid`, `fbclid`, `utm_`, `ref`, `session`, `sort`, `filter`, `variant`
+- Single sitemap declared: `Sitemap: https://getpawsy.pet/sitemap.xml`
+
+## Domain Configuration
+
+- Primary: `https://getpawsy.pet`
+- www variant: `https://www.getpawsy.pet` (DNS A-record → Lovable)
+- Cloudflare: DNS-only mode (grey cloud) for SSL compatibility
 
 ## Troubleshooting
 
@@ -70,27 +69,4 @@ If Supabase REST API fails during generation:
 
 ### Merchant feed has 0 products
 **Cause**: `products_public` view returned no data during vite build.
-**Fix**: Check build logs for `[xml-plugin]` messages. Verify Supabase REST API is accessible.
-
-## robots.txt
-
-Located at `public/robots.txt` (static file).
-
-**Key rules:**
-- Money pages allowed: `/product/`, `/guides/`, `/blog/`, `/bestsellers`, `/collections/`
-- Parameter URLs blocked: `/*?*` (prevents crawl waste)
-- Admin/internal pages blocked: `/dashboard`, `/admin`, `/profile`, etc.
-- Sitemap declared: `Sitemap: https://getpawsy.pet/sitemap.xml`
-
-## Domain Configuration
-
-- Primary: `https://getpawsy.pet`
-- www variant: `https://www.getpawsy.pet` (DNS A-record → Lovable)
-- Cloudflare: DNS-only mode (grey cloud) for SSL compatibility
-
-## Diagnostics
-
-Admin diagnostics page available at `/admin/diagnostics`:
-- Live HTTP health checks for /, /sitemap.xml, /merchant-feed.xml, /robots.txt
-- Last 50 frontend error logs with timestamps
-- Status badges (green/red) for quick assessment
+**Fix**: Check build logs for `[xml-plugin]` messages. Verify REST API is accessible.

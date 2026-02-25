@@ -14,7 +14,7 @@ import {
 
 const BASE = "https://getpawsy.pet";
 const OUT_DIR = joinRoot("public");
-const CHUNK_SIZE = 5000;
+const PRODUCTS_CHUNK_SIZE = 45000;
 const HISTORY_PATH = joinRoot("data", "sitemap-history.json");
 
 const SUPABASE_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co";
@@ -34,11 +34,23 @@ async function fetchFromSupabase(table, params) {
   } catch (err) { console.warn(`[sitemaps] REST fetch failed ${table}:`, err.message); return null; }
 }
 
-function nowIsoDate() { return new Date().toISOString().slice(0, 10); }
-
-function filterIndexable(entries) {
-  return (Array.isArray(entries) ? entries : []).filter((e) => e && e.path && !e.noindex);
+/** Paginated fetch — handles Supabase 1000-row limit */
+async function fetchAllPages(table, params) {
+  const PAGE_SIZE = 1000;
+  let all = [];
+  let offset = 0;
+  while (true) {
+    const sep = params ? "&" : "";
+    const page = await fetchFromSupabase(table, `${params}${sep}limit=${PAGE_SIZE}&offset=${offset}`);
+    if (!page || page.length === 0) break;
+    all = all.concat(page);
+    if (page.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+  return all.length > 0 ? all : null;
 }
+
+function nowIsoDate() { return new Date().toISOString().slice(0, 10); }
 
 function validateXmlBasics(xml, mustContain) {
   if (!xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>'))
@@ -75,139 +87,37 @@ function resolveLastmod(urlPath, currentUpdatedAt, history, today) {
   return currentDate;
 }
 
-// ── Revenue-weighted priority ──
-function computeProductPriority(slug, revenueData, bestsellers, gscByPath) {
-  let priority = 0.60;
-
-  // Bestseller boost
-  if (bestsellers.has(slug)) priority += 0.20;
-
-  // Revenue boost from order data
-  const rev = revenueData.get(slug);
-  if (rev) {
-    if (rev.revenue > 200) priority += 0.15;
-    else if (rev.revenue > 50) priority += 0.10;
-    if (rev.orderCount >= 3) priority += 0.05;
-  }
-
-  // Stock status
-  // (stock info not in products_public view by default, handled via separate query if available)
-
-  // GSC position boost
-  const gsc = gscByPath[`/product/${slug}`];
-  if (gsc) {
-    if (gsc.position >= 4 && gsc.position <= 8) priority += 0.03;
-    else if (gsc.position > 0 && gsc.position <= 3) priority += 0.05;
-  }
-
-  return Math.round(Math.min(0.90, Math.max(0.40, priority)) * 100) / 100;
-}
-
-function computeCollectionPriority(slug, topRevenueCollections) {
-  if (topRevenueCollections.has(slug)) return 0.90;
-  return 0.80;
-}
-
-// ── Load GSC metrics ──
-function loadGscMetrics() {
-  try {
-    const data = JSON.parse(fs.readFileSync(joinRoot("data", "gsc-metrics.json"), "utf8"));
-    const map = {};
-    if (data && Array.isArray(data.rows)) {
-      for (const r of data.rows) {
-        try { const p = new URL(r.page).pathname; map[p] = r; } catch { /* skip */ }
-      }
-    }
-    return map;
-  } catch { return {}; }
-}
-
 async function main() {
   ensureDir(OUT_DIR);
   const today = nowIsoDate();
   const history = loadHistory();
   const newHistory = {};
-  const gscByPath = loadGscMetrics();
 
   const safeRead = (p, fallback) => { try { return readJson(p); } catch { return fallback; } };
 
-  // ── Fetch bestsellers set ──
-  const bestsellersRaw = await fetchFromSupabase("bestsellers", "select=slug&is_active=eq.true");
-  const bestsellers = new Set((bestsellersRaw || []).map((b) => b.slug));
-  console.log(`[sitemaps] Bestsellers loaded: ${bestsellers.size}`);
-
-  // ── Fetch order revenue data (last 30 days) ──
-  const revenueData = new Map();
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
-  const ordersRaw = await fetchFromSupabase(
-    "orders",
-    `select=items,total_amount&status=eq.paid&created_at=gte.${thirtyDaysAgo}&limit=1000`
-  );
-  if (ordersRaw) {
-    for (const order of ordersRaw) {
-      const items = Array.isArray(order.items) ? order.items : [];
-      for (const item of items) {
-        // Extract slug from product name (items have id, name, price)
-        const id = item.id;
-        if (!id) continue;
-        const existing = revenueData.get(id) || { revenue: 0, orderCount: 0 };
-        existing.revenue += (item.price || 0) * (item.quantity || 1);
-        existing.orderCount += 1;
-        revenueData.set(id, existing);
-      }
-    }
-    console.log(`[sitemaps] Revenue data: ${revenueData.size} products from ${ordersRaw.length} orders`);
-  }
-
-  // ── Build product ID → slug map for revenue matching ──
-  const productIdSlugRaw = await fetchFromSupabase(
+  // ══════════════════════════════════════════════════════════════════════
+  // PRODUCTS — ALL active, non-duplicate products (no tier filtering)
+  // ══════════════════════════════════════════════════════════════════════
+  let productsRaw = await fetchAllPages(
     "products_public",
-    "select=id,slug&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&limit=5000"
-  );
-  const revenueBySlug = new Map();
-  if (productIdSlugRaw) {
-    for (const p of productIdSlugRaw) {
-      const rev = revenueData.get(p.id);
-      if (rev) revenueBySlug.set(p.slug, rev);
-    }
-  }
-
-  // ── Top revenue collection slugs ──
-  const topRevenueCollections = new Set();
-  // Collections containing bestsellers are top revenue
-  const collSlugRaw = await fetchFromSupabase("seo_collections", "select=slug&is_active=eq.true");
-  if (collSlugRaw) {
-    // Heuristic: top 10 collections by slug matching common high-value terms
-    for (const c of collSlugRaw) {
-      if (bestsellers.size > 0) {
-        // Mark collections that appear in GSC top positions
-        const gsc = gscByPath[`/collections/${c.slug}`];
-        if (gsc && gsc.impressions > 200) topRevenueCollections.add(c.slug);
-      }
-    }
-  }
-
-  // ── Products (with seo_tier for tiered sitemaps) ──
-  let productsRaw = await fetchFromSupabase(
-    "products_public",
-    "select=slug,updated_at,seo_tier&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc&limit=5000"
+    "select=slug,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
   );
   let products;
   if (productsRaw && productsRaw.length > 0) {
+    // Deduplicate by slug
+    const seen = new Set();
     products = productsRaw
-      .filter((p) => p.slug && p.slug.trim() !== "" && !isExcluded(`/product/${p.slug}`))
-      .map((p) => ({
-        path: `/product/${p.slug}`,
-        lastmod: p.updated_at,
-        priority: computeProductPriority(p.slug, revenueBySlug, bestsellers, gscByPath),
-        seo_tier: p.seo_tier || 'C',
-      }));
+      .filter((p) => {
+        if (!p.slug || p.slug.trim() === "" || isExcluded(`/product/${p.slug}`)) return false;
+        if (seen.has(p.slug)) return false;
+        seen.add(p.slug);
+        return true;
+      })
+      .map((p) => ({ path: `/product/${p.slug}`, lastmod: p.updated_at }));
     console.log(`[sitemaps] Products from REST API: ${products.length}`);
   } else {
-    products = filterIndexable(safeRead(joinRoot("data", "products.json"), [])).map((p) => ({
-      ...p,
-      seo_tier: 'B', // fallback JSON gets Tier B
-    }));
+    products = (safeRead(joinRoot("data", "products.json"), [])
+      .filter(e => e && e.path && !e.noindex));
     console.log(`[sitemaps] Products from JSON fallback: ${products.length}`);
   }
 
@@ -216,60 +126,43 @@ async function main() {
     process.exit(1);
   }
 
-  // ── Collections — only niche-relevant collections ──
-  const COLLECTION_NICHE_KEYWORDS = ['cat', 'tree', 'condo', 'tower', 'furniture', 'scratch', 'litter', 'bed', 'house', 'shelf', 'perch', 'enrichment'];
-  let collectionsRaw = await fetchFromSupabase("seo_collections", "select=slug,updated_at&is_active=eq.true&order=updated_at.desc");
+  // ══════════════════════════════════════════════════════════════════════
+  // COLLECTIONS — ALL active collections (no niche filter)
+  // ══════════════════════════════════════════════════════════════════════
+  let collectionsRaw = await fetchAllPages("seo_collections", "select=slug,updated_at&is_active=eq.true&order=updated_at.desc");
   let collections;
   if (collectionsRaw && collectionsRaw.length > 0) {
     collections = collectionsRaw
-      .filter((c) => {
-        if (isExcluded(`/collections/${c.slug}`)) return false;
-        const slugLower = (c.slug || '').toLowerCase();
-        return COLLECTION_NICHE_KEYWORDS.some(kw => slugLower.includes(kw));
-      })
-      .map((c) => ({
-        path: `/collections/${c.slug}`,
-        lastmod: c.updated_at,
-        priority: computeCollectionPriority(c.slug, topRevenueCollections),
-      }));
-    console.log(`[sitemaps] Collections from REST API: ${collectionsRaw.length} total, ${collections.length} niche-filtered`);
+      .filter((c) => c.slug && !isExcluded(`/collections/${c.slug}`))
+      .map((c) => ({ path: `/collections/${c.slug}`, lastmod: c.updated_at }));
+    console.log(`[sitemaps] Collections from REST API: ${collections.length}`);
   } else {
-    collections = filterIndexable(safeRead(joinRoot("data", "collections.json"), []));
+    collections = safeRead(joinRoot("data", "collections.json"), []).filter(e => e && e.path);
     console.log(`[sitemaps] Collections from JSON fallback: ${collections.length}`);
   }
-  if (collections.length === 0) console.warn("[sitemaps] WARNING: 0 collections found.");
 
-  // ── Blog — aggressive filtering: only core-niche blog posts ──
-  // Filter to cat/cage/pet-furniture related posts, cap at 30
-  const BLOG_NICHE_KEYWORDS = ['cat tree', 'cat condo', 'cat tower', 'cat litter', 'cat scratch', 'cat furniture', 'cat bed', 'cat house', 'indoor cat', 'cat wall', 'cat shelf', 'cat perch', 'kitten', 'feline'];
-  let blogRaw = await fetchFromSupabase("blog_posts", "select=slug,published_at,title,category&is_published=eq.true&order=published_at.desc&limit=500");
+  // ══════════════════════════════════════════════════════════════════════
+  // BLOG — ALL published posts (no niche filter, no cap)
+  // ══════════════════════════════════════════════════════════════════════
+  let blogRaw = await fetchAllPages("blog_posts", "select=slug,published_at&is_published=eq.true&order=published_at.desc");
   let blog;
   if (blogRaw && blogRaw.length > 0) {
     blog = blogRaw
-      .filter((b) => {
-        if (!b.slug || isExcluded(`/blog/${b.slug}`)) return false;
-        // Include only posts relevant to core niches
-        const titleLower = (b.title || '').toLowerCase();
-        const catLower = (b.category || '').toLowerCase();
-        return BLOG_NICHE_KEYWORDS.some(kw => titleLower.includes(kw) || catLower.includes(kw) || catLower.includes('cats') || catLower.includes('small pets'));
-      })
-      .slice(0, 30) // Hard cap: max 30 blog posts in sitemap
+      .filter((b) => b.slug && !isExcluded(`/blog/${b.slug}`))
       .map((b) => ({ path: `/blog/${b.slug}`, lastmod: b.published_at }));
-    console.log(`[sitemaps] Blog from REST API: ${blogRaw.length} total, ${blog.length} niche-filtered for sitemap`);
+    console.log(`[sitemaps] Blog from REST API: ${blog.length}`);
   } else {
-    blog = filterIndexable(safeRead(joinRoot("data", "blog.json"), [])).slice(0, 30);
+    blog = safeRead(joinRoot("data", "blog.json"), []).filter(e => e && e.path);
     console.log(`[sitemaps] Blog from JSON fallback: ${blog.length}`);
   }
 
-  // Guides — filter to cat/cage niche only
-  const GUIDE_NICHE_KEYWORDS = ['cat', 'litter', 'condo', 'tree', 'tower', 'furniture', 'scratch', 'indoor', 'kitten', 'feline'];
-  const allGuides = filterIndexable(safeRead(joinRoot("data", "guides.json"), []));
-  const guides = allGuides.filter(g => {
-    const pathLower = (g.path || '').toLowerCase();
-    return GUIDE_NICHE_KEYWORDS.some(kw => pathLower.includes(kw));
-  });
-  console.log(`[sitemaps] Guides from JSON: ${allGuides.length} total, ${guides.length} niche-filtered`);
-  const clusters = filterIndexable(safeRead(joinRoot("data", "clusters.json"), []));
+  // ══════════════════════════════════════════════════════════════════════
+  // GUIDES — ALL guides (no niche filter)
+  // ══════════════════════════════════════════════════════════════════════
+  const guides = safeRead(joinRoot("data", "guides.json"), []).filter(e => e && e.path && !e.noindex);
+  console.log(`[sitemaps] Guides from JSON: ${guides.length}`);
+
+  const clusters = safeRead(joinRoot("data", "clusters.json"), []).filter(e => e && e.path && !e.noindex);
   console.log(`[sitemaps] Clusters from JSON: ${clusters.length}`);
 
   // ── Sort alphabetically ──
@@ -290,7 +183,7 @@ async function main() {
     };
   });
 
-  // ── Static pages — only essential pages ──
+  // ── Static pages → sitemap-pages.xml ──
   const staticPages = [
     { path: "/", priority: 1.0, changefreq: "daily", lastmod: today },
     { path: "/products", priority: 0.9, changefreq: "daily", lastmod: today },
@@ -299,44 +192,20 @@ async function main() {
     { path: "/contact", priority: 0.40, changefreq: "monthly", lastmod: today },
     { path: "/shipping", priority: 0.30, changefreq: "monthly", lastmod: today },
     { path: "/returns", priority: 0.30, changefreq: "monthly", lastmod: today },
+    { path: "/privacy-policy", priority: 0.20, changefreq: "monthly", lastmod: today },
+    { path: "/terms", priority: 0.20, changefreq: "monthly", lastmod: today },
   ].map((e) => ({
     loc: absUrl(BASE, e.path), lastmod: e.lastmod, changefreq: e.changefreq, priority: e.priority,
     _path: e.path, _updatedAt: e.lastmod,
   }));
 
-  const collectionEntries = makeDelta(collections, { changefreq: "weekly", priority: 0.8 });
-  const blogEntries = makeDelta(blog, { changefreq: "monthly", priority: 0.6 });
-  const guideEntries = makeDelta(guides, { changefreq: "weekly", priority: 0.7 });
-  const clusterEntries = makeDelta(clusters, { changefreq: "weekly", priority: 0.65 });
-
-  // ── Tiered product entries ──
-  // Tier A: core products → sitemap-core-products.xml
-  // Tier B1: support commercial → sitemap-secondary-products.xml
-  // Tier B2: index, follow but EXCLUDED from all sitemaps
-  // Tier C: noindex, follow — excluded from all sitemaps
-  const tierAProducts = products.filter((p) => p.seo_tier === 'A');
-  const tierB1Products = products.filter((p) => p.seo_tier === 'B1');
-  const tierB2Products = products.filter((p) => p.seo_tier === 'B2');
-  const tierCProducts = products.filter((p) => p.seo_tier === 'C' || !['A', 'B1', 'B2'].includes(p.seo_tier));
-
-  const makeDeltaProduct = (entries, defaultPriority) => entries.map((e) => {
-    const lastmod = resolveLastmod(e.path, e.lastmod, history, today);
-    return {
-      loc: absUrl(BASE, e.path), lastmod,
-      changefreq: "weekly",
-      priority: e.priority !== undefined ? Math.min(e.priority, defaultPriority) : defaultPriority,
-      _path: e.path, _updatedAt: e.lastmod ?? null,
-    };
-  });
-
-  const coreProductEntries = makeDeltaProduct(tierAProducts, 0.90);
-  // AGGRESSIVE MODE: Only Tier A in sitemap. Tier B1 excluded for crawl budget concentration.
-  const productEntriesAll = [...coreProductEntries];
-
-  console.log(`[sitemaps] Tier A (core): ${tierAProducts.length}, Tier B1 (secondary): ${tierB1Products.length}, Tier B2 (no sitemap): ${tierB2Products.length}, Tier C (noindex): ${tierCProducts.length}`);
+  const productEntries = makeDelta(products, { changefreq: "weekly", priority: 0.70 });
+  const collectionEntries = makeDelta(collections, { changefreq: "weekly", priority: 0.80 });
+  const blogEntries = makeDelta(blog, { changefreq: "monthly", priority: 0.60 });
+  const guideEntries = makeDelta([...guides, ...clusters], { changefreq: "weekly", priority: 0.70 });
 
   // ── Record history ──
-  const allEntries = [...staticPages, ...collectionEntries, ...blogEntries, ...guideEntries, ...clusterEntries, ...productEntriesAll];
+  const allEntries = [...staticPages, ...productEntries, ...collectionEntries, ...blogEntries, ...guideEntries];
   for (const e of allEntries) newHistory[e._path] = { lastmod: e.lastmod, updatedAt: e._updatedAt };
 
   const clean = (entries) => entries.map(({ loc, lastmod, changefreq, priority }) => ({ loc, lastmod, changefreq, priority }));
@@ -347,56 +216,67 @@ async function main() {
     console.log(`[sitemaps] ✓ ${filename} (${xml.length} bytes)`);
   };
 
-  writeChecked("sitemap-static.xml", renderUrlset(clean(staticPages)), ["<urlset", "</urlset>"]);
-  if (collectionEntries.length > 0) writeChecked("sitemap-collections.xml", renderUrlset(clean(collectionEntries)), ["<urlset", "</urlset>"]);
-  if (blogEntries.length > 0) writeChecked("sitemap-blog.xml", renderUrlset(clean(blogEntries)), ["<urlset", "</urlset>"]);
-  if (guideEntries.length > 0) writeChecked("sitemap-guides.xml", renderUrlset(clean(guideEntries)), ["<urlset", "</urlset>"]);
-  if (clusterEntries.length > 0) writeChecked("sitemap-clusters.xml", renderUrlset(clean(clusterEntries)), ["<urlset", "</urlset>"]);
+  // ══════════════════════════════════════════════════════════════════════
+  // WRITE SITEMAPS
+  // ══════════════════════════════════════════════════════════════════════
+  const sitemapIndexItems = [];
 
-  // Build sitemapindex dynamically — only reference files that were actually written
-  const sitemapIndexItems = [
-    { loc: `${BASE}/sitemap-static.xml`, lastmod: today },
-  ];
-  if (collectionEntries.length > 0) sitemapIndexItems.push({ loc: `${BASE}/sitemap-collections.xml`, lastmod: today });
-  if (blogEntries.length > 0) sitemapIndexItems.push({ loc: `${BASE}/sitemap-blog.xml`, lastmod: today });
-  if (guideEntries.length > 0) sitemapIndexItems.push({ loc: `${BASE}/sitemap-guides.xml`, lastmod: today });
-  if (clusterEntries.length > 0) sitemapIndexItems.push({ loc: `${BASE}/sitemap-clusters.xml`, lastmod: today });
+  // 1. Pages (static)
+  writeChecked("sitemap-pages.xml", renderUrlset(clean(staticPages)), ["<urlset", "</urlset>"]);
+  sitemapIndexItems.push({ loc: `${BASE}/sitemap-pages.xml`, lastmod: today });
 
-  // ── Tiered product sitemaps — AGGRESSIVE MODE: Tier A only ──
-  // Core products (Tier A) → sitemap-core-products.xml (priority 0.9)
-  if (coreProductEntries.length > 0) {
-    writeChecked("sitemap-core-products.xml", renderUrlset(clean(coreProductEntries)), ["<urlset", "</urlset>"]);
-    sitemapIndexItems.push({ loc: `${BASE}/sitemap-core-products.xml`, lastmod: today });
+  // 2. Products — split into chunks of 45000
+  const productChunks = chunk(productEntries, PRODUCTS_CHUNK_SIZE);
+  if (productChunks.length === 0) productChunks.push([]); // at least 1 file
+  for (let i = 0; i < productChunks.length; i++) {
+    const filename = `sitemap-products-${i + 1}.xml`;
+    writeChecked(filename, renderUrlset(clean(productChunks[i])), ["<urlset", "</urlset>"]);
+    sitemapIndexItems.push({ loc: `${BASE}/${filename}`, lastmod: today });
   }
-  // Secondary products (Tier B1) — EXCLUDED from sitemap in aggressive mode
-  // They remain index,follow but are not submitted to search engines
 
-  // ── Remove stale legacy product sitemap chunks ──
-  for (let i = 1; i <= 10; i++) {
-    const staleName = `sitemap-products-${i}.xml`;
-    const stalePath = path.join(OUT_DIR, staleName);
-    if (fs.existsSync(stalePath)) {
-      fs.unlinkSync(stalePath);
-      console.log(`[sitemaps] ✗ Removed legacy ${staleName} (replaced by tiered sitemaps)`);
+  // 3. Collections
+  if (collectionEntries.length > 0) {
+    writeChecked("sitemap-collections.xml", renderUrlset(clean(collectionEntries)), ["<urlset", "</urlset>"]);
+    sitemapIndexItems.push({ loc: `${BASE}/sitemap-collections.xml`, lastmod: today });
+  }
+
+  // 4. Guides (includes clusters)
+  if (guideEntries.length > 0) {
+    writeChecked("sitemap-guides.xml", renderUrlset(clean(guideEntries)), ["<urlset", "</urlset>"]);
+    sitemapIndexItems.push({ loc: `${BASE}/sitemap-guides.xml`, lastmod: today });
+  }
+
+  // 5. Blog
+  if (blogEntries.length > 0) {
+    writeChecked("sitemap-blog.xml", renderUrlset(clean(blogEntries)), ["<urlset", "</urlset>"]);
+    sitemapIndexItems.push({ loc: `${BASE}/sitemap-blog.xml`, lastmod: today });
+  }
+
+  // ── Remove stale legacy files ──
+  const legacyFiles = [
+    "sitemap-static.xml", "sitemap-index.xml", "sitemap_index.xml",
+    "sitemap-core-products.xml", "sitemap-secondary-products.xml", "sitemap-clusters.xml",
+  ];
+  // Also remove any excess product chunk files
+  for (let i = productChunks.length + 1; i <= 20; i++) {
+    legacyFiles.push(`sitemap-products-${i}.xml`);
+  }
+  for (const name of legacyFiles) {
+    const fp = path.join(OUT_DIR, name);
+    if (fs.existsSync(fp)) {
+      fs.unlinkSync(fp);
+      console.log(`[sitemaps] ✗ Removed legacy ${name}`);
     }
   }
 
+  // ── Write sitemap index ──
   const indexXml = renderSitemapIndex(sitemapIndexItems);
   validateXmlBasics(indexXml, ["<sitemapindex", "</sitemapindex>"]);
   writeFile(path.join(OUT_DIR, "sitemap.xml"), indexXml);
-
-  // Clean up legacy alias files that may have stale references
-  for (const alias of ["sitemap-index.xml", "sitemap_index.xml"]) {
-    const aliasPath = path.join(OUT_DIR, alias);
-    if (fs.existsSync(aliasPath)) {
-      fs.unlinkSync(aliasPath);
-      console.log(`[sitemaps] ✗ Removed legacy alias ${alias}`);
-    }
-  }
+  console.log(`[sitemaps] ✓ sitemap.xml (index, ${sitemapIndexItems.length} entries)`);
 
   // ── Post-write assertions ──
-  const requiredFiles = ["sitemap.xml"];
-  if (coreProductEntries.length > 0) requiredFiles.push("sitemap-core-products.xml");
+  const requiredFiles = ["sitemap.xml", "sitemap-products-1.xml"];
   for (const rf of requiredFiles) {
     const fp = path.join(OUT_DIR, rf);
     if (!fs.existsSync(fp)) {
@@ -414,31 +294,18 @@ async function main() {
   saveHistory(newHistory);
 
   // ── Summary ──
-  const totalUrls = staticPages.length + collectionEntries.length + blogEntries.length
-    + guideEntries.length + clusterEntries.length + productEntriesAll.length;
-
-  // Priority distribution
-  const priDist = { high: 0, mid: 0, low: 0 };
-  for (const e of productEntriesAll) {
-    if (e.priority >= 0.80) priDist.high++;
-    else if (e.priority >= 0.65) priDist.mid++;
-    else priDist.low++;
-  }
+  const totalUrls = staticPages.length + productEntries.length + collectionEntries.length
+    + blogEntries.length + guideEntries.length;
 
   console.log(`\n[sitemaps] ══════════════════════════════════════`);
   console.log(`[sitemaps] Generation complete at ${new Date().toISOString()}`);
-  console.log(`[sitemaps] Products:    ${products.length} (Tier A: ${tierAProducts.length}, Tier B1: ${tierB1Products.length}, Tier B2: ${tierB2Products.length}, Tier C: ${tierCProducts.length} noindex)`);
-  console.log(`[sitemaps] Indexed:     ${productEntriesAll.length} (in sitemaps)`);
-  console.log(`[sitemaps] Noindexed:   ${products.length - productEntriesAll.length} (Tier C, excluded from sitemaps)`);
-  console.log(`[sitemaps] Collections: ${collections.length} (top revenue: ${topRevenueCollections.size})`);
-  console.log(`[sitemaps] Blog:        ${blog.length}`);
-  console.log(`[sitemaps] Guides:      ${guides.length}`);
-  console.log(`[sitemaps] Clusters:    ${clusters.length}`);
-  console.log(`[sitemaps] Static:      ${staticPages.length}`);
+  console.log(`[sitemaps] Pages:       ${staticPages.length}`);
+  console.log(`[sitemaps] Products:    ${productEntries.length} (in ${productChunks.length} file(s))`);
+  console.log(`[sitemaps] Collections: ${collectionEntries.length}`);
+  console.log(`[sitemaps] Blog:        ${blogEntries.length}`);
+  console.log(`[sitemaps] Guides:      ${guideEntries.length}`);
   console.log(`[sitemaps] Total URLs:  ${totalUrls}`);
   console.log(`[sitemaps] Index refs:  ${sitemapIndexItems.length}`);
-  console.log(`[sitemaps] Bestsellers: ${bestsellers.size}`);
-  console.log(`[sitemaps] Delta tracking: ${Object.keys(newHistory).length} entries`);
   console.log(`[sitemaps] ══════════════════════════════════════\n`);
 }
 
