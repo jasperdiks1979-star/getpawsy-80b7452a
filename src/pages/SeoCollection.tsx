@@ -1,7 +1,8 @@
 import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { preloadCriticalImage } from '@/hooks/useCriticalImagePreload';
 import { supabase } from '@/integrations/supabase/client';
 import { getCollectionConfig } from '@/config/collectionMap';
 import { resolveCollectionProducts, type CollectionProduct } from '@/lib/collection-matching-engine';
@@ -278,6 +279,15 @@ const SeoCollection = () => {
   const products = productMatch?.products || [];
   const showingRelatedResults = !!productMatch?.fallbackTriggered;
 
+  // Preload first 2 product images for faster LCP
+  useEffect(() => {
+    if (products.length > 0) {
+      products.slice(0, 2).forEach(p => {
+        if (p.image_url) preloadCriticalImage(p.image_url);
+      });
+    }
+  }, [products]);
+
   // Fetch related blog post
   const { data: relatedBlog } = useQuery({
     queryKey: ['seo-collection-blog', collection?.related_blog_slug],
@@ -482,29 +492,32 @@ const SeoCollection = () => {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Section A: Compact Header — products MUST be above fold */}
-        <header className="mb-6">
-          <Badge variant="secondary" className="mb-3">
+        {/* Section A: Ultra-compact Header — max 40vh on mobile */}
+        <header className="mb-3 md:mb-6 max-h-[40vh] overflow-hidden">
+          <Badge variant="secondary" className="mb-2">
             {collection.primary_keyword}
           </Badge>
-          <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">
+          <h1 className="text-2xl md:text-4xl font-display font-bold mb-1">
             {collection.name}
           </h1>
-          {/* Only show 1-2 line intro, NOT full seo_intro wall */}
-          <p className="text-muted-foreground text-base max-w-3xl">
-            {(collection.meta_description || collection.seo_intro || '').substring(0, 160).replace(/<[^>]*>/g, '')}
+          <p className="text-muted-foreground text-sm md:text-base max-w-3xl line-clamp-2">
+            {(collection.meta_description || collection.seo_intro || '').substring(0, 300).replace(/<[^>]*>/g, '')}
           </p>
         </header>
 
-        {/* CRO: Trust Bar for money collections — compact, above products */}
-        {isMoney && <CollectionTrustBar />}
+        {/* Trust strip — always visible, compact */}
+        <div className="flex flex-wrap items-center gap-3 md:gap-6 py-2 px-3 mb-3 rounded-lg bg-secondary/20 border border-secondary/40 text-xs text-secondary-foreground">
+          <span className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5 text-primary" /> Free US Shipping $35+</span>
+          <span className="flex items-center gap-1.5"><RotateCcw className="w-3.5 h-3.5 text-primary" /> 30-Day Returns</span>
+          <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Tested for Large Breeds</span>
+        </div>
 
-        <section id="products" className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold">
-              Shop {collection.name}
+        <section id="products" className="mb-8 md:mb-12">
+          <div className="flex items-center justify-between mb-3 md:mb-6">
+            <h2 className="text-lg md:text-2xl font-semibold">
+              Shop {collection.name.replace(/\s–.*$/, '')}
             </h2>
-            <span className="text-muted-foreground text-sm">
+            <span className="text-muted-foreground text-xs md:text-sm">
               {products.length} products
             </span>
           </div>
@@ -516,14 +529,14 @@ const SeoCollection = () => {
           )}
 
           {productsLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {[...Array(8)].map((_, i) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
+              {[...Array(6)].map((_, i) => (
                 <Skeleton key={i} className="aspect-square rounded-xl" />
               ))}
             </div>
           ) : products.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
                 {products.map((product, index) => (
                   <div key={product.id}>
                     <ProductCard
@@ -577,10 +590,10 @@ const SeoCollection = () => {
           )}
         </section>
 
-        {/* ── GUIDE CONTENT — below products, collapsible on mobile ── */}
+        {/* ── SEO GUIDE CONTENT — below products, always collapsed ── */}
         {collection.seo_intro && collection.seo_intro.length > 200 && (
-          <section className="mb-12">
-            <Accordion type="single" collapsible defaultValue={viewShop ? undefined : 'guide-content'}>
+          <section id="seo-content" className="mb-12">
+            <Accordion type="single" collapsible>
               <AccordionItem value="guide-content" className="border rounded-xl">
                 <AccordionTrigger className="px-5 py-4 text-lg font-semibold hover:no-underline">
                   <span className="flex items-center gap-2">
@@ -702,24 +715,7 @@ const SeoCollection = () => {
           </p>
         </section>
 
-        {/* Trust Reinforcement */}
-        <section id="trust" className="mb-12 grid sm:grid-cols-3 gap-4">
-          <div className="bg-card border rounded-xl p-5 text-center">
-            <Truck className="w-6 h-6 text-primary mx-auto mb-2" />
-            <h3 className="font-semibold text-sm mb-1">Free US Shipping</h3>
-            <p className="text-xs text-muted-foreground">On orders over $35</p>
-          </div>
-          <div className="bg-card border rounded-xl p-5 text-center">
-            <RotateCcw className="w-6 h-6 text-primary mx-auto mb-2" />
-            <h3 className="font-semibold text-sm mb-1">30-Day Returns</h3>
-            <p className="text-xs text-muted-foreground">Hassle-free, no questions asked</p>
-          </div>
-          <div className="bg-card border rounded-xl p-5 text-center">
-            <ShieldCheck className="w-6 h-6 text-primary mx-auto mb-2" />
-            <h3 className="font-semibold text-sm mb-1">Pet-Safe Guarantee</h3>
-            <p className="text-xs text-muted-foreground">Quality tested for safety</p>
-          </div>
-        </section>
+        {/* Trust Reinforcement — moved to compact strip above products, removed duplicate */}
 
         {/* Domination: PAA Expansion Section */}
         {domConfig && domConfig.paaQuestions.length > 0 && (
