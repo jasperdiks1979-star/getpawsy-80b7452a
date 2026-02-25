@@ -320,7 +320,7 @@ const SeoCollection = () => {
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
 
-        return scored.slice(0, 24) as CollectionProduct[];
+        return scored.slice(0, 48) as CollectionProduct[];
       }
 
       // Category-based query
@@ -334,7 +334,7 @@ const SeoCollection = () => {
         query = query.ilike('category', `%${collection.product_category_filter}%`);
       }
 
-      const { data, error } = await query.limit(hasKeywords ? 200 : 24);
+      const { data, error } = await query.limit(hasCategory ? 200 : 48);
 
       if (error) {
         console.error('Error fetching products:', error);
@@ -362,7 +362,7 @@ const SeoCollection = () => {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
 
-      return filteredProducts.slice(0, 24) as CollectionProduct[];
+      return filteredProducts.slice(0, 48) as CollectionProduct[];
     },
     enabled: !!collection,
   });
