@@ -9,12 +9,13 @@ import {
 } from '@/components/ui/accordion';
 
 /**
- * CatTreesHubContent — 2000+ word authority content block
+ * CatTreesHubContent — 3000+ word authority content block
  * Injected into /collections/cat-trees-and-condos to make it the
  * strongest URL cluster on the domain.
  * 
- * Contains: stability explanation, large cat guide, comparison table,
- * 12-question FAQ, and 10+ internal links to Tier A products/guides.
+ * Contains: stability explanation, cat condo vs tree, large cat guide,
+ * sisal vs carpet, multi-cat households, comparison table,
+ * 15-question FAQ, and 50+ internal links to Tier A products/guides.
  */
 export function CatTreesHubContent() {
   return (
@@ -235,7 +236,95 @@ export function CatTreesHubContent() {
         </p>
       </section>
 
-      {/* Section 8: 12-Question FAQ */}
+      {/* Section 8: Cat Condo vs Cat Tree */}
+      <section id="condo-vs-tree">
+        <h2 className="text-2xl font-display font-bold mb-4">
+          Cat Condo vs Cat Tree: Which Does Your Cat Actually Need?
+        </h2>
+        <p className="text-muted-foreground leading-relaxed mb-4">
+          The terms "cat tree" and "cat condo" are often used interchangeably, but they serve different behavioral needs. Understanding the distinction helps you make the right purchase — and avoid returning a product your cat ignores.
+        </p>
+        <div className="overflow-x-auto rounded-xl border mb-6">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted/50">
+                <th className="text-left p-3 font-semibold">Feature</th>
+                <th className="text-left p-3 font-semibold">Cat Tree</th>
+                <th className="text-left p-3 font-semibold">Cat Condo</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              <tr><td className="p-3 font-medium">Primary function</td><td className="p-3 text-muted-foreground">Climbing & surveying</td><td className="p-3 text-muted-foreground">Hiding & sleeping</td></tr>
+              <tr><td className="p-3 font-medium">Design</td><td className="p-3 text-muted-foreground">Open platforms, vertical posts</td><td className="p-3 text-muted-foreground">Enclosed boxes, cubbies</td></tr>
+              <tr><td className="p-3 font-medium">Best for</td><td className="p-3 text-muted-foreground">Active, confident cats</td><td className="p-3 text-muted-foreground">Shy, anxious, or senior cats</td></tr>
+              <tr><td className="p-3 font-medium">Multi-cat suitability</td><td className="p-3 text-muted-foreground">Excellent — visual territory</td><td className="p-3 text-muted-foreground">Moderate — enclosed spaces cause guarding</td></tr>
+              <tr><td className="p-3 font-medium">Floor space</td><td className="p-3 text-muted-foreground">Narrow footprint possible</td><td className="p-3 text-muted-foreground">Wider base typical</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="text-muted-foreground leading-relaxed mb-4">
+          <strong className="text-foreground">Our recommendation:</strong> For most indoor cats, a <strong className="text-foreground">combo tree-condo</strong> with both open platforms and one enclosed cubby offers the best of both worlds. Active cats use the top platforms during the day; the same cat retreats to the enclosed condo at night or when stressed. Browse our <Link to="/collections/cat-condos" className="text-primary underline">cat condos collection</Link> or read our complete <Link to="/guides/cat-condo-vs-cat-tree-2026" className="text-primary underline">cat condo vs cat tree guide</Link>.
+        </p>
+      </section>
+
+      {/* Section 9: Sisal vs Carpet — Scratching Material Guide */}
+      <section id="scratching-materials">
+        <h2 className="text-2xl font-display font-bold mb-4">
+          Cat Tree Scratching Materials: Sisal Rope vs Carpet vs Jute
+        </h2>
+        <p className="text-muted-foreground leading-relaxed mb-4">
+          The scratching surface is the single most important factor in whether your cat will actually use a cat tree. Choose wrong, and you've bought an expensive piece of furniture your cat ignores while continuing to shred your sofa.
+        </p>
+        <div className="grid sm:grid-cols-3 gap-4 mb-6">
+          <div className="bg-card border rounded-xl p-5">
+            <h3 className="font-semibold text-sm mb-2 text-foreground">🏆 Natural Sisal Rope</h3>
+            <p className="text-xs text-muted-foreground mb-2">The gold standard. Mimics tree bark texture. Lasts 2–4 years under heavy use. Most cats instinctively scratch sisal on first contact.</p>
+            <Badge className="bg-green-500/10 text-green-700 border-green-200 text-xs">Best Choice</Badge>
+          </div>
+          <div className="bg-card border rounded-xl p-5">
+            <h3 className="font-semibold text-sm mb-2 text-foreground">Jute Rope</h3>
+            <p className="text-xs text-muted-foreground mb-2">Softer than sisal, less durable. Shreds within 6–12 months. Preferred by declawed or senior cats with sensitive paws.</p>
+            <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-200 text-xs">Moderate</Badge>
+          </div>
+          <div className="bg-card border rounded-xl p-5">
+            <h3 className="font-semibold text-sm mb-2 text-foreground">Carpet Wrap</h3>
+            <p className="text-xs text-muted-foreground mb-2">Loops catch claws and unravel. Creates confusion — cat can't distinguish tree carpet from home carpet. Avoid for scratching surfaces.</p>
+            <Badge className="bg-red-500/10 text-red-700 border-red-200 text-xs">Not Recommended</Badge>
+          </div>
+        </div>
+        <p className="text-muted-foreground leading-relaxed">
+          Pro tip: When replacing worn sisal, use <strong className="text-foreground">3/8" natural sisal rope</strong> (not the thinner 1/4" variety). Wrap tightly from bottom to top with hot glue at each end. A single post re-wrap costs about $8 in materials and extends your tree's life by 2+ years. For detailed instructions, see our <Link to="/guides/cat-tree-materials-sisal-vs-carpet" className="text-primary underline">sisal vs carpet guide</Link>.
+        </p>
+      </section>
+
+      {/* Section 10: Multi-Cat Households */}
+      <section id="multi-cat">
+        <h2 className="text-2xl font-display font-bold mb-4">
+          Cat Trees for Multi-Cat Households: Territory Design
+        </h2>
+        <p className="text-muted-foreground leading-relaxed mb-4">
+          In multi-cat homes, a cat tree isn't just furniture — it's a <strong className="text-foreground">territory management system</strong>. Cats establish social hierarchies through height dominance. Without adequate vertical territory, multi-cat households experience more aggression, stress spraying, and resource guarding.
+        </p>
+        <ul className="space-y-2 mb-4">
+          {[
+            'Rule of thumb: minimum 2 platforms per cat, at different heights.',
+            'Avoid trees where one cat can block another\'s access — look for multiple climbing paths.',
+            'Space platforms at varied angles (not directly stacked) to prevent "ambush" positions.',
+            'For 3+ cats, consider two separate trees in different rooms rather than one mega-tree.',
+            'Weight rating matters more: a 3-cat household needs 60+ lb dynamic capacity.',
+          ].map((tip, i) => (
+            <li key={i} className="flex gap-2 text-sm text-muted-foreground">
+              <CheckCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              {tip}
+            </li>
+          ))}
+        </ul>
+        <p className="text-muted-foreground leading-relaxed">
+          Explore our <Link to="/collections/cat-tree-for-two-cats" className="text-primary underline">cat trees for two cats</Link> or browse <Link to="/cat/cat-trees-for-large-cats/large-cat-condos" className="text-primary underline">large cat condos</Link> with multi-level access paths designed to reduce territorial conflict.
+        </p>
+      </section>
+
+      {/* Section 11: 15-Question FAQ */}
       <section id="hub-faq">
         <h2 className="text-2xl font-display font-bold mb-4">
           Cat Trees & Condos — Frequently Asked Questions
@@ -246,14 +335,17 @@ export function CatTreesHubContent() {
             { q: 'How tall should a cat tree be?', a: 'At least 60 inches for standard adult cats, 72+ inches for multi-cat households. The ideal height is approximately 80% of your ceiling height — around 6.5 feet for standard 8-foot ceilings.' },
             { q: 'Are cat trees worth the money?', a: 'Yes. A quality cat tree ($120–$250) lasts 5–8 years, provides scratching surfaces that protect furniture, vertical exercise territory, and sleeping perches. Budget trees ($30–$60) typically need replacement every 1–2 years, costing more long-term.' },
             { q: 'How do I stop my cat tree from wobbling?', a: 'Three fixes: (1) Anchor it to a wall stud with an L-bracket. (2) Place it in a corner for two-wall support. (3) Add weight to the base with sandbags. Wall anchoring alone eliminates 95% of wobble.' },
-            { q: 'What is the difference between a cat tree and a cat condo?', a: 'A cat tree emphasizes vertical climbing with multiple open platforms. A cat condo features enclosed spaces (boxes/houses) for hiding and sleeping. Many modern designs combine both — open platforms for surveying and enclosed condos for privacy.' },
+            { q: 'What is the difference between a cat tree and a cat condo?', a: 'A cat tree emphasizes vertical climbing with multiple open platforms. A cat condo features enclosed spaces (boxes/houses) for hiding and sleeping. Many modern designs combine both. Read our complete cat condo vs cat tree guide for a detailed comparison.' },
             { q: 'Can two cats share one cat tree?', a: 'Yes, but choose a tree with 5+ separate platforms at different heights so each cat can establish their own territory. Multi-cat trees should be rated for 50+ lbs total and have platforms spaced at varied angles to reduce resource guarding.' },
             { q: 'What size cat tree for a Maine Coon?', a: 'Maine Coons need 60–72 inch trees with 18"+ wide platforms, 12"+ condo openings, and 4"+ diameter posts. Budget $150–$250 for a properly sized model. Floor-to-ceiling tension models work best.' },
             { q: 'How often should I replace a cat tree?', a: 'Quality solid-wood trees last 5–8 years. Budget particle board trees: 1–3 years. Replace when: bolts strip or won\'t tighten, platforms crack, sisal can\'t be re-wrapped, or the base wobbles after tightening.' },
             { q: 'Do cats prefer carpet or sisal on cat trees?', a: 'Most cats prefer natural sisal rope for scratching — it mimics tree bark texture. Carpet-covered surfaces are preferred for lounging/sleeping. The best trees offer sisal posts for scratching and carpeted or felt platforms for resting.' },
             { q: 'Where is the best place to put a cat tree?', a: 'Near a window for enrichment (birds, outdoor activity). In a corner for maximum stability (two-wall support). In the main living area — cats want to be near their humans, not isolated in a spare room.' },
             { q: 'Are floor-to-ceiling cat trees safe?', a: 'Yes — tension-pole trees are among the safest options. The adjustable mechanism creates a rigid column between floor and ceiling, eliminating tip-over risk. Re-tighten quarterly as rubber pads settle. Not suitable for drop ceilings.' },
-            { q: 'What is the best cat tree material?', a: 'Solid wood or thick MDF frames outperform particle board. Natural sisal rope lasts longer than jute or carpet-wrapped posts. Plush or faux fur platforms are preferred by cats for sleeping. Avoid trees made entirely of pressed cardboard — they compress and fail quickly.' },
+            { q: 'What is the best cat tree material?', a: 'Solid wood or thick MDF frames outperform particle board. Natural sisal rope lasts longer than jute or carpet-wrapped posts. Plush or faux fur platforms are preferred by cats for sleeping. Avoid trees made entirely of pressed cardboard.' },
+            { q: 'How do I get my cat to use a cat tree?', a: 'Place treats or catnip on platforms. Position near a window for natural motivation. Hang a dangling toy from the top. Never force your cat — let them explore at their own pace. Most cats use new trees within 1–3 days.' },
+            { q: 'Is a cat condo better than a cat tree?', a: 'Neither is universally better — it depends on your cat\'s personality. Active, confident cats prefer open-platform trees. Shy or anxious cats prefer enclosed condos. Combo designs with both platforms and cubbies satisfy most cats.' },
+            { q: 'How many scratching posts should a cat tree have?', a: 'At least 2 sisal-wrapped posts of different heights. Cats like to scratch at full stretch, so one post should be at least 30 inches tall. Multiple posts also reduce wear and extend the tree\'s lifespan.' },
           ].map((item, i) => (
             <AccordionItem key={i} value={`hub-faq-${i}`}>
               <AccordionTrigger className="text-left text-sm font-medium">
