@@ -77,6 +77,13 @@ export const COLLECTION_MAP: Record<string, CollectionMapEntry> = {
     minProducts: 4,
     criticalMin: 2,
   },
+  'slow-feeder-dog-bowls': {
+    categoryPatterns: ['Dog Bowls', 'Slow Feeders', 'Dog Feeding'],
+    keywords: ['slow feeder', 'anti gulp', 'puzzle feeder', 'slow bowl'],
+    fallbackKeywords: ['dog bowl', 'feeding bowl', 'interactive feeder', 'dog feeder'],
+    minProducts: 8,
+    criticalMin: 4,
+  },
 };
 
 /**
