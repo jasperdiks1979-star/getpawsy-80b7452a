@@ -257,6 +257,7 @@ const HowWeTestProducts = lazyWithRetry(() => import("./pages/HowWeTestProducts"
 const EditorialGuidelines = lazyWithRetry(() => import("./pages/EditorialGuidelines"));
 const AffiliateDisclosure = lazyWithRetry(() => import("./pages/AffiliateDisclosure"));
 const DogBedSizeChart = lazyWithRetry(() => import("./pages/DogBedSizeChart"));
+const IndoorCatCareResource = lazyWithRetry(() => import("./pages/IndoorCatCareResource"));
 const TrainingLandingPage = lazyWithRetry(() => import("./pages/landing/TrainingLandingPage"));
 
 // Generic SEO pages — wrapper components that pass namespace prop
@@ -365,6 +366,7 @@ const App = () => {
                       <Route path="/editorial-guidelines" element={<Suspense fallback={<RouteLoader />}><EditorialGuidelines /></Suspense>} />
                       <Route path="/affiliate-disclosure" element={<Suspense fallback={<RouteLoader />}><AffiliateDisclosure /></Suspense>} />
                       <Route path="/resources/dog-bed-size-chart" element={<Suspense fallback={<RouteLoader />}><DogBedSizeChart /></Suspense>} />
+                      <Route path="/resources/indoor-cat-care" element={<Suspense fallback={<RouteLoader />}><IndoorCatCareResource /></Suspense>} />
                       
                       {/* Guide pages */}
                       <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />

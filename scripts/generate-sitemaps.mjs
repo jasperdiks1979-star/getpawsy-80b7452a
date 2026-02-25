@@ -188,6 +188,8 @@ async function main() {
     { path: "/", priority: 1.0, changefreq: "daily", lastmod: today },
     { path: "/products", priority: 0.9, changefreq: "daily", lastmod: today },
     { path: "/bestsellers", priority: 0.80, changefreq: "weekly", lastmod: today },
+    { path: "/resources/indoor-cat-care", priority: 0.70, changefreq: "weekly", lastmod: today },
+    { path: "/resources/dog-bed-size-chart", priority: 0.60, changefreq: "monthly", lastmod: today },
     { path: "/about", priority: 0.50, changefreq: "monthly", lastmod: today },
     { path: "/contact", priority: 0.40, changefreq: "monthly", lastmod: today },
     { path: "/shipping", priority: 0.30, changefreq: "monthly", lastmod: today },

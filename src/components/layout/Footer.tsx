@@ -121,12 +121,12 @@ export const Footer = () => {
     ],
     // Buying Guides
     guides: [
+      { label: 'Best Cat Trees for Large Cats', href: '/guides/best-cat-trees-large-cats-2026' },
       { label: 'Best Cat Litter Box 2026', href: '/guides/best-cat-litter-box-2026' },
       { label: 'Best Cat Trees for Apartments', href: '/guides/best-cat-trees-small-apartments' },
       { label: 'How Many Litter Boxes Per Cat', href: '/guides/how-many-litter-boxes-per-cat' },
-      { label: 'Dog Hip Dysplasia Support', href: '/guides/dog-hip-dysplasia-support-guide' },
-      { label: 'Best Cat Trees for Maine Coons', href: '/guides/best-cat-trees-maine-coon' },
-      { label: 'Crash-Tested Dog Car Safety', href: '/guides/crash-tested-dog-car-safety' },
+      { label: 'Indoor Cat Care Resources', href: '/resources/indoor-cat-care' },
+      { label: 'Cat Trees & Condos Collection', href: '/collections/cat-trees-and-condos' },
     ],
     // Best of 2026
     bestOf: [
@@ -408,13 +408,15 @@ export const Footer = () => {
             <h4 className="font-display font-semibold text-lg mb-4">Expert Pet Buying Guides</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
               {[
+                { slug: 'best-cat-trees-large-cats-2026', label: 'Best Cat Trees for Large Cats – Stability Guide' },
+                { slug: 'best-cat-trees-2026', label: 'Best Cat Trees 2026 – Complete Buyer Guide' },
                 { slug: 'best-cat-litter-box-2026', label: 'Best Cat Litter Box 2026 – Complete Guide' },
                 { slug: 'best-cat-litter-box-furniture-enclosures-2026', label: 'Best Litter Box Furniture & Enclosures' },
+                { slug: 'best-self-cleaning-litter-box-2026', label: 'Best Self-Cleaning Litter Box 2026' },
                 { slug: 'best-extra-large-litter-boxes', label: 'Best Extra Large Litter Boxes for Big Cats' },
                 { slug: 'best-litter-boxes-multi-cat', label: 'Best Litter Boxes for Multi-Cat Homes' },
                 { slug: 'best-cat-trees-small-apartments', label: 'Best Cat Trees for Small Apartments' },
                 { slug: 'how-many-litter-boxes-per-cat', label: 'How Many Litter Boxes Per Cat? N+1 Rule' },
-                { slug: 'best-litter-box-small-apartments', label: 'Best Litter Box for Small Apartments' },
                 { slug: 'best-litter-box-kittens', label: 'Best Litter Box for Kittens – Starter Picks' },
                 { slug: 'best-litter-box-senior-cats', label: 'Best Litter Box for Senior Cats' },
                 { slug: 'best-low-tracking-litter-box', label: 'Best Low-Tracking Litter Box 2026' },

@@ -1,5 +1,6 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { useMemo } from 'react';
+import { getGuideRedirectTarget } from '@/lib/guide-consolidation';
 import { Helmet } from 'react-helmet-async';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, BookOpen, ChevronRight, ShoppingBag, CheckCircle, XCircle, AlertTriangle, RefreshCw, User, Award } from 'lucide-react';
@@ -22,6 +23,9 @@ const GuidePage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: guide, isLoading, error } = useGuide(slug);
   const { data: allGuides } = useGuidesList();
+
+  // Guide consolidation: redirect weak duplicates to primary guide
+  const redirectTarget = slug ? getGuideRedirectTarget(slug) : null;
 
   // Fetch products for internal linking AND image enrichment in guide content
   const { data: linkableProducts = [] } = useQuery({
@@ -126,6 +130,11 @@ const GuidePage = () => {
     
     return map;
   }, [linkableProducts, guide?.comparisonProducts]);
+
+  // Guide consolidation: redirect weak duplicates to primary guide
+  if (redirectTarget) {
+    return <Navigate to={`/guides/${redirectTarget}`} replace />;
+  }
 
   if (isLoading) {
     return (

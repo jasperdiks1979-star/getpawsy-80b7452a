@@ -2,7 +2,14 @@ import { Link } from 'react-router-dom';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import { FadeInView } from '@/components/ui/FadeInView';
 
-const MONEY_HUBS = [
+const MONEY_HUBS: Array<{
+  title: string;
+  href: string;
+  anchor: string;
+  content: string;
+  badges: string[];
+  guideLink?: string;
+}> = [
   {
     title: 'Cat Trees & Condos',
     href: '/collections/cat-trees-and-condos',
@@ -19,6 +26,7 @@ const MONEY_HUBS = [
     content:
       'Finding the right litter box means balancing odor control, ease of cleaning, and your cat\'s comfort. Our expert-tested collection features self-cleaning systems that reduce daily scooping by 90%, enclosed boxes that trap odors with activated carbon filters, and extra-large options designed for cats over 15 lbs. We also carry furniture-style enclosures that blend into your living room décor. Every litter box is tested for splash resistance, entry height accessibility, and long-term durability. Free US shipping over $35 and a 30-day hassle-free return policy.',
     badges: ['Odor Control', 'Self-Cleaning', 'Large Cat Friendly'],
+    guideLink: '/guides/best-cat-litter-box-2026',
   },
   {
     title: 'Indoor Cat Enrichment & Furniture',
@@ -27,6 +35,7 @@ const MONEY_HUBS = [
     content:
       'Indoor cats need vertical space, scratching surfaces, and mental stimulation to stay healthy and happy. Our curated indoor cat furniture collection includes wall-mounted shelves that create aerial highways, sisal scratching towers that protect your furniture, window perches with suction-cup mounts for bird watching, and interactive puzzle feeders. Each piece is selected for durability, modern aesthetics, and cat ergonomics. Perfect for apartments and multi-cat households. Fast US shipping, free over $35.',
     badges: ['Wall-Mountable', 'Space-Saving', 'Modern Design'],
+    guideLink: '/resources/indoor-cat-care',
   },
 ];
 
@@ -74,9 +83,9 @@ export function MoneyHubBlocks() {
                     Shop {hub.anchor}
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Link>
-                  {'guideLink' in hub && (hub as any).guideLink && (
+                  {'guideLink' in hub && hub.guideLink && (
                     <Link
-                      to={(hub as any).guideLink}
+                      to={hub.guideLink}
                       className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary hover:underline transition-colors"
                     >
                       📖 Read our expert buying guide
