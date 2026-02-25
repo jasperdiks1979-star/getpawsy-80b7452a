@@ -61,9 +61,10 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'outdoor-dog-games-enrichment': 'outdoor-dog-games-2026',
 
   // ── Cat Furniture Consolidation ────────────────────────────
-  // Cat condo vs cat tree → single primary
-  'cat-condo-vs-cat-tower': 'cat-condo-vs-cat-tree-difference',
-  'modern-cat-condo-vs-traditional-cat-tree': 'cat-condo-vs-cat-tree-difference',
+  // Cat condo vs cat tree → single primary mega guide
+  'cat-condo-vs-cat-tower': 'cat-condo-vs-cat-tree-2026',
+  'modern-cat-condo-vs-traditional-cat-tree': 'cat-condo-vs-cat-tree-2026',
+  'cat-condo-vs-cat-tree-difference': 'cat-condo-vs-cat-tree-2026',
 };
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */

@@ -249,6 +249,7 @@ const DogBoosterSeat = lazyWithRetry(() => import("./pages/collections/sub-inten
 const DogCarHarness = lazyWithRetry(() => import("./pages/collections/sub-intent/DogCarHarness"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
+const CatCondoVsCatTree2026 = lazyWithRetry(() => import("./pages/guides/CatCondoVsCatTree2026"));
 const GrowthVerification = lazyWithRetry(() => import("./pages/GrowthVerification"));
 const Healthz = lazyWithRetry(() => import("./pages/Healthz"));
 const WhyTrustOurReviews = lazyWithRetry(() => import("./pages/WhyTrustOurReviews"));
@@ -370,6 +371,7 @@ const App = () => {
                       
                       {/* Guide pages */}
                       <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />
+                      <Route path="/guides/cat-condo-vs-cat-tree-2026" element={<Suspense fallback={<RouteLoader />}><CatCondoVsCatTree2026 /></Suspense>} />
                       <Route path="/guides/:slug" element={<Suspense fallback={<RouteLoader />}><GuidePage /></Suspense>} />
                       {/* Lockdown cluster articles — generic JSON-driven renderer */}
                       <Route path="/guides/cluster/:slug" element={<Suspense fallback={<RouteLoader />}><LockdownClusterArticle /></Suspense>} />
