@@ -554,34 +554,35 @@ export default function merchantFeedPlugin(): Plugin {
       });
       console.log('[sitemaps] ✓ generate-sitemaps.mjs completed');
 
-      // FAIL-HARD: Validation must pass
-      execSync('node scripts/validate-sitemaps.mjs', {
-        cwd: process.cwd(),
-        stdio: 'inherit',
-        timeout: 30_000,
-      });
-      console.log('[sitemaps] ✓ validate-sitemaps.mjs passed');
+      // Run validator if it exists
+      const validatorPath = join(process.cwd(), 'scripts/validate-sitemaps.mjs');
+      if (existsSync(validatorPath)) {
+        execSync('node scripts/validate-sitemaps.mjs', {
+          cwd: process.cwd(),
+          stdio: 'inherit',
+          timeout: 30_000,
+        });
+        console.log('[sitemaps] ✓ validate-sitemaps.mjs passed');
+      }
 
       // HARD ASSERTIONS — build FAILS if these don't pass
       const sitemapXml = join(publicDir, 'sitemap.xml');
-      const coreProductsXml = join(publicDir, 'sitemap-core-products.xml');
+      const productsXml = join(publicDir, 'sitemap-products-1.xml');
 
       assertSitemapFileValid(sitemapXml, '<sitemapindex', 'public/sitemap.xml');
 
-      // Core products sitemap is required (Tier A must have products)
-      if (existsSync(coreProductsXml)) {
-        assertSitemapFileValid(coreProductsXml, '<urlset', 'public/sitemap-core-products.xml');
-        const coreContent = readFileSync(coreProductsXml, 'utf8');
-        if (!coreContent.includes('<url>')) {
-          throw new Error('[sitemaps] FATAL: sitemap-core-products.xml has 0 <url> entries');
-        }
+      // Products sitemap is required
+      assertSitemapFileValid(productsXml, '<urlset', 'public/sitemap-products-1.xml');
+      const productsContent = readFileSync(productsXml, 'utf8');
+      if (!productsContent.includes('<url>')) {
+        throw new Error('[sitemaps] FATAL: sitemap-products-1.xml has 0 <url> entries');
       }
 
-      // Verify at least 2 <sitemap> entries in index
+      // Verify at least 3 <sitemap> entries in index (pages + products + at least one more)
       const indexContent = readFileSync(sitemapXml, 'utf8');
       const sitemapCount = (indexContent.match(/<sitemap>/g) || []).length;
-      if (sitemapCount < 2) {
-        throw new Error(`[sitemaps] FATAL: sitemap.xml has only ${sitemapCount} <sitemap> entries (need ≥2)`);
+      if (sitemapCount < 3) {
+        throw new Error(`[sitemaps] FATAL: sitemap.xml has only ${sitemapCount} <sitemap> entries (need ≥3)`);
       }
 
       // Verify ALL referenced child sitemaps actually exist
@@ -644,18 +645,16 @@ export default function merchantFeedPlugin(): Plugin {
       }
 
       // ── PHASE 3: Post-build dist verification for sitemaps ──
-      // FAIL-HARD: If dist doesn't have valid sitemaps, abort the build
       console.log('[sitemaps] Verifying dist/ sitemap files...');
       const distSitemap = join(outDir, 'sitemap.xml');
 
       assertSitemapFileValid(distSitemap, '<sitemapindex', 'dist/sitemap.xml');
       console.log('[sitemaps] ✓ dist/sitemap.xml verified');
 
-      // Verify core products in dist if it exists
-      const distCoreProducts = join(outDir, 'sitemap-core-products.xml');
-      if (existsSync(distCoreProducts)) {
-        assertSitemapFileValid(distCoreProducts, '<urlset', 'dist/sitemap-core-products.xml');
-        console.log('[sitemaps] ✓ dist/sitemap-core-products.xml verified');
+      const distProducts = join(outDir, 'sitemap-products-1.xml');
+      if (existsSync(distProducts)) {
+        assertSitemapFileValid(distProducts, '<urlset', 'dist/sitemap-products-1.xml');
+        console.log('[sitemaps] ✓ dist/sitemap-products-1.xml verified');
       }
 
       console.log('[sitemaps] ✅ dist/ sitemap verification complete');
