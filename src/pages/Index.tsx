@@ -522,51 +522,43 @@ const Index = () => {
       </SectionErrorBoundary>
 
       {/* ── Most Loved Picks — gated to not block hero LCP ───────────── */}
-      {hydrationReady && (
-        <SectionErrorBoundary sectionName="Most Loved Picks">
-          <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
-            <MostLovedPicks />
-          </Suspense>
-        </SectionErrorBoundary>
-      )}
+      <SectionErrorBoundary sectionName="Most Loved Picks">
+        <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
+          {hydrationReady ? <MostLovedPicks /> : <div style={{ minHeight: 400 }} />}
+        </Suspense>
+      </SectionErrorBoundary>
 
       {/* ── Homepage Authority Section — SEO category links ─────────── */}
       <SectionErrorBoundary sectionName="Authority Categories">
         <Suspense fallback={<div className="py-16" style={{ minHeight: 300 }} />}>
-          {hydrationReady && <HomepageAuthoritySection />}
+          {hydrationReady ? <HomepageAuthoritySection /> : <div style={{ minHeight: 300 }} />}
         </Suspense>
       </SectionErrorBoundary>
 
       {/* ── Money Hub SEO Blocks — 3 niche authority pillars ────────── */}
-      {hydrationReady && (
-        <SectionErrorBoundary sectionName="Money Hubs">
-          <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
-            <MoneyHubBlocks />
-          </Suspense>
-        </SectionErrorBoundary>
-      )}
+      <SectionErrorBoundary sectionName="Money Hubs">
+        <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
+          {hydrationReady ? <MoneyHubBlocks /> : <div style={{ minHeight: 400 }} />}
+        </Suspense>
+      </SectionErrorBoundary>
 
       {/* ── Sales Acceleration — Priority Category Spotlights ─────────── */}
-      {hydrationReady && (
-        <SectionErrorBoundary sectionName="Sales Acceleration">
-          <Suspense fallback={<div className="py-10" style={{ minHeight: 200 }} />}>
-            <SalesAccelerationBanner />
-          </Suspense>
-        </SectionErrorBoundary>
-      )}
+      <SectionErrorBoundary sectionName="Sales Acceleration">
+        <Suspense fallback={<div className="py-10" style={{ minHeight: 200 }} />}>
+          {hydrationReady ? <SalesAccelerationBanner /> : <div style={{ minHeight: 200 }} />}
+        </Suspense>
+      </SectionErrorBoundary>
 
       {/* ── Trust Badges — gated behind hydration to not block LCP ─────────── */}
-      {hydrationReady && (
-        <SectionErrorBoundary sectionName="Features">
-          <Suspense fallback={<div className="py-6 md:py-10 bg-sand/50 border-y border-border/30" style={{ minHeight: 80 }} />}>
-            <AnimatedTrustBadges />
-          </Suspense>
-        </SectionErrorBoundary>
-      )}
+      <SectionErrorBoundary sectionName="Features">
+        <Suspense fallback={<div className="py-6 md:py-10 bg-sand/50 border-y border-border/30" style={{ minHeight: 80 }} />}>
+          {hydrationReady ? <AnimatedTrustBadges /> : <div style={{ minHeight: 80 }} />}
+        </Suspense>
+      </SectionErrorBoundary>
 
-      {/* ── Popular Guides — deferred until hydration ─────────────────── */}
-      {hydrationReady && (
-        <SectionErrorBoundary sectionName="Popular Guides">
+      {/* ── Popular Guides — deferred until hydration, reserve space for CLS ── */}
+      <SectionErrorBoundary sectionName="Popular Guides">
+        {hydrationReady ? (
           <section className="py-20 bg-sand/30">
             <div className="container px-4 md:px-6">
               <FadeInView className="text-center mb-12">
@@ -581,7 +573,7 @@ const Index = () => {
                     slug: 'best-cat-trees-large-cats-2026',
                     title: 'Best Cat Trees for Large Cats (2026)',
                     desc: 'Heavy-duty trees rated for 25+ lbs. Maine Coon & Ragdoll approved.',
-                    imageLoader: guideImageLoaders['best-cat-litter-box-2026'], // fallback image
+                    imageLoader: guideImageLoaders['best-cat-litter-box-2026'],
                   },
                   {
                     slug: 'best-cat-litter-box-2026',
@@ -593,7 +585,7 @@ const Index = () => {
                     slug: 'self-cleaning-litter-box-worth-it',
                     title: 'Are Self-Cleaning Litter Boxes Worth It?',
                     desc: 'Honest cost breakdown, pros & cons, and who should buy one.',
-                    imageLoader: guideImageLoaders['best-cat-litter-box-furniture-enclosures-2026'], // fallback image
+                    imageLoader: guideImageLoaders['best-cat-litter-box-furniture-enclosures-2026'],
                   },
                 ]).map((guide) => (
                   <div key={guide.slug}>
@@ -633,19 +625,21 @@ const Index = () => {
               </div>
             </div>
           </section>
-        </SectionErrorBoundary>
-      )}
+        ) : (
+          <div style={{ minHeight: 500 }} />
+        )}
+      </SectionErrorBoundary>
 
       {/* ── Bestsellers — lazy + gated ──────────────────────────────────── */}
       <SectionErrorBoundary sectionName="Bestsellers">
         <Suspense fallback={<div className="py-20" style={{ minHeight: 400 }} />}>
-          {hydrationReady && <BestsellersSection />}
+          {hydrationReady ? <BestsellersSection /> : <div style={{ minHeight: 400 }} />}
         </Suspense>
       </SectionErrorBoundary>
 
       {/* ── Categories — deferred ─────────────────────────────────────── */}
-      {hydrationReady && (
       <SectionErrorBoundary sectionName="Categories">
+        {hydrationReady ? (
         <section id="categories" className="py-20">
           <div className="container px-4 md:px-6">
             <FadeInView className="text-center mb-12">
@@ -699,12 +693,14 @@ const Index = () => {
             )}
           </div>
         </section>
+        ) : (
+          <div style={{ minHeight: 400 }} />
+        )}
       </SectionErrorBoundary>
-      )}
 
       {/* ── Featured Products — gated behind hydration ────────────────── */}
-      {hydrationReady && (
       <SectionErrorBoundary sectionName="Featured Products">
+        {hydrationReady ? (
         <section className="py-20 bg-sand/40">
           <div className="container px-4 md:px-6">
             <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
@@ -760,12 +756,14 @@ const Index = () => {
             )}
           </div>
         </section>
+        ) : (
+          <div style={{ minHeight: 400 }} />
+        )}
       </SectionErrorBoundary>
-      )}
 
       {/* ── Why Choose GetPawsy — Luxury Positioning ──────────────────── */}
-      {hydrationReady && (
       <SectionErrorBoundary sectionName="Why Choose">
+        {hydrationReady ? (
         <section className="py-20 bg-sand/30">
           <div className="container px-4 md:px-6">
             <FadeInView className="text-center mb-14">
@@ -801,13 +799,15 @@ const Index = () => {
             </FadeInView>
           </div>
         </section>
+        ) : (
+          <div style={{ minHeight: 300 }} />
+        )}
       </SectionErrorBoundary>
-      )}
 
       {/* ── Revenue Niches — fully lazy + gated ─────────────────────────── */}
       <SectionErrorBoundary sectionName="Revenue Niches">
         <Suspense fallback={<div className="py-20" style={{ minHeight: 400 }} />}>
-          {hydrationReady && <PremiumNicheGrid />}
+          {hydrationReady ? <PremiumNicheGrid /> : <div style={{ minHeight: 400 }} />}
         </Suspense>
       </SectionErrorBoundary>
 
@@ -853,8 +853,8 @@ const Index = () => {
       )}
 
       {/* ── Expert Guides — deferred ───────────────────────────────────── */}
-      {hydrationReady && (
       <SectionErrorBoundary sectionName="Expert Guides">
+        {hydrationReady ? (
         <section className="py-20 bg-muted/30">
           <div className="container px-4 md:px-6">
             <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
@@ -913,12 +913,14 @@ const Index = () => {
             </FadeInView>
           </div>
         </section>
+        ) : (
+          <div style={{ minHeight: 500 }} />
+        )}
       </SectionErrorBoundary>
-      )}
 
       {/* ── Newsletter CTA — deferred ────────────────────────────────────── */}
-      {hydrationReady && (
       <SectionErrorBoundary sectionName="Newsletter">
+        {hydrationReady ? (
         <section className="py-20">
           <div className="container px-4 md:px-6">
             <FadeInView className="relative overflow-hidden rounded-3xl gradient-warm p-10 md:p-16 text-center">
@@ -958,8 +960,10 @@ const Index = () => {
             </FadeInView>
           </div>
         </section>
+        ) : (
+          <div style={{ minHeight: 300 }} />
+        )}
       </SectionErrorBoundary>
-      )}
     </Layout>
   );
 };

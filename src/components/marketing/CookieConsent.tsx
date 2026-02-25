@@ -120,8 +120,8 @@ export const CookieConsent = () => {
           data-testid="cookie-banner"
           data-cwvnolcp="true"
         >
-          {/* max-w-md + max-h-[18vh] on mobile keeps visual area smaller than H1 so banner can't win LCP */}
-          <div className="max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-xl overflow-hidden max-h-[18vh] sm:max-h-none overflow-y-auto">
+          {/* Fixed min-height for stable CLS; no max-h constraint to avoid reflow */}
+          <div className="max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-xl overflow-hidden">
             <div className="p-4 md:p-6">
               <div className="flex items-start gap-4">
                 <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 flex-shrink-0">
