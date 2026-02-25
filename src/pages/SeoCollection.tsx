@@ -2,6 +2,7 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
+import { getCollectionConfig, scoreProductForCollection, scoreProductFallback } from '@/config/collectionMap';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -241,17 +242,13 @@ const SeoCollection = () => {
     enabled: !!slug,
   });
 
-  // Fetch matching products — keyword-first approach for accuracy
+  // Fetch matching products — resilient multi-signal matching with fallback engine
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['seo-collection-products', collection?.id],
     queryFn: async () => {
       if (!collection) return [];
 
-      const hasCategory = !!collection.product_category_filter;
-      const hasKeywords = !!collection.product_keyword_filter;
-      const keywords = hasKeywords
-        ? collection.product_keyword_filter!.split(',').map(k => k.trim().toLowerCase()).filter(Boolean)
-        : [];
+      const collectionConfig = getCollectionConfig(collection.slug);
 
       // Infer pet type from collection name/slug for cross-contamination prevention
       const collName = (collection.name + ' ' + collection.slug).toLowerCase();
@@ -277,19 +274,85 @@ const SeoCollection = () => {
         });
       };
 
-      // Relevance scoring: multi-word keywords score higher, require minimum threshold
+      // ─── STRATEGY A: Use CollectionMap (hardened multi-signal) ───
+      if (collectionConfig) {
+        // Fetch broad pool — no restrictive filters except active + not duplicate
+        const { data: pool, error } = await supabase
+          .from('products_public')
+          .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at')
+          .eq('is_active', true)
+          .eq('is_duplicate', false)
+          .limit(500);
+
+        if (error) {
+          console.error('[CollectionMap] Error fetching products:', error);
+          return [];
+        }
+
+        // Score each product using primary signals
+        let scored = (pool || [])
+          .map(p => ({
+            ...p,
+            _score: scoreProductForCollection(p, collectionConfig),
+          }))
+          .filter(p => p._score > 0);
+
+        // Apply pet-type safety filter
+        scored = petTypeFilter(scored);
+
+        // ─── FALLBACK: If below minProducts, expand with fallback keywords ───
+        if (scored.length < collectionConfig.minProducts) {
+          console.warn(
+            `[CollectionMap] "${collection.slug}" has ${scored.length} products (min: ${collectionConfig.minProducts}). Activating fallback.`
+          );
+          const existingIds = new Set(scored.map(p => p.id));
+          const fallbackScored = (pool || [])
+            .filter(p => !existingIds.has(p.id))
+            .map(p => ({
+              ...p,
+              _score: scoreProductFallback(p, collectionConfig),
+            }))
+            .filter(p => p._score > 0);
+
+          scored = [...scored, ...petTypeFilter(fallbackScored)];
+        }
+
+        // Critical warning
+        if (scored.length < collectionConfig.criticalMin) {
+          console.error(
+            `[CollectionMap] CRITICAL: "${collection.slug}" has only ${scored.length} products (critical min: ${collectionConfig.criticalMin}). Revenue impact!`
+          );
+        }
+
+        // Sort: highest relevance first, then in-stock, then newest
+        scored.sort((a, b) => {
+          if (b._score !== a._score) return b._score - a._score;
+          const aStock = (a.stock ?? 0) > 0 ? 0 : 1;
+          const bStock = (b.stock ?? 0) > 0 ? 0 : 1;
+          if (aStock !== bStock) return aStock - bStock;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+
+        return scored.slice(0, 48) as CollectionProduct[];
+      }
+
+      // ─── STRATEGY B: Legacy DB-driven filter (for unmapped collections) ───
+      const hasCategory = !!collection.product_category_filter;
+      const hasKeywords = !!collection.product_keyword_filter;
+      const keywords = hasKeywords
+        ? collection.product_keyword_filter!.split(',').map(k => k.trim().toLowerCase()).filter(Boolean)
+        : [];
+
       const scoreProduct = (pName: string): number => {
         let score = 0;
         for (const kw of keywords) {
           if (pName.includes(kw)) {
-            // Multi-word keywords are more specific = higher score
             score += kw.includes(' ') ? 3 : 1;
           }
         }
         return score;
       };
 
-      // Strategy: If we have keywords, build an OR filter on product name
       if (hasKeywords && !hasCategory) {
         const { data, error } = await supabase
           .from('products_public')
@@ -303,15 +366,12 @@ const SeoCollection = () => {
           return [];
         }
 
-        // Score each product and require minimum relevance
         let scored = (data || [])
           .map(product => ({ ...product, _score: scoreProduct(product.name.toLowerCase()) }))
           .filter(p => p._score > 0);
 
-        // Apply pet-type safety filter
         scored = petTypeFilter(scored);
 
-        // Sort: highest relevance first, then in-stock, then newest
         scored.sort((a, b) => {
           if (b._score !== a._score) return b._score - a._score;
           const aStock = (a.stock ?? 0) > 0 ? 0 : 1;
@@ -343,7 +403,6 @@ const SeoCollection = () => {
 
       let filteredProducts = data || [];
 
-      // Apply keyword filter if both category and keywords specified
       if (hasKeywords) {
         filteredProducts = filteredProducts.filter(product => {
           const pName = product.name.toLowerCase();
@@ -351,10 +410,8 @@ const SeoCollection = () => {
         });
       }
 
-      // Apply pet-type safety filter
       filteredProducts = petTypeFilter(filteredProducts);
 
-      // Sort: in-stock first, then by created_at desc
       filteredProducts.sort((a, b) => {
         const aStock = (a.stock ?? 0) > 0 ? 0 : 1;
         const bStock = (b.stock ?? 0) > 0 ? 0 : 1;
