@@ -32,9 +32,11 @@ export async function validateCollections(): Promise<CollectionHealthReport> {
   // Fetch product pool once
   const { data: pool, error } = await supabase
     .from('products_public')
-    .select('id, name, category')
+    .select('id, name, category, price, image_url')
     .eq('is_active', true)
     .eq('is_duplicate', false)
+    .gt('price', 0)
+    .not('image_url', 'is', null)
     .limit(1000);
 
   if (error || !pool) {

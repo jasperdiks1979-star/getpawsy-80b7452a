@@ -2,7 +2,9 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
-import { getCollectionConfig, scoreProductForCollection, scoreProductFallback } from '@/config/collectionMap';
+import { getCollectionConfig } from '@/config/collectionMap';
+import { resolveCollectionProducts, type CollectionProduct } from '@/lib/collection-matching-engine';
+import { useCollectionIntegrityCheck } from '@/lib/collection-integrity';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -76,18 +78,6 @@ interface SeoCollectionData {
   product_keyword_filter: string | null;
 }
 
-interface CollectionProduct {
-  id: string;
-  name: string;
-  price: number;
-  compare_at_price: number | null;
-  image_url: string | null;
-  slug: string | null;
-  category: string | null;
-  stock: number | null;
-  created_at: string;
-  updated_at: string;
-}
 
 // Generate CollectionPage JSON-LD
 const generateCollectionJsonLd = (collection: SeoCollectionData, products: CollectionProduct[]) => ({
@@ -206,6 +196,9 @@ const RESERVED_CLUSTER_SLUGS = new Set([
 const SeoCollection = () => {
   const { slug } = useParams<{ slug: string }>();
 
+  // Dev-only integrity validator to catch broken collection mappings early
+  useCollectionIntegrityCheck(import.meta.env.DEV);
+
   // GUARD: If this slug has a dedicated static component, redirect there.
   // This prevents SeoCollection from ever intercepting cluster page routes.
   if (slug && RESERVED_CLUSTER_SLUGS.has(slug)) {
@@ -242,187 +235,27 @@ const SeoCollection = () => {
     enabled: !!slug,
   });
 
-  // Fetch matching products — resilient multi-signal matching with fallback engine
-  const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ['seo-collection-products', collection?.id],
+  // Fetch matching products — robust adaptive collection matching engine
+  const { data: productMatch, isLoading: productsLoading } = useQuery({
+    queryKey: ['seo-collection-products', collection?.id, collection?.slug],
     queryFn: async () => {
-      if (!collection) return [];
+      if (!collection) {
+        return {
+          products: [] as CollectionProduct[],
+          fallbackTriggered: false,
+          appliedFilters: [],
+          debug: { slug: '', primaryMatches: 0, fallbackMatches: 0 },
+        };
+      }
 
       const collectionConfig = getCollectionConfig(collection.slug);
-
-      // Infer pet type from collection name/slug for cross-contamination prevention
-      const collName = (collection.name + ' ' + collection.slug).toLowerCase();
-      const isDogCollection = collName.includes('dog') && !collName.includes('cat');
-      const isCatCollection = collName.includes('cat') && !collName.includes('dog');
-
-      const petTypeFilter = <T extends { name: string; category: string | null }>(items: T[]): T[] => {
-        if (!isDogCollection && !isCatCollection) return items;
-        return items.filter(p => {
-          const pName = p.name.toLowerCase();
-          const pCat = (p.category || '').toLowerCase();
-          if (isDogCollection) {
-            return !pCat.includes('cat') && !pCat.includes('bird') && !pCat.includes('hamster') &&
-                   !pCat.includes('guinea') && !pCat.includes('rabbit') &&
-                   !(pName.includes('cat ') || pName.startsWith('cat '));
-          }
-          if (isCatCollection) {
-            return !pCat.includes('dog') && !pCat.includes('bird') && !pCat.includes('hamster') &&
-                   !pCat.includes('guinea') && !pCat.includes('rabbit') &&
-                   !(pName.includes('dog ') || pName.startsWith('dog '));
-          }
-          return true;
-        });
-      };
-
-      // ─── STRATEGY A: Use CollectionMap (hardened multi-signal) ───
-      if (collectionConfig) {
-        // Fetch broad pool — no restrictive filters except active + not duplicate
-        const { data: pool, error } = await supabase
-          .from('products_public')
-          .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at')
-          .eq('is_active', true)
-          .eq('is_duplicate', false)
-          .limit(500);
-
-        if (error) {
-          console.error('[CollectionMap] Error fetching products:', error);
-          return [];
-        }
-
-        // Score each product using primary signals
-        let scored = (pool || [])
-          .map(p => ({
-            ...p,
-            _score: scoreProductForCollection(p, collectionConfig),
-          }))
-          .filter(p => p._score > 0);
-
-        // Apply pet-type safety filter
-        scored = petTypeFilter(scored);
-
-        // ─── FALLBACK: If below minProducts, expand with fallback keywords ───
-        if (scored.length < collectionConfig.minProducts) {
-          console.warn(
-            `[CollectionMap] "${collection.slug}" has ${scored.length} products (min: ${collectionConfig.minProducts}). Activating fallback.`
-          );
-          const existingIds = new Set(scored.map(p => p.id));
-          const fallbackScored = (pool || [])
-            .filter(p => !existingIds.has(p.id))
-            .map(p => ({
-              ...p,
-              _score: scoreProductFallback(p, collectionConfig),
-            }))
-            .filter(p => p._score > 0);
-
-          scored = [...scored, ...petTypeFilter(fallbackScored)];
-        }
-
-        // Critical warning
-        if (scored.length < collectionConfig.criticalMin) {
-          console.error(
-            `[CollectionMap] CRITICAL: "${collection.slug}" has only ${scored.length} products (critical min: ${collectionConfig.criticalMin}). Revenue impact!`
-          );
-        }
-
-        // Sort: highest relevance first, then in-stock, then newest
-        scored.sort((a, b) => {
-          if (b._score !== a._score) return b._score - a._score;
-          const aStock = (a.stock ?? 0) > 0 ? 0 : 1;
-          const bStock = (b.stock ?? 0) > 0 ? 0 : 1;
-          if (aStock !== bStock) return aStock - bStock;
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
-
-        return scored.slice(0, 48) as CollectionProduct[];
-      }
-
-      // ─── STRATEGY B: Legacy DB-driven filter (for unmapped collections) ───
-      const hasCategory = !!collection.product_category_filter;
-      const hasKeywords = !!collection.product_keyword_filter;
-      const keywords = hasKeywords
-        ? collection.product_keyword_filter!.split(',').map(k => k.trim().toLowerCase()).filter(Boolean)
-        : [];
-
-      const scoreProduct = (pName: string): number => {
-        let score = 0;
-        for (const kw of keywords) {
-          if (pName.includes(kw)) {
-            score += kw.includes(' ') ? 3 : 1;
-          }
-        }
-        return score;
-      };
-
-      if (hasKeywords && !hasCategory) {
-        const { data, error } = await supabase
-          .from('products_public')
-          .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at')
-          .eq('is_active', true)
-          .eq('is_duplicate', false)
-          .limit(500);
-
-        if (error) {
-          console.error('Error fetching products:', error);
-          return [];
-        }
-
-        let scored = (data || [])
-          .map(product => ({ ...product, _score: scoreProduct(product.name.toLowerCase()) }))
-          .filter(p => p._score > 0);
-
-        scored = petTypeFilter(scored);
-
-        scored.sort((a, b) => {
-          if (b._score !== a._score) return b._score - a._score;
-          const aStock = (a.stock ?? 0) > 0 ? 0 : 1;
-          const bStock = (b.stock ?? 0) > 0 ? 0 : 1;
-          if (aStock !== bStock) return aStock - bStock;
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
-
-        return scored.slice(0, 48) as CollectionProduct[];
-      }
-
-      // Category-based query
-      let query = supabase
-        .from('products_public')
-        .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at')
-        .eq('is_active', true)
-        .eq('is_duplicate', false);
-
-      if (hasCategory) {
-        query = query.ilike('category', `%${collection.product_category_filter}%`);
-      }
-
-      const { data, error } = await query.limit(hasCategory ? 200 : 48);
-
-      if (error) {
-        console.error('Error fetching products:', error);
-        return [];
-      }
-
-      let filteredProducts = data || [];
-
-      if (hasKeywords) {
-        filteredProducts = filteredProducts.filter(product => {
-          const pName = product.name.toLowerCase();
-          return keywords.some(kw => pName.includes(kw));
-        });
-      }
-
-      filteredProducts = petTypeFilter(filteredProducts);
-
-      filteredProducts.sort((a, b) => {
-        const aStock = (a.stock ?? 0) > 0 ? 0 : 1;
-        const bStock = (b.stock ?? 0) > 0 ? 0 : 1;
-        if (aStock !== bStock) return aStock - bStock;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-
-      return filteredProducts.slice(0, 48) as CollectionProduct[];
+      return resolveCollectionProducts(collection, collectionConfig);
     },
     enabled: !!collection,
   });
+
+  const products = productMatch?.products || [];
+  const showingRelatedResults = !!productMatch?.fallbackTriggered;
 
   // Fetch related blog post
   const { data: relatedBlog } = useQuery({
@@ -519,7 +352,7 @@ const SeoCollection = () => {
     );
   }
 
-  const collectionJsonLd = generateCollectionJsonLd(collection, products);
+  const collectionJsonLd = products.length > 0 ? generateCollectionJsonLd(collection, products) : null;
   const faqJsonLd = collection.faq.length > 0 ? generateFAQJsonLd(collection.faq) : null;
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(collection, parentCollection);
 
@@ -570,10 +403,11 @@ const SeoCollection = () => {
         <meta name="twitter:title" content={collection.meta_title || collection.name} />
         <meta name="twitter:description" content={collection.meta_description || collection.seo_intro.substring(0, 155)} />
         
-        {/* Structured Data */}
-        <script type="application/ld+json">
-          {JSON.stringify(collectionJsonLd)}
-        </script>
+        {collectionJsonLd && (
+          <script type="application/ld+json">
+            {JSON.stringify(collectionJsonLd)}
+          </script>
+        )}
         <script type="application/ld+json">
           {JSON.stringify(breadcrumbJsonLd)}
         </script>
@@ -693,6 +527,12 @@ const SeoCollection = () => {
             </span>
           </div>
 
+          {showingRelatedResults && (
+            <div className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
+              Showing related results
+            </div>
+          )}
+
           {productsLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {[...Array(8)].map((_, i) => (
@@ -727,7 +567,7 @@ const SeoCollection = () => {
             <div className="text-center py-12 bg-muted/30 rounded-2xl">
               <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                Products coming soon! Check back later.
+                Showing related results for this collection.
               </p>
               <Button asChild className="mt-4">
                 <Link to="/products">Browse All Products</Link>
