@@ -878,7 +878,7 @@ const Index = () => {
               {[
                 { slug: 'best-cat-litter-box-2026', badge: 'Cornerstone Guide', desc: '12 tested picks for odor control, large cats & multi-cat homes — with pros & cons.' },
                 { slug: 'best-cat-trees-2026', badge: 'Cornerstone Guide', desc: '9 cat trees tested for stability, enrichment & value. Large cats, budget picks & condos vs trees.' },
-                { slug: 'cat-condo-vs-cat-tree-difference', badge: 'Comparison Guide', desc: 'Cat condo vs cat tree: size, cost, features compared. Which is best for your space?' },
+                { slug: 'best-cat-trees-large-cats-2026', badge: 'Stability Guide', desc: '7 most stable cat trees for large & heavy cats. Weight capacity tested, Maine Coon approved.' },
               ].map((guide) => (
                 <Link
                   key={guide.slug}
