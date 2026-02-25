@@ -12,7 +12,7 @@ const WelcomePopup = lazy(() => import('../marketing/WelcomePopup').then(m => ({
 const ExitIntentPopup = lazy(() => import('../marketing/ExitIntentPopup').then(m => ({ default: m.ExitIntentPopup })).catch(() => ({ default: () => null })));
 const SlowFeederLeadMagnet = lazy(() => import('../marketing/SlowFeederLeadMagnet').then(m => ({ default: m.SlowFeederLeadMagnet })).catch(() => ({ default: () => null })));
 const CookieConsent = lazy(() => import('../marketing/CookieConsent').then(m => ({ default: m.CookieConsent })).catch(() => ({ default: () => null })));
-const LiveVisitorBadge = lazy(() => import('../admin/LiveVisitorBadge').then(m => ({ default: m.LiveVisitorBadge })).catch(() => ({ default: () => null })));
+// LiveVisitorBadge removed from storefront — admin-only widget, was causing bundle leakage
 const ChatWidgetWrapper = lazy(() => import('../chat/ChatWidgetWrapper').then(m => ({ default: m.ChatWidgetWrapper })).catch(() => ({ default: () => null })));
 
 interface LayoutProps {
@@ -89,7 +89,6 @@ export const Layout = ({ children }: LayoutProps) => {
       {widgetsReady && (
         <MarketingErrorBoundary>
           <Suspense fallback={null}>
-            <LiveVisitorBadge />
             <WelcomePopup />
             <ExitIntentPopup />
             <SlowFeederLeadMagnet />
