@@ -56,6 +56,8 @@ import { ProductBundleUpsell } from '@/components/products/ProductBundleUpsell';
 import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
 import { ProductUseCases } from '@/components/products/ProductUseCases';
 import { CatTreeAuthorityBadges } from '@/components/products/CatTreeAuthorityBadges';
+import { PriceAnchoringSection } from '@/components/products/PriceAnchoringSection';
+import { FreeShippingBar } from '@/components/products/FreeShippingBar';
 import { ProductComparisonTable } from '@/components/products/ProductComparisonTable';
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { useGuidesList } from '@/hooks/useGuides';
@@ -941,6 +943,13 @@ const ProductDetail = () => {
               </p>
             </div>
 
+            {/* Price Anchoring & Investment Reframe — luxury positioning */}
+            <PriceAnchoringSection
+              productName={safeString(product.name)}
+              category={product.category}
+              price={Number(product.price)}
+            />
+
             {/* Why Pet Parents Choose This - Benefit-driven scannable section */}
             <WhyPetParentsLoveThis 
               productName={product.name} 
@@ -950,11 +959,14 @@ const ProductDetail = () => {
             {/* Hero Product Conversion Boost — Who is this for / FAQ / urgency */}
             {product.slug && <HeroProductBoost productSlug={product.slug} />}
 
+            {/* Free Shipping Progress Bar */}
+            <FreeShippingBar previewAmount={Number(product.price)} />
+
             {/* Stock Status - Simple, no quantity pressure */}
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${inStock ? 'bg-success' : 'bg-destructive'}`} />
               <span className="font-medium text-foreground">
-                {inStock ? 'In Stock' : 'Out of Stock'}
+                {inStock ? 'In Stock — Ships within 24 hours from US warehouse' : 'Out of Stock'}
               </span>
             </div>
 
