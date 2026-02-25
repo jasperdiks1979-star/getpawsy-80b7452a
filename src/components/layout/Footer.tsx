@@ -195,12 +195,10 @@ export const Footer = () => {
     ],
   };
 
-  const socialLinks = [
-    { icon: Instagram, href: 'https://instagram.com', label: 'Instagram', color: 'hover:text-pink-400' },
-    { icon: Facebook, href: 'https://facebook.com', label: 'Facebook', color: 'hover:text-blue-400' },
-    { icon: Twitter, href: 'https://twitter.com', label: 'Twitter', color: 'hover:text-sky-400' },
-    { icon: Youtube, href: 'https://youtube.com', label: 'YouTube', color: 'hover:text-red-400' },
-  ];
+  // Social links removed — generic domain links (instagram.com, facebook.com)
+  // without real brand profiles are flagged as misleading by Google.
+  // Re-add when actual GetPawsy social profiles exist.
+  const socialLinks: { icon: typeof Instagram; href: string; label: string; color: string }[] = [];
 
   return (
     <footer className="relative mt-auto w-full max-w-[100vw] overflow-x-hidden pb-safe">
