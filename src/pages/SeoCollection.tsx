@@ -61,7 +61,7 @@ import { CatTreesHubContent } from '@/components/seo/CatTreesHubContent';
 import { CollectionTrustBar } from '@/components/seo/CollectionTrustBar';
 import { CollectionMiniComparison } from '@/components/seo/CollectionMiniComparison';
 import { CollectionCROBadges, isMoneyCollection } from '@/components/seo/CollectionCROBadges';
-import { SoldCounter } from '@/components/seo/SoldCounter';
+// SoldCounter removed — fake "X sold this week" risks Google misrepresentation flags
 
 interface FAQItem {
   question: string;
@@ -566,7 +566,7 @@ const SeoCollection = () => {
                           productName={product.name}
                           productPrice={product.price}
                         />
-                        <SoldCounter productId={product.id} productPrice={product.price} />
+                        
                       </div>
                     )}
                   </div>

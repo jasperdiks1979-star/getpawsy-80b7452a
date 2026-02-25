@@ -14,7 +14,7 @@ import { HostnameGuard } from "@/components/seo/HostnameGuard";
 const LiveCheckoutWidget = lazy(() => import("@/components/admin/LiveCheckoutWidget").then(m => ({ default: m.LiveCheckoutWidget })));
 const SafePinterestTag = lazy(() => import("@/components/tracking/SafePinterestTag").then(m => ({ default: m.SafePinterestTag })));
 const SafeGlobalVisitorTracker = lazy(() => import("@/components/tracking/SafeGlobalVisitorTracker").then(m => ({ default: m.SafeGlobalVisitorTracker })));
-const RecentPurchaseNotification = lazy(() => import("@/components/social-proof/RecentPurchaseNotification").then(m => ({ default: m.RecentPurchaseNotification })));
+// RecentPurchaseNotification removed — fake geo-based purchase popups risk Google misrepresentation flags
 const InternalTrafficChip = lazy(() => import("@/components/tracking/InternalTrafficChip").then(m => ({ default: m.InternalTrafficChip })));
 import { MarketingErrorBoundary } from "@/components/error/MarketingErrorBoundary";
 import { AdminRouteGuard } from "@/components/auth/AdminRouteGuard";
@@ -328,7 +328,6 @@ const App = () => {
                     <Suspense fallback={null}>
                       <SafePinterestTag />
                       <SafeGlobalVisitorTracker />
-                      <RecentPurchaseNotification />
                     </Suspense>
                   </MarketingErrorBoundary>
                   <Suspense fallback={null}><InternalTrafficChip /></Suspense>
