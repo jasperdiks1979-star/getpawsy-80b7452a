@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ArrowRight, Package } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+// ⚡ supabase NOT imported at top-level — dynamic import keeps ~138KB off critical path
+const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { trackSearch } from '@/lib/analytics';
 
 interface Product {
@@ -33,6 +34,7 @@ export const SearchSuggestions = ({ query, onSelect, isVisible }: SearchSuggesti
 
       setIsLoading(true);
       try {
+        const supabase = await getSupabase();
         const { data, error } = await supabase
           .from('products_public')
           .select('id, name, price, image_url, category, stock')

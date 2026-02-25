@@ -12,7 +12,7 @@ const trending = getTopSprintProducts(4);
 
 export const TrendingNowStrip = () => {
   return (
-    <div className="w-full bg-accent/50 border-b border-border/50 overflow-hidden">
+    <div className="w-full bg-accent/50 border-b border-border/50 overflow-hidden" style={{ height: 36, contain: 'layout' }}>
       <div className="container px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-hide">
         <span className="flex items-center gap-1.5 text-xs font-semibold text-primary whitespace-nowrap shrink-0">
           <TrendingUp className="w-3.5 h-3.5" />

@@ -1,7 +1,7 @@
-# GetPawsy Performance Baseline — Phase 0
+# GetPawsy Performance Baseline — Phase 2
 
 **Date**: 2026-02-25
-**Build**: phase1-cwv-safe
+**Build**: phase2-cwv-perf
 
 ## Bundle Leakage Audit (Phase 1 findings)
 
@@ -40,14 +40,23 @@
 6. `Navbar` + `Footer` (via Layout, eagerly imported)
 7. Marketing widgets deferred 5s / interaction / grid paint
 
-### Known Bottlenecks (To Address in Phase 2)
+### Known Bottlenecks (To Address in Phase 3)
 
 1. **JS Payload**: ~50+ admin lazy routes still defined in App.tsx — each `lazyWithRetry()` call is trivial but the route definitions add ~2KB parsed JS. Consider route config array.
-2. **Footer DOM**: 100+ links in footer — large DOM on every page. Consider virtualizing or collapsing on mobile.
+2. **framer-motion**: Still used in 60+ files (product pages, about, contact, etc.) — deferred/lazy but adds ~60KB gzip per chunk that uses it. Consider CSS animation replacements for remaining files.
 3. **SeoPageWrappers**: Eagerly imported in App.tsx line 268 — pulls in `SeoPillarPage` and `SeoIntentPage` synchronously via wrapper components.
-4. **Image payload**: Hero + product grid images need srcset/sizes audit.
+4. **Image payload**: Product grid images from CJ dropshipping have no CDN optimization (PROVIDER=none). Enable Cloudinary/Imgix for responsive delivery.
 5. **3rd-party**: Pinterest tag, visitor tracker, chat widget — all deferred but still load.
+
+## Phase 2 Changes (2026-02-25)
+
+| Change | File(s) | Impact |
+|---|---|---|
+| CookieConsent: replaced framer-motion with CSS transitions | `CookieConsent.tsx` | ~60KB gzip saved from cookie banner chunk |
+| SearchSuggestions: deferred supabase import | `SearchSuggestions.tsx` | ~138KB off search chunk critical path |
+| TrendingNowStrip: fixed height for CLS prevention | `TrendingNowStrip.tsx` | Eliminates CLS from trending strip |
+| Footer: collapsible sections on mobile | `Footer.tsx` | ~80 fewer DOM nodes on mobile initial render |
 
 ## Conclusion
 
-**Primary bottleneck**: Admin code leaking into storefront bundle (fixed). Secondary: large JS route table + footer DOM + image payload.
+**Primary bottleneck**: Admin code leaking into storefront bundle (fixed Phase 1). Phase 2 removed framer-motion from cookie banner, deferred supabase in search, and reduced footer DOM on mobile. Remaining: framer-motion in product pages + image CDN optimization.
