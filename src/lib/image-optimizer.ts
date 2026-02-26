@@ -11,18 +11,31 @@
 
 type ImageProvider = 'cloudinary' | 'imgix' | 'none';
 
-// Read from env at module level — Vite inlines these at build time
-// Defaults to Cloudinary with GetPawsy cloud name when env vars aren't set
-const PROVIDER: ImageProvider = (import.meta.env.VITE_IMAGE_OPTIMIZER_PROVIDER as ImageProvider) || 'cloudinary';
-const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dlkqycfzn';
-const IMGIX_DOMAIN = import.meta.env.VITE_IMGIX_DOMAIN || '';
-
 interface ImageOptions {
   w?: number;
   h?: number;
   q?: number | 'auto';  // quality 1-100 or 'auto' for CDN auto-quality
   fmt?: 'auto' | 'webp' | 'avif';
   fit?: 'cover' | 'contain' | 'fill';
+}
+
+/**
+ * Lazy-evaluated provider config.
+ * Uses a getter so HMR picks up changes and env vars resolve correctly.
+ * Defaults to Cloudinary (dlkqycfzn) when no env var is set.
+ */
+function getProvider(): ImageProvider {
+  const env = import.meta.env.VITE_IMAGE_OPTIMIZER_PROVIDER;
+  if (env === 'none' || env === 'imgix' || env === 'cloudinary') return env;
+  return 'cloudinary'; // Default: always use Cloudinary
+}
+
+function getCloudinaryCloud(): string {
+  return import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dlkqycfzn';
+}
+
+function getImgixDomain(): string {
+  return import.meta.env.VITE_IMGIX_DOMAIN || '';
 }
 
 /** Normalize messy image URLs (trim whitespace, fix protocol, etc.) */
@@ -35,28 +48,42 @@ export function normalizeImageUrl(url: string | null | undefined): string {
   return trimmed;
 }
 
+/**
+ * Guard: only proxy absolute http(s) URLs through Cloudinary.
+ * Local assets (/foo.png, data:, blob:) are returned as-is.
+ */
+function isRemoteUrl(url: string): boolean {
+  return url.startsWith('http://') || url.startsWith('https://');
+}
+
 /** Build an optimized image URL through the configured provider */
 export function buildOptimizedImageUrl(rawUrl: string, opts: ImageOptions = {}): string {
   const url = normalizeImageUrl(rawUrl);
   if (url === '/placeholder.svg') return url;
   
+  // Only proxy remote URLs — local assets stay as-is
+  if (!isRemoteUrl(url)) return url;
+  
   const { w, h, q = 'auto', fmt = 'auto', fit = 'cover' } = opts;
+  const provider = getProvider();
 
-  switch (PROVIDER) {
+  switch (provider) {
     case 'cloudinary': {
-      if (!CLOUDINARY_CLOUD) return url;
+      const cloud = getCloudinaryCloud();
+      if (!cloud) return url;
       const transforms: string[] = [];
       if (w) transforms.push(`w_${w}`);
       if (h) transforms.push(`h_${h}`);
       transforms.push(`q_${q}`);
       transforms.push(`f_${fmt === 'auto' ? 'auto' : fmt}`);
       transforms.push(`c_${fit === 'cover' ? 'fill' : fit === 'contain' ? 'fit' : 'scale'}`);
-      // Cloudinary fetch API expects the raw URL (not encoded)
-      return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${transforms.join(',')}/${url}`;
+      // Cloudinary fetch API: raw URL after the transforms (no encoding needed)
+      return `https://res.cloudinary.com/${cloud}/image/fetch/${transforms.join(',')}/${url}`;
     }
 
     case 'imgix': {
-      if (!IMGIX_DOMAIN) return url;
+      const domain = getImgixDomain();
+      if (!domain) return url;
       const params = new URLSearchParams();
       if (w) params.set('w', String(w));
       if (h) params.set('h', String(h));
@@ -65,7 +92,7 @@ export function buildOptimizedImageUrl(rawUrl: string, opts: ImageOptions = {}):
       if (fmt !== 'auto') params.set('fm', fmt);
       params.set('fit', fit === 'cover' ? 'crop' : fit === 'contain' ? 'clip' : 'fill');
       const encoded = encodeURIComponent(url);
-      return `https://${IMGIX_DOMAIN}/${encoded}?${params.toString()}`;
+      return `https://${domain}/${encoded}?${params.toString()}`;
     }
 
     default:
@@ -82,11 +109,10 @@ export function buildOptimizedSrcSet(
 ): string {
   const url = normalizeImageUrl(rawUrl);
   if (url === '/placeholder.svg') return '';
+  if (!isRemoteUrl(url)) return '';
   
-  // If no provider, still generate srcSet if the URL supports width params
-  if (PROVIDER === 'none') {
-    // For CJ dropshipping images, they don't support width params
-    // Return empty srcSet — browser will use src attribute
+  const provider = getProvider();
+  if (provider === 'none') {
     return '';
   }
 
