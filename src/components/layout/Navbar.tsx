@@ -413,7 +413,7 @@ export const Navbar = () => {
               className="flex items-center justify-center w-11 h-11 rounded-2xl overflow-hidden shadow-soft transition-transform duration-200 hover:scale-105 hover:-rotate-[5deg] active:scale-95"
               aria-hidden="true"
             >
-              <img src={logoIcon} alt="" className="w-full h-full object-cover" />
+              <img src={logoIcon} alt="" width={44} height={44} className="w-full h-full object-cover" />
             </div>
             <span className="font-display text-foreground text-xl sm:text-2xl" aria-hidden="true">
               Get<span className="text-primary">Pawsy</span>

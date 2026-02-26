@@ -359,12 +359,12 @@ const Index = () => {
       {/* ── HERO — zero JS animation, instant paint ─────────────────────── */}
       <section
         className="hero-lcp-section relative overflow-hidden flex items-center"
-        style={{ minHeight: '85vh', contain: 'layout style' }}
+        style={{ minHeight: 'calc(85vh - 148px)', contain: 'layout style' }}
       >
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
           <img
-            src="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp"
-            srcSet="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 600w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_900,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 900w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 1200w"
+            src="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp"
+            srcSet="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 600w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_900%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 900w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 1200w"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px"
             alt="Premium cat trees and indoor cat furniture for large breeds"
             width={1200}
