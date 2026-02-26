@@ -133,7 +133,7 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
             !priority && 'transition-opacity duration-200',
             className
           )}
-          style={{ contentVisibility: 'auto' }}
+          style={priority ? undefined : { contentVisibility: 'auto' }}
         />
       )}
     </div>
