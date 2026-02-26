@@ -19,7 +19,7 @@ const IMGIX_DOMAIN = import.meta.env.VITE_IMGIX_DOMAIN || '';
 interface ImageOptions {
   w?: number;
   h?: number;
-  q?: number;       // quality 1-100
+  q?: number | 'auto';  // quality 1-100 or 'auto' for CDN auto-quality
   fmt?: 'auto' | 'webp' | 'avif';
   fit?: 'cover' | 'contain' | 'fill';
 }
@@ -39,7 +39,7 @@ export function buildOptimizedImageUrl(rawUrl: string, opts: ImageOptions = {}):
   const url = normalizeImageUrl(rawUrl);
   if (url === '/placeholder.svg') return url;
   
-  const { w, h, q = 80, fmt = 'auto', fit = 'cover' } = opts;
+  const { w, h, q = 'auto', fmt = 'auto', fit = 'cover' } = opts;
 
   switch (PROVIDER) {
     case 'cloudinary': {
