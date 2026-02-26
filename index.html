@@ -83,13 +83,12 @@
       to prevent "Cannot access uninitialized variable" TDZ errors on iOS Safari.
     -->
 
-    <!-- Preload LCP hero image — Cloudinary CDN with auto format/quality -->
+    <!-- Preload LCP hero image — single href (no imagesrcset to avoid comma parsing issues) -->
     <link rel="preload" as="image" fetchpriority="high"
-      imagesrcset="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 600w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_900,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 900w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 1200w"
-      imagesizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px">
+      href="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp">
     <!-- Inline critical hero layout to guarantee paint before CSS parse -->
     <style>
-      .hero-lcp-section { position:relative; overflow:hidden; display:flex; align-items:center; min-height:85vh; contain:layout style; content-visibility:visible; }
+      .hero-lcp-section { position:relative; overflow:hidden; display:flex; align-items:center; min-height:calc(85vh - 148px); contain:layout style; content-visibility:visible; }
       .hero-lcp-img { width:100%; height:100%; object-fit:cover; object-position:center; aspect-ratio:16/9; }
       /* Prevent CLS from cookie banner — ensure it never pushes content */
       [data-testid="cookie-banner"] { contain:layout; }
@@ -154,7 +153,7 @@
       h1, h2, h3, h4, h5, h6 { font-family: 'Playfair Display', 'Playfair Fallback', Georgia, serif; }
       .skeleton-pulse { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: pulse 1.5s infinite; }
       @keyframes pulse { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-      img { content-visibility: auto; }
+      img[data-defer-visibility="true"] { content-visibility: auto; }
       #boot-recovery.active { display:flex; }
       /* Hide static hero shell once React mounts (replaced by React tree) */
       #static-hero-shell { will-change:contents; }
@@ -240,38 +239,44 @@
         React's createRoot().render() replaces #root's children, so this vanishes
         automatically once the app mounts.
       -->
-      <div id="static-hero-shell" style="position:relative;overflow:hidden;display:flex;align-items:center;min-height:85vh;contain:layout style">
-        <!-- Hero image — matches Index.tsx hero exactly -->
-        <div style="position:absolute;inset:0;z-index:0">
-          <img
-            src="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp"
-            srcset="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 600w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_900,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 900w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 1200w"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px"
-            alt="Premium cat trees and indoor cat furniture for large breeds"
-            width="1200"
-            height="675"
-            fetchpriority="high"
-            decoding="async"
-            style="width:100%;height:100%;object-fit:cover;object-position:center;aspect-ratio:16/9"
-          />
-          <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(255,253,248,0.90),rgba(255,253,248,0.60),rgba(255,253,248,0.1));pointer-events:none"></div>
-        </div>
-        <div style="position:relative;z-index:10;padding:64px 24px;max-width:1280px;margin:0 auto;width:100%">
-          <div style="max-width:672px">
-            <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.2em;color:#c2501f;opacity:0.8;margin:0 0 12px">Curated for Modern Cat Homes</p>
-            <h1 style="font-family:'Playfair Display','Playfair Fallback',Georgia,serif;font-size:clamp(2.25rem,5vw,3.75rem);font-weight:700;line-height:1.05;letter-spacing:-0.015em;color:#1a1a1a;margin:0 0 24px">
-              Premium Indoor Cat Living<br/><span style="color:#c2501f">Luxury Cat Trees & Smart Litter Solutions</span>
-            </h1>
-            <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:clamp(1rem,2vw,1.25rem);color:#6b7280;max-width:512px;line-height:1.6;margin:0 0 32px">
-              Engineered stability. Designed elegance. Built for modern cat homes. Heavy-duty furniture rated for 25+ lbs — smart litter solutions that just work.
-            </p>
-            <div style="display:flex;flex-wrap:wrap;gap:16px;position:relative;z-index:50;pointer-events:auto">
-              <a href="/collections/cat-trees-and-condos" style="display:inline-flex;align-items:center;gap:8px;padding:12px 40px;border-radius:9999px;background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,0.15);touch-action:manipulation;-webkit-tap-highlight-color:transparent">
-                Shop Cat Trees →
-              </a>
-              <a href="/collections/best-cat-litter-boxes" style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;border-radius:9999px;background:transparent;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;border:1px solid #d1d5db;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
-                Cat Litter Boxes
-              </a>
+      <div id="static-hero-shell" style="contain:layout style;overflow:hidden">
+        <!-- Reserve space for promo banner (40px) + navbar (72px) + trending strip (36px) = 148px -->
+        <div style="height:40px" aria-hidden="true"></div>
+        <div style="height:72px" aria-hidden="true"></div>
+        <div style="height:36px" aria-hidden="true"></div>
+        <!-- Hero section — geometry matches hydrated React layout -->
+        <div style="position:relative;overflow:hidden;display:flex;align-items:center;min-height:calc(85vh - 148px)">
+          <div style="position:absolute;inset:0;z-index:0">
+            <img
+              src="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp"
+              srcset="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 600w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_900%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 900w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 1200w"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px"
+              alt="Premium cat trees and indoor cat furniture for large breeds"
+              width="1200"
+              height="675"
+              fetchpriority="high"
+              decoding="async"
+              style="width:100%;height:100%;object-fit:cover;object-position:center;aspect-ratio:16/9"
+            />
+            <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(255,253,248,0.90),rgba(255,253,248,0.60),rgba(255,253,248,0.1));pointer-events:none"></div>
+          </div>
+          <div style="position:relative;z-index:10;padding:64px 24px;max-width:1280px;margin:0 auto;width:100%">
+            <div style="max-width:672px">
+              <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.2em;color:#c2501f;opacity:0.8;margin:0 0 12px">Curated for Modern Cat Homes</p>
+              <h1 style="font-family:'Playfair Display','Playfair Fallback',Georgia,serif;font-size:clamp(2.25rem,5vw,3.75rem);font-weight:700;line-height:1.05;letter-spacing:-0.015em;color:#1a1a1a;margin:0 0 24px">
+                Premium Indoor Cat Living<br/><span style="color:#c2501f">Luxury Cat Trees & Smart Litter Solutions</span>
+              </h1>
+              <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:clamp(1rem,2vw,1.25rem);color:#6b7280;max-width:512px;line-height:1.6;margin:0 0 32px">
+                Engineered stability. Designed elegance. Built for modern cat homes. Heavy-duty furniture rated for 25+ lbs — smart litter solutions that just work.
+              </p>
+              <div style="display:flex;flex-wrap:wrap;gap:16px;position:relative;z-index:50;pointer-events:auto">
+                <a href="/collections/cat-trees-and-condos" style="display:inline-flex;align-items:center;gap:8px;padding:12px 40px;border-radius:9999px;background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,0.15);touch-action:manipulation;-webkit-tap-highlight-color:transparent">
+                  Shop Cat Trees →
+                </a>
+                <a href="/collections/best-cat-litter-boxes" style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;border-radius:9999px;background:transparent;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;border:1px solid #d1d5db;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
+                  Cat Litter Boxes
+                </a>
+              </div>
             </div>
           </div>
         </div>
