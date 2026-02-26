@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import buildIdPlugin from "./vite-plugin-build-id";
 import sitemapsPlugin from "./vite-plugin-sitemaps";
+import clsBuildGuard from "./vite-plugin-cls-build-guard";
 
 export default defineConfig(({ mode }) => ({
   server: {
@@ -98,6 +99,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     buildIdPlugin(),
     sitemapsPlugin(),
+    clsBuildGuard(),
   ].filter(Boolean),
   resolve: {
     alias: {

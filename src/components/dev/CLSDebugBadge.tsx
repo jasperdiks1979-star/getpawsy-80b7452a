@@ -1,5 +1,5 @@
 /**
- * CLSDebugBadge — live CLS readout for dev/preview.
+ * CLSDebugBadge — live CLS readout + geometry mismatch alert for dev/preview.
  *
  * - Fixed bottom-left, tiny, non-intrusive
  * - pointer-events: none → can't accidentally click it
@@ -14,10 +14,13 @@ const HARD = parseFloat(import.meta.env.VITE_CLS_HARD_THRESHOLD || '0.12');
 
 export function CLSDebugBadge() {
   const [cls, setCls] = useState(0);
+  const [geoMismatch, setGeoMismatch] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCls(getCLS());
+      const guard = (window as any).__CLS_GUARD__;
+      if (guard?.geometryMismatch) setGeoMismatch(true);
     }, 500);
     return () => clearInterval(interval);
   }, []);
@@ -46,6 +49,11 @@ export function CLSDebugBadge() {
       aria-hidden="true"
     >
       CLS: {cls.toFixed(4)}
+      {geoMismatch && (
+        <span style={{ display: 'block', fontSize: 9, color: '#fbbf24' }}>
+          ⚠ GEOMETRY SHIFT DETECTED
+        </span>
+      )}
     </div>
   );
 }
