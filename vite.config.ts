@@ -5,6 +5,7 @@ import { componentTagger } from "lovable-tagger";
 import buildIdPlugin from "./vite-plugin-build-id";
 import sitemapsPlugin from "./vite-plugin-sitemaps";
 import clsBuildGuard from "./vite-plugin-cls-build-guard";
+import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig(({ mode }) => ({
   server: {
@@ -100,6 +101,12 @@ export default defineConfig(({ mode }) => ({
     buildIdPlugin(),
     sitemapsPlugin(),
     clsBuildGuard(),
+    mode === "production" && visualizer({
+      filename: 'audits/bundle-report.html',
+      gzipSize: true,
+      brotliSize: true,
+      open: false,
+    }),
   ].filter(Boolean),
   resolve: {
     alias: {
