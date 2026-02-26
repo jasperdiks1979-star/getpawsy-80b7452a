@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowRight, Grid3X3, BookOpen, ShoppingBag } from 'lucide-react';
+import { buildOptimizedImageUrl } from '@/lib/image-optimizer';
 
 interface ExploreMoreCategoryProps {
   category: string | null;
@@ -146,7 +147,7 @@ export function ExploreMoreCategory({ category, currentProductId }: ExploreMoreC
           >
             {product.image_url && (
               <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
-                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
+                <img src={buildOptimizedImageUrl(product.image_url, { w: 128, q: 'auto' })} alt={product.name} width={64} height={64} className="w-full h-full object-cover" loading="lazy" decoding="async" />
               </div>
             )}
             <div className="min-w-0">

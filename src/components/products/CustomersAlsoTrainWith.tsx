@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { trackCrossSellImpression, trackCrossSellClick, trackCrossSellAddToCart } from '@/lib/analytics';
 import { useRef, useEffect } from 'react';
+import { buildOptimizedImageUrl } from '@/lib/image-optimizer';
 
 const TRAINING_CATEGORIES = [
   'dog-harness', 'dog-leash', 'dog-training', 'training-treats',
@@ -104,10 +105,13 @@ export function CustomersAlsoTrainWith({ productId, productName, productCategory
             >
               <div className="aspect-square overflow-hidden bg-muted/30">
                 <img
-                  src={product.image_url || '/placeholder.svg'}
+                  src={buildOptimizedImageUrl(product.image_url || '/placeholder.svg', { w: 320, q: 'auto' })}
                   alt={product.name}
+                  width={320}
+                  height={320}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                   loading="lazy"
+                  decoding="async"
                 />
               </div>
             </Link>

@@ -12,8 +12,9 @@
 type ImageProvider = 'cloudinary' | 'imgix' | 'none';
 
 // Read from env at module level — Vite inlines these at build time
-const PROVIDER: ImageProvider = (import.meta.env.VITE_IMAGE_OPTIMIZER_PROVIDER as ImageProvider) || 'none';
-const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '';
+// Defaults to Cloudinary with GetPawsy cloud name when env vars aren't set
+const PROVIDER: ImageProvider = (import.meta.env.VITE_IMAGE_OPTIMIZER_PROVIDER as ImageProvider) || 'cloudinary';
+const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dlkqycfzn';
 const IMGIX_DOMAIN = import.meta.env.VITE_IMGIX_DOMAIN || '';
 
 interface ImageOptions {
@@ -50,8 +51,8 @@ export function buildOptimizedImageUrl(rawUrl: string, opts: ImageOptions = {}):
       transforms.push(`q_${q}`);
       transforms.push(`f_${fmt === 'auto' ? 'auto' : fmt}`);
       transforms.push(`c_${fit === 'cover' ? 'fill' : fit === 'contain' ? 'fit' : 'scale'}`);
-      const encoded = encodeURIComponent(url);
-      return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${transforms.join(',')}/${encoded}`;
+      // Cloudinary fetch API expects the raw URL (not encoded)
+      return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${transforms.join(',')}/${url}`;
     }
 
     case 'imgix': {
