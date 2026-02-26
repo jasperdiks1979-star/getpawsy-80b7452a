@@ -43,6 +43,10 @@ if (typeof window !== 'undefined' && isCanonicalHost()) {
   normalizeUrl();
 }
 
+// === STEP 0d: CLS Guard — start monitor before React mount to catch all shifts ===
+import { initCLSGuard } from "./lib/perf/cls-guard-init";
+try { initCLSGuard(); } catch {}
+
 // === STEP 1: Install boot error handlers BEFORE anything else ===
 import {
   initBootDiagnostics,
