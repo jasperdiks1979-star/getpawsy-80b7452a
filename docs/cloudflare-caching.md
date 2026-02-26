@@ -15,9 +15,9 @@ Cloudflare caches at the edge when configured correctly.
 |---|---|---|
 | `/` (SPA fallback) | `public, max-age=0, s-maxage=28800, stale-while-revalidate=60` | `html-public` |
 | `/assets/*` (hashed) | `public, max-age=31536000, immutable` | `asset-immutable` |
+| `/robots.txt`, `/sitemap*.xml`, `/merchant-feed.xml` | `public, max-age=300, s-maxage=3600, stale-while-revalidate=60` | `seo-public` |
 | `/admin/*`, `/auth/*` | `no-store, no-cache, must-revalidate` | `auth-no-store` |
 | `/~api/*`, `/api/*` | `private, no-store` | `api-no-store` |
-| `*.xml` (sitemaps) | `no-store, max-age=0` | — |
 
 Origin does **not** set any `Set-Cookie` header on public routes.
 
@@ -29,6 +29,10 @@ The `__cf_bm` cookie is injected by **Cloudflare Bot Management / Bot Fight Mode
 2. The `Vary: Cookie` interaction fragments the cache per-visitor.
 
 **Solution:** Disable Bot Fight Mode for the site, or create a Cache Rule that forces caching despite this cookie.
+
+## Why missing Cache-Control prevents edge caching
+
+Without explicit `Cache-Control` headers from the origin, Cloudflare treats HTML responses as `DYNAMIC` (uncacheable). Even with a Cache Rule set to "Eligible for cache", Cloudflare relies on origin headers (`s-maxage`) to determine Edge TTL when configured to "Respect origin headers". Missing headers = no caching.
 
 ## Required Cloudflare Configuration
 
@@ -80,6 +84,10 @@ curl -sI https://getpawsy.pet/ | grep -iE 'cache-control|cf-cache|set-cookie|x-c
 # Second request should show CF-Cache-Status: HIT
 curl -sI https://getpawsy.pet/ | grep -i cf-cache-status
 
+# SEO files — expect s-maxage=3600, X-Cache-Debug: seo-public
+curl -sI https://getpawsy.pet/robots.txt | grep -iE 'cache-control|x-cache-debug'
+curl -sI https://getpawsy.pet/sitemap.xml | grep -iE 'cache-control|x-cache-debug'
+
 # Asset — expect immutable, CF-Cache-Status: HIT
 curl -sI https://getpawsy.pet/assets/index-abc123.js | grep -iE 'cache-control|cf-cache'
 ```
@@ -89,6 +97,7 @@ curl -sI https://getpawsy.pet/assets/index-abc123.js | grep -iE 'cache-control|c
 | URL type | 1st request | 2nd request | Notes |
 |---|---|---|---|
 | HTML (`/`) | `MISS` or `DYNAMIC` | `HIT` | Requires Cache Rule |
+| SEO (`/robots.txt`) | `MISS` | `HIT` | 1h edge TTL |
 | Asset (`/assets/*`) | `HIT` (or `MISS`) | `HIT` | Usually cached by default |
 | API (`/~api/*`) | `DYNAMIC` | `DYNAMIC` | Never cached |
 
@@ -97,3 +106,13 @@ If HTML stays `DYNAMIC` after rules are applied:
 2. Verify Origin Cache Control is ON
 3. Purge cache: Cloudflare Dashboard → Caching → Purge Everything
 4. Re-test with curl
+
+## Redirect Policy
+
+| Source | Status | Target |
+|---|---|---|
+| `www.getpawsy.pet/*` | 301 | `https://getpawsy.pet/*` |
+| `*.lovable.app/*` | 301 | `https://getpawsy.pet/*` |
+| Trailing slash (non-root) | 301 | Without trailing slash |
+
+Note: The www→apex redirect is handled at the Cloudflare edge layer. If the edge returns 302 instead of 301, update the Cloudflare Redirect Rule to use status 301 (permanent).
