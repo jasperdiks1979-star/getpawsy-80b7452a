@@ -3,6 +3,7 @@ import { getCategoryCollectionUrl } from '@/lib/category-collection-map';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { buildOptimizedImageUrl } from '@/lib/image-optimizer';
 
 interface Subcategory {
   id: string;
@@ -75,8 +76,10 @@ export const SubcategoryGrid = ({ subcategories, parentCategoryName, isLoading }
               <div className="relative aspect-square rounded-xl overflow-hidden bg-muted border border-border/50 transition-all duration-300 group-hover:border-primary/30 group-hover:shadow-lg group-hover:shadow-primary/10">
                 {subcategory.image_url ? (
                   <img
-                    src={subcategory.image_url}
+                    src={buildOptimizedImageUrl(subcategory.image_url, { w: 480, q: 'auto' })}
                     alt={subcategory.name}
+                    width={480}
+                    height={480}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
                     decoding="async"

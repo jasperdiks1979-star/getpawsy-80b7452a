@@ -8,6 +8,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useCustomersAlsoBought } from '@/hooks/useCustomersAlsoBought';
 import { toast } from 'sonner';
 import { trackCrossSellImpression, trackCrossSellClick, trackCrossSellAddToCart } from '@/lib/analytics';
+import { buildOptimizedImageUrl } from '@/lib/image-optimizer';
 
 interface CustomersAlsoBoughtProps {
   productId: string;
@@ -189,8 +190,10 @@ export const CustomersAlsoBought = ({
                 className="block aspect-square overflow-hidden"
               >
                 <img
-                  src={product.image_url || '/placeholder.svg'}
+                  src={buildOptimizedImageUrl(product.image_url || '/placeholder.svg', { w: 320, q: 'auto' })}
                   alt={product.name}
+                  width={320}
+                  height={320}
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

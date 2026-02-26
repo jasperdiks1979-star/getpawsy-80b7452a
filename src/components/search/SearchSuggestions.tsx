@@ -5,6 +5,7 @@ import { Search, ArrowRight, Package } from 'lucide-react';
 // ⚡ supabase NOT imported at top-level — dynamic import keeps ~138KB off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { trackSearch } from '@/lib/analytics';
+import { buildOptimizedImageUrl } from '@/lib/image-optimizer';
 
 interface Product {
   id: string;
@@ -94,9 +95,13 @@ export const SearchSuggestions = ({ query, onSelect, isVisible }: SearchSuggesti
                   <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
                     {product.image_url ? (
                       <img
-                        src={product.image_url}
+                        src={buildOptimizedImageUrl(product.image_url, { w: 96, q: 'auto' })}
                         alt={product.name}
+                        width={48}
+                        height={48}
                         className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <Package className="w-5 h-5 text-muted-foreground" />
