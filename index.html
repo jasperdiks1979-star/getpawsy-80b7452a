@@ -319,16 +319,11 @@
       // 1) Ensure dataLayer exists for any gtag references (prevents TDZ)
       window.dataLayer = window.dataLayer || [];
 
-      // 2) Unregister ALL service workers + clear caches on every load
+      // 2) One-shot SW cleanup — only runs if SWs exist (avoids pointless work every load)
       (function(){
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(function(regs) {
-            regs.forEach(function(r) { r.unregister(); });
-          }).catch(function(){});
-        }
-        if ('caches' in window) {
-          caches.keys().then(function(keys) {
-            keys.forEach(function(k) { caches.delete(k); });
+            if (regs.length) regs.forEach(function(r) { r.unregister(); });
           }).catch(function(){});
         }
       })();
