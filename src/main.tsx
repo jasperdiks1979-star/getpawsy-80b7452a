@@ -44,7 +44,7 @@ if (typeof window !== 'undefined' && isCanonicalHost()) {
 }
 
 // === STEP 0d: CLS Guard — start monitor before React mount to catch all shifts ===
-import { initCLSGuard, postMountCLSChecks } from "./lib/perf/cls-guard-init";
+import { initCLSGuard, postMountVitalsChecks } from "./lib/perf/cls-guard-init";
 try { initCLSGuard(); } catch {}
 
 // === STEP 1: Install boot error handlers BEFORE anything else ===
@@ -150,9 +150,9 @@ try {
   (window as any).__BOOT_OK__ = true;
   console.log("BOOT SUCCESS");
 
-  // Post-mount CLS checks (geometry, preload, image policy) — dev/preview only
-  try { postMountCLSChecks(); } catch (e) {
-    console.warn('[CLS-GUARD] Post-mount check threw (dev only):', e);
+  // Post-mount vitals checks (geometry, preload, image policy, LCP, budget) — dev/preview only
+  try { postMountVitalsChecks(); } catch (e) {
+    console.warn('[VITALS-GUARD] Post-mount check threw (dev only):', e);
   }
 
   // === STEP 5: Payload guard (dev/preview only) ===

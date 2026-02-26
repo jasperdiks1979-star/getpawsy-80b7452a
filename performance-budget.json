@@ -1,0 +1,18 @@
+{
+  "mobile": {
+    "LCP": 3000,
+    "CLS": 0.10,
+    "TBT": 300,
+    "FCP": 2000,
+    "JS_total_kb": 220,
+    "Largest_chunk_kb": 120
+  },
+  "desktop": {
+    "LCP": 2000,
+    "CLS": 0.05,
+    "TBT": 200,
+    "FCP": 1500,
+    "JS_total_kb": 300,
+    "Largest_chunk_kb": 150
+  }
+}
