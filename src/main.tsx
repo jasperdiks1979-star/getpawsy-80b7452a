@@ -1,4 +1,4 @@
-console.log("BOOT START");
+if (import.meta.env.DEV) console.log("BOOT START");
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
@@ -12,8 +12,8 @@ import { initTapDebug } from "./lib/tap-debug";
 
 // === STEP 0: Build marker + BUNDLE EXECUTION START timestamp ===
 if (typeof window !== 'undefined') {
-  (window as any).__BUILD_ID__ = 'v9-no-charts-chunk-' + Date.now().toString(36);
-  console.log('[BUILD] v9-no-charts-chunk deployed');
+  (window as any).__BUILD_ID__ = 'v10-perf-hardening-' + Date.now().toString(36);
+  if (import.meta.env.DEV) console.log('[BUILD] v10-perf-hardening deployed');
 
   // ── LCP Trace: JS bundle execution timestamp ─────────────────────────────
   // This is the FIRST LINE of the main bundle that runs — marks when V8 has
@@ -148,7 +148,7 @@ try {
   // Mark successful mount
   markMounted();
   (window as any).__BOOT_OK__ = true;
-  console.log("BOOT SUCCESS");
+  if (import.meta.env.DEV) console.log("BOOT SUCCESS");
 
   // Post-mount vitals checks (geometry, preload, image policy, LCP, budget) — dev/preview only
   try { postMountVitalsChecks(); } catch (e) {

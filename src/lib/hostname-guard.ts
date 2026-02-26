@@ -15,8 +15,7 @@ const CANONICAL_HOST = 'getpawsy.pet';
 
 export function isCanonicalHost(): boolean {
   if (typeof window === 'undefined') return true;
-  const h = window.location.hostname;
-  return h === CANONICAL_HOST || h === `www.${CANONICAL_HOST}`;
+  return window.location.hostname === CANONICAL_HOST;
 }
 
 export function isLovableAppHost(): boolean {
