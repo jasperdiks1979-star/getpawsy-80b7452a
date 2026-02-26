@@ -102,7 +102,6 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
       // Always include explicit dimensions for layout calculation
       style={{ 
         contain: 'layout',
-        contentVisibility: priority ? 'visible' : 'auto',
       }}
     >
       {/* Simple skeleton placeholder - always shown until image loads */}
@@ -133,7 +132,7 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
             !priority && 'transition-opacity duration-200',
             className
           )}
-          style={priority ? undefined : { contentVisibility: 'auto' }}
+          data-defer-visibility={priority ? undefined : 'true'}
         />
       )}
     </div>
