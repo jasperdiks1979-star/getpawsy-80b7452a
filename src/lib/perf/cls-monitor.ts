@@ -14,7 +14,7 @@ const HARD_THRESHOLD = parseFloat(import.meta.env.VITE_CLS_HARD_THRESHOLD || '0.
 
 // ── State ────────────────────────────────────────────────────────────────────
 let cls = 0;
-let entries: Array<{ value: number; time: number; sources?: string[] }> = [];
+let entries: Array<{ value: number; time: number; sources?: ShiftSource[] }> = [];
 let observer: PerformanceObserver | null = null;
 let started = false;
 
@@ -31,12 +31,28 @@ function nodeSelector(node: Node | null): string {
   return sel.slice(0, 120); // truncate
 }
 
-/** Derive source selectors from a LayoutShift entry */
-function extractSources(entry: PerformanceEntry): string[] {
+/** Source info with rect data for forensic debugging */
+export interface ShiftSource {
+  selector: string;
+  previousRect?: { x: number; y: number; width: number; height: number };
+  currentRect?: { x: number; y: number; width: number; height: number };
+}
+
+/** Derive source selectors + rects from a LayoutShift entry */
+function extractSources(entry: PerformanceEntry): ShiftSource[] {
   try {
-    const sources = (entry as any).sources as Array<{ node?: Node }> | undefined;
+    const sources = (entry as any).sources as Array<{
+      node?: Node;
+      previousRect?: DOMRectReadOnly;
+      currentRect?: DOMRectReadOnly;
+    }> | undefined;
     if (!sources?.length) return [];
-    return sources.map(s => nodeSelector(s.node));
+    return sources.map(s => {
+      const sel = nodeSelector(s.node ?? null);
+      const toRect = (r?: DOMRectReadOnly) =>
+        r ? { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) } : undefined;
+      return { selector: sel, previousRect: toRect(s.previousRect), currentRect: toRect(s.currentRect) };
+    });
   } catch {
     return [];
   }
@@ -114,9 +130,23 @@ export function startCLSMonitor(options: CLSMonitorOptions = {}): void {
             snap.entries
               .sort((a, b) => b.value - a.value)
               .slice(0, 5)
-              .map((e, i) => `  ${i + 1}. shift=${e.value.toFixed(4)} sources=[${e.sources?.join(', ') || 'n/a'}]`)
+              .map((e, i) => {
+                const srcs = e.sources?.map(s => {
+                  let info = s.selector;
+                  if (s.previousRect && s.currentRect) {
+                    info += ` [y:${s.previousRect.y}→${s.currentRect.y}]`;
+                  }
+                  return info;
+                }).join(', ') || 'n/a';
+                return `  ${i + 1}. shift=${e.value.toFixed(4)} sources=[${srcs}]`;
+              })
               .join('\n')
           );
+
+          // Expose hard fail flag for CI
+          if ((window as any).__CLS_GUARD__) {
+            (window as any).__CLS_GUARD__.hardFail = true;
+          }
 
           if (hardFail) {
             throw new Error(`[CLS-GUARD] CLS regression detected: ${cls.toFixed(4)} ≥ ${HARD_THRESHOLD}`);

@@ -1,7 +1,37 @@
 # CLS Guard — "Never Regress CLS Again"
 
-Lightweight runtime instrumentation that catches Cumulative Layout Shift regressions
-before they reach users.
+Lightweight, multi-layer guardrail system that catches Cumulative Layout Shift regressions
+before they reach users. Zero production runtime cost.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│  BUILD TIME          vite-plugin-cls-build-guard.ts  │
+│  ├─ Image provider != "none"                        │
+│  └─ Hero preload exists in index.html               │
+├─────────────────────────────────────────────────────┤
+│  BOOT TIME (before React)    cls-guard-init.ts       │
+│  ├─ Start PerformanceObserver (layout-shift)        │
+│  └─ Capture first-paint geometry rects              │
+├─────────────────────────────────────────────────────┤
+│  POST-MOUNT           postMountCLSChecks()           │
+│  ├─ Verify hydration geometry (Δ > 2px → error)     │
+│  ├─ Validate hero preload (href match, fetchpri)    │
+│  └─ Scan image policy (intrinsic size, c-v)         │
+├─────────────────────────────────────────────────────┤
+│  RUNTIME              cls-monitor.ts                 │
+│  ├─ Cumulative CLS tracking                         │
+│  ├─ Top offender forensics (selector + rects)       │
+│  └─ Threshold enforcement (soft/hard)               │
+├─────────────────────────────────────────────────────┤
+│  CI                   tests/cls.spec.ts              │
+│  ├─ Mobile viewport 390×844                         │
+│  ├─ Slow 4G throttling                              │
+│  ├─ CLS < 0.12 assertion per route                  │
+│  └─ Geometry mismatch assertion                     │
+└─────────────────────────────────────────────────────┘
+```
 
 ## Thresholds
 
@@ -26,52 +56,110 @@ In dev/preview a small fixed badge appears bottom-left showing the live CLS valu
 - 🟡 **Orange**: CLS ≥ 0.08 (soft warning)
 - 🔴 **Red**: CLS ≥ 0.12 (hard fail zone)
 
+If a hydration geometry mismatch is detected, the badge shows:
+**"⚠ GEOMETRY SHIFT DETECTED"**
+
 The badge has `pointer-events: none` and `contain: layout paint` — zero layout impact.
 
 ## Console output
 
-When CLS exceeds the soft threshold you'll see:
-
+### Soft threshold
 ```
 🟡 [CLS-GUARD] Soft threshold warning: CLS 0.0823 ≥ 0.08
 ```
 
-When CLS exceeds the hard threshold:
-
+### Hard threshold (with rect forensics)
 ```
 🔴 [CLS-GUARD] HARD THRESHOLD EXCEEDED: 0.1456 ≥ 0.12
 Route: /
 Top offenders:
-  1. shift=0.0620 sources=[div#static-hero-shell, img.hero-image]
-  2. shift=0.0340 sources=[nav.navbar]
-  3. shift=0.0280 sources=[div.trending-strip]
+  1. shift=0.0620 sources=[div#static-hero-shell [y:0→148], img.hero-image [y:200→348]]
+  2. shift=0.0340 sources=[nav.navbar [y:40→0]]
+  3. shift=0.0280 sources=[div.trending-strip [y:112→76]]
 ```
 
-## Interpreting sources
+### Hydration geometry mismatch
+```
+[CLS-GUARD] Hydration geometry mismatch:
+#static-hero-shell: top 0→148 (Δ148px)
+```
 
-Each layout-shift entry may include `sources` — DOM elements that moved.
-The monitor extracts a CSS-like selector (`tag#id.class1.class2`) for each source node.
+### Image policy violations
+```
+[CLS-GUARD] Missing intrinsic size on above-fold img: https://res.cloudinary.com/...
+[CLS-GUARD] content-visibility:auto on above-fold img: https://res.cloudinary.com/...
+```
 
-Common offenders:
-- Images without explicit width/height
-- Dynamic content inserted above the fold (banners, nav, strips)
-- Font swaps causing text reflow
-- Lazy-loaded components mounting with different dimensions
+### Preload mismatch
+```
+[CLS-GUARD] Hero preload mismatch:
+  preload: https://res.cloudinary.com/.../hero-desktop.webp
+  actual:  https://res.cloudinary.com/.../hero-mobile.webp
+```
+
+## Why hydration mismatch causes CLS spikes
+
+The static HTML shell in `index.html` renders instantly on first paint. If React's
+hydrated layout inserts elements (promo bar, navbar, trending strip) above the hero
+that weren't accounted for in the shell, everything below shifts down — a massive
+CLS burst.
+
+The geometry freeze captures element positions at first paint, then verifies they
+haven't moved after React hydration. Any vertical shift > 2px triggers an error.
+
+**Fix**: The static shell reserves exactly 148px of vertical space (40 + 72 + 36)
+with spacer divs matching the hydrated layout.
+
+## Why intrinsic image sizing is mandatory
+
+Images without explicit `width` and `height` attributes cause layout shifts when
+they load because the browser doesn't know their dimensions until the image data
+arrives. Above-the-fold images MUST have intrinsic dimensions set.
+
+Similarly, `content-visibility: auto` on above-the-fold images causes the browser
+to defer rendering, which can spike LCP and cause reflow when the image finally paints.
+
+## Build-time protection
+
+The Vite build plugin (`vite-plugin-cls-build-guard.ts`) prevents shipping:
+- `VITE_IMAGE_OPTIMIZER_PROVIDER=none` (disables CDN optimization)
+- Missing hero preload in `index.html`
+
+## CI behavior
+
+The Playwright test (`tests/cls.spec.ts`):
+- Emulates iPhone viewport (390×844)
+- Throttles to slow 4G (1.6 Mbps down, 150ms latency)
+- Navigates to `/`, `/collections`, `/cart`
+- Asserts `CLS < 0.12` on each route
+- Asserts no geometry mismatch
+
+## How to override locally
+
+```bash
+# Disable guard entirely
+VITE_CLS_GUARD_ENABLED=false npm run dev
+
+# Relax thresholds for debugging
+VITE_CLS_SOFT_THRESHOLD=0.15 VITE_CLS_HARD_THRESHOLD=0.25 npm run dev
+
+# Enable hard-fail (throws on threshold breach)
+VITE_CLS_HARD_FAIL=true npm run dev
+
+# Hide badge
+VITE_CLS_BADGE=false npm run dev
+```
 
 ## Window globals (dev/preview only)
 
 ```js
-window.__CLS__          // current CLS number
-window.__CLS_GUARD__    // { getSnapshot(), cls }
-```
-
-## Playwright CI test
-
-The test at `tests/cls.spec.ts` navigates to key routes and asserts:
-
-```js
-const cls = await page.evaluate(() => window.__CLS__);
-expect(cls).toBeLessThan(0.12);
+window.__CLS__                         // current CLS number
+window.__CLS_GUARD__.getSnapshot()     // full forensic snapshot
+window.__CLS_GUARD__.cls              // current CLS
+window.__CLS_GUARD__.hardFail         // true if hard threshold breached
+window.__CLS_GUARD__.geometryMismatch // true if hydration shifted elements
+window.__CLS_GUARD__.geometryDeltas   // array of mismatch descriptions
+window.__FIRST_GEOMETRY__             // first-paint element rects (if captured)
 ```
 
 ## Production behavior
@@ -80,4 +168,6 @@ In production builds:
 - No badge is rendered
 - No window globals are exposed
 - No console warnings unless `VITE_CLS_GUARD_ENABLED=true` is explicitly set
+- Geometry freeze, preload validator, and image scanner are tree-shaken
+- Build guard runs at compile time only
 - Zero bytes added to the critical path
