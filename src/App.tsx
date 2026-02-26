@@ -40,9 +40,9 @@ const initLegacyLinkGuard = () => import("@/lib/legacy-link-guard").then(m => m.
 const initLegacyFetchGuard = () => import("@/lib/legacy-link-guard").then(m => m.initLegacyFetchGuard());
 import { AppErrorBoundary } from "@/components/error/AppErrorBoundary";
 
-// CLS debug badge — lazy, dev/preview only, tree-shaken in prod
-const CLSDebugBadge = !import.meta.env.PROD && import.meta.env.VITE_CLS_BADGE !== 'false'
-  ? lazy(() => import("@/components/dev/CLSDebugBadge"))
+// Web Vitals panel — lazy, dev/preview only, tree-shaken in prod
+const WebVitalsPanel = !import.meta.env.PROD && import.meta.env.VITE_VITALS_PANEL !== 'false'
+  ? lazy(() => import("@/components/dev/WebVitalsPanel"))
   : null;
 
 // Production-safe initialization — deferred to not block first paint
@@ -585,8 +585,8 @@ const App = () => {
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
-    {CLSDebugBadge && (
-      <Suspense fallback={null}><CLSDebugBadge /></Suspense>
+    {WebVitalsPanel && (
+      <Suspense fallback={null}><WebVitalsPanel /></Suspense>
     )}
     </AppErrorBoundary>
   );

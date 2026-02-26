@@ -1,14 +1,27 @@
 /**
- * CLS Guard bootstrap — called once from main.tsx.
+ * Web Vitals Guard bootstrap — called once from main.tsx.
  *
- * Reads env flags and starts the monitor accordingly.
- * Wires up geometry freeze, preload validator, and image policy scanner.
- * Exposes window.__CLS_GUARD__ in dev/preview only.
+ * Initializes all performance monitors before React mount:
+ * - CLS monitor (PerformanceObserver layout-shift)
+ * - LCP monitor (PerformanceObserver largest-contentful-paint)
+ * - First-paint geometry capture
+ *
+ * Post-mount checks run after React renders:
+ * - Hydration geometry verification
+ * - Hero preload validation
+ * - Hero image rules validation
+ * - Image policy scan
+ * - Performance budget enforcement
+ *
+ * Exposes window.__CLS_GUARD__ and window.__LCP_GUARD__ in dev/preview.
+ * Zero production impact — all guards are tree-shaken in prod.
  */
 import { startCLSMonitor, getCLSSnapshot, getCLS } from './cls-monitor';
+import { startLCPMonitor, getLCPSnapshot, getLCP, getLCPEntry, validateHeroImageRules } from './lcp-monitor';
 import { captureFirstPaintGeometry, verifyHydrationGeometry } from './first-render-geometry';
 import { validateHeroPreload } from './preload-validator';
 import { scanImagePolicy } from './image-policy-scanner';
+import { runBudgetCheck } from './budget-enforcer';
 
 export function initCLSGuard(): void {
   if (typeof window === 'undefined') return;
@@ -17,7 +30,7 @@ export function initCLSGuard(): void {
   const guardEnabled =
     import.meta.env.VITE_CLS_GUARD_ENABLED !== undefined
       ? import.meta.env.VITE_CLS_GUARD_ENABLED === 'true'
-      : !isProd; // default: enabled in dev/preview, disabled in prod
+      : !isProd;
 
   if (!guardEnabled) return;
 
@@ -26,9 +39,15 @@ export function initCLSGuard(): void {
 
   const hardFail = import.meta.env.VITE_CLS_HARD_FAIL === 'true' && !isProd;
 
+  // Start CLS monitor
   startCLSMonitor({
     logWarnings: true,
     hardFail,
+  });
+
+  // Start LCP monitor
+  startLCPMonitor({
+    logWarnings: true,
   });
 
   // Expose on window for dev/preview debugging + CI assertions
@@ -39,23 +58,35 @@ export function initCLSGuard(): void {
       hardFail: false,
       geometryMismatch: false,
       geometryDeltas: [] as string[],
+      budgetResults: [] as any[],
     };
-    // Also expose __CLS__ shorthand for Playwright assertions
+
     Object.defineProperty(window, '__CLS__', {
       get: () => getCLS(),
       configurable: true,
     });
+
+    (window as any).__LCP_GUARD__ = {
+      getSnapshot: getLCPSnapshot,
+      get lcp() { return getLCP(); },
+      get entry() { return getLCPEntry(); },
+      hardFail: false,
+    };
   }
 }
 
 /**
  * Post-mount verification — call after React has rendered.
- * Runs geometry check, preload validation, and image policy scan.
  */
-export function postMountCLSChecks(): void {
+export function postMountVitalsChecks(): void {
   if (typeof window === 'undefined' || import.meta.env.PROD) return;
 
   verifyHydrationGeometry();
   validateHeroPreload();
+  validateHeroImageRules();
   scanImagePolicy();
+  runBudgetCheck();
 }
+
+// Keep backward-compat alias
+export const postMountCLSChecks = postMountVitalsChecks;
