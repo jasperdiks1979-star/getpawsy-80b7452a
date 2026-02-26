@@ -114,7 +114,7 @@ export const OptimizedImage = memo(forwardRef<HTMLDivElement, OptimizedImageProp
       {isInView && (
         <img
           ref={(el) => onImgRef?.(el)}
-          src={hasError ? '/placeholder.svg' : buildOptimizedImageUrl(src, { w: width, q: 80 })}
+          src={hasError ? '/placeholder.svg' : buildOptimizedImageUrl(src, { w: width, q: 'auto' })}
           srcSet={hasError ? undefined : (buildOptimizedSrcSet(src, [320, 480, 640, 960]) || undefined)}
           alt={alt}
           width={width}
