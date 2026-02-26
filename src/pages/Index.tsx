@@ -341,11 +341,11 @@ const Index = () => {
       <Helmet>
         <title>Premium Indoor Cat Living – Luxury Cat Trees & Smart Litter Solutions | GetPawsy</title>
         <meta name="description" content="Luxury cat trees, self-cleaning litter boxes & indoor cat furniture. Stability-tested, engineered for large cats. Free US shipping over $35. 30-day guarantee." />
-        <link rel="canonical" href="https://getpawsy.pet" />
+        <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <meta property="og:title" content="Premium Indoor Cat Living – Luxury Cat Trees & Smart Litter | GetPawsy" />
         <meta property="og:description" content="Stability-tested cat trees, smart litter solutions & modern cat furniture. Engineered for large cats. Free US shipping." />
-        <meta property="og:url" content="https://getpawsy.pet" />
+        <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Premium Indoor Cat Living – Luxury Cat Trees & Smart Litter | GetPawsy" />
@@ -363,8 +363,8 @@ const Index = () => {
       >
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
           <img
-            src="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp"
-            srcSet="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 600w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_900%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 900w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 1200w"
+            src="/hero-dog-600.webp"
+            srcSet="/hero-dog-600.webp 600w, /hero-dog-900.webp 900w, /hero-dog.webp 1200w"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px"
             alt="Premium cat trees and indoor cat furniture for large breeds"
             width={1200}

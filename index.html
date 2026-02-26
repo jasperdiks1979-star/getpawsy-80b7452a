@@ -52,7 +52,7 @@
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa-192x192.png" />
     <link rel="mask-icon" href="/favicon.png" color="#7C3AED" />
-    <link rel="canonical" href="https://getpawsy.pet" />
+    <link rel="canonical" href="https://getpawsy.pet/" />
     
     <!-- Hreflang Tags for International SEO -->
     <link rel="alternate" hreflang="en" href="https://getpawsy.pet" />
@@ -63,7 +63,7 @@
     <meta property="og:title" content="Premium Indoor Cat Living – Luxury Cat Trees & Smart Litter | GetPawsy" />
     <meta property="og:description" content="Stability-tested cat trees, self-cleaning litter boxes & modern cat furniture. Engineered for large cats. Free US shipping over $35." />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://getpawsy.pet" />
+    <meta property="og:url" content="https://getpawsy.pet/" />
     <meta property="og:image" content="https://getpawsy.pet/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -83,9 +83,9 @@
       to prevent "Cannot access uninitialized variable" TDZ errors on iOS Safari.
     -->
 
-    <!-- Preload LCP hero image — single href (no imagesrcset to avoid comma parsing issues) -->
+    <!-- Preload LCP hero image — direct origin path, NO Cloudinary fetch (eliminates double DNS hop) -->
     <link rel="preload" as="image" fetchpriority="high"
-      href="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp">
+      href="/hero-dog-600.webp">
     <!-- Inline critical hero layout to guarantee paint before CSS parse -->
     <style>
       .hero-lcp-section { position:relative; overflow:hidden; display:flex; align-items:center; min-height:calc(85vh - 148px); contain:layout style; content-visibility:visible; }
@@ -94,9 +94,9 @@
       [data-testid="cookie-banner"] { contain:layout; }
     </style>
 
-    <!-- DNS Prefetch / preconnect — only critical origins -->
+    <!-- DNS Prefetch / preconnect — only critical origins (Cloudinary demoted to dns-prefetch since hero is now origin-served) -->
     <link rel="preconnect" href="https://nojvgfbcjgipjxpfatmm.supabase.co" crossorigin>
-    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+    <link rel="dns-prefetch" href="https://res.cloudinary.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
     <!-- Preload primary font files for fastest LCP text paint -->
@@ -248,8 +248,8 @@
         <div style="position:relative;overflow:hidden;display:flex;align-items:center;min-height:calc(85vh - 148px)">
           <div style="position:absolute;inset:0;z-index:0">
             <img
-              src="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp"
-              srcset="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 600w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_900%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 900w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200%2Cq_auto%2Cf_auto%2Cc_fill/https://getpawsy.pet/hero-dog.webp 1200w"
+              src="/hero-dog-600.webp"
+              srcset="/hero-dog-600.webp 600w, /hero-dog-900.webp 900w, /hero-dog.webp 1200w"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px"
               alt="Premium cat trees and indoor cat furniture for large breeds"
               width="1200"
@@ -333,10 +333,7 @@
         }
       })();
 
-      // 3) Capture boot errors (minimal)
-      window.__bootErrors=[];
-      window.addEventListener('error',function(e){window.__bootErrors.push({message:e.message||'',filename:e.filename||'',lineno:e.lineno||0});});
-      window.addEventListener('unhandledrejection',function(e){var r=e.reason;window.__bootErrors.push({message:r&&r.message?r.message:String(r)});});
+      // 3) Error capture (handled by head script — removed duplicate)
       // 4) Hard reload
       var hrb=document.getElementById('hard-reload-btn');
       if(hrb)hrb.addEventListener('click',function(){try{if('caches'in window)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})});}catch(e){}window.location.href=window.location.pathname+'?cache_bust='+Date.now();});
