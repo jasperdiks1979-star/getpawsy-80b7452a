@@ -83,8 +83,10 @@
       to prevent "Cannot access uninitialized variable" TDZ errors on iOS Safari.
     -->
 
-    <!-- Preload LCP hero image — responsive srcset for mobile/desktop -->
-    <link rel="preload" as="image" href="/hero-dog-600.webp" type="image/webp" fetchpriority="high" imagesrcset="/hero-dog-600.webp 600w, /hero-dog-900.webp 900w, /hero-dog.webp 1200w" imagesizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px">
+    <!-- Preload LCP hero image — Cloudinary CDN with auto format/quality -->
+    <link rel="preload" as="image" fetchpriority="high"
+      imagesrcset="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 600w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_900,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 900w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 1200w"
+      imagesizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px">
     <!-- Inline critical hero layout to guarantee paint before CSS parse -->
     <style>
       .hero-lcp-section { position:relative; overflow:hidden; display:flex; align-items:center; min-height:85vh; contain:layout style; content-visibility:visible; }
@@ -95,18 +97,40 @@
 
     <!-- DNS Prefetch / preconnect — only critical origins -->
     <link rel="preconnect" href="https://nojvgfbcjgipjxpfatmm.supabase.co" crossorigin>
-    <link rel="dns-prefetch" href="https://cf.cjdropshipping.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
     <!-- Preload primary font files for fastest LCP text paint -->
     <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZOIHTWEBlw.woff2" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/playfairdisplay/v37/nuFRD-vYSZviVYUb_rj3ij__anPXDTnCjmHKM4nYO7KN_qiTbtbK-F2rA.woff2" crossorigin>
     
-    <!-- Fonts: single weight each for minimal payload, font-display:swap guaranteed -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
-    </noscript>
+    <!-- Fonts: inline @font-face — eliminates render-blocking external CSS -->
+    <style>
+      @font-face {
+        font-family: 'DM Sans';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZOIHTWEBlw.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: 'DM Sans';
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZOIHTWEBlw.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: 'Playfair Display';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/playfairdisplay/v37/nuFRD-vYSZviVYUb_rj3ij__anPXDTnCjmHKM4nYO7KN_qiTbtbK-F2rA.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+    </style>
     
     <!-- Critical inline styles for instant first paint and CLS prevention -->
     <style>
@@ -220,8 +244,8 @@
         <!-- Hero image — matches Index.tsx hero exactly -->
         <div style="position:absolute;inset:0;z-index:0">
           <img
-            src="/hero-dog.webp"
-           srcset="/hero-dog-600.webp 600w, /hero-dog-900.webp 900w, /hero-dog.webp 1200w"
+            src="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp"
+            srcset="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 600w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_900,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 900w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 1200w"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px"
             alt="Premium cat trees and indoor cat furniture for large breeds"
             width="1200"

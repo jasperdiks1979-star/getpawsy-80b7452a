@@ -363,8 +363,8 @@ const Index = () => {
       >
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
           <img
-            src="/hero-dog.webp"
-            srcSet="/hero-dog-600.webp 600w, /hero-dog-900.webp 900w, /hero-dog.webp 1200w"
+            src="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp"
+            srcSet="https://res.cloudinary.com/dlkqycfzn/image/fetch/w_600,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 600w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_900,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 900w, https://res.cloudinary.com/dlkqycfzn/image/fetch/w_1200,q_auto,f_auto,c_fill/https://getpawsy.pet/hero-dog.webp 1200w"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px"
             alt="Premium cat trees and indoor cat furniture for large breeds"
             width={1200}
@@ -380,7 +380,7 @@ const Index = () => {
         <div className="container relative z-10 px-4 md:px-6 py-16 md:py-24">
           <div className="max-w-2xl">
             {/* instant=true — no JS state/observer needed, paints at 0ms */}
-            <FadeInView instant className="space-y-6">
+            <div className="space-y-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">Curated for Modern Cat Homes</p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.05] tracking-tight">
                 Premium Indoor Cat Living
@@ -404,7 +404,7 @@ const Index = () => {
                   </Link>
                 </Button>
               </div>
-            </FadeInView>
+            </div>
           </div>
         </div>
       </section>
