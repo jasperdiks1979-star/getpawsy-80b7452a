@@ -87,9 +87,10 @@ export function MoneyHubBlocks() {
                     <Link
                       to={hub.guideLink}
                       className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary hover:underline transition-colors"
+                      aria-label={`Read our expert buying guide for ${hub.title}`}
                     >
                       📖 Read our expert buying guide
-                      <ArrowRight className="w-3 h-3" />
+                      <ArrowRight className="w-3 h-3" aria-hidden="true" />
                     </Link>
                   )}
                 </div>
