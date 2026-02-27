@@ -13,9 +13,9 @@ Cloudflare caches at the edge when configured correctly.
 
 | Route pattern | Cache-Control | X-Cache-Debug |
 |---|---|---|
-| `/` (SPA fallback) | `public, max-age=0, s-maxage=28800, stale-while-revalidate=60` | `html-public` |
+| `/` (SPA fallback) | `public, max-age=0, s-maxage=300, stale-while-revalidate=86400` | `html-public` |
 | `/assets/*` (hashed) | `public, max-age=31536000, immutable` | `asset-immutable` |
-| `/robots.txt`, `/sitemap*.xml`, `/merchant-feed.xml` | `public, max-age=300, s-maxage=3600, stale-while-revalidate=60` | `seo-public` |
+| `/robots.txt`, `/sitemap*.xml`, `/merchant-feed.xml` | `public, max-age=0, s-maxage=3600, stale-while-revalidate=86400` | `seo-public` |
 | `/admin/*`, `/auth/*` | `no-store, no-cache, must-revalidate` | `auth-no-store` |
 | `/~api/*`, `/api/*` | `private, no-store` | `api-no-store` |
 
@@ -41,7 +41,7 @@ Without explicit `Cache-Control` headers from the origin, Cloudflare treats HTML
 - **When:** Hostname = `getpawsy.pet` AND URI Path does not start with `/admin` AND URI Path does not start with `/auth` AND URI Path does not start with `/api` AND URI Path does not start with `/~api`
 - **Then:**
   - Cache eligibility: **Eligible for cache**
-  - Edge TTL: **Respect origin headers** (origin sends `s-maxage=28800` = 8 hours)
+  - Edge TTL: **Respect origin headers** (origin sends `s-maxage=300` = 5 minutes)
   - Browser TTL: **Respect origin headers** (origin sends `max-age=0`)
 
 ### 2. Cache Rule for static assets
@@ -78,7 +78,7 @@ node tools/cf-cache-audit.js
 ### Manual curl check
 
 ```bash
-# HTML — expect s-maxage=28800, X-Cache-Debug: html-public, no Set-Cookie from origin
+# HTML — expect s-maxage=300, X-Cache-Debug: html-public, no Set-Cookie from origin
 curl -sI https://getpawsy.pet/ | grep -iE 'cache-control|cf-cache|set-cookie|x-cache-debug'
 
 # Second request should show CF-Cache-Status: HIT
@@ -96,7 +96,7 @@ curl -sI https://getpawsy.pet/assets/index-abc123.js | grep -iE 'cache-control|c
 
 | URL type | 1st request | 2nd request | Notes |
 |---|---|---|---|
-| HTML (`/`) | `MISS` or `DYNAMIC` | `HIT` | Requires Cache Rule |
+| HTML (`/`) | `MISS` or `DYNAMIC` | `HIT` | Requires Cache Rule, 5m edge TTL |
 | SEO (`/robots.txt`) | `MISS` | `HIT` | 1h edge TTL |
 | Asset (`/assets/*`) | `HIT` (or `MISS`) | `HIT` | Usually cached by default |
 | API (`/~api/*`) | `DYNAMIC` | `DYNAMIC` | Never cached |
