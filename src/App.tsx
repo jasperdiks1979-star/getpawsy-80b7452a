@@ -1,6 +1,7 @@
 import { lazy, Suspense, Component, ReactNode, useState, useEffect } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+// ⚡ Toaster/Sonner deferred — not needed for first paint
+const Toaster = lazy(() => import("@/components/ui/toaster").then(m => ({ default: m.Toaster })));
+const Sonner = lazy(() => import("@/components/ui/sonner").then(m => ({ default: m.Toaster })));
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
@@ -58,8 +59,8 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// Critical routes - only Index is eagerly loaded for homepage LCP
-import Index from "./pages/Index";
+// ⚡ STRUCTURAL FIX: Index is now lazy-loaded — moves ~2000 lines (Index + Layout + Navbar + Footer)
+// out of the main chunk. Static HTML shell in index.html covers the visual gap.
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -141,6 +142,8 @@ const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>
   });
 };
 
+// ⚡ STRUCTURAL FIX: Index now lazy — moves Index+Layout+Navbar+Footer out of main chunk
+const Index = lazyWithRetry(() => import("./pages/Index"));
 // Products & NotFound — lazy for homepage LCP (not needed on first paint)
 const Products = lazyWithRetry(() => import("./pages/Products"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
@@ -338,8 +341,9 @@ const App = () => {
           <CartProvider>
             <CartAnimationProvider>
               <WishlistProvider>
-                <Toaster />
-                <Sonner />
+                {/* ⚡ Toaster/Sonner deferred — lazy-loaded, not needed for first paint */}
+                <Suspense fallback={null}><Toaster /></Suspense>
+                <Suspense fallback={null}><Sonner /></Suspense>
                 <BrowserRouter>
                   {/* LiveCheckoutWidget removed — admin-only widget, was leaking into storefront bundle */}
                   <ScrollToTop />
@@ -353,7 +357,7 @@ const App = () => {
                   <Suspense fallback={null}><InternalTrafficChip /></Suspense>
                   <RouteErrorBoundary>
                     <Routes>
-                      <Route path="/" element={<Index />} />
+                      <Route path="/" element={<Suspense fallback={null}><Index /></Suspense>} />
                       <Route path="/healthz" element={<Suspense fallback={null}><Healthz /></Suspense>} />
                       <Route path="/products" element={<Suspense fallback={<RouteLoader />}><Products /></Suspense>} />
                       <Route path="/product/:id" element={<Suspense fallback={<RouteLoader />}><ProductDetail /></Suspense>} />
