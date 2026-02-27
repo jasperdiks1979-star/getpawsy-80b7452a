@@ -1,39 +1,39 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Cookie, X, Settings } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { toast } from 'sonner';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { getConsent, setConsent, type ConsentValue } from '@/lib/cookieConsent';
-import { markCookieBannerMounted, markCookieBannerInteractive } from '@/lib/lcp-debug';
+
+// ⚡ Heavy deps deferred — not needed until banner interaction
+const showToast = (msg: string) => import('sonner').then(m => m.toast.success(msg));
+const markCookieBannerMounted = () => import('@/lib/lcp-debug').then(m => m.markCookieBannerMounted()).catch(() => {});
+const markCookieBannerInteractive = () => import('@/lib/lcp-debug').then(m => m.markCookieBannerInteractive()).catch(() => {});
 
 /**
- * CookieConsent — Phase 2 CWV optimisation
- * Replaced framer-motion (AnimatePresence + motion.div) with CSS transitions.
- * Saves ~60KB gzip from cookie banner chunk on first load.
+ * CookieConsent — Ultra-lightweight, zero-CLS, zero-dependency cookie banner.
+ * 
+ * Performance optimizations:
+ * - NO lucide-react icons (saves ~15KB from chunk)
+ * - NO Button component import (saves shadcn/radix chain)
+ * - NO sonner at top level (deferred to interaction)
+ * - NO useIsMobile hook (inline check)
+ * - Pure HTML buttons with inline styles matching design system
+ * - Fixed overlay position — NEVER pushes layout (CLS = 0)
+ * - Mounts after 1500ms / user interaction / idle — never blocks LCP
  */
 export const CookieConsent = () => {
   const [showBanner, setShowBanner] = useState(false);
-  const [isVisible, setIsVisible] = useState(false); // controls CSS transition
+  const [isVisible, setIsVisible] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
   const [prefs, setPrefs] = useState({ functional: true, analytics: true, marketing: true });
   const mountedRef = useRef(false);
   const interactiveMarkedRef = useRef(false);
-  const isInitialLoad = useRef(true);
   const location = useLocation();
-  const isMobile = useIsMobile();
-
-  // After 4s, allow full expansion (prevent large banner during LCP window)
-  useEffect(() => {
-    const t = setTimeout(() => { isInitialLoad.current = false; }, 4000);
-    return () => clearTimeout(t);
-  }, []);
 
   const isCheckoutRoute = location.pathname === '/cart' || location.pathname === '/checkout' || location.pathname.startsWith('/checkout/');
-  const shouldDisable = isMobile && isCheckoutRoute;
+  // Skip on mobile checkout to not interfere with purchase flow
+  const shouldDisable = isCheckoutRoute && typeof window !== 'undefined' && window.innerWidth < 768;
 
-  // Show banner only if no consent stored — DEFERRED via requestIdleCallback
+  // Show banner only if no consent stored — DEFERRED
   useEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
@@ -43,12 +43,10 @@ export const CookieConsent = () => {
         requestAnimationFrame(() => {
           markCookieBannerMounted();
           setShowBanner(true);
-          // Trigger CSS transition on next frame
           requestAnimationFrame(() => setIsVisible(true));
         });
       };
 
-      // Mount after 1500ms OR on first user interaction, whichever comes first
       let handle: ReturnType<typeof setTimeout>;
       handle = setTimeout(mount, 1500);
 
@@ -65,13 +63,11 @@ export const CookieConsent = () => {
     }
   }, []);
 
-  // Mark interactive once banner is visible and buttons are rendered
+  // Mark interactive once banner is visible
   useEffect(() => {
     if (showBanner && !interactiveMarkedRef.current) {
       interactiveMarkedRef.current = true;
-      requestAnimationFrame(() => {
-        markCookieBannerInteractive();
-      });
+      requestAnimationFrame(() => { markCookieBannerInteractive(); });
     }
   }, [showBanner]);
 
@@ -94,7 +90,6 @@ export const CookieConsent = () => {
 
   const hideBanner = useCallback(() => {
     setIsVisible(false);
-    // Wait for CSS transition to finish before unmounting
     setTimeout(() => setShowBanner(false), 300);
   }, []);
 
@@ -102,7 +97,7 @@ export const CookieConsent = () => {
     setConsent(value);
     hideBanner();
     setShowSettings(false);
-    if (msg) toast.success(msg);
+    if (msg) showToast(msg);
   }, [hideBanner]);
 
   const acceptAll = useCallback(() => save('all', 'All cookies accepted! 🍪'), [save]);
@@ -115,6 +110,25 @@ export const CookieConsent = () => {
   if (shouldDisable) return null;
   if (!showBanner) return null;
 
+  // Inline button styles matching the design system (avoids importing Button component)
+  const btnPrimary: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    padding: '6px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+    fontFamily: 'inherit', cursor: 'pointer', border: 'none',
+    background: 'hsl(22 70% 48%)', color: '#fff',
+    transition: 'opacity 0.15s',
+  };
+  const btnOutline: React.CSSProperties = {
+    ...btnPrimary,
+    background: 'transparent', color: 'hsl(25 30% 12%)',
+    border: '1px solid hsl(38 30% 88%)',
+  };
+  const btnGhost: React.CSSProperties = {
+    ...btnPrimary,
+    background: 'transparent', color: 'hsl(25 18% 42%)',
+    border: 'none', padding: '6px 12px',
+  };
+
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-[100] p-4 pb-safe"
@@ -123,6 +137,7 @@ export const CookieConsent = () => {
         opacity: isVisible ? 1 : 0,
         transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         willChange: 'transform, opacity',
+        contain: 'layout',
       }}
       data-testid="cookie-banner"
       data-cwvnolcp="true"
@@ -130,10 +145,6 @@ export const CookieConsent = () => {
       <div className="max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-xl overflow-hidden">
         <div className="p-4 md:p-6">
           <div className="flex items-start gap-4">
-            <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 flex-shrink-0">
-              <Cookie className="w-6 h-6 text-primary" />
-            </div>
-
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-foreground mb-2 text-sm sm:text-base">🍪 We use cookies</h3>
 
@@ -149,12 +160,10 @@ export const CookieConsent = () => {
                     </button>{' '}
                     <Link to="/cookies" className="text-primary hover:underline">Cookie policy</Link>
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button onClick={acceptAll} size="sm">Accept All</Button>
-                    <Button onClick={acceptNecessary} variant="outline" size="sm">Necessary Only</Button>
-                    <Button onClick={() => setShowSettings(true)} variant="ghost" size="sm" className="gap-1">
-                      <Settings className="w-4 h-4" /> Customize
-                    </Button>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    <button onClick={acceptAll} style={btnPrimary}>Accept All</button>
+                    <button onClick={acceptNecessary} style={btnOutline}>Necessary Only</button>
+                    <button onClick={() => setShowSettings(true)} style={btnGhost}>⚙ Customize</button>
                   </div>
                 </>
               ) : (
@@ -165,16 +174,16 @@ export const CookieConsent = () => {
                     <CookieToggle label="Analytics" description="Help us understand usage" checked={prefs.analytics} onChange={() => setPrefs(p => ({ ...p, analytics: !p.analytics }))} />
                     <CookieToggle label="Marketing" description="Personalized ads" checked={prefs.marketing} onChange={() => setPrefs(p => ({ ...p, marketing: !p.marketing }))} />
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button onClick={saveCustom} size="sm">Save Preferences</Button>
-                    <Button onClick={() => setShowSettings(false)} variant="ghost" size="sm">Back</Button>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    <button onClick={saveCustom} style={btnPrimary}>Save Preferences</button>
+                    <button onClick={() => setShowSettings(false)} style={btnGhost}>Back</button>
                   </div>
                 </>
               )}
             </div>
 
             <button onClick={acceptNecessary} className="p-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0" aria-label="Close cookie banner">
-              <X className="w-5 h-5" />
+              ✕
             </button>
           </div>
         </div>

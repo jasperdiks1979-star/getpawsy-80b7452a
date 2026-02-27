@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { PaymentBadges } from '@/components/shared/PaymentBadges';
-// ── Lucide: per-icon deep imports — eliminates full lucide barrel from critical chunk ──
+// Icons are eager within this module — but the module itself is lazy-loaded by Layout,
+// so these only download when Footer enters the viewport
 import Mail from 'lucide-react/dist/esm/icons/mail';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
@@ -14,13 +15,14 @@ import Cookie from 'lucide-react/dist/esm/icons/cookie';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+// ⚡ sonner deferred — only needed on form submit
+const showToast = (type: 'success' | 'error', msg: string) => import('sonner').then(m => m.toast[type](msg));
 // ⚡ supabase NOT imported at top-level — dynamic import keeps ~138KB SDK off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 // ⚡ zod deferred — validation only needed on form submit
 const getEmailSchema = () => import('zod').then(m => m.z.string().trim().email({ message: 'Invalid email address' }).max(255));
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,7 +89,7 @@ export const Footer = () => {
     const emailSchema = await getEmailSchema();
     const result = emailSchema.safeParse(email);
     if (!result.success) {
-      toast.error(result.error.errors[0].message);
+      showToast('error', result.error.errors[0].message);
       return;
     }
     
@@ -101,12 +103,12 @@ export const Footer = () => {
       
       if (error) {
         if (error.code === '23505') {
-          toast.info("You're already subscribed to our newsletter! 📬");
+          showToast('success', "You're already subscribed to our newsletter! 📬");
         } else {
           throw error;
         }
       } else {
-        toast.success('Thanks for subscribing! 🎉');
+        showToast('success', 'Thanks for subscribing! 🎉');
         
         // Send confirmation email (don't block on this)
         supabase.functions.invoke('send-newsletter-confirmation', {
@@ -118,7 +120,7 @@ export const Footer = () => {
       setEmail('');
     } catch (error) {
       console.error('Newsletter subscription error:', error);
-      toast.error('Something went wrong. Please try again later.');
+      showToast('error', 'Something went wrong. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
@@ -527,7 +529,7 @@ export const Footer = () => {
                         <AlertDialogAction
                           onClick={() => {
                             localStorage.clear();
-                            toast.success('App data cleared! Refreshing...');
+                            showToast('success', 'App data cleared! Refreshing...');
                             setTimeout(() => window.location.reload(), 1000);
                           }}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
