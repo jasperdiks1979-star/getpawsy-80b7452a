@@ -48,23 +48,20 @@ export const CookieConsent = () => {
         });
       };
 
-      let handle: number | ReturnType<typeof setTimeout>;
-      if ('requestIdleCallback' in window) {
-        handle = (window as any).requestIdleCallback(mount, { timeout: 2000 });
-      } else {
-        handle = setTimeout(() => {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(mount);
-          });
-        }, 200);
+      // Mount after 1500ms OR on first user interaction, whichever comes first
+      let handle: ReturnType<typeof setTimeout>;
+      handle = setTimeout(mount, 1500);
+
+      const interactionHandler = () => { mount(); cleanup(); };
+      const events = ['scroll', 'click', 'touchstart'] as const;
+      events.forEach(e => window.addEventListener(e, interactionHandler, { once: true, passive: true }));
+
+      function cleanup() {
+        clearTimeout(handle);
+        events.forEach(e => window.removeEventListener(e, interactionHandler));
       }
-      return () => {
-        if ('requestIdleCallback' in window) {
-          (window as any).cancelIdleCallback(handle as number);
-        } else {
-          clearTimeout(handle as ReturnType<typeof setTimeout>);
-        }
-      };
+
+      return cleanup;
     }
   }, []);
 
