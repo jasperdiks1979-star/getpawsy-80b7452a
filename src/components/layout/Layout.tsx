@@ -2,13 +2,15 @@ import { ScrollToTop } from '../ui/scroll-to-top';
 import { PageTransition } from '../ui/page-transition';
 import { MarketingErrorBoundary } from '../error/MarketingErrorBoundary';
 
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
 
-// ⚡ Navbar + Footer + TrendingNowStrip: lazy-loaded — keeps them out of initial JS evaluation
+// ⚡ Navbar + Footer: lazy-loaded — keeps them out of initial JS evaluation
 // The static HTML shell in index.html covers the visual gap for hero
 const Navbar = lazy(() => import('./Navbar').then(m => ({ default: m.Navbar })));
 const Footer = lazy(() => import('./Footer').then(m => ({ default: m.Footer })));
-const TrendingNowStrip = lazy(() => import('../marketing/TrendingNowStrip').then(m => ({ default: m.TrendingNowStrip })));
+
+// TrendingNowStrip is tiny (~1KB), static data, above-the-fold — NOT lazy to prevent CLS
+import { TrendingNowStrip } from '../marketing/TrendingNowStrip';
 
 // Lazy-load all non-critical marketing/overlay widgets
 const WelcomePopup = lazy(() => import('../marketing/WelcomePopup').then(m => ({ default: m.WelcomePopup })).catch(() => ({ default: () => null })));
@@ -72,14 +74,22 @@ function useDeferWidgets(): boolean {
 export const Layout = ({ children }: LayoutProps) => {
   const widgetsReady = useDeferWidgets();
 
+  // Read promo banner state synchronously to match Suspense fallback height with actual Navbar.
+  // This prevents a 40px CLS when the promo banner has been dismissed.
+  const navbarFallbackHeight = useMemo(() => {
+    try {
+      return localStorage.getItem('promo-banner-dismissed') === 'true' ? 72 : 112;
+    } catch {
+      return 112; // default: promo visible
+    }
+  }, []);
+
   return (
     <div className="min-h-screen min-h-[100dvh] flex flex-col w-full max-w-[100vw] overflow-x-hidden">
-      <Suspense fallback={<div style={{ height: 112 }} aria-hidden="true" />}>
+      <Suspense fallback={<div style={{ height: navbarFallbackHeight }} aria-hidden="true" />}>
         <Navbar />
       </Suspense>
-      <Suspense fallback={<div style={{ height: 36, contain: 'layout' }} aria-hidden="true" />}>
-        <TrendingNowStrip />
-      </Suspense>
+      <TrendingNowStrip />
       <PageTransition>
         <main className="flex-1 w-full max-w-[100vw] overflow-x-hidden pb-safe">{children}</main>
       </PageTransition>
