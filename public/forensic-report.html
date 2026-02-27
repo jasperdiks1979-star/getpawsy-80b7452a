@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GetPawsy — Production Performance Forensic Plan</title>
+<style>
+  @media print {
+    body { font-size: 11pt; }
+    .no-print { display: none; }
+    table { page-break-inside: avoid; }
+    h2 { page-break-after: avoid; }
+    pre { white-space: pre-wrap; word-wrap: break-word; font-size: 9pt; }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    color: #1a1a1a;
+    line-height: 1.6;
+  }
+  h1 { font-size: 1.8em; border-bottom: 3px solid #e74c3c; padding-bottom: 8px; }
+  h2 { font-size: 1.3em; color: #c0392b; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  h3 { font-size: 1.1em; color: #555; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+  th { background: #f5f5f5; font-weight: 600; }
+  tr:nth-child(even) { background: #fafafa; }
+  pre { background: #f4f4f4; border: 1px solid #ddd; padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 0.88em; }
+  code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }
+  blockquote { border-left: 4px solid #e74c3c; margin: 12px 0; padding: 8px 16px; background: #fff5f5; }
+  .print-btn {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #c0392b; color: #fff; border: none;
+    padding: 12px 24px; border-radius: 8px; font-size: 16px;
+    cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 999;
+  }
+  .print-btn:hover { background: #a93226; }
+  .meta { color: #888; font-size: 0.9em; margin-bottom: 2em; }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">📄 Print / Save PDF</button>
+
+<h1>GetPawsy — Production Performance &amp; Caching Forensic Plan</h1>
+<p class="meta">Generated: 2026-02-27 &nbsp;|&nbsp; Target: Mobile CWV Pass (LCP ≤ 3.0s, CLS ≤ 0.10)</p>
+
+<h2>PART 1 — Missing Cloudflare Config (Paste These)</h2>
+<table>
+  <tr><th>#</th><th>Setting</th><th>Path in Cloudflare Dashboard</th></tr>
+  <tr><td>1</td><td>Origin Cache Control ON/OFF</td><td>Caching → Configuration</td></tr>
+  <tr><td>2</td><td>Rocket Loader ON/OFF + Auto Minify</td><td>Speed → Optimization</td></tr>
+  <tr><td>3</td><td>Bot Fight Mode panel + JS Detections</td><td>Security → Bots</td></tr>
+  <tr><td>4</td><td>Cache Rules (separate from Page Rules)</td><td>Rules → Cache Rules</td></tr>
+  <tr><td>5</td><td>Redirect Rules / Transform Rules</td><td>Rules → Redirect Rules / Transform Rules</td></tr>
+</table>
+
+<h2>PART 2 — Evidence Collection Commands</h2>
+<p>Run these from your terminal and paste the output.</p>
+
+<h3>2.1 HTML Document (Critical)</h3>
+<pre>curl -sI https://getpawsy.pet/ | grep -iE 'http/|cache-control|cf-cache-status|age:|vary|set-cookie|content-type|server-timing|cf-ray|x-cache-debug|content-encoding'</pre>
+
+<h3>2.2 Redirect Chain (www → apex)</h3>
+<pre>curl -sI https://www.getpawsy.pet/ | grep -iE 'http/|location|cf-cache-status|set-cookie'</pre>
+
+<h3>2.3 Hero Image</h3>
+<pre>curl -sI https://getpawsy.pet/hero/getpawsy-hero-mobile.webp | grep -iE 'cf-cache-status|cache-control|content-length|content-type|age:'</pre>
+
+<h3>2.4 JS Entry Chunk</h3>
+<pre># Find the current hash
+curl -s https://getpawsy.pet/ | grep -oP '/assets/index-[a-zA-Z0-9]+\.js' | head -1
+# Then check headers on that URL</pre>
+
+<h3>2.5 Cart (Must Be Bypass)</h3>
+<pre>curl -sI https://getpawsy.pet/cart | grep -iE 'cf-cache-status|cache-control|set-cookie'</pre>
+
+<h3>2.6 Cookie Injection Check</h3>
+<pre>curl -sI https://getpawsy.pet/ 2>&amp;1 | grep -i set-cookie</pre>
+
+<h3>What Each Result Means</h3>
+<table>
+  <tr><th>Header</th><th>Good ✅</th><th>Bad ❌</th><th>Why It Matters</th></tr>
+  <tr><td><code>cf-cache-status: HIT</code></td><td>Edge cached</td><td><code>DYNAMIC</code> = not cached</td><td>HTML TTFB drops from ~1.6s to ~50ms</td></tr>
+  <tr><td><code>set-cookie: __cf_bm</code></td><td>absent</td><td>present</td><td>CF sees Set-Cookie → marks uncacheable</td></tr>
+  <tr><td><code>cache-control: s-maxage=300</code></td><td>Origin tells CF to cache</td><td>missing</td><td>Without this, CF ignores "Cache Everything"</td></tr>
+  <tr><td><code>age: &gt;0</code></td><td>Served from cache</td><td><code>0</code> or absent</td><td>Confirms actual edge hit</td></tr>
+  <tr><td><code>x-cache-debug: html-public</code></td><td>Origin cooperating</td><td>absent</td><td>Custom header proving origin config</td></tr>
+</table>
+
+<h3>The <code>__cf_bm</code> Problem</h3>
+<p><code>set-cookie: __cf_bm; Domain=.lovable.app</code> — Cloudflare Bot Management injects a cookie on <strong>every</strong> response. Even with "Cache Everything" Page Rule, CF will <strong>not</strong> cache responses with <code>Set-Cookie</code> headers.</p>
+<p>The <code>Domain=.lovable.app</code> suggests the request may be proxied through lovable.app infrastructure, not directly to origin.</p>
+
+<h2>PART 3 — Root Cause Matrix (Ranked by Impact)</h2>
+<table>
+  <tr><th>#</th><th>Root Cause</th><th>Impact</th><th>Evidence</th><th>Fix</th><th>Where</th></tr>
+  <tr><td><strong>1</strong></td><td>HTML not edge-cached (<code>DYNAMIC</code>)</td><td>~1200ms LCP</td><td>TTFB 1.6s; cf-cache-status DYNAMIC</td><td>Cache Rule with Edge TTL Override</td><td>Cloudflare</td></tr>
+  <tr><td><strong>2</strong></td><td><code>__cf_bm</code> cookie fragments/blocks cache</td><td>Blocks #1</td><td><code>set-cookie: __cf_bm</code> in response</td><td>JS Detections OFF or Cache Rule Override</td><td>Cloudflare</td></tr>
+  <tr><td><strong>3</strong></td><td>CLS from promo banner hydration mismatch</td><td>~0.4–0.7 CLS</td><td>40px shift if localStorage ≠ static shell</td><td>Blocking localStorage read in <code>&lt;head&gt;</code></td><td>Code (index.html)</td></tr>
+  <tr><td><strong>4</strong></td><td>CLS from Navbar Suspense fallback</td><td>~0.05 CLS</td><td>Height mismatch (112→72 or vice versa)</td><td>Dynamic height via localStorage</td><td>Code (Layout.tsx)</td></tr>
+  <tr><td><strong>5</strong></td><td>Font 404 (stale Playfair Display URL)</td><td>~200ms render delay</td><td>Console 404 on woff2</td><td>Updated to v40</td><td>Code (index.html)</td></tr>
+</table>
+
+<h2>PART 4 — E-Commerce Safe Caching Design</h2>
+
+<h3>Policy Matrix</h3>
+<table>
+  <tr><th>Route Pattern</th><th>Cache?</th><th>Edge TTL</th><th>Browser TTL</th><th>Why</th></tr>
+  <tr><td><code>/</code> + <code>/collections/*</code> + <code>/guides/*</code> + <code>/products/*</code></td><td>✅ YES</td><td>5 min (s-maxage=300)</td><td>0 (always revalidate)</td><td>Static HTML, no user state</td></tr>
+  <tr><td><code>/assets/*</code></td><td>✅ YES</td><td>1 year</td><td>1 year (immutable)</td><td>Content-hashed filenames</td></tr>
+  <tr><td><code>/hero/*</code></td><td>✅ YES</td><td>30 days</td><td>1 day</td><td>Rarely changes</td></tr>
+  <tr><td><code>/cart*</code> + <code>/checkout*</code></td><td>❌ NO</td><td>Bypass</td><td>no-store</td><td>User-specific</td></tr>
+  <tr><td><code>/auth*</code> + <code>/admin*</code></td><td>❌ NO</td><td>Bypass</td><td>no-store</td><td>Authenticated</td></tr>
+  <tr><td><code>/api/*</code> + <code>/~api/*</code></td><td>❌ NO</td><td>Bypass</td><td>private, no-store</td><td>Dynamic API</td></tr>
+</table>
+
+<h3>Cloudflare Implementation (Free Plan, Page Rules Maxed)</h3>
+<blockquote>Page Rules are full (3/3). Use <strong>Cache Rules</strong> instead (Free plan gets 5).</blockquote>
+
+<h4>Cache Rule 1 — "Bypass dynamic routes" (PUT THIS FIRST)</h4>
+<pre>Expression:
+(http.host eq "getpawsy.pet"
+ and (starts_with(http.request.uri.path, "/cart")
+  or starts_with(http.request.uri.path, "/checkout")
+  or starts_with(http.request.uri.path, "/auth")
+  or starts_with(http.request.uri.path, "/admin")
+  or starts_with(http.request.uri.path, "/api")
+  or starts_with(http.request.uri.path, "/~api")))
+
+Action:
+- Cache eligibility: Bypass cache</pre>
+
+<h4>Cache Rule 2 — "Cache public HTML"</h4>
+<pre>Expression:
+(http.host eq "getpawsy.pet"
+ and not starts_with(http.request.uri.path, "/cart")
+ and not starts_with(http.request.uri.path, "/checkout")
+ and not starts_with(http.request.uri.path, "/auth")
+ and not starts_with(http.request.uri.path, "/admin")
+ and not starts_with(http.request.uri.path, "/api")
+ and not starts_with(http.request.uri.path, "/~api"))
+
+Action:
+- Cache eligibility: Eligible for cache
+- Edge TTL: Override origin → 300 seconds
+- Browser TTL: Override origin → 0 seconds</pre>
+
+<blockquote><strong>Why "Override origin" for Edge TTL?</strong> Because <code>__cf_bm</code> cookie may cause CF to ignore <code>s-maxage</code>. Override forces caching regardless.</blockquote>
+
+<h4>After creating Cache Rules:</h4>
+<p>Delete Page Rule #3 ("Cache Everything") since Cache Rule replaces it → frees a Page Rule slot.</p>
+
+<h3>Rollback Plan</h3>
+<p>If dynamic pages break:</p>
+<ol>
+  <li>Delete Cache Rule 2 (the HTML caching one)</li>
+  <li>Purge cache: <code>Caching → Configuration → Purge Everything</code></li>
+  <li>Takes effect in &lt;30 seconds</li>
+</ol>
+
+<h2>PART 5 — LCP Decomposition</h2>
+
+<h3>Estimated Breakdown</h3>
+<table>
+  <tr><th>Phase</th><th>Current (est.)</th><th>After CF Cache</th><th>Target</th></tr>
+  <tr><td>TTFB</td><td>~1600ms</td><td>~100ms</td><td>≤200ms</td></tr>
+  <tr><td>Load Delay (hero preload)</td><td>~200ms</td><td>~200ms</td><td>≤200ms</td></tr>
+  <tr><td>Load Time (hero download)</td><td>~300ms</td><td>~300ms</td><td>≤300ms</td></tr>
+  <tr><td>Render Delay (JS/fonts)</td><td>~400ms</td><td>~400ms</td><td>≤300ms</td></tr>
+  <tr><td><strong>Total LCP</strong></td><td><strong>~2500ms</strong></td><td><strong>~1000ms</strong></td><td><strong>≤1000ms</strong></td></tr>
+</table>
+
+<blockquote>The 15.8s LCP scenario = cold-start + no edge cache + slow mobile throttling.</blockquote>
+
+<h3>CLS — Why 0.761 Could Still Appear</h3>
+<ol>
+  <li><strong>Fixes not deployed</strong> — verify production HTML contains <code>data-promo-dismissed</code> blocking script</li>
+  <li><strong>Cookie banner</strong> — DOM injection above fold without height reservation</li>
+  <li><strong>TrendingNowStrip</strong> — still lazy-loaded in deployed build</li>
+  <li><strong>Font swap</strong> — Playfair Display loading causes text reflow</li>
+</ol>
+
+<h2>PART 6 — Build Verification</h2>
+<pre># Check if CLS fix is deployed
+curl -s https://getpawsy.pet/ | grep -o 'promo-banner-dismissed'
+
+# Check TrendingNowStrip is not lazy
+curl -s https://getpawsy.pet/ | grep -oP '/assets/index-[a-zA-Z0-9]+\.js' | head -1
+# Then: curl -s &lt;that URL&gt; | grep -c 'TrendingNow'</pre>
+<p>If <code>promo-banner-dismissed</code> is NOT found → publish first.</p>
+
+<h2>PART 7 — Retest Protocol</h2>
+
+<h3>After All Changes Applied</h3>
+<ol>
+  <li>Purge CF cache (<code>Caching → Configuration → Purge Everything</code>)</li>
+  <li>Wait 60 seconds</li>
+  <li>Verify edge caching:
+    <pre>curl -sI https://getpawsy.pet/ | grep cf-cache-status  # → expect MISS
+curl -sI https://getpawsy.pet/ | grep cf-cache-status  # → expect HIT</pre>
+  </li>
+  <li>Run PageSpeed Insights (mobile) <strong>3 times</strong>: <a href="https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fgetpawsy.pet%2F&form_factor=mobile">PSI Link</a></li>
+  <li>Take <strong>median</strong> of 3 runs</li>
+</ol>
+
+<h3>Acceptance Criteria</h3>
+<table>
+  <tr><th>Metric</th><th>Target</th><th>Stretch</th></tr>
+  <tr><td>LCP</td><td>≤ 3.0s</td><td>≤ 2.5s</td></tr>
+  <tr><td>CLS</td><td>≤ 0.10</td><td>≤ 0.05</td></tr>
+  <tr><td>TTFB</td><td>≤ 0.8s</td><td>≤ 0.4s</td></tr>
+  <tr><td>FCP</td><td>≤ 2.0s</td><td>≤ 1.5s</td></tr>
+  <tr><td>TBT</td><td>≤ 200ms</td><td>≤ 100ms</td></tr>
+</table>
+
+<h2>PART 8 — Action Plan (Prioritized)</h2>
+<table>
+  <tr><th>Step</th><th>Action</th><th>Who</th><th>Time</th></tr>
+  <tr><td>1</td><td>Paste 5 CF config items (Part 1)</td><td>You</td><td>2 min</td></tr>
+  <tr><td>2</td><td>Run 6 curl commands (Part 2) and paste output</td><td>You</td><td>2 min</td></tr>
+  <tr><td>3</td><td>Publish latest build in Lovable</td><td>You</td><td>1 min</td></tr>
+  <tr><td>4</td><td>Create Cache Rules in CF (Rule 1 bypass first, then Rule 2 cache)</td><td>You in CF</td><td>5 min</td></tr>
+  <tr><td>5</td><td>Purge CF cache</td><td>You in CF</td><td>1 min</td></tr>
+  <tr><td>6</td><td>Run PSI 3x, paste median results</td><td>You</td><td>5 min</td></tr>
+  <tr><td>7</td><td>Report back with results</td><td>You</td><td>1 min</td></tr>
+</table>
+
+<hr>
+<p style="color:#888;font-size:0.85em;margin-top:2em;">Reference: <code>docs/cloudflare-caching.md</code> · <code>docs/post-deploy-verification.md</code> · <code>tools/cf-cache-audit.js</code></p>
+
+</body>
+</html>
