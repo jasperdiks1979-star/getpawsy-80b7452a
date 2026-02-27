@@ -40,7 +40,7 @@ export function validateHeroPreload(): void {
 
       // Match preload href against hero image src
       const heroImg = document.querySelector<HTMLImageElement>(
-        '#static-hero-shell img, [data-hero-image] img, .hero-image'
+        '#static-hero-shell img, [data-hero-image] img, .hero-lcp-img, picture .hero-lcp-img'
       );
       if (!heroImg) return;
 
