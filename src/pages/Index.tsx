@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+// ⚡ Button + ArrowRight + useQuery: lazy-loaded — NOT needed for hero first paint
+// These are used below-fold only; keeping them off the critical path saves ~25KB parse
+const ArrowRight = lazy(() => import('lucide-react/dist/esm/icons/arrow-right'));
+const Button = lazy(() => import('@/components/ui/button').then(m => ({ default: m.Button })));
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
-import { Button } from '@/components/ui/button';
 // ⚡ supabase NOT imported at top-level — dynamic import in queryFns keeps ~138KB off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
@@ -391,18 +393,21 @@ const Index = () => {
                 Engineered stability. Designed elegance. Built for modern cat homes.
                 Heavy-duty furniture rated for 25+ lbs — smart litter solutions that just work.
               </p>
+              {/* ⚡ Hero CTAs: plain <a> tags — eliminates Button/Radix from critical render path.
+                  Matches static shell in index.html exactly. */}
               <div className="flex flex-wrap items-center gap-4 pt-2 relative z-10 pointer-events-auto">
-                <Button asChild size="lg" className="gap-2 rounded-full px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow duration-200">
-                  <Link to="/collections/cat-trees-and-condos#product-grid">
-                    Shop Cat Trees
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="gap-2 rounded-full px-8 py-6 text-base font-semibold">
-                  <Link to="/collections/best-cat-litter-boxes#product-grid">
-                    Cat Litter Boxes
-                  </Link>
-                </Button>
+                <a
+                  href="/collections/cat-trees-and-condos#product-grid"
+                  className="inline-flex items-center gap-2 rounded-full px-10 py-3 text-base font-semibold bg-foreground text-background shadow-lg hover:shadow-xl transition-shadow duration-200"
+                >
+                  Shop Cat Trees →
+                </a>
+                <a
+                  href="/collections/best-cat-litter-boxes#product-grid"
+                  className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-semibold border border-border bg-transparent text-foreground"
+                >
+                  Cat Litter Boxes
+                </a>
               </div>
             </div>
           </div>

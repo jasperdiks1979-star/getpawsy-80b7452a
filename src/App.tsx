@@ -31,9 +31,8 @@ const LazyAdminShell = lazy(() =>
     ),
   }))
 );
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
-import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
-import { Button } from "@/components/ui/button";
+// ⚡ Loader2, AlertCircle, Button: only used in error/loading fallbacks — NOT on critical path
+// Moved to inline HTML to eliminate ~20KB (Radix Slot + Lucide icons) from main chunk parse
 // Defer non-critical initializers — don't block first paint
 const setupGlobalErrorHandler = () => import("@/lib/error-reporter").then(m => m.setupGlobalErrorHandler());
 const initDataHealer = () => import("@/lib/data-healer").then(m => m.initDataHealer());
@@ -90,12 +89,12 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4 text-center">
           <div className="max-w-md">
-            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <div className="text-4xl mb-4">⚠️</div>
             <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
             <p className="text-muted-foreground text-sm mb-4">This page couldn't load. Try refreshing or go back home.</p>
             <div className="flex gap-3 justify-center">
-              <Button onClick={() => this.setState({ hasError: false, error: null })}>Try Again</Button>
-              <Button variant="outline" onClick={() => { window.location.href = '/'; }}>Go Home</Button>
+              <button onClick={() => this.setState({ hasError: false, error: null })} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium">Try Again</button>
+              <button onClick={() => { window.location.href = '/'; }} className="px-4 py-2 rounded-md border border-border text-sm font-medium">Go Home</button>
             </div>
           </div>
         </div>
@@ -313,12 +312,12 @@ const RouteLoader = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4 text-center">
         <div className="max-w-md">
-          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <div className="text-4xl mb-4">⚠️</div>
           <h2 className="text-xl font-semibold mb-2">Page took too long to load</h2>
           <p className="text-muted-foreground text-sm mb-4">This might be a temporary issue. Please try reloading.</p>
           <div className="flex gap-3 justify-center">
-            <Button onClick={() => window.location.reload()}>Reload</Button>
-            <Button variant="outline" onClick={() => { window.location.href = '/'; }}>Go Home</Button>
+            <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium">Reload</button>
+            <button onClick={() => { window.location.href = '/'; }} className="px-4 py-2 rounded-md border border-border text-sm font-medium">Go Home</button>
           </div>
         </div>
       </div>
@@ -327,7 +326,7 @@ const RouteLoader = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
     </div>
   );
 };
