@@ -245,9 +245,20 @@
         React's createRoot().render() replaces #root's children, so this vanishes
         automatically once the app mounts.
       -->
+      <!-- Blocking script: sync promo banner dismissed state BEFORE first paint to prevent CLS -->
+      <script>
+        (function(){
+          try {
+            if(localStorage.getItem('promo-banner-dismissed')==='true'){
+              document.documentElement.setAttribute('data-promo-dismissed','1');
+            }
+          }catch(e){}
+        })();
+      </script>
       <div id="static-hero-shell" style="contain:layout style;overflow:hidden">
-        <!-- Reserve space for promo banner (40px) + navbar (72px) + trending strip (36px) = 148px -->
-        <div style="height:40px" aria-hidden="true"></div>
+        <!-- Reserve space for promo banner (40px if visible) + navbar (72px) + trending strip (36px) -->
+        <div id="static-promo-slot" aria-hidden="true"></div>
+        <style>#static-promo-slot{height:40px}html[data-promo-dismissed="1"] #static-promo-slot{height:0}</style>
         <div style="height:72px" aria-hidden="true"></div>
         <div style="height:36px" aria-hidden="true"></div>
         <!-- Hero section — geometry matches hydrated React layout -->
