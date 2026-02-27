@@ -38,11 +38,12 @@ Already uses `position: fixed` + deferred mount (1500ms / interaction). CLS = 0.
 
 ## LCP Element
 
-- **Element:** `<img>` with class `hero-lcp-img`
-- **Preload:** `<link rel="preload" as="image" fetchpriority="high" imagesrcset="...">` in `<head>`
-- **Attributes:** `fetchpriority="high"`, `loading="eager"`, `decoding="async"`, `width=1200`, `height=675`
-- **Sizes:** 600w (mobile), 900w (tablet), 1200w (desktop)
-- **Format:** WebP
+- **Element:** `<img>` inside `<picture>` with class `hero-lcp-img`
+- **Desktop:** `/hero/getpawsy-hero-desktop.webp` (1600×896, WebP)
+- **Mobile:** `/hero/getpawsy-hero-mobile.webp` (896×1184, WebP, portrait 3:4)
+- **Preload:** Two media-conditioned `<link rel="preload">` in `<head>` (mobile ≤768px, desktop ≥769px)
+- **Attributes:** `fetchpriority="high"`, `loading="eager"`, `decoding="async"`, `width`/`height` set
+- **Aspect ratio:** CSS enforces `16/9` on desktop, `3/4` on mobile — zero CLS
 
 ## Verification
 

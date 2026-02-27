@@ -364,18 +364,25 @@ const Index = () => {
         style={{ minHeight: 'calc(85vh - 148px)', contain: 'layout style' }}
       >
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-          <img
-            src="/hero-dog-600.webp"
-            srcSet="/hero-dog-600.webp 600w, /hero-dog-900.webp 900w, /hero-dog.webp 1200w"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 900px, 1200px"
-            alt="Premium cat trees and indoor cat furniture for large breeds"
-            width={1200}
-            height={675}
-            loading="eager"
-            fetchPriority="high"
-            decoding="async"
-            className="hero-lcp-img"
-          />
+          <picture>
+            <source
+              media="(max-width: 768px)"
+              srcSet="/hero/getpawsy-hero-mobile.webp"
+              type="image/webp"
+              width={896}
+              height={1184}
+            />
+            <img
+              src="/hero/getpawsy-hero-desktop.webp"
+              alt="Premium cat trees and indoor cat furniture for large breeds"
+              width={1600}
+              height={896}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              className="hero-lcp-img"
+            />
+          </picture>
           <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent pointer-events-none" />
         </div>
 
