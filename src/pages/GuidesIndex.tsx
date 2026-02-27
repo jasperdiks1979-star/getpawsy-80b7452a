@@ -4,6 +4,7 @@ import { BookOpen, Clock, ArrowRight, ChevronRight, Sparkles } from 'lucide-reac
 import { Layout } from '@/components/layout/Layout';
 import { useGuidesList } from '@/hooks/useGuides';
 import { Loader2 } from 'lucide-react';
+import { getGuideImage } from '@/config/guideImages';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -132,29 +133,46 @@ const GuidesIndex = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {categoryGuides.map((guide) => (
+                {categoryGuides.map((guide) => {
+                  const img = getGuideImage(guide.slug);
+                  return (
                   <Link
                     key={guide.slug}
                     to={`/guides/${guide.slug}`}
-                    className="group relative block rounded-2xl border border-border bg-card p-6 hover:border-primary/30 hover:shadow-soft hover:-translate-y-1 transition-all duration-300"
+                    className="group relative block rounded-2xl border border-border bg-card overflow-hidden hover:border-primary/30 hover:shadow-soft hover:-translate-y-1 transition-all duration-300"
                   >
-                    <h3 className="text-lg font-display font-bold text-foreground group-hover:text-primary transition-colors mb-2 leading-snug">
-                      {guide.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-5 line-clamp-2 leading-relaxed">
-                      {guide.excerpt}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                        <Clock className="w-3.5 h-3.5" />
-                        {guide.readingTime} min read
-                      </span>
-                      <span className="flex items-center gap-1.5 text-sm font-semibold text-primary group-hover:gap-2.5 transition-all duration-300">
-                        Read Guide <ArrowRight className="w-4 h-4" />
-                      </span>
+                    <div className="aspect-[14/9] overflow-hidden">
+                      <img
+                        src={img.src}
+                        alt={img.alt}
+                        width={1400}
+                        height={900}
+                        loading="lazy"
+                        decoding="async"
+                        className="aspect-[14/9] w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => { e.currentTarget.src = '/guides/default-guide.webp'; }}
+                      />
+                    </div>
+                    <div className="p-6">
+                      <h3 className="text-lg font-display font-bold text-foreground group-hover:text-primary transition-colors mb-2 leading-snug">
+                        {guide.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-5 line-clamp-2 leading-relaxed">
+                        {guide.excerpt}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                          <Clock className="w-3.5 h-3.5" />
+                          {guide.readingTime} min read
+                        </span>
+                        <span className="flex items-center gap-1.5 text-sm font-semibold text-primary group-hover:gap-2.5 transition-all duration-300">
+                          Read Guide <ArrowRight className="w-4 h-4" />
+                        </span>
+                      </div>
                     </div>
                   </Link>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Shop CTA for this category hub */}

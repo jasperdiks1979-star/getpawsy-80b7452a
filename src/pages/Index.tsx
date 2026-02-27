@@ -73,12 +73,8 @@ const categoryImageLoaders: Record<string, () => Promise<string>> = {
   'Cats': () => import('@/assets/categories/cats.jpg').then(m => m.default),
 };
 
-// Guide image loaders — each guide MUST have a unique image (no duplicates)
-const guideImageLoaders: Record<string, () => Promise<string>> = {
-  'best-cat-trees-large-cats-2026': () => Promise.resolve('/guides/cat-trees-large-2026.webp'),
-  'best-cat-litter-box-2026': () => Promise.resolve('/guides/cat-litter-boxes-2026.webp'),
-  'best-cat-litter-box-furniture-enclosures-2026': () => import('@/assets/guides/guide-litter-furniture.jpg').then(m => m.default),
-};
+// Guide images — centralized config (src/config/guideImages.ts)
+import { getGuideImage } from '@/config/guideImages';
 
 /** Lazy image component — loads image module on mount, shows warm placeholder */
 function LazyImage({ loader, alt, className, width, height }: {
@@ -585,33 +581,35 @@ const Index = () => {
                     slug: 'best-cat-trees-large-cats-2026',
                     title: 'Best Cat Trees for Large Cats (2026)',
                     desc: 'Heavy-duty trees rated for 25+ lbs. Maine Coon & Ragdoll approved.',
-                    imageLoader: guideImageLoaders['best-cat-trees-large-cats-2026'],
                   },
                   {
                     slug: 'best-cat-litter-box-2026',
                     title: 'Best Cat Litter Boxes (2026)',
                     desc: '12 tested picks for odor control, large cats & multi-cat homes.',
-                    imageLoader: guideImageLoaders['best-cat-litter-box-2026'],
                   },
                   {
                     slug: 'self-cleaning-litter-box-worth-it',
                     title: 'Are Self-Cleaning Litter Boxes Worth It?',
                     desc: 'Honest cost breakdown, pros & cons, and who should buy one.',
-                    imageLoader: guideImageLoaders['best-cat-litter-box-furniture-enclosures-2026'],
                   },
-                ]).map((guide) => (
+                ]).map((guide) => {
+                  const img = getGuideImage(guide.slug);
+                  return (
                   <div key={guide.slug}>
                     <Link
                       to={`/guides/${guide.slug}`}
                       className="group block bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-500 hover:-translate-y-1.5 border border-border/50"
                     >
-                      <div className="relative aspect-[16/10] overflow-hidden">
-                        <LazyImage
-                          loader={guide.imageLoader}
-                          alt={guide.title}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                          width={600}
-                          height={375}
+                      <div className="relative aspect-[14/9] overflow-hidden">
+                        <img
+                          src={img.src}
+                          alt={img.alt}
+                          width={1400}
+                          height={900}
+                          loading="lazy"
+                          decoding="async"
+                          className="aspect-[14/9] w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          onError={(e) => { e.currentTarget.src = '/guides/default-guide.webp'; }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                       </div>
@@ -626,7 +624,8 @@ const Index = () => {
                       </div>
                     </Link>
                   </div>
-                ))}
+                  );
+                })}
               </FadeInView>
               <div className="text-center mt-10">
                 <Link to="/guides">
