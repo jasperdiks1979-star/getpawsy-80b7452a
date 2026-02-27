@@ -1,18 +1,20 @@
-import { Navbar } from './Navbar';
-import { Footer } from './Footer';
 import { ScrollToTop } from '../ui/scroll-to-top';
 import { PageTransition } from '../ui/page-transition';
 import { MarketingErrorBoundary } from '../error/MarketingErrorBoundary';
 
 import { lazy, Suspense, useState, useEffect } from 'react';
-import { TrendingNowStrip } from '../marketing/TrendingNowStrip';
+
+// ⚡ Navbar + Footer + TrendingNowStrip: lazy-loaded — keeps them out of initial JS evaluation
+// The static HTML shell in index.html covers the visual gap for hero
+const Navbar = lazy(() => import('./Navbar').then(m => ({ default: m.Navbar })));
+const Footer = lazy(() => import('./Footer').then(m => ({ default: m.Footer })));
+const TrendingNowStrip = lazy(() => import('../marketing/TrendingNowStrip').then(m => ({ default: m.TrendingNowStrip })));
 
 // Lazy-load all non-critical marketing/overlay widgets
 const WelcomePopup = lazy(() => import('../marketing/WelcomePopup').then(m => ({ default: m.WelcomePopup })).catch(() => ({ default: () => null })));
 const ExitIntentPopup = lazy(() => import('../marketing/ExitIntentPopup').then(m => ({ default: m.ExitIntentPopup })).catch(() => ({ default: () => null })));
 const SlowFeederLeadMagnet = lazy(() => import('../marketing/SlowFeederLeadMagnet').then(m => ({ default: m.SlowFeederLeadMagnet })).catch(() => ({ default: () => null })));
 const CookieConsent = lazy(() => import('../marketing/CookieConsent').then(m => ({ default: m.CookieConsent })).catch(() => ({ default: () => null })));
-// LiveVisitorBadge removed from storefront — admin-only widget, was causing bundle leakage
 const ChatWidgetWrapper = lazy(() => import('../chat/ChatWidgetWrapper').then(m => ({ default: m.ChatWidgetWrapper })).catch(() => ({ default: () => null })));
 
 interface LayoutProps {
@@ -72,12 +74,18 @@ export const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen min-h-[100dvh] flex flex-col w-full max-w-[100vw] overflow-x-hidden">
-      <Navbar />
-      <TrendingNowStrip />
+      <Suspense fallback={<div style={{ height: 112 }} aria-hidden="true" />}>
+        <Navbar />
+      </Suspense>
+      <Suspense fallback={<div style={{ height: 36, contain: 'layout' }} aria-hidden="true" />}>
+        <TrendingNowStrip />
+      </Suspense>
       <PageTransition>
         <main className="flex-1 w-full max-w-[100vw] overflow-x-hidden pb-safe">{children}</main>
       </PageTransition>
-      <Footer />
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
       {/* CookieConsent always mounts (has its own defer logic) */}
       <MarketingErrorBoundary>
         <Suspense fallback={null}>
