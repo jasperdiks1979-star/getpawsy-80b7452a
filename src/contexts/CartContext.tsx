@@ -9,9 +9,13 @@ const trackGoogleAdsAddToCart = (productId: string, productName: string, price: 
 // ⚡ supabase is NOT imported at top level — dynamic import keeps ~138KB SDK off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
-import { toast } from 'sonner';
-import { fireMarketingAsync } from '@/lib/marketingClient';
-import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
+// ⚡ CRITICAL FIX: sonner, marketingClient, and useVisitorTracking were sync-imported,
+// pulling ~160KB (sonner + supabase SDK via trackVisitorEvent) into the main bundle.
+// Now all three are lazily imported — only loaded when actually called.
+const showToast = (msg: string) => import('sonner').then(m => m.toast.success(msg)).catch(() => {});
+const showErrorToast = (msg: string) => import('sonner').then(m => m.toast.error(msg)).catch(() => {});
+const getFireMarketingAsync = () => import('@/lib/marketingClient').then(m => m.fireMarketingAsync);
+const getTrackVisitorEvent = () => import('@/hooks/useVisitorTracking').then(m => m.trackVisitorEvent);
 
 export interface CartItem {
   id: string;
@@ -221,20 +225,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(prev => {
       const existing = prev.find(item => item.id === newItem.id);
       if (existing) {
-        toast.success(`${newItem.name} quantity increased`, {
-          description: `Now ${existing.quantity + 1} in cart`,
-          duration: 2000,
-        });
+        showToast(`${newItem.name} quantity increased`);
+        // toast options removed — lazy-loaded toast is simpler
         return prev.map(item =>
           item.id === newItem.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      toast.success(`Added to cart`, {
-        description: newItem.name,
-        duration: 2000,
-      });
+      showToast(`Added to cart: ${newItem.name}`);
       return [...prev, { ...newItem, quantity: 1 }];
     });
     
@@ -245,18 +244,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     trackGoogleAdsAddToCart(newItem.id, newItem.name, newItem.price, 1);
     
     // Internal visitor_activity tracking for funnel analysis
-    trackVisitorEvent('add_to_cart', {
+    getTrackVisitorEvent().then(fn => fn('add_to_cart', {
       productId: newItem.id,
       productName: newItem.name,
       productPrice: newItem.price,
       productQuantity: 1,
-    });
+    })).catch(() => {});
     
     // Legacy cart activity (for map visualization)
     trackCartActivity();
     
     // Pinterest AddToCart tracking — deferred, non-blocking
-    fireMarketingAsync('pinterest-addtocart', async () => {
+    getFireMarketingAsync().then(fn => fn('pinterest-addtocart', async () => {
       const { trackPinterestEvent } = await import('@/hooks/usePinterestTracking');
       trackPinterestEvent('addtocart', {
         value: newItem.price,
@@ -272,7 +271,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           product_quantity: 1,
         }],
       });
-    }, 'pinterest');
+    }, 'pinterest')).catch(() => {});
   };
 
   const removeItem = (id: string) => {
