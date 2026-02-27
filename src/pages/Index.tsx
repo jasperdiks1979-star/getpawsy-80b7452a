@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 // ⚡ Button + ArrowRight + useQuery: lazy-loaded — NOT needed for hero first paint
@@ -8,7 +9,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
 // ⚡ supabase NOT imported at top-level — dynamic import in queryFns keeps ~138KB off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { safeString, safePrice, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { FadeInView } from '@/components/ui/FadeInView';
 
@@ -73,10 +73,10 @@ const categoryImageLoaders: Record<string, () => Promise<string>> = {
   'Cats': () => import('@/assets/categories/cats.jpg').then(m => m.default),
 };
 
-// Guide image loaders
-// Only cat-focused guide images
+// Guide image loaders — each guide MUST have a unique image (no duplicates)
 const guideImageLoaders: Record<string, () => Promise<string>> = {
-  'best-cat-litter-box-2026': () => import('@/assets/guides/guide-cat-litter.jpg').then(m => m.default),
+  'best-cat-trees-large-cats-2026': () => Promise.resolve('/guides/cat-trees-large-2026.webp'),
+  'best-cat-litter-box-2026': () => Promise.resolve('/guides/cat-litter-boxes-2026.webp'),
   'best-cat-litter-box-furniture-enclosures-2026': () => import('@/assets/guides/guide-litter-furniture.jpg').then(m => m.default),
 };
 
@@ -585,7 +585,7 @@ const Index = () => {
                     slug: 'best-cat-trees-large-cats-2026',
                     title: 'Best Cat Trees for Large Cats (2026)',
                     desc: 'Heavy-duty trees rated for 25+ lbs. Maine Coon & Ragdoll approved.',
-                    imageLoader: guideImageLoaders['best-cat-litter-box-2026'],
+                    imageLoader: guideImageLoaders['best-cat-trees-large-cats-2026'],
                   },
                   {
                     slug: 'best-cat-litter-box-2026',
