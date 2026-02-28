@@ -56,6 +56,7 @@ export function useJobRunner() {
   });
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastProgressRef = useRef<number>(Date.now());
+  const STUCK_THRESHOLD_MS = 180_000; // 3 min without progress = stuck (matches backend)
   const [appearsStuck, setAppearsStuck] = useState(false);
 
   const fetchStatus = useCallback(async (runId?: string) => {
@@ -94,10 +95,14 @@ export function useJobRunner() {
     pollingRef.current = setInterval(async () => {
       const run = await fetchStatus(runId);
 
-      // Check stuck detection: 60s without progress
+      // Check stuck detection: use server-side updated_at (heartbeat) if available
       const sinceLastProgress = Date.now() - lastProgressRef.current;
-      if (sinceLastProgress > 60_000 && run && (run.status === 'queued' || run.status === 'running')) {
-        setAppearsStuck(true);
+      if (run && (run.status === 'queued' || run.status === 'running')) {
+        // Also check server-side heartbeat via started_at as fallback
+        const serverLastProgress = run.started_at ? Date.now() - new Date(run.started_at).getTime() : 0;
+        if (sinceLastProgress > STUCK_THRESHOLD_MS || serverLastProgress > STUCK_THRESHOLD_MS) {
+          setAppearsStuck(true);
+        }
       }
 
       if (run && (run.status === 'success' || run.status === 'failed' || run.status === 'cancelled')) {

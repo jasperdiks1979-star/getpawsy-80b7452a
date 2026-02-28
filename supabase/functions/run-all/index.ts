@@ -93,17 +93,19 @@ Deno.serve(async (req) => {
     // Distributed lock — check for active run
     const { data: activeRun } = await supabase
       .from('job_runs')
-      .select('id, started_at')
+      .select('id, started_at, updated_at')
       .in('status', ['queued', 'running'])
       .limit(1)
       .maybeSingle();
 
     if (activeRun) {
       const forceOverride = body.forceOverride === true;
-      const staleSinceMs = activeRun.started_at
-        ? Date.now() - new Date(activeRun.started_at).getTime()
+      // Use updated_at (heartbeat) for staleness, fall back to started_at
+      const lastHeartbeat = activeRun.updated_at || activeRun.started_at;
+      const staleSinceMs = lastHeartbeat
+        ? Date.now() - new Date(lastHeartbeat).getTime()
         : 0;
-      const isStale = staleSinceMs > 90_000; // 90s no-progress = stale
+      const isStale = staleSinceMs > 180_000; // 3 min without heartbeat = stale
 
       if (forceOverride || isStale) {
         // Auto-release the stuck lock
@@ -242,6 +244,9 @@ Deno.serve(async (req) => {
         .eq('run_id', run.id).eq('step_key', step.key);
 
       await log(supabase, run.id, step.key, 'info', `Starting: ${step.label}`);
+
+      // Heartbeat: update run's updated_at so stale lock detection works
+      await supabase.from('job_runs').update({ updated_at: new Date().toISOString() }).eq('id', run.id);
 
       const stepStart = Date.now();
 

@@ -326,7 +326,7 @@ export function RunCenterCard() {
           {appearsStuck && isActive && (
             <div className="flex items-center gap-1.5 text-[10px] text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded px-2 py-1 flex-wrap">
               <AlertTriangle className="h-3 w-3 shrink-0" />
-              <span>Run appears stuck — no progress for 60s</span>
+              <span>Run appears stuck — no heartbeat for 3 min</span>
               <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px] gap-1" onClick={resetView}>
                 <RefreshCw className="h-3 w-3" /> Refresh
               </Button>
@@ -355,10 +355,15 @@ export function RunCenterCard() {
               <div>Lock: <span className={isActive ? 'text-yellow-500' : 'text-green-500'}>{isActive ? 'HELD' : 'FREE'}</span></div>
               <div>State: <span className="text-foreground">{run?.status?.toUpperCase() || 'IDLE'}</span></div>
               <div>Run ID: <span className="text-muted-foreground">{run?.id?.slice(0, 8) || '—'}</span></div>
-              <div>Progress: <span className="text-muted-foreground">
-                {run?.started_at
-                  ? `${Math.round((Date.now() - new Date(run.started_at).getTime()) / 1000)}s ago`
-                  : '—'}
+              <div>Heartbeat: <span className={cn("text-muted-foreground", appearsStuck && isActive && "text-destructive font-bold")}>
+                {(() => {
+                  if (!run) return '—';
+                  // Use updated_at as heartbeat indicator
+                  const ts = (run as any).updated_at || run.started_at;
+                  if (!ts) return '—';
+                  const ago = Math.round((Date.now() - new Date(ts).getTime()) / 1000);
+                  return `${ago}s ago`;
+                })()}
               </span></div>
               {steps.length > 0 && (
                 <>
