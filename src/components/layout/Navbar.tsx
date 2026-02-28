@@ -43,9 +43,8 @@ import logoIcon from '@/assets/logo-getpawsy.png';
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/collections/cat-trees-and-condos', label: 'Cat Trees' },
-  { href: '/collections/best-cat-litter-boxes', label: 'Litter Boxes' },
-  { href: '/products?category=cat-furniture', label: 'Cat Furniture' },
+  { href: '/dog', label: '🐕 Dogs' },
+  { href: '/cat', label: '🐈 Cats' },
   { href: '/guides', label: 'Guides' },
   { href: '/bestsellers', label: 'Bestsellers', icon: Award, highlight: true },
 ];
@@ -457,21 +456,21 @@ export const Navbar = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-64">
                 <DropdownMenuItem asChild>
-                  <Link to="/collections/cat-trees-and-condos" className="flex items-center gap-3 py-2">
-                    <span className="text-lg">🏔️</span>
+                  <Link to="/dog" className="flex items-center gap-3 py-2">
+                    <span className="text-lg">🐕</span>
                     <div>
-                      <p className="font-medium">Cat Trees & Condos</p>
-                      <p className="text-xs text-muted-foreground">Heavy-duty, stability-tested</p>
+                      <p className="font-medium">Dog Training & Travel</p>
+                      <p className="text-xs text-muted-foreground">Collars, carriers & training gear</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/collections/best-cat-litter-boxes" className="flex items-center gap-3 py-2">
-                    <span className="text-lg">✨</span>
+                  <Link to="/cat" className="flex items-center gap-3 py-2">
+                    <span className="text-lg">🐈</span>
                     <div>
-                      <p className="font-medium">Best Cat Litter Boxes</p>
-                      <p className="text-xs text-muted-foreground">Expert-tested 2026 picks</p>
+                      <p className="font-medium">Cat Trees & Essentials</p>
+                      <p className="text-xs text-muted-foreground">Trees, litter boxes & toys</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>
