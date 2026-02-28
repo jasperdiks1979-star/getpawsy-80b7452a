@@ -45,19 +45,15 @@ export function TrendingProducts() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const items = useMemo(() => (products || []).slice(0, 12), [products]);
-
-  if (!isLoading && products && products.length < 8) {
-    console.error(`TrendingProducts: only ${products.length} products (minimum 8 for SEO crawl depth)`);
-  }
+  const items = useMemo(() => (products || []).slice(0, 6), [products]);
 
   if (isLoading) {
     return (
       <section className="py-14 md:py-16">
         <div className="container px-4 md:px-6">
           <div className="h-8 w-56 bg-muted rounded mb-8 animate-pulse" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
-            {Array.from({ length: 12 }).map((_, i) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-5">
+            {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ aspectRatio: '3/4' }} />
             ))}
           </div>
@@ -70,7 +66,7 @@ export function TrendingProducts() {
 
   return (
     <HomeProductGridSection
-      title="Best Sellers"
+      title="Trending Pet Favorites"
       subtitle="Our most popular products — loved by pet owners across the US"
       products={items}
       trackingKey="best-sellers"

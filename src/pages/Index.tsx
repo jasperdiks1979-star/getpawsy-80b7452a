@@ -1,133 +1,47 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-// ⚡ Button + ArrowRight + useQuery: lazy-loaded — NOT needed for hero first paint
-// These are used below-fold only; keeping them off the critical path saves ~25KB parse
-const ArrowRight = lazy(() => import('lucide-react/dist/esm/icons/arrow-right'));
-const Button = lazy(() => import('@/components/ui/button').then(m => ({ default: m.Button })));
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
-// ⚡ supabase NOT imported at top-level — dynamic import in queryFns keeps ~138KB off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
-import { safeString, safePrice, safeProduct, SafeProduct } from '@/lib/safe-render';
 import { FadeInView } from '@/components/ui/FadeInView';
+import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 
-// ⚡ Deferred imports — not needed for first paint
-const getDedupeProducts = () => import('@/lib/dedupe-products').then(m => m.dedupeProducts);
-const showToast = (type: 'success' | 'error' | 'info', msg: string) =>
-  import('sonner').then(m => m.toast[type](msg));
-// Small pure-data modules — sync is fine (< 5KB combined, no deps)
-import { getAnchorText } from '@/lib/anchor-text-helper';
-import { getCategoryCollectionUrl } from '@/lib/category-collection-map';
-
-// ── Below-fold heavy components — lazy-loaded (not in initial bundle) ──────
-const Skeleton = lazy(() => import('@/components/ui/skeleton').then(m => ({ default: m.Skeleton })));
-const ProductCard = lazy(() => import('@/components/products/ProductCard').then(m => ({ default: m.ProductCard })));
-const Carousel = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.Carousel })));
-const CarouselContent = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.CarouselContent })));
-const CarouselItem = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.CarouselItem })));
-const CarouselPrevious = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.CarouselPrevious })));
-const CarouselNext = lazy(() => import('@/components/ui/carousel').then(m => ({ default: m.CarouselNext })));
-import type { CarouselApi } from '@/components/ui/carousel';
-
-// ── Below-fold page sections — lazy-loaded ───────────────────────────────
-const AnimatedTrustBadges = lazy(() => import('@/components/home/AnimatedTrustBadges'));
-const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAuthoritySection'));
-const BestsellersSection = lazy(() => import('@/components/home/BestsellersSection').then(m => ({ default: m.BestsellersSection })));
-const PremiumNicheGrid = lazy(() => import('@/components/home/PremiumNicheGrid').then(m => ({ default: m.PremiumNicheGrid })));
-const MostLovedPicks = lazy(() => import('@/components/home/MostLovedPicks'));
-const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
-const NewArrivalsSection = lazy(() => import('@/components/home/NewArrivalsSection'));
-const ShopByCategoryLinks = lazy(() => import('@/components/home/ShopByCategoryLinks'));
-const MostPopularMonthly = lazy(() => import('@/components/home/MostPopularMonthly'));
+// ── Below-fold heavy components — lazy-loaded ──────────────────────────
 const TopPicksSection = lazy(() => import('@/components/home/TopPicksSection'));
-const SalesAccelerationBanner = lazy(() => import('@/components/home/SalesAccelerationBanner').then(m => ({ default: m.SalesAccelerationBanner })));
-const MoneyHubBlocks = lazy(() => import('@/components/home/MoneyHubBlocks').then(m => ({ default: m.MoneyHubBlocks })));
-// ── NEW conversion sections — lazy-loaded ─────────────────────────────────
-
+const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
 const ProblemSolutionBlock = lazy(() => import('@/components/home/ProblemSolutionBlock'));
 const WhyGetPawsyComparison = lazy(() => import('@/components/home/WhyGetPawsyComparison'));
 const GuaranteeBlock = lazy(() => import('@/components/home/GuaranteeBlock'));
-// ── SEO schemas — tiny, sync ─────────────────────────────────────────────
-import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
+const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAuthoritySection'));
+const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
 
-// ⚡ SEO schemas — tiny but not needed for LCP, defer
+// ── SEO schemas — tiny, sync ─────────────────────────────────────────────
 const WebsiteSchema = lazy(() => import('@/components/seo/WebsiteSchema').then(m => ({ default: m.WebsiteSchema })));
 const LocalBusinessSchema = lazy(() => import('@/components/seo/LocalBusinessSchema').then(m => ({ default: m.LocalBusinessSchema })));
-
-// ── Icons: only import what is strictly needed above fold ─────────────────
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
-// Below-fold icons — deep per-icon imports, each only loaded when visible
-const BELOW_FOLD_ICONS = {
-  Clock: lazy(() => import('lucide-react/dist/esm/icons/clock')),
-  BookOpen: lazy(() => import('lucide-react/dist/esm/icons/book-open')),
-  Truck: lazy(() => import('lucide-react/dist/esm/icons/truck')),
-  ShieldCheck: lazy(() => import('lucide-react/dist/esm/icons/shield-check')),
-  RotateCcw: lazy(() => import('lucide-react/dist/esm/icons/rotate-ccw')),
-  Heart: lazy(() => import('lucide-react/dist/esm/icons/heart')),
-  Star: lazy(() => import('lucide-react/dist/esm/icons/star')),
-};
 
 // ── Non-critical analytics/debug — deferred ───────────────────────────────
 const trackNewsletterSignup = (email: string) =>
   import('@/lib/analytics').then(m => m.trackNewsletterSignup(email));
-
-// ── Category image loaders — never in initial bundle ─────────────────────
-// Only cat-focused category images — non-cat categories suppressed from homepage
-const categoryImageLoaders: Record<string, () => Promise<string>> = {
-  'Cats': () => import('@/assets/categories/cats.jpg').then(m => m.default),
-};
-
-// Guide images — centralized config (src/config/guideImages.ts)
-import { getGuideImage } from '@/config/guideImages';
-
-/** Lazy image component — loads image module on mount, shows warm placeholder */
-function LazyImage({ loader, alt, className, width, height }: {
-  loader: () => Promise<string>;
-  alt: string;
-  className?: string;
-  width?: number;
-  height?: number;
-}) {
-  const [src, setSrc] = useState<string | null>(null);
-  useEffect(() => { loader().then(setSrc).catch(() => {}); }, []); // eslint-disable-line
-  if (!src) return <div className={className} style={{ width, height, background: 'hsl(38 35% 93%)' }} />;
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      width={width}
-      height={height}
-      loading="lazy"
-      decoding="async"
-      onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
-    />
-  );
-}
+const showToast = (type: 'success' | 'error' | 'info', msg: string) =>
+  import('sonner').then(m => m.toast[type](msg));
 
 // ── Hook: gates non-critical data fetches until after first interaction/paint ──
 function useHydrationReady(): boolean {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     if (ready) return;
-    const activate = () => {
-      setReady(true);
-    };
-    // Defer until idle or user interaction — whichever comes first
+    const activate = () => setReady(true);
     const ric = 'requestIdleCallback' in window
       ? (window as any).requestIdleCallback(activate, { timeout: 3000 })
       : setTimeout(activate, 1000);
-    const handler = () => { activate(); };
+    const handler = () => activate();
     window.addEventListener('scroll', handler, { once: true, passive: true });
     window.addEventListener('click', handler, { once: true, passive: true });
     window.addEventListener('touchstart', handler, { once: true, passive: true });
     return () => {
-      if ('requestIdleCallback' in window) {
-        (window as any).cancelIdleCallback(ric);
-      } else {
-        clearTimeout(ric as number);
-      }
+      if ('requestIdleCallback' in window) (window as any).cancelIdleCallback(ric);
+      else clearTimeout(ric as number);
       window.removeEventListener('scroll', handler);
       window.removeEventListener('click', handler);
       window.removeEventListener('touchstart', handler);
@@ -137,11 +51,8 @@ function useHydrationReady(): boolean {
 }
 
 const Index = () => {
-
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
-
-  // Gate — non-critical queries only run after first paint / idle
   const hydrationReady = useHydrationReady();
 
   // Dev-only crawl heatmap logger
@@ -150,164 +61,6 @@ const Index = () => {
       import('@/utils/crawlHeatmap').then(m => m.logHomepageCrawlStats()).catch(() => {});
     }
   }, [hydrationReady]);
-
-  // Featured products carousel state
-  const [productsApi, setProductsApi] = useState<CarouselApi>();
-
-  // Auto-play for featured products carousel
-  useEffect(() => {
-    if (!productsApi) return;
-    const interval = setInterval(() => {
-      if (productsApi.canScrollNext()) {
-        productsApi.scrollNext();
-      } else {
-        productsApi.scrollTo(0);
-      }
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [productsApi]);
-
-  // ── Featured products — only starts fetching after hydration gate ──
-  // Featured products: Dog & Cat Training + Travel focus (50/50 split)
-  const { data: featuredProducts, isLoading: productsLoading } = useQuery({
-    queryKey: ['featured-products-training-travel'],
-    queryFn: async () => {
-      const [supabase, dedupeProducts] = await Promise.all([getSupabase(), getDedupeProducts()]);
-      const { data, error } = await supabase
-        .from('products_public')
-        .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
-        .eq('is_active', true)
-        .in('category', ['Dog Training', 'Dog Carriers', 'Dog Collars & Leashes', 'Cat Trees & Condos', 'Cat Carriers', 'Cat Toys', 'Cat Scratching Posts'])
-        .order('price', { ascending: false })
-        .limit(12);
-      if (error) throw error;
-      return dedupeProducts(data || []);
-    },
-    enabled: hydrationReady,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // ── Categories — deferred until hydration gate ──────────────────────────
-  // FIX: Was 3 sequential DB calls (categories + full products scan + all categories).
-  // Now: 2 parallel calls with a LIMIT on the products scan, reducing serial latency
-  // from ~600ms to ~200ms and eliminating the full-table-scan.
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['homepage-categories'],
-    queryFn: async () => {
-      // Run both queries in parallel — eliminates the sequential await chain
-      const supabase = await getSupabase();
-      const [categoriesRes, allCategoriesRes, productsRes] = await Promise.all([
-        supabase
-          .from('categories')
-          .select('id, name, slug, description, image_url, display_order, icon')
-          .is('parent_id', null)
-          .order('display_order', { ascending: true }),
-        supabase
-          .from('categories')
-          .select('id, parent_id, name, slug'),
-        supabase
-          .from('products_public')
-          .select('category')
-          .eq('is_active', true)
-          .limit(500),
-      ]);
-
-      if (categoriesRes.error) throw categoriesRes.error;
-      const categoriesData = categoriesRes.data || [];
-      const allCategories = allCategoriesRes.data || [];
-      const productsData = productsRes.data || [];
-
-      // Build slug/name → root parent ID lookup in one pass
-      const catById: Record<string, { id: string; parent_id: string | null }> = {};
-      allCategories.forEach(cat => { catById[cat.id] = cat; });
-
-      const findRootParent = (categoryId: string, visited = new Set<string>()): string | null => {
-        if (visited.has(categoryId)) return null;
-        visited.add(categoryId);
-        const cat = catById[categoryId];
-        if (!cat) return null;
-        if (!cat.parent_id) return categoryId;
-        return findRootParent(cat.parent_id, visited);
-      };
-
-      const catNameToRootId: Record<string, string> = {};
-      allCategories.forEach(cat => {
-        const rootId = findRootParent(cat.id);
-        if (rootId) {
-          catNameToRootId[cat.name.toLowerCase().trim()] = rootId;
-          if (cat.slug) catNameToRootId[cat.slug.toLowerCase().trim()] = rootId;
-        }
-      });
-
-      // Count per root parent in one pass
-      const rootCountMap: Record<string, number> = {};
-      productsData.forEach(p => {
-        if (p.category) {
-          const rootId = catNameToRootId[p.category.toLowerCase().trim()];
-          if (rootId) rootCountMap[rootId] = (rootCountMap[rootId] || 0) + 1;
-        }
-      });
-
-      return categoriesData
-        .map(cat => ({ ...cat, product_count: rootCountMap[cat.id] || 0 }))
-        .filter(cat => cat.product_count > 0);
-    },
-    enabled: hydrationReady,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const safeCategories = useMemo(() => {
-    if (!categories) return [];
-    return categories.map(cat => ({
-      ...cat,
-      name: safeString(cat.name),
-      description: safeString(cat.description),
-      image_url: safeString(cat.image_url),
-      slug: safeString(cat.slug),
-    }));
-  }, [categories]);
-
-  const safeFeaturedProducts = useMemo(() => {
-    if (!featuredProducts) return [];
-    return featuredProducts
-      .map(p => safeProduct(p))
-      .filter((p): p is SafeProduct => p !== null);
-  }, [featuredProducts]);
-
-  // ── Recently viewed — gated on hydration ────────────────────────────────
-  const recentlyViewedIds = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('recently_viewed');
-      return raw ? JSON.parse(raw) as string[] : [];
-    } catch { return []; }
-  }, []);
-
-  const { data: recentlyViewedProducts } = useQuery({
-    queryKey: ['recently-viewed-products', recentlyViewedIds],
-    queryFn: async () => {
-      if (recentlyViewedIds.length === 0) return [];
-      const supabase = await getSupabase();
-      const { data, error } = await supabase
-        .from('products_public')
-        .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
-        .in('id', recentlyViewedIds)
-        .eq('is_active', true);
-      if (error) throw error;
-      if (!data) return [];
-      return recentlyViewedIds
-        .map(id => data.find(p => p.id === id))
-        .filter((p): p is NonNullable<typeof p> => p != null);
-    },
-    enabled: hydrationReady && recentlyViewedIds.length > 0,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const safeRecentlyViewedProducts = useMemo(() => {
-    if (!recentlyViewedProducts) return [];
-    return recentlyViewedProducts
-      .map(p => safeProduct(p))
-      .filter((p): p is SafeProduct => p !== null);
-  }, [recentlyViewedProducts]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -328,7 +81,7 @@ const Index = () => {
           throw error;
         }
       } else {
-        showToast('success', 'Thanks for signing up! Check your inbox for 15% off.');
+        showToast('success', 'Thanks for signing up! Check your inbox for 10% off.');
         trackNewsletterSignup(newsletterEmail);
       }
       setNewsletterEmail('');
@@ -342,24 +95,26 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Dog & Cat Training & Travel Gear – US 3–7 Day Shipping | GetPawsy</title>
-        <meta name="description" content="Smart training & travel gear for dogs and cats. US warehouse shipping in 3–7 days. Harnesses, carriers, enrichment toys & travel essentials. 30-day guarantee." />
+        <title>Premium Dog & Cat Essentials — Fast US Shipping | GetPawsy</title>
+        <meta name="description" content="Premium dog & cat essentials with fast US shipping. Vet-approved picks, 3–7 day delivery, 30-day returns. Shop training gear, beds, cat trees & more." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Dog & Cat Training & Travel Gear – US Shipping | GetPawsy" />
-        <meta property="og:description" content="Smart training & travel gear for dogs and cats. US warehouse 3–7 day shipping. 30-day guarantee." />
+        <meta property="og:title" content="Premium Dog & Cat Essentials — Fast US Shipping | GetPawsy" />
+        <meta property="og:description" content="Premium dog & cat essentials with fast US shipping. Vet-approved picks, 3–7 day delivery, 30-day returns." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Dog & Cat Training & Travel Gear | GetPawsy" />
-        <meta name="twitter:description" content="Smart training & travel gear for dogs and cats. US warehouse 3–7 day shipping. 30-day guarantee." />
+        <meta name="twitter:title" content="Premium Dog & Cat Essentials | GetPawsy" />
+        <meta name="twitter:description" content="Vet-approved dog & cat essentials. Fast US shipping, 30-day returns." />
       </Helmet>
       <Suspense fallback={null}>
         <WebsiteSchema />
         <LocalBusinessSchema />
       </Suspense>
 
-      {/* ── HERO — zero JS animation, instant paint ─────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════
+          1. HERO — zero JS, instant paint, preloaded LCP image
+          ═══════════════════════════════════════════════════════════════ */}
       <section
         className="hero-lcp-section relative overflow-hidden flex items-center"
         style={{ minHeight: 'calc(85vh - 148px)', contain: 'layout style' }}
@@ -375,7 +130,7 @@ const Index = () => {
             />
             <img
               src="/hero/getpawsy-hero-desktop.webp"
-              alt="Premium cat trees and indoor cat furniture for large breeds"
+              alt="Premium dog and cat essentials — beds, cat trees, training gear"
               width={1600}
               height={896}
               loading="eager"
@@ -389,526 +144,180 @@ const Index = () => {
 
         <div className="container relative z-10 px-4 md:px-6 py-16 md:py-24">
           <div className="max-w-2xl">
-            {/* instant=true — no JS state/observer needed, paints at 0ms */}
             <div className="space-y-6">
-         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">Dog & Cat Training & Travel Specialist</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">
+                Dog & Cat Essentials — US Based
+              </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.05] tracking-tight">
-                Train Better. Travel Safer.
+                Premium Dog &amp; Cat Essentials
                 <br />
-                <span className="text-primary">For dogs & cats.</span>
+                <span className="text-primary">Fast US Shipping</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
-                Smart training &amp; travel gear for dogs and cats — US warehouse shipping (3–7 days) + 30-day happiness guarantee.
+                Vet-approved picks • 3–7 day US delivery • 30-day returns
               </p>
-              {/* ⚡ Hero CTAs: plain <a> tags — eliminates Button/Radix from critical render path. */}
+              {/* ⚡ Hero CTAs: plain <a> tags — no Radix/Button on critical path */}
               <div className="flex flex-wrap items-center gap-4 pt-2 relative z-10 pointer-events-auto">
                 <a
-                  href="/dog/"
-                  className="inline-flex items-center gap-2 rounded-full px-10 py-3 text-base font-semibold bg-foreground text-background shadow-lg hover:shadow-xl transition-shadow duration-200"
+                  href="/collections/dog"
+                  className="inline-flex items-center gap-2 rounded-full px-10 py-3 text-base font-semibold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl transition-all duration-200"
                 >
                   Shop Dog Essentials →
                 </a>
                 <a
-                  href="/cat/"
-                  className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-semibold border border-border bg-transparent text-foreground"
+                  href="/collections/cat"
+                  className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-semibold border border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                 >
                   Shop Cat Essentials
                 </a>
-              </div>
-              {/* Inline trust badges — zero JS, pure HTML */}
-              <div className="flex flex-wrap gap-x-5 gap-y-2 pt-4 text-xs md:text-sm font-medium text-muted-foreground">
-                <span>🇺🇸 US Shipping 3–7 Days</span>
-                <span>🛡️ 30-Day Guarantee</span>
-                <span>🔒 Secure Checkout</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Brand Values Strip ────────────────────────────────────── */}
-      <section className="py-6 border-y border-border/40 bg-card/60">
+      {/* ═══════════════════════════════════════════════════════════════
+          2. TRUST BAR — SVG-only icons, no external libraries
+          ═══════════════════════════════════════════════════════════════ */}
+      <section className="py-5 border-y border-border/40 bg-card/60" aria-label="Trust signals">
         <div className="container px-4 md:px-6">
-          <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 text-sm font-medium text-muted-foreground">
-            {[
-              { icon: '🇺🇸', label: 'US Shipping 3–7 Days' },
-              { icon: '🛡️', label: '30-Day Guarantee' },
-              { icon: '🔒', label: 'Secure Checkout' },
-              { icon: '🐕', label: 'Dog Training & Travel' },
-              { icon: '🐈', label: 'Cat Training & Travel' },
-            ].map((v) => (
-              <span key={v.label} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                <span>{v.icon}</span> {v.label}
-              </span>
-            ))}
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary">
+                <rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                <circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
+              </svg>
+              US Warehouse Shipping
+            </span>
+            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              4.8/5 Customer Rating
+            </span>
+            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              30-Day Guarantee
+            </span>
+            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              Secure Checkout
+            </span>
           </div>
         </div>
       </section>
 
-
-
-
-      {/* ── SECTION 3: Best Sellers Grid ──────────────────────────────── */}
-      <SectionErrorBoundary sectionName="Bestsellers">
-        <Suspense fallback={<div className="py-20" style={{ minHeight: 400 }} />}>
-          <BestsellersSection />
+      {/* ═══════════════════════════════════════════════════════════════
+          3. TRENDING PET FAVORITES — max 6 products
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Trending Products">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 400 }} />}>
+          <TrendingProducts />
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* ── SECTION 4: Problem → Solution ─────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════
+          4. SHOP BY PROBLEM — 4 grid blocks
+          ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Problem Solution">
-        <Suspense fallback={<div className="py-14" style={{ minHeight: 200 }} />}>
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
           <ProblemSolutionBlock />
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* ── SECTION 5: Why Choose GetPawsy (Comparison) ────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════
+          5. WHY GETPAWSY — 4 feature blocks
+          ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Why GetPawsy">
         <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
           <WhyGetPawsyComparison />
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* ── SECTION 6: Guarantee Block ──────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════
+          6. GUARANTEE BLOCK — 30-day happiness guarantee
+          ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Guarantee">
         <Suspense fallback={<div className="py-14" style={{ minHeight: 200 }} />}>
           <GuaranteeBlock />
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* ── Top Picks — 20 curated products for internal link authority ── */}
+      {/* ═══════════════════════════════════════════════════════════════
+          7. TOP PICKS — 20 curated products for internal link authority
+          ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Top Picks">
         <Suspense fallback={<div className="py-16" style={{ minHeight: 500 }} />}>
           <TopPicksSection />
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* ── Trending Products — crawl-optimized SEO product grid ────── */}
-      <SectionErrorBoundary sectionName="Trending Products">
-        <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
-          <TrendingProducts />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ── New Arrivals — crawl-optimized newest products grid ────── */}
-      <SectionErrorBoundary sectionName="New Arrivals">
-        <Suspense fallback={<div className="py-14" style={{ minHeight: 400 }} />}>
-          <NewArrivalsSection />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ── Shop by Category — mid-page discovery bridge ────────────── */}
-      <SectionErrorBoundary sectionName="Shop by Category Links">
-        <Suspense fallback={<div className="py-10" style={{ minHeight: 80 }} />}>
-          <ShopByCategoryLinks />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ── Most Popular This Month — money product SEO block ────── */}
-      <SectionErrorBoundary sectionName="Most Popular Monthly">
-        <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
-          <MostPopularMonthly />
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ── Most Loved Picks — gated to not block hero LCP ───────────── */}
-      <SectionErrorBoundary sectionName="Most Loved Picks">
-        <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
-          {hydrationReady ? <MostLovedPicks /> : <div style={{ minHeight: 400 }} />}
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ── Homepage Authority Section — SEO category links ─────────── */}
-      <SectionErrorBoundary sectionName="Authority Categories">
+      {/* ═══════════════════════════════════════════════════════════════
+          8. SEO AUTHORITY TEXT — category links + 200-word paragraph
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Authority Section">
         <Suspense fallback={<div className="py-16" style={{ minHeight: 300 }} />}>
           {hydrationReady ? <HomepageAuthoritySection /> : <div style={{ minHeight: 300 }} />}
         </Suspense>
       </SectionErrorBoundary>
 
-      {/* ── Money Hub SEO Blocks — 3 niche authority pillars ────────── */}
-      <SectionErrorBoundary sectionName="Money Hubs">
-        <Suspense fallback={<div className="py-16" style={{ minHeight: 400 }} />}>
-          {hydrationReady ? <MoneyHubBlocks /> : <div style={{ minHeight: 400 }} />}
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ── Sales Acceleration — Priority Category Spotlights ─────────── */}
-      <SectionErrorBoundary sectionName="Sales Acceleration">
-        <Suspense fallback={<div className="py-10" style={{ minHeight: 200 }} />}>
-          {hydrationReady ? <SalesAccelerationBanner /> : <div style={{ minHeight: 200 }} />}
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ── Trust Badges — gated behind hydration to not block LCP ─────────── */}
-      <SectionErrorBoundary sectionName="Features">
-        <Suspense fallback={<div className="py-6 md:py-10 bg-sand/50 border-y border-border/30" style={{ minHeight: 80 }} />}>
-          {hydrationReady ? <AnimatedTrustBadges /> : <div style={{ minHeight: 80 }} />}
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ── Popular Guides — deferred until hydration, reserve space for CLS ── */}
-      <SectionErrorBoundary sectionName="Popular Guides">
-        {hydrationReady ? (
-          <section className="py-20 bg-sand/30">
-            <div className="container px-4 md:px-6">
-              <FadeInView className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Training & Travel Buying Guides</h2>
-                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                  Expert-tested &amp; updated 2026 — dog training gear, travel safety, cat enrichment &amp; carrier comparisons
-                </p>
-              </FadeInView>
-              <FadeInView className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {([
-                  {
-                    slug: 'best-cat-trees-large-cats-2026',
-                    title: 'Best Cat Trees for Large Cats (2026)',
-                    desc: 'Heavy-duty trees rated for 25+ lbs. Maine Coon & Ragdoll approved.',
-                  },
-                  {
-                    slug: 'best-cat-litter-box-2026',
-                    title: 'Best Cat Litter Boxes (2026)',
-                    desc: '12 tested picks for odor control, large cats & multi-cat homes.',
-                  },
-                  {
-                    slug: 'self-cleaning-litter-box-worth-it',
-                    title: 'Are Self-Cleaning Litter Boxes Worth It?',
-                    desc: 'Honest cost breakdown, pros & cons, and who should buy one.',
-                  },
-                ]).map((guide) => {
-                  const img = getGuideImage(guide.slug);
-                  return (
-                  <div key={guide.slug}>
-                    <Link
-                      to={`/guides/${guide.slug}`}
-                      className="group block bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-500 hover:-translate-y-1.5 border border-border/50"
-                    >
-                      <div className="relative aspect-[14/9] overflow-hidden">
-                        <img
-                          src={img.src}
-                          alt={img.alt}
-                          width={1400}
-                          height={900}
-                          loading="lazy"
-                          decoding="async"
-                          className="aspect-[14/9] w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                          onError={(e) => { e.currentTarget.src = '/guides/default-guide.webp'; }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                      </div>
-                      <div className="p-6">
-                        <h3 className="font-display font-bold text-lg text-foreground group-hover:text-primary transition-colors mb-2 leading-snug">
-                          {getAnchorText(guide.slug, 'hero-insert')}
-                        </h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed mb-4">{guide.desc}</p>
-                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary group-hover:gap-2.5 transition-all duration-300">
-                          Read Guide <ArrowRight className="w-4 h-4" />
-                        </span>
-                      </div>
-                    </Link>
-                  </div>
-                  );
-                })}
-              </FadeInView>
-              <div className="text-center mt-10">
-                <Link to="/guides">
-                  <Button variant="outline" className="gap-2 rounded-full">
-                    View All Guides
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </section>
-        ) : (
-          <div style={{ minHeight: 500 }} />
-        )}
-      </SectionErrorBoundary>
-
-      {/* Bestsellers already shown above (Section 3) */}
-
-
-      {/* ── Categories — deferred ─────────────────────────────────────── */}
-      <SectionErrorBoundary sectionName="Categories">
-        {hydrationReady ? (
-        <section id="categories" className="py-20">
-          <div className="container px-4 md:px-6">
-            <FadeInView className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Shop by Category</h2>
-              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Training gear, travel essentials &amp; enrichment products for dogs and cats
-              </p>
-            </FadeInView>
-
-            {categoriesLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <div key={index} className="relative overflow-hidden rounded-2xl aspect-square">
-                    <Suspense fallback={<div className="w-full h-full bg-muted rounded-2xl" />}>
-                      <Skeleton className="w-full h-full" />
-                    </Suspense>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <FadeInView className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-                {safeCategories.map((category) => (
-                  <div key={category.id} className="transition-transform duration-300 hover:-translate-y-2">
-                    <Link
-                      to={getCategoryCollectionUrl(category.name)}
-                      className="group block relative overflow-hidden rounded-2xl aspect-square shadow-soft hover:shadow-soft-lg transition-shadow duration-300"
-                    >
-                      <LazyImage
-                        loader={categoryImageLoaders[category.name] || (async () => category.image_url || '/categories/dogs.jpg')}
-                        alt={`${category.name} - Shop premium ${category.name.toLowerCase()} products for pets`}
-                        width={400}
-                        height={400}
-                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-115"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/30 to-transparent transition-all duration-300 group-hover:from-primary/90 group-hover:via-primary/30" />
-                      <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300">
-                        <h3 className="font-display font-semibold text-lg text-white mb-1 transform translate-y-0 group-hover:-translate-y-1 transition-transform duration-300">
-                          {category.name}
-                        </h3>
-                        <p className="text-white/0 text-sm group-hover:text-white/80 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75">
-                          View products →
-                        </p>
-                      </div>
-                      <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-0 group-hover:scale-100 transition-all duration-300">
-                        <ArrowRight className="w-4 h-4 text-white" />
-                      </div>
-                    </Link>
-                  </div>
-                ))}
-              </FadeInView>
-            )}
-          </div>
-        </section>
-        ) : (
-          <div style={{ minHeight: 400 }} />
-        )}
-      </SectionErrorBoundary>
-
-      {/* ── Featured Products — gated behind hydration ────────────────── */}
-      <SectionErrorBoundary sectionName="Featured Products">
-        {hydrationReady ? (
-        <section className="py-20 bg-sand/40">
-          <div className="container px-4 md:px-6">
-            <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
-              <div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-2">Featured Training & Travel Gear</h2>
-                <p className="text-muted-foreground text-lg">Top-rated dog &amp; cat training and travel essentials</p>
-              </div>
-              <Link to="/products">
-                <Button variant="outline" className="gap-2 rounded-full">
-                  View All Products
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </FadeInView>
-
-            {productsLoading && (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            )}
-
-            {!productsLoading && safeFeaturedProducts.length > 0 && (
-              <FadeInView>
-                <Suspense fallback={<div className="h-80" />}>
-                  <Carousel
-                    setApi={setProductsApi}
-                    opts={{ align: 'start', loop: true, dragFree: true }}
-                    className="w-full cursor-grab active:cursor-grabbing"
-                  >
-                    <CarouselContent className="-ml-4">
-                      {safeFeaturedProducts.map((product) => (
-                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
-                          <ProductCard product={product as any} />
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                    <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-                    <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-                  </Carousel>
-                </Suspense>
-              </FadeInView>
-            )}
-
-            {!productsLoading && safeFeaturedProducts.length === 0 && (
-              <div className="text-center py-16 bg-card rounded-3xl shadow-soft">
-                <p className="text-muted-foreground mb-4">
-                  No products available yet. Import products via the admin page.
-                </p>
-                <Link to="/dashboard">
-                  <Button className="rounded-full">Go to Admin</Button>
-                </Link>
-              </div>
-            )}
-          </div>
-        </section>
-        ) : (
-          <div style={{ minHeight: 400 }} />
-        )}
-      </SectionErrorBoundary>
-
-      {/* Why Choose already shown above (Section 5 — Comparison Table) */}
-
-      {/* ── Revenue Niches — fully lazy + gated ─────────────────────────── */}
-      <SectionErrorBoundary sectionName="Revenue Niches">
-        <Suspense fallback={<div className="py-20" style={{ minHeight: 400 }} />}>
-          {hydrationReady ? <PremiumNicheGrid /> : <div style={{ minHeight: 400 }} />}
-        </Suspense>
-      </SectionErrorBoundary>
-
-      {/* ── Recently Viewed — only renders if data exists ────────────────── */}
-      {safeRecentlyViewedProducts.length > 0 && (
-        <SectionErrorBoundary sectionName="Recently Viewed">
-          <section className="py-20 bg-sand/40">
-            <div className="container px-4 md:px-6">
-              <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center">
-                    <Suspense fallback={<div className="w-6 h-6" />}>
-                      <BELOW_FOLD_ICONS.Clock className="w-6 h-6 text-secondary-foreground" />
-                    </Suspense>
-                  </div>
-                  <div>
-                    <h2 className="text-3xl md:text-4xl font-display font-bold">Recently Viewed</h2>
-                    <p className="text-muted-foreground text-lg">Pick up where you left off</p>
-                  </div>
-                </div>
-              </FadeInView>
-              <FadeInView>
-                <Suspense fallback={<div className="h-80" />}>
-                  <Carousel
-                    opts={{ align: 'start', loop: false, dragFree: true }}
-                    className="w-full cursor-grab active:cursor-grabbing"
-                  >
-                    <CarouselContent className="-ml-4">
-                      {safeRecentlyViewedProducts.map((product) => (
-                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4">
-                          <ProductCard product={product as any} />
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                    <CarouselPrevious className="hidden md:flex -left-4 lg:-left-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-                    <CarouselNext className="hidden md:flex -right-4 lg:-right-12 bg-card hover:bg-secondary border-2 border-border shadow-soft" />
-                  </Carousel>
-                </Suspense>
-              </FadeInView>
-            </div>
-          </section>
-        </SectionErrorBoundary>
-      )}
-
-      {/* ── Expert Guides — deferred ───────────────────────────────────── */}
-      <SectionErrorBoundary sectionName="Expert Guides">
-        {hydrationReady ? (
-        <section className="py-20 bg-muted/30">
-          <div className="container px-4 md:px-6">
-            <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <Suspense fallback={<div className="w-6 h-6" />}>
-                    <BELOW_FOLD_ICONS.BookOpen className="w-6 h-6 text-primary" />
-                  </Suspense>
-                </div>
-                <div>
-                  <h2 className="text-3xl md:text-4xl font-display font-bold">Expert Training & Travel Guides</h2>
-                  <p className="text-muted-foreground text-lg">In-depth buying guides for dog &amp; cat training and travel gear</p>
-                </div>
-              </div>
-              <Link to="/guides" className="group flex items-center gap-2 text-primary font-semibold hover:underline">
-                View all guides <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </FadeInView>
-
-            <FadeInView className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { slug: 'best-cat-litter-box-2026', badge: 'Cornerstone Guide', desc: '12 tested picks for odor control, large cats & multi-cat homes — with pros & cons.' },
-                { slug: 'best-cat-trees-2026', badge: 'Cornerstone Guide', desc: '9 cat trees tested for stability, enrichment & value. Large cats, budget picks & condos vs trees.' },
-                { slug: 'best-cat-trees-large-cats-2026', badge: 'Stability Guide', desc: '7 most stable cat trees for large & heavy cats. Weight capacity tested, Maine Coon approved.' },
-              ].map((guide) => (
-                <Link
-                  key={guide.slug}
-                  to={`/guides/${guide.slug}`}
-                  className="group bg-card rounded-2xl border border-border p-6 hover:border-primary/30 hover:shadow-soft transition-all"
-                >
-                  <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">{guide.badge}</span>
-                  <h3 className="font-display font-bold text-lg mt-3 mb-2 group-hover:text-primary transition-colors">
-                    {getAnchorText(guide.slug, 'mid-page-cornerstone')}
-                  </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{guide.desc}</p>
-                </Link>
-              ))}
-              {[
-                { slug: 'how-many-litter-boxes-per-cat', badge: 'Expert Advice', desc: 'The vet-backed n+1 rule explained with real placement tips.' },
-                { slug: 'best-cat-trees-small-apartments', badge: 'Space-Saving', desc: '7 compact cat trees tested in real apartments under 600 sq ft.' },
-                { slug: 'best-cat-litter-box-furniture-enclosures-2026', badge: 'Buying Guide', desc: '8 litter box enclosures tested for odor control and home décor.' },
-                { slug: 'self-cleaning-litter-box-worth-it', badge: 'Cost Analysis', desc: 'Honest breakdown: are self-cleaning litter boxes worth the investment?' },
-              ].map((guide) => (
-                <Link
-                  key={guide.slug}
-                  to={`/guides/${guide.slug}`}
-                  className="group bg-card rounded-2xl border border-border p-6 hover:border-primary/30 hover:shadow-soft transition-all"
-                >
-                  <span className="text-xs font-medium text-accent-foreground bg-accent/60 px-2.5 py-1 rounded-full">{guide.badge}</span>
-                  <h3 className="font-display font-bold text-lg mt-3 mb-2 group-hover:text-primary transition-colors">
-                    {getAnchorText(guide.slug, 'mid-page-hub')}
-                  </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{guide.desc}</p>
-                </Link>
-              ))}
-            </FadeInView>
-          </div>
-        </section>
-        ) : (
-          <div style={{ minHeight: 500 }} />
-        )}
-      </SectionErrorBoundary>
-
-      {/* ── Newsletter CTA — deferred ────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════
+          9. EMAIL CAPTURE — 10% off, inline form, no popup
+          ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Newsletter">
         {hydrationReady ? (
-        <section className="py-20">
-          <div className="container px-4 md:px-6">
-            <FadeInView className="relative overflow-hidden rounded-3xl gradient-warm p-10 md:p-16 text-center">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-              <div className="relative z-10">
-                <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 text-primary-foreground">
-                  Get 10% Off Your First Order 🐾
-                </h2>
-                <p className="text-lg text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-                  Join 2,000+ pet parents. Get exclusive deals, new arrivals, and pet care tips straight to your inbox.
-                </p>
-                <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-                  <input
-                    type="email"
-                    placeholder="Enter your email"
-                    value={newsletterEmail}
-                    onChange={(e) => setNewsletterEmail(e.target.value)}
-                    className="flex-1 px-5 py-3.5 rounded-full bg-white/15 border border-white/25 placeholder:text-white/60 text-white focus:outline-none focus:ring-2 focus:ring-white/40 backdrop-blur-sm"
-                    disabled={isSubscribing}
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-full px-8 py-3.5 text-sm font-semibold bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
-                    disabled={isSubscribing}
-                  >
-                    {isSubscribing ? 'Subscribing...' : 'Get 10% Off'}
-                  </button>
-                </form>
-                <p className="text-sm text-primary-foreground/70 mt-4">
-                  No spam, unsubscribe anytime. We respect your inbox.
-                </p>
-              </div>
-            </FadeInView>
-          </div>
-        </section>
+          <section className="py-16 md:py-20">
+            <div className="container px-4 md:px-6">
+              <FadeInView className="relative overflow-hidden rounded-3xl gradient-warm p-10 md:p-16 text-center">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+                <div className="relative z-10">
+                  <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 text-primary-foreground">
+                    Get 10% Off Your First Order
+                  </h2>
+                  <p className="text-lg text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
+                    Join thousands of pet parents. Get exclusive deals, new arrivals, and pet care tips.
+                  </p>
+                  <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                    <input
+                      type="email"
+                      placeholder="Enter your email"
+                      value={newsletterEmail}
+                      onChange={(e) => setNewsletterEmail(e.target.value)}
+                      className="flex-1 px-5 py-3.5 rounded-full bg-white/15 border border-white/25 placeholder:text-white/60 text-white focus:outline-none focus:ring-2 focus:ring-white/40 backdrop-blur-sm"
+                      disabled={isSubscribing}
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-full px-8 py-3.5 text-sm font-semibold bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+                      disabled={isSubscribing}
+                    >
+                      {isSubscribing ? 'Subscribing...' : 'Get 10% Off'}
+                    </button>
+                  </form>
+                  <p className="text-sm text-primary-foreground/70 mt-4">
+                    No spam, unsubscribe anytime. We respect your inbox.
+                  </p>
+                </div>
+              </FadeInView>
+            </div>
+          </section>
         ) : (
           <div style={{ minHeight: 300 }} />
         )}
       </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          STICKY MOBILE CTA — fixed bottom bar, Dog/Cat links
+          ═══════════════════════════════════════════════════════════════ */}
+      <Suspense fallback={null}>
+        <StickyMobileCta />
+      </Suspense>
     </Layout>
   );
 };

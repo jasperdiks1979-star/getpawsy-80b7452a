@@ -69,31 +69,36 @@ export function HomepageAuthoritySection() {
         {/* SEO authority paragraph */}
         <FadeInView className="mt-12 max-w-3xl mx-auto text-center">
           <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-            At GetPawsy, we curate the{' '}
-            <Link to="/bestsellers" className="text-primary hover:underline font-medium">
-              best pet products of 2026
+            GetPawsy is your one-stop shop for premium{' '}
+            <Link to="/collections/dog" className="text-primary hover:underline font-medium">
+              dog essentials
             </Link>{' '}
-            so you don't have to search endlessly. Whether you're looking for a supportive{' '}
+            and{' '}
+            <Link to="/collections/cat" className="text-primary hover:underline font-medium">
+              cat essentials
+            </Link>{' '}
+            — all shipped fast within the United States. We curate vet-approved training gear,{' '}
             <Link to="/collections/orthopedic-calming-dog-beds" className="text-primary hover:underline font-medium">
-              orthopedic dog bed
-            </Link>{' '}
-            for your senior pup, a space-saving{' '}
+              orthopedic dog beds
+            </Link>,{' '}
             <Link to="/collections/cat-condos" className="text-primary hover:underline font-medium">
-              cat tree for a small apartment
-            </Link>,
-            an{' '}
-            <Link to="/product/dog-cot-cooling-pet-bed-3" className="text-primary hover:underline font-medium">
-              elevated dog cot
-            </Link>{' '}
-            for summer cooling,
-            or enrichment toys that actually last — our US-based team has tested and reviewed
-            every product. We ship fast within the United States with free delivery on orders
-            over $35 and offer a 30-day hassle-free return policy. Thousands of pet parents
-            trust GetPawsy for quality, transparency, and expert guidance. Explore our{' '}
+              cat trees and condos
+            </Link>,{' '}
+            enrichment toys, and travel accessories designed for comfort, safety, and durability. 
+            Whether you're looking for a supportive bed for a senior pup, a space-saving cat tree 
+            for a small apartment, or interactive toys that actually last — our US-based team has 
+            tested and reviewed every product. We ship from US warehouses with 3–7 day delivery 
+            and free shipping on orders over $35. Every order is backed by our 30-day hassle-free 
+            return policy. Thousands of pet parents trust GetPawsy for quality, transparency, 
+            and expert guidance. Explore our{' '}
             <Link to="/guides" className="text-primary hover:underline font-medium">
               expert buying guides
             </Link>{' '}
-            and find the perfect match for your furry family member today.
+            or browse our{' '}
+            <Link to="/bestsellers" className="text-primary hover:underline font-medium">
+              best sellers
+            </Link>{' '}
+            to find the perfect match for your furry family member today.
           </p>
         </FadeInView>
       </div>
