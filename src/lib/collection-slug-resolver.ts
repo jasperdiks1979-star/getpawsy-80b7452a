@@ -45,6 +45,11 @@ const SLUG_ALIASES: Record<string, string> = {
   'dog-products': 'dog',
   'all-dog': 'dog',
   'shop-dog': 'dog',
+  // Multi-pet variants
+  'multi': 'multi-pet',
+  'multipet': 'multi-pet',
+  'all-pets': 'multi-pet',
+  'pet': 'multi-pet',
 };
 
 /**
@@ -89,6 +94,23 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     related_collection_slugs: ['orthopedic-calming-dog-beds', 'best-interactive-dog-toys', 'dog-collars-leashes'],
     product_category_filter: null,
     product_keyword_filter: 'dog',
+  },
+  'multi-pet': {
+    slug: 'multi-pet',
+    name: 'Multi-Pet Essentials — Products for Cats & Dogs',
+    primary_keyword: 'multi-pet products',
+    secondary_keywords: ['cat and dog products', 'pet supplies', 'multi-pet household', 'products for cats and dogs'],
+    seo_intro: 'Products designed for households with both cats and dogs. From shared water fountains and automatic feeders to universal grooming tools — find items that work for your whole furry family.',
+    meta_title: 'Multi-Pet Products — For Cats & Dogs | GetPawsy',
+    meta_description: 'Shop products made for multi-pet households. Water fountains, feeders, beds & more for cats and dogs. Curated for happy pet families.',
+    faq: [
+      { question: 'Can cats and dogs share a water fountain?', answer: 'Yes! Most pet water fountains are designed for both cats and dogs. Look for models with multiple drinking levels and sufficient capacity for all your pets.' },
+      { question: 'What products work for both cats and dogs?', answer: 'Water fountains, automatic feeders, pet cameras, grooming gloves, and travel carriers often come in universal designs that work for both species.' },
+    ],
+    related_blog_slug: null,
+    related_collection_slugs: ['cat', 'dog'],
+    product_category_filter: null,
+    product_keyword_filter: 'pet',
   },
 };
 

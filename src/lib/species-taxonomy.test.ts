@@ -37,17 +37,17 @@ describe('classifySpecies', () => {
   });
 
   // === Multi-pet products ===
-  it('classifies "Pet Bowl for Dogs and Cats" as both', () => {
-    expect(classifySpecies('Pet Bowl for Dogs and Cats').speciesPrimary).toBe('both');
+  it('classifies "Pet Bowl for Dogs and Cats" as multi', () => {
+    expect(classifySpecies('Pet Bowl for Dogs and Cats').speciesPrimary).toBe('multi');
   });
-  it('classifies "Dog & Cat Water Fountain" as both', () => {
-    expect(classifySpecies('Dog & Cat Water Fountain').speciesPrimary).toBe('both');
+  it('classifies "Dog & Cat Water Fountain" as multi', () => {
+    expect(classifySpecies('Dog & Cat Water Fountain').speciesPrimary).toBe('multi');
   });
-  it('classifies "Dog Cat Travel Carrier" as both', () => {
-    expect(classifySpecies('Dog Cat Travel Carrier').speciesPrimary).toBe('both');
+  it('classifies "Dog Cat Travel Carrier" as multi', () => {
+    expect(classifySpecies('Dog Cat Travel Carrier').speciesPrimary).toBe('multi');
   });
-  it('classifies "Automatic Feeder for Cats and Dogs" as both', () => {
-    expect(classifySpecies('Automatic Feeder for Cats and Dogs').speciesPrimary).toBe('both');
+  it('classifies "Automatic Feeder for Cats and Dogs" as multi', () => {
+    expect(classifySpecies('Automatic Feeder for Cats and Dogs').speciesPrimary).toBe('multi');
   });
 
   // === Edge cases ===
@@ -65,14 +65,35 @@ describe('classifySpecies', () => {
     expect(result.dogScore).toBe(0);
   });
   it('does NOT false-positive "catalog" as cat', () => {
-    // "catalog" contains "cat" but word-boundary matching should prevent false match
     expect(classifySpecies('Product Catalog Listing').speciesPrimary).toBe('unknown');
   });
   it('respects category signals', () => {
     expect(classifySpecies('Premium Bed', 'Dog Beds').speciesPrimary).toBe('dog');
   });
   it('returns correct taxonomy version', () => {
-    expect(classifySpecies('Dog Toy').taxonomyVersion).toBe(1);
+    expect(classifySpecies('Dog Toy').taxonomyVersion).toBe(2);
+  });
+
+  // === Confidence + reasons ===
+  it('returns high confidence for explicit multi-pet phrase', () => {
+    const result = classifySpecies('Pet Bowl for Dogs and Cats');
+    expect(result.speciesConfidence).toBeGreaterThanOrEqual(0.9);
+    expect(result.speciesReasons).toContain('explicit_multi_pet_phrase');
+  });
+  it('returns reasons array with signal sources for dog', () => {
+    const result = classifySpecies('Dog Training Leash');
+    expect(result.speciesReasons.length).toBeGreaterThan(0);
+    expect(result.speciesReasons.some(r => r.startsWith('title:'))).toBe(true);
+  });
+  it('returns zero confidence for unknown', () => {
+    const result = classifySpecies('Premium Steel Item');
+    expect(result.speciesConfidence).toBe(0);
+    expect(result.speciesReasons).toContain('no_species_signals');
+  });
+  it('returns multi when both cat and dog signals present without explicit phrase', () => {
+    const result = classifySpecies('Dog Harness with Cat Collar Adapter');
+    expect(result.speciesPrimary).toBe('multi');
+    expect(result.speciesReasons).toContain('both_species_signals_present');
   });
 });
 
@@ -91,8 +112,14 @@ describe('filterProductsBySpecies', () => {
     expect(result.map(p => p.name)).toContain('Pet Fountain for Dogs and Cats');
   });
 
-  it('filters dog products without multi-pet', () => {
+  it('filters dog products without multi-pet (strict mode, default)', () => {
     const result = filterProductsBySpecies(products, 'dog', false);
+    expect(result.length).toBe(1);
+    expect(result[0].name).toBe('Dog Leash');
+  });
+
+  it('filters dog products without multi-pet using default param', () => {
+    const result = filterProductsBySpecies(products, 'dog');
     expect(result.length).toBe(1);
     expect(result[0].name).toBe('Dog Leash');
   });

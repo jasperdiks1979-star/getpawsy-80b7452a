@@ -355,18 +355,26 @@ const SeoCollection = () => {
   });
 
   // Species taxonomy filter for cat/dog virtual collections
-  const isSpeciesCollection = slug === 'cat' || slug === 'dog';
-  const [includeMultiPet, setIncludeMultiPet] = useState(true);
+  const isSpeciesCollection = slug === 'cat' || slug === 'dog' || slug === 'multi-pet';
+  const [includeMultiPet, setIncludeMultiPet] = useState(false); // STRICT mode: off by default
 
   const products = useMemo(() => {
     const raw = productMatch?.products || [];
     if (!isSpeciesCollection || raw.length === 0) return raw;
 
+    if (slug === 'multi-pet') {
+      // Multi-pet collection: show only multi items
+      return raw.filter(p => {
+        const taxonomy = classifySpecies(p.name, p.category || '', []);
+        return taxonomy.speciesPrimary === 'multi';
+      });
+    }
+
     const targetSpecies = slug as 'cat' | 'dog';
     return raw.filter(p => {
       const taxonomy = classifySpecies(p.name, p.category || '', []);
       if (taxonomy.speciesPrimary === targetSpecies) return true;
-      if (includeMultiPet && taxonomy.speciesPrimary === 'both') return true;
+      if (includeMultiPet && taxonomy.speciesPrimary === 'multi') return true;
       return false;
     });
   }, [productMatch?.products, isSpeciesCollection, slug, includeMultiPet]);
@@ -650,7 +658,7 @@ const SeoCollection = () => {
           </div>
 
           {/* Species filter toggle for cat/dog collections */}
-          {isSpeciesCollection && (
+          {isSpeciesCollection && slug !== 'multi-pet' && (
             <div className="flex items-center gap-2 mb-4">
               <button
                 onClick={() => setIncludeMultiPet(!includeMultiPet)}
@@ -660,7 +668,7 @@ const SeoCollection = () => {
                     : 'bg-muted border-border text-muted-foreground'
                 }`}
               >
-                🐾 {includeMultiPet ? 'Includes multi-pet items' : 'Show multi-pet items'}
+                🐾 {includeMultiPet ? 'Includes multi-pet items' : 'Include multi-pet items'}
               </button>
             </div>
           )}
@@ -703,11 +711,22 @@ const SeoCollection = () => {
                     {/* Species badge for cat/dog collections */}
                     {isSpeciesCollection && (() => {
                       const taxonomy = classifySpecies(product.name, product.category || '', []);
-                      return taxonomy.speciesPrimary === 'both' ? (
-                        <div className="px-2 pt-1">
-                          <Badge variant="outline" className="text-[10px] h-5 gap-1">🐾 Multi-pet</Badge>
-                        </div>
-                      ) : null;
+                      if (taxonomy.speciesPrimary === 'multi') {
+                        return (
+                          <div className="px-2 pt-1">
+                            <Badge variant="outline" className="text-[10px] h-5 gap-1">🐾 Multi-pet</Badge>
+                          </div>
+                        );
+                      }
+                      if (slug === 'multi-pet' || slug === 'cat' || slug === 'dog') {
+                        const label = taxonomy.speciesPrimary === 'cat' ? '🐱 Cat' : taxonomy.speciesPrimary === 'dog' ? '🐶 Dog' : null;
+                        if (label) return (
+                          <div className="px-2 pt-1">
+                            <Badge variant="outline" className="text-[10px] h-5 gap-1">{label}</Badge>
+                          </div>
+                        );
+                      }
+                      return null;
                     })()}
                     {/* CRO badges + sold counter for money collections */}
                     {isMoney && (
