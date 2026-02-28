@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   Play, Loader2, CheckCircle, XCircle, Clock, AlertTriangle,
-  RefreshCw, SkipForward, ChevronDown, ChevronUp, FileJson, Copy, Zap, Shield, Globe,
+  RefreshCw, SkipForward, ChevronDown, ChevronUp, FileJson, Copy, Zap, Shield, Globe, StopCircle, Activity,
 } from 'lucide-react';
 import { useJobRunner, type JobRunStep, type JobRunLog } from '@/hooks/useJobRunner';
 import { cn } from '@/lib/utils';
@@ -27,13 +27,14 @@ interface RedirectResult {
 }
 
 export function RunCenterCard() {
-  const { run, steps, logs, loading, triggering, isActive, error, reauthRequired, traceId, triggerRun, refresh } = useJobRunner();
+  const { run, steps, logs, loading, triggering, isActive, error, reauthRequired, traceId, triggerRun, cancelRun, refresh, appearsStuck, resetView } = useJobRunner();
   const [logsOpen, setLogsOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [confirmFullStack, setConfirmFullStack] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState<string | null>(null);
   const [redirectDebug, setRedirectDebug] = useState<RedirectResult[] | null>(null);
   const [redirectLoading, setRedirectLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   // Parse cooldown from error
   const cooldownMatch = error?.match(/Next manual run allowed at (.+)/);
@@ -90,6 +91,17 @@ export function RunCenterCard() {
       toast.success('Report JSON copied');
     }
   };
+
+  const handleCancel = useCallback(async (force = false) => {
+    setCancelling(true);
+    const result = await cancelRun(undefined, force);
+    setCancelling(false);
+    if (result?.ok) {
+      toast.success(force ? 'Run force-cancelled' : 'Cancel requested');
+    } else {
+      toast.error(result?.reason || 'Failed to cancel');
+    }
+  }, [cancelRun]);
 
   const disabled = isActive || triggering || !!cooldownRemaining;
 
@@ -172,6 +184,40 @@ export function RunCenterCard() {
               </Button>
               <p className="text-[10px] text-muted-foreground pl-0.5">Includes indexing submits (guarded).</p>
             </div>
+
+            {/* Cancel button — always visible when active */}
+            {isActive && (
+              <div className="space-y-0.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleCancel(false)}
+                  disabled={cancelling}
+                  className="gap-1.5 text-xs border-destructive/50 text-destructive hover:bg-destructive/10"
+                >
+                  {cancelling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <StopCircle className="h-3.5 w-3.5" />}
+                  Cancel Run
+                </Button>
+                <p className="text-[10px] text-muted-foreground pl-0.5">Stops between steps.</p>
+              </div>
+            )}
+
+            {/* Force Override — only when stuck */}
+            {appearsStuck && isActive && (
+              <div className="space-y-0.5">
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => handleCancel(true)}
+                  disabled={cancelling}
+                  className="gap-1.5 text-xs"
+                >
+                  <StopCircle className="h-3.5 w-3.5" />
+                  Force Stop
+                </Button>
+                <p className="text-[10px] text-muted-foreground pl-0.5">Immediately kills run.</p>
+              </div>
+            )}
           </div>
 
           {/* Error (non-cooldown) */}
@@ -275,6 +321,57 @@ export function RunCenterCard() {
               No runs yet. Use Dry Run or Full Stack to start.
             </p>
           )}
+
+          {/* Stuck run warning */}
+          {appearsStuck && isActive && (
+            <div className="flex items-center gap-1.5 text-[10px] text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded px-2 py-1 flex-wrap">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              <span>Run appears stuck — no progress for 60s</span>
+              <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px] gap-1" onClick={resetView}>
+                <RefreshCw className="h-3 w-3" /> Refresh
+              </Button>
+            </div>
+          )}
+          {!isActive && run?.error_message?.includes('auto-released') && (
+            <div className="flex items-center gap-1.5 text-[10px] text-yellow-600 dark:text-yellow-400">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              <span>Run auto-released after timeout</span>
+            </div>
+          )}
+          {!isActive && run?.status === 'cancelled' && (
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <StopCircle className="h-3 w-3 shrink-0" />
+              <span>Run was cancelled{run.error_message ? `: ${run.error_message}` : ''}</span>
+            </div>
+          )}
+
+          {/* Run Diagnostics Panel */}
+          <div className="border-t pt-2 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+              <Activity className="h-3 w-3" />
+              Run Diagnostics
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[9px] font-mono bg-muted/30 rounded px-2 py-1.5">
+              <div>Lock: <span className={isActive ? 'text-yellow-500' : 'text-green-500'}>{isActive ? 'HELD' : 'FREE'}</span></div>
+              <div>State: <span className="text-foreground">{run?.status?.toUpperCase() || 'IDLE'}</span></div>
+              <div>Run ID: <span className="text-muted-foreground">{run?.id?.slice(0, 8) || '—'}</span></div>
+              <div>Progress: <span className="text-muted-foreground">
+                {run?.started_at
+                  ? `${Math.round((Date.now() - new Date(run.started_at).getTime()) / 1000)}s ago`
+                  : '—'}
+              </span></div>
+              {steps.length > 0 && (
+                <>
+                  <div>Current: <span className="text-foreground">
+                    {steps.find(s => s.status === 'running')?.step_label || '—'}
+                  </span></div>
+                  <div>Steps: <span className="text-foreground">
+                    {steps.filter(s => s.status === 'success').length}✓ {steps.filter(s => s.status === 'failed').length}✗ {steps.filter(s => s.status === 'skipped').length}⊘
+                  </span></div>
+                </>
+              )}
+            </div>
+          </div>
 
           {/* Redirect Debug */}
           <div className="border-t pt-2 space-y-1.5">

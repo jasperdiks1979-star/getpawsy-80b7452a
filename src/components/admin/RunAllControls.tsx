@@ -8,7 +8,7 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  Play, Loader2, CheckCircle, XCircle, Clock, Shield, AlertTriangle, RefreshCw,
+  Play, Loader2, CheckCircle, XCircle, Clock, Shield, AlertTriangle, RefreshCw, StopCircle,
 } from 'lucide-react';
 import { useJobRunner } from '@/hooks/useJobRunner';
 import { GovernorStatusDisplay } from '@/components/admin/GovernorStatusDisplay';
@@ -34,7 +34,8 @@ interface LastRunSummary {
  * Provides dry run toggle, guarded indexing confirm, cooldown handling, and status display.
  */
 export function RunAllControls() {
-  const { run, steps, loading, triggering, isActive, error, reauthRequired, traceId, triggerRun, refresh, appearsStuck, resetView } = useJobRunner();
+  const { run, steps, loading, triggering, isActive, error, reauthRequired, traceId, triggerRun, cancelRun, refresh, appearsStuck, resetView } = useJobRunner();
+  const [cancelling, setCancelling] = useState(false);
 
   // Persist dry run toggle
   const [dryRun, setDryRun] = useState(() => {
@@ -92,6 +93,17 @@ export function RunAllControls() {
       toast.error(reason);
     }
   };
+
+  const handleCancel = useCallback(async (force = false) => {
+    setCancelling(true);
+    const result = await cancelRun(undefined, force);
+    setCancelling(false);
+    if (result?.ok) {
+      toast.success(force ? 'Run force-cancelled' : 'Cancel requested — pipeline will stop between steps');
+    } else {
+      toast.error(result?.reason || 'Failed to cancel');
+    }
+  }, [cancelRun]);
 
   const disabled = isActive || triggering;
 
@@ -162,6 +174,38 @@ export function RunAllControls() {
                 ? 'Run ALL (Dry Run)'
                 : 'Run ALL + Indexing'}
           </Button>
+
+          {/* Cancel button — always visible when active */}
+          {isActive && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleCancel(false)}
+              disabled={cancelling}
+              className="gap-1.5 text-xs h-8 px-3 border-destructive/50 text-destructive hover:bg-destructive/10"
+            >
+              {cancelling ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <StopCircle className="h-3.5 w-3.5" />
+              )}
+              Cancel
+            </Button>
+          )}
+
+          {/* Force Override — only when stuck */}
+          {appearsStuck && isActive && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => handleCancel(true)}
+              disabled={cancelling}
+              className="gap-1.5 text-xs h-8 px-3"
+            >
+              <StopCircle className="h-3.5 w-3.5" />
+              Force Stop
+            </Button>
+          )}
         </div>
 
         {/* Last run status chip */}

@@ -2309,6 +2309,8 @@ export type Database = {
       }
       job_runs: {
         Row: {
+          cancel_reason: string | null
+          cancel_requested: boolean
           created_at: string
           duration_ms: number | null
           error_message: string | null
@@ -2322,6 +2324,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cancel_reason?: string | null
+          cancel_requested?: boolean
           created_at?: string
           duration_ms?: number | null
           error_message?: string | null
@@ -2335,6 +2339,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cancel_reason?: string | null
+          cancel_requested?: boolean
           created_at?: string
           duration_ms?: number | null
           error_message?: string | null
