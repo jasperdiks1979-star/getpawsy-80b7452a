@@ -129,24 +129,24 @@ export const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
-    // Dog Silo — 50% link equity
+    // Dog Silo — 50% link equity → money collections
     dogLinks: [
-      { label: 'All Dog Products', href: '/dog' },
-      { label: 'Dog Training Gear', href: '/products?category=Dog+Training' },
-      { label: 'Dog Carriers & Travel', href: '/products?category=Dog+Carriers' },
-      { label: 'Dog Collars & Leashes', href: '/products?category=Dog+Collars+%26+Leashes' },
-      { label: 'Dog Toys', href: '/products?category=Dog+Toys' },
-      { label: 'Dog Beds', href: '/products?category=Dog+Beds' },
+      { label: 'All Dog Products', href: '/collections/dogs' },
+      { label: 'Orthopedic Dog Beds', href: '/collections/orthopedic-calming-dog-beds' },
+      { label: 'No-Pull Dog Harnesses', href: '/collections/best-dog-harnesses' },
+      { label: 'Dog Car Seats', href: '/collections/best-dog-car-seats' },
+      { label: 'Interactive Dog Toys', href: '/collections/best-interactive-dog-toys' },
+      { label: 'Slow Feeder Bowls', href: '/collections/best-slow-feeder-dog-bowls' },
       { label: 'Dog Training & Travel Guide', href: '/dog/best-dog-training-and-travel-gear-2026' },
     ],
-    // Cat Silo — 50% link equity
+    // Cat Silo — 50% link equity → money collections
     catLinks: [
-      { label: 'All Cat Products', href: '/cat' },
-      { label: 'Cat Trees & Condos', href: '/products?category=Cat+Trees+%26+Condos' },
-      { label: 'Cat Litter Boxes', href: '/products?category=Cat+Litter+Boxes' },
-      { label: 'Cat Carriers', href: '/products?category=Cat+Carriers' },
-      { label: 'Cat Toys', href: '/products?category=Cat+Toys' },
-      { label: 'Cat Scratching Posts', href: '/products?category=Cat+Scratching+Posts' },
+      { label: 'All Cat Products', href: '/collections/cats' },
+      { label: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos' },
+      { label: 'Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
+      { label: 'Cat Scratching Posts', href: '/collections/best-cat-scratching-posts' },
+      { label: 'Cat Carriers', href: '/collections/best-cat-carriers' },
+      { label: 'Interactive Cat Toys', href: '/collections/best-interactive-cat-toys' },
       { label: 'Cat Training & Travel Guide', href: '/cat/best-cat-training-and-travel-gear-2026' },
     ],
     support: [
