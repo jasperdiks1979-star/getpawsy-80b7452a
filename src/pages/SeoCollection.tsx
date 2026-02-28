@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { getCollectionConfig } from '@/config/collectionMap';
 import { resolveCollectionProducts, type CollectionProduct } from '@/lib/collection-matching-engine';
 import { useCollectionIntegrityCheck } from '@/lib/collection-integrity';
+import { resolveCollectionSlug, getVirtualCollection } from '@/lib/collection-slug-resolver';
+import { logCollectionResolution } from '@/lib/diagnostics-payload';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -201,10 +203,19 @@ const RESERVED_CLUSTER_SLUGS = new Set([
 ]);
 
 const SeoCollection = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug: rawSlug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const viewShop = searchParams.get('view') === 'shop';
   const scrolledRef = useRef(false);
+
+  // Resolve slug through canonical mapping layer
+  const slugResolution = useMemo(() => {
+    if (!rawSlug) return null;
+    return resolveCollectionSlug(rawSlug);
+  }, [rawSlug]);
+
+  const slug = slugResolution?.resolvedSlug || rawSlug;
+  const isReserved = !!(slug && RESERVED_CLUSTER_SLUGS.has(slug));
 
   // Dev-only integrity validator to catch broken collection mappings early
   useCollectionIntegrityCheck(import.meta.env.DEV);
@@ -222,41 +233,106 @@ const SeoCollection = () => {
     return () => clearTimeout(timer);
   }, [viewShop]);
 
-  // GUARD: If this slug has a dedicated static component, redirect there.
-  // This prevents SeoCollection from ever intercepting cluster page routes.
-  if (slug && RESERVED_CLUSTER_SLUGS.has(slug)) {
-    return <Navigate to={`/collections/${slug}`} replace />;
-  }
-
-  // Fetch collection data
-  const { data: collection, isLoading: collectionLoading, error } = useQuery({
+  // Fetch collection data — tries resolved slug first
+  const { data: dbCollection, isLoading: collectionLoading, error } = useQuery({
     queryKey: ['seo-collection', slug],
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!slug) throw new Error('No slug');
+
+      // Try resolved slug
+      const { data, error: err } = await supabase
         .from('seo_collections')
         .select('*')
         .eq('slug', slug)
         .eq('is_active', true)
         .single();
 
-      if (error) throw error;
-      
-      // Parse FAQ from JSONB safely
-      const rawFaq = data.faq;
-      const faq: FAQItem[] = Array.isArray(rawFaq) 
-        ? rawFaq.map((item: unknown) => {
-            const faqItem = item as { question?: string; answer?: string; q?: string; a?: string };
-            return {
-              question: faqItem?.question || faqItem?.q || '',
-              answer: faqItem?.answer || faqItem?.a || ''
-            };
-          }).filter(f => f.question && f.answer)
-        : [];
-      
-      return { ...data, faq } as SeoCollectionData;
+      if (!err && data) {
+        logCollectionResolution({
+          requestedSlug: rawSlug || '',
+          resolvedSlug: slug,
+          aliasUsed: slugResolution?.aliasUsed || false,
+          matchResult: 'db_hit',
+        });
+
+        // Parse FAQ from JSONB safely
+        const rawFaq = data.faq;
+        const faq: FAQItem[] = Array.isArray(rawFaq)
+          ? rawFaq.map((item: unknown) => {
+              const faqItem = item as { question?: string; answer?: string; q?: string; a?: string };
+              return {
+                question: faqItem?.question || faqItem?.q || '',
+                answer: faqItem?.answer || faqItem?.a || ''
+              };
+            }).filter(f => f.question && f.answer)
+          : [];
+        return { ...data, faq } as SeoCollectionData;
+      }
+
+      // If alias was used, also try the original slug
+      if (slugResolution?.aliasUsed && rawSlug) {
+        const { data: origData, error: origErr } = await supabase
+          .from('seo_collections')
+          .select('*')
+          .eq('slug', rawSlug)
+          .eq('is_active', true)
+          .single();
+        if (!origErr && origData) {
+          logCollectionResolution({
+            requestedSlug: rawSlug,
+            resolvedSlug: rawSlug,
+            aliasUsed: false,
+            matchResult: 'db_hit',
+          });
+          const rawFaq = origData.faq;
+          const faq: FAQItem[] = Array.isArray(rawFaq)
+            ? rawFaq.map((item: unknown) => {
+                const faqItem = item as { question?: string; answer?: string; q?: string; a?: string };
+                return { question: faqItem?.question || faqItem?.q || '', answer: faqItem?.answer || faqItem?.a || '' };
+              }).filter(f => f.question && f.answer)
+            : [];
+          return { ...origData, faq } as SeoCollectionData;
+        }
+      }
+
+      throw err || new Error('Collection not found in database');
     },
-    enabled: !!slug,
+    enabled: !!slug && !isReserved,
+    retry: false,
   });
+
+  // Virtual collection fallback — if DB lookup fails and we have a virtual definition
+  const virtualCollection = useMemo(() => {
+    if (dbCollection || collectionLoading) return null;
+    if (!slug) return null;
+    const vc = getVirtualCollection(slug);
+    if (vc) {
+      logCollectionResolution({
+        requestedSlug: rawSlug || '',
+        resolvedSlug: slug,
+        aliasUsed: slugResolution?.aliasUsed || false,
+        matchResult: 'virtual',
+      });
+    }
+    return vc;
+  }, [dbCollection, collectionLoading, slug, rawSlug, slugResolution]);
+
+  // Effective collection: DB hit or virtual fallback
+  const collection: SeoCollectionData | null = dbCollection || (virtualCollection ? {
+    id: `virtual-${virtualCollection.slug}`,
+    slug: virtualCollection.slug,
+    name: virtualCollection.name,
+    primary_keyword: virtualCollection.primary_keyword,
+    secondary_keywords: virtualCollection.secondary_keywords,
+    seo_intro: virtualCollection.seo_intro,
+    meta_title: virtualCollection.meta_title,
+    meta_description: virtualCollection.meta_description,
+    faq: virtualCollection.faq,
+    related_blog_slug: virtualCollection.related_blog_slug,
+    related_collection_slugs: virtualCollection.related_collection_slugs,
+    product_category_filter: virtualCollection.product_category_filter,
+    product_keyword_filter: virtualCollection.product_keyword_filter,
+  } : null);
 
   // Fetch matching products — robust adaptive collection matching engine
   const { data: productMatch, isLoading: productsLoading } = useQuery({
@@ -350,6 +426,16 @@ const SeoCollection = () => {
     enabled: subCollectionSlugs.length > 0,
   });
 
+  // GUARD: If this slug has a dedicated static component, redirect there.
+  if (isReserved && slug) {
+    return <Navigate to={`/collections/${slug}`} replace />;
+  }
+
+  // If alias was used and the resolved slug differs from the URL, redirect to canonical
+  if (slugResolution?.aliasUsed && rawSlug !== slug) {
+    return <Navigate to={`/collections/${slug}`} replace />;
+  }
+
   if (collectionLoading) {
     return (
       <Layout>
@@ -367,7 +453,15 @@ const SeoCollection = () => {
     );
   }
 
-  if (error || !collection) {
+  if (!collection) {
+    // Log not-found for diagnostics
+    logCollectionResolution({
+      requestedSlug: rawSlug || '',
+      resolvedSlug: slug || '',
+      aliasUsed: slugResolution?.aliasUsed || false,
+      matchResult: 'not_found',
+    });
+
     return (
       <Layout>
         <div className="container py-20 text-center">

@@ -43,7 +43,26 @@ if (typeof window !== 'undefined' && isCanonicalHost()) {
   normalizeUrl();
 }
 
-// === STEP 0d: CLS Guard — start monitor before React mount to catch all shifts ===
+// === STEP 0d: Build Version Guard — detect deploy changes, clear stale caches ===
+import { runBuildVersionGuard, initServiceWorkerUpdateFlow } from "./lib/build-version-guard";
+import { logBuildGuardAction } from "./lib/diagnostics-payload";
+if (typeof window !== 'undefined') {
+  try {
+    const guardResult = runBuildVersionGuard();
+    logBuildGuardAction(guardResult);
+    if (guardResult.action === 'reloading') {
+      // Execution stops — reload triggered
+      throw new Error('BUILD_GUARD_RELOAD');
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message === 'BUILD_GUARD_RELOAD') throw e;
+    console.warn('[BUILD-GUARD] Non-fatal error:', e);
+  }
+  // SW update flow — non-blocking
+  try { initServiceWorkerUpdateFlow(); } catch {}
+}
+
+// === STEP 0e: CLS Guard — start monitor before React mount to catch all shifts ===
 import { initCLSGuard, postMountVitalsChecks } from "./lib/perf/cls-guard-init";
 try { initCLSGuard(); } catch {}
 

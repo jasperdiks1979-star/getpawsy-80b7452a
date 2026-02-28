@@ -211,6 +211,13 @@ function showRecoveryUI(errorMsg: string): void {
   const root = document.getElementById('root');
   if (!root) return;
 
+  // Import diagnostics payload if available
+  let getDiagPayload: (() => string) | null = null;
+  try {
+    // Dynamic import would be async; use the local getDiagnosticsJSON as fallback
+    getDiagPayload = getDiagnosticsJSON as unknown as () => string;
+  } catch {}
+
   root.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafafa;padding:24px">
       <div style="text-align:center;max-width:440px">
@@ -227,6 +234,11 @@ function showRecoveryUI(errorMsg: string): void {
             Hard Reload (clear cache)
           </button>
         </div>
+        <div id="continue-bypass" style="display:none;margin-bottom:16px">
+          <button id="continue-btn" style="padding:8px 20px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#555;font-size:13px;cursor:pointer">
+            Continue without refresh →
+          </button>
+        </div>
         <button id="copy-diag-btn" style="padding:6px 16px;border-radius:6px;border:1px solid #eee;background:#f9f9f9;color:#888;font-size:12px;cursor:pointer">
           Copy diagnostics
         </button>
@@ -234,6 +246,21 @@ function showRecoveryUI(errorMsg: string): void {
       </div>
     </div>
   `;
+
+  // Show "Continue without refresh" after 8 seconds
+  setTimeout(() => {
+    const bypass = document.getElementById('continue-bypass');
+    if (bypass) bypass.style.display = 'block';
+  }, 8000);
+
+  document.getElementById('continue-btn')?.addEventListener('click', () => {
+    // Remove recovery overlay and let the app attempt to render
+    root.innerHTML = '<div id="root-inner"></div>';
+    console.warn('[RECOVERY] User chose to continue without refresh');
+    // Navigate to home as minimal route
+    window.location.hash = '';
+    window.location.pathname = '/';
+  });
 
   document.getElementById('hard-reload-btn')?.addEventListener('click', async () => {
     try {
