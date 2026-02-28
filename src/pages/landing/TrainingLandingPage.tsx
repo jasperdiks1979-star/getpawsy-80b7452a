@@ -102,7 +102,7 @@ export default function TrainingLandingPage() {
         <div className="container flex items-center justify-between py-3">
           <Link to="/" className="text-lg font-display font-bold text-foreground">GetPawsy</Link>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="hidden sm:flex items-center gap-1"><Truck className="w-3 h-3 text-primary" /> Free US Shipping $35+</span>
+            <span className="hidden sm:flex items-center gap-1"><Truck className="w-3 h-3 text-primary" /> Free US Shipping $49+</span>
             <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-primary" /> 30-Day Guarantee</span>
           </div>
         </div>

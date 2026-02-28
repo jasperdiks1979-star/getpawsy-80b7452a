@@ -39,7 +39,7 @@ export function SalesAccelerationBanner() {
             Top Rated by Pet Parents
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Expert-vetted products trusted by thousands of US pet owners. Free shipping on orders over $35.
+            Expert-vetted products trusted by thousands of US pet owners. Free shipping on orders over $49.
           </p>
         </div>
 

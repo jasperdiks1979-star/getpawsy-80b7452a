@@ -140,7 +140,7 @@ export function ProductSchema({
         returnFees: 'https://schema.org/FreeReturn',
       },
       // NOTE: Shipping rate in schema is per-item estimate; actual shipping is order-threshold based
-      // ($0 for orders >= $35, $5.99 for orders < $35) configured in Merchant Center settings.
+      // ($0 for orders >= $49, $5.99 for orders < $49) configured in Merchant Center settings.
       // We omit shippingRate here to avoid mismatch with order-level logic.
       shippingDetails: {
         '@type': 'OfferShippingDetails',
