@@ -44,6 +44,7 @@ import {
   generateCollectionMetaDescription 
 } from '@/lib/seo-longtail-keywords';
 import { CategoryRelatedGuides } from '@/components/seo/CategoryRelatedGuides';
+import { CollectionClusterIntro } from '@/components/authority/CollectionClusterIntro';
 import { CategoryPopularProducts } from '@/components/seo/CategoryPopularProducts';
 import { CategoryClusterLinks } from '@/components/seo/CategoryClusterLinks';
 import { CollectionExpertGuides } from '@/components/seo/CollectionExpertGuides';
@@ -511,6 +512,12 @@ const SeoCollection = () => {
           <span className="flex items-center gap-1.5"><RotateCcw className="w-3.5 h-3.5 text-primary" /> 30-Day Returns</span>
           <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Tested for Large Breeds</span>
         </div>
+
+        {/* Cluster-aware contextual intro — 150–200 words with 3 guide links */}
+        <CollectionClusterIntro
+          collectionName={collection.name}
+          collectionSlug={collection.slug}
+        />
 
         <div id="product-grid" />
         <section id="products" className="mb-8 md:mb-12">
