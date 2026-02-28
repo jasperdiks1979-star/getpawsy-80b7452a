@@ -180,10 +180,18 @@ const CatTrainingTravelPillar = () => {
             </div>
           </section>
 
-          {/* Internal Links */}
+          {/* Silo Internal Links — cat silo only */}
           <section>
-            <h2 className="text-2xl font-display font-bold mb-4">Related Cat Guides</h2>
+            <h2 className="text-2xl font-display font-bold mb-4">Explore Cat Guides</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Link to="/cat/training/" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Cat Enrichment & Training →</h3>
+                <p className="text-sm text-muted-foreground">Cat trees, scratching posts & interactive toys</p>
+              </Link>
+              <Link to="/cat/travel/" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Cat Travel Essentials →</h3>
+                <p className="text-sm text-muted-foreground">Airline-approved carriers & travel gear</p>
+              </Link>
               <Link to="/cat/cat-trees-for-large-cats" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Cat Trees for Large Cats →</h3>
                 <p className="text-sm text-muted-foreground">Stability-tested for 25+ lbs</p>
