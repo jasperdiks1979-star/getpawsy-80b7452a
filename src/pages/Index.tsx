@@ -44,7 +44,7 @@ const TopPicksSection = lazy(() => import('@/components/home/TopPicksSection'));
 const SalesAccelerationBanner = lazy(() => import('@/components/home/SalesAccelerationBanner').then(m => ({ default: m.SalesAccelerationBanner })));
 const MoneyHubBlocks = lazy(() => import('@/components/home/MoneyHubBlocks').then(m => ({ default: m.MoneyHubBlocks })));
 // ── NEW conversion sections — lazy-loaded ─────────────────────────────────
-const SocialProofBlock = lazy(() => import('@/components/home/SocialProofBlock'));
+
 const ProblemSolutionBlock = lazy(() => import('@/components/home/ProblemSolutionBlock'));
 const WhyGetPawsyComparison = lazy(() => import('@/components/home/WhyGetPawsyComparison'));
 const GuaranteeBlock = lazy(() => import('@/components/home/GuaranteeBlock'));
@@ -446,12 +446,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ── SECTION 2: Social Proof ─────────────────────────────────── */}
-      <SectionErrorBoundary sectionName="Social Proof">
-        <Suspense fallback={<div className="py-14" style={{ minHeight: 200 }} />}>
-          <SocialProofBlock />
-        </Suspense>
-      </SectionErrorBoundary>
+
+
 
       {/* ── SECTION 3: Best Sellers Grid ──────────────────────────────── */}
       <SectionErrorBoundary sectionName="Bestsellers">
