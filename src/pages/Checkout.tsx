@@ -23,6 +23,7 @@ import {
   FLAT_SHIPPING_RATE,
   DELIVERY_TIME_STANDARD,
   RETURNS_POLICY_SHORT,
+  getApplicableTier,
 } from '@/lib/shipping-constants';
 import {
   Breadcrumb,
@@ -186,9 +187,19 @@ const Checkout = () => {
   };
 
   const shipping = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE;
-  const discountPercent = discountApplied ? VALID_DISCOUNT_CODES[discountApplied]?.discount || 0 : 0;
-  const discountAmount = (totalPrice * discountPercent) / 100;
-  const total = totalPrice - discountAmount + shipping;
+  
+  // Tiered incentive discount (automatic, stacks with coupon)
+  const currentTier = getApplicableTier(totalPrice);
+  const tierDiscountPercent = currentTier?.discountPercent ?? 0;
+  const tierDiscountAmount = totalPrice * (tierDiscountPercent / 100);
+  
+  // Coupon discount (applied after tier discount)
+  const couponDiscountPercent = discountApplied ? VALID_DISCOUNT_CODES[discountApplied]?.discount || 0 : 0;
+  const couponDiscountAmount = (totalPrice * couponDiscountPercent) / 100;
+  
+  // Total discount = tier + coupon (no stacking conflict: tier is automatic reward, coupon is promotional)
+  const totalDiscountAmount = tierDiscountAmount + couponDiscountAmount;
+  const total = totalPrice - totalDiscountAmount + shipping;
 
   // Check for discount code in localStorage (from popups)
   useEffect(() => {
@@ -652,16 +663,22 @@ const Checkout = () => {
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>${totalPrice.toFixed(2)}</span>
                 </div>
+                {tierDiscountPercent > 0 && (
+                  <div className="flex justify-between text-[hsl(var(--success))]">
+                    <span>Tier Discount ({tierDiscountPercent}%)</span>
+                    <span>-${tierDiscountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 {discountApplied && (
-                  <div className="flex justify-between text-green-600 dark:text-green-400">
-                    <span>Discount ({discountPercent}%)</span>
-                    <span>-${discountAmount.toFixed(2)}</span>
+                  <div className="flex justify-between text-[hsl(var(--success))]">
+                    <span>Coupon ({couponDiscountPercent}%)</span>
+                    <span>-${couponDiscountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
                   {shipping === 0 ? (
-                    <span className="text-green-600">Free</span>
+                    <span className="text-[hsl(var(--success))]">Free</span>
                   ) : (
                     <span>${shipping.toFixed(2)}</span>
                   )}

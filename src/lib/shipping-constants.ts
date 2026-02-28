@@ -11,7 +11,37 @@
 // ============= SHIPPING CONSTANTS =============
 
 /** Free shipping threshold in USD */
-export const FREE_SHIPPING_THRESHOLD = 35;
+export const FREE_SHIPPING_THRESHOLD = 49;
+
+// ============= TIERED INCENTIVE THRESHOLDS =============
+
+/** Tiered discount configuration – applied automatically in cart */
+export const TIERED_INCENTIVES = [
+  { threshold: 49, label: 'Free Shipping', discountPercent: 0 },
+  { threshold: 79, label: '5% Off Your Order', discountPercent: 5 },
+  { threshold: 119, label: '10% Off Your Order', discountPercent: 10 },
+] as const;
+
+/** Get the best applicable tier for a given subtotal */
+export const getApplicableTier = (subtotal: number) => {
+  // Return the highest qualifying tier
+  for (let i = TIERED_INCENTIVES.length - 1; i >= 0; i--) {
+    if (subtotal >= TIERED_INCENTIVES[i].threshold) {
+      return TIERED_INCENTIVES[i];
+    }
+  }
+  return null;
+};
+
+/** Get the next tier the customer can unlock */
+export const getNextTier = (subtotal: number) => {
+  for (const tier of TIERED_INCENTIVES) {
+    if (subtotal < tier.threshold) {
+      return { ...tier, remaining: tier.threshold - subtotal };
+    }
+  }
+  return null;
+};
 
 /** Flat shipping rate for orders under threshold in USD */
 export const FLAT_SHIPPING_RATE = 5.99;
