@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { CheckCircle, Package, ArrowRight } from 'lucide-react';
@@ -11,6 +11,7 @@ import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { ReferralShareWidget } from '@/components/referral/ReferralShareWidget';
+import { PostPurchaseOffer } from '@/components/cart/PostPurchaseOffer';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -18,10 +19,13 @@ const PaymentSuccess = () => {
   const { items, totalPrice, clearCart } = useCart();
   const abTest = useBundleABTest();
   const [tracked, setTracked] = useState(false);
+  const purchasedIdsRef = useRef<string[]>([]);
 
   useEffect(() => {
     // Track purchase conversion and clear cart only once
     if (!tracked && sessionId && items.length > 0) {
+      // Capture product IDs for post-purchase offer before cart is cleared
+      purchasedIdsRef.current = items.map(item => item.id);
       // Track GA4 purchase event
       trackPurchase(
         sessionId,
@@ -165,6 +169,13 @@ const PaymentSuccess = () => {
               </li>
             </ul>
           </div>
+
+          {/* Post-Purchase Offer */}
+          {purchasedIdsRef.current.length > 0 && (
+            <div className="max-w-md mx-auto mb-8">
+              <PostPurchaseOffer purchasedProductIds={purchasedIdsRef.current} />
+            </div>
+          )}
 
           {/* Referral program widget */}
           <div className="max-w-md mx-auto mb-8">

@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import { FreeShippingNudge } from '@/components/cart/FreeShippingNudge';
+import { TieredIncentiveBar } from '@/components/cart/TieredIncentiveBar';
 import { safeString, safeNumber } from '@/lib/safe-render';
 import {
   FREE_SHIPPING_THRESHOLD,
@@ -17,6 +18,7 @@ import {
   RETURNS_POLICY_SHORT,
   TRUST_BADGES,
   US_FULFILLMENT_NOTE,
+  getApplicableTier,
 } from '@/lib/shipping-constants';
 import {
   Breadcrumb,
@@ -32,8 +34,14 @@ const Cart = () => {
 
   // Apply flat rate shipping for orders under threshold
   const shipping = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE;
-  const tax = totalPrice * 0.08;
-  const total = totalPrice + shipping + tax;
+  
+  // Tiered incentive discount
+  const currentTier = getApplicableTier(totalPrice);
+  const tierDiscountPercent = currentTier?.discountPercent ?? 0;
+  const tierDiscountAmount = totalPrice * (tierDiscountPercent / 100);
+  
+  const tax = (totalPrice - tierDiscountAmount) * 0.08;
+  const total = totalPrice - tierDiscountAmount + shipping + tax;
   
   // Calculate progress to free shipping
   const shippingProgress = Math.min((totalPrice / FREE_SHIPPING_THRESHOLD) * 100, 100);
@@ -166,41 +174,32 @@ const Cart = () => {
             <div className="bg-card rounded-xl shadow-card p-6 sticky top-24">
               <h2 className="text-xl font-bold mb-4">Order Summary</h2>
               
-              {/* Free Shipping Progress */}
-              {totalPrice < FREE_SHIPPING_THRESHOLD ? (
-                <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Truck className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium">
-                      Add ${amountToFreeShipping.toFixed(2)} more for FREE shipping!
-                    </span>
-                  </div>
-                  <Progress value={shippingProgress} className="h-2" />
+              {/* Tiered Incentive Progress */}
+              <div className="mb-4">
+                <TieredIncentiveBar subtotal={totalPrice} />
+                {totalPrice < FREE_SHIPPING_THRESHOLD && (
                   <FreeShippingNudge 
                     amountNeeded={amountToFreeShipping} 
                     currentItemIds={items.map(item => item.id)} 
                   />
-                </div>
-              ) : (
-                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                  <div className="flex items-center gap-2">
-                    <Gift className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-700 dark:text-green-400">
-                      🎉 You qualify for FREE shipping!
-                    </span>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
               
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-medium">${totalPrice.toFixed(2)}</span>
                 </div>
+                {tierDiscountPercent > 0 && (
+                  <div className="flex justify-between text-[hsl(var(--success))]">
+                    <span>Tier Discount ({tierDiscountPercent}%)</span>
+                    <span>-${tierDiscountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
                   {shipping === 0 ? (
-                    <span className="font-medium text-green-600">Free</span>
+                    <span className="font-medium text-[hsl(var(--success))]">Free</span>
                   ) : (
                     <span className="font-medium">${shipping.toFixed(2)}</span>
                   )}
