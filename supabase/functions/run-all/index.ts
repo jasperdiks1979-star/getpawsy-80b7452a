@@ -32,6 +32,10 @@ const MAX_INDEXING_URLS = 20;
 const CANONICAL_HOST = 'https://getpawsy.pet';
 const INDEXING_DEDUPE_DAYS = 7;
 
+// === SAFETY TIMEOUTS ===
+const GLOBAL_RUN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes hard cap for entire run
+const INDEXING_WATCHDOG_MS = 20_000; // 20s watchdog for indexing step
+
 function generateTraceId(): string {
   return `tr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -165,13 +169,29 @@ Deno.serve(async (req) => {
     const startedAt = new Date().toISOString();
     await supabase.from('job_runs').update({ status: 'running', started_at: startedAt }).eq('id', run.id);
 
-    // Execute steps sequentially
+    // Execute steps sequentially with GLOBAL TIMEOUT safety net
     let allSuccess = true;
     const report: Record<string, unknown> = {};
     let crawlHealthPassed = true;
+    let globalTimedOut = false;
+    const runStartMs = Date.now();
 
     for (let i = 0; i < STEPS.length; i++) {
       const step = STEPS[i];
+
+      // === GLOBAL RUN TIMEOUT CHECK ===
+      const elapsed = Date.now() - runStartMs;
+      if (elapsed >= GLOBAL_RUN_TIMEOUT_MS) {
+        globalTimedOut = true;
+        await log(supabase, run.id, null, 'warn', `⏱️ GLOBAL TIMEOUT (${Math.round(elapsed / 1000)}s). Skipping remaining steps.`);
+        // Mark all remaining steps as skipped
+        for (const remaining of STEPS.slice(i)) {
+          await supabase.from('job_run_steps')
+            .update({ status: 'skipped', finished_at: new Date().toISOString(), result: { skipped_reason: 'global_timeout' } })
+            .eq('run_id', run.id).eq('step_key', remaining.key);
+        }
+        break;
+      }
 
       // Mark step running
       await supabase.from('job_run_steps')
@@ -195,27 +215,25 @@ Deno.serve(async (req) => {
 
         // Special guard: skip indexing if crawl health had critical failures
         if (step.key === 'indexing_submit' && !crawlHealthPassed) {
-          throw new Error('Indexing aborted: crawl_health_check has critical failures (redirect target wrong or missing). Check Redirect Debug for details.');
+          throw new Error('Indexing aborted: crawl_health_check has critical failures.');
         }
 
-        // Wrap indexing_submit in a hard 45s timeout at the orchestrator level
+        // === PER-STEP WATCHDOG for indexing ===
         let result: Record<string, unknown>;
         if (step.key === 'indexing_submit') {
-          const INDEXING_ORCHESTRATOR_TIMEOUT = 15_000;
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Indexing step orchestrator timeout (45s)')), INDEXING_ORCHESTRATOR_TIMEOUT)
+          const watchdogPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('watchdog_timeout')), INDEXING_WATCHDOG_MS)
           );
           try {
-            result = await Promise.race([executeStep(supabase, step.key, run.id), timeoutPromise]);
-          } catch (timeoutErr) {
-            // Fail-open: mark as warning, continue pipeline
+            result = await Promise.race([executeStep(supabase, step.key, run.id), watchdogPromise]);
+          } catch (watchdogErr) {
             const duration = Date.now() - stepStart;
-            const errMsg = timeoutErr instanceof Error ? timeoutErr.message : String(timeoutErr);
+            const errMsg = watchdogErr instanceof Error ? watchdogErr.message : String(watchdogErr);
             await supabase.from('job_run_steps')
-              .update({ status: 'success', finished_at: new Date().toISOString(), duration_ms: duration, result: { status: 'warning', error: errMsg } })
+              .update({ status: 'success', finished_at: new Date().toISOString(), duration_ms: duration, result: { status: 'warning', reason: errMsg } })
               .eq('run_id', run.id).eq('step_key', step.key);
-            await log(supabase, run.id, step.key, 'warn', `Indexing step auto-completed with warning: ${errMsg} (${duration}ms)`);
-            report[step.key] = { status: 'warning', duration_ms: duration, error: errMsg };
+            await log(supabase, run.id, step.key, 'warn', `Indexing watchdog fired (${duration}ms): ${errMsg}. Pipeline continues.`);
+            report[step.key] = { status: 'warning', duration_ms: duration, reason: errMsg };
             continue;
           }
         } else {
@@ -223,12 +241,10 @@ Deno.serve(async (req) => {
         }
         const duration = Date.now() - stepStart;
 
-        // Track crawl health result
         if (step.key === 'crawl_health_check' && result?.hasCriticalFailures) {
           crawlHealthPassed = false;
         }
 
-        // Check if GSC step returned reauthRequired — treat as non-critical failure, continue pipeline
         if (step.key === 'gsc_query_level_sync' && result?.reauthRequired) {
           const errMsg = (result.error as string) || 'GSC re-authentication required';
           await supabase.from('job_run_steps')
@@ -237,15 +253,13 @@ Deno.serve(async (req) => {
           await log(supabase, run.id, step.key, 'warn', `GSC auth issue (non-blocking): ${errMsg}`);
           report[step.key] = { status: 'failed', error: errMsg, reauthRequired: true };
           allSuccess = false;
-          continue; // Continue to next step — GSC is not critical
+          continue;
         }
 
-        // For indexing_submit, treat partial failure as warning (not full failure)
         const isIndexingWarning = step.key === 'indexing_submit' && result?.status === 'warning';
-        const stepStatus = isIndexingWarning ? 'success' : 'success';
 
         await supabase.from('job_run_steps')
-          .update({ status: stepStatus, finished_at: new Date().toISOString(), duration_ms: duration, result })
+          .update({ status: 'success', finished_at: new Date().toISOString(), duration_ms: duration, result })
           .eq('run_id', run.id).eq('step_key', step.key);
 
         const logLevel = isIndexingWarning ? 'warn' : 'info';
@@ -254,12 +268,10 @@ Deno.serve(async (req) => {
       } catch (err) {
         const duration = Date.now() - stepStart;
         const errMsg = err instanceof Error ? err.message : String(err);
-        const errStack = err instanceof Error ? err.stack : undefined;
 
-        // Structured error logging for diagnostics
         console.error(JSON.stringify({
           phase: 'step_execution', step: step.key, stepLabel: step.label,
-          error: errMsg, stack: errStack, duration_ms: duration, runId, traceId,
+          error: errMsg, duration_ms: duration, runId: run.id, traceId,
         }));
 
         await supabase.from('job_run_steps')
@@ -273,8 +285,6 @@ Deno.serve(async (req) => {
           allSuccess = false;
           if (step.key === 'crawl_health_check') crawlHealthPassed = false;
           await log(supabase, run.id, null, 'error', `Critical step "${step.label}" failed. Aborting remaining steps.`);
-
-          // Mark remaining as skipped
           for (const remaining of STEPS.slice(i + 1)) {
             await supabase.from('job_run_steps')
               .update({ status: 'skipped' })
@@ -286,9 +296,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Finalize run
+    // Finalize run — ALWAYS reach a terminal state
     const finishedAt = new Date().toISOString();
     const totalDuration = Date.now() - new Date(startedAt).getTime();
+    const finalStatus = globalTimedOut ? 'failed' : (allSuccess ? 'success' : 'failed');
 
     // Runtime integrity check
     const suspiciouslyFast = totalDuration < 8000 && mode === 'fullstack';
@@ -308,27 +319,33 @@ Deno.serve(async (req) => {
 
     report.mode = mode;
     report.traceId = traceId;
+    report.globalTimedOut = globalTimedOut;
     report._meta = {
       totalDuration,
       suspiciouslyFast,
+      globalTimedOut,
       stepOutcomes: { success: successCount, failed: failedCount, skipped: skippedCount, total: STEPS.length },
     };
 
     await supabase.from('job_runs').update({
-      status: allSuccess ? 'success' : 'failed',
+      status: finalStatus,
       finished_at: finishedAt,
       duration_ms: totalDuration,
       report,
+      error_message: globalTimedOut ? `Run auto-finalized: global ${GLOBAL_RUN_TIMEOUT_MS / 1000}s timeout reached` : null,
     }).eq('id', run.id);
 
-    await log(supabase, run.id, null, allSuccess ? 'info' : 'error',
-      `Run completed: ${allSuccess ? 'SUCCESS' : 'FAILED'} (${totalDuration}ms, ${successCount}✓ ${failedCount}✗ ${skippedCount}⊘, traceId=${traceId})`);
+    const logMsg = globalTimedOut
+      ? `Run TIMEOUT: auto-finalized after ${totalDuration}ms (${successCount}✓ ${failedCount}✗ ${skippedCount}⊘)`
+      : `Run completed: ${allSuccess ? 'SUCCESS' : 'FAILED'} (${totalDuration}ms, ${successCount}✓ ${failedCount}✗ ${skippedCount}⊘, traceId=${traceId})`;
+    await log(supabase, run.id, null, globalTimedOut || !allSuccess ? 'warn' : 'info', logMsg);
 
     return jsonResponse({
       ok: true, runId: run.id, traceId,
-      status: allSuccess ? 'success' : 'failed',
+      status: finalStatus,
       duration_ms: totalDuration,
       suspiciouslyFast,
+      globalTimedOut,
       stepOutcomes: { success: successCount, failed: failedCount, skipped: skippedCount },
     });
   } catch (err) {

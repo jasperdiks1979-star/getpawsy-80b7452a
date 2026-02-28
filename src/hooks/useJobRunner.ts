@@ -55,6 +55,8 @@ export function useJobRunner() {
     reauthRequired: false, traceId: null,
   });
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastProgressRef = useRef<number>(Date.now());
+  const [appearsStuck, setAppearsStuck] = useState(false);
 
   const fetchStatus = useCallback(async (runId?: string) => {
     const { data, error } = await invokeFunction<{
@@ -65,27 +67,44 @@ export function useJobRunner() {
     });
 
     if (error || !data?.ok) {
-      // Only set error if we got a real error, not just "no data"
       const errMsg = data?.reason || error?.message || 'Failed to fetch status';
       setState(prev => ({ ...prev, loading: false, error: errMsg }));
       return;
     }
 
-    setState(prev => ({
-      ...prev, run: data.run, steps: data.steps, logs: data.logs, loading: false, error: null,
-    }));
+    // Track progress: if run status or steps changed, update timestamp
+    setState(prev => {
+      const statusChanged = prev.run?.status !== data.run?.status;
+      const stepsChanged = JSON.stringify(prev.steps.map(s => s.status)) !== JSON.stringify(data.steps.map(s => s.status));
+      if (statusChanged || stepsChanged) {
+        lastProgressRef.current = Date.now();
+        setAppearsStuck(false);
+      }
+      return { ...prev, run: data.run, steps: data.steps, logs: data.logs, loading: false, error: null };
+    });
 
     return data.run;
   }, [invokeFunction]);
 
   const startPolling = useCallback((runId?: string) => {
     if (pollingRef.current) clearInterval(pollingRef.current);
+    lastProgressRef.current = Date.now();
+    setAppearsStuck(false);
+
     pollingRef.current = setInterval(async () => {
       const run = await fetchStatus(runId);
+
+      // Check stuck detection: 60s without progress
+      const sinceLastProgress = Date.now() - lastProgressRef.current;
+      if (sinceLastProgress > 60_000 && run && (run.status === 'queued' || run.status === 'running')) {
+        setAppearsStuck(true);
+      }
+
       if (run && (run.status === 'success' || run.status === 'failed' || run.status === 'cancelled')) {
+        setAppearsStuck(false);
         if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
       }
-    }, 3000);
+    }, 10_000); // Poll every 10s
   }, [fetchStatus]);
 
   const triggerRun = useCallback(async (mode: 'dryrun' | 'fullstack' = 'fullstack', forceOverride = false) => {
@@ -118,6 +137,12 @@ export function useJobRunner() {
     return { ok: true, runId: data.runId, traceId };
   }, [invokeFunction, fetchStatus, startPolling]);
 
+  const resetView = useCallback(() => {
+    setAppearsStuck(false);
+    lastProgressRef.current = Date.now();
+    fetchStatus();
+  }, [fetchStatus]);
+
   // Initial load
   useEffect(() => {
     fetchStatus().then(run => {
@@ -130,5 +155,5 @@ export function useJobRunner() {
 
   const isActive = state.run?.status === 'queued' || state.run?.status === 'running';
 
-  return { ...state, isActive, triggerRun, refresh: () => fetchStatus() };
+  return { ...state, isActive, appearsStuck, triggerRun, refresh: () => fetchStatus(), resetView };
 }
