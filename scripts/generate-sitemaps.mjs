@@ -184,9 +184,19 @@ async function main() {
   });
 
   // ── Static pages → sitemap-pages.xml ──
+  // Hub & silo pages listed FIRST for crawl priority signaling
   const staticPages = [
     { path: "/", priority: 1.0, changefreq: "daily", lastmod: today },
+    { path: "/dog", priority: 0.90, changefreq: "daily", lastmod: today },
+    { path: "/cat", priority: 0.90, changefreq: "daily", lastmod: today },
+    { path: "/dog/training", priority: 0.85, changefreq: "weekly", lastmod: today },
+    { path: "/dog/travel", priority: 0.85, changefreq: "weekly", lastmod: today },
+    { path: "/cat/training", priority: 0.85, changefreq: "weekly", lastmod: today },
+    { path: "/cat/travel", priority: 0.85, changefreq: "weekly", lastmod: today },
+    { path: "/dog/best-dog-training-and-travel-gear-2026", priority: 0.85, changefreq: "weekly", lastmod: today },
+    { path: "/cat/best-cat-training-and-travel-gear-2026", priority: 0.85, changefreq: "weekly", lastmod: today },
     { path: "/products", priority: 0.9, changefreq: "daily", lastmod: today },
+    { path: "/guides", priority: 0.70, changefreq: "weekly", lastmod: today },
     { path: "/bestsellers", priority: 0.80, changefreq: "weekly", lastmod: today },
     { path: "/resources/indoor-cat-care", priority: 0.70, changefreq: "weekly", lastmod: today },
     { path: "/resources/dog-bed-size-chart", priority: 0.60, changefreq: "monthly", lastmod: today },

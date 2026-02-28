@@ -1,0 +1,107 @@
+{
+  "version": "2026-02-28",
+  "source": "gsc_keywords + seo_collections",
+  "notes": "Based on top-impression URLs from GSC sync. CTR improvements use benefit-first format, avoid clickbait, keep brand at end.",
+  "patches": [
+    {
+      "url": "/collections/cat-trees-and-condos",
+      "oldTitle": "Cat Trees & Condos Collection | GetPawsy",
+      "newTitle": "Cat Trees & Condos – Stability-Tested for Large Cats (2026) | GetPawsy",
+      "oldMeta": "Shop cat trees and condos at GetPawsy.",
+      "newMeta": "Stability-tested cat trees and condos for cats up to 25+ lbs. Sisal posts, multi-level perches, cave hideaways. US shipping 3–7 days. 30-day guarantee.",
+      "impressions": 68,
+      "currentCtr": 0.015,
+      "targetCtr": 0.04
+    },
+    {
+      "url": "/collections/best-cat-scratching-posts",
+      "oldTitle": "Best Cat Scratching Posts 2026 – Sisal & Modern | GetPawsy",
+      "newTitle": "Best Cat Scratching Posts – Sisal, Tall & Wall-Mounted (2026) | GetPawsy",
+      "oldMeta": "Top-rated cat scratching posts and pads.",
+      "newMeta": "Save your furniture with sisal rope, tall vertical, and wall-mounted cat scratching posts. Tested for durability. Free US shipping over $35.",
+      "impressions": "estimated-high",
+      "currentCtr": "unknown",
+      "targetCtr": 0.05
+    },
+    {
+      "url": "/collections/best-cat-carriers",
+      "oldTitle": "Best Cat Carriers 2026 – Airline Approved & Backpacks | GetPawsy",
+      "newTitle": "Best Cat Carriers – Airline Approved, Expandable & Backpack (2026) | GetPawsy",
+      "oldMeta": "Shop the best cat carriers for vet visits, flights & travel.",
+      "newMeta": "Airline-approved, expandable and backpack cat carriers for stress-free vet visits and travel. Fits under most seats. Free US shipping over $35.",
+      "impressions": "estimated-high",
+      "currentCtr": "unknown",
+      "targetCtr": 0.05
+    },
+    {
+      "url": "/collections/best-cat-toys-for-indoor-cats",
+      "oldTitle": "Best Cat Toys for Indoor Cats 2026 – Beat Boredom | GetPawsy",
+      "newTitle": "Indoor Cat Toys – Interactive & Enrichment Picks That Work (2026) | GetPawsy",
+      "oldMeta": "Compare the best toys for indoor cats.",
+      "newMeta": "Interactive, puzzle, and electronic toys tested to keep indoor cats active and engaged. Vet-recommended enrichment. Free US shipping over $35.",
+      "impressions": "estimated-high",
+      "currentCtr": "unknown",
+      "targetCtr": 0.05
+    },
+    {
+      "url": "/dog/dog-training-behavior-tools",
+      "oldTitle": "Dog Training & Behavior Tools | GetPawsy",
+      "newTitle": "Dog Training Tools – No-Pull Harnesses & Recall Leashes (2026) | GetPawsy",
+      "oldMeta": "Shop dog training and behavior tools.",
+      "newMeta": "No-pull harnesses, long training leashes, and positive reinforcement tools for recall, leash manners and puppy training. US shipping 3–7 days.",
+      "impressions": "estimated-medium",
+      "currentCtr": "unknown",
+      "targetCtr": 0.04
+    },
+    {
+      "url": "/dog/dog-car-travel-safety",
+      "oldTitle": "Dog Car Travel Safety | GetPawsy",
+      "newTitle": "Dog Car Safety – Crash-Tested Seats, Harnesses & Hammocks (2026) | GetPawsy",
+      "oldMeta": "Shop dog car travel safety products.",
+      "newMeta": "Crash-tested dog car seats, safety harnesses, booster seats and waterproof hammocks. Keep your dog safe on every ride. Free US shipping over $35.",
+      "impressions": "estimated-medium",
+      "currentCtr": "unknown",
+      "targetCtr": 0.04
+    },
+    {
+      "url": "/dog/orthopedic-dog-beds",
+      "oldTitle": "Orthopedic Dog Beds | GetPawsy",
+      "newTitle": "Orthopedic Dog Beds – Memory Foam for Joint Support (2026) | GetPawsy",
+      "oldMeta": "Shop orthopedic dog beds.",
+      "newMeta": "Vet-recommended orthopedic dog beds with memory foam support for senior dogs, large breeds, and dogs with arthritis. Washable covers. Free US shipping.",
+      "impressions": "estimated-medium",
+      "currentCtr": "unknown",
+      "targetCtr": 0.04
+    },
+    {
+      "url": "/cat/cat-trees-for-large-cats",
+      "oldTitle": "Cat Trees for Large Cats | GetPawsy",
+      "newTitle": "Cat Trees for Large Cats – Stability-Tested for 25+ lbs (2026) | GetPawsy",
+      "oldMeta": "Shop cat trees for large cats.",
+      "newMeta": "Extra-sturdy cat trees tested for Maine Coons and cats over 25 lbs. Wide platforms, reinforced bases, natural sisal posts. Free US shipping.",
+      "impressions": "estimated-high",
+      "currentCtr": "unknown",
+      "targetCtr": 0.05
+    },
+    {
+      "url": "/collections/best-cat-litter-boxes",
+      "oldTitle": "Best Cat Litter Boxes 2026 – Self-Cleaning & Odor Control | GetPawsy",
+      "newTitle": "Best Cat Litter Boxes – Self-Cleaning & Odor-Free (2026) | GetPawsy",
+      "oldMeta": "Compare self-cleaning, enclosed & odor control cat litter boxes.",
+      "newMeta": "Self-cleaning, enclosed, and high-sided litter boxes tested for odor control. For single and multi-cat homes. Free US shipping over $35.",
+      "impressions": "estimated-high",
+      "currentCtr": "unknown",
+      "targetCtr": 0.05
+    },
+    {
+      "url": "/collections/best-cat-beds",
+      "oldTitle": "Best Cat Beds 2026 – Calming, Cave & Cozy Styles | GetPawsy",
+      "newTitle": "Best Cat Beds – Calming Donuts, Caves & Heated Picks (2026) | GetPawsy",
+      "oldMeta": "Shop the best cat beds for 2026.",
+      "newMeta": "Calming donut beds, cozy cave beds, and heated cat beds. Machine washable, soft plush materials. Free US shipping on all cat beds.",
+      "impressions": "estimated-medium",
+      "currentCtr": "unknown",
+      "targetCtr": 0.04
+    }
+  ]
+}
