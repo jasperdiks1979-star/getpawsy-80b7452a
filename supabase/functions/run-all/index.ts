@@ -99,12 +99,37 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (activeRun) {
-      return jsonResponse({
-        ok: false, traceId,
-        reason: 'A run is already in progress',
-        activeRunId: activeRun.id,
-        startedAt: activeRun.started_at,
-      });
+      const forceOverride = body.forceOverride === true;
+      const staleSinceMs = activeRun.started_at
+        ? Date.now() - new Date(activeRun.started_at).getTime()
+        : 0;
+      const isStale = staleSinceMs > 90_000; // 90s no-progress = stale
+
+      if (forceOverride || isStale) {
+        // Auto-release the stuck lock
+        const releaseReason = forceOverride
+          ? 'Force override by admin'
+          : `Stale lock auto-released (${Math.round(staleSinceMs / 1000)}s with no progress)`;
+        await supabase.from('job_runs').update({
+          status: 'failed',
+          finished_at: new Date().toISOString(),
+          duration_ms: staleSinceMs,
+          error_message: releaseReason,
+        }).eq('id', activeRun.id);
+        // Mark any pending/running steps as skipped
+        await supabase.from('job_run_steps')
+          .update({ status: 'skipped', finished_at: new Date().toISOString(), result: { skipped_reason: 'lock_released' } })
+          .eq('run_id', activeRun.id)
+          .in('status', ['pending', 'running']);
+        await log(supabase, activeRun.id, null, 'warn', `🔓 ${releaseReason}. Previous run ${activeRun.id} force-finalized.`);
+      } else {
+        return jsonResponse({
+          ok: false, traceId,
+          reason: 'A run is already in progress',
+          activeRunId: activeRun.id,
+          startedAt: activeRun.started_at,
+        });
+      }
     }
 
     // Adaptive Run Limiter — call execution-governor for signal-based evaluation
