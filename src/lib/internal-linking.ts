@@ -2,10 +2,13 @@
  * Internal Linking Strategy for Blog Posts
  * Automatically converts keywords in blog content to internal links.
  * Includes cornerstone sculpt links for priority authority flow.
+ * Money collections receive highest priority (priority 15) to ensure
+ * every blog post links to at least 1 money collection.
  */
 
 import { BLOG_CORNERSTONE_TRIGGERS, PRIORITY_CORNERSTONES, getCornerstoneAnchor } from './link-sculpt-config';
 import { getCategoryCollectionUrl } from './category-collection-map';
+import { MONEY_COLLECTIONS } from './money-collections';
 
 interface LinkableKeyword {
   keyword: string;
@@ -486,7 +489,35 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
     });
   });
 
-  // ── Cornerstone sculpt keywords (highest priority — authority flow) ──
+  // ── Money Collection keywords (HIGHEST priority — max authority flow) ──
+  for (const mc of MONEY_COLLECTIONS) {
+    // Primary keyword → money collection URL
+    keywords.push({
+      keyword: mc.primaryKeyword.toLowerCase(),
+      url: `/collections/${mc.slug}`,
+      type: 'category',
+      priority: 15, // Highest — ensures blog→money collection linking
+    });
+    // Short name as anchor variant
+    keywords.push({
+      keyword: mc.shortName.toLowerCase(),
+      url: `/collections/${mc.slug}`,
+      type: 'category',
+      priority: 13,
+    });
+    // Description keywords (partial match phrases)
+    const descWords = mc.description.toLowerCase().split(/[,.]/).map(s => s.trim()).filter(s => s.length > 10);
+    for (const phrase of descWords.slice(0, 2)) {
+      keywords.push({
+        keyword: phrase,
+        url: `/collections/${mc.slug}`,
+        type: 'category',
+        priority: 11,
+      });
+    }
+  }
+
+  // ── Cornerstone sculpt keywords (high priority — authority flow) ──
   Object.entries(BLOG_CORNERSTONE_TRIGGERS).forEach(([trigger, targets]) => {
     targets.forEach(({ cornerstoneId }) => {
       const cs = PRIORITY_CORNERSTONES.find(c => c.id === cornerstoneId);
@@ -496,7 +527,7 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
         keyword: trigger.toLowerCase(),
         url: cs.path,
         type: 'cornerstone',
-        priority: 12, // Highest priority — sculpt links
+        priority: 12, // High priority — sculpt links
       });
     });
   });

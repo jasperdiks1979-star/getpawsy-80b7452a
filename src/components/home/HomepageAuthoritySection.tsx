@@ -1,38 +1,6 @@
 import { Link } from 'react-router-dom';
 import { FadeInView } from '@/components/ui/FadeInView';
-
-const TOP_CATEGORIES = [
-  {
-    href: '/collections/orthopedic-calming-dog-beds',
-    title: 'Dog Beds',
-    desc: 'Orthopedic & calming beds for dogs of all sizes.',
-  },
-  {
-    href: '/collections/cat-condos',
-    title: 'Cat Trees & Condos',
-    desc: 'Multi-level cat furniture for climbing, scratching & lounging.',
-  },
-  {
-    href: '/collections/best-interactive-dog-toys',
-    title: 'Dog Toys',
-    desc: 'Interactive & durable toys to keep your dog entertained.',
-  },
-  {
-    href: '/collections/cat-condos',
-    title: 'Cat Furniture',
-    desc: 'Modern cat shelves, perches & wall-mounted play systems.',
-  },
-  {
-    href: '/collections/dog-travel-accessories',
-    title: 'Pet Travel Accessories',
-    desc: 'Car seats, carriers & travel bowls for pets on the go.',
-  },
-  {
-    href: '/collections/best-slow-feeder-dog-bowls',
-    title: 'Slow Feeder Bowls',
-    desc: 'Prevent bloat & promote healthy eating habits.',
-  },
-];
+import { MONEY_COLLECTIONS } from '@/lib/money-collections';
 
 export function HomepageAuthoritySection() {
   return (
@@ -43,54 +11,78 @@ export function HomepageAuthoritySection() {
             Shop by Top Pet Categories
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Explore our most popular collections — hand-picked for US pet owners
+            Our 10 most popular collections — curated for US pet owners
           </p>
         </FadeInView>
 
         <FadeInView>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 max-w-4xl mx-auto">
-            {TOP_CATEGORIES.map((cat) => (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 max-w-5xl mx-auto">
+            {MONEY_COLLECTIONS.map((mc) => (
               <Link
-                key={cat.href + cat.title}
-                to={cat.href}
-                className="group block bg-card border border-border/50 rounded-2xl p-5 md:p-6 hover:border-primary/30 hover:shadow-md transition-all duration-300"
+                key={mc.slug}
+                to={`/collections/${mc.slug}`}
+                className="group block bg-card border border-border/50 rounded-2xl p-4 md:p-5 hover:border-primary/30 hover:shadow-md transition-all duration-300"
               >
-                <h3 className="font-display font-semibold text-base md:text-lg text-foreground group-hover:text-primary transition-colors mb-1">
-                  {cat.title}
+                <span className="text-2xl block mb-1.5">{mc.icon}</span>
+                <h3 className="font-display font-semibold text-sm md:text-base text-foreground group-hover:text-primary transition-colors mb-0.5">
+                  {mc.shortName}
                 </h3>
-                <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
-                  {cat.desc}
+                <p className="text-[11px] md:text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                  {mc.description}
                 </p>
               </Link>
             ))}
           </div>
         </FadeInView>
 
-        {/* SEO authority paragraph */}
+        {/* SEO authority paragraph with contextual links to money collections */}
         <FadeInView className="mt-12 max-w-3xl mx-auto text-center">
           <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
             GetPawsy is your one-stop shop for premium{' '}
-            <Link to="/collections/dog" className="text-primary hover:underline font-medium">
+            <Link to="/collections/dogs" className="text-primary hover:underline font-medium">
               dog essentials
             </Link>{' '}
             and{' '}
-            <Link to="/collections/cat" className="text-primary hover:underline font-medium">
+            <Link to="/collections/cats" className="text-primary hover:underline font-medium">
               cat essentials
             </Link>{' '}
-            — all shipped fast within the United States. We curate vet-approved training gear,{' '}
+            — all shipped fast within the United States. We curate vet-approved{' '}
+            <Link to="/collections/best-dog-harnesses" className="text-primary hover:underline font-medium">
+              no-pull dog harnesses
+            </Link>,{' '}
             <Link to="/collections/orthopedic-calming-dog-beds" className="text-primary hover:underline font-medium">
               orthopedic dog beds
             </Link>,{' '}
-            <Link to="/collections/cat-condos" className="text-primary hover:underline font-medium">
+            <Link to="/collections/cat-trees-and-condos" className="text-primary hover:underline font-medium">
               cat trees and condos
             </Link>,{' '}
-            enrichment toys, and travel accessories designed for comfort, safety, and durability. 
-            Whether you're looking for a supportive bed for a senior pup, a space-saving cat tree 
-            for a small apartment, or interactive toys that actually last — our US-based team has 
-            tested and reviewed every product. We ship from US warehouses with 3–7 day delivery 
+            <Link to="/collections/best-interactive-dog-toys" className="text-primary hover:underline font-medium">
+              interactive dog toys
+            </Link>,{' '}
+            <Link to="/collections/best-cat-litter-boxes" className="text-primary hover:underline font-medium">
+              self-cleaning litter boxes
+            </Link>,{' '}
+            and{' '}
+            <Link to="/collections/best-dog-car-seats" className="text-primary hover:underline font-medium">
+              crash-tested dog car seats
+            </Link>{' '}
+            designed for comfort, safety, and durability.
+            Whether you need a{' '}
+            <Link to="/collections/best-slow-feeder-dog-bowls" className="text-primary hover:underline font-medium">
+              slow feeder bowl
+            </Link>{' '}
+            for a fast-eating pup, a{' '}
+            <Link to="/collections/best-cat-scratching-posts" className="text-primary hover:underline font-medium">
+              sisal scratching post
+            </Link>{' '}
+            for your indoor cat, or an{' '}
+            <Link to="/collections/best-cat-carriers" className="text-primary hover:underline font-medium">
+              airline-approved cat carrier
+            </Link>{' '}
+            — our US-based team has tested and reviewed every product.
+            We ship from US warehouses with 3–7 day delivery 
             and free shipping on orders over $49. Every order is backed by our 30-day hassle-free 
-            return policy. Thousands of pet parents trust GetPawsy for quality, transparency, 
-            and expert guidance. Explore our{' '}
+            return policy. Explore our{' '}
             <Link to="/guides" className="text-primary hover:underline font-medium">
               expert buying guides
             </Link>{' '}

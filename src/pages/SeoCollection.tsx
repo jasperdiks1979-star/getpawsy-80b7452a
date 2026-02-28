@@ -11,6 +11,7 @@ import { resolveCollectionSlug, getVirtualCollection } from '@/lib/collection-sl
 import { logCollectionResolution } from '@/lib/diagnostics-payload';
 import { classifySpecies } from '@/lib/species-taxonomy';
 import { Layout } from '@/components/layout/Layout';
+import { CrossCollectionLinks } from '@/components/seo/CrossCollectionLinks';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -953,6 +954,9 @@ const SeoCollection = () => {
           relatedSlugs={collection.related_collection_slugs}
           subCollections={subCollections}
         />
+
+        {/* Cross-Collection Links — money collection cross-linking */}
+        <CrossCollectionLinks currentSlug={collection.slug} />
 
         {/* Section D: Internal Links */}
         <section className="grid md:grid-cols-2 gap-6">
