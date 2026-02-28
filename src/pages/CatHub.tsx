@@ -6,6 +6,7 @@ import { Layout } from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { safeProduct, SafeProduct } from '@/lib/safe-render';
 import { FadeInView } from '@/components/ui/FadeInView';
+import { CAT_SILO } from '@/lib/silo-config';
 
 const ProductCard = lazy(() => import('@/components/products/ProductCard').then(m => ({ default: m.ProductCard })));
 
@@ -17,7 +18,7 @@ const CatHub = () => {
         .from('products_public')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
         .eq('is_active', true)
-        .in('category', ['Cat Trees & Condos', 'Cat Carriers', 'Cat Toys', 'Cat Scratching Posts', 'Cat Furniture', 'Cat Houses'])
+        .in('category', CAT_SILO.categories)
         .order('price', { ascending: false })
         .limit(24);
       if (error) throw error;
@@ -55,16 +56,16 @@ const CatHub = () => {
         </div>
       </section>
 
-      {/* Pillar Links */}
+      {/* Silo Navigation — links ONLY within cat silo */}
       <section className="py-12 border-b border-border/40">
         <div className="container px-4 md:px-6">
           <h2 className="text-2xl font-display font-bold mb-6">Explore Cat Categories</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { title: 'Cat Trees for Large Cats', href: '/cat/cat-trees-for-large-cats', desc: 'Stability-tested for 25+ lbs' },
-              { title: 'Litter Boxes', href: '/collections/cat-litter-boxes', desc: 'Self-cleaning & odor control' },
-              { title: 'Cat Carriers', href: '/collections/cat-carriers', desc: 'Airline-approved travel carriers' },
-              { title: 'Training & Travel Guide 2026', href: '/cat/best-cat-training-and-travel-gear-2026', desc: 'Expert buyer guide' },
+              { title: CAT_SILO.training.label, href: CAT_SILO.training.href, desc: CAT_SILO.training.desc },
+              { title: CAT_SILO.travel.label, href: CAT_SILO.travel.href, desc: CAT_SILO.travel.desc },
+              ...CAT_SILO.subCollections.map(c => ({ title: c.label, href: c.href, desc: c.desc })),
+              { title: 'Training & Travel Guide 2026', href: CAT_SILO.pillar.href, desc: 'Expert buyer guide' },
             ].map(item => (
               <Link
                 key={item.href}

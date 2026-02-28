@@ -175,6 +175,10 @@ const DogHub = lazyWithRetry(() => import("./pages/DogHub"));
 const CatHub = lazyWithRetry(() => import("./pages/CatHub"));
 const DogTrainingTravelPillar = lazyWithRetry(() => import("./pages/landing/DogTrainingTravelPillar"));
 const CatTrainingTravelPillar = lazyWithRetry(() => import("./pages/landing/CatTrainingTravelPillar"));
+const DogTraining = lazyWithRetry(() => import("./pages/silo/DogTraining"));
+const DogTravel = lazyWithRetry(() => import("./pages/silo/DogTravel"));
+const CatTraining = lazyWithRetry(() => import("./pages/silo/CatTraining"));
+const CatTravel = lazyWithRetry(() => import("./pages/silo/CatTravel"));
 
 /** Redirect legacy /collection/:slug to /collections/:slug with 301-equivalent */
 function CollectionRedirect() {
@@ -410,6 +414,10 @@ const App = () => {
                       {/* ═══ DOG & CAT HUB PAGES ═══ */}
                       <Route path="/dog" element={<Suspense fallback={<RouteLoader />}><DogHub /></Suspense>} />
                       <Route path="/cat" element={<Suspense fallback={<RouteLoader />}><CatHub /></Suspense>} />
+                      <Route path="/dog/training" element={<Suspense fallback={<RouteLoader />}><DogTraining /></Suspense>} />
+                      <Route path="/dog/travel" element={<Suspense fallback={<RouteLoader />}><DogTravel /></Suspense>} />
+                      <Route path="/cat/training" element={<Suspense fallback={<RouteLoader />}><CatTraining /></Suspense>} />
+                      <Route path="/cat/travel" element={<Suspense fallback={<RouteLoader />}><CatTravel /></Suspense>} />
                       <Route path="/dog/best-dog-training-and-travel-gear-2026" element={<Suspense fallback={<RouteLoader />}><DogTrainingTravelPillar /></Suspense>} />
                       <Route path="/cat/best-cat-training-and-travel-gear-2026" element={<Suspense fallback={<RouteLoader />}><CatTrainingTravelPillar /></Suspense>} />
                       {/* ═══ NAMESPACED SEO CLUSTER ROUTES ═══ */}

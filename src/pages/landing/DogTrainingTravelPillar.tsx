@@ -180,16 +180,24 @@ const DogTrainingTravelPillar = () => {
             </div>
           </section>
 
-          {/* Internal Links */}
+          {/* Silo Internal Links — dog silo only */}
           <section>
-            <h2 className="text-2xl font-display font-bold mb-4">Related Dog Guides</h2>
+            <h2 className="text-2xl font-display font-bold mb-4">Explore Dog Guides</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Link to="/dog/training/" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Dog Training Essentials →</h3>
+                <p className="text-sm text-muted-foreground">No-pull harnesses, leashes & behavior tools</p>
+              </Link>
+              <Link to="/dog/travel/" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
+                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Dog Travel Safety Gear →</h3>
+                <p className="text-sm text-muted-foreground">Car seats, travel harnesses & carriers</p>
+              </Link>
               <Link to="/dog/dog-training-behavior-tools" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
-                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Dog Training & Behavior Tools →</h3>
+                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Training & Behavior Tools →</h3>
                 <p className="text-sm text-muted-foreground">Complete collection of training gear</p>
               </Link>
               <Link to="/dog/dog-car-travel-safety" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">
-                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Dog Car Travel Safety →</h3>
+                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">Car Travel Safety →</h3>
                 <p className="text-sm text-muted-foreground">Car seats, harnesses & safety gear</p>
               </Link>
               <Link to="/dog/orthopedic-dog-beds" className="group bg-card rounded-xl border border-border/40 p-5 hover:border-primary/30 transition-colors">

@@ -6,6 +6,7 @@ import { Layout } from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { safeProduct, SafeProduct } from '@/lib/safe-render';
 import { FadeInView } from '@/components/ui/FadeInView';
+import { DOG_SILO } from '@/lib/silo-config';
 
 const ProductCard = lazy(() => import('@/components/products/ProductCard').then(m => ({ default: m.ProductCard })));
 
@@ -17,7 +18,7 @@ const DogHub = () => {
         .from('products_public')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
         .eq('is_active', true)
-        .in('category', ['Dog Training', 'Dog Carriers', 'Dog Collars & Leashes', 'Dog Toys'])
+        .in('category', DOG_SILO.categories)
         .order('price', { ascending: false })
         .limit(24);
       if (error) throw error;
@@ -55,16 +56,16 @@ const DogHub = () => {
         </div>
       </section>
 
-      {/* Pillar Links */}
+      {/* Silo Navigation — links ONLY within dog silo */}
       <section className="py-12 border-b border-border/40">
         <div className="container px-4 md:px-6">
           <h2 className="text-2xl font-display font-bold mb-6">Explore Dog Categories</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { title: 'Training & Behavior', href: '/dog/dog-training-behavior-tools', desc: 'Harnesses, leashes & training aids' },
-              { title: 'Car Travel Safety', href: '/dog/dog-car-travel-safety', desc: 'Car seats, harnesses & hammocks' },
-              { title: 'Orthopedic Beds', href: '/dog/orthopedic-dog-beds', desc: 'Memory foam beds for all breeds' },
-              { title: 'Training & Travel Guide 2026', href: '/dog/best-dog-training-and-travel-gear-2026', desc: 'Expert buyer guide' },
+              { title: DOG_SILO.training.label, href: DOG_SILO.training.href, desc: DOG_SILO.training.desc },
+              { title: DOG_SILO.travel.label, href: DOG_SILO.travel.href, desc: DOG_SILO.travel.desc },
+              ...DOG_SILO.subCollections.map(c => ({ title: c.label, href: c.href, desc: c.desc })),
+              { title: 'Training & Travel Guide 2026', href: DOG_SILO.pillar.href, desc: 'Expert buyer guide' },
             ].map(item => (
               <Link
                 key={item.href}
