@@ -56,7 +56,7 @@ export function useJobRunner() {
   });
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastProgressRef = useRef<number>(Date.now());
-  const STUCK_THRESHOLD_MS = 180_000; // 3 min without progress = stuck (matches backend)
+  const STUCK_THRESHOLD_MS = 90_000; // 90s without progress = stuck (matches backend)
   const [appearsStuck, setAppearsStuck] = useState(false);
 
   const fetchStatus = useCallback(async (runId?: string) => {

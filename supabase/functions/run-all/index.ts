@@ -13,7 +13,7 @@ const STEPS = [
   { key: 'ctr_recovery', label: 'CTR Recovery Optimizer', critical: false },
   { key: 'ranking_push', label: 'Ranking Push Builder (pos 6–25)', critical: false },
   { key: 'content_generation_queue', label: 'Content Generation Queue', critical: false },
-  { key: 'indexing_submit', label: 'Sitemap Ping (Safe Mode)', critical: false },
+  { key: 'indexing_submit', label: 'Sitemap Ping (Google + Bing)', critical: false },
   { key: 'compile_report', label: 'Compile Run Report', critical: false },
   { key: 'ctr_intelligence', label: 'CTR Intelligence Update', critical: false },
   { key: 'cluster_intelligence', label: 'Cluster Intelligence Update', critical: false },
@@ -33,8 +33,9 @@ const CANONICAL_HOST = 'https://getpawsy.pet';
 const INDEXING_DEDUPE_DAYS = 7;
 
 // === SAFETY TIMEOUTS ===
-const GLOBAL_RUN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes hard cap for entire run
-const INDEXING_WATCHDOG_MS = 20_000; // 20s watchdog for indexing step
+const GLOBAL_RUN_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes hard cap for entire run
+const STALE_HEARTBEAT_MS = 90_000; // 90s without heartbeat = stale (was 180s)
+const MAX_STEP_DURATION_MS = 60_000; // 60s max per step
 
 function generateTraceId(): string {
   return `tr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -105,7 +106,7 @@ Deno.serve(async (req) => {
       const staleSinceMs = lastHeartbeat
         ? Date.now() - new Date(lastHeartbeat).getTime()
         : 0;
-      const isStale = staleSinceMs > 180_000; // 3 min without heartbeat = stale
+      const isStale = staleSinceMs > STALE_HEARTBEAT_MS; // 90s without heartbeat = stale
 
       if (forceOverride || isStale) {
         // Auto-release the stuck lock
@@ -251,41 +252,41 @@ Deno.serve(async (req) => {
       const stepStart = Date.now();
 
       try {
-        // Dryrun mode: skip indexing step entirely
+        // Dryrun mode: skip sitemap ping step entirely
         if (step.key === 'indexing_submit' && mode === 'dryrun') {
           await supabase.from('job_run_steps')
             .update({ status: 'skipped', finished_at: new Date().toISOString(), duration_ms: 0 })
             .eq('run_id', run.id).eq('step_key', step.key);
-          await log(supabase, run.id, step.key, 'info', 'Indexing step skipped (dryrun)');
+          await log(supabase, run.id, step.key, 'info', 'Sitemap ping skipped (dryrun)');
           report[step.key] = { status: 'skipped', reason: 'dryrun mode' };
           continue;
         }
 
-        // Special guard: skip indexing if crawl health had critical failures
+        // Special guard: skip sitemap ping if crawl health had critical failures
         if (step.key === 'indexing_submit' && !crawlHealthPassed) {
-          throw new Error('Indexing aborted: crawl_health_check has critical failures.');
+          throw new Error('Sitemap ping aborted: crawl_health_check has critical failures.');
         }
 
-        // === PER-STEP WATCHDOG for indexing ===
+        // === PER-STEP TIMEOUT WATCHDOG (all steps) ===
         let result: Record<string, unknown>;
-        if (step.key === 'indexing_submit') {
-          const watchdogPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('watchdog_timeout')), INDEXING_WATCHDOG_MS)
-          );
-          try {
-            result = await Promise.race([executeStep(supabase, step.key, run.id), watchdogPromise]);
-          } catch (watchdogErr) {
-            const duration = Date.now() - stepStart;
-            const errMsg = watchdogErr instanceof Error ? watchdogErr.message : String(watchdogErr);
+        const stepTimeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('STEP_TIMEOUT')), MAX_STEP_DURATION_MS)
+        );
+        try {
+          result = await Promise.race([executeStep(supabase, step.key, run.id), stepTimeoutPromise]);
+        } catch (timeoutErr) {
+          const duration = Date.now() - stepStart;
+          const errMsg = timeoutErr instanceof Error ? timeoutErr.message : String(timeoutErr);
+          if (errMsg === 'STEP_TIMEOUT') {
+            // Non-critical timeout: mark as warning, pipeline continues
             await supabase.from('job_run_steps')
-              .update({ status: 'success', finished_at: new Date().toISOString(), duration_ms: duration, result: { status: 'warning', reason: errMsg } })
+              .update({ status: 'success', finished_at: new Date().toISOString(), duration_ms: duration, result: { status: 'warning', reason: 'STEP_TIMEOUT' } })
               .eq('run_id', run.id).eq('step_key', step.key);
-            await log(supabase, run.id, step.key, 'warn', `Indexing watchdog fired (${duration}ms): ${errMsg}. Pipeline continues.`);
-            report[step.key] = { status: 'warning', duration_ms: duration, reason: errMsg };
+            await log(supabase, run.id, step.key, 'warn', `Step timeout (${duration}ms). Pipeline continues.`);
+            report[step.key] = { status: 'warning', duration_ms: duration, reason: 'STEP_TIMEOUT' };
             continue;
           }
-        } else {
-          result = await executeStep(supabase, step.key, run.id);
+          throw timeoutErr; // Re-throw non-timeout errors
         }
         const duration = Date.now() - stepStart;
 
@@ -688,17 +689,37 @@ async function executeStep(
     }
 
     case 'indexing_submit': {
-      // === SITEMAP PING (Safe Mode) v5 — with circuit breaker, rate limit, idempotency ===
+      // === SITEMAP PING (Google + Bing) v6 — guarded mode, 3 retries w/ exponential backoff ===
       const PING_TIMEOUT_MS = 5_000;
       const RATE_LIMIT_MAX_PER_HOUR = 6;
-      const IDEMPOTENCY_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
-      const CIRCUIT_BREAKER_THRESHOLD = 3; // consecutive failures to open
-      const CIRCUIT_BREAKER_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
+      const IDEMPOTENCY_WINDOW_MS = 10 * 60 * 1000;
+      const CIRCUIT_BREAKER_THRESHOLD = 3;
+      const CIRCUIT_BREAKER_COOLDOWN_MS = 30 * 60 * 1000;
+      const MAX_RETRIES = 3;
+      const BACKOFF_MS = [1000, 3000, 9000]; // exponential backoff
       const pingStepStart = Date.now();
 
-      const SITEMAPS_TO_PING = [
-        `${CANONICAL_HOST}/sitemap.xml`,
-      ];
+      // === GUARDED MODE: verify canonical host + sitemap reachability ===
+      const sitemapUrl = `${CANONICAL_HOST}/sitemap.xml`;
+      const isCanonicalHost = CANONICAL_HOST === 'https://getpawsy.pet';
+      
+      if (!isCanonicalHost) {
+        await log(supabase, runId, 'indexing_submit', 'warn', `SKIPPED: canonical host "${CANONICAL_HOST}" is not getpawsy.pet`);
+        return { status: 'skipped', reason: 'invalid_canonical', canonicalHost: CANONICAL_HOST };
+      }
+
+      // Verify sitemap is reachable before pinging
+      try {
+        const sitemapCheck = await fetch(sitemapUrl, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+        if (!sitemapCheck.ok) {
+          await log(supabase, runId, 'indexing_submit', 'warn', `SKIPPED: sitemap returned HTTP ${sitemapCheck.status}`);
+          return { status: 'skipped', reason: 'sitemap_unreachable', httpStatus: sitemapCheck.status };
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        await log(supabase, runId, 'indexing_submit', 'warn', `SKIPPED: sitemap fetch failed — ${msg}`);
+        return { status: 'skipped', reason: 'sitemap_unreachable', error: msg };
+      }
 
       const ENGINES: Array<{ name: string; template: (s: string) => string }> = [
         { name: 'google', template: (s) => `https://www.google.com/ping?sitemap=${encodeURIComponent(s)}` },
@@ -736,7 +757,10 @@ async function executeStep(
         .select('id', { count: 'exact', head: true })
         .gte('created_at', oneHourAgo);
 
-      const rateLimited = (recentPingCount || 0) >= RATE_LIMIT_MAX_PER_HOUR * ENGINES.length;
+      if ((recentPingCount || 0) >= RATE_LIMIT_MAX_PER_HOUR * ENGINES.length) {
+        await log(supabase, runId, 'indexing_submit', 'warn', `Rate limit reached (${recentPingCount} pings in last hour). Skipping.`);
+        return { status: 'skipped', reason: 'rate_limited', recentPingCount };
+      }
 
       // --- Idempotency check ---
       const idempotencyThreshold = new Date(Date.now() - IDEMPOTENCY_WINDOW_MS).toISOString();
@@ -747,14 +771,7 @@ async function executeStep(
         .gte('created_at', idempotencyThreshold)
         .limit(1);
 
-      const alreadyPingedRecently = (recentSuccess?.length || 0) > 0;
-
-      if (rateLimited) {
-        await log(supabase, runId, 'indexing_submit', 'warn', `Rate limit reached (${recentPingCount} pings in last hour). Skipping.`);
-        return { status: 'skipped', reason: 'rate_limited', recentPingCount };
-      }
-
-      if (alreadyPingedRecently) {
+      if ((recentSuccess?.length || 0) > 0) {
         await log(supabase, runId, 'indexing_submit', 'info', `Idempotency: successful ping within last 10 min. Skipping.`);
         return { status: 'skipped', reason: 'idempotent_cache_hit' };
       }
@@ -766,45 +783,54 @@ async function executeStep(
         httpStatus?: number;
         duration_ms: number;
         error?: string;
+        attempts: number;
       }
 
       const pingResults: PingResult[] = [];
 
-      for (const sitemapUrl of SITEMAPS_TO_PING) {
-        for (const engine of ENGINES) {
-          if (circuitOpen[engine.name]) {
-            pingResults.push({ targetEngine: engine.name, sitemapUrl, status: 'circuit_open', duration_ms: 0, error: 'Circuit breaker open' });
-            continue;
+      for (const engine of ENGINES) {
+        if (circuitOpen[engine.name]) {
+          pingResults.push({ targetEngine: engine.name, sitemapUrl, status: 'circuit_open', duration_ms: 0, error: 'Circuit breaker open', attempts: 0 });
+          continue;
+        }
+
+        let lastResult: PingResult | null = null;
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          if (attempt > 1) {
+            const jitter = Math.random() * 0.3 * BACKOFF_MS[attempt - 2];
+            await new Promise(r => setTimeout(r, BACKOFF_MS[attempt - 2] + jitter));
           }
 
           const pingUrl = engine.template(sitemapUrl);
           const start = Date.now();
-          let result: PingResult;
           try {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
             const res = await fetch(pingUrl, { method: 'GET', signal: controller.signal });
             clearTimeout(timer);
             const duration_ms = Date.now() - start;
-            result = res.ok
-              ? { targetEngine: engine.name, sitemapUrl, status: 'success', httpStatus: res.status, duration_ms }
-              : { targetEngine: engine.name, sitemapUrl, status: 'http_error', httpStatus: res.status, duration_ms };
+            if (res.ok) {
+              lastResult = { targetEngine: engine.name, sitemapUrl, status: 'success', httpStatus: res.status, duration_ms, attempts: attempt };
+              break; // Success — stop retrying
+            }
+            lastResult = { targetEngine: engine.name, sitemapUrl, status: 'http_error', httpStatus: res.status, duration_ms, attempts: attempt };
           } catch (e) {
             const duration_ms = Date.now() - start;
             const errMsg = e instanceof Error ? e.message : String(e);
             const isTimeout = errMsg.includes('abort') || errMsg.includes('signal');
-            result = { targetEngine: engine.name, sitemapUrl, status: isTimeout ? 'timeout' : 'http_error', duration_ms, error: errMsg };
+            lastResult = { targetEngine: engine.name, sitemapUrl, status: isTimeout ? 'timeout' : 'http_error', duration_ms, error: errMsg, attempts: attempt };
           }
-          pingResults.push(result);
+        }
 
-          // Persist to ping log for circuit breaker + rate limiting
+        if (lastResult) {
+          pingResults.push(lastResult);
           await supabase.from('sitemap_ping_log').insert({
             engine: engine.name,
             sitemap_url: sitemapUrl,
-            status: result.status,
-            http_status: result.httpStatus || null,
-            duration_ms: result.duration_ms,
-            error_message: result.error || null,
+            status: lastResult.status,
+            http_status: lastResult.httpStatus || null,
+            duration_ms: lastResult.duration_ms,
+            error_message: lastResult.error || null,
             run_id: runId,
           });
         }
@@ -825,18 +851,18 @@ async function executeStep(
         timeouts,
         circuitBlocked,
         stepDurationMs,
-        note: 'Sitemap ping is a hint, not a guarantee. Rate: max 6/hr/engine. Circuit breaker: 3 consecutive failures → 30 min cooldown.',
+        note: 'Sitemap Ping v6: 3 retries w/ backoff (1s,3s,9s). Rate: max 6/hr/engine. Circuit breaker: 3 consecutive failures → 30 min cooldown.',
         pings: pingResults,
       };
 
       for (const r of pingResults) {
         const lvl = r.status === 'success' ? 'info' : 'warn';
         await log(supabase, runId, 'indexing_submit', lvl,
-          `Ping ${r.targetEngine} ${r.sitemapUrl}: ${r.status} (${r.duration_ms}ms)${r.httpStatus ? ` HTTP ${r.httpStatus}` : ''}${r.error ? ` — ${r.error}` : ''}`);
+          `Ping ${r.targetEngine} ${r.sitemapUrl}: ${r.status} (${r.duration_ms}ms, ${r.attempts} attempt${r.attempts > 1 ? 's' : ''})${r.httpStatus ? ` HTTP ${r.httpStatus}` : ''}${r.error ? ` — ${r.error}` : ''}`);
       }
 
       await log(supabase, runId, 'indexing_submit', hasFailures ? 'warn' : 'info',
-        `Sitemap Ping v5: ${succeeded}/${pingResults.length} ok, ${failed} err, ${timeouts} timeout, ${circuitBlocked} circuit-blocked. ${stepDurationMs}ms.`);
+        `Sitemap Ping v6: ${succeeded}/${pingResults.length} ok, ${failed} err, ${timeouts} timeout, ${circuitBlocked} circuit-blocked. ${stepDurationMs}ms.`);
 
       return pingReport;
     }

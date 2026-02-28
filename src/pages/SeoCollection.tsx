@@ -1,6 +1,6 @@
 import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { preloadCriticalImage } from '@/hooks/useCriticalImagePreload';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,7 @@ import { resolveCollectionProducts, type CollectionProduct } from '@/lib/collect
 import { useCollectionIntegrityCheck } from '@/lib/collection-integrity';
 import { resolveCollectionSlug, getVirtualCollection } from '@/lib/collection-slug-resolver';
 import { logCollectionResolution } from '@/lib/diagnostics-payload';
+import { classifySpecies } from '@/lib/species-taxonomy';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -353,7 +354,23 @@ const SeoCollection = () => {
     enabled: !!collection,
   });
 
-  const products = productMatch?.products || [];
+  // Species taxonomy filter for cat/dog virtual collections
+  const isSpeciesCollection = slug === 'cat' || slug === 'dog';
+  const [includeMultiPet, setIncludeMultiPet] = useState(true);
+
+  const products = useMemo(() => {
+    const raw = productMatch?.products || [];
+    if (!isSpeciesCollection || raw.length === 0) return raw;
+
+    const targetSpecies = slug as 'cat' | 'dog';
+    return raw.filter(p => {
+      const taxonomy = classifySpecies(p.name, p.category || '', []);
+      if (taxonomy.speciesPrimary === targetSpecies) return true;
+      if (includeMultiPet && taxonomy.speciesPrimary === 'both') return true;
+      return false;
+    });
+  }, [productMatch?.products, isSpeciesCollection, slug, includeMultiPet]);
+
   const showingRelatedResults = !!productMatch?.fallbackTriggered;
 
   // Preload first 2 product images for faster LCP
@@ -468,11 +485,19 @@ const SeoCollection = () => {
           <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <h1 className="text-2xl font-bold mb-4">Collection Not Found</h1>
           <p className="text-muted-foreground mb-6">
-            The collection you're looking for doesn't exist or has been removed.
+            We couldn't find the collection "{rawSlug}". Try one of these popular collections instead:
           </p>
-          <Button asChild>
-            <Link to="/products">Browse All Products</Link>
-          </Button>
+          <div className="flex flex-wrap gap-3 justify-center mb-6">
+            <Button asChild variant="default">
+              <Link to="/collections/cat">🐱 Cat Essentials</Link>
+            </Button>
+            <Button asChild variant="default">
+              <Link to="/collections/dog">🐶 Dog Essentials</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/products">Browse All Products</Link>
+            </Button>
+          </div>
         </div>
       </Layout>
     );
@@ -624,6 +649,22 @@ const SeoCollection = () => {
             </span>
           </div>
 
+          {/* Species filter toggle for cat/dog collections */}
+          {isSpeciesCollection && (
+            <div className="flex items-center gap-2 mb-4">
+              <button
+                onClick={() => setIncludeMultiPet(!includeMultiPet)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  includeMultiPet
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'bg-muted border-border text-muted-foreground'
+                }`}
+              >
+                🐾 {includeMultiPet ? 'Includes multi-pet items' : 'Show multi-pet items'}
+              </button>
+            </div>
+          )}
+
           {showingRelatedResults && (
             <div className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
               Showing related results
@@ -659,6 +700,15 @@ const SeoCollection = () => {
                       position={index + 1}
                       popularChoice={isPriorityCategory && index < 3 && (product.stock ?? 0) > 0}
                     />
+                    {/* Species badge for cat/dog collections */}
+                    {isSpeciesCollection && (() => {
+                      const taxonomy = classifySpecies(product.name, product.category || '', []);
+                      return taxonomy.speciesPrimary === 'both' ? (
+                        <div className="px-2 pt-1">
+                          <Badge variant="outline" className="text-[10px] h-5 gap-1">🐾 Multi-pet</Badge>
+                        </div>
+                      ) : null;
+                    })()}
                     {/* CRO badges + sold counter for money collections */}
                     {isMoney && (
                       <div className="px-2 pb-2">
