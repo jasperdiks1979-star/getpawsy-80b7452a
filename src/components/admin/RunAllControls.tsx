@@ -202,9 +202,9 @@ export function RunAllControls() {
 
         {/* Stuck run warning */}
         {appearsStuck && isActive && (
-          <div className="flex items-center gap-1.5 text-[10px] text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded px-2 py-1">
+          <div className="flex items-center gap-1.5 text-[10px] text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded px-2 py-1 flex-wrap">
             <AlertTriangle className="h-3 w-3 shrink-0" />
-            <span>Run appears stuck (no progress for 60s)</span>
+            <span>Run appears stuck — will auto-release after timeout</span>
             <Button
               variant="ghost"
               size="sm"
@@ -212,8 +212,14 @@ export function RunAllControls() {
               onClick={resetView}
             >
               <RefreshCw className="h-3 w-3" />
-              Reset view
+              Refresh
             </Button>
+          </div>
+        )}
+        {!isActive && run?.error_message?.includes('auto-released') && (
+          <div className="flex items-center gap-1.5 text-[10px] text-yellow-600 dark:text-yellow-400">
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            <span>Run auto-released after timeout</span>
           </div>
         )}
       </div>
