@@ -15,7 +15,7 @@ export interface ScalingGuide {
   secondaryKWs: string[];
   intent: 'commercial' | 'informational' | 'comparison';
   priority: number;
-  cluster: 'cat-litter' | 'cat-furniture' | 'dog-beds' | 'micro-intent';
+  cluster: 'cat-litter' | 'cat-furniture' | 'dog-beds' | 'micro-intent' | 'dog-training' | 'cat-enrichment';
   week: number;
   role: 'cornerstone' | 'hub' | 'subguide';
   internalLinksTarget: number;
@@ -202,6 +202,23 @@ export const SCALING_GUIDES: ScalingGuide[] = [
   { slug: 'best-dog-bed-for-small-dogs', title: 'Best Dog Beds for Small Dogs (2026) – Cozy Picks for Under 20 lbs', primaryKW: 'best dog bed for small dogs', secondaryKWs: ['small dog bed', 'dog bed for tiny dogs', 'mini dog bed'], intent: 'commercial', priority: 62, cluster: 'micro-intent', week: 9, role: 'subguide', internalLinksTarget: 4, linksTo: ['best-dog-bed-2026', 'best-calming-dog-bed'], difficulty: 'low' },
   { slug: 'best-cat-tree-under-50', title: 'Best Cat Trees Under $50 (2026) – Cheap But Good Picks', primaryKW: 'best cat tree under 50', secondaryKWs: ['cheapest cat tree', 'cat tree under 50 dollars'], intent: 'commercial', priority: 56, cluster: 'micro-intent', week: 9, role: 'subguide', internalLinksTarget: 3, linksTo: ['best-cat-tree-under-100', 'best-cat-trees-small-apartments'], difficulty: 'low' },
   { slug: 'best-litter-box-for-sphynx', title: 'Best Litter Box for Sphynx Cats (2026) – Low Dust & Warm Entry', primaryKW: 'best litter box for sphynx cat', secondaryKWs: ['sphynx cat litter box', 'litter for hairless cats'], intent: 'commercial', priority: 46, cluster: 'micro-intent', week: 11, role: 'subguide', internalLinksTarget: 3, linksTo: ['best-dust-free-cat-litter', 'best-cat-litter-box-2026'], difficulty: 'low' },
+
+  // ========== CLUSTER 5: DOG TRAINING (10 guides) ==========
+  // Pillar
+  { slug: 'complete-dog-training-guide-2026', title: 'The Complete Dog Training Guide (2026) – Stop Pulling, Barking & Bad Habits Fast', primaryKW: 'dog training guide', secondaryKWs: ['best dog training tools', 'how to stop dog pulling', 'positive reinforcement dog training', 'dog obedience training'], intent: 'informational', priority: 98, cluster: 'dog-training', week: 1, role: 'cornerstone', internalLinksTarget: 15, linksTo: ['best-no-pull-dog-harness-2026', 'best-dog-training-leash-for-pullers', 'top-dog-training-tools-for-puppies', 'best-anti-bark-training-methods'], difficulty: 'high' },
+  // Commercial comparison pages
+  { slug: 'best-no-pull-dog-harness-2026', title: 'Best No-Pull Dog Harness (2026) – Tested & Ranked for Pullers', primaryKW: 'best no pull dog harness', secondaryKWs: ['no pull harness', 'front clip harness', 'dog harness for pulling', 'harness for large dog that pulls'], intent: 'commercial', priority: 92, cluster: 'dog-training', week: 1, role: 'hub', internalLinksTarget: 10, linksTo: ['complete-dog-training-guide-2026', 'best-dog-training-leash-for-pullers', 'top-dog-training-tools-for-puppies'], difficulty: 'high' },
+  { slug: 'best-dog-training-leash-for-pullers', title: 'Best Dog Training Leash for Pullers (2026) – Tested & Ranked', primaryKW: 'best dog training leash', secondaryKWs: ['leash for pulling dogs', 'anti pull leash', 'dog training leash for pulling'], intent: 'commercial', priority: 85, cluster: 'dog-training', week: 1, role: 'subguide', internalLinksTarget: 8, linksTo: ['complete-dog-training-guide-2026', 'best-no-pull-dog-harness-2026'], difficulty: 'medium' },
+  { slug: 'top-dog-training-tools-for-puppies', title: 'Top Dog Training Tools for Puppies (2026) – Start Right', primaryKW: 'puppy training tools', secondaryKWs: ['best tools for puppy training', 'puppy harness', 'puppy training tools for beginners'], intent: 'commercial', priority: 83, cluster: 'dog-training', week: 2, role: 'subguide', internalLinksTarget: 8, linksTo: ['complete-dog-training-guide-2026', 'best-no-pull-dog-harness-2026', 'best-anti-bark-training-methods'], difficulty: 'medium' },
+  { slug: 'best-anti-bark-training-methods', title: 'Best Anti-Bark Training Methods (2026) – Humane Solutions That Work', primaryKW: 'anti bark training', secondaryKWs: ['stop dog barking', 'dog bark deterrent', 'best anti bark training solution'], intent: 'commercial', priority: 80, cluster: 'dog-training', week: 2, role: 'subguide', internalLinksTarget: 7, linksTo: ['complete-dog-training-guide-2026', 'best-no-pull-dog-harness-2026'], difficulty: 'medium' },
+
+  // ========== CLUSTER 6: CAT ENRICHMENT (5 guides) ==========
+  // Pillar
+  { slug: 'best-cat-enrichment-ideas-indoor-cats-2026', title: 'Best Cat Enrichment Ideas for Indoor Cats (2026 Guide)', primaryKW: 'cat enrichment ideas', secondaryKWs: ['indoor cat enrichment', 'best cat enrichment', 'how to keep indoor cats entertained', 'best cat enrichment ideas'], intent: 'informational', priority: 96, cluster: 'cat-enrichment', week: 1, role: 'cornerstone', internalLinksTarget: 12, linksTo: ['best-interactive-cat-toys-that-work', 'best-cat-litter-box-furniture-small-apartments', 'modern-cat-furniture-matches-your-home'], difficulty: 'high' },
+  // Commercial comparison pages
+  { slug: 'best-interactive-cat-toys-that-work', title: 'Best Interactive Cat Toys That Actually Work (2026) – Tested & Ranked', primaryKW: 'best interactive cat toys', secondaryKWs: ['interactive cat toys for indoor cats', 'cat toys that work', 'best cat toys 2026'], intent: 'commercial', priority: 88, cluster: 'cat-enrichment', week: 1, role: 'hub', internalLinksTarget: 8, linksTo: ['best-cat-enrichment-ideas-indoor-cats-2026', 'best-cat-litter-box-furniture-small-apartments', 'modern-cat-furniture-matches-your-home'], difficulty: 'medium' },
+  { slug: 'best-cat-litter-box-furniture-small-apartments', title: 'Best Cat Litter Box Furniture for Small Apartments (2026)', primaryKW: 'cat litter box furniture small apartment', secondaryKWs: ['hidden litter box', 'litter box enclosure', 'cat litter box furniture'], intent: 'commercial', priority: 86, cluster: 'cat-enrichment', week: 2, role: 'subguide', internalLinksTarget: 7, linksTo: ['best-cat-enrichment-ideas-indoor-cats-2026', 'best-interactive-cat-toys-that-work', 'modern-cat-furniture-matches-your-home'], difficulty: 'medium' },
+  { slug: 'modern-cat-furniture-matches-your-home', title: 'Modern Cat Furniture That Matches Your Home (2026)', primaryKW: 'modern cat furniture', secondaryKWs: ['stylish cat tree', 'modern cat tree for small space', 'cat furniture that matches home'], intent: 'commercial', priority: 82, cluster: 'cat-enrichment', week: 2, role: 'subguide', internalLinksTarget: 7, linksTo: ['best-cat-enrichment-ideas-indoor-cats-2026', 'best-interactive-cat-toys-that-work', 'best-cat-litter-box-furniture-small-apartments'], difficulty: 'medium' },
 ];
 
 // ============= WEEKLY SCHEDULE =============
@@ -254,6 +271,8 @@ export function getScalingSummary() {
     'cat-furniture': SCALING_GUIDES.filter(g => g.cluster === 'cat-furniture').length,
     'dog-beds': SCALING_GUIDES.filter(g => g.cluster === 'dog-beds').length,
     'micro-intent': SCALING_GUIDES.filter(g => g.cluster === 'micro-intent').length,
+    'dog-training': SCALING_GUIDES.filter(g => g.cluster === 'dog-training').length,
+    'cat-enrichment': SCALING_GUIDES.filter(g => g.cluster === 'cat-enrichment').length,
   };
   const byRole = {
     cornerstone: SCALING_GUIDES.filter(g => g.role === 'cornerstone').length,
