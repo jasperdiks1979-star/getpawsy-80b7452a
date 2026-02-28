@@ -53,6 +53,8 @@ export function EdgeHeadersReport() {
       { path: "/", category: "html" },
       { path: "/products", category: "html" },
       { path: "/sitemap.xml", category: "xml" },
+      { path: "/sitemap-static.xml", category: "xml" },
+      { path: "/merchant-feed.xml", category: "xml" },
       { path: "/robots.txt", category: "txt" },
     ];
 

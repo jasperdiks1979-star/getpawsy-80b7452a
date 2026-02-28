@@ -27,6 +27,7 @@ interface GapReport {
 }
 
 const REASON_LABELS: Record<string, string> = {
+  is_duplicate: "Duplicate (hidden)",
   out_of_stock: "Out of Stock",
   missing_price: "Missing Price",
   missing_image: "Missing Image",

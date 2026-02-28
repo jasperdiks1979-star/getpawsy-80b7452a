@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RedirectVerifier } from "@/components/admin/edge/RedirectVerifier";
 import { EdgeHeadersReport } from "@/components/admin/edge/EdgeHeadersReport";
+import { SeoGateReport } from "@/components/admin/edge/SeoGateReport";
 
 export default function EdgeDiagnosticsPage() {
   return (
@@ -13,18 +14,21 @@ export default function EdgeDiagnosticsPage() {
         <div>
           <h1 className="text-2xl font-bold">Edge Diagnostics</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Implementation Summary: Verifies WWW→Apex 301 redirect correctness (single-hop),
-            deterministic Cache-Control headers for HTML/XML/assets, and flags 302s or multi-hop chains.
-            Built 2026-02-18 for GSC redirect-error and cache-header compliance.
+            Verifies WWW→Apex 301 redirect correctness, cache headers, and SEO gate compliance.
+            The SEO Gate tab uses server-side checks for accurate 301/302 status codes.
           </p>
         </div>
 
-        <Tabs defaultValue="redirects" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="redirects">Redirect Verifier</TabsTrigger>
-            <TabsTrigger value="headers">Headers Report</TabsTrigger>
+        <Tabs defaultValue="seo-gate" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="seo-gate">SEO Gate</TabsTrigger>
+            <TabsTrigger value="redirects">Browser Redirects</TabsTrigger>
+            <TabsTrigger value="headers">Browser Headers</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="seo-gate" className="mt-4">
+            <SeoGateReport />
+          </TabsContent>
           <TabsContent value="redirects" className="mt-4">
             <RedirectVerifier />
           </TabsContent>
