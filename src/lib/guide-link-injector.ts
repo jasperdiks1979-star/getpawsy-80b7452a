@@ -270,8 +270,13 @@ export function getClusterRelatedGuides(currentSlug: string, category?: string):
       'Cat Litter': 'cat-litter',
       'Cat Furniture': 'cat-furniture',
       'Dog Beds': 'dog-beds',
-      'Dog Activities': 'dog-beds', // Map dog activities to dog-beds cluster
+      'Dog Activities': 'dog-beds',
       'Small Pets': 'micro-intent',
+      'Dog Training': 'dog-training',
+      'Dog Collars & Leashes': 'dog-training',
+      'Cat Enrichment': 'cat-enrichment',
+      'Cat Toys': 'cat-enrichment',
+      'Cat Trees & Condos': 'cat-enrichment',
     };
     
     const cluster = category ? categoryClusterMap[category] : null;
