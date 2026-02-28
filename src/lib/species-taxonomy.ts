@@ -1,11 +1,11 @@
 /**
- * Species Taxonomy Classifier
+ * Species Taxonomy Classifier v2
  * 
  * Deterministic, rule-based classifier for pet products.
- * Assigns speciesPrimary: "cat" | "dog" | "both" | "unknown"
+ * Assigns speciesPrimary: "cat" | "dog" | "multi" | "unknown"
  * based on title, category, and tags signals.
  * 
- * No AI — pure keyword matching with explicit multi-pet detection.
+ * v2 changes: "both" → "multi", added confidence + reasons, low-confidence → multi
  */
 
 const DOG_SIGNALS = [
@@ -40,14 +40,16 @@ export interface SpeciesSignals {
 }
 
 export interface TaxonomyResult {
-  speciesPrimary: 'cat' | 'dog' | 'both' | 'unknown';
+  speciesPrimary: 'cat' | 'dog' | 'multi' | 'unknown';
   speciesSignals: SpeciesSignals;
+  speciesReasons: string[];
+  speciesConfidence: number;
   dogScore: number;
   catScore: number;
   taxonomyVersion: number;
 }
 
-const TAXONOMY_VERSION = 1;
+const TAXONOMY_VERSION = 2;
 
 function findSignals(text: string, signals: string[]): string[] {
   const lower = text.toLowerCase();
@@ -73,6 +75,7 @@ export function classifySpecies(
   tags: string[] = [],
 ): TaxonomyResult {
   const allText = [title, category, ...tags].join(' ');
+  const reasons: string[] = [];
   
   // Check for explicit multi-pet phrases first
   const isExplicitlyMultiPet = hasMultiPetPhrase(allText);
@@ -95,22 +98,46 @@ export function classifySpecies(
   const catScore = titleCatHits.length * 2 + categoryCatHits.length * 1.5 + tagsCatHits.length;
 
   let speciesPrimary: TaxonomyResult['speciesPrimary'];
+  let confidence: number;
 
   if (isExplicitlyMultiPet) {
-    speciesPrimary = 'both';
+    speciesPrimary = 'multi';
+    confidence = 0.95;
+    reasons.push('explicit_multi_pet_phrase');
   } else if (dogScore > 0 && catScore > 0) {
-    speciesPrimary = 'both';
+    speciesPrimary = 'multi';
+    confidence = 0.8;
+    reasons.push('both_species_signals_present');
   } else if (dogScore > 0) {
     speciesPrimary = 'dog';
+    // Higher score = higher confidence, cap at 1.0
+    confidence = Math.min(1.0, 0.6 + dogScore * 0.1);
+    reasons.push(...titleDogHits.map(h => `title:${h}`));
+    reasons.push(...categoryDogHits.map(h => `category:${h}`));
+    reasons.push(...tagsDogHits.map(h => `tag:${h}`));
   } else if (catScore > 0) {
     speciesPrimary = 'cat';
+    confidence = Math.min(1.0, 0.6 + catScore * 0.1);
+    reasons.push(...titleCatHits.map(h => `title:${h}`));
+    reasons.push(...categoryCatHits.map(h => `category:${h}`));
+    reasons.push(...tagsCatHits.map(h => `tag:${h}`));
   } else {
     speciesPrimary = 'unknown';
+    confidence = 0;
+    reasons.push('no_species_signals');
+  }
+
+  // Low-confidence guard: if single-species but confidence < 0.6, treat as multi
+  if ((speciesPrimary === 'dog' || speciesPrimary === 'cat') && confidence < 0.6) {
+    speciesPrimary = 'multi';
+    reasons.push('low_confidence_fallback');
   }
 
   return {
     speciesPrimary,
     speciesSignals,
+    speciesReasons: reasons,
+    speciesConfidence: confidence,
     dogScore,
     catScore,
     taxonomyVersion: TAXONOMY_VERSION,
@@ -119,12 +146,13 @@ export function classifySpecies(
 
 /**
  * Filter products for a species collection.
- * Returns products matching the target species (or "both").
+ * Returns products matching the target species.
+ * When includeMultiPet=true, also includes speciesPrimary="multi".
  */
 export function filterProductsBySpecies<T extends { name: string; category?: string | null; tags?: string[] | null }>(
   products: T[],
   targetSpecies: 'cat' | 'dog',
-  includeMultiPet = true,
+  includeMultiPet = false,
 ): (T & { _taxonomy: TaxonomyResult })[] {
   return products
     .map(p => ({
@@ -133,7 +161,7 @@ export function filterProductsBySpecies<T extends { name: string; category?: str
     }))
     .filter(p => {
       if (p._taxonomy.speciesPrimary === targetSpecies) return true;
-      if (includeMultiPet && p._taxonomy.speciesPrimary === 'both') return true;
+      if (includeMultiPet && p._taxonomy.speciesPrimary === 'multi') return true;
       return false;
     });
 }
