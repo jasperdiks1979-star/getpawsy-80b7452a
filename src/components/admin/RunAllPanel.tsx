@@ -57,7 +57,7 @@ export function RunAllPanel() {
                 Pipeline Runner (Full Stack)
               </CardTitle>
               <CardDescription>
-                GSC sync · Crawl health · Perf snapshot · Orphan detection · CTR recovery · Ranking push · Content queue · Indexing submit · Report · CTR intel · Cluster intel · Competitor gap · SERP features · Zero-click · Authority gap · Competitor content · Backlink scoring · Revenue optimizer · Market simulation
+                GSC sync · Crawl health · Perf snapshot · Orphan detection · CTR recovery · Ranking push · Content queue · Sitemap ping · Report · CTR intel · Cluster intel · Competitor gap · SERP features · Zero-click · Authority gap · Competitor content · Backlink scoring · Revenue optimizer · Market simulation
               </CardDescription>
             </div>
             <Button variant="ghost" size="icon" onClick={refresh} disabled={triggering}>
@@ -189,11 +189,11 @@ export function RunAllPanel() {
                 <li>CTR recovery optimizer</li>
                 <li>Ranking push builder</li>
                 <li>Content generation queue</li>
-                <li><strong>Indexing URL submissions</strong> (max 20 URLs, deduped)</li>
+                <li><strong>Sitemap ping</strong> (Google + Bing, rate-limited)</li>
                 <li>Consolidated report compilation</li>
               </ul>
               <p className="mt-2 text-xs">
-                All generated changes are saved as drafts. Indexing submissions are real and will be sent to search engines.
+                All generated changes are saved as drafts. Sitemap pings notify search engines of content updates.
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>

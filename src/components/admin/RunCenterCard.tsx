@@ -169,7 +169,7 @@ export function RunCenterCard() {
                 {triggering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
                 {isActive ? 'Running…' : cooldownRemaining ? `Cooldown: ${cooldownRemaining}` : 'Run ALL (Dry Run)'}
               </Button>
-              <p className="text-[10px] text-muted-foreground pl-0.5">Runs everything except indexing submits.</p>
+              <p className="text-[10px] text-muted-foreground pl-0.5">Runs everything except sitemap pings.</p>
             </div>
             <div className="space-y-0.5">
               <Button
@@ -180,9 +180,9 @@ export function RunCenterCard() {
                 className="gap-1.5 text-xs"
               >
                 {triggering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Shield className="h-3.5 w-3.5" />}
-                {isActive ? 'Running…' : cooldownRemaining ? `Cooldown: ${cooldownRemaining}` : 'Run ALL (Full Stack + Indexing)'}
+                {isActive ? 'Running…' : cooldownRemaining ? `Cooldown: ${cooldownRemaining}` : 'Run ALL (Full Stack + Sitemap Ping)'}
               </Button>
-              <p className="text-[10px] text-muted-foreground pl-0.5">Includes indexing submits (guarded).</p>
+              <p className="text-[10px] text-muted-foreground pl-0.5">Includes sitemap pinging (Google + Bing).</p>
             </div>
 
             {/* Cancel button — always visible when active */}
@@ -408,14 +408,14 @@ export function RunCenterCard() {
       <AlertDialog open={confirmFullStack} onOpenChange={setConfirmFullStack}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Run Full Stack + Indexing?</AlertDialogTitle>
+            <AlertDialogTitle>Run Full Stack + Sitemap Ping?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div>
-                <p>This will run full SEO automation <strong>AND</strong> submit URLs for indexing:</p>
+                <p>This will run full SEO automation <strong>AND</strong> ping sitemaps to search engines:</p>
                 <ul className="mt-2 space-y-0.5 list-disc pl-4 text-xs">
-                  <li>Max 20 URLs per run (allowlisted to getpawsy.pet)</li>
-                  <li>7-day dedupe — won't resubmit recent URLs</li>
-                  <li>Aborts if crawl health check has critical failures</li>
+                  <li>Pings Google &amp; Bing with sitemap URLs (safe, non-aggressive)</li>
+                  <li>Rate-limited: max 6 pings/hour per engine</li>
+                  <li>Circuit breaker: auto-disables after 3 consecutive failures</li>
                   <li>All other changes saved as drafts</li>
                 </ul>
               </div>

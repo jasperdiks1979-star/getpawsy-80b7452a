@@ -232,6 +232,7 @@ const PerfAuditPage = lazyWithRetry(() => import("./pages/admin/PerfAuditPage"))
 const PerfDebugPage = lazyWithRetry(() => import("./pages/admin/PerfDebugPage"));
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
+const SitemapPingPage = lazyWithRetry(() => import("./pages/admin/SitemapPingPage"));
 
 // Diagnostics pages (hidden, noindex)
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
@@ -579,6 +580,7 @@ const App = () => {
                         <Route path="indexing-diagnostics" element={<Suspense fallback={<RouteLoader />}><IndexingDiagnosticsPage /></Suspense>} />
                         <Route path="perf-audit" element={<Suspense fallback={<RouteLoader />}><PerfAuditPage /></Suspense>} />
                         <Route path="edge-diagnostics" element={<Suspense fallback={<RouteLoader />}><EdgeDiagnosticsPage /></Suspense>} />
+                        <Route path="sitemap-ping" element={<Suspense fallback={<RouteLoader />}><SitemapPingPage /></Suspense>} />
                         <Route path="domain-health" element={<Suspense fallback={<RouteLoader />}><DomainHealthPage /></Suspense>} />
                         <Route path="gsc-4xx" element={<Suspense fallback={<RouteLoader />}><Gsc4xxTriagePage /></Suspense>} />
                         <Route path="structured-data" element={<Suspense fallback={<RouteLoader />}><StructuredDataPage /></Suspense>} />

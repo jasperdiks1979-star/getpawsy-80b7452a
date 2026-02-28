@@ -61,6 +61,7 @@ const sections = [
       { to: '/admin/perf-audit', label: 'Performance Audit', icon: Activity, desc: 'LCP, bundle size, CWV' },
       { to: '/admin/crawl-health', label: 'Crawl Health', icon: Stethoscope, desc: 'Crawler monitoring' },
       { to: '/admin/edge-diagnostics', label: 'Edge Diagnostics', icon: Activity, desc: 'Edge function health' },
+      { to: '/admin/sitemap-ping', label: 'Sitemap Ping', icon: Activity, desc: 'Google & Bing ping' },
       { to: '/admin/security-credentials', label: 'Security & Credentials', icon: ShieldAlert, desc: 'API key management' },
     ],
   },
