@@ -137,6 +137,25 @@ export function useJobRunner() {
     return { ok: true, runId: data.runId, traceId };
   }, [invokeFunction, fetchStatus, startPolling]);
 
+  const cancelRun = useCallback(async (runId?: string, force = false) => {
+    const { data, error } = await invokeFunction<{
+      ok: boolean; cancelled?: boolean; reason?: string; mode?: string;
+    }>('cancel-run', {
+      body: JSON.stringify({ runId: runId || state.run?.id, force, reason: 'Cancelled from UI' }),
+      silent: true,
+    });
+
+    if (error || !data?.ok) {
+      const reason = data?.reason || error?.message || 'Failed to cancel run';
+      setState(prev => ({ ...prev, error: reason }));
+      return { ok: false, reason };
+    }
+
+    // Refresh status after cancel
+    await fetchStatus(runId || state.run?.id);
+    return { ok: true, mode: data.mode };
+  }, [invokeFunction, fetchStatus, state.run?.id]);
+
   const resetView = useCallback(() => {
     setAppearsStuck(false);
     lastProgressRef.current = Date.now();
@@ -155,5 +174,5 @@ export function useJobRunner() {
 
   const isActive = state.run?.status === 'queued' || state.run?.status === 'running';
 
-  return { ...state, isActive, appearsStuck, triggerRun, refresh: () => fetchStatus(), resetView };
+  return { ...state, isActive, appearsStuck, triggerRun, cancelRun, refresh: () => fetchStatus(), resetView };
 }

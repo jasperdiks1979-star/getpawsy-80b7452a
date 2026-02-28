@@ -201,15 +201,33 @@ Deno.serve(async (req) => {
     let globalTimedOut = false;
     const runStartMs = Date.now();
 
+    let cancelledByUser = false;
+
     for (let i = 0; i < STEPS.length; i++) {
       const step = STEPS[i];
+
+      // === CANCEL CHECK (cooperative) ===
+      const { data: cancelCheck } = await supabase
+        .from('job_runs')
+        .select('cancel_requested')
+        .eq('id', run.id)
+        .single();
+      if (cancelCheck?.cancel_requested) {
+        cancelledByUser = true;
+        await log(supabase, run.id, null, 'warn', `🛑 Cancel requested. Stopping pipeline at step ${i + 1}/${STEPS.length}.`);
+        for (const remaining of STEPS.slice(i)) {
+          await supabase.from('job_run_steps')
+            .update({ status: 'skipped', finished_at: new Date().toISOString(), result: { skipped_reason: 'cancelled' } })
+            .eq('run_id', run.id).eq('step_key', remaining.key);
+        }
+        break;
+      }
 
       // === GLOBAL RUN TIMEOUT CHECK ===
       const elapsed = Date.now() - runStartMs;
       if (elapsed >= GLOBAL_RUN_TIMEOUT_MS) {
         globalTimedOut = true;
         await log(supabase, run.id, null, 'warn', `⏱️ GLOBAL TIMEOUT (${Math.round(elapsed / 1000)}s). Skipping remaining steps.`);
-        // Mark all remaining steps as skipped
         for (const remaining of STEPS.slice(i)) {
           await supabase.from('job_run_steps')
             .update({ status: 'skipped', finished_at: new Date().toISOString(), result: { skipped_reason: 'global_timeout' } })
@@ -324,7 +342,7 @@ Deno.serve(async (req) => {
     // Finalize run — ALWAYS reach a terminal state
     const finishedAt = new Date().toISOString();
     const totalDuration = Date.now() - new Date(startedAt).getTime();
-    const finalStatus = globalTimedOut ? 'failed' : (allSuccess ? 'success' : 'failed');
+    const finalStatus = cancelledByUser ? 'cancelled' : globalTimedOut ? 'failed' : (allSuccess ? 'success' : 'failed');
 
     // Runtime integrity check
     const suspiciouslyFast = totalDuration < 8000 && mode === 'fullstack';
@@ -345,10 +363,12 @@ Deno.serve(async (req) => {
     report.mode = mode;
     report.traceId = traceId;
     report.globalTimedOut = globalTimedOut;
+    report.cancelledByUser = cancelledByUser;
     report._meta = {
       totalDuration,
       suspiciouslyFast,
       globalTimedOut,
+      cancelledByUser,
       stepOutcomes: { success: successCount, failed: failedCount, skipped: skippedCount, total: STEPS.length },
     };
 
@@ -357,7 +377,7 @@ Deno.serve(async (req) => {
       finished_at: finishedAt,
       duration_ms: totalDuration,
       report,
-      error_message: globalTimedOut ? `Run auto-finalized: global ${GLOBAL_RUN_TIMEOUT_MS / 1000}s timeout reached` : null,
+      error_message: cancelledByUser ? 'Run cancelled by admin' : globalTimedOut ? `Run auto-finalized: global ${GLOBAL_RUN_TIMEOUT_MS / 1000}s timeout reached` : null,
     }).eq('id', run.id);
 
     const logMsg = globalTimedOut
