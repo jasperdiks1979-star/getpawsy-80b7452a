@@ -1,0 +1,237 @@
+{
+  "version": "2026-02-28",
+  "silos": ["dog", "cat"],
+  "clusters": [
+    {
+      "cluster": "Dog Recall Training",
+      "silo": "dog",
+      "pillarUrl": "/dog/dog-training-behavior-tools",
+      "supportingUrls": [
+        "/dog/dog-training/how-to-train-recall",
+        "/dog/dog-training/common-recall-mistakes",
+        "/dog/dog-training/off-leash-training-safely",
+        "/dog/dog-training/15ft-vs-30ft-training-leash",
+        "/blog/dog-separation-anxiety-solutions",
+        "/blog/how-to-stop-puppy-biting-gentle-methods"
+      ],
+      "productUrls": [
+        "/product/30-foot-long-training-leash",
+        "/product/no-pull-front-clip-harness",
+        "/product/reflective-training-leash-6ft",
+        "/product/retractable-dog-leash-heavy-duty",
+        "/product/dog-training-treat-pouch",
+        "/product/dog-clicker-training-set",
+        "/product/adjustable-slip-lead",
+        "/product/hands-free-dog-leash-running",
+        "/product/dog-whistle-training-recall",
+        "/product/long-line-training-lead-50ft"
+      ],
+      "internalLinksToAdd": [
+        { "from": "/dog/dog-training/how-to-train-recall", "to": "/dog/dog-training-behavior-tools", "anchor": "complete dog training gear guide" },
+        { "from": "/dog/dog-training/how-to-train-recall", "to": "/product/30-foot-long-training-leash", "anchor": "30-foot training lead for recall practice" },
+        { "from": "/dog/dog-training/how-to-train-recall", "to": "/product/dog-clicker-training-set", "anchor": "clicker and treat pouch kit" },
+        { "from": "/dog/dog-training/common-recall-mistakes", "to": "/dog/dog-training/how-to-train-recall", "anchor": "step-by-step recall training method" },
+        { "from": "/dog/dog-training/off-leash-training-safely", "to": "/product/no-pull-front-clip-harness", "anchor": "secure front-clip harness for transition training" }
+      ]
+    },
+    {
+      "cluster": "Dog Leash Pulling Solutions",
+      "silo": "dog",
+      "pillarUrl": "/dog/dog-training-behavior-tools",
+      "supportingUrls": [
+        "/dog/dog-training/stop-pulling-on-leash",
+        "/dog/dog-training/front-clip-vs-back-clip-harness",
+        "/dog/dog-training/no-pull-harness-vs-head-halter",
+        "/dog/dog-training/best-harness-large-dogs",
+        "/dog/dog-training/no-pull-harness-small-dogs",
+        "/dog/dog-training/harness-sizing-guide"
+      ],
+      "productUrls": [
+        "/product/no-pull-front-clip-harness",
+        "/product/reflective-no-pull-vest-harness",
+        "/product/padded-chest-harness-large-dogs",
+        "/product/adjustable-step-in-harness",
+        "/product/head-halter-gentle-leader",
+        "/product/dual-handle-traffic-leash",
+        "/product/shock-absorbing-bungee-leash",
+        "/product/easy-walk-harness-medium-dogs",
+        "/product/anti-pull-training-lead-leather",
+        "/product/tactical-dog-harness-no-pull"
+      ],
+      "internalLinksToAdd": [
+        { "from": "/dog/dog-training/stop-pulling-on-leash", "to": "/dog/dog-training-behavior-tools", "anchor": "browse all training harnesses and leashes" },
+        { "from": "/dog/dog-training/stop-pulling-on-leash", "to": "/product/no-pull-front-clip-harness", "anchor": "front-clip no-pull harness" },
+        { "from": "/dog/dog-training/front-clip-vs-back-clip-harness", "to": "/dog/dog-training/harness-sizing-guide", "anchor": "how to measure for the right harness fit" },
+        { "from": "/dog/dog-training/best-harness-large-dogs", "to": "/product/padded-chest-harness-large-dogs", "anchor": "padded chest harness rated for 80+ lbs" }
+      ]
+    },
+    {
+      "cluster": "Dog Barking & Behavior",
+      "silo": "dog",
+      "pillarUrl": "/dog/dog-training-behavior-tools",
+      "supportingUrls": [
+        "/blog/dog-separation-anxiety-solutions",
+        "/blog/how-to-stop-puppy-biting-gentle-methods",
+        "/dog/dog-training/harness-vs-collar"
+      ],
+      "productUrls": [
+        "/product/calming-dog-bed-anxiety",
+        "/product/puzzle-feeder-dog-enrichment",
+        "/product/snuffle-mat-slow-feeder",
+        "/product/interactive-dog-toy-treat-ball",
+        "/product/calming-vest-thundershirt",
+        "/product/dog-crate-training-cover"
+      ],
+      "internalLinksToAdd": [
+        { "from": "/blog/dog-separation-anxiety-solutions", "to": "/dog/dog-training-behavior-tools", "anchor": "effective training tools for anxious dogs" },
+        { "from": "/blog/dog-separation-anxiety-solutions", "to": "/product/calming-dog-bed-anxiety", "anchor": "calming donut bed for nervous dogs" },
+        { "from": "/blog/dog-separation-anxiety-solutions", "to": "/product/puzzle-feeder-dog-enrichment", "anchor": "enrichment puzzle to reduce boredom" }
+      ]
+    },
+    {
+      "cluster": "Dog Crate Training & Potty Training",
+      "silo": "dog",
+      "pillarUrl": "/dog/dog-training-behavior-tools",
+      "supportingUrls": [
+        "/dog/dog-training/puppy-training-leash-guide",
+        "/blog/how-to-stop-puppy-biting-gentle-methods"
+      ],
+      "productUrls": [
+        "/product/dog-crate-training-cover",
+        "/product/puppy-training-pads-washable",
+        "/product/crate-bed-machine-washable",
+        "/product/dog-playpen-foldable",
+        "/product/puppy-chew-toy-teething"
+      ],
+      "internalLinksToAdd": [
+        { "from": "/dog/dog-training/puppy-training-leash-guide", "to": "/dog/dog-training-behavior-tools", "anchor": "full puppy training essentials" },
+        { "from": "/dog/dog-training/puppy-training-leash-guide", "to": "/product/puppy-training-pads-washable", "anchor": "washable puppy training pads" }
+      ]
+    },
+    {
+      "cluster": "Dog Car Travel Safety",
+      "silo": "dog",
+      "pillarUrl": "/dog/dog-car-travel-safety",
+      "supportingUrls": [
+        "/dog/dog-car-travel-safety/car-seats",
+        "/dog/dog-car-travel-safety/booster-seats",
+        "/dog/dog-car-travel-safety/harness-safety",
+        "/dog/dog-car-travel-safety/crash-tested-seat-belts",
+        "/dog/dog-car-travel-safety/back-seat-hammocks",
+        "/dog/dog-car-travel-safety/anxious-dog-road-trips"
+      ],
+      "productUrls": [
+        "/product/dog-car-seat-small-dogs",
+        "/product/dog-booster-seat-console",
+        "/product/crash-tested-dog-harness",
+        "/product/backseat-hammock-waterproof",
+        "/product/dog-seat-belt-clip",
+        "/product/travel-water-bottle-dog",
+        "/product/collapsible-dog-bowl-travel",
+        "/product/car-barrier-dog-net",
+        "/product/dog-car-ramp-foldable",
+        "/product/pet-first-aid-kit-travel"
+      ],
+      "internalLinksToAdd": [
+        { "from": "/dog/dog-car-travel-safety/car-seats", "to": "/dog/dog-car-travel-safety", "anchor": "complete dog car safety guide" },
+        { "from": "/dog/dog-car-travel-safety/car-seats", "to": "/product/dog-car-seat-small-dogs", "anchor": "top-rated elevated car seat for small breeds" },
+        { "from": "/dog/dog-car-travel-safety/anxious-dog-road-trips", "to": "/product/calming-vest-thundershirt", "anchor": "anxiety-reducing compression vest for travel" }
+      ]
+    },
+    {
+      "cluster": "Cat Scratching Solutions",
+      "silo": "cat",
+      "pillarUrl": "/cat/training/",
+      "supportingUrls": [
+        "/blog/cat-nutrition-guide-best-food-feline",
+        "/guides/cat-condo-vs-cat-tree-2026",
+        "/cat/cat-trees-for-large-cats"
+      ],
+      "productUrls": [
+        "/product/sisal-scratching-post-tall",
+        "/product/corrugated-cardboard-scratcher",
+        "/product/wall-mounted-cat-scratcher",
+        "/product/cat-scratching-pad-angled",
+        "/product/sisal-rope-scratching-tree",
+        "/product/cat-scratching-post-with-toy",
+        "/product/corner-wall-cat-scratcher",
+        "/product/extra-large-cat-scratching-post",
+        "/product/cat-tree-with-sisal-posts",
+        "/product/natural-wood-cat-scratcher"
+      ],
+      "internalLinksToAdd": [
+        { "from": "/cat/training/", "to": "/product/sisal-scratching-post-tall", "anchor": "tall sisal scratching post for redirecting claws" },
+        { "from": "/cat/training/", "to": "/product/corrugated-cardboard-scratcher", "anchor": "budget-friendly cardboard scratcher pad" },
+        { "from": "/guides/cat-condo-vs-cat-tree-2026", "to": "/cat/training/", "anchor": "enrichment and training essentials for cats" }
+      ]
+    },
+    {
+      "cluster": "Cat Litter Box Behavior",
+      "silo": "cat",
+      "pillarUrl": "/cat/training/",
+      "supportingUrls": [
+        "/guides/best-cat-litter-box-2026"
+      ],
+      "productUrls": [
+        "/product/self-cleaning-litter-box",
+        "/product/enclosed-litter-box-odor-control",
+        "/product/top-entry-litter-box",
+        "/product/litter-mat-waterproof",
+        "/product/extra-large-litter-box-multi-cat",
+        "/product/corner-litter-box-space-saving"
+      ],
+      "internalLinksToAdd": [
+        { "from": "/guides/best-cat-litter-box-2026", "to": "/cat/training/", "anchor": "cat behavior and enrichment guide" },
+        { "from": "/guides/best-cat-litter-box-2026", "to": "/product/self-cleaning-litter-box", "anchor": "hands-free self-cleaning litter box" }
+      ]
+    },
+    {
+      "cluster": "Cat Anxiety & Carrier Training",
+      "silo": "cat",
+      "pillarUrl": "/cat/travel/",
+      "supportingUrls": [
+        "/cat/cat-trees-for-large-cats",
+        "/guides/best-cat-trees-large-cats-2026"
+      ],
+      "productUrls": [
+        "/product/airline-approved-cat-carrier",
+        "/product/expandable-cat-carrier-backpack",
+        "/product/calming-cat-bed-cave",
+        "/product/cat-carrier-with-window",
+        "/product/foldable-cat-carrier-soft",
+        "/product/cat-harness-leash-set",
+        "/product/cat-stroller-foldable",
+        "/product/cat-travel-water-bottle"
+      ],
+      "internalLinksToAdd": [
+        { "from": "/cat/travel/", "to": "/product/airline-approved-cat-carrier", "anchor": "TSA-compliant airline carrier for cats" },
+        { "from": "/cat/travel/", "to": "/product/cat-harness-leash-set", "anchor": "escape-proof cat harness and leash set" },
+        { "from": "/guides/best-cat-trees-large-cats-2026", "to": "/cat/travel/", "anchor": "cat travel and carrier essentials" }
+      ]
+    },
+    {
+      "cluster": "Cat Play Aggression & Enrichment",
+      "silo": "cat",
+      "pillarUrl": "/cat/training/",
+      "supportingUrls": [
+        "/blog/cat-nutrition-guide-best-food-feline"
+      ],
+      "productUrls": [
+        "/product/interactive-cat-toy-feather",
+        "/product/laser-pointer-cat-toy",
+        "/product/puzzle-feeder-cat-treat",
+        "/product/catnip-kicker-toy",
+        "/product/electronic-cat-toy-butterfly",
+        "/product/cat-tunnel-crinkle",
+        "/product/window-mounted-bird-feeder-cat",
+        "/product/cat-exercise-wheel",
+        "/product/robotic-mouse-toy-cat",
+        "/product/treat-dispensing-ball-cat"
+      ],
+      "internalLinksToAdd": [
+        { "from": "/cat/training/", "to": "/product/puzzle-feeder-cat-treat", "anchor": "interactive puzzle feeder for mental stimulation" },
+        { "from": "/cat/training/", "to": "/product/electronic-cat-toy-butterfly", "anchor": "automated butterfly toy for solo play" }
+      ]
+    }
+  ]
+}
