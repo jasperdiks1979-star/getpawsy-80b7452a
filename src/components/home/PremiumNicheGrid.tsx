@@ -21,7 +21,7 @@ const niches = [
     slug: 'dog-car-travel-safety-seats',
     title: 'Dog Car Safety Seats',
     benefit: 'Crash-tested comfort so every car ride is safe and stress-free.',
-    trust: 'Safety-certified • Free shipping over $35',
+    trust: 'Safety-certified • Free shipping over $49',
     image: carSafetySeatsImg,
     alt: 'Happy dog safely secured in premium car safety seat with golden sunlight',
   },

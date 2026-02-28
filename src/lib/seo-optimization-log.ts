@@ -64,7 +64,7 @@ export const OPTIMIZATION_LOG = [
           },
           metaDescription: {
             before: 'Shop cat enrichment toys, cat trees, and condos...',
-            after: 'Shop cat trees, condos & towers that indoor cats love. Sturdy climbing furniture for exercise & mental stimulation. Fast free shipping over $35.',
+            after: 'Shop cat trees, condos & towers that indoor cats love. Sturdy climbing furniture for exercise & mental stimulation. Fast free shipping over $49.',
             rationale: 'Benefit-driven copy with shipping incentive for CTR',
           },
           seoIntro: {

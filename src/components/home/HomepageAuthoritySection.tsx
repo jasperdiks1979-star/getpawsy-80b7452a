@@ -88,7 +88,7 @@ export function HomepageAuthoritySection() {
             Whether you're looking for a supportive bed for a senior pup, a space-saving cat tree 
             for a small apartment, or interactive toys that actually last — our US-based team has 
             tested and reviewed every product. We ship from US warehouses with 3–7 day delivery 
-            and free shipping on orders over $35. Every order is backed by our 30-day hassle-free 
+            and free shipping on orders over $49. Every order is backed by our 30-day hassle-free 
             return policy. Thousands of pet parents trust GetPawsy for quality, transparency, 
             and expert guidance. Explore our{' '}
             <Link to="/guides" className="text-primary hover:underline font-medium">

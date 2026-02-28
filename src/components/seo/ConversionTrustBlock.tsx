@@ -5,6 +5,7 @@
  * Used on all 3 priority collection pages.
  */
 import { Shield, Truck, RotateCcw, Star, CheckCircle, Zap } from 'lucide-react';
+import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
 
 interface ConversionTrustBlockProps {
   categoryName: string;
@@ -42,7 +43,7 @@ export function ConversionTrustBlock({ categoryName }: ConversionTrustBlockProps
       {/* Trust Badges Row */}
       <div className="flex flex-wrap justify-center gap-6 py-6 bg-muted/30 rounded-2xl mb-8">
         {[
-          { icon: <Truck className="w-5 h-5" />, label: 'Free US Shipping Over $35' },
+          { icon: <Truck className="w-5 h-5" />, label: `Free US Shipping Over $${FREE_SHIPPING_THRESHOLD}` },
           { icon: <RotateCcw className="w-5 h-5" />, label: '30-Day Money-Back Guarantee' },
           { icon: <Shield className="w-5 h-5" />, label: 'Secure Stripe Checkout' },
           { icon: <CheckCircle className="w-5 h-5" />, label: 'US-Based Support' },

@@ -74,7 +74,7 @@ export const RETARGETING_AD_VARIATIONS: AdCopyVariation[] = [
     name: 'Reassurance-First',
     focus: 'Shipping & Returns',
     headline: 'Thoughtfully designed pet essentials',
-    description: 'Free US shipping over $35. Easy 30-day returns. Quality products shipped from US fulfillment centers.',
+    description: 'Free US shipping over $49. Easy 30-day returns. Quality products shipped from US fulfillment centers.',
     cta: 'Explore Products',
   },
   
@@ -132,7 +132,7 @@ export const PLATFORM_AD_COPY: PlatformAdCopy[] = [
     variations: {
       reassurance: {
         headline: 'Pet essentials with peace of mind',
-        description: 'Free US shipping over $35 • 30-day easy returns',
+        description: 'Free US shipping over $49 • 30-day easy returns',
       },
       problem_solution: {
         headline: 'Everyday pet care, simplified',
@@ -151,7 +151,7 @@ export const PLATFORM_AD_COPY: PlatformAdCopy[] = [
     variations: {
       reassurance: {
         headline: 'Trusted pet essentials delivered fast',
-        description: 'Ships from US fulfillment centers. Free shipping over $35. Hassle-free returns.',
+        description: 'Ships from US fulfillment centers. Free shipping over $49. Hassle-free returns.',
       },
       problem_solution: {
         headline: 'Making pet care easier, every day',
@@ -170,7 +170,7 @@ export const PLATFORM_AD_COPY: PlatformAdCopy[] = [
     variations: {
       reassurance: {
         headline: 'US Shipping • 30-Day Returns',
-        description: 'Quality pet products with free shipping over $35. Fast delivery from US warehouses.',
+        description: 'Quality pet products with free shipping over $49. Fast delivery from US warehouses.',
       },
       problem_solution: {
         headline: 'Pet Essentials Made Simple',
@@ -178,7 +178,7 @@ export const PLATFORM_AD_COPY: PlatformAdCopy[] = [
       },
       lifestyle: {
         headline: 'Quality Pet Products',
-        description: 'Trusted essentials for daily comfort. Free US shipping on orders over $35.',
+        description: 'Trusted essentials for daily comfort. Free US shipping on orders over $49.',
       },
     },
   },

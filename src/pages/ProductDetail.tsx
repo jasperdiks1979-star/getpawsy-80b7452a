@@ -1697,7 +1697,7 @@ const ProductDetail = () => {
               {/* Trust badge - desktop only */}
               <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground flex-shrink-0">
                 <Truck className="w-3.5 h-3.5 text-primary" />
-                <span>Free US Shipping $35+</span>
+                <span>Free US Shipping ${FREE_SHIPPING_THRESHOLD}+</span>
                 <span className="mx-1">•</span>
                 <Shield className="w-3.5 h-3.5 text-primary" />
                 <span>30-Day Returns</span>
