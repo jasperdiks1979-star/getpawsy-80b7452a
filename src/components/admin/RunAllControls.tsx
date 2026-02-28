@@ -8,7 +8,7 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  Play, Loader2, CheckCircle, XCircle, Clock, Shield,
+  Play, Loader2, CheckCircle, XCircle, Clock, Shield, AlertTriangle, RefreshCw,
 } from 'lucide-react';
 import { useJobRunner } from '@/hooks/useJobRunner';
 import { GovernorStatusDisplay } from '@/components/admin/GovernorStatusDisplay';
@@ -34,7 +34,7 @@ interface LastRunSummary {
  * Provides dry run toggle, guarded indexing confirm, cooldown handling, and status display.
  */
 export function RunAllControls() {
-  const { run, steps, loading, triggering, isActive, error, reauthRequired, traceId, triggerRun, refresh } = useJobRunner();
+  const { run, steps, loading, triggering, isActive, error, reauthRequired, traceId, triggerRun, refresh, appearsStuck, resetView } = useJobRunner();
 
   // Persist dry run toggle
   const [dryRun, setDryRun] = useState(() => {
@@ -197,6 +197,23 @@ export function RunAllControls() {
                 {(displayRun as any).failedStep}
               </span>
             )}
+          </div>
+        )}
+
+        {/* Stuck run warning */}
+        {appearsStuck && isActive && (
+          <div className="flex items-center gap-1.5 text-[10px] text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded px-2 py-1">
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            <span>Run appears stuck (no progress for 60s)</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 px-1.5 text-[10px] gap-1"
+              onClick={resetView}
+            >
+              <RefreshCw className="h-3 w-3" />
+              Reset view
+            </Button>
           </div>
         )}
       </div>
