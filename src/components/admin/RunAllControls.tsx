@@ -172,7 +172,7 @@ export function RunAllControls() {
               ? 'Running…'
               : dryRun
                 ? 'Run ALL (Dry Run)'
-                : 'Run ALL + Indexing'}
+                : 'Run ALL + Sitemap Ping'}
           </Button>
 
           {/* Cancel button — always visible when active */}
@@ -272,14 +272,14 @@ export function RunAllControls() {
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base">Run Full Stack + Indexing?</AlertDialogTitle>
+            <AlertDialogTitle className="text-base">Run Full Stack + Sitemap Ping?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2">
-                <p className="text-sm">This will run the full 9-step automation <strong>AND</strong> submit URLs for indexing:</p>
+                <p className="text-sm">This will run the full pipeline <strong>AND</strong> ping sitemaps to search engines:</p>
                 <ul className="list-disc pl-4 text-xs space-y-0.5 text-muted-foreground">
-                  <li>Max 20 URLs per run (allowlisted to getpawsy.pet)</li>
-                  <li>7-day dedupe — won't resubmit recent URLs</li>
-                  <li>Aborts if crawl health check has critical failures</li>
+                  <li>Pings Google &amp; Bing with sitemap URLs (safe, non-aggressive)</li>
+                  <li>Rate-limited: max 6 pings/hour per engine</li>
+                  <li>Circuit breaker: auto-disables after 3 consecutive failures</li>
                   <li>All other changes saved as drafts</li>
                 </ul>
               </div>

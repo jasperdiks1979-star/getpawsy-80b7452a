@@ -5752,6 +5752,45 @@ export type Database = {
         }
         Relationships: []
       }
+      sitemap_ping_log: {
+        Row: {
+          created_at: string
+          duration_ms: number
+          engine: string
+          error_message: string | null
+          http_status: number | null
+          id: string
+          reason: string | null
+          run_id: string | null
+          sitemap_url: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number
+          engine: string
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          reason?: string | null
+          run_id?: string | null
+          sitemap_url: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number
+          engine?: string
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          reason?: string | null
+          run_id?: string | null
+          sitemap_url?: string
+          status?: string
+        }
+        Relationships: []
+      }
       sourcing_opportunities: {
         Row: {
           cj_product_id: string | null
