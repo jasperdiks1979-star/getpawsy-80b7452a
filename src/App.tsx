@@ -171,6 +171,10 @@ const LiveMap = lazyWithRetry(() => import("./pages/LiveMap"));
 const Blog = lazyWithRetry(() => import("./pages/Blog"));
 const BlogPost = lazyWithRetry(() => import("./pages/BlogPost"));
 const FounderMode = lazyWithRetry(() => import("./pages/FounderMode"));
+const DogHub = lazyWithRetry(() => import("./pages/DogHub"));
+const CatHub = lazyWithRetry(() => import("./pages/CatHub"));
+const DogTrainingTravelPillar = lazyWithRetry(() => import("./pages/landing/DogTrainingTravelPillar"));
+const CatTrainingTravelPillar = lazyWithRetry(() => import("./pages/landing/CatTrainingTravelPillar"));
 
 /** Redirect legacy /collection/:slug to /collections/:slug with 301-equivalent */
 function CollectionRedirect() {
@@ -403,6 +407,11 @@ const App = () => {
                       {/* Lockdown cluster articles — generic JSON-driven renderer */}
                       <Route path="/guides/cluster/:slug" element={<Suspense fallback={<RouteLoader />}><LockdownClusterArticle /></Suspense>} />
                       
+                      {/* ═══ DOG & CAT HUB PAGES ═══ */}
+                      <Route path="/dog" element={<Suspense fallback={<RouteLoader />}><DogHub /></Suspense>} />
+                      <Route path="/cat" element={<Suspense fallback={<RouteLoader />}><CatHub /></Suspense>} />
+                      <Route path="/dog/best-dog-training-and-travel-gear-2026" element={<Suspense fallback={<RouteLoader />}><DogTrainingTravelPillar /></Suspense>} />
+                      <Route path="/cat/best-cat-training-and-travel-gear-2026" element={<Suspense fallback={<RouteLoader />}><CatTrainingTravelPillar /></Suspense>} />
                       {/* ═══ NAMESPACED SEO CLUSTER ROUTES ═══ */}
                       {/* Dog pillars — dedicated components for existing pages */}
                       <Route path="/dog/orthopedic-dog-beds" element={<Suspense fallback={<RouteLoader />}><OrthopedicDogBeds /></Suspense>} />
