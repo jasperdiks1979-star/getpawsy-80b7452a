@@ -60,6 +60,9 @@ import { PriceAnchoringSection } from '@/components/products/PriceAnchoringSecti
 import { FreeShippingBar } from '@/components/products/FreeShippingBar';
 import { ProductComparisonTable } from '@/components/products/ProductComparisonTable';
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
+import { ProductProblemSolution } from '@/components/products/ProductProblemSolution';
+import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
+import { ProductSpecsTable } from '@/components/products/ProductSpecsTable';
 import { SimilarProductsCompare } from '@/components/products/SimilarProductsCompare';
 import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { useGuidesList } from '@/hooks/useGuides';
@@ -945,6 +948,76 @@ const ProductDetail = () => {
               </motion.div>
             )}
 
+            {/* Benefit Bullets — problem→outcome based for cold traffic */}
+            <div className="space-y-2">
+              <ul className="space-y-2">
+                {(() => {
+                  const cat = (product.category || '').toLowerCase();
+                  const n = (product.name || '').toLowerCase();
+                  const bullets: string[] = [];
+                  
+                  // Category-aware benefit bullets (problem → outcome)
+                  if (n.includes('bed') || cat.includes('bed')) {
+                    bullets.push(
+                      'Relieves joint pressure so your pet wakes up rested',
+                      'Removable cover for easy machine washing',
+                      'Non-slip base stays put on any floor',
+                      'Fits small to extra-large breeds',
+                    );
+                  } else if (n.includes('harness') || cat.includes('harness')) {
+                    bullets.push(
+                      'Stops pulling without choking or neck strain',
+                      'Padded straps prevent rubbing and chafing',
+                      'Reflective trim for safe evening walks',
+                      'Quick-snap buckle for easy on/off',
+                    );
+                  } else if (/cat\s*tree|cat\s*condo|scratching/i.test(n + ' ' + cat)) {
+                    bullets.push(
+                      'Saves your furniture with dedicated scratching posts',
+                      'Multi-level design keeps cats mentally stimulated',
+                      'Supports cats up to 25+ lbs safely',
+                      'Sturdy base prevents tipping during play',
+                    );
+                  } else if (/litter/i.test(n + ' ' + cat)) {
+                    bullets.push(
+                      'Sealed design traps odors at the source',
+                      'Less scooping — efficient waste separation',
+                      'Easy-clean removable tray saves time',
+                      'High walls prevent litter scatter',
+                    );
+                  } else if (n.includes('toy') || cat.includes('toy')) {
+                    bullets.push(
+                      'Channels energy away from furniture destruction',
+                      'Durable build withstands aggressive chewers',
+                      'Non-toxic, pet-safe materials throughout',
+                      'Engages natural problem-solving instincts',
+                    );
+                  } else if (n.includes('carrier') || cat.includes('carrier')) {
+                    bullets.push(
+                      'Reduces travel anxiety with ventilated comfort',
+                      'Fits under most airline cabin seats',
+                      'Secure zippers prevent escape attempts',
+                      'Padded base cushions bumpy rides',
+                    );
+                  } else {
+                    bullets.push(
+                      'Premium materials built for daily pet life',
+                      'Designed for comfort and ease of use',
+                      'Ships fast from US warehouses',
+                      'Backed by 30-day satisfaction guarantee',
+                    );
+                  }
+                  
+                  return bullets.slice(0, 5).map((b, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                      <span className="text-primary mt-0.5 flex-shrink-0">✓</span>
+                      <span>{b}</span>
+                    </li>
+                  ));
+                })()}
+              </ul>
+            </div>
+
             {/* Short Description - Clarity-first intro for cold traffic */}
             <div className="text-muted-foreground leading-relaxed break-words overflow-hidden">
               <p className="text-[15px] leading-relaxed">
@@ -1395,6 +1468,20 @@ const ProductDetail = () => {
             )}
           </Tabs>
         </motion.div>
+
+        {/* Problem → Solution Block */}
+        <ProductProblemSolution productName={product.name} category={product.category || ''} />
+
+        {/* Feature Grid — 4 feature cards */}
+        <ProductFeatureGrid productName={product.name} category={product.category || ''} />
+
+        {/* Specifications Table — semantic, real product data */}
+        <ProductSpecsTable product={{
+          name: product.name,
+          category: product.category,
+          weight: product.weight ? Number(product.weight) : null,
+          sku: product.sku,
+        }} />
 
         {/* Use Case Segmentation — "Best For" */}
         <ProductUseCases productName={product.name} category={product.category || ''} />
