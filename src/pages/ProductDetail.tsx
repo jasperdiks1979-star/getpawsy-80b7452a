@@ -784,15 +784,22 @@ const ProductDetail = () => {
                 {safeString(product.name)}
               </h1>
               
-              {/* Rating placeholder */}
-              <div className="flex items-center gap-2 mt-3">
-                <div className="flex items-center gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`w-4 h-4 ${i < 4 ? 'text-warning fill-warning' : 'text-muted'}`} />
-                  ))}
+              {/* Rating — only shown when real verified reviews exist */}
+              {reviews.length > 0 && (
+                <div className="flex items-center gap-2 mt-3">
+                  <div className="flex items-center gap-0.5">
+                    {[...Array(5)].map((_, i) => {
+                      const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+                      return (
+                        <Star key={i} className={`w-4 h-4 ${i < Math.round(avgRating) ? 'text-warning fill-warning' : 'text-muted'}`} />
+                      );
+                    })}
+                  </div>
+                  <a href="#reviews" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    ({reviews.length} verified review{reviews.length !== 1 ? 's' : ''})
+                  </a>
                 </div>
-                <span className="text-sm text-muted-foreground">(24 reviews)</span>
-              </div>
+              )}
               
               {/* Cat Tree / Litter Authority Badges */}
               <CatTreeAuthorityBadges
