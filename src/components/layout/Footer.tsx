@@ -129,58 +129,25 @@ export const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
-    // Top Cat Categories — 70% link equity allocation to cat trees silo
-    topCats: [
-      { label: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos' },
-      { label: 'Cat Trees for Large Cats', href: '/cat/cat-trees-for-large-cats' },
-      { label: 'Heavy Duty Cat Trees', href: '/cat/cat-trees-for-large-cats/heavy-duty' },
-      { label: 'Cat Condos', href: '/collections/cat-condos' },
-      { label: 'Modern Cat Trees', href: '/collections/modern-cat-trees' },
-      { label: 'Cat Trees for Apartments', href: '/collections/best-cat-trees-for-small-apartments' },
-      { label: 'Maine Coon Cat Trees', href: '/cat/cat-trees-for-large-cats/for-maine-coon' },
-      { label: 'Large Cat Condos', href: '/cat/cat-trees-for-large-cats/large-cat-condos' },
-      { label: 'Cat Condo vs Cat Tree', href: '/guides/cat-condo-vs-cat-tree-2026' },
+    // Dog Silo — 50% link equity
+    dogLinks: [
+      { label: 'All Dog Products', href: '/dog' },
+      { label: 'Dog Training Gear', href: '/products?category=Dog+Training' },
+      { label: 'Dog Carriers & Travel', href: '/products?category=Dog+Carriers' },
+      { label: 'Dog Collars & Leashes', href: '/products?category=Dog+Collars+%26+Leashes' },
+      { label: 'Dog Toys', href: '/products?category=Dog+Toys' },
+      { label: 'Dog Beds', href: '/products?category=Dog+Beds' },
+      { label: 'Dog Training & Travel Guide', href: '/dog/best-dog-training-and-travel-gear-2026' },
     ],
-    // Cat Litter — 20% link equity
-    catLitter: [
-      { label: 'Best Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
-      { label: 'Self-Cleaning Litter Boxes', href: '/collections/self-cleaning-litter-box-guide' },
-      { label: 'Litter Box for Large Cats', href: '/collections/best-litter-box-for-large-cats' },
-      { label: 'Litter Box for Odor Control', href: '/collections/best-litter-box-for-odor-control' },
-    ],
-    // Buying Guides
-    guides: [
-      { label: 'Best Cat Trees for Large Cats', href: '/guides/best-cat-trees-large-cats-2026' },
-      { label: 'Cat Condo vs Cat Tree 2026', href: '/guides/cat-condo-vs-cat-tree-2026' },
-      { label: 'Best Cat Litter Box 2026', href: '/guides/best-cat-litter-box-2026' },
-      { label: 'Best Cat Trees for Apartments', href: '/guides/best-cat-trees-small-apartments' },
-      { label: 'How Many Litter Boxes Per Cat', href: '/guides/how-many-litter-boxes-per-cat' },
-      { label: 'Cat Tree Stability Guide', href: '/guides/cat-tree-stability-guide' },
-      { label: 'Indoor Cat Care Resources', href: '/resources/indoor-cat-care' },
-    ],
-    // Best of 2026
-    bestOf: [
-      { label: 'Bestsellers 2026', href: '/bestsellers' },
-      { label: 'All Products', href: '/products' },
-    ],
-    // Popular Categories — reweighted: 70% cat trees, 20% litter, 10% other
-    popularCategories: [
-      // Cat Trees silo (70%)
-      { label: 'Best Cat Trees 2026', href: '/collections/cat-trees-and-condos' },
-      { label: 'Cat Trees for Maine Coons', href: '/cat/cat-trees-for-large-cats/for-maine-coon' },
-      { label: 'Floor-to-Ceiling Cat Trees', href: '/cat/cat-trees-for-large-cats/heavy-duty' },
-      { label: 'Cat Trees for Large Cats', href: '/cat/cat-trees-for-large-cats' },
-      { label: 'Cat Trees for Small Apartments', href: '/collections/best-cat-trees-for-small-apartments' },
-      { label: 'Modern Cat Trees', href: '/collections/modern-cat-trees' },
-      { label: 'Large Cat Condos', href: '/cat/cat-trees-for-large-cats/large-cat-condos' },
-      { label: 'Extra Stable Cat Trees', href: '/collections/extra-stable-cat-tree' },
-      { label: 'Multi-Level Cat Condos', href: '/collections/multi-level-cat-condos' },
-      { label: 'Cat Condo vs Cat Tree Guide', href: '/guides/cat-condo-vs-cat-tree-2026' },
-      // Litter silo (20%)
-      { label: 'Best Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
-      { label: 'Self-Cleaning Litter Boxes', href: '/collections/self-cleaning-litter-box-guide' },
-      // Other (10%)
-      { label: 'Indoor Cat Care Resources', href: '/resources/indoor-cat-care' },
+    // Cat Silo — 50% link equity
+    catLinks: [
+      { label: 'All Cat Products', href: '/cat' },
+      { label: 'Cat Trees & Condos', href: '/products?category=Cat+Trees+%26+Condos' },
+      { label: 'Cat Litter Boxes', href: '/products?category=Cat+Litter+Boxes' },
+      { label: 'Cat Carriers', href: '/products?category=Cat+Carriers' },
+      { label: 'Cat Toys', href: '/products?category=Cat+Toys' },
+      { label: 'Cat Scratching Posts', href: '/products?category=Cat+Scratching+Posts' },
+      { label: 'Cat Training & Travel Guide', href: '/cat/best-cat-training-and-travel-gear-2026' },
     ],
     support: [
       { label: 'Contact', href: '/contact' },
@@ -257,9 +224,9 @@ export const Footer = () => {
                   Get<span className="text-primary">Pawsy</span>
                 </span>
               </Link>
-              <p className="text-background/70 leading-relaxed max-w-sm">
-                Premium products for your pet, lovingly curated. 
-                Making tails wag since 2024.
+               <p className="text-background/70 leading-relaxed max-w-sm">
+                Smart training & travel gear for dogs and cats. 
+                US shipping, 3–7 days.
               </p>
               
               {/* Social Links */}
@@ -302,10 +269,10 @@ export const Footer = () => {
               </div>
             </div>
 
-            {/* Cat Trees & Condos — collapsed on mobile */}
-            <FooterSection title="Cat Trees & Condos">
+            {/* Dog Silo — collapsed on mobile */}
+            <FooterSection title="🐕 Shop Dogs">
               <ul className="space-y-3">
-                {footerLinks.topCats.map((link) => (
+                {footerLinks.dogLinks.map((link) => (
                   <li key={link.href}>
                     <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
@@ -314,22 +281,23 @@ export const Footer = () => {
                   </li>
                 ))}
               </ul>
-
-              <FooterSection title="Cat Litter Boxes" className="mt-8">
-                <ul className="space-y-3">
-                  {footerLinks.catLitter.map((link) => (
-                    <li key={link.href}>
-                      <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
-                        <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                        <span>{link.label}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </FooterSection>
             </FooterSection>
 
-            {/* Support + Best Of — collapsed on mobile */}
+            {/* Cat Silo — collapsed on mobile */}
+            <FooterSection title="🐈 Shop Cats">
+              <ul className="space-y-3">
+                {footerLinks.catLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      <span>{link.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </FooterSection>
+
+            {/* Support + Company — collapsed on mobile */}
             <FooterSection title="Customer Service">
               <ul className="space-y-3">
                 {footerLinks.support.map((link) => (
@@ -346,22 +314,9 @@ export const Footer = () => {
                 ))}
               </ul>
 
-              <FooterSection title="Best of 2026" className="mt-8">
+              <FooterSection title="Company & Trust" className="mt-8">
                 <ul className="space-y-3">
-                  {footerLinks.bestOf.map((link) => (
-                    <li key={link.href}>
-                      <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
-                        <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                        <span>{link.label}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </FooterSection>
-
-              <FooterSection title="Buying Guides" className="mt-8">
-                <ul className="space-y-3">
-                  {footerLinks.guides.map((link) => (
+                  {footerLinks.company.map((link) => (
                     <li key={link.href}>
                       <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                         <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
@@ -372,99 +327,37 @@ export const Footer = () => {
                 </ul>
               </FooterSection>
             </FooterSection>
-
-            {/* Company + Trust Links — collapsed on mobile */}
-            <FooterSection title="Company & Trust">
-              <ul className="space-y-3">
-                {footerLinks.company.map((link) => (
-                  <li key={link.href}>
-                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
-                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                      <span>{link.label}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </FooterSection>
-
           </div>
-          {/* Top Indoor Cat Solutions — Money Hub SEO Section */}
+
+          {/* Dog & Cat Highlights */}
           <div className="mt-12 pt-8 border-t border-background/10">
-            <h4 className="font-display font-semibold text-lg mb-4">Top Indoor Cat Solutions</h4>
+            <h4 className="font-display font-semibold text-lg mb-4">Train Better. Travel Safer.</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
               <div>
-                <Link to="/collections/cat-trees-and-condos" className="text-sm font-medium text-primary hover:underline">
-                  Best Cat Trees & Condos 2026 →
+                <Link to="/dog" className="text-sm font-medium text-primary hover:underline">
+                  Dog Training & Travel Gear →
                 </Link>
                 <p className="text-xs text-background/50 mt-1">
-                  Stability-tested cat trees for large cats, apartments, and multi-cat homes.
+                  Training collars, carriers, leashes & travel essentials for every dog.
                 </p>
               </div>
               <div>
-                <Link to="/cat/cat-trees-for-large-cats" className="text-sm font-medium text-primary hover:underline">
-                  Heavy Duty Cat Trees for Large Cats →
+                <Link to="/cat" className="text-sm font-medium text-primary hover:underline">
+                  Cat Trees, Toys & Essentials →
                 </Link>
                 <p className="text-xs text-background/50 mt-1">
-                  Anti-tip tested, 25+ lb rated cat trees for Maine Coons & large breeds.
+                  Cat trees, litter boxes, carriers & scratching posts for indoor cats.
                 </p>
               </div>
               <div>
-                <Link to="/collections/best-cat-litter-boxes" className="text-sm font-medium text-primary hover:underline">
-                  Best Self-Cleaning Litter Boxes →
+                <Link to="/bestsellers" className="text-sm font-medium text-primary hover:underline">
+                  Bestsellers 2026 →
                 </Link>
                 <p className="text-xs text-background/50 mt-1">
-                  Odor-eliminating smart litter boxes with app control and quiet operation.
+                  Our most popular dog & cat products, curated by real sales data.
                 </p>
               </div>
             </div>
-          </div>
-
-          {/* Popular Pet Categories — collapsed on mobile */}
-          <div className="mt-8 pt-8 border-t border-background/10">
-            <FooterSection title="Popular Pet Categories">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-8 gap-y-2">
-                {footerLinks.popularCategories.map((link) => (
-                  <Link
-                    key={link.href}
-                    to={link.href}
-                    className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
-                  >
-                    <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                    <span>{link.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </FooterSection>
-          </div>
-          {/* Expert Pet Buying Guides — collapsed on mobile */}
-          <div className="mt-12 pt-8 border-t border-background/10">
-            <FooterSection title="Expert Pet Buying Guides">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
-                {[
-                  { slug: 'best-cat-trees-large-cats-2026', label: 'Best Cat Trees for Large Cats – Stability Guide' },
-                  { slug: 'best-cat-trees-2026', label: 'Best Cat Trees 2026 – Complete Buyer Guide' },
-                  { slug: 'best-cat-litter-box-2026', label: 'Best Cat Litter Box 2026 – Complete Guide' },
-                  { slug: 'best-cat-litter-box-furniture-enclosures-2026', label: 'Best Litter Box Furniture & Enclosures' },
-                  { slug: 'best-self-cleaning-litter-box-2026', label: 'Best Self-Cleaning Litter Box 2026' },
-                  { slug: 'best-extra-large-litter-boxes', label: 'Best Extra Large Litter Boxes for Big Cats' },
-                  { slug: 'best-litter-boxes-multi-cat', label: 'Best Litter Boxes for Multi-Cat Homes' },
-                  { slug: 'best-cat-trees-small-apartments', label: 'Best Cat Trees for Small Apartments' },
-                  { slug: 'how-many-litter-boxes-per-cat', label: 'How Many Litter Boxes Per Cat? N+1 Rule' },
-                  { slug: 'best-litter-box-kittens', label: 'Best Litter Box for Kittens – Starter Picks' },
-                  { slug: 'best-litter-box-senior-cats', label: 'Best Litter Box for Senior Cats' },
-                  { slug: 'best-low-tracking-litter-box', label: 'Best Low-Tracking Litter Box 2026' },
-                ].map((guide) => (
-                  <Link
-                    key={guide.slug}
-                    to={`/guides/${guide.slug}`}
-                    className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
-                  >
-                    <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                    <span>{guide.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </FooterSection>
           </div>
         </div>
 
