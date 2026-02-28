@@ -168,16 +168,16 @@ const Index = () => {
   }, [productsApi]);
 
   // ── Featured products — only starts fetching after hydration gate ──
-  // Featured products: ONLY Cat Trees/Condos + Small Animal Cages (topical authority focus)
+  // Featured products: Dog & Cat Training + Travel focus (50/50 split)
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
-    queryKey: ['featured-products-focused'],
+    queryKey: ['featured-products-training-travel'],
     queryFn: async () => {
       const [supabase, dedupeProducts] = await Promise.all([getSupabase(), getDedupeProducts()]);
       const { data, error } = await supabase
         .from('products_public')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
         .eq('is_active', true)
-        .in('category', ['Cat Trees & Condos', 'Cat Furniture', 'Cat Houses', 'Cat Scratching Posts', 'Cat Beds', 'Cat Litter Boxes'])
+        .in('category', ['Dog Training', 'Dog Carriers', 'Dog Collars & Leashes', 'Cat Trees & Condos', 'Cat Carriers', 'Cat Toys', 'Cat Scratching Posts'])
         .order('price', { ascending: false })
         .limit(12);
       if (error) throw error;
@@ -342,17 +342,17 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Premium Dog & Cat Essentials – US Shipping, 30-Day Guarantee | GetPawsy</title>
-        <meta name="description" content="Curated dog & cat essentials shipped from US warehouses in 3–7 days. Quality-tested toys, beds & furniture. 30-day happiness guarantee. Free shipping $35+." />
+        <title>Dog & Cat Training & Travel Gear – US 3–7 Day Shipping | GetPawsy</title>
+        <meta name="description" content="Smart training & travel gear for dogs and cats. US warehouse shipping in 3–7 days. Harnesses, carriers, enrichment toys & travel essentials. 30-day guarantee." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Premium Dog & Cat Essentials – US Shipping | GetPawsy" />
-        <meta property="og:description" content="Curated dog & cat essentials. US warehouse shipping 3–7 days. 30-day happiness guarantee. Free shipping $35+." />
+        <meta property="og:title" content="Dog & Cat Training & Travel Gear – US Shipping | GetPawsy" />
+        <meta property="og:description" content="Smart training & travel gear for dogs and cats. US warehouse 3–7 day shipping. 30-day guarantee." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Premium Dog & Cat Essentials | GetPawsy" />
-        <meta name="twitter:description" content="Curated dog & cat essentials. US warehouse shipping 3–7 days. 30-day happiness guarantee." />
+        <meta name="twitter:title" content="Dog & Cat Training & Travel Gear | GetPawsy" />
+        <meta name="twitter:description" content="Smart training & travel gear for dogs and cats. US warehouse 3–7 day shipping. 30-day guarantee." />
       </Helmet>
       <Suspense fallback={null}>
         <WebsiteSchema />
@@ -391,35 +391,34 @@ const Index = () => {
           <div className="max-w-2xl">
             {/* instant=true — no JS state/observer needed, paints at 0ms */}
             <div className="space-y-6">
-         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">Premium Dog & Cat Essentials</p>
+         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">Dog & Cat Training & Travel Specialist</p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.05] tracking-tight">
-                Smarter toys. Happier pets.
+                Train Better. Travel Safer.
                 <br />
-                <span className="text-primary">Zero junk.</span>
+                <span className="text-primary">For dogs & cats.</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
-                Premium dog &amp; cat essentials — US warehouse shipping (3–7 days) + 30-day happiness guarantee.
+                Smart training &amp; travel gear for dogs and cats — US warehouse shipping (3–7 days) + 30-day happiness guarantee.
               </p>
               {/* ⚡ Hero CTAs: plain <a> tags — eliminates Button/Radix from critical render path. */}
               <div className="flex flex-wrap items-center gap-4 pt-2 relative z-10 pointer-events-auto">
                 <a
-                  href="/products?category=dogs"
+                  href="/dog/"
                   className="inline-flex items-center gap-2 rounded-full px-10 py-3 text-base font-semibold bg-foreground text-background shadow-lg hover:shadow-xl transition-shadow duration-200"
                 >
                   Shop Dog Essentials →
                 </a>
                 <a
-                  href="/products?category=cats"
+                  href="/cat/"
                   className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-semibold border border-border bg-transparent text-foreground"
                 >
-                  Shop Cat Favorites
+                  Shop Cat Essentials
                 </a>
               </div>
               {/* Inline trust badges — zero JS, pure HTML */}
               <div className="flex flex-wrap gap-x-5 gap-y-2 pt-4 text-xs md:text-sm font-medium text-muted-foreground">
-                <span>🇺🇸 Ships from US</span>
-                <span>🚚 3–7 Day Delivery</span>
-                <span>⭐ 4.8/5 Avg Rating</span>
+                <span>🇺🇸 US Shipping 3–7 Days</span>
+                <span>🛡️ 30-Day Guarantee</span>
                 <span>🔒 Secure Checkout</span>
               </div>
             </div>
@@ -432,11 +431,11 @@ const Index = () => {
         <div className="container px-4 md:px-6">
           <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 text-sm font-medium text-muted-foreground">
             {[
-              { icon: '🇺🇸', label: 'Ships from US' },
-              { icon: '🚚', label: '3–7 Day Delivery' },
-              { icon: '⭐', label: '4.8/5 Avg Rating' },
+              { icon: '🇺🇸', label: 'US Shipping 3–7 Days' },
+              { icon: '🛡️', label: '30-Day Guarantee' },
               { icon: '🔒', label: 'Secure Checkout' },
-              { icon: '↩️', label: '30-Day Guarantee' },
+              { icon: '🐕', label: 'Dog Training & Travel' },
+              { icon: '🐈', label: 'Cat Training & Travel' },
             ].map((v) => (
               <span key={v.label} className="inline-flex items-center gap-1.5 whitespace-nowrap">
                 <span>{v.icon}</span> {v.label}
@@ -553,9 +552,9 @@ const Index = () => {
           <section className="py-20 bg-sand/30">
             <div className="container px-4 md:px-6">
               <FadeInView className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Indoor Cat Buying Guides</h2>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Training & Travel Buying Guides</h2>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                  Expert-tested &amp; updated 2026 — stability-rated cat trees, litter box comparisons &amp; enrichment advice
+                  Expert-tested &amp; updated 2026 — dog training gear, travel safety, cat enrichment &amp; carrier comparisons
                 </p>
               </FadeInView>
               <FadeInView className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -635,7 +634,7 @@ const Index = () => {
             <FadeInView className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Shop by Category</h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Everything your indoor cat needs — from climbing furniture to enrichment essentials
+                Training gear, travel essentials &amp; enrichment products for dogs and cats
               </p>
             </FadeInView>
 
@@ -695,8 +694,8 @@ const Index = () => {
           <div className="container px-4 md:px-6">
             <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
               <div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-2">Featured Cat Furniture</h2>
-                <p className="text-muted-foreground text-lg">Stability-tested picks for indoor cats of all sizes</p>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-2">Featured Training & Travel Gear</h2>
+                <p className="text-muted-foreground text-lg">Top-rated dog &amp; cat training and travel essentials</p>
               </div>
               <Link to="/products">
                 <Button variant="outline" className="gap-2 rounded-full">
@@ -814,8 +813,8 @@ const Index = () => {
                   </Suspense>
                 </div>
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-display font-bold">Explore Our Expert Pet Guides</h2>
-                  <p className="text-muted-foreground text-lg">In-depth buying guides tested by real pet owners</p>
+                  <h2 className="text-3xl md:text-4xl font-display font-bold">Expert Training & Travel Guides</h2>
+                  <p className="text-muted-foreground text-lg">In-depth buying guides for dog &amp; cat training and travel gear</p>
                 </div>
               </div>
               <Link to="/guides" className="group flex items-center gap-2 text-primary font-semibold hover:underline">
