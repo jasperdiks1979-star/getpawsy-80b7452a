@@ -5,23 +5,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// IndexNow API endpoints for different search engines
 const INDEXNOW_ENDPOINTS = [
-  "https://api.indexnow.org/indexnow",           // IndexNow API (Bing, Yandex, Seznam, Naver)
-  "https://www.bing.com/indexnow",               // Bing direct
-  "https://yandex.com/indexnow",                 // Yandex direct
+  "https://api.indexnow.org/indexnow",
+  "https://www.bing.com/indexnow",
+  "https://yandex.com/indexnow",
 ];
 
 const BASE_URL = "https://getpawsy.pet";
-
-// IndexNow key - this should be a unique key for your domain
 const INDEXNOW_KEY = "e8f4a2b1c9d7e6f5a3b2c1d0e9f8a7b6";
-
-// Google Indexing API endpoint
 const GOOGLE_INDEXING_API = "https://indexing.googleapis.com/v3/urlNotifications:publish";
+const REQUEST_TIMEOUT_MS = 10_000;
 
 interface PingRequest {
   urls?: string[];
+  url?: string;
   productId?: string;
   blogSlug?: string;
   type?: "product" | "blog" | "category" | "sitemap" | "all";
@@ -41,13 +38,28 @@ interface ServiceAccountCredentials {
   token_uri: string;
 }
 
-// Generate JWT for Google Service Account authentication
-async function generateGoogleJWT(credentials: ServiceAccountCredentials): Promise<string> {
-  const header = {
-    alg: "RS256",
-    typ: "JWT",
-  };
+/** Create an AbortSignal that fires after `ms` milliseconds */
+function timeoutSignal(ms: number): { signal: AbortSignal; clear: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return { signal: controller.signal, clear: () => clearTimeout(timer) };
+}
 
+/** Fetch with a hard timeout — resolves or rejects, never hangs */
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
+  const { signal, clear } = timeoutSignal(timeoutMs);
+  try {
+    const res = await fetch(url, { ...init, signal });
+    clear();
+    return res;
+  } catch (e) {
+    clear();
+    throw e;
+  }
+}
+
+async function generateGoogleJWT(credentials: ServiceAccountCredentials): Promise<string> {
+  const header = { alg: "RS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: credentials.client_email,
@@ -62,42 +74,30 @@ async function generateGoogleJWT(credentials: ServiceAccountCredentials): Promis
   const payloadB64 = btoa(JSON.stringify(payload)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   const unsignedToken = `${headerB64}.${payloadB64}`;
 
-  // Import the private key for signing
   const pemContents = credentials.private_key
     .replace("-----BEGIN PRIVATE KEY-----", "")
     .replace("-----END PRIVATE KEY-----", "")
     .replace(/\n/g, "");
-  
+
   const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
-  
+
   const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryKey,
+    "pkcs8", binaryKey,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
+    false, ["sign"]
   );
 
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    cryptoKey,
-    encoder.encode(unsignedToken)
-  );
-
+  const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, encoder.encode(unsignedToken));
   const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
   return `${unsignedToken}.${signatureB64}`;
 }
 
-// Get Google access token using service account
 async function getGoogleAccessToken(credentials: ServiceAccountCredentials): Promise<string | null> {
   try {
     const jwt = await generateGoogleJWT(credentials);
-    
-    const response = await fetch(credentials.token_uri, {
+    const response = await fetchWithTimeout(credentials.token_uri, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -110,78 +110,68 @@ async function getGoogleAccessToken(credentials: ServiceAccountCredentials): Pro
       console.error("Failed to get Google access token:", await response.text());
       return null;
     }
-
     const data = await response.json();
     return data.access_token;
   } catch (error) {
-    console.error("Error getting Google access token:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    const isTimeout = msg.includes("abort") || msg.includes("signal");
+    console.error(`Google access token ${isTimeout ? "timeout" : "error"}:`, msg);
     return null;
   }
 }
 
-// Ping Google Indexing API for each URL
 async function pingGoogleIndexingAPI(urls: string[]): Promise<PingResult> {
   const serviceAccountJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-  
   if (!serviceAccountJson) {
-    return {
-      engine: "Google Indexing API",
-      success: false,
-      error: "GOOGLE_SERVICE_ACCOUNT_JSON not configured",
-    };
+    return { engine: "Google Indexing API", success: false, error: "GOOGLE_SERVICE_ACCOUNT_JSON not configured" };
   }
 
   try {
     const credentials: ServiceAccountCredentials = JSON.parse(serviceAccountJson);
     const accessToken = await getGoogleAccessToken(credentials);
-    
     if (!accessToken) {
-      return {
-        engine: "Google Indexing API",
-        success: false,
-        error: "Failed to obtain access token",
-      };
+      return { engine: "Google Indexing API", success: false, error: "Failed to obtain access token" };
     }
 
     let successCount = 0;
     let failCount = 0;
     const errors: string[] = [];
-
-    // Google Indexing API has rate limits, process URLs sequentially
-    // Limit to 200 URLs per day per property
     const urlsToProcess = urls.slice(0, 200);
-    
-    for (const url of urlsToProcess) {
-      try {
-        const response = await fetch(GOOGLE_INDEXING_API, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            url: url,
-            type: "URL_UPDATED",
-          }),
-        });
 
-        if (response.ok) {
-          successCount++;
-        } else {
-          failCount++;
-          const errorText = await response.text();
-          if (errors.length < 3) {
-            errors.push(`${url}: ${response.status} - ${errorText.substring(0, 100)}`);
+    // Use Promise.allSettled to ensure no dangling promises
+    const results = await Promise.allSettled(
+      urlsToProcess.map(async (url) => {
+        try {
+          const response = await fetchWithTimeout(GOOGLE_INDEXING_API, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ url, type: "URL_UPDATED" }),
+          });
+
+          if (response.ok) {
+            return { url, ok: true };
+          } else {
+            const errorText = await response.text().catch(() => "unknown");
+            return { url, ok: false, error: `${response.status} - ${errorText.substring(0, 100)}` };
           }
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : "Unknown error";
+          const isTimeout = msg.includes("abort") || msg.includes("signal");
+          return { url, ok: false, error: isTimeout ? "timeout" : msg };
         }
-        
-        // Small delay to respect rate limits
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } catch (error) {
+      })
+    );
+
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value.ok) {
+        successCount++;
+      } else {
         failCount++;
-        if (errors.length < 3) {
-          errors.push(`${url}: ${error instanceof Error ? error.message : "Unknown error"}`);
-        }
+        const errDetail = r.status === "fulfilled" ? r.value.error : r.reason?.message;
+        if (errors.length < 5) errors.push(`${errDetail}`);
       }
     }
 
@@ -190,7 +180,7 @@ async function pingGoogleIndexingAPI(urls: string[]): Promise<PingResult> {
       success: successCount > 0,
       status: successCount > 0 ? 200 : 500,
       urlsProcessed: successCount,
-      error: errors.length > 0 ? errors.join("; ") : undefined,
+      error: errors.length > 0 ? `${failCount} failed: ${errors.join("; ")}` : undefined,
     };
   } catch (error) {
     return {
@@ -202,9 +192,6 @@ async function pingGoogleIndexingAPI(urls: string[]): Promise<PingResult> {
 }
 
 async function pingIndexNow(urls: string[]): Promise<PingResult[]> {
-  const results: PingResult[] = [];
-  
-  // Prepare the request body for batch submission
   const body = {
     host: "getpawsy.pet",
     key: INDEXNOW_KEY,
@@ -212,31 +199,39 @@ async function pingIndexNow(urls: string[]): Promise<PingResult[]> {
     urlList: urls.slice(0, 10000),
   };
 
-  for (const endpoint of INDEXNOW_ENDPOINTS) {
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+  // Use Promise.allSettled — every endpoint resolves individually
+  const settled = await Promise.allSettled(
+    INDEXNOW_ENDPOINTS.map(async (endpoint) => {
+      const engineName = endpoint.includes("bing") ? "Bing" :
+                         endpoint.includes("yandex") ? "Yandex" : "IndexNow API";
+      try {
+        const response = await fetchWithTimeout(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        return {
+          engine: engineName,
+          success: response.status >= 200 && response.status < 300,
+          status: response.status,
+        } as PingResult;
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Unknown error";
+        const isTimeout = msg.includes("abort") || msg.includes("signal");
+        return {
+          engine: engineName,
+          success: false,
+          error: isTimeout ? "timeout (10s)" : msg,
+        } as PingResult;
+      }
+    })
+  );
 
-      results.push({
-        engine: endpoint.includes("bing") ? "Bing" : 
-                endpoint.includes("yandex") ? "Yandex" : "IndexNow API",
-        success: response.status >= 200 && response.status < 300,
-        status: response.status,
-      });
-    } catch (error) {
-      results.push({
-        engine: endpoint.includes("bing") ? "Bing" : 
-                endpoint.includes("yandex") ? "Yandex" : "IndexNow API",
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  }
-
-  return results;
+  return settled.map(s => s.status === "fulfilled" ? s.value : {
+    engine: "Unknown",
+    success: false,
+    error: s.reason?.message || "promise rejected",
+  });
 }
 
 Deno.serve(async (req) => {
@@ -252,37 +247,31 @@ Deno.serve(async (req) => {
     let urls: string[] = [];
     let pingType = "manual";
 
-    // Handle different request types
     if (req.method === "POST") {
       const body: PingRequest = await req.json();
-      
+
       if (body.urls && body.urls.length > 0) {
-        // Direct URL submission (array)
         urls = body.urls.map((url: string) => url.startsWith("http") ? url : `${BASE_URL}${url}`);
         pingType = "direct";
       } else if (body.url && typeof body.url === "string") {
-        // Single URL submission (backwards compat / fallback)
         urls = [body.url.startsWith("http") ? body.url : `${BASE_URL}${body.url}`];
         pingType = "direct";
       } else if (body.productId) {
-        // Single product update
         const { data: product } = await supabase
           .from("products")
           .select("slug, id")
           .eq("id", body.productId)
           .single();
-        
+
         if (product) {
           const productPath = product.slug || product.id;
           urls = [`${BASE_URL}/product/${productPath}`];
           pingType = "product";
         }
       } else if (body.blogSlug) {
-        // Blog post update
         urls = [`${BASE_URL}/blog/${body.blogSlug}`];
         pingType = "blog";
       } else if (body.type === "sitemap" || body.type === "all") {
-        // Ping all sitemaps
         urls = [
           `${BASE_URL}/`,
           `${BASE_URL}/products`,
@@ -292,22 +281,23 @@ Deno.serve(async (req) => {
         pingType = body.type;
       }
     } else if (req.method === "GET") {
-      // Quick ping for sitemap refresh
       pingType = "sitemap-refresh";
     }
 
-    // Execute pings in parallel
-    const [indexNowResults, googleResult] = await Promise.all([
+    // Execute pings in parallel with Promise.allSettled — never hangs
+    const [indexNowSettled, googleSettled] = await Promise.allSettled([
       urls.length > 0 ? pingIndexNow(urls) : Promise.resolve([]),
       urls.length > 0 ? pingGoogleIndexingAPI(urls) : Promise.resolve({
-        engine: "Google Indexing API",
-        success: true,
-        status: 200,
-        urlsProcessed: 0,
+        engine: "Google Indexing API", success: true, status: 200, urlsProcessed: 0,
       } as PingResult),
     ]);
 
-    // Log the ping
+    const indexNowResults = indexNowSettled.status === "fulfilled" ? indexNowSettled.value : [];
+    const googleResult = googleSettled.status === "fulfilled" ? googleSettled.value : {
+      engine: "Google Indexing API", success: false, error: googleSettled.reason?.message || "promise rejected",
+    } as PingResult;
+
+    // Log the ping (non-blocking)
     await supabase.from("cron_job_logs").insert({
       job_name: "indexnow-ping",
       started_at: new Date().toISOString(),
@@ -316,24 +306,17 @@ Deno.serve(async (req) => {
       details: {
         type: pingType,
         urlCount: urls.length,
-        urls: urls.slice(0, 10), // Log first 10 URLs
-        results: {
-          indexNow: indexNowResults,
-          google: googleResult,
-        },
+        urls: urls.slice(0, 10),
+        results: { indexNow: indexNowResults, google: googleResult },
       },
-    });
+    }).catch(() => {}); // non-blocking
 
     const response = {
       success: true,
       message: `Pinged ${urls.length} URL(s) to search engines`,
       pingType,
       urlCount: urls.length,
-      results: {
-        indexNow: indexNowResults,
-        google: googleResult,
-      },
-      tip: "IndexNow → Bing, Yandex, Seznam, Naver. Google Indexing API → Direct URL submission.",
+      results: { indexNow: indexNowResults, google: googleResult },
     };
 
     console.log(`IndexNow ping completed: ${JSON.stringify(response)}`);
@@ -348,10 +331,7 @@ Deno.serve(async (req) => {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

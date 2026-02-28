@@ -193,13 +193,34 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Special guard: skip indexing if crawl health had critical failures (wrong redirect target, missing redirect, etc.)
-        // Note: a 302 with correct target does NOT block indexing — only logs a warning
+        // Special guard: skip indexing if crawl health had critical failures
         if (step.key === 'indexing_submit' && !crawlHealthPassed) {
           throw new Error('Indexing aborted: crawl_health_check has critical failures (redirect target wrong or missing). Check Redirect Debug for details.');
         }
 
-        const result = await executeStep(supabase, step.key, run.id);
+        // Wrap indexing_submit in a hard 45s timeout at the orchestrator level
+        let result: Record<string, unknown>;
+        if (step.key === 'indexing_submit') {
+          const INDEXING_ORCHESTRATOR_TIMEOUT = 45_000;
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Indexing step orchestrator timeout (45s)')), INDEXING_ORCHESTRATOR_TIMEOUT)
+          );
+          try {
+            result = await Promise.race([executeStep(supabase, step.key, run.id), timeoutPromise]);
+          } catch (timeoutErr) {
+            // Fail-open: mark as warning, continue pipeline
+            const duration = Date.now() - stepStart;
+            const errMsg = timeoutErr instanceof Error ? timeoutErr.message : String(timeoutErr);
+            await supabase.from('job_run_steps')
+              .update({ status: 'success', finished_at: new Date().toISOString(), duration_ms: duration, result: { status: 'warning', error: errMsg } })
+              .eq('run_id', run.id).eq('step_key', step.key);
+            await log(supabase, run.id, step.key, 'warn', `Indexing step auto-completed with warning: ${errMsg} (${duration}ms)`);
+            report[step.key] = { status: 'warning', duration_ms: duration, error: errMsg };
+            continue;
+          }
+        } else {
+          result = await executeStep(supabase, step.key, run.id);
+        }
         const duration = Date.now() - stepStart;
 
         // Track crawl health result
@@ -600,9 +621,9 @@ async function executeStep(
     }
 
     case 'indexing_submit': {
-      // === INDEXING SUBMIT v2 — Non-blocking, guarded, with timeouts ===
-      const STEP_HARD_CAP_MS = 60_000;
-      const PER_REQUEST_TIMEOUT_MS = 12_000;
+      // === INDEXING SUBMIT v3 — Non-blocking, guarded, 45s hard cap, AbortController ===
+      const STEP_HARD_CAP_MS = 45_000;
+      const PER_REQUEST_TIMEOUT_MS = 10_000;
       const MAX_RETRIES = 2;
       const RETRY_DELAYS = [1500, 4000];
       const CONCURRENCY = 2;
@@ -752,7 +773,10 @@ async function executeStep(
       for (let i = 0; i < toSubmit.length && !hardCapReached; i += CONCURRENCY) {
         if (Date.now() - stepStartTime > STEP_HARD_CAP_MS) { hardCapReached = true; break; }
         const batch = toSubmit.slice(i, i + CONCURRENCY);
-        const batchResults = await Promise.all(batch.map(submitSingleUrl));
+        const batchSettled = await Promise.allSettled(batch.map(submitSingleUrl));
+        const batchResults = batchSettled.map((s, idx) =>
+          s.status === 'fulfilled' ? s.value : { url: batch[idx], status: 'error', error: s.reason?.message || 'promise rejected' } as SubmitResult
+        );
         results.push(...batchResults);
       }
 
