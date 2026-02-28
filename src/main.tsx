@@ -193,7 +193,10 @@ try {
     console.warn('[BOOT] Analytics load failed (non-fatal):', e);
   });
 
-  // === STEP 6: Verify build integrity (async, non-blocking) ===
+  // === STEP 6b: Redirect & header verification (dev/preview only) ===
+  import("./lib/redirect-verification").then(m => m.logRedirectVerification()).catch(() => {});
+
+  // === STEP 7: Verify build integrity (async, non-blocking) ===
   verifyBuildIntegrity().catch(() => {});
 } catch (e) {
   console.error('[BOOT_FAIL] React mount failed:', e);

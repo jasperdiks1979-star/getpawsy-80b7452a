@@ -1,0 +1,55 @@
+# =============================================================
+# Cache-Control headers for GetPawsy (getpawsy.pet)
+# Applied by Lovable Cloud / Cloudflare Pages at the edge.
+# =============================================================
+
+# HTML documents: never cache stale HTML (SPA shell must be fresh)
+/
+  Cache-Control: public, max-age=0, must-revalidate
+  X-Content-Type-Options: nosniff
+
+# SEO files: cache 1h with stale-while-revalidate fallback
+/robots.txt
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+  Content-Type: text/plain; charset=utf-8
+
+/sitemap.xml
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+  Content-Type: application/xml; charset=utf-8
+
+/sitemap-*.xml
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+  Content-Type: application/xml; charset=utf-8
+
+/merchant-feed.xml
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+  Content-Type: application/xml; charset=utf-8
+
+# Health check
+/healthz.json
+  Cache-Control: no-cache
+
+# Hashed static assets (JS/CSS) - immutable, long cache
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Images and fonts in assets
+/hero/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/images/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# PWA icons
+/pwa-*.png
+  Cache-Control: public, max-age=86400
+
+/favicon.png
+  Cache-Control: public, max-age=86400
+
+/favicon.ico
+  Cache-Control: public, max-age=86400
+
+# OG image
+/og-image.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
