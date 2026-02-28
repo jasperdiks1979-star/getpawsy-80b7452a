@@ -937,5 +937,113 @@
     "featuredImage": "/images/guides/litter-box-apartment.jpg",
     "readingTime": 9,
     "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "complete-dog-training-guide-2026",
+    "title": "The Complete Dog Training Guide (2026) – Stop Pulling, Barking & Bad Habits Fast",
+    "excerpt": "Learn how to stop leash pulling, barking, and destructive behavior with our expert-tested 7-day training plan. Positive reinforcement methods and tool comparisons.",
+    "category": "Dog Training",
+    "keywords": ["best dog training tools", "how to stop dog pulling", "dog training guide"],
+    "publishedAt": "2026-02-28",
+    "updatedAt": "2026-02-28",
+    "featuredImage": "/images/guides/dog-training-guide-2026.jpg",
+    "readingTime": 18,
+    "relatedCategories": ["dog-training", "dog-collars-and-leashes"]
+  },
+  {
+    "slug": "best-no-pull-dog-harness-2026",
+    "title": "Best No-Pull Dog Harness (2026) – Tested & Ranked for Pullers | Free US Shipping",
+    "excerpt": "We tested 5 top-rated no-pull dog harnesses hands-on with real pullers. Front-clip designs ranked by comfort, control, and durability.",
+    "category": "Dog Training",
+    "keywords": ["best no pull dog harness", "no pull harness", "front clip harness"],
+    "publishedAt": "2026-02-28",
+    "updatedAt": "2026-02-28",
+    "featuredImage": "/images/guides/no-pull-harness-2026.jpg",
+    "readingTime": 12,
+    "relatedCategories": ["dog-training", "dog-collars-and-leashes"]
+  },
+  {
+    "slug": "best-dog-training-leash-for-pullers",
+    "title": "Best Dog Training Leash for Pullers (2026) – Tested & Ranked | Free US Shipping",
+    "excerpt": "We compared fixed, retractable, and anti-pull dog leashes for training. Hands-on testing with real pullers.",
+    "category": "Dog Training",
+    "keywords": ["best dog training leash", "leash for pulling dogs", "anti pull leash"],
+    "publishedAt": "2026-02-28",
+    "updatedAt": "2026-02-28",
+    "featuredImage": "/images/guides/training-leash-2026.jpg",
+    "readingTime": 10,
+    "relatedCategories": ["dog-training", "dog-collars-and-leashes"]
+  },
+  {
+    "slug": "top-dog-training-tools-for-puppies",
+    "title": "Top Dog Training Tools for Puppies (2026) – Start Right | Free US Shipping",
+    "excerpt": "The best training tools for puppies starting at 12 weeks. Harnesses, leashes, and reward accessories tested for growing dogs.",
+    "category": "Dog Training",
+    "keywords": ["puppy training tools", "best tools for puppy training", "puppy harness"],
+    "publishedAt": "2026-02-28",
+    "updatedAt": "2026-02-28",
+    "featuredImage": "/images/guides/puppy-training-tools-2026.jpg",
+    "readingTime": 10,
+    "relatedCategories": ["dog-training", "dog-collars-and-leashes"]
+  },
+  {
+    "slug": "best-anti-bark-training-methods",
+    "title": "Best Anti-Bark Training Methods (2026) – Humane Solutions That Work | Free US Shipping",
+    "excerpt": "Effective humane anti-bark methods including ultrasonic deterrents, desensitization, and positive reinforcement.",
+    "category": "Dog Training",
+    "keywords": ["anti bark training", "stop dog barking", "dog bark deterrent"],
+    "publishedAt": "2026-02-28",
+    "updatedAt": "2026-02-28",
+    "featuredImage": "/images/guides/anti-bark-methods-2026.jpg",
+    "readingTime": 11,
+    "relatedCategories": ["dog-training", "dog-collars-and-leashes"]
+  },
+  {
+    "slug": "best-cat-enrichment-ideas-indoor-cats-2026",
+    "title": "Best Cat Enrichment Ideas for Indoor Cats (2026 Guide) – Keep Your Cat Happy & Stimulated",
+    "excerpt": "Complete guide to indoor cat enrichment with 17 proven ideas. Interactive toys, climbing furniture, litter solutions, and DIY activities.",
+    "category": "Cat Enrichment",
+    "keywords": ["cat enrichment ideas", "indoor cat enrichment", "best cat enrichment"],
+    "publishedAt": "2026-02-28",
+    "updatedAt": "2026-02-28",
+    "featuredImage": "/images/guides/cat-enrichment-2026.jpg",
+    "readingTime": 16,
+    "relatedCategories": ["cat-trees-and-condos", "cat-toys", "cat-scratching-posts"]
+  },
+  {
+    "slug": "best-cat-litter-box-furniture-small-apartments",
+    "title": "Best Cat Litter Box Furniture for Small Apartments (2026) – Hidden & Stylish | Free US Shipping",
+    "excerpt": "We tested 6 litter box furniture enclosures for small apartments. Hidden cabinets and end tables ranked by odor control, size, and style.",
+    "category": "Cat Furniture",
+    "keywords": ["cat litter box furniture", "hidden litter box", "litter box enclosure"],
+    "publishedAt": "2026-02-28",
+    "updatedAt": "2026-02-28",
+    "featuredImage": "/images/guides/litter-box-furniture-2026.jpg",
+    "readingTime": 12,
+    "relatedCategories": ["cat-litter-boxes"]
+  },
+  {
+    "slug": "best-interactive-cat-toys-that-work",
+    "title": "Best Interactive Cat Toys That Actually Work (2026) – Tested & Ranked | Free US Shipping",
+    "excerpt": "Interactive cat toys that actually keep cats engaged. Scratching posts with toys, puzzle feeders & wand toys tested.",
+    "category": "Cat Toys",
+    "keywords": ["best interactive cat toys", "cat toys that work", "interactive cat toys"],
+    "publishedAt": "2026-02-28",
+    "updatedAt": "2026-02-28",
+    "featuredImage": "/images/guides/interactive-cat-toys-2026.jpg",
+    "readingTime": 10,
+    "relatedCategories": ["cat-toys", "cat-scratching-posts"]
+  },
+  {
+    "slug": "modern-cat-furniture-matches-your-home",
+    "title": "Modern Cat Furniture That Matches Your Home (2026) – Style Meets Function | Free US Shipping",
+    "excerpt": "Cat furniture that doesn't look like cat furniture. Modern cat trees, litter enclosures, and scratching posts that blend with your home décor.",
+    "category": "Cat Furniture",
+    "keywords": ["modern cat furniture", "cat furniture that matches home", "stylish cat tree"],
+    "publishedAt": "2026-02-28",
+    "updatedAt": "2026-02-28",
+    "featuredImage": "/images/guides/modern-cat-furniture-2026.jpg",
+    "readingTime": 11,
+    "relatedCategories": ["cat-trees-and-condos", "cat-litter-boxes", "cat-scratching-posts"]
   }
 ]
