@@ -43,6 +43,11 @@ const MostPopularMonthly = lazy(() => import('@/components/home/MostPopularMonth
 const TopPicksSection = lazy(() => import('@/components/home/TopPicksSection'));
 const SalesAccelerationBanner = lazy(() => import('@/components/home/SalesAccelerationBanner').then(m => ({ default: m.SalesAccelerationBanner })));
 const MoneyHubBlocks = lazy(() => import('@/components/home/MoneyHubBlocks').then(m => ({ default: m.MoneyHubBlocks })));
+// ── NEW conversion sections — lazy-loaded ─────────────────────────────────
+const SocialProofBlock = lazy(() => import('@/components/home/SocialProofBlock'));
+const ProblemSolutionBlock = lazy(() => import('@/components/home/ProblemSolutionBlock'));
+const WhyGetPawsyComparison = lazy(() => import('@/components/home/WhyGetPawsyComparison'));
+const GuaranteeBlock = lazy(() => import('@/components/home/GuaranteeBlock'));
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 
@@ -337,17 +342,17 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Premium Indoor Cat Living – Luxury Cat Trees & Smart Litter Solutions | GetPawsy</title>
-        <meta name="description" content="Luxury cat trees, self-cleaning litter boxes & indoor cat furniture. Stability-tested, engineered for large cats. Free US shipping over $35. 30-day guarantee." />
+        <title>Premium Dog & Cat Essentials – US Shipping, 30-Day Guarantee | GetPawsy</title>
+        <meta name="description" content="Curated dog & cat essentials shipped from US warehouses in 3–7 days. Quality-tested toys, beds & furniture. 30-day happiness guarantee. Free shipping $35+." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Premium Indoor Cat Living – Luxury Cat Trees & Smart Litter | GetPawsy" />
-        <meta property="og:description" content="Stability-tested cat trees, smart litter solutions & modern cat furniture. Engineered for large cats. Free US shipping." />
+        <meta property="og:title" content="Premium Dog & Cat Essentials – US Shipping | GetPawsy" />
+        <meta property="og:description" content="Curated dog & cat essentials. US warehouse shipping 3–7 days. 30-day happiness guarantee. Free shipping $35+." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Premium Indoor Cat Living – Luxury Cat Trees & Smart Litter | GetPawsy" />
-        <meta name="twitter:description" content="Stability-tested cat trees, smart litter solutions & modern cat furniture. Engineered for large cats. Free US shipping." />
+        <meta name="twitter:title" content="Premium Dog & Cat Essentials | GetPawsy" />
+        <meta name="twitter:description" content="Curated dog & cat essentials. US warehouse shipping 3–7 days. 30-day happiness guarantee." />
       </Helmet>
       <Suspense fallback={null}>
         <WebsiteSchema />
@@ -386,31 +391,36 @@ const Index = () => {
           <div className="max-w-2xl">
             {/* instant=true — no JS state/observer needed, paints at 0ms */}
             <div className="space-y-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">Curated for Modern Cat Homes</p>
+         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">Premium Dog & Cat Essentials</p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.05] tracking-tight">
-                Premium Indoor Cat Living
+                Smarter toys. Happier pets.
                 <br />
-                <span className="text-primary">Luxury Cat Trees & Smart Litter Solutions</span>
+                <span className="text-primary">Zero junk.</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
-                Engineered stability. Designed elegance. Built for modern cat homes.
-                Heavy-duty furniture rated for 25+ lbs — smart litter solutions that just work.
+                Premium dog &amp; cat essentials — US warehouse shipping (3–7 days) + 30-day happiness guarantee.
               </p>
-              {/* ⚡ Hero CTAs: plain <a> tags — eliminates Button/Radix from critical render path.
-                  Matches static shell in index.html exactly. */}
+              {/* ⚡ Hero CTAs: plain <a> tags — eliminates Button/Radix from critical render path. */}
               <div className="flex flex-wrap items-center gap-4 pt-2 relative z-10 pointer-events-auto">
                 <a
-                  href="/collections/cat-trees-and-condos#product-grid"
+                  href="/products?category=dogs"
                   className="inline-flex items-center gap-2 rounded-full px-10 py-3 text-base font-semibold bg-foreground text-background shadow-lg hover:shadow-xl transition-shadow duration-200"
                 >
-                  Shop Cat Trees →
+                  Shop Dog Essentials →
                 </a>
                 <a
-                  href="/collections/best-cat-litter-boxes#product-grid"
+                  href="/products?category=cats"
                   className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-semibold border border-border bg-transparent text-foreground"
                 >
-                  Cat Litter Boxes
+                  Shop Cat Favorites
                 </a>
+              </div>
+              {/* Inline trust badges — zero JS, pure HTML */}
+              <div className="flex flex-wrap gap-x-5 gap-y-2 pt-4 text-xs md:text-sm font-medium text-muted-foreground">
+                <span>🇺🇸 Ships from US</span>
+                <span>🚚 3–7 Day Delivery</span>
+                <span>⭐ 4.8/5 Avg Rating</span>
+                <span>🔒 Secure Checkout</span>
               </div>
             </div>
           </div>
@@ -422,10 +432,10 @@ const Index = () => {
         <div className="container px-4 md:px-6">
           <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 text-sm font-medium text-muted-foreground">
             {[
-              { icon: '🛡️', label: 'Stability First' },
-              { icon: '🐈', label: 'Designed for Large Cats' },
-              { icon: '🇺🇸', label: 'US Warehouse Shipping' },
-              { icon: '🔩', label: 'Built to Last' },
+              { icon: '🇺🇸', label: 'Ships from US' },
+              { icon: '🚚', label: '3–7 Day Delivery' },
+              { icon: '⭐', label: '4.8/5 Avg Rating' },
+              { icon: '🔒', label: 'Secure Checkout' },
               { icon: '↩️', label: '30-Day Guarantee' },
             ].map((v) => (
               <span key={v.label} className="inline-flex items-center gap-1.5 whitespace-nowrap">
@@ -436,63 +446,40 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ── Indoor Cat Authority — 3 Pillar Category Blocks ────────── */}
-      <section className="py-16 md:py-20">
-        <div className="container px-4 md:px-6">
-          <FadeInView className="text-center mb-12">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-2">The Three Pillars</p>
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">
-              Indoor Cat Living, Elevated
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Stability-tested furniture. Expert-rated litter solutions. Enrichment designed for active cats.
-            </p>
-          </FadeInView>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                title: 'Cat Trees & Condos',
-                desc: 'Heavy-duty designs built for Maine Coons, Ragdolls & multi-cat homes. Anti-tip tested, sisal-wrapped posts, 25+ lb rated.',
-                href: '/collections/cat-trees-and-condos#product-grid',
-                badges: ['25+ lb Rated', 'Anti-Tip Tested'],
-                accent: 'from-primary/10 to-primary/5',
-              },
-              {
-                title: 'Smart Litter Solutions',
-                desc: 'Self-cleaning technology meets elegant design. Top-rated for odor control, large cats & apartments.',
-                href: '/collections/best-cat-litter-boxes#product-grid',
-                badges: ['Self-Cleaning', 'Odor Control'],
-                accent: 'from-secondary/20 to-secondary/10',
-              },
-              {
-                title: 'Indoor Cat Furniture',
-                desc: 'Wall-mounted shelves, window perches & modern scratching towers. Designs that elevate your space.',
-                href: '/products?category=cat-furniture',
-                badges: ['Modern Design', 'Space-Saving'],
-                accent: 'from-accent/30 to-accent/15',
-              },
-            ].map((pillar) => (
-              <FadeInView key={pillar.href}>
-                <a
-                  href={pillar.href}
-                  className={`group block bg-gradient-to-br ${pillar.accent} border border-border/30 rounded-2xl p-8 md:p-10 h-full hover:border-primary/40 hover:shadow-lg transition-all duration-500`}
-                >
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {pillar.badges.map((b) => (
-                      <span key={b} className="text-[11px] font-semibold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full">{b}</span>
-                    ))}
-                  </div>
-                  <h3 className="text-2xl font-display font-bold mb-3 group-hover:text-primary transition-colors">{pillar.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-6">{pillar.desc}</p>
-                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary group-hover:gap-3 transition-all duration-300">
-                    Explore Collection <ArrowRight className="w-4 h-4" />
-                  </span>
-                </a>
-              </FadeInView>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── SECTION 2: Social Proof ─────────────────────────────────── */}
+      <SectionErrorBoundary sectionName="Social Proof">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 200 }} />}>
+          <SocialProofBlock />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ── SECTION 3: Best Sellers Grid ──────────────────────────────── */}
+      <SectionErrorBoundary sectionName="Bestsellers">
+        <Suspense fallback={<div className="py-20" style={{ minHeight: 400 }} />}>
+          <BestsellersSection />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ── SECTION 4: Problem → Solution ─────────────────────────────── */}
+      <SectionErrorBoundary sectionName="Problem Solution">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 200 }} />}>
+          <ProblemSolutionBlock />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ── SECTION 5: Why Choose GetPawsy (Comparison) ────────────── */}
+      <SectionErrorBoundary sectionName="Why GetPawsy">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
+          <WhyGetPawsyComparison />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ── SECTION 6: Guarantee Block ──────────────────────────────── */}
+      <SectionErrorBoundary sectionName="Guarantee">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 200 }} />}>
+          <GuaranteeBlock />
+        </Suspense>
+      </SectionErrorBoundary>
 
       {/* ── Top Picks — 20 curated products for internal link authority ── */}
       <SectionErrorBoundary sectionName="Top Picks">
@@ -641,12 +628,8 @@ const Index = () => {
         )}
       </SectionErrorBoundary>
 
-      {/* ── Bestsellers — lazy + gated ──────────────────────────────────── */}
-      <SectionErrorBoundary sectionName="Bestsellers">
-        <Suspense fallback={<div className="py-20" style={{ minHeight: 400 }} />}>
-          {hydrationReady ? <BestsellersSection /> : <div style={{ minHeight: 400 }} />}
-        </Suspense>
-      </SectionErrorBoundary>
+      {/* Bestsellers already shown above (Section 3) */}
+
 
       {/* ── Categories — deferred ─────────────────────────────────────── */}
       <SectionErrorBoundary sectionName="Categories">
@@ -772,48 +755,7 @@ const Index = () => {
         )}
       </SectionErrorBoundary>
 
-      {/* ── Why Choose GetPawsy — Luxury Positioning ──────────────────── */}
-      <SectionErrorBoundary sectionName="Why Choose">
-        {hydrationReady ? (
-        <section className="py-20 bg-sand/30">
-          <div className="container px-4 md:px-6">
-            <FadeInView className="text-center mb-14">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-2">The GetPawsy Difference</p>
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">Why Discerning Cat Parents Choose Us</h2>
-              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Premium indoor cat living — without the premium markup. Every product stability-tested, every detail considered.
-              </p>
-            </FadeInView>
-            <FadeInView className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                { iconKey: 'ShieldCheck' as const, title: 'Stability Tested', desc: 'Every cat tree is evaluated for anti-tip stability and weight capacity before approval. No compromises.' },
-                { iconKey: 'Truck' as const, title: 'US Warehouse Shipping', desc: 'Ships from US warehouses within 1–2 business days. Free shipping on orders over $35.' },
-                { iconKey: 'RotateCcw' as const, title: '30-Day Guarantee', desc: 'Full refund or exchange, no questions asked. We stand behind every product we curate.' },
-                { iconKey: 'Heart' as const, title: 'Expert Curated', desc: 'Hand-picked inventory backed by buying guides, comparison data, and real owner insights.' },
-              ].map((item) => {
-                const Icon = BELOW_FOLD_ICONS[item.iconKey];
-                return (
-                  <div
-                    key={item.title}
-                    className="bg-card rounded-2xl p-8 shadow-soft hover:shadow-lg transition-all duration-500 border border-border/30 text-center group"
-                  >
-                    <div className="w-16 h-16 rounded-2xl bg-primary/8 flex items-center justify-center mx-auto mb-5 group-hover:bg-primary/15 transition-colors duration-300">
-                      <Suspense fallback={<div className="w-7 h-7" />}>
-                        <Icon className="w-7 h-7 text-primary" />
-                      </Suspense>
-                    </div>
-                    <h3 className="font-display font-bold text-lg mb-2">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
-                  </div>
-                );
-              })}
-            </FadeInView>
-          </div>
-        </section>
-        ) : (
-          <div style={{ minHeight: 300 }} />
-        )}
-      </SectionErrorBoundary>
+      {/* Why Choose already shown above (Section 5 — Comparison Table) */}
 
       {/* ── Revenue Niches — fully lazy + gated ─────────────────────────── */}
       <SectionErrorBoundary sectionName="Revenue Niches">
@@ -939,11 +881,10 @@ const Index = () => {
               <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 text-primary-foreground">
-                  Join Our Pack! 🐾
+                  Get 10% Off Your First Order 🐾
                 </h2>
                 <p className="text-lg text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-                  Subscribe to our newsletter and get 15% off your first order,
-                  plus exclusive deals and pet care tips from our experts.
+                  Join 2,000+ pet parents. Get exclusive deals, new arrivals, and pet care tips straight to your inbox.
                 </p>
                 <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
                   <input
@@ -954,15 +895,13 @@ const Index = () => {
                     className="flex-1 px-5 py-3.5 rounded-full bg-white/15 border border-white/25 placeholder:text-white/60 text-white focus:outline-none focus:ring-2 focus:ring-white/40 backdrop-blur-sm"
                     disabled={isSubscribing}
                   />
-                  <Button
+                  <button
                     type="submit"
-                    variant="secondary"
-                    size="lg"
-                    className="rounded-full px-8"
+                    className="rounded-full px-8 py-3.5 text-sm font-semibold bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
                     disabled={isSubscribing}
                   >
-                    {isSubscribing ? 'Subscribing...' : 'Subscribe'}
-                  </Button>
+                    {isSubscribing ? 'Subscribing...' : 'Get 10% Off'}
+                  </button>
                 </form>
                 <p className="text-sm text-primary-foreground/70 mt-4">
                   No spam, unsubscribe anytime. We respect your inbox.
