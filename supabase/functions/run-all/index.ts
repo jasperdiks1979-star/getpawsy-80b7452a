@@ -13,7 +13,7 @@ const STEPS = [
   { key: 'ctr_recovery', label: 'CTR Recovery Optimizer', critical: false },
   { key: 'ranking_push', label: 'Ranking Push Builder (pos 6–25)', critical: false },
   { key: 'content_generation_queue', label: 'Content Generation Queue', critical: false },
-  { key: 'indexing_submit', label: 'Indexing Submit (Full Stack)', critical: false },
+  { key: 'indexing_submit', label: 'Sitemap Ping (Safe Mode)', critical: false },
   { key: 'compile_report', label: 'Compile Run Report', critical: false },
   { key: 'ctr_intelligence', label: 'CTR Intelligence Update', critical: false },
   { key: 'cluster_intelligence', label: 'Cluster Intelligence Update', critical: false },
@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
         // Wrap indexing_submit in a hard 45s timeout at the orchestrator level
         let result: Record<string, unknown>;
         if (step.key === 'indexing_submit') {
-          const INDEXING_ORCHESTRATOR_TIMEOUT = 45_000;
+          const INDEXING_ORCHESTRATOR_TIMEOUT = 15_000;
           const timeoutPromise = new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Indexing step orchestrator timeout (45s)')), INDEXING_ORCHESTRATOR_TIMEOUT)
           );
@@ -621,212 +621,93 @@ async function executeStep(
     }
 
     case 'indexing_submit': {
-      // === INDEXING SUBMIT v3 — Non-blocking, guarded, 45s hard cap, AbortController ===
-      const STEP_HARD_CAP_MS = 45_000;
-      const PER_REQUEST_TIMEOUT_MS = 10_000;
-      const MAX_RETRIES = 2;
-      const RETRY_DELAYS = [1500, 4000];
-      const CONCURRENCY = 2;
-      const BATCH_SIZE = 10;
-      const stepStartTime = Date.now();
+      // === SITEMAP PING (Safe Mode) v4 — No per-URL indexing, only sitemap pings ===
+      // "Sitemap ping is a hint, not a guarantee."
+      const PING_TIMEOUT_MS = 5_000;
+      const pingStepStart = Date.now();
 
-      // --- Blocked URL patterns ---
-      const BLOCKED_PATTERNS = [
-        /\/$/, // homepage
-        /\/sitemap/i, /\/robots\.txt/i, /\/auth/i, /\/track/i,
-        /\/cookies/i, /\/admin/i, /\/healthz/i, /\/cart/i, /\/checkout/i,
+      const SITEMAPS_TO_PING = [
+        `${CANONICAL_HOST}/sitemap.xml`,
+        `${CANONICAL_HOST}/sitemap-index.xml`,
+        `${CANONICAL_HOST}/sitemap-guides.xml`,
       ];
 
-      const isAllowedUrl = (url: string): boolean => {
-        if (!url.startsWith(CANONICAL_HOST)) return false;
-        const path = url.replace(CANONICAL_HOST, '');
-        if (!path || path === '/') return false;
-        for (const p of BLOCKED_PATTERNS) { if (p.test(path)) return false; }
-        // Only product or guide/blog pages
-        const allowed = path.startsWith('/product/') || path.startsWith('/blog/') ||
-                        path.startsWith('/guides/') || path.startsWith('/dog/') || path.startsWith('/cat/');
-        return allowed;
-      };
+      const ENGINES: Array<{ name: string; template: (s: string) => string }> = [
+        { name: 'google', template: (s) => `https://www.google.com/ping?sitemap=${encodeURIComponent(s)}` },
+        { name: 'bing', template: (s) => `https://www.bing.com/ping?sitemap=${encodeURIComponent(s)}` },
+      ];
 
-      // Step 1: Gather candidate URLs
-      const candidateUrls = new Set<string>();
-      const { data: recentProducts } = await supabase
-        .from('products')
-        .select('slug')
-        .eq('is_active', true)
-        .gte('updated_at', new Date(Date.now() - 7 * 86400000).toISOString())
-        .order('updated_at', { ascending: false })
-        .limit(BATCH_SIZE);
-
-      for (const p of recentProducts || []) {
-        if (p.slug) candidateUrls.add(`${CANONICAL_HOST}/product/${p.slug}`);
+      interface PingResult {
+        targetEngine: string;
+        sitemapUrl: string;
+        status: 'success' | 'timeout' | 'http_error';
+        httpStatus?: number;
+        duration_ms: number;
+        error?: string;
       }
 
-      const { data: recentPosts } = await supabase
-        .from('blog_posts')
-        .select('slug')
-        .eq('is_published', true)
-        .gte('updated_at', new Date(Date.now() - 7 * 86400000).toISOString())
-        .order('updated_at', { ascending: false })
-        .limit(5);
-
-      for (const p of recentPosts || []) {
-        if (p.slug) candidateUrls.add(`${CANONICAL_HOST}/blog/${p.slug}`);
-      }
-
-      // Step 2: Guardrail filter (skip homepage, sitemap, non-indexable, etc.)
-      const guardedUrls = [...candidateUrls].filter(isAllowedUrl);
-      const skippedGuard = [...candidateUrls].filter(u => !isAllowedUrl(u));
-
-      // Step 3: Dedupe against recent submissions
-      const dedupeDate = new Date(Date.now() - INDEXING_DEDUPE_DAYS * 86400000).toISOString();
-      let alreadySubmitted = new Set<string>();
-      if (guardedUrls.length > 0) {
-        const { data: recentSubmissions } = await supabase
-          .from('indexing_submissions')
-          .select('url')
-          .gte('submitted_at', dedupeDate)
-          .in('url', guardedUrls);
-        alreadySubmitted = new Set((recentSubmissions || []).map(s => s.url));
-      }
-      const skippedDedupe = guardedUrls.filter(u => alreadySubmitted.has(u));
-      const toSubmit = guardedUrls.filter(u => !alreadySubmitted.has(u)).slice(0, MAX_INDEXING_URLS);
-
-      // Step 4: Submit with concurrency, timeouts, retries, and hard cap
-      interface SubmitResult { url: string; status: string; googleProcessed?: number; pingDuration?: number; retries?: number; error?: string; }
-      const results: SubmitResult[] = [];
-      const blacklisted = new Set<string>();
-      let hardCapReached = false;
-
-      const submitSingleUrl = async (url: string): Promise<SubmitResult> => {
-        if (blacklisted.has(url)) return { url, status: 'blacklisted', error: 'auto-blacklisted after repeated failures' };
-
-        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-          // Hard cap check
-          if (Date.now() - stepStartTime > STEP_HARD_CAP_MS) {
-            hardCapReached = true;
-            return { url, status: 'skipped_timeout', error: 'step hard cap reached (60s)' };
-          }
-
-          // Retry backoff (skip on first attempt)
-          if (attempt > 0) {
-            const delay = RETRY_DELAYS[attempt - 1] || 4000;
-            await new Promise(r => setTimeout(r, delay));
-            if (Date.now() - stepStartTime > STEP_HARD_CAP_MS) {
-              hardCapReached = true;
-              return { url, status: 'skipped_timeout', error: 'step hard cap reached during retry backoff' };
+      const pingTasks: Array<() => Promise<PingResult>> = [];
+      for (const sitemapUrl of SITEMAPS_TO_PING) {
+        for (const engine of ENGINES) {
+          pingTasks.push(async (): Promise<PingResult> => {
+            const pingUrl = engine.template(sitemapUrl);
+            const start = Date.now();
+            try {
+              const controller = new AbortController();
+              const timer = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
+              const res = await fetch(pingUrl, { method: 'GET', signal: controller.signal });
+              clearTimeout(timer);
+              const duration_ms = Date.now() - start;
+              if (res.ok) {
+                return { targetEngine: engine.name, sitemapUrl, status: 'success', httpStatus: res.status, duration_ms };
+              }
+              return { targetEngine: engine.name, sitemapUrl, status: 'http_error', httpStatus: res.status, duration_ms };
+            } catch (e) {
+              const duration_ms = Date.now() - start;
+              const errMsg = e instanceof Error ? e.message : String(e);
+              const isTimeout = errMsg.includes('abort') || errMsg.includes('signal');
+              return { targetEngine: engine.name, sitemapUrl, status: isTimeout ? 'timeout' : 'http_error', duration_ms, error: errMsg };
             }
-          }
-
-          const pingStart = Date.now();
-          try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), PER_REQUEST_TIMEOUT_MS);
-
-            const res = await fetch(`${baseUrl}/functions/v1/indexnow-ping`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ urls: [url] }),
-              signal: controller.signal,
-            });
-            clearTimeout(timeout);
-
-            const pingDuration = Date.now() - pingStart;
-
-            // On 4xx (except 429), don't retry
-            if (res.status >= 400 && res.status < 500 && res.status !== 429) {
-              blacklisted.add(url);
-              return { url, status: 'failed_4xx', pingDuration, error: `HTTP ${res.status}`, retries: attempt };
-            }
-
-            // On 429, retry with backoff
-            if (res.status === 429 && attempt < MAX_RETRIES) continue;
-
-            const data = await res.json().catch(() => ({}));
-            const googleResult = data?.results?.google;
-            const googleProcessed = googleResult?.urlsProcessed ?? 0;
-            const anySuccess = googleProcessed > 0 || (data?.results?.indexNow?.some?.((r: { success: boolean }) => r.success));
-            const submissionStatus = anySuccess ? 'submitted' : (res.ok ? 'submitted_no_confirmation' : 'failed');
-
-            await supabase.from('indexing_submissions').insert({
-              url, run_id: runId, status: submissionStatus,
-              response_json: { ...data, _pingDurationMs: pingDuration, _googleUrlsProcessed: googleProcessed, _attempt: attempt },
-            }).catch(() => {}); // non-blocking DB write
-
-            return { url, status: submissionStatus, googleProcessed, pingDuration, retries: attempt };
-          } catch (e) {
-            const errMsg = e instanceof Error ? e.message : String(e);
-            const isTimeout = errMsg.includes('abort') || errMsg.includes('signal');
-
-            if (isTimeout && attempt < MAX_RETRIES) continue;
-
-            // After final retry, blacklist and return failure
-            if (attempt >= MAX_RETRIES) blacklisted.add(url);
-
-            return { url, status: isTimeout ? 'timeout' : 'error', error: errMsg, pingDuration: Date.now() - pingStart, retries: attempt };
-          }
+          });
         }
-        return { url, status: 'exhausted_retries', retries: MAX_RETRIES };
-      };
-
-      // Process in batches with concurrency limit
-      for (let i = 0; i < toSubmit.length && !hardCapReached; i += CONCURRENCY) {
-        if (Date.now() - stepStartTime > STEP_HARD_CAP_MS) { hardCapReached = true; break; }
-        const batch = toSubmit.slice(i, i + CONCURRENCY);
-        const batchSettled = await Promise.allSettled(batch.map(submitSingleUrl));
-        const batchResults = batchSettled.map((s, idx) =>
-          s.status === 'fulfilled' ? s.value : { url: batch[idx], status: 'error', error: s.reason?.message || 'promise rejected' } as SubmitResult
-        );
-        results.push(...batchResults);
       }
 
-      // Mark remaining URLs as skipped if hard cap reached
-      const processedUrls = new Set(results.map(r => r.url));
-      const skippedHardCap = toSubmit.filter(u => !processedUrls.has(u));
-      for (const url of skippedHardCap) {
-        results.push({ url, status: 'skipped_timeout', error: 'step hard cap reached' });
-      }
+      // Execute all pings with Promise.allSettled — never throws
+      const settled = await Promise.allSettled(pingTasks.map(fn => fn()));
+      const pingResults: PingResult[] = settled.map((s, i) =>
+        s.status === 'fulfilled'
+          ? s.value
+          : { targetEngine: 'unknown', sitemapUrl: SITEMAPS_TO_PING[Math.floor(i / ENGINES.length)], status: 'http_error' as const, duration_ms: 0, error: s.reason?.message || 'promise rejected' }
+      );
 
-      // Build submit guard report
-      const totalGoogleProcessed = results.reduce((sum, r) => sum + (r.googleProcessed || 0), 0);
-      const successCount = results.filter(r => r.status === 'submitted').length;
-      const failCount = results.filter(r => ['failed', 'failed_4xx', 'timeout', 'error', 'exhausted_retries'].includes(r.status)).length;
-      const stepDuration = Date.now() - stepStartTime;
+      const succeeded = pingResults.filter(r => r.status === 'success').length;
+      const failed = pingResults.filter(r => r.status === 'http_error').length;
+      const timeouts = pingResults.filter(r => r.status === 'timeout').length;
+      const stepDurationMs = Date.now() - pingStepStart;
+      const hasFailures = failed > 0 || timeouts > 0;
 
-      const submitGuardReport = {
-        status: failCount === results.length && results.length > 0 ? 'warning' : 'completed',
-        totalCandidates: candidateUrls.size,
-        guardFiltered: skippedGuard.length,
-        deduped: skippedDedupe.length,
-        attempted: results.length,
-        succeeded: successCount,
-        failed: failCount,
-        googleConfirmed: totalGoogleProcessed,
-        hardCapReached,
-        blacklistedUrls: [...blacklisted],
-        skippedHardCap: skippedHardCap.length,
-        stepDurationMs: stepDuration,
-        maxPerRun: MAX_INDEXING_URLS,
-        config: { timeoutMs: PER_REQUEST_TIMEOUT_MS, maxRetries: MAX_RETRIES, concurrency: CONCURRENCY, hardCapMs: STEP_HARD_CAP_MS },
+      const pingReport = {
+        status: hasFailures ? 'warning' : 'completed',
+        attempted: pingResults.length,
+        succeeded,
+        failed,
+        timeouts,
+        stepDurationMs,
+        note: 'Sitemap ping is a hint, not a guarantee.',
+        pings: pingResults,
       };
 
-      await log(supabase, runId, 'indexing_submit', failCount > 0 ? 'warn' : 'info',
-        `Indexing guard report: ${successCount}/${results.length} succeeded, ${totalGoogleProcessed} Google-confirmed, ` +
-        `${skippedGuard.length} guard-filtered, ${skippedDedupe.length} deduped, hardCap=${hardCapReached}, ${stepDuration}ms`);
-
-      // Log per-failure details (max 5)
-      const failures = results.filter(r => r.error);
-      for (const f of failures.slice(0, 5)) {
-        await log(supabase, runId, 'indexing_submit', 'warn', `Failed: ${f.url} — ${f.error} (retries=${f.retries || 0})`);
+      // Log per-ping results
+      for (const r of pingResults) {
+        const lvl = r.status === 'success' ? 'info' : 'warn';
+        await log(supabase, runId, 'indexing_submit', lvl,
+          `Ping ${r.targetEngine} ${r.sitemapUrl}: ${r.status} (${r.duration_ms}ms)${r.httpStatus ? ` HTTP ${r.httpStatus}` : ''}${r.error ? ` — ${r.error}` : ''}`);
       }
 
-      return {
-        ...submitGuardReport,
-        details: results,
-        skippedGuardUrls: skippedGuard,
-        skippedDedupeUrls: skippedDedupe,
-        indexingEffective: totalGoogleProcessed > 0,
-      };
+      await log(supabase, runId, 'indexing_submit', hasFailures ? 'warn' : 'info',
+        `Sitemap Ping summary: ${succeeded}/${pingResults.length} succeeded, ${failed} errors, ${timeouts} timeouts, ${stepDurationMs}ms. Sitemap ping is a hint, not a guarantee.`);
+
+      return pingReport;
     }
 
     case 'compile_report': {
