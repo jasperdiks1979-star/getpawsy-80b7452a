@@ -51,10 +51,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch all products from DB
+    // Fetch all products from DB — include is_duplicate, category_id, shipping fields
     const { data: allProducts, error: prodError } = await adminClient
       .from("products")
-      .select("id, name, slug, price, compare_at_price, image_url, images, stock, is_active");
+      .select("id, name, slug, price, compare_at_price, image_url, images, stock, is_active, is_duplicate");
 
     if (prodError) throw new Error(`DB error: ${prodError.message}`);
 
@@ -98,6 +98,9 @@ Deno.serve(async (req) => {
       feed_included: boolean;
     }> = [];
 
+    // Reason counters
+    const reasonCounts: Record<string, number> = {};
+
     for (const p of products) {
       const inFeed = feedIds.has(p.id) || feedIds.has(p.slug) || feedSlugs.has(p.slug);
       if (inFeed) continue;
@@ -105,7 +108,9 @@ Deno.serve(async (req) => {
       let reason = "other";
       const imageCount = 1 + (Array.isArray(p.images) ? p.images.length : 0);
 
-      if (!p.is_active) {
+      if (p.is_duplicate) {
+        reason = "is_duplicate";
+      } else if (!p.is_active) {
         reason = "inactive";
       } else if (p.stock !== null && p.stock <= 0) {
         reason = "out_of_stock";
@@ -114,6 +119,8 @@ Deno.serve(async (req) => {
       } else if (!p.image_url) {
         reason = "missing_image";
       }
+
+      reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
 
       missingProducts.push({
         id: p.id,
@@ -134,6 +141,7 @@ Deno.serve(async (req) => {
       totalProducts: products.length,
       inFeed: feedIds.size,
       missingFromFeed: missingProducts.length,
+      reasonBreakdown: reasonCounts,
       missingProducts,
     };
 
