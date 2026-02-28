@@ -1,0 +1,139 @@
+/**
+ * Species Taxonomy Classifier
+ * 
+ * Deterministic, rule-based classifier for pet products.
+ * Assigns speciesPrimary: "cat" | "dog" | "both" | "unknown"
+ * based on title, category, and tags signals.
+ * 
+ * No AI — pure keyword matching with explicit multi-pet detection.
+ */
+
+const DOG_SIGNALS = [
+  'dog', 'puppy', 'canine', 'leash', 'harness', 'collar',
+  'training rope', 'potty pad', 'dog bed', 'dog crate',
+  'dog toy', 'dog bowl', 'dog treat', 'dog food',
+  'chew toy', 'fetch', 'dog car seat', 'dog booster',
+  'dog carrier', 'pup', 'bark', 'no-pull',
+];
+
+const CAT_SIGNALS = [
+  'cat', 'kitten', 'feline', 'litter', 'scratching',
+  'catnip', 'cat tree', 'cat tower', 'cat condo',
+  'cat bed', 'cat toy', 'cat food', 'cat treat',
+  'whisker', 'mouse toy', 'laser toy', 'cat fountain',
+  'sisal', 'cat perch', 'cat shelf', 'kitty',
+];
+
+// Phrases that explicitly indicate multi-pet products
+const MULTI_PET_PHRASES = [
+  'dog and cat', 'cat and dog', 'dogs and cats', 'cats and dogs',
+  'dog & cat', 'cat & dog', 'dogs & cats', 'cats & dogs',
+  'for dogs and cats', 'for cats and dogs',
+  'pet bowl', 'pet bed', 'pet carrier', 'pet fountain',
+  'all pets', 'multi-pet', 'dog cat',
+];
+
+export interface SpeciesSignals {
+  titleHits: string[];
+  categoryHits: string[];
+  tagsHits: string[];
+}
+
+export interface TaxonomyResult {
+  speciesPrimary: 'cat' | 'dog' | 'both' | 'unknown';
+  speciesSignals: SpeciesSignals;
+  dogScore: number;
+  catScore: number;
+  taxonomyVersion: number;
+}
+
+const TAXONOMY_VERSION = 1;
+
+function findSignals(text: string, signals: string[]): string[] {
+  const lower = text.toLowerCase();
+  return signals.filter(signal => {
+    // Word-boundary match to avoid false positives like "catalog" matching "cat"
+    const regex = new RegExp(`\\b${signal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    return regex.test(lower);
+  });
+}
+
+function hasMultiPetPhrase(text: string): boolean {
+  const lower = text.toLowerCase();
+  return MULTI_PET_PHRASES.some(phrase => lower.includes(phrase));
+}
+
+/**
+ * Classify a product's species from its metadata.
+ * Pure, deterministic — no side effects.
+ */
+export function classifySpecies(
+  title: string,
+  category: string = '',
+  tags: string[] = [],
+): TaxonomyResult {
+  const allText = [title, category, ...tags].join(' ');
+  
+  // Check for explicit multi-pet phrases first
+  const isExplicitlyMultiPet = hasMultiPetPhrase(allText);
+
+  const titleDogHits = findSignals(title, DOG_SIGNALS);
+  const titleCatHits = findSignals(title, CAT_SIGNALS);
+  const categoryDogHits = findSignals(category, DOG_SIGNALS);
+  const categoryCatHits = findSignals(category, CAT_SIGNALS);
+  const tagsDogHits = findSignals(tags.join(' '), DOG_SIGNALS);
+  const tagsCatHits = findSignals(tags.join(' '), CAT_SIGNALS);
+
+  const speciesSignals: SpeciesSignals = {
+    titleHits: [...titleDogHits, ...titleCatHits],
+    categoryHits: [...categoryDogHits, ...categoryCatHits],
+    tagsHits: [...tagsDogHits, ...tagsCatHits],
+  };
+
+  // Score: title hits count 2x, category 1.5x, tags 1x
+  const dogScore = titleDogHits.length * 2 + categoryDogHits.length * 1.5 + tagsDogHits.length;
+  const catScore = titleCatHits.length * 2 + categoryCatHits.length * 1.5 + tagsCatHits.length;
+
+  let speciesPrimary: TaxonomyResult['speciesPrimary'];
+
+  if (isExplicitlyMultiPet) {
+    speciesPrimary = 'both';
+  } else if (dogScore > 0 && catScore > 0) {
+    speciesPrimary = 'both';
+  } else if (dogScore > 0) {
+    speciesPrimary = 'dog';
+  } else if (catScore > 0) {
+    speciesPrimary = 'cat';
+  } else {
+    speciesPrimary = 'unknown';
+  }
+
+  return {
+    speciesPrimary,
+    speciesSignals,
+    dogScore,
+    catScore,
+    taxonomyVersion: TAXONOMY_VERSION,
+  };
+}
+
+/**
+ * Filter products for a species collection.
+ * Returns products matching the target species (or "both").
+ */
+export function filterProductsBySpecies<T extends { name: string; category?: string | null; tags?: string[] | null }>(
+  products: T[],
+  targetSpecies: 'cat' | 'dog',
+  includeMultiPet = true,
+): (T & { _taxonomy: TaxonomyResult })[] {
+  return products
+    .map(p => ({
+      ...p,
+      _taxonomy: classifySpecies(p.name, p.category || '', p.tags || []),
+    }))
+    .filter(p => {
+      if (p._taxonomy.speciesPrimary === targetSpecies) return true;
+      if (includeMultiPet && p._taxonomy.speciesPrimary === 'both') return true;
+      return false;
+    });
+}
