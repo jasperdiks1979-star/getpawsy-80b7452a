@@ -651,6 +651,8 @@ export type Database = {
         Row: {
           author_name: string | null
           category: string
+          cluster_primary: string | null
+          cluster_secondary: string | null
           content: string
           created_at: string
           excerpt: string
@@ -672,6 +674,8 @@ export type Database = {
         Insert: {
           author_name?: string | null
           category?: string
+          cluster_primary?: string | null
+          cluster_secondary?: string | null
           content: string
           created_at?: string
           excerpt: string
@@ -693,6 +697,8 @@ export type Database = {
         Update: {
           author_name?: string | null
           category?: string
+          cluster_primary?: string | null
+          cluster_secondary?: string | null
           content?: string
           created_at?: string
           excerpt?: string
@@ -4340,6 +4346,8 @@ export type Database = {
           canonical_product_id: string | null
           category: string | null
           cj_product_id: string | null
+          cluster_primary: string | null
+          cluster_secondary: string | null
           compare_at_price: number | null
           cost_price: number | null
           created_at: string
@@ -4371,6 +4379,8 @@ export type Database = {
           canonical_product_id?: string | null
           category?: string | null
           cj_product_id?: string | null
+          cluster_primary?: string | null
+          cluster_secondary?: string | null
           compare_at_price?: number | null
           cost_price?: number | null
           created_at?: string
@@ -4402,6 +4412,8 @@ export type Database = {
           canonical_product_id?: string | null
           category?: string | null
           cj_product_id?: string | null
+          cluster_primary?: string | null
+          cluster_secondary?: string | null
           compare_at_price?: number | null
           cost_price?: number | null
           created_at?: string

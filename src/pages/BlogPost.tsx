@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
 import { Badge } from '@/components/ui/badge';
+import { BlogProductInjector } from '@/components/authority/BlogProductInjector';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Clock, User, Share2, BookOpen, ShoppingBag, Home, ArrowLeft } from 'lucide-react';
@@ -42,6 +43,7 @@ interface BlogPost {
   meta_title: string | null;
   meta_description: string | null;
   meta_keywords: string[] | null;
+  cluster_primary: string | null;
 }
 
 interface Product {
@@ -432,6 +434,14 @@ const BlogPostPage = () => {
         <div className="prose prose-lg max-w-none blog-article-content">
           {renderContent(post.content)}
         </div>
+
+        {/* Cluster-matched product recommendations — auto blog↔product linking */}
+        {post.cluster_primary && (
+          <BlogProductInjector
+            clusterId={post.cluster_primary}
+            injectorIndex={0}
+          />
+        )}
 
         {/* Soft Email Capture for SEO Traffic */}
         <SoftEmailCapture 

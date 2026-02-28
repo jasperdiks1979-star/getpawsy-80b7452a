@@ -61,6 +61,8 @@ import { FreeShippingBar } from '@/components/products/FreeShippingBar';
 import { ProductComparisonTable } from '@/components/products/ProductComparisonTable';
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
 import { ProductProblemSolution } from '@/components/products/ProductProblemSolution';
+import { ClusterAuthorityBlock } from '@/components/authority/ClusterAuthorityBlock';
+import { inferClusterFromCategory } from '@/lib/cluster-config';
 import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
 import { ProductSpecsTable } from '@/components/products/ProductSpecsTable';
 import { SimilarProductsCompare } from '@/components/products/SimilarProductsCompare';
@@ -1491,6 +1493,12 @@ const ProductDetail = () => {
 
         {/* Visible FAQ Accordion — 10 Questions */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
+
+        {/* Cluster Authority Block — "Learn More About [Topic]" */}
+        <ClusterAuthorityBlock
+          clusterId={inferClusterFromCategory(product.category || '')}
+          productName={product.name}
+        />
 
         {/* Reviews Section */}
         <motion.section
