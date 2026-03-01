@@ -15,6 +15,7 @@ const WhyGetPawsyComparison = lazy(() => import('@/components/home/WhyGetPawsyCo
 const GuaranteeBlock = lazy(() => import('@/components/home/GuaranteeBlock'));
 const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAuthoritySection'));
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
+const PopularRightNow = lazy(() => import('@/components/home/PopularRightNow'));
 
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
 const WebsiteSchema = lazy(() => import('@/components/seo/WebsiteSchema').then(m => ({ default: m.WebsiteSchema })));
@@ -254,6 +255,15 @@ const Index = () => {
       <SectionErrorBoundary sectionName="Top Picks">
         <Suspense fallback={<div className="py-16" style={{ minHeight: 500 }} />}>
           <TopPicksSection />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          7b. POPULAR RIGHT NOW — 3 boost-target money collections
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Popular Right Now">
+        <Suspense fallback={<div className="py-10" style={{ minHeight: 200 }} />}>
+          {hydrationReady ? <PopularRightNow /> : <div style={{ minHeight: 200 }} />}
         </Suspense>
       </SectionErrorBoundary>
 
