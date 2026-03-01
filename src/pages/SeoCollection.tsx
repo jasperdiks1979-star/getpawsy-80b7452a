@@ -66,6 +66,7 @@ import { CatTreesHubContent } from '@/components/seo/CatTreesHubContent';
 import { CollectionTrustBar } from '@/components/seo/CollectionTrustBar';
 import { CollectionMiniComparison } from '@/components/seo/CollectionMiniComparison';
 import { CollectionCROBadges, isMoneyCollection } from '@/components/seo/CollectionCROBadges';
+import { getMoneyCollectionFAQs } from '@/lib/money-collection-faqs';
 // SoldCounter removed — fake "X sold this week" risks Google misrepresentation flags
 
 interface FAQItem {
@@ -513,11 +514,18 @@ const SeoCollection = () => {
   }
 
   const collectionJsonLd = products.length > 0 ? generateCollectionJsonLd(collection, products) : null;
-  const faqJsonLd = collection.faq.length > 0 ? generateFAQJsonLd(collection.faq) : null;
+  
+  // Merge DB FAQs with money collection FAQ fallbacks
+  const moneyFaqs = getMoneyCollectionFAQs(collection.slug);
+  const mergedFaqs = collection.faq.length > 0
+    ? collection.faq
+    : moneyFaqs.map(f => ({ question: f.question, answer: f.answer }));
+  
+  const faqJsonLd = mergedFaqs.length > 0 ? generateFAQJsonLd(mergedFaqs) : null;
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(collection, parentCollection);
 
   const comparisonData = getComparisonData(collection.slug);
-  const tocItems = getCollectionTocItems(!!comparisonData, collection.faq.length > 0);
+  const tocItems = getCollectionTocItems(!!comparisonData, mergedFaqs.length > 0);
   const isPriorityCategory = !!comparisonData; // has comparison = priority category
   const domConfig = getDominationConfig(collection.slug);
   const isMoney = isMoneyCollection(collection.slug);
@@ -905,7 +913,7 @@ const SeoCollection = () => {
         )}
 
         {/* Section C: Mini FAQ */}
-        {collection.faq.length > 0 && (
+        {mergedFaqs.length > 0 && (
           <section id="faq" className="mb-12 bg-muted/30 rounded-2xl p-6 md:p-8">
             <div className="flex items-center gap-2 mb-6">
               <HelpCircle className="w-5 h-5 text-primary" />
@@ -914,7 +922,7 @@ const SeoCollection = () => {
               </h2>
             </div>
             <Accordion type="single" collapsible className="w-full">
-              {collection.faq.map((item, index) => (
+              {mergedFaqs.map((item, index) => (
                 <AccordionItem key={index} value={`faq-${index}`}>
                   <AccordionTrigger className="text-left">
                     {item.question}
