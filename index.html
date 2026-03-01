@@ -101,9 +101,9 @@
         if (document.getElementById('chunk-recovery')) return;
         var d = document.createElement('div');
         d.id = 'chunk-recovery';
-        d.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#fff;font-family:system-ui,sans-serif;text-align:center;padding:2rem;';
-        d.innerHTML = '<div><h2 style="font-size:1.25rem;margin-bottom:.75rem">New version available</h2><p style="color:#666;margin-bottom:1.25rem;max-width:320px">The app was just updated. Please refresh to load the latest version.</p><button onclick="sessionStorage.clear();window.location.replace(window.location.pathname)" style="background:#000;color:#fff;border:none;padding:.75rem 2rem;border-radius:.5rem;font-size:1rem;cursor:pointer">Refresh Now</button></div>';
-        document.body.appendChild(d);
+        d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#fef3c7;border-bottom:1px solid #fbbf24;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:system-ui,sans-serif;font-size:13px;color:#92400e;';
+        d.innerHTML = '<span>🔄 New version available. Please refresh.</span><button onclick="sessionStorage.clear();window.location.replace(window.location.pathname)" style="background:#1a1a1a;color:#fff;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500;white-space:nowrap">Refresh Now</button>';
+        document.body.prepend(d);
       }
 
       // Catch via error event — e.message may be populated
@@ -146,7 +146,7 @@
             if (recentCount >= 2) {
               console.error('[CRASH_DETECT] Boot failed with ' + fatal.length + ' fatal errors after 12s');
               var rec = document.getElementById('boot-recovery');
-              if (rec) rec.style.display = 'flex';
+              if (rec) rec.style.display = 'block';
               var msgEl = document.getElementById('boot-error-msg');
               if (msgEl) msgEl.textContent = 'Fatal errors: ' + JSON.stringify(fatal.slice(0, 5));
             }
@@ -438,32 +438,17 @@
         </div>
       </div>
 
-      <!-- Recovery UI: visible only if React fails to mount with actual JS errors -->
-      <div id="boot-recovery" style="display:none;align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafafa;padding:24px">
-        <div style="text-align:center;max-width:440px">
-          <div style="font-size:48px;margin-bottom:16px">🐾</div>
-          <h1 style="font-size:22px;font-weight:600;margin-bottom:8px;color:#1a1a1a">Something went wrong</h1>
-          <p style="font-size:14px;color:#666;margin-bottom:20px;line-height:1.5">
-            A temporary issue occurred. Click below to fix it.
-          </p>
-          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px">
-            <button onclick="location.reload()" style="padding:10px 24px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;font-size:14px;cursor:pointer;font-weight:500">
-              Reload
-            </button>
-            <button id="hard-reload-btn" style="padding:10px 24px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#333;font-size:14px;cursor:pointer;font-weight:500">
-              Hard Reload
-            </button>
+      <!-- Recovery UI: NON-BLOCKING banner if React fails to mount -->
+      <div id="boot-recovery" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:#fef3c7;border-bottom:1px solid #fbbf24;padding:10px 16px;font-family:system-ui,sans-serif;font-size:13px;color:#92400e;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1280px;margin:0 auto">
+          <span>⚠️ The page didn't load correctly.</span>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <button onclick="location.reload()" style="padding:4px 12px;border-radius:6px;border:none;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-weight:500">Reload</button>
+            <button id="hard-reload-btn" style="padding:4px 12px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#333;font-size:12px;cursor:pointer;font-weight:500">Hard Reload</button>
+            <button id="continue-anyway-btn" style="padding:4px 12px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#555;font-size:12px;cursor:pointer">Dismiss</button>
           </div>
-          <div style="margin-bottom:12px">
-            <button id="continue-anyway-btn" style="padding:8px 20px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#555;font-size:13px;cursor:pointer">
-              Continue anyway →
-            </button>
-          </div>
-          <button id="copy-diag-btn" style="padding:6px 16px;border-radius:6px;border:1px solid #eee;background:#f9f9f9;color:#888;font-size:12px;cursor:pointer;margin-bottom:8px">
-            Copy diagnostics
-          </button>
-          <p id="boot-error-msg" style="font-size:11px;color:#bbb;margin-top:8px;word-break:break-all"></p>
         </div>
+        <p id="boot-error-msg" style="font-size:10px;color:#b45309;margin-top:4px;word-break:break-all;max-width:1280px;margin-left:auto;margin-right:auto"></p>
       </div>
     </div>
     <noscript>
@@ -493,32 +478,14 @@
       // 4) Hard reload
       var hrb=document.getElementById('hard-reload-btn');
       if(hrb)hrb.addEventListener('click',function(){try{if('caches'in window)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})});}catch(e){}window.location.href=window.location.pathname+'?cache_bust='+Date.now();});
-      // 5) Copy diagnostics — includes buildVersion, route, userAgent, time, errors
-      var cdb=document.getElementById('copy-diag-btn');
-      if(cdb)cdb.addEventListener('click',function(){
-        try{
-          var diag = {
-            buildVersion: window.__BUILD_ID__ || '1.0.0',
-            route: location.pathname,
-            url: location.href,
-            canonicalHost: 'getpawsy.pet',
-            userAgent: navigator.userAgent,
-            time: new Date().toISOString(),
-            fatalErrors: (window.__BOOT_FATAL_ERRORS__ || []).slice(0, 10),
-            allErrors: (window.__BOOT_ERRORS__ || []).slice(0, 50),
-            bootOk: !!window.__BOOT_OK__,
-          };
-          navigator.clipboard.writeText(JSON.stringify(diag, null, 2));
-          this.textContent='Copied!';
-        }catch(e){this.textContent='Failed';}
-      });
+      // 5) (copy-diag removed — banner is now minimal)
       // 6) Continue anyway button — dismisses overlay and lets content show
       var cab=document.getElementById('continue-anyway-btn');
       if(cab)cab.addEventListener('click',function(){var r=document.getElementById('boot-recovery');if(r)r.style.display='none';});
       // 7) Boot watchdog — uses FATAL errors only (matches head script debounce logic)
       setTimeout(function(){
         if(!window.__BOOT_OK__&&window.__BOOT_FATAL_ERRORS__&&window.__BOOT_FATAL_ERRORS__.length>=2){
-          var r=document.getElementById('boot-recovery');if(r&&r.style.display==='none')r.style.display='flex';
+          var r=document.getElementById('boot-recovery');if(r&&r.style.display==='none')r.style.display='block';
         }
       },12000);
     </script>
