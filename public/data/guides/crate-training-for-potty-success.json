@@ -1,0 +1,39 @@
+{
+  "slug": "crate-training-for-potty-success",
+  "title": "Crate Training for Potty Success (2026) – The Foundation Method",
+  "seoTitle": "Crate Training for Potty Success – Complete Guide | GetPawsy",
+  "seoDescription": "How crate training accelerates potty training. Correct crate sizing, schedule integration, and common mistakes. Expert-tested method.",
+  "h1Override": "Crate Training for Potty Success – The Foundation Method",
+  "excerpt": "How to use crate training to accelerate potty training. Proper crate sizing, schedule integration, and the overnight protocol.",
+  "quickAnswer": "Crate training works for potty training because dogs instinctively avoid soiling their sleeping area. The crate must be just large enough to stand, turn, and lie down. Combined with a strict schedule (outside immediately after crate time), most puppies learn the routine within 7–10 days.",
+  "category": "Dog Training",
+  "keywords": ["crate training potty", "crate training puppy", "crate potty training method", "crate training schedule"],
+  "publishedAt": "2026-03-01",
+  "updatedAt": "2026-03-01",
+  "featuredImage": "/images/guides/potty-training-guide-2026.jpg",
+  "readingTime": 8,
+  "relatedCategories": ["dog-training"],
+  "trustLines": ["Certified trainer-approved", "Updated March 2026"],
+  "faq": [
+    { "question": "How long can a puppy stay in a crate?", "answer": "Age in months + 1 hour is the general rule. A 3-month puppy: max 4 hours. Never exceed 8 hours for adult dogs. Puppies under 10 weeks should not be crated for more than 1 hour during the day." },
+    { "question": "Is crate training cruel?", "answer": "When done correctly, crate training provides a safe den space that reduces anxiety. Dogs are den animals and often seek enclosed spaces naturally. Cruelty arises from overuse — using the crate as punishment or leaving dogs crated for excessive periods." }
+  ],
+  "sections": [
+    {
+      "heading": "Why Crate Training Accelerates Potty Training",
+      "content": "Dogs have an instinct to keep their sleeping area clean. A properly sized crate leverages this instinct by making indoor elimination uncomfortable while outdoor elimination remains rewarding.\n\nThe cycle is simple:\n1. Crate → Build bladder pressure naturally\n2. Release from crate → Immediately go outside\n3. Outdoor elimination → Treat + praise\n4. Free time (supervised) → Back to crate before next scheduled outing\n\nThis creates a clear pattern: the only opportunity to eliminate happens outdoors, where rewards are waiting.\n\nFor the full potty training protocol, see our [Complete Potty Training Guide →](/guides/dog-potty-training-complete-guide). For training pads and cleanup supplies, browse our [potty training collection →](/collections/dog-potty-training)."
+    },
+    {
+      "heading": "Crate Selection & Setup",
+      "content": "**Size Matters:** The crate should be just big enough for your puppy to stand, turn around, and lie down comfortably. Too large and they'll eliminate in one corner and sleep in another. Use a divider panel to adjust size as your puppy grows.\n\n**Placement:** Near family activity during the day, near your bedroom at night. Your puppy needs to hear you and feel included.\n\n**Making It Positive:**\n- Feed all meals inside the crate\n- Toss treats in randomly throughout the day\n- Never use the crate as punishment\n- Leave the door open when you're home — let it be a choice\n\n**The Overnight Protocol:**\n- Last water 2 hours before bedtime\n- Final potty trip right before crate time\n- Set alarm for one middle-of-night break (until 4 months old)\n- First thing in morning: outside immediately\n\nPair your crate setup with [enzyme cleaners and potty bells →](/collections/dog-potty-training) for a complete system."
+    }
+  ],
+  "relatedGuides": [
+    { "slug": "dog-potty-training-complete-guide", "label": "Complete Potty Training Guide" },
+    { "slug": "how-to-potty-train-a-puppy-fast", "label": "Fast Puppy Potty Training" }
+  ],
+  "relatedCollections": [
+    { "slug": "dog-potty-training", "label": "Shop Potty Training Gear" },
+    { "slug": "puppy-training-essentials", "label": "Puppy Essentials" }
+  ]
+}

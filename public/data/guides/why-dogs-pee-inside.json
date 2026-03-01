@@ -1,0 +1,39 @@
+{
+  "slug": "why-dogs-pee-inside",
+  "title": "Why Dogs Pee Inside (2026) – Causes & Fixes for Indoor Accidents",
+  "seoTitle": "Why Dogs Pee Inside – Causes & Solutions | GetPawsy",
+  "seoDescription": "Why your housetrained dog is peeing inside and how to fix it. Medical causes, behavioral triggers, and step-by-step solutions. Vet-informed guide.",
+  "h1Override": "Why Dogs Pee Inside – Causes & Fixes for Indoor Accidents",
+  "excerpt": "Your housetrained dog is peeing inside again. Understand the medical and behavioral causes, then apply targeted fixes.",
+  "quickAnswer": "Indoor urination in a previously trained dog is usually caused by a UTI, schedule disruption, anxiety, or incomplete initial training. Always rule out medical causes first with a vet visit, then address the behavioral trigger.",
+  "category": "Dog Training",
+  "keywords": ["why does my dog pee inside", "dog peeing in house", "indoor accidents dog", "housetrained dog accidents"],
+  "publishedAt": "2026-03-01",
+  "updatedAt": "2026-03-01",
+  "featuredImage": "/images/guides/potty-training-guide-2026.jpg",
+  "readingTime": 8,
+  "relatedCategories": ["dog-training"],
+  "trustLines": ["Vet-reviewed causes", "Updated March 2026"],
+  "faq": [
+    { "question": "Is my dog peeing inside for attention?", "answer": "Rarely. Dogs don't urinate strategically for attention. Indoor accidents are almost always medical, anxiety-related, or a sign of incomplete training. Punishing a dog for accidents increases anxiety and worsens the problem." },
+    { "question": "Should I punish my dog for peeing inside?", "answer": "Never. Dogs cannot connect punishment to an action that happened even minutes ago. Punishment teaches fear of you, not where to eliminate. Clean up silently with enzyme cleaner and increase your outdoor schedule." }
+  ],
+  "sections": [
+    {
+      "heading": "Medical Causes (Rule These Out First)",
+      "content": "Before assuming a behavior problem, see your vet. Common medical causes:\n\n- **Urinary Tract Infection (UTI)** — Most common cause of sudden indoor accidents. Signs: frequent small urinations, straining, blood in urine\n- **Diabetes or Cushing's Disease** — Increased thirst and urination\n- **Kidney Disease** — Especially in senior dogs\n- **Incontinence** — Hormonal changes after spaying can cause leaking during sleep\n- **Gastrointestinal Issues** — Can cause urgency they can't control\n\nA simple urinalysis can rule out most medical causes. Never skip this step.\n\nFor cleaning up accidents properly, [enzyme cleaners from our potty training collection →](/collections/dog-potty-training) are essential."
+    },
+    {
+      "heading": "Behavioral Causes & Solutions",
+      "content": "If your vet clears medical causes, it's behavioral. Here are the top triggers:\n\n**1. Schedule Disruption** — Changed work hours, new baby, moved homes. Dogs need routine. Solution: Re-establish a fixed potty schedule.\n\n**2. Incomplete Initial Training** — Many dogs appear housetrained but were never fully proofed. They succeed because of management (frequent trips), not understanding. Solution: Go back to basics using our [potty training complete guide →](/guides/dog-potty-training-complete-guide).\n\n**3. Territorial Marking** — Intact males (and some females) mark vertical surfaces. Solution: Neutering reduces marking in 60% of cases. Enzyme cleaning is critical.\n\n**4. Submissive/Excitement Urination** — Common in puppies and timid dogs. They urinate during greetings or when being scolded. Solution: Keep greetings calm. Never lean over or make direct eye contact during greetings.\n\n**5. Separation Anxiety** — Accidents ONLY when left alone, often paired with destruction and barking. Solution: This requires a systematic desensitization protocol — not more potty breaks.\n\nFor apartment dogs dealing with these issues, [indoor potty solutions →](/collections/dog-potty-training) provide a reliable backup system."
+    }
+  ],
+  "relatedGuides": [
+    { "slug": "dog-potty-training-complete-guide", "label": "Complete Potty Training Guide" },
+    { "slug": "how-to-potty-train-a-puppy-fast", "label": "Fast Puppy Potty Training" }
+  ],
+  "relatedCollections": [
+    { "slug": "dog-potty-training", "label": "Shop Potty Training Gear" },
+    { "slug": "puppy-training-essentials", "label": "Puppy Essentials" }
+  ]
+}

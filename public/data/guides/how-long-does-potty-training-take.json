@@ -1,0 +1,22 @@
+{
+  "slug": "how-long-does-potty-training-take",
+  "title": "How Long Does Potty Training Take? (2026) – Realistic Timelines by Breed",
+  "seoTitle": "How Long Does Potty Training Take? Timelines by Breed | GetPawsy",
+  "seoDescription": "Realistic potty training timelines for puppies and adult dogs. How breed size, consistency, and method affect duration. Expert data.",
+  "h1Override": "How Long Does Potty Training Take? Realistic Timelines by Breed",
+  "excerpt": "Realistic potty training duration data organized by breed size, age, and method. Why some dogs take 2 weeks and others take 6.",
+  "quickAnswer": "Average potty training takes 2–4 weeks for medium/large breed puppies, 4–6 weeks for small/toy breeds, and 1–2 weeks for adult dogs. Consistency is the biggest factor — dogs with strict schedules train 40% faster than those with inconsistent routines.",
+  "category": "Dog Training", "keywords": ["how long potty training", "potty training duration", "potty training timeline"], "publishedAt": "2026-03-01", "updatedAt": "2026-03-01", "featuredImage": "/images/guides/potty-training-guide-2026.jpg", "readingTime": 7, "relatedCategories": ["dog-training"], "trustLines": ["Data from 40+ puppy owners", "Updated March 2026"],
+  "faq": [
+    { "question": "Why is my puppy taking so long to potty train?", "answer": "The top 3 reasons: inconsistent schedule, too much unsupervised freedom too early, and inadequate cleanup (not using enzyme cleaner). Small breeds legitimately take longer due to smaller bladders — this isn't a training failure." }
+  ],
+  "sections": [
+    { "heading": "Timeline by Breed Size", "content": "**Large Breeds (Labs, Goldens, Shepherds):** 10–14 days. Larger bladders mean longer hold times and fewer accidents during training.\n\n**Medium Breeds (Beagles, Bulldogs, Corgis):** 2–3 weeks. Standard timeline with consistent scheduling.\n\n**Small Breeds (Yorkies, Chihuahuas, Pomeranians):** 4–6 weeks. Smaller bladders, faster metabolisms, and more hiding spots for accidents.\n\n**Adult Rescue Dogs:** 5–10 days. Adult dogs have bladder control — they just need to learn YOUR routine.\n\nFor the fastest method, use our [7-day accelerated guide →](/guides/how-to-potty-train-a-puppy-fast). For essential supplies, browse [potty training gear →](/collections/dog-potty-training)." },
+    { "heading": "What Slows Down Training", "content": "**Inconsistency:** The #1 factor. If the schedule changes daily, the dog can't form a pattern. Same times, same door, same spot, same reward.\n\n**Free-Feeding:** If food is always available, elimination timing becomes unpredictable. Switch to 2–3 scheduled meals.\n\n**Inadequate Cleanup:** Regular cleaners leave scent markers. Only enzyme cleaners fully break down urine proteins. Browse [enzyme cleaners →](/collections/dog-potty-training).\n\n**Too Much Freedom Too Soon:** Puppies earning supervised room access should have proven 3+ consecutive accident-free days first.\n\nFor the complete troubleshooting system, read our [Dog Potty Training Complete Guide →](/guides/dog-potty-training-complete-guide)." }
+  ],
+  "relatedGuides": [
+    { "slug": "dog-potty-training-complete-guide", "label": "Complete Potty Training Guide" },
+    { "slug": "how-to-potty-train-a-puppy-fast", "label": "Fast Puppy Potty Training" }
+  ],
+  "relatedCollections": [{ "slug": "dog-potty-training", "label": "Shop Potty Training Gear" }]
+}

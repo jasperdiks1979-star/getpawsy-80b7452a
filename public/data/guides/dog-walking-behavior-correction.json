@@ -1,0 +1,22 @@
+{
+  "slug": "dog-walking-behavior-correction",
+  "title": "Dog Walking Behavior Correction (2026) – Fix Lunging, Zigzagging & Refusing",
+  "seoTitle": "Dog Walking Behavior Correction – Lunging, Zigzagging Fixes | GetPawsy",
+  "seoDescription": "Fix common dog walking behavior problems: lunging at other dogs, zigzagging, stopping, and refusing to walk. Positive methods only.",
+  "h1Override": "Dog Walking Behavior Correction – Fix Lunging, Zigzagging & Refusing",
+  "excerpt": "Solutions for lunging at other dogs, zigzag walking, stopping mid-walk, and leash refusal. Positive reinforcement corrections for every problem.",
+  "quickAnswer": "Most walking behavior problems stem from three causes: reactivity (lunging), over-stimulation (zigzagging), or fear (refusing). Each requires a different approach — lunging needs counter-conditioning at distance, zigzagging needs engagement training, and refusing needs confidence building.",
+  "category": "Dog Training", "keywords": ["dog walking behavior", "dog lunging on leash", "dog refuses to walk", "leash reactive dog"], "publishedAt": "2026-03-01", "updatedAt": "2026-03-01", "featuredImage": "/images/guides/leash-training-step-by-step-2026.jpg", "readingTime": 9, "relatedCategories": ["dog-training"], "trustLines": ["Behavioral specialist-reviewed", "Updated March 2026"],
+  "faq": [
+    { "question": "Why does my dog lunge at other dogs on leash?", "answer": "Leash reactivity is usually frustration or fear, not aggression. The leash prevents your dog from doing what they want (greet or flee), causing an outburst. Counter-conditioning at safe distances teaches calm responses over 3–6 weeks." }
+  ],
+  "sections": [
+    { "heading": "Lunging & Reactivity", "content": "**The Problem:** Dog barks, lunges, or fixates on other dogs, people, or animals during walks.\n\n**The Fix: Counter-Conditioning**\n1. Identify your dog's 'threshold distance' — how far away a trigger can be without reaction\n2. At that distance, when your dog notices the trigger → feed high-value treats continuously\n3. When trigger passes → treats stop\n4. Over weeks, gradually decrease distance\n\n**Equipment:** Front-clip harness + 6-foot leash for control. Browse [leash control tools →](/collections/dog-leash-control).\n\nFor the foundation protocol, read our [Leash Training Guide →](/guides/leash-training-dog-step-by-step)." },
+    { "heading": "Zigzagging, Stopping & Refusing", "content": "**Zigzagging:** Your dog is sniff-exploring, not walking with purpose. Solution: Allow 'sniff breaks' as rewards for walking nicely. Walk 30 steps on loose leash → 'go sniff' for 30 seconds.\n\n**Stopping Mid-Walk:** Usually sensory overload, discomfort, or fear. Check paws for injuries, check harness fit, and consider if the environment is too stimulating. Start with quieter routes.\n\n**Refusing to Walk:** Common in puppies and newly adopted dogs. Never drag. Crouch, encourage, use treats to lure forward. Build positive associations gradually.\n\nFor all walking equipment needs, browse our [leash & control collection →](/collections/dog-leash-control) and [training accessories →](/collections/dog-training-accessories)." }
+  ],
+  "relatedGuides": [
+    { "slug": "leash-training-dog-step-by-step", "label": "Leash Training Step-by-Step" },
+    { "slug": "common-leash-training-mistakes", "label": "Common Leash Mistakes" }
+  ],
+  "relatedCollections": [{ "slug": "dog-leash-control", "label": "Shop Leash & Control" }]
+}
