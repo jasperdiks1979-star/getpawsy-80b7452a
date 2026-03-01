@@ -96,17 +96,17 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Premium Dog & Cat Essentials — Fast US Shipping | GetPawsy</title>
-        <meta name="description" content="Premium dog & cat essentials with fast US shipping. Vet-approved picks, 3–7 day delivery, 30-day returns. Shop training gear, beds, cat trees & more." />
+        <title>Professional Dog Training Tools — Trusted by Owners Across the US | GetPawsy</title>
+        <meta name="description" content="Professional dog training tools for potty training, behavior correction & safer walks. Free US shipping $49+, 30-day returns. Trusted by dog owners nationwide." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Premium Dog & Cat Essentials — Fast US Shipping | GetPawsy" />
-        <meta property="og:description" content="Premium dog & cat essentials with fast US shipping. Vet-approved picks, 3–7 day delivery, 30-day returns." />
+        <meta property="og:title" content="Professional Dog Training Tools — Trusted by Owners Across the US | GetPawsy" />
+        <meta property="og:description" content="Potty training. Behavior correction. Safer walks. Smarter solutions. Free US shipping $49+." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Premium Dog & Cat Essentials | GetPawsy" />
-        <meta name="twitter:description" content="Vet-approved dog & cat essentials. Fast US shipping, 30-day returns." />
+        <meta name="twitter:title" content="Professional Dog Training Tools | GetPawsy" />
+        <meta name="twitter:description" content="Dog training tools trusted by owners across the US. Free shipping $49+, 30-day returns." />
       </Helmet>
       <Suspense fallback={null}>
         <WebsiteSchema />
@@ -114,7 +114,7 @@ const Index = () => {
       </Suspense>
 
       {/* ═══════════════════════════════════════════════════════════════
-          1. HERO — zero JS, instant paint, preloaded LCP image
+          1. HERO — Dog Training Authority positioning
           ═══════════════════════════════════════════════════════════════ */}
       <section
         className="hero-lcp-section relative overflow-hidden flex items-center"
@@ -131,7 +131,7 @@ const Index = () => {
             />
             <img
               src="/hero/getpawsy-hero-desktop.webp"
-              alt="Premium dog and cat essentials — beds, cat trees, training gear"
+              alt="Professional dog training tools — harnesses, leashes, potty training gear"
               width={1600}
               height={896}
               loading="eager"
@@ -147,29 +147,29 @@ const Index = () => {
           <div className="max-w-2xl">
             <div className="space-y-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">
-                Dog & Cat Essentials — US Based
+                Dog Training Authority — US Based
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.05] tracking-tight">
-                Premium Dog &amp; Cat Essentials
+                Professional Dog Training Tools
                 <br />
-                <span className="text-primary">Fast US Shipping</span>
+                <span className="text-primary">Trusted by Owners Across the US</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
-                Vet-approved picks • 3–7 day US delivery • 30-day returns
+                Potty training. Behavior correction. Safer walks. Smarter solutions.
               </p>
-              {/* ⚡ Hero CTAs: plain <a> tags — no Radix/Button on critical path */}
+              {/* ⚡ Hero CTAs */}
               <div className="flex flex-wrap items-center gap-4 pt-2 relative z-10 pointer-events-auto">
                 <a
-                  href="/collections/dog"
+                  href="/collections/dog-potty-training"
                   className="inline-flex items-center gap-2 rounded-full px-10 py-3 text-base font-semibold bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl transition-all duration-200"
                 >
-                  Shop Dog Essentials →
+                  Shop Potty Training →
                 </a>
                 <a
-                  href="/collections/cat"
+                  href="/collections/dog-leash-control"
                   className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-semibold border border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                 >
-                  Shop Cat Essentials
+                  Leash & Control
                 </a>
               </div>
             </div>
@@ -178,7 +178,7 @@ const Index = () => {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          2. TRUST BAR — SVG-only icons, no external libraries
+          2. TRUST BAR — 3 trust badges as specified
           ═══════════════════════════════════════════════════════════════ */}
       <section className="py-5 border-y border-border/40 bg-card/60" aria-label="Trust signals">
         <div className="container px-4 md:px-6">
@@ -188,26 +188,23 @@ const Index = () => {
                 <rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
                 <circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
               </svg>
-              US Warehouse Shipping
-            </span>
-            <span className="inline-flex items-center gap-2 whitespace-nowrap">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-              4.8/5 Customer Rating
+              Free US Shipping $49+
             </span>
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
-              30-Day Guarantee
+              30-Day Returns
             </span>
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                <path d="M10 5.172C10 3.782 8.423 2.679 6.5 3c-2.823.47-4.113 6.006-4 7 .08.703 1.725 1.722 3.656 1 1.261-.472 1.96-1.45 2.344-2.5" />
+                <path d="M14.267 5.172c0-1.39 1.577-2.493 3.5-2.172 2.823.47 4.113 6.006 4 7-.08.703-1.725 1.722-3.656 1-1.261-.472-1.855-1.45-2.239-2.5" />
+                <path d="M8 14v.5" /><path d="M16 14v.5" />
+                <path d="M11.25 16.25h1.5L12 17l-.75-.75z" />
+                <path d="M4.42 11.247A13.152 13.152 0 0 0 4 14.556C4 18.728 7.582 21 12 21s8-2.272 8-6.444c0-1.061-.162-2.2-.493-3.309m-9.243-6.082A8.801 8.801 0 0 1 12 5c.78 0 1.5.108 2.161.306" />
               </svg>
-              Secure Checkout
+              Tested for Large Breeds
             </span>
           </div>
         </div>

@@ -1,6 +1,13 @@
 import { Link } from 'react-router-dom';
 import { FadeInView } from '@/components/ui/FadeInView';
-import { MONEY_COLLECTIONS } from '@/lib/money-collections';
+
+const DOG_TRAINING_COLLECTIONS = [
+  { slug: 'dog-potty-training', shortName: 'Potty Training', icon: '🚽', description: 'Pads, trays, sprays & bell systems for housebreaking.' },
+  { slug: 'dog-leash-control', shortName: 'Leash & Control', icon: '🦮', description: 'No-pull harnesses, training leashes & head collars.' },
+  { slug: 'dog-anti-bark', shortName: 'Anti-Bark', icon: '🔇', description: 'Humane bark control & calming aids.' },
+  { slug: 'puppy-training-essentials', shortName: 'Puppy Essentials', icon: '🐶', description: 'Everything for the first 12 months.' },
+  { slug: 'dog-training-accessories', shortName: 'Training Accessories', icon: '🎯', description: 'Clickers, treat bags, agility & more.' },
+];
 
 export function HomepageAuthoritySection() {
   return (
@@ -8,16 +15,16 @@ export function HomepageAuthoritySection() {
       <div className="container px-4 md:px-6">
         <FadeInView className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">
-            Shop by Top Pet Categories
+            Shop by Training Need
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Our 10 most popular collections — curated for US pet owners
+            Our 5 core collections — built for US dog owners who want real results
           </p>
         </FadeInView>
 
         <FadeInView>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 max-w-5xl mx-auto">
-            {MONEY_COLLECTIONS.map((mc) => (
+            {DOG_TRAINING_COLLECTIONS.map((mc) => (
               <Link
                 key={mc.slug}
                 to={`/collections/${mc.slug}`}
@@ -35,62 +42,40 @@ export function HomepageAuthoritySection() {
           </div>
         </FadeInView>
 
-        {/* SEO authority paragraph with contextual links to money collections */}
+        {/* SEO authority paragraph — dog training focused */}
         <FadeInView className="mt-12 max-w-3xl mx-auto text-center">
           <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-            GetPawsy is your one-stop shop for premium{' '}
-            <Link to="/collections/dogs" className="text-primary hover:underline font-medium">
-              dog essentials
-            </Link>{' '}
-            and{' '}
-            <Link to="/collections/cats" className="text-primary hover:underline font-medium">
-              cat essentials
-            </Link>{' '}
-            — all shipped fast within the United States. We curate vet-approved{' '}
-            <Link to="/collections/best-dog-harnesses" className="text-primary hover:underline font-medium">
-              no-pull dog harnesses
+            GetPawsy is the go-to destination for{' '}
+            <Link to="/collections/dog-potty-training" className="text-primary hover:underline font-medium">
+              dog potty training tools
             </Link>,{' '}
-            <Link to="/collections/orthopedic-calming-dog-beds" className="text-primary hover:underline font-medium">
-              orthopedic dog beds
-            </Link>,{' '}
-            <Link to="/collections/cat-trees-and-condos" className="text-primary hover:underline font-medium">
-              cat trees and condos
-            </Link>,{' '}
-            <Link to="/collections/best-interactive-dog-toys" className="text-primary hover:underline font-medium">
-              interactive dog toys
-            </Link>,{' '}
-            <Link to="/collections/best-cat-litter-boxes" className="text-primary hover:underline font-medium">
-              self-cleaning litter boxes
+            <Link to="/collections/dog-leash-control" className="text-primary hover:underline font-medium">
+              no-pull leash & harness solutions
             </Link>,{' '}
             and{' '}
-            <Link to="/collections/best-dog-car-seats" className="text-primary hover:underline font-medium">
-              crash-tested dog car seats
+            <Link to="/collections/dog-anti-bark" className="text-primary hover:underline font-medium">
+              humane anti-bark devices
             </Link>{' '}
-            designed for comfort, safety, and durability.
-            Whether you need a{' '}
-            <Link to="/collections/best-slow-feeder-dog-bowls" className="text-primary hover:underline font-medium">
-              slow feeder bowl
+            — all shipped fast within the United States. Whether you're raising a{' '}
+            <Link to="/collections/puppy-training-essentials" className="text-primary hover:underline font-medium">
+              new puppy
             </Link>{' '}
-            for a fast-eating pup, a{' '}
-            <Link to="/collections/best-cat-scratching-posts" className="text-primary hover:underline font-medium">
-              sisal scratching post
+            or correcting behavior in an adult dog, our curated{' '}
+            <Link to="/collections/dog-training-accessories" className="text-primary hover:underline font-medium">
+              training accessories
             </Link>{' '}
-            for your indoor cat, or an{' '}
-            <Link to="/collections/best-cat-carriers" className="text-primary hover:underline font-medium">
-              airline-approved cat carrier
-            </Link>{' '}
-            — our US-based team has tested and reviewed every product.
-            We ship from US warehouses with 3–7 day delivery 
-            and free shipping on orders over $49. Every order is backed by our 30-day hassle-free 
-            return policy. Explore our{' '}
+            are tested by real dog owners and recommended by professional trainers.
+            We ship from US warehouses with 3–7 day delivery
+            and free shipping on orders over $49. Every order is backed by our 30-day hassle-free
+            return policy — and our tools are tested for large breeds up to 120 lbs. Explore our{' '}
             <Link to="/guides" className="text-primary hover:underline font-medium">
-              expert buying guides
+              expert training guides
             </Link>{' '}
             or browse our{' '}
-            <Link to="/bestsellers" className="text-primary hover:underline font-medium">
-              best sellers
+            <Link to="/blog?category=dogs" className="text-primary hover:underline font-medium">
+              training tips blog
             </Link>{' '}
-            to find the perfect match for your furry family member today.
+            to build a well-behaved, confident dog.
           </p>
         </FadeInView>
       </div>
