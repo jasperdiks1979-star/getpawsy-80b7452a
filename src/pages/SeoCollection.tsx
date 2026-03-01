@@ -70,7 +70,7 @@ import { getMoneyCollectionFAQs } from '@/lib/money-collection-faqs';
 import { TrainingCollectionCrossLinks } from '@/components/collections/TrainingCollectionCrossLinks';
 // SoldCounter removed — fake "X sold this week" risks Google misrepresentation flags
 
-const TRAINING_COLLECTION_SLUGS = ['dog-potty-training', 'dog-leash-control', 'puppy-training-essentials'];
+const TRAINING_COLLECTION_SLUGS = ['dog-potty-training', 'dog-leash-control', 'dog-anti-bark', 'puppy-essentials', 'dog-training-accessories'];
 
 interface FAQItem {
   question: string;

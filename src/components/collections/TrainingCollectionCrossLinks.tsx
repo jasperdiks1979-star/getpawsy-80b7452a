@@ -1,6 +1,6 @@
 /**
  * Training Collection Cross-Links — bidirectional internal linking
- * between the 3 core dog training collections.
+ * between the 5 core dog training collections.
  * Renders as a compact "Related Training Collections" strip.
  */
 import { Link } from 'react-router-dom';
@@ -19,10 +19,22 @@ const TRAINING_COLLECTIONS = [
     desc: 'No-pull harnesses & training leashes',
   },
   {
-    slug: 'puppy-training-essentials',
+    slug: 'dog-anti-bark',
+    name: 'Anti-Bark',
+    icon: '🔇',
+    desc: 'Humane bark control devices & calming aids',
+  },
+  {
+    slug: 'puppy-essentials',
     name: 'Puppy Essentials',
     icon: '🐶',
     desc: 'Complete starter kits for new puppies',
+  },
+  {
+    slug: 'dog-training-accessories',
+    name: 'Training Tools',
+    icon: '🎯',
+    desc: 'Clickers, treat pouches & agility gear',
   },
 ];
 
