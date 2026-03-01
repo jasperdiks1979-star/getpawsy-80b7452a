@@ -74,8 +74,8 @@
 
       // On any chunk failure, auto-reload ONCE to pick up new deploy hashes
       var chunkReloadKey = 'gp_chunk_reload_guard';
-      window.addEventListener('error', function onChunkErr(e) {
-        if (!isChunkFailure(e.message)) return;
+
+      function doChunkReload() {
         if (sessionStorage.getItem(chunkReloadKey)) return; // already tried once
         sessionStorage.setItem(chunkReloadKey, '1');
         console.warn('[CRASH_DETECT] Static chunk load failed — auto-reloading once');
@@ -91,7 +91,21 @@
         } catch(_) {
           window.location.replace(window.location.pathname + '?cb=' + Date.now());
         }
+      }
+
+      // Catch via error event — e.message may be populated
+      window.addEventListener('error', function(e) {
+        if (isChunkFailure(e.message)) doChunkReload();
       });
+
+      // Catch module script failures that fire as plain Event (no message)
+      // by detecting blank screen + no boot after 4s
+      setTimeout(function() {
+        if (!window.__BOOT_OK__ && document.querySelectorAll('#root *').length === 0) {
+          // React never rendered anything — likely a static chunk failure
+          doChunkReload();
+        }
+      }, 4000);
 
       // Clear the chunk reload guard on successful boot so future deploys can retry
       var origBootOkSetter = Object.getOwnPropertyDescriptor(window, '__BOOT_OK__');
