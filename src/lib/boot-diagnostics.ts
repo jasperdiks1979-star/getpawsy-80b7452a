@@ -222,9 +222,9 @@ function showRecoveryUI(errorMsg: string): void {
     <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafafa;padding:24px">
       <div style="text-align:center;max-width:440px">
         <div style="font-size:48px;margin-bottom:16px">🐾</div>
-        <h1 style="font-size:22px;font-weight:600;margin-bottom:8px;color:#1a1a1a">GetPawsy needs a refresh</h1>
+        <h1 style="font-size:22px;font-weight:600;margin-bottom:8px;color:#1a1a1a">Something went wrong</h1>
         <p style="font-size:14px;color:#666;margin-bottom:20px;line-height:1.5">
-          A new version is available or a temporary issue occurred. Click below to fix it.
+          A temporary issue occurred. Click below to fix it.
         </p>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">
           <button onclick="location.reload()" style="padding:10px 24px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;font-size:14px;cursor:pointer;font-weight:500">
