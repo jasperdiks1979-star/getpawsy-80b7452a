@@ -1,0 +1,22 @@
+{
+  "slug": "why-dogs-bark-excessively",
+  "title": "Why Dogs Bark Excessively (2026) – Root Causes Explained",
+  "seoTitle": "Why Dogs Bark Excessively – Root Causes | GetPawsy",
+  "seoDescription": "Why your dog barks excessively and how to identify the root cause. 6 bark types explained with targeted solutions for each.",
+  "h1Override": "Why Dogs Bark Excessively – Root Causes Explained",
+  "excerpt": "Understanding the 6 types of excessive barking and their root causes. Targeted solutions based on trigger identification.",
+  "quickAnswer": "Dogs bark excessively due to: boredom (40% of cases), territorial response (25%), anxiety (20%), attention-seeking (10%), or medical issues (5%). The fix depends entirely on the cause — treating boredom barking like anxiety barking makes both worse.",
+  "category": "Dog Training", "keywords": ["why dogs bark excessively", "excessive barking causes", "dog barking too much"], "publishedAt": "2026-03-01", "updatedAt": "2026-03-01", "featuredImage": "/images/guides/stop-dog-barking-2026.jpg", "readingTime": 8, "relatedCategories": ["dog-training"], "trustLines": ["Behaviorist data-backed", "Updated March 2026"],
+  "faq": [
+    { "question": "Is excessive barking a sign of anxiety?", "answer": "It can be, but boredom is more common. Anxiety barking is high-pitched, frantic, and often accompanied by other stress signals (panting, pacing, destruction). Boredom barking is monotonous and rhythmic." }
+  ],
+  "sections": [
+    { "heading": "The 6 Root Causes", "content": "**1. Boredom (40%)** — Insufficient mental and physical stimulation. Monotonous barking. Fix: enrichment schedule, puzzle feeders, more exercise.\n\n**2. Territorial (25%)** — Barking at passersby, delivery drivers, other dogs near property. Fix: desensitization, window management, [anti-bark tools →](/collections/dog-anti-bark).\n\n**3. Anxiety (20%)** — Separation anxiety, noise phobia, or generalized anxiety. High-pitched, frantic. Fix: counter-conditioning, possibly medication.\n\n**4. Attention-Seeking (10%)** — Barking at YOU for food, play, or attention. Fix: ignore completely, reward quiet behavior only.\n\n**5. Excitement (3%)** — Happy barking during play or greetings. Usually not a problem unless excessive.\n\n**6. Medical (2%)** — Pain, cognitive dysfunction, hearing loss. Fix: vet visit first.\n\nFor the complete anti-bark protocol, read our [How to Stop Dog Barking Guide →](/guides/how-to-stop-dog-barking-guide)." },
+    { "heading": "How to Identify Your Dog's Bark Type", "content": "**Listen to the pitch and pattern:**\n- Low, rapid: territorial\n- High, frantic: anxiety or fear\n- Monotonous, steady: boredom\n- Single barks with pauses: attention-seeking\n\n**Note the context:**\n- When you're away: separation anxiety\n- When someone approaches: territorial\n- When nothing's happening: boredom\n- When directed at you: attention-seeking\n\nOnce identified, apply the targeted protocol from our [barking guide →](/guides/how-to-stop-dog-barking-guide). For immediate tools, browse [anti-bark solutions →](/collections/dog-anti-bark)." }
+  ],
+  "relatedGuides": [
+    { "slug": "how-to-stop-dog-barking-guide", "label": "How to Stop Dog Barking" },
+    { "slug": "separation-anxiety-and-barking", "label": "Separation Anxiety & Barking" }
+  ],
+  "relatedCollections": [{ "slug": "dog-anti-bark", "label": "Shop Anti-Bark Solutions" }]
+}
