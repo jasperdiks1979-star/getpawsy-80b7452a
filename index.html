@@ -53,15 +53,65 @@
         console.error('[CRASH_DETECT] PROMISE REJECTION:', msg);
       });
 
-      // Only show overlay if:
-      // 1. React hasn't mounted (BOOT_OK still false)
-      // 2. There are FATAL (non-benign) errors
-      // 3. More than 2 fatal errors occurred within 3 seconds (debounce)
+      // Auto-reload on static chunk failures (react-vendor, main bundle)
+      // These are NOT caught by lazyWithRetry since they're static imports.
+      var CHUNK_FAIL_PATTERNS = [
+        'importing a module script failed',
+        'failed to fetch dynamically imported module',
+        'loading chunk',
+        'loading css chunk',
+        'chunkloaderror',
+      ];
+
+      function isChunkFailure(msg) {
+        if (!msg || typeof msg !== 'string') return false;
+        var m = msg.toLowerCase();
+        for (var i = 0; i < CHUNK_FAIL_PATTERNS.length; i++) {
+          if (m.indexOf(CHUNK_FAIL_PATTERNS[i]) !== -1) return true;
+        }
+        return false;
+      }
+
+      // On any chunk failure, auto-reload ONCE to pick up new deploy hashes
+      var chunkReloadKey = 'gp_chunk_reload_guard';
+      window.addEventListener('error', function onChunkErr(e) {
+        if (!isChunkFailure(e.message)) return;
+        if (sessionStorage.getItem(chunkReloadKey)) return; // already tried once
+        sessionStorage.setItem(chunkReloadKey, '1');
+        console.warn('[CRASH_DETECT] Static chunk load failed — auto-reloading once');
+        try {
+          if ('caches' in window) {
+            caches.keys().then(function(ks) {
+              return Promise.all(ks.map(function(k) { return caches.delete(k); }));
+            }).then(function() { window.location.replace(window.location.pathname + '?cb=' + Date.now()); })
+              .catch(function() { window.location.replace(window.location.pathname + '?cb=' + Date.now()); });
+          } else {
+            window.location.replace(window.location.pathname + '?cb=' + Date.now());
+          }
+        } catch(_) {
+          window.location.replace(window.location.pathname + '?cb=' + Date.now());
+        }
+      });
+
+      // Clear the chunk reload guard on successful boot so future deploys can retry
+      var origBootOkSetter = Object.getOwnPropertyDescriptor(window, '__BOOT_OK__');
+      Object.defineProperty(window, '__BOOT_OK__', {
+        set: function(v) {
+          this.__boot_ok_val = v;
+          if (v === true) {
+            try { sessionStorage.removeItem(chunkReloadKey); } catch(_) {}
+          }
+        },
+        get: function() { return this.__boot_ok_val; },
+        configurable: true,
+      });
+      window.__BOOT_OK__ = false;
+
+      // Fallback overlay — only after 12s, only for real fatal errors, only if chunk reload didn't trigger
       setTimeout(function() {
         if (!window.__BOOT_OK__) {
           var fatal = window.__BOOT_FATAL_ERRORS__;
           if (fatal.length >= 2) {
-            // Check if errors cluster within 3s window
             var recentCount = 0;
             var now = Date.now();
             for (var i = 0; i < fatal.length; i++) {
@@ -73,13 +123,7 @@
               if (rec) rec.style.display = 'flex';
               var msgEl = document.getElementById('boot-error-msg');
               if (msgEl) msgEl.textContent = 'Fatal errors: ' + JSON.stringify(fatal.slice(0, 5));
-            } else {
-              console.warn('[CRASH_DETECT] Boot has errors but below threshold — waiting silently');
             }
-          } else if (fatal.length > 0) {
-            console.warn('[CRASH_DETECT] Boot has ' + fatal.length + ' fatal error(s) but below threshold (need 2+)');
-          } else {
-            console.warn('[CRASH_DETECT] Boot slow (12s) but no fatal errors — benign only');
           }
         }
       }, 12000);
