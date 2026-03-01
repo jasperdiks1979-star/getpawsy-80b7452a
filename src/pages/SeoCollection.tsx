@@ -368,8 +368,10 @@ const SeoCollection = () => {
     if (!isSpeciesCollection || raw.length === 0) return raw;
 
     if (slug === 'multi-pet') {
-      // Multi-pet collection: show only multi items
       return raw.filter(p => {
+        // Prefer DB column, fall back to text classification
+        const dbSpecies = (p as any).primary_species;
+        if (dbSpecies) return dbSpecies === 'both';
         const taxonomy = classifySpecies(p.name, p.category || '', []);
         return taxonomy.speciesPrimary === 'multi';
       });
@@ -377,6 +379,13 @@ const SeoCollection = () => {
 
     const targetSpecies = slug as 'cat' | 'dog';
     return raw.filter(p => {
+      // Prefer DB column, fall back to text classification
+      const dbSpecies = (p as any).primary_species as string | null;
+      if (dbSpecies) {
+        if (dbSpecies === targetSpecies) return true;
+        if (includeMultiPet && dbSpecies === 'both') return true;
+        return false;
+      }
       const taxonomy = classifySpecies(p.name, p.category || '', []);
       if (taxonomy.speciesPrimary === targetSpecies) return true;
       if (includeMultiPet && taxonomy.speciesPrimary === 'multi') return true;
@@ -719,27 +728,18 @@ const SeoCollection = () => {
                       listName={collection.name}
                       position={index + 1}
                       popularChoice={isPriorityCategory && index < 3 && (product.stock ?? 0) > 0}
+                      showSpeciesBadge={isSpeciesCollection}
+                      species={(() => {
+                        // Prefer DB column over runtime classification
+                        const dbSpecies = (product as any).primary_species as string | null;
+                        if (dbSpecies === 'dog') return 'dog';
+                        if (dbSpecies === 'cat') return 'cat';
+                        if (dbSpecies === 'both') return 'both';
+                        const taxonomy = classifySpecies(product.name, product.category || '', []);
+                        if (taxonomy.speciesPrimary === 'multi') return 'both';
+                        return taxonomy.speciesPrimary === 'cat' || taxonomy.speciesPrimary === 'dog' ? taxonomy.speciesPrimary : 'unknown';
+                      })()}
                     />
-                    {/* Species badge for cat/dog collections */}
-                    {isSpeciesCollection && (() => {
-                      const taxonomy = classifySpecies(product.name, product.category || '', []);
-                      if (taxonomy.speciesPrimary === 'multi') {
-                        return (
-                          <div className="px-2 pt-1">
-                            <Badge variant="outline" className="text-[10px] h-5 gap-1">🐾 Multi-pet</Badge>
-                          </div>
-                        );
-                      }
-                      if (slug === 'multi-pet' || slug === 'cat' || slug === 'dog') {
-                        const label = taxonomy.speciesPrimary === 'cat' ? '🐱 Cat' : taxonomy.speciesPrimary === 'dog' ? '🐶 Dog' : null;
-                        if (label) return (
-                          <div className="px-2 pt-1">
-                            <Badge variant="outline" className="text-[10px] h-5 gap-1">{label}</Badge>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
                     {/* CRO badges + sold counter for money collections */}
                     {isMoney && (
                       <div className="px-2 pb-2">

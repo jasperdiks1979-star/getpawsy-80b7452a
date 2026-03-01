@@ -6491,6 +6491,8 @@ export type Database = {
           last_stock_sync_at: string | null
           name: string | null
           price: number | null
+          primary_intent: string | null
+          primary_species: string | null
           seo_tier: string | null
           shipping_time: string | null
           sku: string | null
@@ -6520,6 +6522,8 @@ export type Database = {
           last_stock_sync_at?: string | null
           name?: string | null
           price?: number | null
+          primary_intent?: string | null
+          primary_species?: string | null
           seo_tier?: string | null
           shipping_time?: string | null
           sku?: string | null
@@ -6549,6 +6553,8 @@ export type Database = {
           last_stock_sync_at?: string | null
           name?: string | null
           price?: number | null
+          primary_intent?: string | null
+          primary_species?: string | null
           seo_tier?: string | null
           shipping_time?: string | null
           sku?: string | null
