@@ -12,6 +12,7 @@ const TopPicksSection = lazy(() => import('@/components/home/TopPicksSection'));
 const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
 const ProblemSolutionBlock = lazy(() => import('@/components/home/ProblemSolutionBlock'));
 const WhyGetPawsyComparison = lazy(() => import('@/components/home/WhyGetPawsyComparison'));
+const WhyTrainingToolsWork = lazy(() => import('@/components/home/WhyTrainingToolsWork'));
 const GuaranteeBlock = lazy(() => import('@/components/home/GuaranteeBlock'));
 const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAuthoritySection'));
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
@@ -228,6 +229,15 @@ const Index = () => {
       <SectionErrorBoundary sectionName="Problem Solution">
         <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
           <ProblemSolutionBlock />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          4b. WHY OUR TRAINING TOOLS WORK — authority block
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Why Training Tools Work">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
+          <WhyTrainingToolsWork />
         </Suspense>
       </SectionErrorBoundary>
 

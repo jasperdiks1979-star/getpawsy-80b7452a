@@ -67,7 +67,10 @@ import { CollectionTrustBar } from '@/components/seo/CollectionTrustBar';
 import { CollectionMiniComparison } from '@/components/seo/CollectionMiniComparison';
 import { CollectionCROBadges, isMoneyCollection } from '@/components/seo/CollectionCROBadges';
 import { getMoneyCollectionFAQs } from '@/lib/money-collection-faqs';
+import { TrainingCollectionCrossLinks } from '@/components/collections/TrainingCollectionCrossLinks';
 // SoldCounter removed — fake "X sold this week" risks Google misrepresentation flags
+
+const TRAINING_COLLECTION_SLUGS = ['dog-potty-training', 'dog-leash-control', 'puppy-training-essentials'];
 
 interface FAQItem {
   question: string;
@@ -831,6 +834,11 @@ const SeoCollection = () => {
 
         {/* Cat Trees Hub: authority content — BELOW products */}
         {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
+
+        {/* Training Collection Cross-Links — bidirectional silo linking */}
+        {TRAINING_COLLECTION_SLUGS.includes(collection.slug) && (
+          <TrainingCollectionCrossLinks currentSlug={collection.slug} />
+        )}
 
         {/* Expert Guides — curated guide links for this collection */}
         <div id="expert-guides">
