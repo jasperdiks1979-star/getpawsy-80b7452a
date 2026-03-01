@@ -39,6 +39,10 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
 /collections/puppy-training     /collections/puppy-training-essentials  301
 /collections/puppy-starter-kit  /collections/puppy-training-essentials  301
 /collections/dog-training       /collections/dog-leash-control          301
+/collections/anti-bark          /collections/dog-anti-bark              301
+/collections/bark-control       /collections/dog-anti-bark              301
+/collections/stop-barking       /collections/dog-anti-bark              301
+/collections/training-accessories /collections/dog-training-accessories 301
 /collections/training           /collections/dog-leash-control          301
 
 # ═══ LEGACY CATEGORY REDIRECTS (GSC 4xx patterns) ═══
@@ -47,13 +51,15 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
 /category/*         /products           301
 
 # ═══ OLD GUIDE SLUG REDIRECTS ═══
-/guides/dog-leash-training              /guides/leash-training-art-guide        301
-/guides/dog-potty-training-tips         /blog/ultimate-puppy-training-guide-potty-obedience  301
-/guides/puppy-leash-training            /guides/leash-training-art-guide        301
-/guides/potty-training-guide            /blog/ultimate-puppy-training-guide-potty-obedience  301
-/guides/no-pull-harness-guide           /dog/dog-training/front-clip-vs-back-clip-harness    301
-/guides/puppy-training-tips             /blog/puppy-training-basics-essential-commands        301
-/guides/dog-training-basics             /blog/clicker-training-dogs-beginners-complete-guide  301
+/guides/dog-leash-training              /guides/leash-training-dog-step-by-step  301
+/guides/dog-potty-training-tips         /guides/dog-potty-training-complete-guide 301
+/guides/puppy-leash-training            /guides/leash-training-dog-step-by-step  301
+/guides/potty-training-guide            /guides/dog-potty-training-complete-guide 301
+/guides/no-pull-harness-guide           /guides/leash-training-dog-step-by-step  301
+/guides/puppy-training-tips             /guides/puppy-training-first-30-days     301
+/guides/dog-training-basics             /guides/best-dog-training-tools          301
+/guides/how-to-stop-barking             /guides/how-to-stop-dog-barking          301
+/guides/stop-barking-guide              /guides/how-to-stop-dog-barking          301
 
 # ═══ MISC LEGACY PATTERNS ═══
 /products/          /products   301

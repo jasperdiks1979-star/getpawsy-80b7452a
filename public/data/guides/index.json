@@ -1045,5 +1045,65 @@
     "featuredImage": "/images/guides/modern-cat-furniture-2026.jpg",
     "readingTime": 11,
     "relatedCategories": ["cat-trees-and-condos", "cat-litter-boxes", "cat-scratching-posts"]
+  },
+  {
+    "slug": "dog-potty-training-complete-guide",
+    "title": "Complete Dog Potty Training Guide (2026) – Housebreak Any Dog in 14 Days",
+    "excerpt": "Master potty training with our expert 14-day plan. Covers puppies, adult dogs, apartment setups, and transitioning from pads to outdoor.",
+    "category": "Dog Training",
+    "keywords": ["potty training dog", "house training puppy", "housebreaking guide", "potty training schedule"],
+    "publishedAt": "2026-03-01",
+    "updatedAt": "2026-03-01",
+    "featuredImage": "/images/guides/potty-training-guide-2026.jpg",
+    "readingTime": 14,
+    "relatedCategories": ["dog-training"]
+  },
+  {
+    "slug": "leash-training-dog-step-by-step",
+    "title": "Leash Training Your Dog: Step-by-Step Guide (2026) – Stop Pulling in 7 Days",
+    "excerpt": "A structured 7-day plan to stop leash pulling using positive reinforcement. Covers harness selection, heel training, and reactive dog management.",
+    "category": "Dog Training",
+    "keywords": ["leash training dog", "stop dog pulling on leash", "loose leash walking", "no pull harness training"],
+    "publishedAt": "2026-03-01",
+    "updatedAt": "2026-03-01",
+    "featuredImage": "/images/guides/leash-training-step-by-step-2026.jpg",
+    "readingTime": 13,
+    "relatedCategories": ["dog-training", "dog-collars-and-leashes"]
+  },
+  {
+    "slug": "puppy-training-first-30-days",
+    "title": "Puppy Training: Your First 30 Days – Complete Schedule & Milestones",
+    "excerpt": "A structured 30-day plan covering potty training, socialization, basic commands, and bite inhibition. Week-by-week milestones.",
+    "category": "Dog Training",
+    "keywords": ["puppy training schedule", "first 30 days with puppy", "new puppy training plan"],
+    "publishedAt": "2026-03-01",
+    "updatedAt": "2026-03-01",
+    "featuredImage": "/images/guides/puppy-first-30-days-2026.jpg",
+    "readingTime": 16,
+    "relatedCategories": ["dog-training"]
+  },
+  {
+    "slug": "how-to-stop-dog-barking",
+    "title": "How to Stop Dog Barking (2026) – Humane Methods That Actually Work",
+    "excerpt": "Complete guide to stopping excessive barking. Root cause identification, ultrasonic deterrents, desensitization training, and positive reinforcement techniques.",
+    "category": "Dog Training",
+    "keywords": ["how to stop dog barking", "stop dog barking", "anti bark methods", "dog barking solutions"],
+    "publishedAt": "2026-03-01",
+    "updatedAt": "2026-03-01",
+    "featuredImage": "/images/guides/stop-dog-barking-2026.jpg",
+    "readingTime": 11,
+    "relatedCategories": ["dog-training"]
+  },
+  {
+    "slug": "best-dog-training-tools",
+    "title": "Best Dog Training Tools (2026) – Expert-Tested Clickers, Harnesses & More",
+    "excerpt": "Complete guide to essential dog training tools. Clickers, treat pouches, no-pull harnesses, long lines, and agility equipment compared and ranked.",
+    "category": "Dog Training",
+    "keywords": ["best dog training tools", "dog training equipment", "clicker training tools", "training accessories"],
+    "publishedAt": "2026-03-01",
+    "updatedAt": "2026-03-01",
+    "featuredImage": "/images/guides/best-training-tools-2026.jpg",
+    "readingTime": 12,
+    "relatedCategories": ["dog-training"]
   }
 ]
