@@ -61,6 +61,36 @@ export const MONEY_COLLECTION_FAQS: Record<string, MoneyFAQ[]> = {
     { question: 'Are laser toys safe for cats?', answer: 'Laser toys are safe when used properly. Never shine the laser directly in your cat\'s eyes. Always end laser play by directing the dot to a physical toy or treat so your cat gets the satisfaction of a "catch" — this prevents frustration.' },
     { question: 'How much playtime do indoor cats need?', answer: 'Indoor cats need 20–30 minutes of active play per day, split into 2–3 sessions. Interactive play mimicking hunting (stalk, chase, pounce, catch) is most satisfying. Pair with puzzle feeders for mental stimulation between play sessions.' },
   ],
+  'dog-potty-training': [
+    { question: 'How long does it take to potty train a dog?', answer: 'Most dogs achieve reliable housebreaking within 4–6 weeks with consistent training. Puppies under 6 months take longer due to smaller bladders. Adult rescue dogs may need 2–4 weeks to learn new routines.' },
+    { question: 'Are grass pads better than pee pads?', answer: 'Grass pads simulate outdoor conditions, making the transition to outdoor elimination easier. Pee pads work as temporary solutions but may confuse dogs about acceptable indoor elimination spots.' },
+    { question: 'Why does my potty-trained dog have accidents?', answer: 'Sudden regression can indicate a UTI, anxiety, or major routine change. Rule out medical causes with your vet first. Environmental triggers like new pets or moving can cause temporary setbacks.' },
+    { question: 'Is crate training necessary for potty training?', answer: 'Crate training is the most effective housebreaking method because it leverages a dog\'s natural instinct to keep their sleeping area clean. The crate should be just large enough to stand, turn, and lie down.' },
+  ],
+  'dog-leash-control': [
+    { question: 'How do I stop my dog from pulling on the leash?', answer: 'Use a front-clip no-pull harness and the stop-and-redirect method: when your dog pulls, stop completely. Wait until the leash is loose, then continue. Reward loose-leash walking with treats. Most dogs improve within 1–2 weeks.' },
+    { question: 'Are no-pull harnesses safe for dogs?', answer: 'Yes, properly fitted no-pull harnesses are safe and vet-recommended. Front-clip designs redirect force across the chest without neck pressure. Ensure the harness doesn\'t restrict shoulder movement.' },
+    { question: 'What length leash is best for training?', answer: 'A 4–6 foot fixed-length leash is ideal. Shorter leashes restrict movement; longer ones give too much freedom. Avoid retractable leashes during training — they teach dogs that pulling extends range.' },
+    { question: 'How long does leash training take?', answer: 'Most dogs show improvement within 2–3 weeks of daily practice with proper equipment. Full reliability typically takes 4–8 weeks depending on age, breed, and how ingrained the pulling habit is.' },
+  ],
+  'dog-anti-bark': [
+    { question: 'Are ultrasonic bark deterrents effective?', answer: 'Yes — ultrasonic devices interrupt bark patterns with high-frequency sound. Studies show 70–80% effectiveness paired with positive reinforcement. Best for alert barking; less effective for anxiety-driven barking.' },
+    { question: 'Are anti-bark collars safe for dogs?', answer: 'Humane collars using vibration, citronella, or ultrasonic sound are safe. Avoid shock collars — they cause fear and aggression. Look for automatic shut-off features to prevent overstimulation.' },
+    { question: 'How do I stop my dog barking at night?', answer: 'Night barking is usually caused by anxiety, outdoor noises, or needing to go outside. Use white noise, ensure adequate daytime exercise, and create a calm sleep environment. Anti-bark devices with bedtime routines work well.' },
+    { question: 'Can excessive barking indicate a health problem?', answer: 'Yes. Sudden changes in barking can indicate pain, cognitive decline in seniors, or hearing loss. If barking patterns change suddenly, consult your vet before trying behavioral interventions.' },
+  ],
+  'puppy-essentials': [
+    { question: 'What does a new puppy need in the first week?', answer: 'A properly sized crate, food/water bowls, potty training pads, a lightweight collar with ID tag, 2–3 chew toys, enzymatic cleaner, and a quiet sleeping area. Keep the environment calm and predictable.' },
+    { question: 'When should I start training my puppy?', answer: 'Start the day you bring your puppy home. Puppies can learn basic commands like sit and name recognition as early as 8 weeks. Formal obedience classes typically begin at 12–16 weeks.' },
+    { question: 'What chew toys are safe for puppies?', answer: 'Safe chew toys are made from non-toxic rubber or nylon with no small detachable parts. Match hardness to age — softer for teething puppies under 6 months. Avoid toys that can be shredded into pieces.' },
+    { question: 'How do I stop my puppy from biting everything?', answer: 'Puppy mouthing is normal behavior, not aggression. Redirect biting to appropriate chew toys, reward correct chewing, and briefly disengage when they bite skin. Most puppies outgrow it by 6–7 months.' },
+  ],
+  'dog-training-accessories': [
+    { question: 'Do dog training clickers really work?', answer: 'Yes. Clicker training is scientifically validated — the precise marker sound tells your dog exactly which behavior earned the reward. Dogs trained with clickers learn new behaviors up to 50% faster than verbal-only methods.' },
+    { question: 'What treats are best for dog training?', answer: 'Small (pea-sized), soft, smelly, high-value treats work best. Freeze-dried liver, cheese cubes, and commercial training treats are popular. Avoid hard biscuits that take too long to chew during sessions.' },
+    { question: 'How long should training sessions be?', answer: 'Keep sessions 5–10 minutes for puppies, 10–15 minutes for adults, 2–3 times daily. Short frequent sessions outperform long infrequent ones. Always end on a success.' },
+    { question: 'What is the best age to start training?', answer: 'Training should start immediately, regardless of age. Puppies as young as 8 weeks can learn through positive reinforcement. Older dogs are equally trainable and often learn faster due to better focus.' },
+  ],
 };
 
 /** Get FAQs for a money collection slug, or empty array */
