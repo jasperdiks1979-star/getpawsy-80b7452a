@@ -86,21 +86,18 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
   }
   render() {
     if (this.state.hasError) {
+      // Non-blocking: show banner + attempt to render children
       return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4 text-center">
-          <div className="max-w-md">
-            <div className="text-4xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
-            <p className="text-muted-foreground text-sm mb-4">This page couldn't load. Try refreshing or go back home.</p>
-            <div className="flex gap-3 justify-center mb-3">
-              <button onClick={() => this.setState({ hasError: false, error: null })} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium">Try Again</button>
-              <button onClick={() => { window.location.href = '/'; }} className="px-4 py-2 rounded-md border border-border text-sm font-medium">Go Home</button>
+        <>
+          <div className="fixed top-0 left-0 right-0 z-[9999] bg-amber-50 border-b border-amber-300 px-4 py-2.5 flex items-center justify-between gap-3 text-sm text-amber-800" style={{ fontFamily: 'system-ui, sans-serif' }}>
+            <span>⚠️ This page had a temporary issue.</span>
+            <div className="flex gap-2 shrink-0">
+              <button onClick={() => this.setState({ hasError: false, error: null })} className="px-3 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium">Try Again</button>
+              <button onClick={() => { window.location.href = '/'; }} className="px-3 py-1 rounded-md border border-border text-xs font-medium">Home</button>
             </div>
-            <button onClick={() => this.setState({ hasError: false, error: null })} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground">
-              Continue anyway →
-            </button>
           </div>
-        </div>
+          {this.props.children}
+        </>
       );
     }
     return this.props.children;
