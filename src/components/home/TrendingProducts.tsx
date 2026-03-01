@@ -1,70 +1,79 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { HomeProductGridSection } from './HomeProductGridSection';
+import { classifySpecies } from '@/lib/species-taxonomy';
 
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
-// Dog training collection categories only
-const DOG_TRAINING_CATEGORIES = [
-  'Dog Training', 'Dog Collars & Leashes', 'Dog Harnesses',
-  'Dog Potty Training', 'Anti-Bark', 'Puppy Essentials',
-  'Training Accessories', 'Dog Behavior', 'Dog Leash',
+// Hard-exclude non-dog/cat species keywords
+const EXCLUDED_SPECIES = [
+  'rabbit', 'hamster', 'guinea pig', 'bird', 'fish',
+  'reptile', 'small animal', 'ferret', 'hutch', 'cage',
 ];
 
-// Hard-exclude non-dog categories
-const EXCLUDED_PATTERNS = [
-  'cat', 'kitten', 'feline', 'rabbit', 'hamster', 'guinea pig',
-  'bird', 'fish', 'reptile', 'small animal', 'ferret',
-];
-
-function isDogTrainingProduct(p: { name: string; category?: string | null }): boolean {
+/**
+ * Product scoring for homepage "Top 8" featuring.
+ * Higher score = featured first.
+ */
+function productScore(p: { name: string; category?: string | null; price?: number; compare_at_price?: number | null; image_url?: string | null }): number {
   const text = `${p.name} ${p.category || ''}`.toLowerCase();
-  if (EXCLUDED_PATTERNS.some(pat => text.includes(pat))) return false;
-  // Must have a dog/training signal
-  const dogSignals = ['dog', 'puppy', 'canine', 'leash', 'harness', 'collar',
-    'training', 'potty', 'bark', 'no-pull', 'clicker', 'treat pouch',
-    'agility', 'crate', 'pee pad', 'housebreaking'];
-  return dogSignals.some(s => text.includes(s));
+
+  // Hard exclude non-cat/dog species
+  if (EXCLUDED_SPECIES.some(s => text.includes(s))) return -100;
+
+  const taxonomy = classifySpecies(p.name, p.category || '', []);
+  let score = 0;
+
+  // +40 if cat/dog/multi (exclude unknown)
+  if (['dog', 'cat', 'multi'].includes(taxonomy.speciesPrimary)) score += 40;
+  else return -50; // unknown species = deprioritize
+
+  // +20 if in impulse price band ($15-$79)
+  const price = p.price || 0;
+  if (price >= 15 && price <= 79) score += 20;
+
+  // +10 if has margin (compare_at_price > price)
+  if (p.compare_at_price && p.compare_at_price > price) {
+    score += 10 + Math.min(15, Math.round(((p.compare_at_price - price) / p.compare_at_price) * 30));
+  }
+
+  // +15 if has image
+  if (p.image_url) score += 15;
+
+  // Dog training bonus (aligns with hero positioning)
+  const dogTrainingSignals = ['leash', 'harness', 'training', 'potty', 'bark', 'no-pull', 'clicker', 'crate'];
+  if (dogTrainingSignals.some(s => text.includes(s))) score += 10;
+
+  return score;
 }
 
 export function TrendingProducts() {
   const { data: products, isLoading } = useQuery({
-    queryKey: ['dog-training-picks'],
+    queryKey: ['top-8-homepage-picks'],
     queryFn: async () => {
       const supabase = await getSupabase();
 
-      // Try bestsellers first filtered to dog training
-      const { data: bestsellers } = await supabase
-        .from('bestsellers')
-        .select('product_id, rank, products:product_id (id, name, slug, image_url, price, category, compare_at_price)')
-        .eq('is_active', true)
-        .order('rank', { ascending: true })
-        .limit(40);
-
-      if (bestsellers && bestsellers.length > 0) {
-        const focused = bestsellers
-          .map((b: any) => b.products)
-          .filter((p: any) => p && p.slug && p.name && isDogTrainingProduct(p));
-        if (focused.length >= 4) {
-          // Sort by margin (compare_at_price vs price)
-          return sortByMargin(focused).slice(0, 8);
-        }
-      }
-
-      // Fallback: direct query for dog training products
+      // Fetch a broad pool of active products
       const { data, error } = await supabase
         .from('products_public')
         .select('id, name, slug, image_url, price, category, compare_at_price')
         .eq('is_active', true)
+        .eq('is_duplicate', false)
         .not('slug', 'is', null)
         .not('image_url', 'is', null)
         .gt('price', 0)
-        .order('price', { ascending: false })
-        .limit(200);
+        .limit(300);
 
       if (error) throw error;
-      const filtered = (data || []).filter(p => !!p.slug && !!p.name && isDogTrainingProduct(p));
-      return sortByMargin(filtered).slice(0, 8);
+
+      // Score and sort all products
+      const scored = (data || [])
+        .filter(p => !!p.slug && !!p.name)
+        .map(p => ({ ...p, _score: productScore(p) }))
+        .filter(p => p._score > 0) // Exclude negative scores (non-cat/dog species)
+        .sort((a, b) => b._score - a._score || new Date(b.id).getTime() - new Date(a.id).getTime());
+
+      return scored.slice(0, 8);
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -90,26 +99,14 @@ export function TrendingProducts() {
 
   return (
     <HomeProductGridSection
-      title="Top Dog Training Picks"
-      subtitle="High-performance tools trusted by US dog owners"
+      title="Top Picks for Your Pet"
+      subtitle="High-performance products trusted by US pet owners"
       products={items}
-      trackingKey="dog-training-picks"
-      seeAllHref="/collections/dog-training-accessories"
-      seeAllLabel="Explore All Dog Training Tools"
+      trackingKey="top-8-homepage-picks"
+      seeAllHref="/products"
+      seeAllLabel="Explore All Products"
     />
   );
-}
-
-function sortByMargin(products: any[]): any[] {
-  return [...products].sort((a, b) => {
-    const marginA = a.compare_at_price && a.compare_at_price > a.price
-      ? (a.compare_at_price - a.price) / a.compare_at_price
-      : 0;
-    const marginB = b.compare_at_price && b.compare_at_price > b.price
-      ? (b.compare_at_price - b.price) / b.compare_at_price
-      : 0;
-    return marginB - marginA;
-  });
 }
 
 export default TrendingProducts;
