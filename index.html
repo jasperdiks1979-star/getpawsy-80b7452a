@@ -6,26 +6,80 @@
     <script>
       window.__BOOT_OK__ = false;
       window.__BOOT_ERRORS__ = [];
+      window.__BOOT_FATAL_ERRORS__ = [];
+
+      // Benign errors that should NOT trigger crash overlay
+      var BENIGN_PATTERNS = [
+        'Importing a module script failed',
+        'Failed to fetch dynamically imported module',
+        'ResizeObserver loop',
+        'ResizeObserver loop completed with undelivered notifications',
+        'Load failed',
+        'Loading chunk',
+        'Loading CSS chunk',
+        'NetworkError',
+        'AbortError',
+        'The operation was aborted',
+        'Script error',
+        'net::ERR_',
+        'ChunkLoadError',
+        'The user aborted a request',
+        'cancelled',
+        'TypeError: cancelled',
+      ];
+
+      function isBenignError(msg) {
+        if (!msg || typeof msg !== 'string') return false;
+        var m = msg.toLowerCase();
+        for (var i = 0; i < BENIGN_PATTERNS.length; i++) {
+          if (m.indexOf(BENIGN_PATTERNS[i].toLowerCase()) !== -1) return true;
+        }
+        return false;
+      }
+
       window.addEventListener('error', function(e) {
         window.__BOOT_ERRORS__.push({ type: 'error', msg: e.message, file: e.filename, line: e.lineno });
+        if (!isBenignError(e.message)) {
+          window.__BOOT_FATAL_ERRORS__.push({ type: 'error', msg: e.message, file: e.filename, line: e.lineno, ts: Date.now() });
+        }
         console.error('[CRASH_DETECT] JS ERROR:', e.message, 'at', e.filename + ':' + e.lineno);
       });
       window.addEventListener('unhandledrejection', function(e) {
         var msg = e.reason && e.reason.message ? e.reason.message : String(e.reason);
         window.__BOOT_ERRORS__.push({ type: 'rejection', msg: msg });
+        if (!isBenignError(msg)) {
+          window.__BOOT_FATAL_ERRORS__.push({ type: 'rejection', msg: msg, ts: Date.now() });
+        }
         console.error('[CRASH_DETECT] PROMISE REJECTION:', msg);
       });
+
+      // Only show overlay if:
+      // 1. React hasn't mounted (BOOT_OK still false)
+      // 2. There are FATAL (non-benign) errors
+      // 3. More than 2 fatal errors occurred within 3 seconds (debounce)
       setTimeout(function() {
         if (!window.__BOOT_OK__) {
-          // Only show recovery if there were actual JS errors — don't penalize slow networks
-          if (window.__BOOT_ERRORS__.length > 0) {
-            console.error('[CRASH_DETECT] Boot failed with errors after 12s');
-            var rec = document.getElementById('boot-recovery');
-            if (rec) rec.style.display = 'flex';
-            var msg = document.getElementById('boot-error-msg');
-            if (msg) msg.textContent = 'Boot errors: ' + JSON.stringify(window.__BOOT_ERRORS__);
+          var fatal = window.__BOOT_FATAL_ERRORS__;
+          if (fatal.length >= 2) {
+            // Check if errors cluster within 3s window
+            var recentCount = 0;
+            var now = Date.now();
+            for (var i = 0; i < fatal.length; i++) {
+              if (now - fatal[i].ts < 3000) recentCount++;
+            }
+            if (recentCount >= 2) {
+              console.error('[CRASH_DETECT] Boot failed with ' + fatal.length + ' fatal errors after 12s');
+              var rec = document.getElementById('boot-recovery');
+              if (rec) rec.style.display = 'flex';
+              var msgEl = document.getElementById('boot-error-msg');
+              if (msgEl) msgEl.textContent = 'Fatal errors: ' + JSON.stringify(fatal.slice(0, 5));
+            } else {
+              console.warn('[CRASH_DETECT] Boot has errors but below threshold — waiting silently');
+            }
+          } else if (fatal.length > 0) {
+            console.warn('[CRASH_DETECT] Boot has ' + fatal.length + ' fatal error(s) but below threshold (need 2+)');
           } else {
-            console.warn('[CRASH_DETECT] Boot slow (12s) but no errors — waiting silently');
+            console.warn('[CRASH_DETECT] Boot slow (12s) but no fatal errors — benign only');
           }
         }
       }, 12000);
@@ -369,14 +423,34 @@
       // 4) Hard reload
       var hrb=document.getElementById('hard-reload-btn');
       if(hrb)hrb.addEventListener('click',function(){try{if('caches'in window)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})});}catch(e){}window.location.href=window.location.pathname+'?cache_bust='+Date.now();});
-      // 5) Copy diagnostics
+      // 5) Copy diagnostics — includes buildVersion, route, userAgent, time, errors
       var cdb=document.getElementById('copy-diag-btn');
-      if(cdb)cdb.addEventListener('click',function(){try{navigator.clipboard.writeText(JSON.stringify({url:location.href,ua:navigator.userAgent,errors:window.__bootErrors},null,2));this.textContent='Copied!';}catch(e){this.textContent='Failed';}});
+      if(cdb)cdb.addEventListener('click',function(){
+        try{
+          var diag = {
+            buildVersion: window.__BUILD_ID__ || '1.0.0',
+            route: location.pathname,
+            url: location.href,
+            canonicalHost: 'getpawsy.pet',
+            userAgent: navigator.userAgent,
+            time: new Date().toISOString(),
+            fatalErrors: (window.__BOOT_FATAL_ERRORS__ || []).slice(0, 10),
+            allErrors: (window.__BOOT_ERRORS__ || []).slice(0, 50),
+            bootOk: !!window.__BOOT_OK__,
+          };
+          navigator.clipboard.writeText(JSON.stringify(diag, null, 2));
+          this.textContent='Copied!';
+        }catch(e){this.textContent='Failed';}
+      });
       // 6) Continue anyway button — dismisses overlay and lets content show
       var cab=document.getElementById('continue-anyway-btn');
       if(cab)cab.addEventListener('click',function(){var r=document.getElementById('boot-recovery');if(r)r.style.display='none';});
-      // 7) Boot watchdog — only triggers if actual errors occurred (matches head script)
-      setTimeout(function(){if(!window.__BOOT_OK__&&window.__BOOT_ERRORS__&&window.__BOOT_ERRORS__.length>0){var r=document.getElementById('boot-recovery');if(r)r.style.display='flex';}},12000);
+      // 7) Boot watchdog — uses FATAL errors only (matches head script debounce logic)
+      setTimeout(function(){
+        if(!window.__BOOT_OK__&&window.__BOOT_FATAL_ERRORS__&&window.__BOOT_FATAL_ERRORS__.length>=2){
+          var r=document.getElementById('boot-recovery');if(r&&r.style.display==='none')r.style.display='flex';
+        }
+      },12000);
     </script>
   </body>
 </html>

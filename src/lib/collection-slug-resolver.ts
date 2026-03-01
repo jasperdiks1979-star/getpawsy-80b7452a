@@ -136,6 +136,45 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     product_category_filter: null,
     product_keyword_filter: 'pet',
   },
+  // ── Dog Training Money Funnel Virtual Fallbacks ──
+  'dog-leash-control': {
+    slug: 'dog-leash-control',
+    name: 'Dog Leash & Control — No-Pull Training Tools',
+    primary_keyword: 'dog leash training tools',
+    secondary_keywords: ['no-pull harness', 'dog leash', 'training leash', 'slip lead', 'head collar', 'long line'],
+    seo_intro: 'Find the best no-pull harnesses, training leashes, slip leads, and control tools for dogs that pull. Humane, positive-reinforcement gear trusted by professional trainers and US dog owners.',
+    meta_title: 'Dog Leash & Control — No-Pull Training Tools 2026 | GetPawsy',
+    meta_description: 'Shop no-pull harnesses, training leashes & control tools for dogs. Humane solutions for pullers. Free US shipping $49+, 30-day returns.',
+    faq: [
+      { question: 'What is the best harness for a dog that pulls?', answer: 'A front-clip no-pull harness is the most effective and humane option. It redirects your dog\'s momentum toward you when they pull, making walks more manageable without causing discomfort.' },
+      { question: 'Are slip leads good for training?', answer: 'Slip leads can be effective for trained dogs in specific situations (vet visits, emergency control), but for everyday leash training, a front-clip harness paired with positive reinforcement is more effective and safer.' },
+      { question: 'How long should a training leash be?', answer: 'A standard 6-foot leash is ideal for daily walks and basic training. For recall practice and distance training, use a 15-30 foot long line in open, safe areas.' },
+      { question: 'When should I start leash training my puppy?', answer: 'Start indoor leash familiarization as early as 8-10 weeks old. Begin short outdoor walks once your puppy is fully vaccinated (typically around 16 weeks). Keep early sessions to 5-10 minutes.' },
+    ],
+    related_blog_slug: 'leash-training-dog-step-by-step',
+    related_collection_slugs: ['dog-potty-training', 'dog-anti-bark', 'puppy-training-essentials'],
+    product_category_filter: null,
+    product_keyword_filter: 'leash,lead,no-pull,harness,collar,walking,control,slip lead',
+  },
+  'dog-potty-training': {
+    slug: 'dog-potty-training',
+    name: 'Dog Potty Training — Pads, Mats & Solutions',
+    primary_keyword: 'dog potty training',
+    secondary_keywords: ['puppy potty pads', 'training pads', 'grass mat', 'housebreaking', 'potty training spray'],
+    seo_intro: 'Everything you need for successful puppy and dog potty training. From absorbent training pads and grass mats to attractant sprays and potty bells — get your dog housetrained faster with proven tools.',
+    meta_title: 'Dog Potty Training — Pads, Mats & Solutions 2026 | GetPawsy',
+    meta_description: 'Shop potty training pads, grass mats, sprays & tools for puppies and dogs. Housebreaking essentials. Free US shipping $49+.',
+    faq: [
+      { question: 'How long does potty training a puppy take?', answer: 'Most puppies can be reliably housetrained within 4-6 months, though some may take up to a year. Consistency, positive reinforcement, and a regular schedule are key to faster results.' },
+      { question: 'Are grass pads better than regular potty pads?', answer: 'Grass pads (real or artificial) can make the transition to outdoor potty habits easier because they teach dogs to associate grass with bathroom time. Regular pads are more absorbent for indoor-only use.' },
+      { question: 'Do potty training sprays really work?', answer: 'Attractant sprays can help guide your puppy to the correct potty spot. They contain scents that encourage elimination in that area. They work best when combined with a consistent schedule and positive reinforcement.' },
+      { question: 'How often should I take my puppy out to potty?', answer: 'A general rule: puppies can hold it for about 1 hour per month of age. A 3-month-old puppy needs to go out every 3 hours. Always take them out after eating, drinking, playing, and waking up.' },
+    ],
+    related_blog_slug: 'dog-potty-training-complete-guide',
+    related_collection_slugs: ['dog-leash-control', 'puppy-training-essentials', 'dog-training-accessories'],
+    product_category_filter: null,
+    product_keyword_filter: 'potty,pee pad,training pad,housebreaking,diaper,grass mat,toilet,puppy pad',
+  },
 };
 
 export interface SlugResolution {
