@@ -40,9 +40,13 @@ function productScore(p: { name: string; category?: string | null; price?: numbe
   // +15 if has image
   if (p.image_url) score += 15;
 
-  // Dog training bonus (aligns with hero positioning)
-  const dogTrainingSignals = ['leash', 'harness', 'training', 'potty', 'bark', 'no-pull', 'clicker', 'crate'];
-  if (dogTrainingSignals.some(s => text.includes(s))) score += 10;
+  // Dog training bonus (aligns with hero positioning — money funnel)
+  const dogTrainingSignals = ['leash', 'harness', 'training', 'potty', 'bark', 'no-pull', 'clicker', 'crate', 'treat pouch', 'long line', 'slip lead', 'head collar', 'puppy pad'];
+  const trainingMatches = dogTrainingSignals.filter(s => text.includes(s)).length;
+  if (trainingMatches > 0) score += 15 + (trainingMatches * 5); // stronger dog training bias
+
+  // Extra boost for dog species (money funnel = dog training)
+  if (taxonomy.speciesPrimary === 'dog') score += 10;
 
   return score;
 }
