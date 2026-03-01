@@ -124,16 +124,16 @@ const Index = () => {
           <picture>
             <source
               media="(max-width: 768px)"
-              srcSet="/hero/getpawsy-hero-mobile.webp"
+              srcSet="/hero/dog-training-hero-mobile.webp"
               type="image/webp"
               width={896}
               height={1184}
             />
             <img
-              src="/hero/getpawsy-hero-desktop.webp"
-              alt="Professional dog training tools — harnesses, leashes, potty training gear"
-              width={1600}
-              height={896}
+              src="/hero/dog-training-hero-desktop.webp"
+              alt="Golden retriever being trained by owner in sunlit backyard — professional dog training tools"
+              width={1920}
+              height={1080}
               loading="eager"
               fetchPriority="high"
               decoding="async"
@@ -147,7 +147,7 @@ const Index = () => {
           <div className="max-w-2xl">
             <div className="space-y-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">
-                Dog Training Authority — US Based
+                DOG TRAINING AUTHORITY — US BASED
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.05] tracking-tight">
                 Professional Dog Training Tools
@@ -169,7 +169,7 @@ const Index = () => {
                   href="/collections/dog-leash-control"
                   className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-semibold border border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                 >
-                  Leash & Control
+                  Explore Leash & Control →
                 </a>
               </div>
             </div>
@@ -184,25 +184,28 @@ const Index = () => {
         <div className="container px-4 md:px-6">
           <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm font-medium text-muted-foreground">
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
                 <rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
                 <circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
               </svg>
               Free US Shipping $49+
             </span>
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
               30-Day Returns
             </span>
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary">
-                <path d="M10 5.172C10 3.782 8.423 2.679 6.5 3c-2.823.47-4.113 6.006-4 7 .08.703 1.725 1.722 3.656 1 1.261-.472 1.96-1.45 2.344-2.5" />
-                <path d="M14.267 5.172c0-1.39 1.577-2.493 3.5-2.172 2.823.47 4.113 6.006 4 7-.08.703-1.725 1.722-3.656 1-1.261-.472-1.855-1.45-2.239-2.5" />
-                <path d="M8 14v.5" /><path d="M16 14v.5" />
-                <path d="M11.25 16.25h1.5L12 17l-.75-.75z" />
-                <path d="M4.42 11.247A13.152 13.152 0 0 0 4 14.556C4 18.728 7.582 21 12 21s8-2.272 8-6.444c0-1.061-.162-2.2-.493-3.309m-9.243-6.082A8.801 8.801 0 0 1 12 5c.78 0 1.5.108 2.161.306" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+              </svg>
+              US Fulfillment Centers
+            </span>
+            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <path d="M9 12l2 2 4-4" />
               </svg>
               Tested for Large Breeds
             </span>
