@@ -10,7 +10,7 @@ const EXCLUDED_SPECIES = [
   'reptile', 'small animal', 'ferret', 'hutch', 'cage',
 ];
 
-const TRAINING_INTENTS = ['training', 'walking', 'behavior', 'potty'];
+const TRAINING_INTENTS = ['training', 'walking', 'behavior', 'potty', 'grooming'];
 
 /**
  * Product scoring for homepage "Top 8" featuring.
@@ -34,10 +34,10 @@ function productScore(p: {
   const intent = p.primary_intent || 'general';
   let score = 0;
 
-  // +30 if dog or both
+  // +30 if dog or both, +15 cat, skip unknown
   if (['dog', 'both'].includes(species)) score += 30;
-  else if (species === 'cat') score += 10;
-  else return { score: -50, intent }; // unknown species = deprioritize
+  else if (species === 'cat') score += 15;
+  else score -= 10; // unknown species = mild deprioritize (not hard exclude)
 
   // +50 if training-related intent
   if (TRAINING_INTENTS.includes(intent)) score += 50;
@@ -99,7 +99,7 @@ export function TrendingProducts() {
         if (diversified.length >= 8) break;
       }
 
-      // If not enough after diversification, fill from remaining
+      // If not enough after diversification, fill from remaining scored
       if (diversified.length < 8) {
         for (const p of scored) {
           if (diversified.find(d => d.id === p.id)) continue;
@@ -108,6 +108,7 @@ export function TrendingProducts() {
         }
       }
 
+      console.info('[TrendingProducts] Top 8 selected:', diversified.length, 'from', scored.length, 'scored (pool:', (data || []).length, ')');
       return diversified;
     },
     staleTime: 10 * 60 * 1000,
