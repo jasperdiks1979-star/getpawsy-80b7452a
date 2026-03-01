@@ -92,10 +92,13 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
             <div className="text-4xl mb-4">⚠️</div>
             <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
             <p className="text-muted-foreground text-sm mb-4">This page couldn't load. Try refreshing or go back home.</p>
-            <div className="flex gap-3 justify-center">
+            <div className="flex gap-3 justify-center mb-3">
               <button onClick={() => this.setState({ hasError: false, error: null })} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium">Try Again</button>
               <button onClick={() => { window.location.href = '/'; }} className="px-4 py-2 rounded-md border border-border text-sm font-medium">Go Home</button>
             </div>
+            <button onClick={() => this.setState({ hasError: false, error: null })} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground">
+              Continue anyway →
+            </button>
           </div>
         </div>
       );
