@@ -51,6 +51,10 @@ interface ProductCardProps {
   priority?: boolean;
   /** Show "Popular Choice" badge for top-performing products */
   popularChoice?: boolean;
+  /** Show species badge (cat-only, dog-only, cats & dogs) */
+  showSpeciesBadge?: boolean;
+  /** Override species classification */
+  species?: 'cat' | 'dog' | 'both' | 'unknown' | null;
 }
 
 export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(({ 
@@ -62,6 +66,8 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   reviewCount,
   priority = false,
   popularChoice = false,
+  showSpeciesBadge = false,
+  species,
 }, ref) => {
   const { addItem } = useCart();
   const { triggerAddToCart } = useCartAnimation();
@@ -196,6 +202,11 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
             {isOutOfStock && (
               <Badge variant="secondary" className="bg-muted text-muted-foreground shadow-soft">
                 Out of Stock
+              </Badge>
+            )}
+            {showSpeciesBadge && species && species !== 'unknown' && (
+              <Badge variant="outline" className="bg-card/90 backdrop-blur-sm text-[10px] shadow-soft">
+                {species === 'cat' ? '🐱 Cat' : species === 'dog' ? '🐶 Dog' : '🐾 Cats & Dogs'}
               </Badge>
             )}
           </div>

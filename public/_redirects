@@ -60,6 +60,9 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
 /guides/dog-training-basics             /guides/best-dog-training-tools          301
 /guides/how-to-stop-barking             /guides/how-to-stop-dog-barking          301
 /guides/stop-barking-guide              /guides/how-to-stop-dog-barking          301
+/guides/leash-training-guide            /guides/leash-training-dog-step-by-step  301
+/guides/potty-training-tips             /guides/dog-potty-training-complete-guide 301
+/guides/crate-training                  /guides/best-dog-training-tools          301
 
 # ═══ MISC LEGACY PATTERNS ═══
 /products/          /products   301
