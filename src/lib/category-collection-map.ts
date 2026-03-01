@@ -7,8 +7,8 @@
 
 const CATEGORY_TO_COLLECTION: Record<string, string> = {
   // Top-level pet types
-  'dogs': '/collections/dogs',
-  'cats': '/collections/cats',
+  'dogs': '/collections/dog',
+  'cats': '/collections/cat',
 
   // Dog subcategories
   'dog-beds': '/collections/orthopedic-calming-dog-beds',
@@ -17,16 +17,16 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
   'memory-foam-dog-beds': '/collections/memory-foam-orthopedic-dog-bed',
   'senior-dog-beds': '/collections/orthopedic-dog-bed-senior-dogs',
   'dog-toys': '/collections/best-interactive-dog-toys',
-  'dog-training': '/dog/dog-training-behavior-tools',
+  'dog-training': '/collections/dog-leash-control',
   'dog-collars-leashes': '/dog/dog-training-behavior-tools',
   'dog-carriers': '/collections/dog-travel-accessories',
   'dog-car-seats': '/collections/best-dog-car-seats',
   'dog-car-safety': '/collections/dog-car-travel-safety-seats',
-  'dog-houses': '/collections/dogs',
+  'dog-houses': '/collections/dog',
   'dog-bowls-feeders': '/collections/best-slow-feeder-dog-bowls',
-  'dog-food-treats': '/collections/dogs',
+  'dog-food-treats': '/collections/dog',
   'dog-grooming': '/collections/best-dog-grooming-kits',
-  'dog-clothing': '/collections/dogs',
+  'dog-clothing': '/collections/dog',
 
   // Cat subcategories
   'cat-beds': '/collections/best-cat-beds',
@@ -37,29 +37,29 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
   'cat-carriers': '/collections/best-cat-carriers',
   'cat-bowls-feeders': '/collections/automatic-cat-feeders',
   'cat-furniture': '/collections/cat-condos',
-  'cat-houses': '/collections/cats',
-  'cat-grooming': '/collections/cats',
-  'cat-collars-accessories': '/collections/cats',
+  'cat-houses': '/collections/cat',
+  'cat-grooming': '/collections/cat',
+  'cat-collars-accessories': '/collections/cat',
   'cat-hammocks': '/collections/best-cat-window-perches',
   'cat-exercise-wheels': '/collections/indoor-cat-enrichment',
 
-  // Small pets
-  'guinea-pig-cages': '/collections/guinea-pig-cages-playpens',
-  'guinea-pig-toys': '/collections/guinea-pig-cages-playpens',
-  'hamster-cages': '/collections/dogs', // fallback - no collection yet
-  'hamster-wheels': '/collections/dogs',
-  'rabbit-cages': '/collections/dogs',
-  'rabbits': '/collections/dogs',
-  'small-pets': '/collections/dogs',
+  // Small pets — route to /products (no dedicated collection; never route to /collections/dog)
+  'guinea-pig-cages': '/products?category=guinea-pig-cages',
+  'guinea-pig-toys': '/products?category=guinea-pig-toys',
+  'hamster-cages': '/products?category=hamster-cages',
+  'hamster-wheels': '/products?category=hamster-wheels',
+  'rabbit-cages': '/products?category=rabbit-cages',
+  'rabbits': '/products?category=rabbits',
+  'small-pets': '/products?category=small-pets',
 
   // Pet generic
   'pet-beds': '/collections/orthopedic-calming-dog-beds',
   'pet-furniture': '/collections/cat-condos',
-  'pet-houses': '/collections/dogs',
+  'pet-houses': '/collections/dog',
   'pet-collars-leashes': '/collections/best-dog-harnesses',
-  'pet-training': '/collections/dog-enrichment-toys',
+  'pet-training': '/collections/dog-leash-control',
   'pet-bags': '/collections/dog-travel-accessories',
-  'pet-supplies': '/collections/dogs',
+  'pet-supplies': '/products',
 };
 
 /**

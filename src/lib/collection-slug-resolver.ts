@@ -38,6 +38,7 @@ const SLUG_ALIASES: Record<string, string> = {
   'cat-products': 'cat',
   'all-cat': 'cat',
   'shop-cat': 'cat',
+  'cat-supplies': 'cat',
   // Dog variants
   'dogs': 'dog',
   'canine': 'dog',
@@ -45,19 +46,29 @@ const SLUG_ALIASES: Record<string, string> = {
   'dog-products': 'dog',
   'all-dog': 'dog',
   'shop-dog': 'dog',
+  'dog-supplies': 'dog',
   // Multi-pet variants
   'multi': 'multi-pet',
   'multipet': 'multi-pet',
   'all-pets': 'multi-pet',
   'pet': 'multi-pet',
+  'all': 'multi-pet',
   // Dog training variants / legacy redirects
   'leash-control': 'dog-leash-control',
   'potty-training': 'dog-potty-training',
   'dog-leash': 'dog-leash-control',
   'dog-potty': 'dog-potty-training',
+  'dog-training': 'dog-leash-control',
+  'training': 'dog-leash-control',
   'puppy-essentials': 'puppy-training-essentials',
   'puppy-training': 'puppy-training-essentials',
   'puppy-starter-kit': 'puppy-training-essentials',
+  'puppy-kit': 'puppy-training-essentials',
+  // Shopify legacy handles
+  'frontpage': 'dog',
+  'all-products': 'multi-pet',
+  'best-sellers': 'dog',
+  'new-arrivals': 'dog',
 };
 
 /**

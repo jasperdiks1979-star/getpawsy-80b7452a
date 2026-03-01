@@ -9,3 +9,56 @@ https://www.getpawsy.pet/* https://getpawsy.pet/:splat 301!
 
 # lovable.app preview -> apex (301 permanent)
 https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
+
+# ═══ LEGACY PAGE REDIRECTS (Shopify/WooCommerce patterns) ═══
+/pages/contact      /contact    301
+/pages/about        /about      301
+/pages/faq          /faq        301
+/pages/shipping     /shipping   301
+/pages/returns      /returns    301
+/pages/privacy      /privacy    301
+/pages/terms        /terms      301
+
+# ═══ LEGACY SHOP REDIRECTS ═══
+/shop               /products   301
+/shop/all           /products   301
+/shop/*             /products   301
+
+# ═══ LEGACY COLLECTION HANDLE REDIRECTS ═══
+/collections/dogs               /collections/dog    301
+/collections/cats               /collections/cat    301
+/collections/all                /products           301
+/collections/frontpage          /                   301
+
+# ═══ DOG TRAINING COLLECTION ALIASES ═══
+/collections/leash-control      /collections/dog-leash-control          301
+/collections/potty-training     /collections/dog-potty-training         301
+/collections/dog-leash          /collections/dog-leash-control          301
+/collections/dog-potty          /collections/dog-potty-training         301
+/collections/puppy-essentials   /collections/puppy-training-essentials  301
+/collections/puppy-training     /collections/puppy-training-essentials  301
+/collections/puppy-starter-kit  /collections/puppy-training-essentials  301
+/collections/dog-training       /collections/dog-leash-control          301
+/collections/training           /collections/dog-leash-control          301
+
+# ═══ LEGACY CATEGORY REDIRECTS (GSC 4xx patterns) ═══
+/category/dogs      /collections/dog    301
+/category/cats      /collections/cat    301
+/category/*         /products           301
+
+# ═══ OLD GUIDE SLUG REDIRECTS ═══
+/guides/dog-leash-training              /guides/leash-training-art-guide        301
+/guides/dog-potty-training-tips         /blog/ultimate-puppy-training-guide-potty-obedience  301
+/guides/puppy-leash-training            /guides/leash-training-art-guide        301
+/guides/potty-training-guide            /blog/ultimate-puppy-training-guide-potty-obedience  301
+/guides/no-pull-harness-guide           /dog/dog-training/front-clip-vs-back-clip-harness    301
+/guides/puppy-training-tips             /blog/puppy-training-basics-essential-commands        301
+/guides/dog-training-basics             /blog/clicker-training-dogs-beginners-complete-guide  301
+
+# ═══ MISC LEGACY PATTERNS ═══
+/products/          /products   301
+/blog/              /blog       301
+/collections/       /products   301
+
+# ═══ SPA FALLBACK ═══
+/* /index.html 200
