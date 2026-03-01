@@ -76,7 +76,11 @@
       var chunkReloadKey = 'gp_chunk_reload_guard';
 
       function doChunkReload() {
-        if (sessionStorage.getItem(chunkReloadKey)) return; // already tried once
+        if (sessionStorage.getItem(chunkReloadKey)) {
+          // Already tried once — show inline recovery UI instead of blank screen
+          showChunkRecovery();
+          return;
+        }
         sessionStorage.setItem(chunkReloadKey, '1');
         console.warn('[CRASH_DETECT] Static chunk load failed — auto-reloading once');
         try {
@@ -93,6 +97,15 @@
         }
       }
 
+      function showChunkRecovery() {
+        if (document.getElementById('chunk-recovery')) return;
+        var d = document.createElement('div');
+        d.id = 'chunk-recovery';
+        d.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#fff;font-family:system-ui,sans-serif;text-align:center;padding:2rem;';
+        d.innerHTML = '<div><h2 style="font-size:1.25rem;margin-bottom:.75rem">New version available</h2><p style="color:#666;margin-bottom:1.25rem;max-width:320px">The app was just updated. Please refresh to load the latest version.</p><button onclick="sessionStorage.clear();window.location.replace(window.location.pathname)" style="background:#000;color:#fff;border:none;padding:.75rem 2rem;border-radius:.5rem;font-size:1rem;cursor:pointer">Refresh Now</button></div>';
+        document.body.appendChild(d);
+      }
+
       // Catch via error event — e.message may be populated
       window.addEventListener('error', function(e) {
         if (isChunkFailure(e.message)) doChunkReload();
@@ -102,7 +115,6 @@
       // by detecting blank screen + no boot after 4s
       setTimeout(function() {
         if (!window.__BOOT_OK__ && document.querySelectorAll('#root *').length === 0) {
-          // React never rendered anything — likely a static chunk failure
           doChunkReload();
         }
       }, 4000);
