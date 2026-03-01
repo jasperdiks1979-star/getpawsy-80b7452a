@@ -98,11 +98,12 @@ export const ANCHOR_DISTRIBUTION = {
 // ── Footer Priority Links ──
 export const FOOTER_SHOP_LINKS = [
   { label: 'Bestsellers', href: '/bestsellers' },
-  { label: 'Best Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
+  { label: 'Dog Training', href: '/collections/dog-leash-control' },
+  { label: 'Potty Training', href: '/collections/dog-potty-training' },
   { label: 'Best Dog Toys', href: '/collections/best-interactive-dog-toys' },
   { label: 'All Products', href: '/products' },
-  { label: 'Dogs', href: '/collections/dogs' },
-  { label: 'Cats', href: '/collections/cats' },
+  { label: 'Dogs', href: '/collections/dog' },
+  { label: 'Cats', href: '/collections/cat' },
 ];
 
 // ── 60-Day Authority Flow Plan (Documentation) ──
