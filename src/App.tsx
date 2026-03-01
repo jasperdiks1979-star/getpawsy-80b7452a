@@ -107,6 +107,22 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
   }
 }
 
+/** Fallback component shown when chunk loading fails even after reload */
+const ChunkLoadError = () => (
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: '2rem', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
+    <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>Page failed to load</h2>
+    <p style={{ color: '#666', marginBottom: '1rem', maxWidth: '24rem' }}>
+      This usually resolves with a fresh reload. If it persists, clear your browser cache.
+    </p>
+    <button
+      onClick={() => { sessionStorage.clear(); window.location.replace(window.location.pathname); }}
+      style={{ padding: '0.5rem 1.5rem', background: '#111', color: '#fff', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.875rem' }}
+    >
+      Reload page
+    </button>
+  </div>
+);
+
 const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>) => {
   return lazy(async () => {
     try {
@@ -120,12 +136,10 @@ const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>
       if (!sessionStorage.getItem(reloadKey)) {
         sessionStorage.setItem(reloadKey, '1');
         try {
-          // Unregister all service workers
           if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
             await Promise.all(registrations.map(r => r.unregister()));
           }
-          // Clear all caches
           if ('caches' in window) {
             const keys = await caches.keys();
             await Promise.all(keys.map(k => caches.delete(k)));
@@ -133,13 +147,13 @@ const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>
         } catch (swErr) {
           console.error('[LazyLoad] SW cleanup failed:', swErr);
         }
-        // Force hard reload with cache-bust to get fresh assets
         window.location.href = window.location.pathname + '?cb=' + Date.now();
-        // Return a never-resolving promise to prevent React from rendering an error
         return new Promise(() => {});
       }
       
-      throw error;
+      // Second failure after reload — show recovery UI instead of blank screen
+      console.error('[LazyLoad] Chunk still unavailable after reload, showing recovery UI');
+      return { default: ChunkLoadError };
     }
   });
 };
