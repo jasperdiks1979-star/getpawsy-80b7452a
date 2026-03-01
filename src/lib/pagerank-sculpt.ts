@@ -113,19 +113,32 @@ export function auditLinkSculpting(hrefs: string[]): LinkAuditResult {
 export const SITEMAP_WEIGHTS = {
   homepage: 1.0,
   moneyCollection: 0.95,
+  tier1Product: 0.85,
   pillarGuide: 0.90,
   standardCollection: 0.80,
   clusterArticle: 0.75,
   blogPost: 0.65,
-  productPage: 0.70,
+  tier2Product: 0.70,
+  productPage: 0.55,
   utilityPage: 0.30,
 } as const;
 
-/** Get sitemap priority for a URL */
+/** Get sitemap priority for a URL — revenue-tier aware */
 export function getSitemapPriority(url: string): number {
+  // Delegate to revenue tier engine for tier-aware priorities
+  try {
+    const { getRevenueSitemapPriority } = require('./revenue-tier-engine');
+    return getRevenueSitemapPriority(url);
+  } catch {
+    // Fallback to static weights if engine not available
+    return getSitemapPriorityFallback(url);
+  }
+}
+
+/** Static fallback (original logic) */
+function getSitemapPriorityFallback(url: string): number {
   if (url === '/' || url === '') return SITEMAP_WEIGHTS.homepage;
   
-  // Money collection check
   for (const slug of MONEY_COLLECTION_SLUGS) {
     if (url === `/collections/${slug}`) return SITEMAP_WEIGHTS.moneyCollection;
   }

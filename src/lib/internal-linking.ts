@@ -4,11 +4,15 @@
  * Includes cornerstone sculpt links for priority authority flow.
  * Money collections receive highest priority (priority 15) to ensure
  * every blog post links to at least 1 money collection.
+ * 
+ * Revenue-tier-aware: Tier 1 collections get +40% link weight (priority boost),
+ * Tier 3 collections get -30% (priority reduction).
  */
 
 import { BLOG_CORNERSTONE_TRIGGERS, PRIORITY_CORNERSTONES, getCornerstoneAnchor } from './link-sculpt-config';
 import { getCategoryCollectionUrl } from './category-collection-map';
 import { MONEY_COLLECTIONS } from './money-collections';
+import { getLinkWeightMultiplier } from './revenue-tier-engine';
 
 interface LinkableKeyword {
   keyword: string;
@@ -489,21 +493,24 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
     });
   });
 
-  // ── Money Collection keywords (HIGHEST priority — max authority flow) ──
+  // ── Money Collection keywords (HIGHEST priority — revenue-tier weighted) ──
   for (const mc of MONEY_COLLECTIONS) {
+    // Revenue tier multiplier: tier_1 = 1.4, tier_2 = 1.0, tier_3 = 0.7
+    const tierMultiplier = getLinkWeightMultiplier(mc.slug);
+
     // Primary keyword → money collection URL
     keywords.push({
       keyword: mc.primaryKeyword.toLowerCase(),
       url: `/collections/${mc.slug}`,
       type: 'category',
-      priority: 15, // Highest — ensures blog→money collection linking
+      priority: Math.round(15 * tierMultiplier),
     });
     // Short name as anchor variant
     keywords.push({
       keyword: mc.shortName.toLowerCase(),
       url: `/collections/${mc.slug}`,
       type: 'category',
-      priority: 13,
+      priority: Math.round(13 * tierMultiplier),
     });
     // Description keywords (partial match phrases)
     const descWords = mc.description.toLowerCase().split(/[,.]/).map(s => s.trim()).filter(s => s.length > 10);
@@ -512,7 +519,7 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
         keyword: phrase,
         url: `/collections/${mc.slug}`,
         type: 'category',
-        priority: 11,
+        priority: Math.round(11 * tierMultiplier),
       });
     }
   }
