@@ -43,10 +43,12 @@ import logoIcon from '@/assets/logo-getpawsy.png';
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/dog', label: '🐕 Dogs' },
-  { href: '/cat', label: '🐈 Cats' },
+  { href: '/collections/dog-potty-training', label: 'Potty Training' },
+  { href: '/collections/dog-leash-control', label: 'Leash & Control' },
+  { href: '/collections/dog-anti-bark', label: 'Anti-Bark Solutions' },
+  { href: '/collections/puppy-training-essentials', label: 'Puppy Essentials' },
+  { href: '/collections/dog-training-accessories', label: 'Training Accessories' },
   { href: '/guides', label: 'Guides' },
-  { href: '/bestsellers', label: 'Bestsellers', icon: Award, highlight: true },
 ];
 
 const promoItems = [
@@ -421,72 +423,19 @@ export const Navbar = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => {
-              const Icon = 'icon' in link ? link.icon : null;
-              const isHighlight = 'highlight' in link && link.highlight;
-              
-              return (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={`relative px-4 py-2 text-sm font-medium transition-colors rounded-full flex items-center gap-1.5 ${
-                    isHighlight && !isActive(link.href)
-                      ? 'text-amber-600 dark:text-amber-400 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/20'
-                      : isActive(link.href) 
-                        ? 'text-primary bg-primary/10' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                >
-                  {Icon && <Icon className="w-4 h-4" />}
-                  {link.label}
-                </Link>
-              );
-            })}
-
-            {/* Top Rated Dropdown — authority flow to cornerstones */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className="flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors rounded-full text-amber-600 dark:text-amber-400 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/20"
-                >
-                  <Trophy className="w-4 h-4" />
-                  Top Rated
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="w-64">
-                <DropdownMenuItem asChild>
-                  <Link to="/dog" className="flex items-center gap-3 py-2">
-                    <span className="text-lg">🐕</span>
-                    <div>
-                      <p className="font-medium">Dog Training & Travel</p>
-                      <p className="text-xs text-muted-foreground">Collars, carriers & training gear</p>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/cat" className="flex items-center gap-3 py-2">
-                    <span className="text-lg">🐈</span>
-                    <div>
-                      <p className="font-medium">Cat Trees & Essentials</p>
-                      <p className="text-xs text-muted-foreground">Trees, litter boxes & toys</p>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/bestsellers" className="flex items-center gap-3 py-2">
-                    <Star className="w-4 h-4 text-amber-500" />
-                    <div>
-                      <p className="font-medium">All Bestsellers</p>
-                      <p className="text-xs text-muted-foreground">Our most popular picks</p>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={`relative px-4 py-2 text-sm font-medium transition-colors rounded-full flex items-center gap-1.5 ${
+                  isActive(link.href) 
+                    ? 'text-primary bg-primary/10' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
             {/* Categories Mega Menu Trigger */}
             <button
               onMouseEnter={() => setIsMegaMenuOpen(true)}
@@ -499,7 +448,7 @@ export const Navbar = () => {
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
-              Categories
+              More
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMegaMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
           </nav>
@@ -702,29 +651,41 @@ export const Navbar = () => {
                         )}
                       </div>
 
-                      {/* Top Rated — Mobile */}
+                      {/* Dog Training Quick Links — Mobile */}
                       <div className="mb-2">
                         <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                          Top Rated
+                          Dog Training
                         </p>
                       </div>
                       <div className="rounded-xl border bg-card overflow-hidden mb-4">
                         <SheetClose asChild>
-                          <Link to="/bestsellers" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
-                            <Star className="w-4 h-4 text-amber-500" />
-                            <span className="font-medium">Bestsellers</span>
+                          <Link to="/collections/dog-potty-training" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
+                            <span>🚽</span>
+                            <span className="font-medium">Potty Training</span>
                           </Link>
                         </SheetClose>
                         <SheetClose asChild>
-                          <Link to="/collections/best-cat-litter-boxes" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
-                            <span>🐱</span>
-                            <span className="font-medium">Best Cat Litter Boxes</span>
+                          <Link to="/collections/dog-leash-control" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
+                            <span>🦮</span>
+                            <span className="font-medium">Leash & Control</span>
                           </Link>
                         </SheetClose>
                         <SheetClose asChild>
-                          <Link to="/collections/best-interactive-dog-toys" className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors">
+                          <Link to="/collections/dog-anti-bark" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
+                            <span>🔇</span>
+                            <span className="font-medium">Anti-Bark Solutions</span>
+                          </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link to="/collections/puppy-training-essentials" className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted transition-colors">
                             <span>🐶</span>
-                            <span className="font-medium">Best Dog Toys</span>
+                            <span className="font-medium">Puppy Essentials</span>
+                          </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link to="/collections/dog-training-accessories" className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors">
+                            <span>🎯</span>
+                            <span className="font-medium">Training Accessories</span>
                           </Link>
                         </SheetClose>
                       </div>

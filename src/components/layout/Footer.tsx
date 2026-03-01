@@ -129,30 +129,26 @@ export const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
-    // Dog Silo — 50% link equity → money collections
-    dogLinks: [
-      { label: 'All Dog Products', href: '/collections/dogs' },
-      { label: 'Orthopedic Dog Beds', href: '/collections/orthopedic-calming-dog-beds' },
-      { label: 'No-Pull Dog Harnesses', href: '/collections/best-dog-harnesses' },
-      { label: 'Dog Car Seats', href: '/collections/best-dog-car-seats' },
-      { label: 'Interactive Dog Toys', href: '/collections/best-interactive-dog-toys' },
-      { label: 'Slow Feeder Bowls', href: '/collections/best-slow-feeder-dog-bowls' },
-      { label: 'Dog Training & Travel Guide', href: '/dog/best-dog-training-and-travel-gear-2026' },
+    // Dog Training — primary authority silo
+    dogTrainingLinks: [
+      { label: 'Potty Training Gear', href: '/collections/dog-potty-training' },
+      { label: 'Leash & Control', href: '/collections/dog-leash-control' },
+      { label: 'Anti-Bark Solutions', href: '/collections/dog-anti-bark' },
+      { label: 'Puppy Training Essentials', href: '/collections/puppy-training-essentials' },
+      { label: 'Training Accessories', href: '/collections/dog-training-accessories' },
+      { label: 'Dog Training Guide Hub', href: '/dog/best-dog-training-and-travel-gear-2026' },
+      { label: 'Training Tips Blog', href: '/blog?category=dogs' },
     ],
-    // Cat Silo — 50% link equity → money collections
+    // Cat — deprioritized, secondary
     catLinks: [
-      { label: 'All Cat Products', href: '/collections/cats' },
       { label: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos' },
       { label: 'Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
       { label: 'Cat Scratching Posts', href: '/collections/best-cat-scratching-posts' },
       { label: 'Cat Carriers', href: '/collections/best-cat-carriers' },
-      { label: 'Interactive Cat Toys', href: '/collections/best-interactive-cat-toys' },
-      { label: 'Cat Training & Travel Guide', href: '/cat/best-cat-training-and-travel-gear-2026' },
     ],
     support: [
       { label: 'Contact', href: '/contact' },
-      { label: 'Shipping', href: '/shipping', noFollow: true },
-      { label: 'Returns', href: '/returns' },
+      { label: 'Shipping & Returns', href: '/shipping' },
       { label: 'FAQ', href: '/faq' },
     ],
     company: [
@@ -225,8 +221,8 @@ export const Footer = () => {
                 </span>
               </Link>
                <p className="text-background/70 leading-relaxed max-w-sm">
-                Smart training & travel gear for dogs and cats. 
-                US shipping, 3–7 days.
+                Professional dog training tools trusted by owners across the US. 
+                Potty training. Behavior correction. Safer walks.
               </p>
               
               {/* Social Links */}
@@ -269,10 +265,10 @@ export const Footer = () => {
               </div>
             </div>
 
-            {/* Dog Silo — collapsed on mobile */}
-            <FooterSection title="🐕 Shop Dogs">
+            {/* Dog Training — primary authority column */}
+            <FooterSection title="🐕 Dog Training">
               <ul className="space-y-3">
-                {footerLinks.dogLinks.map((link) => (
+                {footerLinks.dogTrainingLinks.map((link) => (
                   <li key={link.href}>
                     <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
@@ -283,8 +279,8 @@ export const Footer = () => {
               </ul>
             </FooterSection>
 
-            {/* Cat Silo — collapsed on mobile */}
-            <FooterSection title="🐈 Shop Cats">
+            {/* Cat — secondary, deprioritized */}
+            <FooterSection title="🐈 Cat Essentials">
               <ul className="space-y-3">
                 {footerLinks.catLinks.map((link) => (
                   <li key={link.href}>
@@ -329,32 +325,32 @@ export const Footer = () => {
             </FooterSection>
           </div>
 
-          {/* Dog & Cat Highlights */}
+          {/* Dog Training Authority Highlights */}
           <div className="mt-12 pt-8 border-t border-background/10">
-            <h4 className="font-display font-semibold text-lg mb-4">Train Better. Travel Safer.</h4>
+            <h4 className="font-display font-semibold text-lg mb-4">Professional Dog Training Tools</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
               <div>
-                <Link to="/dog" className="text-sm font-medium text-primary hover:underline">
-                  Dog Training & Travel Gear →
+                <Link to="/collections/dog-potty-training" className="text-sm font-medium text-primary hover:underline">
+                  Potty Training Solutions →
                 </Link>
                 <p className="text-xs text-background/50 mt-1">
-                  Training collars, carriers, leashes & travel essentials for every dog.
+                  Pads, trays, sprays & bell systems for housebreaking any dog.
                 </p>
               </div>
               <div>
-                <Link to="/cat" className="text-sm font-medium text-primary hover:underline">
-                  Cat Trees, Toys & Essentials →
+                <Link to="/collections/dog-leash-control" className="text-sm font-medium text-primary hover:underline">
+                  Leash & Walk Control →
                 </Link>
                 <p className="text-xs text-background/50 mt-1">
-                  Cat trees, litter boxes, carriers & scratching posts for indoor cats.
+                  No-pull harnesses, training leashes & head collars for safe walks.
                 </p>
               </div>
               <div>
-                <Link to="/bestsellers" className="text-sm font-medium text-primary hover:underline">
-                  Bestsellers 2026 →
+                <Link to="/collections/dog-anti-bark" className="text-sm font-medium text-primary hover:underline">
+                  Anti-Bark & Behavior →
                 </Link>
                 <p className="text-xs text-background/50 mt-1">
-                  Our most popular dog & cat products, curated by real sales data.
+                  Humane bark control, calming aids & behavior correction tools.
                 </p>
               </div>
             </div>

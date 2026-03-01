@@ -1,5 +1,5 @@
 /**
- * ProblemSolutionBlock — 4-block problem-based grid for conversion.
+ * ProblemSolutionBlock — 4-block problem-based grid for dog training authority.
  * SVG-only icons, zero external dependencies.
  */
 
@@ -12,10 +12,10 @@ const PROBLEMS = [
       </svg>
     ),
     bg: 'bg-primary/10',
-    title: 'Dog pulls on walks?',
-    desc: 'Our no-pull harnesses and training leashes give you control from day one. Vet-recommended gear that builds obedience safely.',
-    cta: 'Shop Training Tools',
-    href: '/collections/dog-training-accessories',
+    title: "Puppy won't stop having accidents?",
+    desc: 'Our potty training pads, trays & bell systems make housebreaking faster. Consistent, vet-recommended methods for any breed or age.',
+    cta: 'Shop Potty Training',
+    href: '/collections/dog-potty-training',
   },
   {
     icon: (
@@ -26,10 +26,10 @@ const PROBLEMS = [
       </svg>
     ),
     bg: 'bg-secondary/60',
-    title: 'Senior dog joint pain?',
-    desc: 'Orthopedic memory foam beds with washable covers support aging joints and improve sleep quality for dogs of all sizes.',
-    cta: 'Shop Orthopedic Beds',
-    href: '/collections/orthopedic-calming-dog-beds',
+    title: 'Dog pulls on every walk?',
+    desc: 'No-pull harnesses, training leashes & head collars give you instant control. Safe, humane tools that build obedience from day one.',
+    cta: 'Shop Leash & Control',
+    href: '/collections/dog-leash-control',
   },
   {
     icon: (
@@ -39,10 +39,10 @@ const PROBLEMS = [
       </svg>
     ),
     bg: 'bg-accent/50',
-    title: 'Litter box mess?',
-    desc: 'Enclosed litter boxes with tracking lids contain odor and scatter. Easy to clean, designed for multi-cat households.',
-    cta: 'Shop Litter Solutions',
-    href: '/collections/best-cat-litter-boxes',
+    title: 'Excessive barking driving you crazy?',
+    desc: 'Humane anti-bark devices, ultrasonic deterrents & calming aids that address the root cause. No shock — just behavior correction that works.',
+    cta: 'Shop Anti-Bark Solutions',
+    href: '/collections/dog-anti-bark',
   },
   {
     icon: (
@@ -51,10 +51,10 @@ const PROBLEMS = [
       </svg>
     ),
     bg: 'bg-primary/10',
-    title: 'Indoor cat boredom?',
-    desc: 'Multi-level cat trees, scratching posts, and interactive toys keep indoor cats engaged, active, and mentally stimulated.',
-    cta: 'Shop Interactive Toys',
-    href: '/collections/cat-condos',
+    title: 'New puppy, no idea where to start?',
+    desc: 'Complete puppy starter kits: training pads, crate essentials, chew toys & socialization tools. Everything for the first 12 months.',
+    cta: 'Shop Puppy Essentials',
+    href: '/collections/puppy-training-essentials',
   },
 ];
 
@@ -64,10 +64,10 @@ export function ProblemSolutionBlock() {
       <div className="container px-4 md:px-6">
         <div className="text-center mb-10">
           <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-            Solve Real Pet Problems
+            Solve Real Dog Training Problems
           </h2>
           <p className="text-muted-foreground text-base mt-2 max-w-xl mx-auto">
-            Targeted solutions for the challenges pet owners face every day
+            Targeted tools for the behavior challenges dog owners face every day
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
