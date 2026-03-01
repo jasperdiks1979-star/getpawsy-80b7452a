@@ -22,9 +22,9 @@ const INTROS: Record<ClusterId, {
     text: (name) =>
       `Finding the right ${name.toLowerCase()} can make all the difference in your dog's training journey. Whether you're working on recall, loose-leash walking, or simply building a stronger bond, the tools you choose matter. Our team researches each product for durability, safety, and real-world effectiveness — so you can focus on progress, not guesswork. Every item in this collection is selected to support positive reinforcement methods recommended by certified trainers.`,
     links: [
-      { label: 'Dog Training Basics Guide', href: '/dog/training' },
-      { label: 'Leash Training Tips', href: '/guides/dog-leash-training' },
-      { label: 'Choosing the Right Collar', href: '/guides/dog-collar-guide' },
+      { label: 'Dog Training Basics Guide', href: '/guides/best-dog-training-tools' },
+      { label: 'Leash Training Step-by-Step', href: '/guides/leash-training-dog-step-by-step' },
+      { label: 'Dog Potty Training Guide', href: '/guides/dog-potty-training-complete-guide' },
     ],
   },
   'dog-comfort-recovery': {

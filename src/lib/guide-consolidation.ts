@@ -74,6 +74,12 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'barking-solutions': 'how-to-stop-dog-barking',
   'crate-training-tips': 'puppy-training-first-30-days',
   'crate-training-guide': 'puppy-training-first-30-days',
+
+  // ── Dog Collar / Gear Consolidation ──────────────────────
+  'dog-collar-guide': 'leash-training-dog-step-by-step',
+  'dog-collar-sizing-guide': 'leash-training-dog-step-by-step',
+  'best-dog-collars': 'leash-training-dog-step-by-step',
+  'collar-vs-harness': 'leash-training-dog-step-by-step',
 };
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */
