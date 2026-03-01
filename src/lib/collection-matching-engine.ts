@@ -12,6 +12,8 @@ export interface CollectionProduct {
   stock: number | null;
   created_at: string;
   updated_at: string;
+  primary_species?: string | null;
+  primary_intent?: string | null;
 }
 
 export interface CollectionMatchResult {
@@ -173,7 +175,7 @@ export async function resolveCollectionProducts(
 
   const { data: pool, error } = await supabase
     .from('products_public')
-    .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at')
+    .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at, primary_species, primary_intent')
     .eq('is_active', true)
     .eq('is_duplicate', false)
     .gt('price', 0)

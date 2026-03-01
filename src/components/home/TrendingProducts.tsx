@@ -68,7 +68,7 @@ export function TrendingProducts() {
 
       const { data, error } = await supabase
         .from('products_public')
-        .select('id, name, slug, image_url, price, category, compare_at_price')
+        .select('id, name, slug, image_url, price, category, compare_at_price, primary_species, primary_intent')
         .eq('is_active', true)
         .eq('is_duplicate', false)
         .not('slug', 'is', null)
