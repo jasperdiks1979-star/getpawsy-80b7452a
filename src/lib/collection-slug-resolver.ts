@@ -55,6 +55,9 @@ const SLUG_ALIASES: Record<string, string> = {
   'potty-training': 'dog-potty-training',
   'dog-leash': 'dog-leash-control',
   'dog-potty': 'dog-potty-training',
+  'puppy-essentials': 'puppy-training-essentials',
+  'puppy-training': 'puppy-training-essentials',
+  'puppy-starter-kit': 'puppy-training-essentials',
 };
 
 /**
