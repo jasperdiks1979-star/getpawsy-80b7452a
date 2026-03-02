@@ -46,6 +46,10 @@ const KNOWN_JOBS: Record<string, { displayName: string; schedule: string }> = {
     displayName: 'Nieuwsbrief Scheduler',
     schedule: 'Elke 5 minuten',
   },
+  'cj-google-merchant-sync': {
+    displayName: 'CJ → Google Merchant Sync',
+    schedule: 'Elke 6 uur (00:00, 06:00, 12:00, 18:00 UTC)',
+  },
 };
 
 export const useCronJobLogs = (limit = 50) => {
