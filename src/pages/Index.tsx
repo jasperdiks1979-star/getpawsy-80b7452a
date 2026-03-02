@@ -14,6 +14,7 @@ const ProblemSolutionBlock = lazy(() => import('@/components/home/ProblemSolutio
 const WhyGetPawsyComparison = lazy(() => import('@/components/home/WhyGetPawsyComparison'));
 const WhyTrainingToolsWork = lazy(() => import('@/components/home/WhyTrainingToolsWork'));
 const GuaranteeBlock = lazy(() => import('@/components/home/GuaranteeBlock'));
+const WhyShopGetPawsy = lazy(() => import('@/components/home/WhyShopGetPawsy'));
 const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAuthoritySection'));
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
 const PopularRightNow = lazy(() => import('@/components/home/PopularRightNow'));
@@ -255,6 +256,15 @@ const Index = () => {
       <SectionErrorBoundary sectionName="Guarantee">
         <Suspense fallback={<div className="py-14" style={{ minHeight: 200 }} />}>
           <GuaranteeBlock />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          6b. WHY SHOP WITH GETPAWSY — 4 trust pillars
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Why Shop GetPawsy">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
+          <WhyShopGetPawsy />
         </Suspense>
       </SectionErrorBoundary>
 
