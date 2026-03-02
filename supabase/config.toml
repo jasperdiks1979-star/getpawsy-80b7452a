@@ -173,3 +173,9 @@ verify_jwt = false
 
 [functions.domain-health-check]
 verify_jwt = false
+
+[functions.seo-recovery-engine]
+verify_jwt = false
+
+[functions.batch-cluster-pipeline]
+verify_jwt = false
