@@ -148,7 +148,9 @@ export const Footer = () => {
     ],
     support: [
       { label: 'Contact', href: '/contact' },
-      { label: 'Shipping & Returns', href: '/shipping' },
+      { label: 'Shipping Policy', href: '/shipping' },
+      { label: 'Returns & Refunds', href: '/returns' },
+      { label: 'Track Your Order', href: '/track' },
       { label: 'FAQ', href: '/faq' },
     ],
     company: [
@@ -249,7 +251,7 @@ export const Footer = () => {
                 </a>
                 <div className="flex items-center gap-3 text-sm text-background/70">
                   <Clock className="w-4 h-4" />
-                  <span>{RESPONSE_TIME}</span>
+                  <span>Mon–Fri 9:00–17:00 EST • Within 24h</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-background/70">
                   <MapPin className="w-4 h-4" />
@@ -328,21 +330,26 @@ export const Footer = () => {
           {/* Company Information — Business Transparency */}
           <div className="mt-12 pt-8 border-t border-background/10">
             <h4 className="font-display font-semibold text-lg mb-4">Company Information</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               <div className="space-y-2 text-sm">
                 <p className="text-background/80"><strong className="text-background">Business Name:</strong> GetPawsy</p>
+                <p className="text-background/80"><strong className="text-background">Business Type:</strong> Online Pet Supplies Retailer</p>
                 <p className="text-background/80"><strong className="text-background">Operated by:</strong> Skidzo (KVK 78156955)</p>
-                <p className="text-background/80"><strong className="text-background">Operating Location:</strong> Netherlands</p>
               </div>
               <div className="space-y-2 text-sm">
-                <p className="text-background/80"><strong className="text-background">Contact Email:</strong> <a href="mailto:info@getpawsy.pet" className="text-primary hover:underline">info@getpawsy.pet</a></p>
-                <p className="text-background/80"><strong className="text-background">Support Hours:</strong> Mon–Fri 09:00–17:00 CET</p>
+                <p className="text-background/80"><strong className="text-background">Support Email:</strong> <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
+                <p className="text-background/80"><strong className="text-background">Support Hours:</strong> Mon–Fri 9:00–17:00 (EST)</p>
                 <p className="text-background/80"><strong className="text-background">Response Time:</strong> Within 24 hours</p>
               </div>
               <div className="space-y-2 text-sm">
                 <p className="text-background/80"><strong className="text-background">Fulfillment:</strong> Orders ship from US warehouse partners</p>
                 <p className="text-background/80"><strong className="text-background">Serving:</strong> United States customers</p>
                 <p className="text-background/80"><strong className="text-background">Currency:</strong> USD ($)</p>
+              </div>
+              <div className="space-y-2 text-sm">
+                <p className="text-background/80"><strong className="text-background">Secure Checkout:</strong> Powered by Stripe</p>
+                <p className="text-background/80"><strong className="text-background">SSL Protected:</strong> 256-bit encryption</p>
+                <p className="text-background/80"><strong className="text-background">Payments:</strong> Visa, Mastercard, PayPal, Apple Pay</p>
               </div>
             </div>
           </div>
