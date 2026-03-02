@@ -247,6 +247,7 @@ const PerfDebugPage = lazyWithRetry(() => import("./pages/admin/PerfDebugPage"))
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
 const SitemapPingPage = lazyWithRetry(() => import("./pages/admin/SitemapPingPage"));
+const MerchantFixChecklist = lazyWithRetry(() => import("./pages/MerchantFixChecklist"));
 
 // Diagnostics pages (hidden, noindex)
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
@@ -515,6 +516,9 @@ const App = () => {
                       
                       {/* Performance debug guide — hidden, no-index */}
                       <Route path="/debug/perf" element={<Suspense fallback={<RouteLoader />}><PerfDebugPage /></Suspense>} />
+                      
+                      {/* Merchant Center fix checklist — admin only, noindex */}
+                      <Route path="/merchant-fix-checklist" element={<Suspense fallback={<RouteLoader />}><MerchantFixChecklist /></Suspense>} />
                       
                       {/* Diagnostics pages — hidden, noindex */}
                       <Route path="/diagnostics/headers" element={<Suspense fallback={<RouteLoader />}><HeadersDiagnostics /></Suspense>} />
