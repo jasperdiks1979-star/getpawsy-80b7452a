@@ -333,9 +333,59 @@ function getCurrentSeason(): string {
   return 'Winter';
 }
 
+// ── Shipping weight normalizer ────────────────────────────────────────
+
+const LARGE_PRODUCT_PATTERNS = /\b(xl|extra.?large|large|60"|69"|77"|84"|90"|cat.?tree|dog.?bed|stroller|cage|aviary|crate|kennel)\b/i;
+
+function normalizeShippingWeight(rawWeight: number | null, name: string, tags?: string[]): string {
+  let weightKg: number;
+
+  if (rawWeight === null || rawWeight === undefined || rawWeight === 0 || isNaN(rawWeight)) {
+    weightKg = 1;
+  } else if (rawWeight >= 100 && rawWeight <= 200000) {
+    // Likely grams
+    weightKg = rawWeight / 1000;
+  } else if (rawWeight < 100) {
+    // Likely kg already
+    weightKg = rawWeight;
+  } else {
+    weightKg = 1;
+  }
+
+  // Floor check
+  if (weightKg < 0.1) weightKg = 1;
+  // Cap
+  if (weightKg > 25) weightKg = 25;
+
+  // Large product minimum
+  const combined = `${name} ${(tags || []).join(' ')}`;
+  if (LARGE_PRODUCT_PATTERNS.test(combined) && weightKg < 5) {
+    weightKg = 5;
+  }
+
+  // Round to 1 decimal
+  weightKg = Math.round(weightKg * 10) / 10;
+  return `${weightKg} kg`;
+}
+
+// ── Image validation / fallback ──────────────────────────────────────
+
+const PLACEHOLDER_IMAGE = `${BASE_URL}/images/merchant-placeholder.jpg`;
+
+function sanitizeImageUrl(url: string | null): string {
+  if (!url || url.trim() === '') return PLACEHOLDER_IMAGE;
+  const trimmed = url.trim();
+  // Must be absolute https
+  if (!trimmed.startsWith('https://')) return PLACEHOLDER_IMAGE;
+  // Block known broken CDN patterns
+  if (/cjdropshipping\.com\/image\/null/i.test(trimmed)) return PLACEHOLDER_IMAGE;
+  if (trimmed.length < 15) return PLACEHOLDER_IMAGE;
+  return trimmed;
+}
+
 function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): string {
   const url = `${BASE_URL}/product/${p.slug || p.id}`;
-  const img = p.image_url || (p.images && p.images[0]) || '';
+  const img = sanitizeImageUrl(p.image_url || (p.images && p.images[0]) || null);
   const title = buildOptimizedTitle(p);
   const desc = buildOptimizedDescription(p);
 
@@ -347,15 +397,24 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): string
     priceXml = `      <g:price>${priceStr(p.price)}</g:price>`;
   }
 
+  // Build extra fields
   let extra = '';
   if (p.sku) { extra += `      <g:mpn>${esc(p.sku)}</g:mpn>\n`; }
   else { extra += `      <g:identifier_exists>no</g:identifier_exists>\n`; }
+
+  // Additional images — only valid https URLs
   if (p.images && p.images.length > 1) {
     for (const ai of p.images.slice(1, 11)) {
-      if (ai && ai !== p.image_url) extra += `      <g:additional_image_link>${esc(ai)}</g:additional_image_link>\n`;
+      const sanitized = sanitizeImageUrl(ai);
+      if (sanitized !== PLACEHOLDER_IMAGE && sanitized !== img) {
+        extra += `      <g:additional_image_link>${esc(sanitized)}</g:additional_image_link>\n`;
+      }
     }
   }
-  if (p.weight) { extra += `      <g:shipping_weight>${(p.weight * 2.20462).toFixed(2)} lb</g:shipping_weight>\n`; }
+
+  // ALWAYS include normalized shipping_weight
+  const shippingWeight = normalizeShippingWeight(p.weight, p.name);
+  extra += `      <g:shipping_weight>${shippingWeight}</g:shipping_weight>\n`;
 
   const avail = getAvailability(p.stock, p.is_active);
   const season = getCurrentSeason();

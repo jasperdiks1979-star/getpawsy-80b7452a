@@ -179,3 +179,6 @@ verify_jwt = false
 
 [functions.batch-cluster-pipeline]
 verify_jwt = false
+
+[functions.validate-merchant-feed]
+verify_jwt = false
