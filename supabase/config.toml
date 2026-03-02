@@ -182,3 +182,6 @@ verify_jwt = false
 
 [functions.validate-merchant-feed]
 verify_jwt = false
+
+[functions.cj-google-sync]
+verify_jwt = false
