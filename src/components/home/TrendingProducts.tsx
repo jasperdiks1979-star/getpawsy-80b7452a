@@ -10,7 +10,7 @@ const EXCLUDED_SPECIES = [
   'reptile', 'small animal', 'ferret', 'hutch', 'cage',
 ];
 
-const TRAINING_INTENTS = ['training', 'walking', 'behavior', 'potty', 'grooming'];
+const TRAINING_INTENTS = ['training', 'walking', 'behavior', 'potty', 'grooming', 'leash', 'harness', 'collar', 'bark'];
 
 /**
  * Product scoring for homepage "Top 8" featuring.
@@ -24,6 +24,7 @@ function productScore(p: {
   image_url?: string | null;
   primary_species?: string | null;
   primary_intent?: string | null;
+  created_at?: string | null;
 }): { score: number; intent: string } {
   const text = `${p.name} ${p.category || ''}`.toLowerCase();
 
@@ -32,27 +33,49 @@ function productScore(p: {
 
   const species = p.primary_species || 'unknown';
   const intent = p.primary_intent || 'general';
+
+  // GATE: Only dog/both species allowed in Top 8
+  if (!['dog', 'both'].includes(species)) return { score: -100, intent: 'wrong_species' };
+
+  // Weighted scoring (MarginScore 0.35, Availability 0.20, PriceSweet 0.15, CTRProxy 0.15, Image 0.10, Newness 0.05)
   let score = 0;
 
-  // +30 if dog or both, +15 cat, skip unknown
-  if (['dog', 'both'].includes(species)) score += 30;
-  else if (species === 'cat') score += 15;
-  else score -= 10; // unknown species = mild deprioritize (not hard exclude)
-
-  // +50 if training-related intent
-  if (TRAINING_INTENTS.includes(intent)) score += 50;
-
-  // +20 impulse price band ($15-$79)
+  // MarginScore (0.35) — infer from compare_at_price vs price
   const price = p.price || 0;
-  if (price >= 15 && price <= 79) score += 20;
+  const margin = (p.compare_at_price && p.compare_at_price > price)
+    ? (p.compare_at_price - price) / p.compare_at_price
+    : 0.15; // assume 15% default
+  score += Math.min(margin * 100, 35) * 0.35;
 
-  // +15 if has margin (compare_at_price > price)
-  if (p.compare_at_price && p.compare_at_price > price) {
-    score += 15;
+  // AvailabilityScore (0.20) — assume available if listed
+  score += 20;
+
+  // PriceSweetSpotScore (0.15) — prefer $19–$79
+  if (price >= 19 && price <= 79) score += 15;
+  else if (price >= 10 && price < 19) score += 8;
+  else if (price > 79 && price <= 150) score += 5;
+  else if (price > 300) score -= 10;
+
+  // CTRProxyScore (0.15) — shorter clear titles score better
+  const titleLen = (p.name || '').length;
+  if (titleLen > 0 && titleLen <= 60) score += 15;
+  else if (titleLen <= 90) score += 8;
+  else score += 3;
+
+  // ImageQualityScore (0.10) — has image
+  if (p.image_url) score += 10;
+
+  // NewnessScore (0.05) — boost recently added
+  if (p.created_at) {
+    const daysSince = (Date.now() - new Date(p.created_at).getTime()) / 86400000;
+    if (daysSince < 30) score += 5;
+    else if (daysSince < 90) score += 2;
   }
 
-  // +10 if has image
-  if (p.image_url) score += 10;
+  // Training intent bonus (+20)
+  if (TRAINING_INTENTS.includes(intent)) score += 20;
+  // Text-level training signal bonus
+  if (['potty', 'leash', 'harness', 'collar', 'training', 'bark'].some(k => text.includes(k))) score += 10;
 
   // -50 if missing key fields
   if (!p.price || !p.image_url || !p.name) score -= 50;

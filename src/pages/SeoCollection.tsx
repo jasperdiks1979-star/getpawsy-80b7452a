@@ -381,17 +381,27 @@ const SeoCollection = () => {
 
     // Determine target species from slug prefix or exact slug
     const targetSpecies: 'cat' | 'dog' = (slug === 'cat' || isCatPrefixedCollection) ? 'cat' : 'dog';
+    const oppositeSpecies = targetSpecies === 'cat' ? 'dog' : 'cat';
     return raw.filter(p => {
       const dbSpecies = (p as any).primary_species as string | null;
+      const category = (p.category || '').toLowerCase();
+      const name = (p.name || '').toLowerCase();
+
+      // Hard-exclude products whose category explicitly belongs to the opposite species
+      const oppositeKeywords = oppositeSpecies === 'dog'
+        ? ['dog collar', 'dog leash', 'dog harness', 'dog training', 'dog bed', 'dog toy', 'dog crate', 'dog car']
+        : ['cat tree', 'cat litter', 'cat condo', 'cat tower', 'cat scratching', 'cat furniture'];
+      const hasCategoryConflict = oppositeKeywords.some(kw => category.includes(kw));
+      if (hasCategoryConflict) return false;
+
       if (dbSpecies) {
         if (dbSpecies === targetSpecies) return true;
-        if (dbSpecies === 'both') return true; // always include "both" in species-filtered collections
-        if (includeMultiPet && dbSpecies === 'both') return true;
+        if (dbSpecies === 'both') return true;
         return false;
       }
-      const taxonomy = classifySpecies(p.name, p.category || '', []);
+      const taxonomy = classifySpecies(name, category, []);
       if (taxonomy.speciesPrimary === targetSpecies) return true;
-      if (taxonomy.speciesPrimary === 'multi') return true; // multi = works for both species
+      if (taxonomy.speciesPrimary === 'multi') return true;
       return false;
     });
   }, [productMatch?.products, needsSpeciesFilter, slug, isDogPrefixedCollection, isCatPrefixedCollection, includeMultiPet]);
