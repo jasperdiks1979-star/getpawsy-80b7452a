@@ -97,17 +97,17 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Dog Training Essentials — Fast Shipping from US Warehouses | GetPawsy</title>
-        <meta name="description" content="Dog training essentials for potty training, behavior correction & safer walks. Free US shipping $49+, 30-day returns. Shop dog training tools at GetPawsy." />
+        <title>Dog Training Essentials – Fast 3–7 Day US Shipping | GetPawsy</title>
+        <meta name="description" content="Top-rated dog training tools for potty training, leash control & behavior correction. Free US shipping $49+, 30-day returns. 3–7 day delivery from US warehouses." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Dog Training Essentials — Fast Shipping from US Warehouses | GetPawsy" />
-        <meta property="og:description" content="Potty training. Behavior correction. Safer walks. Smarter solutions. Free US shipping $49+." />
+        <meta property="og:title" content="Dog Training Essentials – Fast 3–7 Day US Shipping | GetPawsy" />
+        <meta property="og:description" content="Top-rated potty training pads, no-pull harnesses & behavior tools. Free US shipping $49+, 30-day returns." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Dog Training Essentials | GetPawsy" />
-        <meta name="twitter:description" content="Dog training tools with fast shipping from US warehouses. Free shipping $49+, 30-day returns." />
+        <meta name="twitter:title" content="Dog Training Essentials – Fast US Shipping | GetPawsy" />
+        <meta name="twitter:description" content="Top-rated dog training tools. Free shipping $49+, 30-day returns. 3–7 day US delivery." />
       </Helmet>
       <Suspense fallback={null}>
         <WebsiteSchema />
