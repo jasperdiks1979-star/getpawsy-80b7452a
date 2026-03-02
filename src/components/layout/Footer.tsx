@@ -221,7 +221,7 @@ export const Footer = () => {
                 </span>
               </Link>
                <p className="text-background/70 leading-relaxed max-w-sm">
-                Professional dog training tools trusted by owners across the US. 
+                Dog training essentials with fast shipping from US warehouses. 
                 Potty training. Behavior correction. Safer walks.
               </p>
               
@@ -253,7 +253,7 @@ export const Footer = () => {
                 </div>
                 <div className="flex items-center gap-3 text-sm text-background/70">
                   <MapPin className="w-4 h-4" />
-                  <span>US-based support 🇺🇸</span>
+                  <span>Ships from US warehouses</span>
                 </div>
               </div>
               
@@ -325,9 +325,31 @@ export const Footer = () => {
             </FooterSection>
           </div>
 
-          {/* Dog Training Authority Highlights */}
+          {/* Company Information — Business Transparency */}
           <div className="mt-12 pt-8 border-t border-background/10">
-            <h4 className="font-display font-semibold text-lg mb-4">Professional Dog Training Tools</h4>
+            <h4 className="font-display font-semibold text-lg mb-4">Company Information</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              <div className="space-y-2 text-sm">
+                <p className="text-background/80"><strong className="text-background">Business Name:</strong> GetPawsy</p>
+                <p className="text-background/80"><strong className="text-background">Operated by:</strong> Skidzo (KVK 78156955)</p>
+                <p className="text-background/80"><strong className="text-background">Operating Location:</strong> Netherlands</p>
+              </div>
+              <div className="space-y-2 text-sm">
+                <p className="text-background/80"><strong className="text-background">Contact Email:</strong> <a href="mailto:info@getpawsy.pet" className="text-primary hover:underline">info@getpawsy.pet</a></p>
+                <p className="text-background/80"><strong className="text-background">Support Hours:</strong> Mon–Fri 09:00–17:00 CET</p>
+                <p className="text-background/80"><strong className="text-background">Response Time:</strong> Within 24 hours</p>
+              </div>
+              <div className="space-y-2 text-sm">
+                <p className="text-background/80"><strong className="text-background">Fulfillment:</strong> Orders ship from US warehouse partners</p>
+                <p className="text-background/80"><strong className="text-background">Serving:</strong> United States customers</p>
+                <p className="text-background/80"><strong className="text-background">Currency:</strong> USD ($)</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Dog Training Collection Highlights */}
+          <div className="mt-8 pt-6 border-t border-background/10">
+            <h4 className="font-display font-semibold text-lg mb-4">Dog Training Collections</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
               <div>
                 <Link to="/collections/dog-potty-training" className="text-sm font-medium text-primary hover:underline">
@@ -364,7 +386,7 @@ export const Footer = () => {
               {/* US Trust Section */}
               <div className="flex flex-col items-center gap-2 text-xs text-background/40 border-b border-background/10 pb-4">
                 <div className="flex flex-wrap justify-center gap-4 text-background/60 mb-2">
-                  <span>🇺🇸 US-Based Customer Support</span>
+                  <span>📧 Email Support Within 24h</span>
                   <span>🚚 Fast US Shipping</span>
                   <span>🔄 30-Day Easy Returns</span>
                 </div>

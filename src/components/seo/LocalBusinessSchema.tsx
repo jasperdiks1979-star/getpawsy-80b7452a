@@ -19,36 +19,23 @@ export function LocalBusinessSchema({
 }: LocalBusinessSchemaProps) {
   const localBusinessSchema = {
     '@context': 'https://schema.org',
-    '@type': 'PetStore',
+    '@type': 'OnlineBusiness',
     '@id': `${baseUrl}/#localbusiness`,
     name: 'GetPawsy',
     alternateName: 'GetPawsy Pet Products',
-    description: 'Premium online pet store offering quality dog beds, cat trees, pet toys, collars, grooming supplies and accessories with fast US shipping.',
+    description: 'Online pet store offering dog training tools, cat essentials, and pet accessories. Operated from the Netherlands, serving US customers with US warehouse fulfillment.',
     url: baseUrl,
     logo: `${baseUrl}/favicon.png`,
     image: `${baseUrl}/og-image.png`,
-    email: 'support@getpawsy.pet',
+    email: 'info@getpawsy.pet',
     priceRange: '$$',
     currenciesAccepted: 'USD',
     paymentAccepted: 'Credit Card, Debit Card, PayPal, Apple Pay, Google Pay',
-    // US-focused for GMC compliance
     areaServed: [
       { '@type': 'Country', name: 'United States' },
     ],
-    openingHoursSpecification: {
-      '@type': 'OpeningHoursSpecification',
-      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-      opens: '00:00',
-      closes: '23:59',
-    },
-    sameAs: [
-      'https://facebook.com/getpawsy',
-      'https://instagram.com/getpawsy',
-      'https://twitter.com/getpawsy',
-      'https://pinterest.com/getpawsy',
-      'https://tiktok.com/@getpawsy',
-      'https://youtube.com/@getpawsy',
-    ],
+    // sameAs intentionally empty — only add verified brand social profiles
+    sameAs: [],
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
       name: 'Pet Products',
@@ -71,8 +58,6 @@ export function LocalBusinessSchema({
         },
       ],
     },
-    // NOTE: aggregateRating and review fields intentionally omitted
-    // Google requires real customer reviews - will be added when real reviews are collected
   };
 
   return (

@@ -31,7 +31,7 @@ export function WebsiteSchema({
     '@type': 'Organization',
     '@id': `${url}/#organization`,
     name: 'GetPawsy',
-    legalName: 'GetPawsy Pet Products',
+    legalName: 'Skidzo',
     url: url,
     logo: {
       '@type': 'ImageObject',
@@ -40,30 +40,27 @@ export function WebsiteSchema({
       height: 512,
     },
     image: `${url}${image}`,
-    description: 'Premium pet products store offering quality supplies for dogs, cats, and other pets. Trusted by pet owners across the United States.',
+    description: 'Online pet products store offering dog training tools, cat essentials, and pet accessories. Operated from the Netherlands, serving US customers with US warehouse fulfillment.',
     foundingDate: '2024',
-    slogan: 'Happy Pets, Happy Life',
-    sameAs: [
-      'https://facebook.com/getpawsy',
-      'https://instagram.com/getpawsy',
-      'https://twitter.com/getpawsy',
-      'https://pinterest.com/getpawsy',
-    ],
+    // sameAs intentionally empty — only real, verified brand profiles should be listed
+    sameAs: [],
     contactPoint: [
       {
         '@type': 'ContactPoint',
         contactType: 'customer service',
-        email: 'support@getpawsy.pet',
+        email: 'info@getpawsy.pet',
         availableLanguage: ['English'],
         areaServed: 'US',
       },
     ],
+    address: {
+      '@type': 'PostalAddress',
+      addressCountry: 'NL',
+    },
     knowsAbout: [
-      'Pet Products',
-      'Dog Supplies',
-      'Cat Supplies',
-      'Pet Care',
-      'Animal Accessories',
+      'Dog Training Products',
+      'Pet Supplies',
+      'Cat Essentials',
     ],
   };
 

@@ -87,7 +87,7 @@ export const RESPONSE_TIME = 'We respond within 24 business hours';
 export const BUSINESS_NAME = 'GetPawsy';
 
 /** Operating country display */
-export const OPERATING_COUNTRY = 'US-based support';
+export const OPERATING_COUNTRY = 'Netherlands (serving US customers)';
 
 // ============= TRUST BADGE MESSAGES =============
 
