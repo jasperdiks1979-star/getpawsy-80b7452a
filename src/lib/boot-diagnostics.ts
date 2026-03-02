@@ -65,7 +65,8 @@ export function installBootErrorHandlers(): void {
     if (
       event.message?.includes('Loading chunk') ||
       event.message?.includes('Failed to fetch dynamically imported module') ||
-      event.message?.includes('error loading dynamically imported module')
+      event.message?.includes('error loading dynamically imported module') ||
+      event.message?.includes('Importing a module script failed')
     ) {
       handleChunkFailure(event.message);
     }
@@ -82,7 +83,8 @@ export function installBootErrorHandlers(): void {
     if (
       reason.includes('Loading chunk') ||
       reason.includes('Failed to fetch dynamically imported module') ||
-      reason.includes('error loading dynamically imported module')
+      reason.includes('error loading dynamically imported module') ||
+      reason.includes('Importing a module script failed')
     ) {
       handleChunkFailure(reason);
     }
@@ -90,32 +92,21 @@ export function installBootErrorHandlers(): void {
 }
 
 /**
- * Handle chunk load failures — clear caches and reload once
+ * Handle chunk load failures — delegate to unified reload guard in index.html.
+ * This prevents multiple independent reload systems from cascading.
  */
 async function handleChunkFailure(errorMsg: string): Promise<void> {
-  const reloadKey = 'boot-chunk-reload';
-  if (sessionStorage.getItem(reloadKey)) {
+  const guardKey = (window as any).__RELOAD_GUARD_KEY__ || 'gp_reload_guard_v2';
+  const count = parseInt(sessionStorage.getItem(guardKey) || '0', 10) || 0;
+
+  if (count >= 1) {
     console.error('[BOOT_FAIL] Chunk reload already attempted, showing recovery UI');
     showRecoveryUI(errorMsg);
     return;
   }
 
-  sessionStorage.setItem(reloadKey, '1');
-  console.warn('[BOOT] Chunk failure detected, clearing caches and reloading...');
-
-  try {
-    if ('serviceWorker' in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-    }
-    if ('caches' in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }
-  } catch (e) {
-    console.error('[BOOT] Cache cleanup failed:', e);
-  }
-
+  sessionStorage.setItem(guardKey, String(count + 1));
+  console.warn('[BOOT] Chunk failure detected, reloading...');
   window.location.reload();
 }
 
@@ -161,10 +152,10 @@ export async function verifyBuildIntegrity(): Promise<boolean> {
 
     if (serverBuildId && serverBuildId !== BUILD_ID) {
       console.warn(`[BOOT] Build mismatch: JS=${BUILD_ID}, server=${serverBuildId}. New version available.`);
-      // Only force reload if we haven't already
-      const reloadKey = 'build-mismatch-reload';
-      if (!sessionStorage.getItem(reloadKey)) {
-        sessionStorage.setItem(reloadKey, '1');
+      const guardKey = (window as any).__RELOAD_GUARD_KEY__ || 'gp_reload_guard_v2';
+      const count = parseInt(sessionStorage.getItem(guardKey) || '0', 10) || 0;
+      if (count === 0) {
+        sessionStorage.setItem(guardKey, String(count + 1));
         window.location.reload();
         return false;
       }
@@ -183,10 +174,10 @@ export function markMounted(): void {
   if (diagnostics) {
     diagnostics.mountedAt = Date.now();
   }
-  // Clear chunk reload flag on successful mount
+  // Clear unified reload guard on successful mount
   try {
-    sessionStorage.removeItem('boot-chunk-reload');
-    sessionStorage.removeItem('build-mismatch-reload');
+    const guardKey = (window as any).__RELOAD_GUARD_KEY__ || 'gp_reload_guard_v2';
+    sessionStorage.removeItem(guardKey);
   } catch {}
 
   console.log('[BOOT] React mounted successfully');

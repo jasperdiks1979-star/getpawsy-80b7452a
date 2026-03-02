@@ -53,8 +53,11 @@
         console.error('[CRASH_DETECT] PROMISE REJECTION:', msg);
       });
 
-      // Auto-reload on static chunk failures (react-vendor, main bundle)
-      // These are NOT caught by lazyWithRetry since they're static imports.
+      // ── UNIFIED RELOAD GUARD ──────────────────────────────────────
+      // Single key used by ALL reload mechanisms (index.html, boot-diagnostics,
+      // build-version-guard). Prevents cascading reloads.
+      var RELOAD_GUARD_KEY = 'gp_reload_guard_v2';
+
       var CHUNK_FAIL_PATTERNS = [
         'importing a module script failed',
         'failed to fetch dynamically imported module',
@@ -72,29 +75,22 @@
         return false;
       }
 
-      // On any chunk failure, auto-reload ONCE to pick up new deploy hashes
-      var chunkReloadKey = 'gp_chunk_reload_guard';
+      // Returns how many reloads have been attempted this session
+      function getReloadCount() {
+        try { return parseInt(sessionStorage.getItem(RELOAD_GUARD_KEY) || '0', 10) || 0; } catch(_) { return 0; }
+      }
 
       function doChunkReload() {
-        if (sessionStorage.getItem(chunkReloadKey)) {
-          // Already tried once — show inline recovery UI instead of blank screen
+        var count = getReloadCount();
+        if (count >= 1) {
+          // Already reloaded once — show recovery UI, never reload again
           showChunkRecovery();
           return;
         }
-        sessionStorage.setItem(chunkReloadKey, '1');
+        try { sessionStorage.setItem(RELOAD_GUARD_KEY, String(count + 1)); } catch(_) {}
         console.warn('[CRASH_DETECT] Static chunk load failed — auto-reloading once');
-        try {
-          if ('caches' in window) {
-            caches.keys().then(function(ks) {
-              return Promise.all(ks.map(function(k) { return caches.delete(k); }));
-            }).then(function() { window.location.replace(window.location.pathname + '?cb=' + Date.now()); })
-              .catch(function() { window.location.replace(window.location.pathname + '?cb=' + Date.now()); });
-          } else {
-            window.location.replace(window.location.pathname + '?cb=' + Date.now());
-          }
-        } catch(_) {
-          window.location.replace(window.location.pathname + '?cb=' + Date.now());
-        }
+        // Synchronous redirect — no async cache clearing to avoid race conditions
+        window.location.replace(window.location.pathname + '?cb=' + Date.now());
       }
 
       function showChunkRecovery() {
@@ -102,30 +98,33 @@
         var d = document.createElement('div');
         d.id = 'chunk-recovery';
         d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#fef3c7;border-bottom:1px solid #fbbf24;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:system-ui,sans-serif;font-size:13px;color:#92400e;';
-        d.innerHTML = '<span>🔄 New version available. Please refresh.</span><button onclick="sessionStorage.clear();window.location.replace(window.location.pathname)" style="background:#1a1a1a;color:#fff;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500;white-space:nowrap">Refresh Now</button>';
+        d.innerHTML = '<span>\uD83D\uDD04 New version available. Please refresh.</span><button onclick="sessionStorage.clear();window.location.replace(window.location.pathname)" style="background:#1a1a1a;color:#fff;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500;white-space:nowrap">Refresh Now</button>';
         document.body.prepend(d);
       }
 
-      // Catch via error event — e.message may be populated
+      // Expose the guard key globally so boot-diagnostics + build-version-guard
+      // can check/increment the SAME counter instead of using their own keys.
+      window.__RELOAD_GUARD_KEY__ = RELOAD_GUARD_KEY;
+      window.__getReloadCount__ = getReloadCount;
+
+      // Catch chunk failures via error event
       window.addEventListener('error', function(e) {
         if (isChunkFailure(e.message)) doChunkReload();
       });
 
-      // Catch module script failures that fire as plain Event (no message)
-      // by detecting blank screen + no boot after 4s
+      // Blank screen fallback after 4s — only if no reload already attempted
       setTimeout(function() {
         if (!window.__BOOT_OK__ && document.querySelectorAll('#root *').length === 0) {
           doChunkReload();
         }
       }, 4000);
 
-      // Clear the chunk reload guard on successful boot so future deploys can retry
-      var origBootOkSetter = Object.getOwnPropertyDescriptor(window, '__BOOT_OK__');
+      // Clear the reload guard on successful boot so future deploys can retry
       Object.defineProperty(window, '__BOOT_OK__', {
         set: function(v) {
           this.__boot_ok_val = v;
           if (v === true) {
-            try { sessionStorage.removeItem(chunkReloadKey); } catch(_) {}
+            try { sessionStorage.removeItem(RELOAD_GUARD_KEY); } catch(_) {}
           }
         },
         get: function() { return this.__boot_ok_val; },
@@ -133,26 +132,16 @@
       });
       window.__BOOT_OK__ = false;
 
-      // Fallback overlay — only after 12s, only for real fatal errors, only if chunk reload didn't trigger
+      // Fallback overlay — only after 10s for real fatal errors
       setTimeout(function() {
         if (!window.__BOOT_OK__) {
           var fatal = window.__BOOT_FATAL_ERRORS__;
-          if (fatal.length >= 2) {
-            var recentCount = 0;
-            var now = Date.now();
-            for (var i = 0; i < fatal.length; i++) {
-              if (now - fatal[i].ts < 3000) recentCount++;
-            }
-            if (recentCount >= 2) {
-              console.error('[CRASH_DETECT] Boot failed with ' + fatal.length + ' fatal errors after 12s');
-              var rec = document.getElementById('boot-recovery');
-              if (rec) rec.style.display = 'block';
-              var msgEl = document.getElementById('boot-error-msg');
-              if (msgEl) msgEl.textContent = 'Fatal errors: ' + JSON.stringify(fatal.slice(0, 5));
-            }
+          if (fatal && fatal.length >= 2) {
+            console.error('[CRASH_DETECT] Boot failed with ' + fatal.length + ' fatal errors after 10s');
+            showChunkRecovery();
           }
         }
-      }, 12000);
+      }, 10000);
     </script>
     <!-- Cache headers set by CDN - see public/_headers -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />

@@ -69,9 +69,11 @@ export function runBuildVersionGuard(): BuildGuardResult {
     // Build mismatch detected
     console.warn(`[BUILD-GUARD] Build changed: ${lastSeen} → ${currentBuild}`);
 
-    // Check single-reload guard to prevent loops
-    if (sessionStorage.getItem(SS_RELOAD_GUARD) === currentBuild) {
-      console.warn('[BUILD-GUARD] Reload already attempted for this build, skipping');
+    // Use UNIFIED reload guard — shared with index.html crash detector
+    const guardKey = (window as any).__RELOAD_GUARD_KEY__ || 'gp_reload_guard_v2';
+    const reloadCount = parseInt(sessionStorage.getItem(guardKey) || '0', 10) || 0;
+    if (reloadCount >= 1 || sessionStorage.getItem(SS_RELOAD_GUARD) === currentBuild) {
+      console.warn('[BUILD-GUARD] Reload already attempted, skipping');
       localStorage.setItem(LS_KEY, currentBuild);
       result.action = 'skipped_guard';
       return result;
@@ -91,7 +93,9 @@ export function runBuildVersionGuard(): BuildGuardResult {
     // Clear service worker caches
     clearServiceWorkerCaches().catch(() => {});
 
-    // Set the reload guard BEFORE reloading
+    // Set BOTH guards BEFORE reloading (unified + legacy)
+    const uniGuardKey = (window as any).__RELOAD_GUARD_KEY__ || 'gp_reload_guard_v2';
+    sessionStorage.setItem(uniGuardKey, String(reloadCount + 1));
     sessionStorage.setItem(SS_RELOAD_GUARD, currentBuild);
     localStorage.setItem(LS_KEY, currentBuild);
 
