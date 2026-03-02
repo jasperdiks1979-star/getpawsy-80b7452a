@@ -359,17 +359,19 @@ const SeoCollection = () => {
     enabled: !!collection,
   });
 
-  // Species taxonomy filter for cat/dog virtual collections
+  // Species taxonomy filter — applies to cat/dog hub pages AND all dog-*/cat-* prefixed collections
   const isSpeciesCollection = slug === 'cat' || slug === 'dog' || slug === 'multi-pet';
+  const isDogPrefixedCollection = slug?.startsWith('dog-') || slug?.startsWith('puppy-');
+  const isCatPrefixedCollection = slug?.startsWith('cat-');
+  const needsSpeciesFilter = isSpeciesCollection || isDogPrefixedCollection || isCatPrefixedCollection;
   const [includeMultiPet, setIncludeMultiPet] = useState(false); // STRICT mode: off by default
 
   const products = useMemo(() => {
     const raw = productMatch?.products || [];
-    if (!isSpeciesCollection || raw.length === 0) return raw;
+    if (!needsSpeciesFilter || raw.length === 0) return raw;
 
     if (slug === 'multi-pet') {
       return raw.filter(p => {
-        // Prefer DB column, fall back to text classification
         const dbSpecies = (p as any).primary_species;
         if (dbSpecies) return dbSpecies === 'both';
         const taxonomy = classifySpecies(p.name, p.category || '', []);
@@ -377,21 +379,22 @@ const SeoCollection = () => {
       });
     }
 
-    const targetSpecies = slug as 'cat' | 'dog';
+    // Determine target species from slug prefix or exact slug
+    const targetSpecies: 'cat' | 'dog' = (slug === 'cat' || isCatPrefixedCollection) ? 'cat' : 'dog';
     return raw.filter(p => {
-      // Prefer DB column, fall back to text classification
       const dbSpecies = (p as any).primary_species as string | null;
       if (dbSpecies) {
         if (dbSpecies === targetSpecies) return true;
+        if (dbSpecies === 'both') return true; // always include "both" in species-filtered collections
         if (includeMultiPet && dbSpecies === 'both') return true;
         return false;
       }
       const taxonomy = classifySpecies(p.name, p.category || '', []);
       if (taxonomy.speciesPrimary === targetSpecies) return true;
-      if (includeMultiPet && taxonomy.speciesPrimary === 'multi') return true;
+      if (taxonomy.speciesPrimary === 'multi') return true; // multi = works for both species
       return false;
     });
-  }, [productMatch?.products, isSpeciesCollection, slug, includeMultiPet]);
+  }, [productMatch?.products, needsSpeciesFilter, slug, isDogPrefixedCollection, isCatPrefixedCollection, includeMultiPet]);
 
   const showingRelatedResults = !!productMatch?.fallbackTriggered;
 
