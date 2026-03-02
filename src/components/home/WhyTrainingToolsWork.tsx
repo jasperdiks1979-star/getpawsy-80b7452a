@@ -21,8 +21,8 @@ const PILLARS = [
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       </svg>
     ),
-    title: 'Tested for Real Dogs',
-    desc: 'We evaluate durability, fit, and effectiveness across breed sizes — from 10-lb puppies to 100-lb working dogs. If it doesn\'t hold up, it doesn\'t make our store.',
+    title: 'Selected for Durability',
+    desc: 'We evaluate durability, fit, and effectiveness across a range of breed sizes. Products that don\'t hold up don\'t make our store.',
   },
   {
     icon: (
@@ -51,7 +51,7 @@ export function WhyTrainingToolsWork() {
             Why Our Training Tools Work
           </h2>
           <p className="text-muted-foreground text-base mt-2 max-w-xl mx-auto">
-            Professional-grade tools chosen by certified trainers and trusted by thousands of US dog owners
+            Quality tools selected for effective, force-free training methods
           </p>
         </div>
 

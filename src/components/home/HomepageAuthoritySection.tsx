@@ -67,7 +67,7 @@ export function HomepageAuthoritySection() {
             are tested by real dog owners and recommended by professional trainers.
             We ship from US warehouses with 3–7 day delivery
             and free shipping on orders over $49. Every order is backed by our 30-day hassle-free
-            return policy — and our tools are tested for large breeds up to 120 lbs. Explore our{' '}
+            return policy. Explore our{' '}
             <Link to="/guides" className="text-primary hover:underline font-medium">
               expert training guides
             </Link>{' '}

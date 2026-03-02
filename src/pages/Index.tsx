@@ -97,17 +97,17 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Professional Dog Training Tools — Trusted by Owners Across the US | GetPawsy</title>
-        <meta name="description" content="Professional dog training tools for potty training, behavior correction & safer walks. Free US shipping $49+, 30-day returns. Trusted by dog owners nationwide." />
+        <title>Dog Training Essentials — Fast Shipping from US Warehouses | GetPawsy</title>
+        <meta name="description" content="Dog training essentials for potty training, behavior correction & safer walks. Free US shipping $49+, 30-day returns. Shop dog training tools at GetPawsy." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Professional Dog Training Tools — Trusted by Owners Across the US | GetPawsy" />
+        <meta property="og:title" content="Dog Training Essentials — Fast Shipping from US Warehouses | GetPawsy" />
         <meta property="og:description" content="Potty training. Behavior correction. Safer walks. Smarter solutions. Free US shipping $49+." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Professional Dog Training Tools | GetPawsy" />
-        <meta name="twitter:description" content="Dog training tools trusted by owners across the US. Free shipping $49+, 30-day returns." />
+        <meta name="twitter:title" content="Dog Training Essentials | GetPawsy" />
+        <meta name="twitter:description" content="Dog training tools with fast shipping from US warehouses. Free shipping $49+, 30-day returns." />
       </Helmet>
       <Suspense fallback={null}>
         <WebsiteSchema />
@@ -148,12 +148,12 @@ const Index = () => {
           <div className="max-w-2xl">
             <div className="space-y-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">
-                DOG TRAINING AUTHORITY — US BASED
+                DOG TRAINING ESSENTIALS — FAST SHIPPING FROM US WAREHOUSES
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.05] tracking-tight">
-                Professional Dog Training Tools
+                Dog Training Essentials
                 <br />
-                <span className="text-primary">Trusted by Owners Across the US</span>
+                <span className="text-primary">Fast Shipping from US Warehouses</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
                 Potty training. Behavior correction. Safer walks. Smarter solutions.
@@ -199,16 +199,15 @@ const Index = () => {
             </span>
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
               </svg>
-              US Fulfillment Centers
+              Secure Checkout
             </span>
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary" aria-hidden="true">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <path d="M9 12l2 2 4-4" />
+                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
               </svg>
-              Tested for Large Breeds
+              Email Support
             </span>
           </div>
         </div>
