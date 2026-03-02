@@ -40,6 +40,7 @@ const navItems = [
   { to: '/admin/domain-health', label: 'Domain Health', icon: Globe },
   { to: '/admin/perf-audit', label: 'Performance', icon: Activity },
   { to: '/admin/security-credentials', label: 'Security', icon: ShieldAlert },
+  { to: '/admin/integrations/merchant', label: 'Merchant Center', icon: Globe },
 ];
 
 /**

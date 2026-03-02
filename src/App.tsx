@@ -248,6 +248,7 @@ const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagno
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
 const SitemapPingPage = lazyWithRetry(() => import("./pages/admin/SitemapPingPage"));
 const MerchantFixChecklist = lazyWithRetry(() => import("./pages/MerchantFixChecklist"));
+const MerchantIntegrationPage = lazyWithRetry(() => import("./pages/admin/MerchantIntegrationPage"));
 
 // Diagnostics pages (hidden, noindex)
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
@@ -613,6 +614,7 @@ const App = () => {
                         <Route path="progress" element={<Suspense fallback={<RouteLoader />}><ProgressDashboard /></Suspense>} />
                         <Route path="seo-engine" element={<Suspense fallback={<RouteLoader />}><AutonomousSeoEnginePage /></Suspense>} />
                         <Route path="seo-console" element={<Suspense fallback={<RouteLoader />}><SeoConsolePage /></Suspense>} />
+                        <Route path="integrations/merchant" element={<Suspense fallback={<RouteLoader />}><MerchantIntegrationPage /></Suspense>} />
                       </Route>
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
