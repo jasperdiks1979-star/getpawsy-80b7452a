@@ -2709,6 +2709,126 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_oauth_state: {
+        Row: {
+          code_verifier: string
+          created_at: string
+          expires_at: string
+          id: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          code_verifier: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          code_verifier?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      merchant_oauth_tokens: {
+        Row: {
+          access_token_expires_at: string | null
+          created_at: string
+          encrypted_refresh_token: string
+          id: string
+          is_connected: boolean
+          last_error: string | null
+          last_error_at: string | null
+          merchant_center_id: string | null
+          scopes: string[] | null
+          token_created_at: string
+          token_refreshed_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token_expires_at?: string | null
+          created_at?: string
+          encrypted_refresh_token: string
+          id?: string
+          is_connected?: boolean
+          last_error?: string | null
+          last_error_at?: string | null
+          merchant_center_id?: string | null
+          scopes?: string[] | null
+          token_created_at?: string
+          token_refreshed_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token_expires_at?: string | null
+          created_at?: string
+          encrypted_refresh_token?: string
+          id?: string
+          is_connected?: boolean
+          last_error?: string | null
+          last_error_at?: string | null
+          merchant_center_id?: string | null
+          scopes?: string[] | null
+          token_created_at?: string
+          token_refreshed_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      merchant_sync_logs: {
+        Row: {
+          account_info: Json | null
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          issues_summary: Json | null
+          products_with_issues: number | null
+          started_at: string
+          status: string
+          sync_type: string
+          total_products: number | null
+          triggered_by: string | null
+        }
+        Insert: {
+          account_info?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          issues_summary?: Json | null
+          products_with_issues?: number | null
+          started_at?: string
+          status?: string
+          sync_type?: string
+          total_products?: number | null
+          triggered_by?: string | null
+        }
+        Update: {
+          account_info?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          issues_summary?: Json | null
+          products_with_issues?: number | null
+          started_at?: string
+          status?: string
+          sync_type?: string
+          total_products?: number | null
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       monitoring_ad_actions: {
         Row: {
           action_type: string

@@ -185,3 +185,18 @@ verify_jwt = false
 
 [functions.cj-google-sync]
 verify_jwt = false
+
+[functions.merchant-oauth-start]
+verify_jwt = false
+
+[functions.merchant-oauth-callback]
+verify_jwt = false
+
+[functions.merchant-status]
+verify_jwt = false
+
+[functions.merchant-sync]
+verify_jwt = false
+
+[functions.merchant-summary]
+verify_jwt = false
