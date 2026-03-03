@@ -15,7 +15,6 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Auth check
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -35,7 +34,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check admin
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -61,12 +59,27 @@ Deno.serve(async (req: Request) => {
     // Get last sync
     const { data: lastSync } = await supabase
       .from("merchant_sync_logs")
-      .select("status, started_at, completed_at, total_products, products_with_issues, error_message")
+      .select("status, started_at, completed_at, total_products, products_with_issues, error_message, debug_report")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
+    // Get export count from DB
+    const { count: activeProductCount } = await supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .gt("price", 0);
+
     const merchantId = Deno.env.get("GOOGLE_MERCHANT_ID");
+
+    // Config flags
+    const pruneEnabled = Deno.env.get("PRUNE_ENABLED") === "true";
+    const pruneDryrun = Deno.env.get("PRUNE_DRYRUN") !== "false";
+    const sendAdditionalImages = Deno.env.get("SEND_ADDITIONAL_IMAGES") !== "false";
+
+    // Extract prune summary from last sync if available
+    const lastPruneSummary = (lastSync?.debug_report as any)?.pruneSummary || null;
 
     return new Response(
       JSON.stringify({
@@ -78,6 +91,7 @@ Deno.serve(async (req: Request) => {
           tokenRefreshedAt: tokenData?.token_refreshed_at || null,
           lastError: tokenData?.last_error || null,
           lastErrorAt: tokenData?.last_error_at || null,
+          exportableProductCount: activeProductCount || 0,
           lastSync: lastSync
             ? {
                 status: lastSync.status,
@@ -88,6 +102,13 @@ Deno.serve(async (req: Request) => {
                 errorMessage: lastSync.error_message,
               }
             : null,
+          flags: {
+            PRUNE_ENABLED: pruneEnabled,
+            PRUNE_DRYRUN: pruneDryrun,
+            SEND_ADDITIONAL_IMAGES: sendAdditionalImages,
+            COMPLIANCE_SAFE: true,
+          },
+          lastPruneSummary,
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
