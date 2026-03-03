@@ -200,3 +200,6 @@ verify_jwt = false
 
 [functions.merchant-summary]
 verify_jwt = false
+
+[functions.merchant-audit]
+verify_jwt = false
