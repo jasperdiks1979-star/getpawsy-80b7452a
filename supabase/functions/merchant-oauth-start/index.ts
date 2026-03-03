@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
     const configuredRedirect = Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI");
-    const fallbackRedirect = `${supabaseUrl}/functions/v1/merchant-oauth-callback`;
+    const fallbackRedirect = "https://getpawsy.pet/api/merchant-oauth-callback";
     const redirectUri = configuredRedirect || fallbackRedirect;
 
     // Diagnostic: log URL origins (no secrets)

@@ -33,8 +33,8 @@ This project uses **OAuth2 Authorization Code flow with PKCE** to connect to Goo
 3. Application type: **Web application**
 4. Name: `GetPawsy Merchant OAuth`
 5. Authorized redirect URIs:
-   - Production: `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-oauth-callback`
-   - (The callback goes through the edge function, not the frontend)
+   - Production: `https://getpawsy.pet/api/merchant-oauth-callback`
+   - (Google redirects to your custom domain; the frontend forwards to the edge function via POST)
 6. Click **Create**
 7. Copy the **Client ID** and **Client Secret**
 
@@ -46,7 +46,7 @@ Add these secrets in Lovable Cloud:
 |---|---|
 | `GOOGLE_OAUTH_CLIENT_ID` | Your OAuth Client ID |
 | `GOOGLE_OAUTH_CLIENT_SECRET` | Your OAuth Client Secret |
-| `GOOGLE_OAUTH_REDIRECT_URI` | `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-oauth-callback` |
+| `GOOGLE_OAUTH_REDIRECT_URI` | `https://getpawsy.pet/api/merchant-oauth-callback` |
 | `GOOGLE_MERCHANT_CENTER_ID` | Your numeric Merchant Center ID |
 | `APP_BASE_URL` | `https://getpawsy.pet` |
 | `TOKEN_ENCRYPTION_KEY` | A random 32+ character string (e.g., generate with `openssl rand -hex 32`) |
