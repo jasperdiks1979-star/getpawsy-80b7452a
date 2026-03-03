@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ import {
   ExternalLink,
   Loader2,
   ShieldCheck,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,6 +52,7 @@ interface SyncLog {
 
 export default function MerchantIntegrationPage() {
   const { invokeFunction } = useAuthenticatedFetch();
+  const navigate = useNavigate();
   const [status, setStatus] = useState<MerchantStatus | null>(null);
   const [logs, setLogs] = useState<SyncLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,11 +161,17 @@ export default function MerchantIntegrationPage() {
       </Helmet>
 
       <div className="p-6 space-y-6 max-w-4xl">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Google Merchant Center</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            OAuth2 integration — no service account keys required.
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Google Merchant Center</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              OAuth2 integration — no service account keys required.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => navigate('/admin/integrations/merchant/settings')}>
+            <Settings className="h-4 w-4 mr-1" />
+            Settings
+          </Button>
         </div>
 
         {/* Connection Status Card */}
