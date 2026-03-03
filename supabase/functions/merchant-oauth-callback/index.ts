@@ -57,9 +57,14 @@ Deno.serve(async (req: Request) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
     const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
-    const redirectUri =
-      Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI") ||
-      `${supabaseUrl}/functions/v1/merchant-oauth-callback`;
+    const configuredRedirect = Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI");
+    const fallbackRedirect = `${supabaseUrl}/functions/v1/merchant-oauth-callback`;
+    const redirectUri = configuredRedirect || fallbackRedirect;
+
+    // Diagnostic: log URL origins (no secrets)
+    console.log("[merchant-oauth-callback] SUPABASE_URL:", supabaseUrl);
+    console.log("[merchant-oauth-callback] Redirect URI source:", configuredRedirect ? "GOOGLE_OAUTH_REDIRECT_URI env" : "fallback from SUPABASE_URL");
+    console.log("[merchant-oauth-callback] Redirect URI used:", redirectUri);
     const encryptionKey = Deno.env.get("TOKEN_ENCRYPTION_KEY");
     const merchantId = Deno.env.get("GOOGLE_MERCHANT_CENTER_ID");
 
