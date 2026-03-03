@@ -205,15 +205,16 @@ function checkFooterLinks(corpus: string): { found: string[]; missing: string[] 
   const found: string[] = [];
   const missing: string[] = [];
   for (const href of REQUIRED_FOOTER_HREFS) {
-    // Check for various compiled patterns:
-    // <a href="/shipping"> compiles to: href:"/shipping" or href="/shipping"
-    // <Link to="/shipping"> compiles to: to:"/shipping" or to="/shipping"
-    if (
-      corpus.includes(`href="${href}"`) ||
-      corpus.includes(`href:"${href}"`) ||
-      corpus.includes(`to:"${href}"`) ||
-      corpus.includes(`to="${href}"`)
-    ) {
+    // Minified JS may use single quotes, double quotes, backticks, or varied spacing.
+    // Check broadly: any occurrence of the path as a string value in the corpus.
+    const patterns = [
+      `href="${href}"`, `href:'${href}'`, `href:"${href}"`,
+      `href:"${href}"`, `href: "${href}"`, `href: '${href}'`,
+      `to:"${href}"`, `to:'${href}'`, `to="${href}"`, `to='${href}'`,
+      `"${href}"`,  // raw string literal in object like { href: "/shipping" }
+      `'${href}'`,  // single-quoted variant
+    ];
+    if (patterns.some(p => corpus.includes(p))) {
       found.push(href);
     } else {
       missing.push(href);
