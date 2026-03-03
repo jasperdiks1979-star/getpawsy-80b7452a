@@ -37,7 +37,8 @@ function useDeferWidgets(): boolean {
   useEffect(() => {
     if (ready) return;
 
-    const activate = () => setReady(true);
+    let cancelled = false;
+    const activate = () => { if (!cancelled) setReady(true); };
 
     // 5s hard cap
     const timer = setTimeout(activate, 5000);
@@ -47,8 +48,15 @@ function useDeferWidgets(): boolean {
     const handler = () => { activate(); cleanup(); };
     events.forEach(e => window.addEventListener(e, handler, { once: true, passive: true }));
 
-    // Check if grid has already rendered via the timing mark
+    // Check if grid has already rendered via the timing mark — reduced polling, with cleanup
+    let checkCount = 0;
+    const maxChecks = 15; // max 3 seconds of checking (200ms * 15)
     const checkGrid = setInterval(() => {
+      checkCount++;
+      if (checkCount >= maxChecks) {
+        clearInterval(checkGrid);
+        return;
+      }
       try {
         import('@/lib/grid-timing').then(({ getGridTiming }) => {
           if (getGridTiming().gridFirstItemRenderedAt !== null) {
@@ -60,6 +68,7 @@ function useDeferWidgets(): boolean {
     }, 200);
 
     function cleanup() {
+      cancelled = true;
       clearTimeout(timer);
       clearInterval(checkGrid);
       events.forEach(e => window.removeEventListener(e, handler));

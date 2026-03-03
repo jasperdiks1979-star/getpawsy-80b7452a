@@ -1,5 +1,5 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
-// ⚡ No lucide icon — use emoji/SVG inline to avoid pulling lucide into TrendingNowStrip chunk
 import { getTopSprintProducts } from '@/lib/sprint-products';
 
 /**
@@ -10,7 +10,7 @@ import { getTopSprintProducts } from '@/lib/sprint-products';
 
 const trending = getTopSprintProducts(4);
 
-export const TrendingNowStrip = () => {
+export const TrendingNowStrip = memo(() => {
   return (
     <div className="w-full bg-accent/50 border-b border-border/50 overflow-hidden" style={{ height: 36, contain: 'layout' }}>
       <div className="container px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-hide">
@@ -31,4 +31,6 @@ export const TrendingNowStrip = () => {
       </div>
     </div>
   );
-};
+});
+
+TrendingNowStrip.displayName = 'TrendingNowStrip';

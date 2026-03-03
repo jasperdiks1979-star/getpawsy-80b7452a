@@ -832,3 +832,16 @@ a, button, [role="button"], input[type="submit"], input[type="button"] {
 .hero-lcp-section > div:first-child > div:not(:first-child) {
   pointer-events: none !important;
 }
+
+/* Stabilise hero compositing layer — prevents iOS Safari repaint flicker */
+.hero-lcp-section {
+  will-change: auto;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+.hero-lcp-img {
+  will-change: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}

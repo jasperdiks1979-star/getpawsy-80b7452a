@@ -104,6 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     traceEffect('AuthProvider', 'auth-init (async — supabase not yet loaded)');
 
     let subscription: { unsubscribe: () => void } | null = null;
+    let initialSessionResolved = false;
 
     // Safety timeout: if auth init hasn't completed in 10s, stop blocking the UI
     const authTimeout = setTimeout(() => {
@@ -114,8 +115,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }, 10_000);
 
+    const applySession = (source: string, session: Session | null) => {
+      traceStateSet('AuthProvider', `session+user [${source}]`, !!session);
+      setSession(prev => prev === session ? prev : session);
+      setUser(prev => {
+        const next = session?.user ?? null;
+        return prev?.id === next?.id ? prev : next;
+      });
+      if (session?.expires_at) scheduleTokenRefresh(session.expires_at);
+      if (session?.user) {
+        setTimeout(() => checkAdminRole(session.user), 0);
+      } else {
+        setIsAdmin(false);
+      }
+      traceStateSet('AuthProvider', 'isLoading', false);
+      setIsLoading(false);
+    };
+
     // ── Dynamic import — supabase SDK downloads AFTER React is mounted ────────
-    // This removes ~138 KB gzip from the initial JS waterfall.
     const initAuth = async () => {
       const supabase = await getSupabase();
 
@@ -123,30 +140,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data } = supabase.auth.onAuthStateChange((event, session) => {
         console.log('Auth state changed:', event);
         traceAuthEvent(`onAuthStateChange → ${event}`);
-        traceStateSet('AuthProvider', 'session+user', !!session);
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.expires_at) scheduleTokenRefresh(session.expires_at);
-        if (session?.user) {
-          setTimeout(() => checkAdminRole(session.user), 0);
-        } else {
-          setIsAdmin(false);
-        }
-        traceStateSet('AuthProvider', 'isLoading', false);
-        setIsLoading(false);
+        // Skip if getSession already resolved with the same data
+        if (event === 'INITIAL_SESSION' && initialSessionResolved) return;
+        applySession(`onAuthStateChange:${event}`, session);
       });
       subscription = data.subscription;
 
       // THEN check for existing session
       supabase.auth.getSession().then(({ data: { session } }) => {
         traceAuthEvent(`getSession resolved (hasSession=${!!session})`);
-        traceStateSet('AuthProvider', 'session+user [getSession]', !!session);
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.expires_at) scheduleTokenRefresh(session.expires_at);
-        if (session?.user) checkAdminRole(session.user);
-        traceStateSet('AuthProvider', 'isLoading [getSession]', false);
-        setIsLoading(false);
+        initialSessionResolved = true;
+        applySession('getSession', session);
       }).catch((e) => {
         console.error('[AuthProvider] getSession failed:', e);
         traceStateSet('AuthProvider', 'isLoading [getSession catch]', false);
