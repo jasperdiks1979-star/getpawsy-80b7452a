@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, RefreshCw, Zap, TrendingUp, Tag, AlertTriangle,
-  CheckCircle, ArrowRight, Search, BarChart3,
+  CheckCircle, ArrowRight, Search, BarChart3, Rocket, ImageOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
@@ -23,6 +23,7 @@ interface Optimization {
   product_type: string | null;
   keyword_suggestions: string[];
   optimization_score: number;
+  boost_score: number;
   status: string;
 }
 
@@ -33,17 +34,27 @@ interface Insights {
   categoryIssues: Array<{ id: string; name: string; issue: string }>;
 }
 
-function ScoreBadge({ score }: { score: number }) {
+interface PerformanceData {
+  topProducts: Array<{ id: string; name: string; price: number; category: string | null; boostScore: number }>;
+  optimizedTitles: Array<{ id: string; currentTitle: string; suggestedTitle: string }>;
+  keywordSuggestions: Array<{ keyword: string; productCount: number }>;
+  imageIssues: Array<{ id: string; name: string; issue: string }>;
+}
+
+function ScoreBadge({ score, label }: { score: number; label?: string }) {
   const color = score >= 80 ? 'text-green-600' : score >= 60 ? 'text-amber-600' : 'text-destructive';
-  return <span className={`text-xs font-bold ${color}`}>{score}/100</span>;
+  return <span className={`text-xs font-bold ${color}`}>{score}{label || '/100'}</span>;
 }
 
 export default function ShoppingOptimizerPage() {
   const [loading, setLoading] = useState(false);
+  const [boostLoading, setBoostLoading] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
   const [insightsLoading, setInsightsLoading] = useState(false);
+  const [perfLoading, setPerfLoading] = useState(false);
   const [optimizations, setOptimizations] = useState<Optimization[]>([]);
   const [insights, setInsights] = useState<Insights | null>(null);
+  const [performance, setPerformance] = useState<PerformanceData | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const callOptimizer = async (action: string, body?: any) => {
@@ -80,6 +91,21 @@ export default function ShoppingOptimizerPage() {
     }
   };
 
+  const runBoost = async () => {
+    setBoostLoading(true);
+    try {
+      const json = await callOptimizer('boost');
+      if (!json.ok) throw new Error(json.error);
+      setOptimizations(json.results || []);
+      setSelected(new Set());
+      toast.success(`Boosted ${json.boosted} products (${json.imageIssues} image issues)`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setBoostLoading(false);
+    }
+  };
+
   const loadInsights = async () => {
     setInsightsLoading(true);
     try {
@@ -93,6 +119,24 @@ export default function ShoppingOptimizerPage() {
     }
   };
 
+  const loadPerformance = async () => {
+    setPerfLoading(true);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/shopping-optimizer?action=performance`,
+        { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
+      );
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error);
+      setPerformance(json);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setPerfLoading(false);
+    }
+  };
+
   const applySelected = async () => {
     if (selected.size === 0) return toast.error('No products selected');
     setApplyLoading(true);
@@ -100,7 +144,6 @@ export default function ShoppingOptimizerPage() {
       const json = await callOptimizer('apply', { productIds: Array.from(selected) });
       if (!json.ok) throw new Error(json.error);
       toast.success(`Applied ${json.applied} optimizations`);
-      // Update local state
       setOptimizations(prev =>
         prev.map(o => selected.has(o.product_id) ? { ...o, status: 'applied' } : o)
       );
@@ -112,13 +155,12 @@ export default function ShoppingOptimizerPage() {
     }
   };
 
-  // Load existing optimizations from DB on mount
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from('shopping_optimizations')
         .select('*')
-        .order('optimization_score', { ascending: true })
+        .order('optimization_score', { ascending: false })
         .limit(50);
       if (data?.length) setOptimizations(data as unknown as Optimization[]);
     })();
@@ -133,35 +175,74 @@ export default function ShoppingOptimizerPage() {
   };
 
   const selectAll = () => {
-    const pending = optimizations.filter(o => o.status === 'pending').map(o => o.product_id);
+    const pending = optimizations.filter(o => o.status !== 'applied').map(o => o.product_id);
     setSelected(new Set(pending));
   };
+
+  const priorityCount = optimizations.filter(o => o.status === 'priority').length;
 
   return (
     <div className="space-y-6">
       <Helmet><meta name="robots" content="noindex,nofollow" /></Helmet>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />
-            Shopping Traffic Engine
+            Shopping Visibility Booster
           </h1>
           <p className="text-muted-foreground text-sm">
-            Optimize product data for higher Google Shopping visibility and CTR
+            Auto-select top 50 products, optimize titles, validate images & categories for Google Shopping
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={runOptimize} disabled={loading}>
+          <Button variant="outline" onClick={runOptimize} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
-            Run Optimizer
+            Optimize All
+          </Button>
+          <Button onClick={runBoost} disabled={boostLoading}>
+            {boostLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
+            Boost Top 50
           </Button>
         </div>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold">{optimizations.length}</p>
+            <p className="text-xs text-muted-foreground">Products Optimized</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-primary">{priorityCount}</p>
+            <p className="text-xs text-muted-foreground">Priority Feed Items</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold">{optimizations.filter(o => o.status === 'applied').length}</p>
+            <p className="text-xs text-muted-foreground">Applied</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold">
+              {optimizations.length > 0 ? Math.round(optimizations.reduce((s, o) => s + o.optimization_score, 0) / optimizations.length) : 0}
+            </p>
+            <p className="text-xs text-muted-foreground">Avg Score</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="optimizations">
         <TabsList>
           <TabsTrigger value="optimizations">Optimizations</TabsTrigger>
+          <TabsTrigger value="performance" onClick={() => !performance && loadPerformance()}>
+            Performance
+          </TabsTrigger>
           <TabsTrigger value="insights" onClick={() => !insights && loadInsights()}>
             Insights
           </TabsTrigger>
@@ -183,10 +264,10 @@ export default function ShoppingOptimizerPage() {
             </div>
           )}
 
-          {optimizations.length === 0 && !loading && (
+          {optimizations.length === 0 && !loading && !boostLoading && (
             <div className="text-center py-12 text-muted-foreground">
               <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>Click "Run Optimizer" to generate title and description improvements.</p>
+              <p>Click "Boost Top 50" to auto-select and optimize the best products for Google Shopping.</p>
             </div>
           )}
 
@@ -202,10 +283,13 @@ export default function ShoppingOptimizerPage() {
                       className="mt-1"
                     />
                     <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between flex-wrap gap-1">
                         <div className="flex items-center gap-2">
                           <ScoreBadge score={opt.optimization_score} />
-                          <Badge variant={opt.status === 'applied' ? 'default' : 'secondary'} className="text-xs">
+                          {opt.boost_score > 0 && (
+                            <span className="text-xs text-muted-foreground">Boost: {opt.boost_score}%</span>
+                          )}
+                          <Badge variant={opt.status === 'applied' ? 'default' : opt.status === 'priority' ? 'destructive' : 'secondary'} className="text-xs">
                             {opt.status}
                           </Badge>
                         </div>
@@ -217,7 +301,6 @@ export default function ShoppingOptimizerPage() {
                         )}
                       </div>
 
-                      {/* Title comparison */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div>
                           <p className="text-xs font-medium text-muted-foreground mb-1">Original Title</p>
@@ -231,7 +314,6 @@ export default function ShoppingOptimizerPage() {
                         </div>
                       </div>
 
-                      {/* Keywords */}
                       {opt.keyword_suggestions?.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {opt.keyword_suggestions.map(kw => (
@@ -242,7 +324,6 @@ export default function ShoppingOptimizerPage() {
                         </div>
                       )}
 
-                      {/* Product type */}
                       {opt.product_type && (
                         <p className="text-xs text-muted-foreground">
                           Product Type: {opt.product_type}
@@ -256,6 +337,105 @@ export default function ShoppingOptimizerPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="performance" className="space-y-4">
+          {perfLoading && (
+            <div className="text-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+            </div>
+          )}
+
+          {performance && (
+            <div className="space-y-4">
+              {/* Image Issues */}
+              {performance.imageIssues.length > 0 && (
+                <Card className="border-destructive/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2 text-destructive">
+                      <ImageOff className="w-4 h-4" /> Image Issues ({performance.imageIssues.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1.5">
+                      {performance.imageIssues.map(p => (
+                        <div key={p.id} className="text-sm flex items-center gap-2">
+                          <AlertTriangle className="w-3 h-3 text-destructive shrink-0" />
+                          <span className="truncate">{p.name}</span>
+                          <Badge variant="outline" className="text-xs shrink-0">{p.issue}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Top Products */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Rocket className="w-4 h-4" /> Top 50 Products by Boost Score
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1.5 max-h-80 overflow-y-auto">
+                      {performance.topProducts.slice(0, 20).map((p, i) => (
+                        <div key={p.id} className="flex items-center justify-between text-sm">
+                          <span className="truncate flex-1">
+                            <span className="text-muted-foreground mr-1">#{i + 1}</span>
+                            {p.name}
+                          </span>
+                          <ScoreBadge score={Math.round(p.boostScore * 100)} label="%" />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Keyword Suggestions */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4" /> Keyword Demand
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1.5">
+                      {performance.keywordSuggestions.map(kw => (
+                        <div key={kw.keyword} className="flex items-center justify-between text-sm">
+                          <span>{kw.keyword}</span>
+                          <Badge variant="secondary" className="text-xs">{kw.productCount}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Optimized Titles */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4" /> Title Suggestions for Top Products
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {performance.optimizedTitles.map(t => (
+                      <div key={t.id} className="text-sm border-b border-border pb-2 last:border-0">
+                        <p className="text-muted-foreground line-clamp-1">{t.currentTitle}</p>
+                        <p className="font-medium text-primary flex items-center gap-1">
+                          <ArrowRight className="w-3 h-3 shrink-0" />
+                          <span className="line-clamp-1">{t.suggestedTitle}</span>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
+
         <TabsContent value="insights" className="space-y-4">
           {insightsLoading && (
             <div className="text-center py-8">
@@ -265,7 +445,6 @@ export default function ShoppingOptimizerPage() {
 
           {insights && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Top Keywords */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -284,7 +463,6 @@ export default function ShoppingOptimizerPage() {
                 </CardContent>
               </Card>
 
-              {/* Category Issues */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -307,7 +485,6 @@ export default function ShoppingOptimizerPage() {
                 </CardContent>
               </Card>
 
-              {/* Low CTR Products */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -330,7 +507,6 @@ export default function ShoppingOptimizerPage() {
                 </CardContent>
               </Card>
 
-              {/* Title Suggestions */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
