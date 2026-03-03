@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// AES-GCM decryption
+// ── AES-GCM decryption ──────────────────────────────────────────
 async function decryptToken(encrypted: string, keyStr: string): Promise<string> {
   const [ivB64, ctB64] = encrypted.split(":");
   const iv = Uint8Array.from(atob(ivB64), (c) => c.charCodeAt(0));
@@ -44,6 +44,58 @@ async function refreshAccessToken(
   return await resp.json();
 }
 
+// ── Weight normalization (matching cj-google-sync) ──────────────
+const LARGE_ITEM_PATTERNS = /xl|large|60"|69"|77"|84"|90"|cat tree|dog bed|stroller|cage|aviary/i;
+
+function normalizeWeight(rawGrams: number | null | undefined, title: string): number {
+  let grams = rawGrams ?? 0;
+  if (!grams || isNaN(grams)) grams = 0;
+  let kg: number;
+  if (grams === 0) kg = 0.2;
+  else if (grams >= 100 && grams <= 200000) kg = grams / 1000;
+  else if (grams > 0 && grams < 100) kg = grams;
+  else kg = 0.2;
+  if (kg < 0.05) kg = 0.2;
+  if (kg > 30) kg = 25;
+  if (LARGE_ITEM_PATTERNS.test(title) && kg < 5) kg = 5;
+  return Math.round(kg * 100) / 100;
+}
+
+function validateImageUrl(url: string | null): { valid: boolean; url: string; reason?: string } {
+  const PLACEHOLDER = "https://getpawsy.pet/images/merchant-placeholder.jpg";
+  if (!url || url.trim() === "") return { valid: false, url: PLACEHOLDER, reason: "empty_url" };
+  if (!url.startsWith("https://") && !url.startsWith("http://"))
+    return { valid: false, url: PLACEHOLDER, reason: "not_absolute" };
+  let cleaned = url.startsWith("http://") ? url.replace("http://", "https://") : url;
+  if (cleaned.includes(" ") || cleaned.length < 15)
+    return { valid: false, url: PLACEHOLDER, reason: "malformed_url" };
+  return { valid: true, url: cleaned };
+}
+
+// ── Google Content API upsert ───────────────────────────────────
+async function upsertGoogleProduct(
+  accessToken: string,
+  merchantId: string,
+  product: Record<string, unknown>
+): Promise<{ ok: boolean; status?: number; error?: string; offerId?: string }> {
+  const url = `https://shoppingcontent.googleapis.com/content/v2.1/${merchantId}/products`;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(product),
+    });
+    if (res.ok) return { ok: true };
+    const body = await res.text();
+    return { ok: false, status: res.status, error: body.substring(0, 500), offerId: product.offerId as string };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message, offerId: product.offerId as string };
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -53,8 +105,10 @@ Deno.serve(async (req: Request) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);
 
+  const runId = crypto.randomUUID();
+
   try {
-    // Auth check
+    // ── Auth check ────────────────────────────────────────────────
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -72,7 +126,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Admin check
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -86,11 +139,20 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Rate limit: max 1 sync per minute
+    // ── Parse body ────────────────────────────────────────────────
+    const body = await req.json().catch(() => ({}));
+    const modeReceived = body.mode || "live";
+    const modeEffective = modeReceived === "dryrun" ? "dryrun" : "live";
+    const limit = body.limit || 75;
+
+    console.log(`[merchant-sync] START runId=${runId} invokedBy=admin_button mode_received=${modeReceived} mode_effective=${modeEffective} limit=${limit}`);
+
+    // ── Rate limit ────────────────────────────────────────────────
     const { data: recentSync } = await supabase
       .from("merchant_sync_logs")
       .select("started_at")
       .eq("status", "running")
+      .neq("sync_type", "debug_dry_run")
       .gt("started_at", new Date(Date.now() - 60000).toISOString())
       .maybeSingle();
 
@@ -101,7 +163,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get token
+    // ── Get OAuth token ───────────────────────────────────────────
     const { data: tokenRecord } = await supabase
       .from("merchant_oauth_tokens")
       .select("*")
@@ -121,6 +183,7 @@ Deno.serve(async (req: Request) => {
     const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
     const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
     const merchantId = tokenRecord.merchant_center_id || Deno.env.get("GOOGLE_MERCHANT_CENTER_ID");
+    const merchantIdLast4 = merchantId ? merchantId.slice(-4) : "none";
 
     if (!merchantId) {
       return new Response(
@@ -133,22 +196,21 @@ Deno.serve(async (req: Request) => {
     const { data: syncLog } = await supabase
       .from("merchant_sync_logs")
       .insert({
-        sync_type: "manual",
+        sync_type: modeEffective === "dryrun" ? "admin_dryrun" : "manual",
         status: "running",
         triggered_by: user.id,
       })
       .select("id")
       .single();
-
     const syncId = syncLog?.id;
 
-    // Decrypt refresh token and get access token
+    // Decrypt + refresh token
     let refreshToken: string;
     try {
       refreshToken = await decryptToken(tokenRecord.encrypted_refresh_token, encryptionKey);
     } catch (e) {
       console.error("[merchant-sync] Decrypt failed:", e);
-      await markDisconnected(supabase, tokenRecord.id, "Failed to decrypt refresh token", syncId);
+      await markFailed(supabase, syncId, "Failed to decrypt refresh token");
       return new Response(
         JSON.stringify({ ok: false, error: "Token decryption failed. Please reconnect." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -157,14 +219,17 @@ Deno.serve(async (req: Request) => {
 
     const tokenResult = await refreshAccessToken(refreshToken, clientId, clientSecret);
     if (!tokenResult) {
-      await markDisconnected(supabase, tokenRecord.id, "Refresh token expired or revoked", syncId);
+      await supabase
+        .from("merchant_oauth_tokens")
+        .update({ is_connected: false, last_error: "Refresh token expired or revoked", last_error_at: new Date().toISOString() })
+        .eq("id", tokenRecord.id);
+      await markFailed(supabase, syncId, "Token refresh failed");
       return new Response(
         JSON.stringify({ ok: false, error: "Token refresh failed. Please reconnect Google Merchant." }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Update token refresh time
     await supabase
       .from("merchant_oauth_tokens")
       .update({
@@ -177,105 +242,233 @@ Deno.serve(async (req: Request) => {
 
     const accessToken = tokenResult.access_token;
 
-    // 1. Fetch account info
-    let accountInfo = null;
-    try {
-      const accResp = await fetch(
-        `https://shoppingcontent.googleapis.com/content/v2.1/${merchantId}/accounts/${merchantId}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+    // ── STEP 1: Source query (EXACT same as cj-google-sync) ─────
+    const sourceQuery = "SELECT id,name,slug,description,price,image_url,stock,weight,cj_product_id,is_active,images FROM products WHERE is_active=true AND price>0 ORDER BY id";
+
+    const { data: products, error: dbErr, count: rawCount } = await supabase
+      .from("products")
+      .select("id, name, slug, description, price, image_url, stock, weight, cj_product_id, is_active, images", { count: "exact" })
+      .eq("is_active", true)
+      .gt("price", 0)
+      .order("id")
+      .range(0, limit - 1);
+
+    if (dbErr) {
+      await markFailed(supabase, syncId, `DB error: ${dbErr.message}`);
+      return new Response(
+        JSON.stringify({ ok: false, error: `DB query failed: ${dbErr.message}`, runId }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
-      if (accResp.ok) {
-        accountInfo = await accResp.json();
-      } else {
-        console.error("[merchant-sync] Account fetch failed:", accResp.status, await accResp.text());
-      }
-    } catch (e) {
-      console.error("[merchant-sync] Account fetch error:", e);
     }
 
-    // 2. Fetch product statuses (issues summary)
-    let totalProducts = 0;
-    let productsWithIssues = 0;
-    const issuesSummary: Record<string, number> = {};
+    const totalRaw = rawCount ?? 0;
+    console.log(`[merchant-sync] rawCount=${totalRaw}, batch=${products?.length ?? 0}, limit=${limit}, merchantId_last4=${merchantIdLast4}`);
 
-    try {
-      let nextPageToken: string | undefined;
-      let pages = 0;
-      const maxPages = 10; // Safety limit
+    // ── STEP 2: Eligibility + payload build ─────────────────────
+    let eligibleCount = 0;
+    let payloadBuiltCount = 0;
+    let attemptedSendCount = 0;
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: Array<{ offerId: string; status?: number; reason: string }> = [];
+    const skippedReasons: Record<string, number> = {};
 
-      do {
-        const statusUrl = new URL(
-          `https://shoppingcontent.googleapis.com/content/v2.1/${merchantId}/productstatuses`
-        );
-        statusUrl.searchParams.set("maxResults", "250");
-        if (nextPageToken) statusUrl.searchParams.set("pageToken", nextPageToken);
+    const payloads: Array<Record<string, unknown>> = [];
 
-        const statusResp = await fetch(statusUrl.toString(), {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+    for (const p of (products || [])) {
+      // Skip checks (matching cj-google-sync)
+      if (!p.price || p.price <= 0) {
+        skippedReasons["missing_price"] = (skippedReasons["missing_price"] || 0) + 1;
+        continue;
+      }
 
-        if (!statusResp.ok) {
-          const errText = await statusResp.text();
-          console.error("[merchant-sync] Product statuses failed:", statusResp.status, errText);
-          break;
+      const weightKg = normalizeWeight(p.weight, p.name || "");
+      if (weightKg > 30) {
+        skippedReasons["weight_over_30kg"] = (skippedReasons["weight_over_30kg"] || 0) + 1;
+        continue;
+      }
+
+      const imageResult = validateImageUrl(p.image_url);
+      if (!imageResult.valid && !imageResult.url) {
+        skippedReasons["no_image"] = (skippedReasons["no_image"] || 0) + 1;
+        continue;
+      }
+
+      eligibleCount++;
+
+      // Additional images
+      const additionalImages: string[] = [];
+      if (p.images && Array.isArray(p.images)) {
+        for (const img of (p.images as string[]).slice(0, 9)) {
+          const r = validateImageUrl(img);
+          if (r.valid) additionalImages.push(r.url);
         }
+      }
 
-        const statusData = await statusResp.json();
-        const resources = statusData.resources || [];
+      const googleProduct: Record<string, unknown> = {
+        offerId: p.id,
+        title: (p.name || "").substring(0, 150),
+        description: (p.description || p.name || "").substring(0, 5000),
+        link: `https://getpawsy.pet/product/${p.slug}`,
+        imageLink: imageResult.url,
+        contentLanguage: "en",
+        targetCountry: "US",
+        channel: "online",
+        availability: p.stock && p.stock > 0 ? "in stock" : "out of stock",
+        condition: "new",
+        price: { value: p.price.toFixed(2), currency: "USD" },
+        brand: "GetPawsy",
+        shippingWeight: { value: weightKg.toString(), unit: "kg" },
+      };
+      if (additionalImages.length > 0) {
+        googleProduct.additionalImageLinks = additionalImages;
+      }
 
-        for (const product of resources) {
-          totalProducts++;
-          const issues = product.itemLevelIssues || [];
-          if (issues.length > 0) {
-            productsWithIssues++;
-            for (const issue of issues) {
-              const key = `${issue.severity || "unknown"}:${issue.description || "unknown"}`;
-              issuesSummary[key] = (issuesSummary[key] || 0) + 1;
-            }
+      payloads.push(googleProduct);
+      payloadBuiltCount++;
+    }
+
+    console.log(`[merchant-sync] eligibleCount=${eligibleCount} payloadBuiltCount=${payloadBuiltCount} modeEffective=${modeEffective}`);
+
+    // ── STEP 3: Send to Google (LIVE only) ──────────────────────
+    if (modeEffective === "live") {
+      if (payloadBuiltCount > 0) {
+        attemptedSendCount = payloadBuiltCount;
+
+        for (const payload of payloads) {
+          const result = await upsertGoogleProduct(accessToken, merchantId, payload);
+          if (result.ok) {
+            successCount++;
+          } else {
+            errorCount++;
+            errors.push({
+              offerId: (payload.offerId as string) || "unknown",
+              status: result.status,
+              reason: (result.error || "unknown").substring(0, 300),
+            });
           }
         }
-
-        nextPageToken = statusData.nextPageToken;
-        pages++;
-      } while (nextPageToken && pages < maxPages);
-    } catch (e) {
-      console.error("[merchant-sync] Product statuses error:", e);
+      } else if (eligibleCount > 0) {
+        // Should not happen, but guard
+        const errMsg = `BUG: eligibleCount=${eligibleCount} but payloadBuiltCount=0 — payload build produced nothing`;
+        console.error(`[merchant-sync] ${errMsg}`);
+        await markFailed(supabase, syncId, errMsg);
+        return new Response(
+          JSON.stringify({ ok: false, error: errMsg, runId, mode_effective: modeEffective }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
-    // Update sync log
-    await supabase
-      .from("merchant_sync_logs")
-      .update({
-        status: "completed",
-        total_products: totalProducts,
-        products_with_issues: productsWithIssues,
-        issues_summary: issuesSummary,
-        account_info: accountInfo
-          ? {
-              name: accountInfo.name,
-              id: accountInfo.id,
-              websiteUrl: accountInfo.websiteUrl,
-              adultContent: accountInfo.adultContent,
-            }
-          : null,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", syncId);
+    // ── STEP 4: Also read product statuses from Google ──────────
+    let googleTotalProducts = 0;
+    let googleProductsWithIssues = 0;
+    const issuesSummary: Record<string, number> = {};
 
-    console.log(
-      `[merchant-sync] ✅ Sync complete: ${totalProducts} products, ${productsWithIssues} with issues`
-    );
+    if (modeEffective === "live") {
+      try {
+        let nextPageToken: string | undefined;
+        let pages = 0;
+        do {
+          const statusUrl = new URL(
+            `https://shoppingcontent.googleapis.com/content/v2.1/${merchantId}/productstatuses`
+          );
+          statusUrl.searchParams.set("maxResults", "250");
+          if (nextPageToken) statusUrl.searchParams.set("pageToken", nextPageToken);
+
+          const statusResp = await fetch(statusUrl.toString(), {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+
+          if (!statusResp.ok) {
+            console.error("[merchant-sync] Product statuses failed:", statusResp.status);
+            await statusResp.text(); // consume body
+            break;
+          }
+
+          const statusData = await statusResp.json();
+          const resources = statusData.resources || [];
+          for (const product of resources) {
+            googleTotalProducts++;
+            const issues = product.itemLevelIssues || [];
+            if (issues.length > 0) {
+              googleProductsWithIssues++;
+              for (const issue of issues) {
+                const key = `${issue.severity || "unknown"}:${issue.description || "unknown"}`;
+                issuesSummary[key] = (issuesSummary[key] || 0) + 1;
+              }
+            }
+          }
+          nextPageToken = statusData.nextPageToken;
+          pages++;
+        } while (nextPageToken && pages < 10);
+      } catch (e) {
+        console.error("[merchant-sync] Product statuses error:", e);
+      }
+    }
+
+    // ── Persist to merchant_sync_logs ────────────────────────────
+    const debugSummary = {
+      runId,
+      mode_effective: modeEffective,
+      merchantId_last4: merchantIdLast4,
+      sourceQuery,
+      rawCount: totalRaw,
+      batchSize: products?.length ?? 0,
+      eligibleCount,
+      payloadBuiltCount,
+      attemptedSendCount,
+      successCount,
+      errorCount,
+      skippedReasons,
+      topErrors: errors.slice(0, 10),
+      googleTotalProducts,
+      googleProductsWithIssues,
+    };
+
+    if (syncId) {
+      await supabase
+        .from("merchant_sync_logs")
+        .update({
+          status: "completed",
+          total_products: modeEffective === "live" ? googleTotalProducts : 0,
+          products_with_issues: googleProductsWithIssues,
+          issues_summary: { ...issuesSummary, _sync_funnel: debugSummary },
+          completed_at: new Date().toISOString(),
+          raw_count: totalRaw,
+          eligible_count: eligibleCount,
+          payload_built_count: payloadBuiltCount,
+          sent_count: modeEffective === "live" ? successCount : 0,
+          debug_report: debugSummary,
+        })
+        .eq("id", syncId);
+    }
+
+    console.log(`[merchant-sync] DONE runId=${runId} mode=${modeEffective} raw=${totalRaw} eligible=${eligibleCount} payload=${payloadBuiltCount} attempted=${attemptedSendCount} success=${successCount} errors=${errorCount}`);
 
     return new Response(
       JSON.stringify({
         ok: true,
-        summary: {
-          totalProducts,
-          productsWithIssues,
+        runId,
+        mode_effective: modeEffective,
+        rawCount: totalRaw,
+        eligibleCount,
+        payloadBuiltCount,
+        attemptedSendCount,
+        successCount,
+        errorCount,
+        skippedReasons,
+        topErrors: errors.slice(0, 10),
+        sourceQuery,
+        googleStatusSummary: modeEffective === "live" ? {
+          totalProducts: googleTotalProducts,
+          productsWithIssues: googleProductsWithIssues,
           issuesSummary,
-          accountInfo: accountInfo
-            ? { name: accountInfo.name, id: accountInfo.id, websiteUrl: accountInfo.websiteUrl }
-            : null,
+        } : null,
+        summary: {
+          totalProducts: modeEffective === "live" ? googleTotalProducts : 0,
+          productsWithIssues: googleProductsWithIssues,
+          issuesSummary,
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -283,35 +476,20 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     console.error("[merchant-sync] Unhandled error:", err);
     return new Response(
-      JSON.stringify({ ok: false, error: "Internal sync error" }),
+      JSON.stringify({ ok: false, error: (err as Error).message, runId }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
 
-async function markDisconnected(
-  supabase: any,
-  tokenId: string,
-  errorMsg: string,
-  syncId: string | undefined
-) {
+async function markFailed(supabase: any, syncId: string | undefined, errorMsg: string) {
+  if (!syncId) return;
   await supabase
-    .from("merchant_oauth_tokens")
+    .from("merchant_sync_logs")
     .update({
-      is_connected: false,
-      last_error: errorMsg,
-      last_error_at: new Date().toISOString(),
+      status: "failed",
+      error_message: errorMsg,
+      completed_at: new Date().toISOString(),
     })
-    .eq("id", tokenId);
-
-  if (syncId) {
-    await supabase
-      .from("merchant_sync_logs")
-      .update({
-        status: "failed",
-        error_message: errorMsg,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", syncId);
-  }
+    .eq("id", syncId);
 }

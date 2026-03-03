@@ -24,6 +24,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface MerchantStatus {
   connected: boolean;
@@ -109,6 +114,27 @@ interface DebugReport {
   };
 }
 
+interface LiveSyncResult {
+  ok: boolean;
+  runId: string;
+  mode_effective: string;
+  rawCount: number;
+  eligibleCount: number;
+  payloadBuiltCount: number;
+  attemptedSendCount: number;
+  successCount: number;
+  errorCount: number;
+  skippedReasons: Record<string, number>;
+  topErrors: Array<{ offerId: string; status?: number; reason: string }>;
+  sourceQuery: string;
+  googleStatusSummary: {
+    totalProducts: number;
+    productsWithIssues: number;
+    issuesSummary: Record<string, number>;
+  } | null;
+  error?: string;
+}
+
 export default function MerchantIntegrationPage() {
   const { invokeFunction } = useAuthenticatedFetch();
   const navigate = useNavigate();
@@ -120,6 +146,9 @@ export default function MerchantIntegrationPage() {
   const [debugging, setDebugging] = useState(false);
   const [debugReport, setDebugReport] = useState<DebugReport | null>(null);
   const [showFullReport, setShowFullReport] = useState(false);
+  const [liveSyncResult, setLiveSyncResult] = useState<LiveSyncResult | null>(null);
+  const [showLiveErrors, setShowLiveErrors] = useState(false);
+  const [showLiveFullResponse, setShowLiveFullResponse] = useState(false);
   const [reachability, setReachability] = useState<{ testing: boolean; result: null | { reachable: boolean; latencyMs?: number; error?: string } }>({ testing: false, result: null });
 
   const testReachability = useCallback(async () => {
@@ -182,16 +211,22 @@ export default function MerchantIntegrationPage() {
 
   const handleSync = async () => {
     setSyncing(true);
+    setLiveSyncResult(null);
     try {
-      const { data, error } = await invokeFunction<{ ok: boolean; summary?: any; error?: string }>(
+      const { data, error } = await invokeFunction<LiveSyncResult>(
         'merchant-sync',
-        { method: 'POST' }
+        { body: { mode: 'live' } }
       );
-      if (data?.ok) {
-        toast.success(`Sync complete: ${data.summary?.totalProducts ?? 0} products, ${data.summary?.productsWithIssues ?? 0} with issues`);
+      if (data) {
+        setLiveSyncResult(data);
+        if (data.ok) {
+          toast.success(`Sync: ${data.successCount} sent, ${data.errorCount} errors`);
+        } else {
+          toast.error(data.error || 'Sync failed');
+        }
         await Promise.all([fetchStatus(), fetchLogs()]);
       } else {
-        toast.error(data?.error || error?.message || 'Sync failed');
+        toast.error(error?.message || 'Sync failed');
       }
     } catch {
       toast.error('Sync request failed');
@@ -229,6 +264,13 @@ export default function MerchantIntegrationPage() {
     }
   };
 
+  const copyLiveResult = () => {
+    if (liveSyncResult) {
+      navigator.clipboard.writeText(JSON.stringify(liveSyncResult, null, 2));
+      toast.success('Result copied to clipboard');
+    }
+  };
+
   const formatDate = (d: string | null) => {
     if (!d) return '—';
     return new Date(d).toLocaleString('nl-NL', {
@@ -240,7 +282,6 @@ export default function MerchantIntegrationPage() {
     ? Math.round((Date.now() - new Date(status.tokenCreatedAt).getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
-  // Safety guards
   const missingEnvKeys = debugReport
     ? Object.entries(debugReport.envConfigStatus).filter(([, v]) => !v).map(([k]) => k)
     : [];
@@ -266,7 +307,7 @@ export default function MerchantIntegrationPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Google Merchant Center</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              OAuth2 integration — no service account keys required.
+              OAuth2 integration — products pushed via Content API.
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => navigate('/admin/integrations/merchant/settings')}>
@@ -330,7 +371,7 @@ export default function MerchantIntegrationPage() {
                 <div className="relative">
                   <Button onClick={handleSync} disabled={syncing || !canLiveSync}>
                     {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                    Run Sync Now
+                    Run Sync Now (LIVE)
                   </Button>
                   {!canLiveSync && debugReport && (
                     <p className="text-xs text-destructive mt-1 absolute whitespace-nowrap">
@@ -365,6 +406,108 @@ export default function MerchantIntegrationPage() {
           </CardContent>
         </Card>
 
+        {/* Live Sync Result Panel */}
+        {liveSyncResult && (
+          <Card className={liveSyncResult.mode_effective === 'dryrun' ? 'border-amber-500/50' : liveSyncResult.errorCount > 0 ? 'border-destructive/50' : 'border-primary/50'}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <RefreshCw className="h-5 w-5" />
+                  Sync Result
+                  {liveSyncResult.mode_effective === 'dryrun' && (
+                    <Badge variant="outline" className="text-amber-600 border-amber-500 ml-2 text-sm font-bold">DRY RUN</Badge>
+                  )}
+                  {liveSyncResult.mode_effective === 'live' && (
+                    <Badge variant="default" className="ml-2 text-sm">LIVE</Badge>
+                  )}
+                </CardTitle>
+                <Button variant="ghost" size="sm" onClick={copyLiveResult}>
+                  <Copy className="h-4 w-4 mr-1" /> Copy
+                </Button>
+              </div>
+              <CardDescription>Run ID: {liveSyncResult.runId}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Funnel counters */}
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
+                {[
+                  { label: 'Raw (DB)', value: liveSyncResult.rawCount },
+                  { label: 'Eligible', value: liveSyncResult.eligibleCount },
+                  { label: 'Payload Built', value: liveSyncResult.payloadBuiltCount },
+                  { label: 'Attempted', value: liveSyncResult.attemptedSendCount },
+                  { label: 'Success', value: liveSyncResult.successCount, color: 'text-primary' },
+                  { label: 'Errors', value: liveSyncResult.errorCount, color: liveSyncResult.errorCount > 0 ? 'text-destructive' : undefined },
+                ].map((s) => (
+                  <div key={s.label} className="p-2 rounded-md bg-muted/50">
+                    <p className={`text-xl font-bold ${s.color || ''}`}>{s.value}</p>
+                    <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Skipped reasons */}
+              {Object.keys(liveSyncResult.skippedReasons).length > 0 && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Skipped Reasons</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(liveSyncResult.skippedReasons).map(([reason, count]) => (
+                      <Badge key={reason} variant="secondary" className="text-xs">
+                        {reason.replace(/_/g, ' ')}: {count}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Errors expandable */}
+              {liveSyncResult.errorCount > 0 && liveSyncResult.topErrors.length > 0 && (
+                <Collapsible open={showLiveErrors} onOpenChange={setShowLiveErrors}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-destructive text-xs">
+                      {showLiveErrors ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+                      View {liveSyncResult.topErrors.length} error(s)
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-2 mt-2">
+                      {liveSyncResult.topErrors.map((err, i) => (
+                        <div key={i} className="p-2 bg-destructive/5 rounded text-xs font-mono">
+                          <span className="text-muted-foreground">#{err.offerId?.slice(0, 8)}</span>
+                          {err.status && <span className="ml-2 text-destructive">HTTP {err.status}</span>}
+                          <p className="text-muted-foreground mt-1 break-all">{err.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* DRY RUN warning */}
+              {liveSyncResult.mode_effective === 'dryrun' && (
+                <div className="p-3 bg-amber-500/10 rounded-md text-sm flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <span className="font-medium text-amber-700">Dry run — nothing sent to Google</span>
+                </div>
+              )}
+
+              {/* Full response toggle */}
+              <Collapsible open={showLiveFullResponse} onOpenChange={setShowLiveFullResponse}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs">
+                    {showLiveFullResponse ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+                    {showLiveFullResponse ? 'Hide' : 'View'} Full Response
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <pre className="p-3 bg-muted rounded-md text-xs overflow-x-auto max-h-[400px] overflow-y-auto font-mono whitespace-pre-wrap mt-2">
+                    {JSON.stringify(liveSyncResult, null, 2)}
+                  </pre>
+                </CollapsibleContent>
+              </Collapsible>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Debug Summary Panel */}
         {debugReport && (
           <Card className="border-amber-500/50">
@@ -398,7 +541,6 @@ export default function MerchantIntegrationPage() {
                 ))}
               </div>
 
-              {/* Zero-reason checks */}
               {debugReport.sourceEnumeration.zeroReasonChecks && (
                 <div className="p-3 bg-destructive/10 rounded-md text-sm space-y-1">
                   <p className="font-medium text-destructive">⚠ rawCount = 0 — Root Cause:</p>
@@ -411,7 +553,6 @@ export default function MerchantIntegrationPage() {
                 </div>
               )}
 
-              {/* Merchant Feed Probe */}
               <div className={`p-3 rounded-md text-sm ${debugReport.merchantFeedProbe.itemCount > 0 ? 'bg-primary/10' : 'bg-destructive/10'}`}>
                 <p className="font-medium">
                   merchant-feed.xml: {debugReport.merchantFeedProbe.itemCount} items
@@ -425,7 +566,6 @@ export default function MerchantIntegrationPage() {
                 )}
               </div>
 
-              {/* Top Failure Reasons */}
               {debugReport.topFailureReasons.length > 0 && (
                 <div>
                   <p className="text-sm font-medium mb-2">Top Failure Reasons</p>
@@ -440,7 +580,6 @@ export default function MerchantIntegrationPage() {
                 </div>
               )}
 
-              {/* Env Config Status */}
               <div>
                 <p className="text-sm font-medium mb-2 flex items-center gap-1">
                   <ShieldAlert className="h-4 w-4" /> Environment Config
@@ -455,7 +594,6 @@ export default function MerchantIntegrationPage() {
                 </div>
               </div>
 
-              {/* MVE */}
               {debugReport.minimumViableExport && (
                 <div className={`p-3 rounded-md text-sm ${debugReport.minimumViableExport.possible ? 'bg-primary/10' : 'bg-destructive/10'}`}>
                   <p className="font-medium">{debugReport.minimumViableExport.possible ? '✅ Minimum Viable Export possible' : '❌ Minimum Viable Export NOT possible'}</p>
@@ -463,27 +601,21 @@ export default function MerchantIntegrationPage() {
                 </div>
               )}
 
-              {/* Payload explanation */}
               <p className="text-sm text-muted-foreground">{debugReport.payloadBuild.explanation}</p>
 
-              {/* Toggle full report */}
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowFullReport(!showFullReport)}
-                  className="text-xs"
-                >
-                  {showFullReport ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
-                  {showFullReport ? 'Hide' : 'View'} Full Debug Report
-                </Button>
-              </div>
-
-              {showFullReport && (
-                <pre className="p-3 bg-muted rounded-md text-xs overflow-x-auto max-h-[500px] overflow-y-auto font-mono whitespace-pre-wrap">
-                  {JSON.stringify(debugReport, null, 2)}
-                </pre>
-              )}
+              <Collapsible open={showFullReport} onOpenChange={setShowFullReport}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs">
+                    {showFullReport ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+                    {showFullReport ? 'Hide' : 'View'} Full Debug Report
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <pre className="p-3 bg-muted rounded-md text-xs overflow-x-auto max-h-[500px] overflow-y-auto font-mono whitespace-pre-wrap mt-2">
+                    {JSON.stringify(debugReport, null, 2)}
+                  </pre>
+                </CollapsibleContent>
+              </Collapsible>
             </CardContent>
           </Card>
         )}
