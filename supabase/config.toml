@@ -215,3 +215,6 @@ verify_jwt = false
 
 [functions.cj-us-hunter]
 verify_jwt = false
+
+[functions.revenue-accelerator]
+verify_jwt = false
