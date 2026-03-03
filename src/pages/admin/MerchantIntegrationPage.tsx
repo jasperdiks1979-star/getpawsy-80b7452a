@@ -178,7 +178,7 @@ export default function MerchantIntegrationPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Status</p>
                 {status?.connected ? (
-                  <Badge variant="default" className="bg-green-600 mt-1">
+                  <Badge variant="default" className="mt-1">
                     <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
                   </Badge>
                 ) : (
