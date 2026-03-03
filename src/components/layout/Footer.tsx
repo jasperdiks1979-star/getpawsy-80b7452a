@@ -223,9 +223,9 @@ export const Footer = () => {
                 </span>
               </Link>
                <p className="text-background/70 leading-relaxed max-w-sm">
-                Dog training essentials with fast shipping from US warehouses. 
+                Dog training essentials shipped from warehouses located in the United States. 
                 Potty training. Behavior correction. Safer walks.
-              </p>
+               </p>
               
               {/* Social Links */}
               <div className="flex items-center gap-3">
@@ -255,7 +255,7 @@ export const Footer = () => {
                 </div>
                 <div className="flex items-center gap-3 text-sm text-background/70">
                   <MapPin className="w-4 h-4" />
-                  <span>Ships from US warehouses</span>
+                  <span>Ships from warehouses located in the United States</span>
                 </div>
               </div>
               
@@ -331,9 +331,9 @@ export const Footer = () => {
             <h4 className="font-display font-semibold text-lg mb-4">Company Information</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               <div className="space-y-2 text-sm">
-                <p className="text-background/80"><strong className="text-background">Business Name:</strong> GetPawsy</p>
-                <p className="text-background/80"><strong className="text-background">Business Type:</strong> Online Pet Supplies Retailer</p>
-                <p className="text-background/80"><strong className="text-background">Operated by:</strong> Skidzo (KVK 78156955)</p>
+               <p className="text-background/80"><strong className="text-background">Business Name:</strong> GetPawsy</p>
+                <p className="text-background/80"><strong className="text-background">Operated by:</strong> Skidzo (Chamber of Commerce: 78156955)</p>
+                <p className="text-background/80"><strong className="text-background">Business Address:</strong> Apeldoorn, Netherlands</p>
               </div>
               <div className="space-y-2 text-sm">
                 <p className="text-background/80"><strong className="text-background">Support Email:</strong> <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
@@ -341,7 +341,7 @@ export const Footer = () => {
                 <p className="text-background/80"><strong className="text-background">Response Time:</strong> Within 24 hours</p>
               </div>
               <div className="space-y-2 text-sm">
-                <p className="text-background/80"><strong className="text-background">Fulfillment:</strong> Orders ship from US warehouse partners</p>
+                <p className="text-background/80"><strong className="text-background">Fulfillment:</strong> Orders ship from warehouses located in the United States</p>
                 <p className="text-background/80"><strong className="text-background">Serving:</strong> United States customers</p>
                 <p className="text-background/80"><strong className="text-background">Currency:</strong> USD ($)</p>
               </div>
@@ -351,6 +351,9 @@ export const Footer = () => {
                 <p className="text-background/80"><strong className="text-background">Payments:</strong> Visa, Mastercard, PayPal, Apple Pay</p>
               </div>
             </div>
+            <p className="text-sm text-background/60 mt-4 max-w-3xl">
+              GetPawsy is an online pet supplies retailer operated by Skidzo. Orders are fulfilled from warehouses located in the United States and shipped directly to customers across the United States.
+            </p>
           </div>
 
           {/* Dog Training Collection Highlights */}
@@ -392,9 +395,10 @@ export const Footer = () => {
               {/* US Trust Section */}
               <div className="flex flex-col items-center gap-2 text-xs text-background/40 border-b border-background/10 pb-4">
                 <div className="flex flex-wrap justify-center gap-4 text-background/60 mb-2">
-                  <span>📧 Email Support Within 24h</span>
-                  <span>🚚 Fast US Shipping</span>
-                  <span>🔄 30-Day Easy Returns</span>
+                  <span>📦 Ships from US warehouses</span>
+                  <span>🚚 3–7 business day delivery</span>
+                  <span>↩️ 30-day easy returns</span>
+                  <span>🔒 Secure checkout</span>
                 </div>
                 <p>
                   Customer support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-background/60 hover:text-primary transition-colors">{SUPPORT_EMAIL}</a> | <Link to="/returns" className="text-background/60 hover:text-primary transition-colors">Returns Policy</Link>
@@ -410,12 +414,12 @@ export const Footer = () => {
                 </p>
                 
                 <div className="flex flex-wrap justify-center gap-6 text-sm text-background/50">
-                  <Link to="/privacy" className="hover:text-primary transition-colors">
+                  <a href="/privacy" className="hover:text-primary transition-colors">
                     Privacy Policy
-                  </Link>
-                  <Link to="/terms" className="hover:text-primary transition-colors">
+                  </a>
+                  <a href="/terms" className="hover:text-primary transition-colors">
                     Terms of Service
-                  </Link>
+                  </a>
                   <Link to="/cookies" rel="nofollow" className="hover:text-primary transition-colors">
                     Cookie Policy
                   </Link>
