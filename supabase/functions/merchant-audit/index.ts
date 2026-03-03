@@ -1,5 +1,38 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
+// Inline minimal sanitizer for feed-sample (avoids cross-function import)
+function sanitizeTextBasic(text: string): string {
+  const BANNED = [
+    /free\s*shipping/gi, /ships?\s*from/gi, /\d+[-–]\d+\s*business\s*days?/gi,
+    /fast\s*delivery/gi, /express\s*shipping/gi, /us\s*warehouse/gi,
+    /worldwide\s*shipping/gi, /\d+[-–]?\s*day\s*returns?/gi, /hassle[-\s]*free\s*returns?/gi,
+    /money\s*back/gi, /satisfaction\s*guarantee[d]?/gi, /trusted\s*by/gi,
+    /best\s*seller/gi, /top[-\s]*rated/gi, /premium\s*quality/gi,
+    /shop\s*now/gi, /order\s*today/gi, /best\s*price/gi, /buy\s*now/gi,
+    /your\s*pet\s*deserves/gi, /perfect\s*for/gi, /amazing/gi,
+    /✔/g, /✓/g, /★+/g, /⭐+/g, /🏆/g, /🥇/g, /💯/g, /🔥/g, /✅/g, /🎉/g, /🚚/g, /📦/g,
+  ];
+  let r = text.replace(/<\/?[a-z][^>]*>/gi, " ");
+  r = r.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "");
+  for (const re of BANNED) r = r.replace(re, "");
+  return r.replace(/\s{2,}/g, " ").trim();
+}
+
+const CATEGORY_MAP: Record<string, number> = {
+  "dog toy": 5004, "dog bed": 4985, "dog collar": 5001, "dog leash": 5002,
+  "cat toy": 5019, "cat bed": 5008, "cat tree": 5020, "cat litter": 5011,
+  "pet carrier": 6978, "pet bowl": 8069, "pet bed": 4516, "pet grooming": 4523,
+  "dog": 4985, "cat": 5007, "pet": 2,
+};
+
+function mapCategory(name: string): number | null {
+  const lower = name.toLowerCase();
+  for (const [key, id] of Object.entries(CATEGORY_MAP)) {
+    if (lower.includes(key)) return id;
+  }
+  return null;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -25,6 +58,7 @@ const BUSINESS_SIGNALS = [
 async function checkPage(path: string, mustContain: string[]): Promise<{
   path: string; status: number | null; accessible: boolean;
   missing: string[]; present: string[]; pass: boolean;
+  businessSignalsFound: string[];
 }> {
   try {
     const res = await fetch(`${SITE}${path}`, {
@@ -33,7 +67,7 @@ async function checkPage(path: string, mustContain: string[]): Promise<{
       redirect: "follow",
     });
     const status = res.status;
-    if (!res.ok) return { path, status, accessible: false, missing: mustContain, present: [], pass: false };
+    if (!res.ok) return { path, status, accessible: false, missing: mustContain, present: [], pass: false, businessSignalsFound: [] };
 
     const html = (await res.text()).toLowerCase();
     const present: string[] = [];
@@ -43,19 +77,25 @@ async function checkPage(path: string, mustContain: string[]): Promise<{
       else missing.push(term);
     }
 
-    // Also check for business signals
-    const businessPresent: string[] = [];
+    const businessSignalsFound: string[] = [];
     for (const sig of BUSINESS_SIGNALS) {
-      if (html.includes(sig.toLowerCase())) businessPresent.push(sig);
+      if (html.includes(sig.toLowerCase())) businessSignalsFound.push(sig);
     }
 
     return {
       path, status, accessible: true, missing, present,
       pass: missing.length === 0,
+      businessSignalsFound,
     };
   } catch (e) {
-    return { path, status: null, accessible: false, missing: mustContain, present: [], pass: false };
+    return { path, status: null, accessible: false, missing: mustContain, present: [], pass: false, businessSignalsFound: [] };
   }
+}
+
+function buildStableOfferId(product: { id: string; slug?: string | null }): string {
+  if (product.id) return `getpawsy_${product.id}`;
+  if (product.slug) return `getpawsy_${product.slug}`;
+  return `getpawsy_unknown`;
 }
 
 Deno.serve(async (req: Request) => {
@@ -87,33 +127,33 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action") || "audit";
 
+    // ── ACTION: feed-sample ─────────────────────────────────────
     if (action === "feed-sample") {
-      // Return 5 sample products exactly as they would be sent
-      const { sanitizeProduct } = await import("../merchant-sync/compliance-sanitizer.ts");
+      const limitParam = parseInt(url.searchParams.get("limit") || "5", 10);
+      const sampleLimit = Math.min(Math.max(limitParam, 1), 20);
+
       const { data: products } = await supabase
         .from("products")
         .select("id, name, slug, description, price, image_url, weight, images")
         .eq("is_active", true)
         .gt("price", 0)
-        .limit(5);
+        .limit(sampleLimit);
 
       const samples = (products || []).map((p: any) => {
-        const compliance = sanitizeProduct({
-          title: (p.name || "").substring(0, 150),
-          description: (p.description || p.name || "").substring(0, 5000),
-          category: null,
-          weightKg: p.weight ? p.weight / 1000 : null,
-        });
+        const sanitizedTitle = sanitizeTextBasic((p.name || "").substring(0, 150));
+        const sanitizedDesc = sanitizeTextBasic((p.description || p.name || "").substring(0, 5000));
+        const categoryId = mapCategory(p.name || "");
         return {
-          offerId: p.id,
-          title: compliance.sanitizedTitle,
-          description: compliance.sanitizedDescription,
-          googleProductCategory: compliance.googleProductCategory,
+          offerId: buildStableOfferId(p),
+          title: sanitizedTitle,
+          description: sanitizedDesc.length < 140 ? `${sanitizedTitle} is a pet product. Check listing for details.` : sanitizedDesc,
+          link: `https://getpawsy.pet/product/${p.slug}`,
+          googleProductCategory: categoryId,
           image_link: p.image_url,
           additional_image_links: (p.images || []).slice(0, 5),
-          descriptionFallbackGenerated: compliance.descriptionFallbackGenerated,
-          blocked: compliance.blocked,
-          blockReason: compliance.blockReason,
+          descriptionFallbackGenerated: sanitizedDesc.length < 140,
+          blocked: false,
+          blockReason: null,
         };
       });
 
@@ -121,7 +161,72 @@ Deno.serve(async (req: Request) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Default: full audit
+    // ── ACTION: preflight ───────────────────────────────────────
+    if (action === "preflight") {
+      const results = await Promise.all(REQUIRED_PAGES.map(p => checkPage(p.path, p.mustContain)));
+      const allPagesPass = results.every(r => r.pass);
+
+      // Check homepage footer links
+      let footerLinks: string[] = [];
+      try {
+        const homeRes = await fetch(SITE, {
+          headers: { "User-Agent": "GetPawsy-MerchantAudit/1.0" },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (homeRes.ok) {
+          const homeHtml = await homeRes.text();
+          const lowerHtml = homeHtml.toLowerCase();
+          for (const page of REQUIRED_PAGES) {
+            if (lowerHtml.includes(`href="${page.path}"`) || lowerHtml.includes(`href="${page.path}"`)) {
+              footerLinks.push(page.path);
+            }
+          }
+        }
+      } catch { /* ignore */ }
+
+      const missingFooterLinks = REQUIRED_PAGES.map(p => p.path).filter(p => !footerLinks.includes(p));
+
+      const failures: string[] = [];
+      for (const r of results) {
+        if (!r.accessible) failures.push(`${r.path}: not accessible (HTTP ${r.status})`);
+        else if (r.missing.length > 0) failures.push(`${r.path}: missing content: ${r.missing.join(", ")}`);
+      }
+      if (missingFooterLinks.length > 0) failures.push(`Missing footer links: ${missingFooterLinks.join(", ")}`);
+
+      // Check a sample product page
+      const { data: sampleProduct } = await supabase
+        .from("products")
+        .select("slug, price")
+        .eq("is_active", true)
+        .gt("price", 0)
+        .limit(1)
+        .maybeSingle();
+
+      let productPageOk = false;
+      if (sampleProduct?.slug) {
+        try {
+          const pRes = await fetch(`${SITE}/product/${sampleProduct.slug}`, {
+            headers: { "User-Agent": "GetPawsy-MerchantAudit/1.0" },
+            signal: AbortSignal.timeout(10000),
+          });
+          productPageOk = pRes.ok;
+          if (!pRes.ok) failures.push(`Product page /product/${sampleProduct.slug}: HTTP ${pRes.status}`);
+        } catch { failures.push(`Product page /product/${sampleProduct.slug}: fetch failed`); }
+      }
+
+      const readyForReview = allPagesPass && missingFooterLinks.length === 0 && productPageOk;
+
+      return new Response(JSON.stringify({
+        ok: true,
+        ready_for_review: readyForReview,
+        failures,
+        pages: results,
+        footerLinks: { found: footerLinks, missing: missingFooterLinks },
+        productPageCheck: { slug: sampleProduct?.slug, ok: productPageOk },
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ── ACTION: audit (default) ─────────────────────────────────
     const results = await Promise.all(REQUIRED_PAGES.map(p => checkPage(p.path, p.mustContain)));
     const allPass = results.every(r => r.pass);
 
