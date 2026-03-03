@@ -826,6 +826,78 @@ export type Database = {
         }
         Relationships: []
       }
+      cj_us_winners: {
+        Row: {
+          auto_imported: boolean | null
+          category: string | null
+          cj_product_id: string
+          created_at: string
+          id: string
+          image_ok: boolean | null
+          image_url: string | null
+          imported_product_id: string | null
+          name: string
+          price: number
+          score: number
+          shipping_time: number | null
+          stock: number | null
+          updated_at: string
+          warehouse: string
+          weight: number | null
+        }
+        Insert: {
+          auto_imported?: boolean | null
+          category?: string | null
+          cj_product_id: string
+          created_at?: string
+          id?: string
+          image_ok?: boolean | null
+          image_url?: string | null
+          imported_product_id?: string | null
+          name: string
+          price?: number
+          score?: number
+          shipping_time?: number | null
+          stock?: number | null
+          updated_at?: string
+          warehouse?: string
+          weight?: number | null
+        }
+        Update: {
+          auto_imported?: boolean | null
+          category?: string | null
+          cj_product_id?: string
+          created_at?: string
+          id?: string
+          image_ok?: boolean | null
+          image_url?: string | null
+          imported_product_id?: string | null
+          name?: string
+          price?: number
+          score?: number
+          shipping_time?: number | null
+          stock?: number | null
+          updated_at?: string
+          warehouse?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cj_us_winners_imported_product_id_fkey"
+            columns: ["imported_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cj_us_winners_imported_product_id_fkey"
+            columns: ["imported_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cj_webhook_logs: {
         Row: {
           created_at: string
