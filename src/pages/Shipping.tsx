@@ -88,7 +88,15 @@ const Shipping = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-4">
-                  GetPawsy works with trusted fulfillment partners, primarily based in the United States, to pick, pack, and ship your orders. This allows us to offer reliable delivery times and consistent product quality.
+                   Orders are fulfilled from warehouses located in the United States. Our shipping carriers include USPS and UPS, depending on your destination and order size. Every order includes tracking information so you can follow your package from dispatch to delivery.
+                </p>
+                <p className="text-foreground mb-4">
+                  <strong>Processing time:</strong> 1–2 business days after payment confirmation.<br />
+                  <strong>Delivery time:</strong> 3–7 business days after dispatch.<br />
+                  <strong>Tracking:</strong> Provided for every order via email.
+                </p>
+                <p className="text-muted-foreground mb-4">
+                  Delivery estimates are based on orders shipped within the United States.
                 </p>
                 <p className="text-muted-foreground mb-4">
                   Skidzo, the legal entity operating GetPawsy, coordinates all fulfillment logistics and is fully responsible for ensuring your order reaches you safely and on time.

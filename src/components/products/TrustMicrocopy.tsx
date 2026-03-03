@@ -22,7 +22,11 @@ export const TrustMicrocopy: React.FC<TrustMicrocopyProps> = ({ className = '' }
     <div className={`space-y-1.5 ${className}`}>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <Truck className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Free US Shipping over ${FREE_SHIPPING_THRESHOLD} • {DELIVERY_TIME_STANDARD}</span>
+        <span>Ships from US warehouses • Free over ${FREE_SHIPPING_THRESHOLD}</span>
+      </div>
+      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+        <Lock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+        <span>Delivery in {DELIVERY_TIME_STANDARD} • Tracking included</span>
       </div>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <RotateCcw className="w-3.5 h-3.5 text-primary flex-shrink-0" />
@@ -30,12 +34,8 @@ export const TrustMicrocopy: React.FC<TrustMicrocopyProps> = ({ className = '' }
       </div>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <CreditCard className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span className="mr-1">Secure Checkout</span>
+        <span className="mr-1">Secure checkout via Stripe</span>
         <PaymentBadges showLabel={false} variant="dark" className="gap-1.5" />
-      </div>
-      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-        <Lock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Encrypted payments • No hidden fees</span>
       </div>
     </div>
   );
