@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
     const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
     const redirectUri =
       Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI") ||
-      "https://getpawsy.pet/api/merchant/oauth/callback";
+      `${supabaseUrl}/functions/v1/merchant-oauth-callback`;
     const encryptionKey = Deno.env.get("TOKEN_ENCRYPTION_KEY");
     const merchantId = Deno.env.get("GOOGLE_MERCHANT_CENTER_ID");
 

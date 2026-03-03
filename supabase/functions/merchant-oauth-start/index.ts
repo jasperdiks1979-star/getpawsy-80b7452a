@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
     const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
     const redirectUri =
       Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI") ||
-      "https://getpawsy.pet/api/merchant/oauth/callback";
+      `${supabaseUrl}/functions/v1/merchant-oauth-callback`;
 
     if (!clientId) {
       return new Response(
