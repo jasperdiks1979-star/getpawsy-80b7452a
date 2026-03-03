@@ -14,6 +14,11 @@ export function OrganizationSchema() {
     url: SITE_URL,
     logo: `${SITE_URL}/favicon.png`,
     email: 'support@getpawsy.pet',
+    brand: 'GetPawsy',
+    parentOrganization: {
+      '@type': 'Organization',
+      name: 'Skidzo',
+    },
     description:
       'GetPawsy is an online pet supplies retailer operated by Skidzo. Orders are fulfilled from warehouses located in the United States and shipped directly to customers across the United States.',
     address: {
