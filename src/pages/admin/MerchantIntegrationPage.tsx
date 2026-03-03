@@ -15,6 +15,9 @@ import {
   Loader2,
   ShieldCheck,
   Settings,
+  Bug,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,6 +53,35 @@ interface SyncLog {
   completed_at: string | null;
 }
 
+interface DebugReport {
+  timestamp: string;
+  environment: Record<string, unknown>;
+  sourceEnumeration: {
+    table: string;
+    query: string;
+    rawCount: number;
+    rawCountError: string | null;
+    zeroReasonChecks: Record<string, unknown> | null;
+  };
+  eligibilityFiltering: {
+    eligibleCount: number;
+    failureBuckets: Array<{
+      reason: string;
+      count: number;
+      examples: Array<Record<string, unknown>>;
+    }>;
+  };
+  payloadBuild: { payloadItemsBuilt: number; explanation: string };
+  googleApiStage: Record<string, unknown>;
+  pipeline: { rawCount: number; eligibleCount: number; payloadBuiltCount: number; sentCount: number };
+  topFailureReasons: Array<{ reason: string; count: number }>;
+  minimumViableExport: {
+    possible: boolean;
+    sampleProducts: Array<Record<string, unknown>>;
+    explanation: string;
+  };
+}
+
 export default function MerchantIntegrationPage() {
   const { invokeFunction } = useAuthenticatedFetch();
   const navigate = useNavigate();
@@ -58,6 +90,9 @@ export default function MerchantIntegrationPage() {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [debugging, setDebugging] = useState(false);
+  const [debugReport, setDebugReport] = useState<DebugReport | null>(null);
+  const [showFullReport, setShowFullReport] = useState(false);
   const [reachability, setReachability] = useState<{ testing: boolean; result: null | { reachable: boolean; latencyMs?: number; error?: string } }>({ testing: false, result: null });
 
   const testReachability = useCallback(async () => {
@@ -91,8 +126,6 @@ export default function MerchantIntegrationPage() {
 
   useEffect(() => {
     Promise.all([fetchStatus(), fetchLogs()]).finally(() => setLoading(false));
-
-    // Check URL params for callback result
     const params = new URLSearchParams(window.location.search);
     if (params.get('connected') === '1') {
       toast.success('Google Merchant Center connected!');
@@ -107,9 +140,7 @@ export default function MerchantIntegrationPage() {
   const handleConnect = async () => {
     setConnecting(true);
     try {
-      const { data } = await invokeFunction<{ ok: boolean; authUrl: string; error?: string }>(
-        'merchant-oauth-start'
-      );
+      const { data } = await invokeFunction<{ ok: boolean; authUrl: string; error?: string }>('merchant-oauth-start');
       if (data?.ok && data.authUrl) {
         window.location.href = data.authUrl;
       } else {
@@ -130,9 +161,7 @@ export default function MerchantIntegrationPage() {
         { method: 'POST' }
       );
       if (data?.ok) {
-        toast.success(
-          `Sync complete: ${data.summary?.totalProducts ?? 0} products, ${data.summary?.productsWithIssues ?? 0} with issues`
-        );
+        toast.success(`Sync complete: ${data.summary?.totalProducts ?? 0} products, ${data.summary?.productsWithIssues ?? 0} with issues`);
         await Promise.all([fetchStatus(), fetchLogs()]);
       } else {
         toast.error(data?.error || error?.message || 'Sync failed');
@@ -144,14 +173,32 @@ export default function MerchantIntegrationPage() {
     }
   };
 
+  const handleDebugDryRun = async () => {
+    setDebugging(true);
+    setDebugReport(null);
+    try {
+      const { data, error } = await invokeFunction<{ ok: boolean; report: DebugReport; error?: string }>(
+        'merchant-debug-sync',
+        { silent: true }
+      );
+      if (data?.ok && data.report) {
+        setDebugReport(data.report);
+        toast.success('Debug report generated');
+        await fetchLogs(); // Refresh logs to show debug entry
+      } else {
+        toast.error(data?.error || error?.message || 'Debug run failed');
+      }
+    } catch {
+      toast.error('Debug request failed');
+    } finally {
+      setDebugging(false);
+    }
+  };
+
   const formatDate = (d: string | null) => {
     if (!d) return '—';
     return new Date(d).toLocaleString('nl-NL', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   };
 
@@ -201,13 +248,9 @@ export default function MerchantIntegrationPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Status</p>
                 {status?.connected ? (
-                  <Badge variant="default" className="mt-1">
-                    <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
-                  </Badge>
+                  <Badge variant="default" className="mt-1"><CheckCircle2 className="h-3 w-3 mr-1" /> Connected</Badge>
                 ) : (
-                  <Badge variant="destructive" className="mt-1">
-                    <XCircle className="h-3 w-3 mr-1" /> Disconnected
-                  </Badge>
+                  <Badge variant="destructive" className="mt-1"><XCircle className="h-3 w-3 mr-1" /> Disconnected</Badge>
                 )}
               </div>
               <div>
@@ -231,9 +274,7 @@ export default function MerchantIntegrationPage() {
                   <div>
                     <p className="font-medium text-destructive">Last Error</p>
                     <p className="text-muted-foreground">{status.lastError}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDate(status.lastErrorAt ?? null)}
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">{formatDate(status.lastErrorAt ?? null)}</p>
                   </div>
                 </div>
               </div>
@@ -241,31 +282,24 @@ export default function MerchantIntegrationPage() {
 
             <div className="flex gap-3 flex-wrap">
               <Button onClick={handleConnect} disabled={connecting} variant="outline">
-                {connecting ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Link2 className="h-4 w-4 mr-2" />
-                )}
+                {connecting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Link2 className="h-4 w-4 mr-2" />}
                 {status?.connected ? 'Reconnect' : 'Connect Google Merchant'}
               </Button>
 
               {status?.connected && (
                 <Button onClick={handleSync} disabled={syncing}>
-                  {syncing ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                  )}
+                  {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                   Run Sync Now
                 </Button>
               )}
 
+              <Button onClick={handleDebugDryRun} disabled={debugging} variant="secondary">
+                {debugging ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Bug className="h-4 w-4 mr-2" />}
+                Dry Run (Explain 0)
+              </Button>
+
               <Button onClick={testReachability} disabled={reachability.testing} variant="secondary">
-                {reachability.testing ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                )}
+                {reachability.testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-2" />}
                 Test Connection
               </Button>
             </div>
@@ -273,20 +307,118 @@ export default function MerchantIntegrationPage() {
             {reachability.result && (
               <div className={`p-3 rounded-md text-sm flex items-start gap-2 ${reachability.result.reachable ? 'bg-primary/10' : 'bg-destructive/10'}`}>
                 {reachability.result.reachable ? (
-                  <>
-                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <span>Supabase reachable ✅ {reachability.result.latencyMs != null && <span className="text-muted-foreground">({reachability.result.latencyMs}ms)</span>}</span>
-                  </>
+                  <><CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" /><span>Reachable ✅ {reachability.result.latencyMs != null && <span className="text-muted-foreground">({reachability.result.latencyMs}ms)</span>}</span></>
                 ) : (
-                  <>
-                    <XCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
-                    <span>Blocked by DNS/Private Relay/network ❌ <span className="text-muted-foreground">{reachability.result.error}</span></span>
-                  </>
+                  <><XCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" /><span>Blocked ❌ <span className="text-muted-foreground">{reachability.result.error}</span></span></>
                 )}
               </div>
             )}
           </CardContent>
         </Card>
+
+        {/* Debug Summary Panel */}
+        {debugReport && (
+          <Card className="border-amber-500/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2 text-amber-600">
+                <Bug className="h-5 w-5" />
+                Debug Summary — Dry Run
+              </CardTitle>
+              <CardDescription>{formatDate(debugReport.timestamp)}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Pipeline Funnel */}
+              <div className="grid grid-cols-4 gap-3 text-center">
+                {[
+                  { label: 'Raw (DB)', value: debugReport.pipeline.rawCount },
+                  { label: 'Eligible', value: debugReport.pipeline.eligibleCount },
+                  { label: 'Payload Built', value: debugReport.pipeline.payloadBuiltCount },
+                  { label: 'Sent (dry run)', value: debugReport.pipeline.sentCount },
+                ].map((s, i) => (
+                  <div key={s.label} className="p-3 rounded-md bg-muted/50">
+                    <p className="text-2xl font-bold">{s.value}</p>
+                    <p className="text-xs text-muted-foreground">{s.label}</p>
+                    {i < 3 && s.value === 0 && (
+                      <Badge variant="destructive" className="text-xs mt-1">⚠ 0</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Zero-reason checks */}
+              {debugReport.sourceEnumeration.zeroReasonChecks && (
+                <div className="p-3 bg-destructive/10 rounded-md text-sm space-y-1">
+                  <p className="font-medium text-destructive">⚠ rawCount = 0 — Diagnostic Checks:</p>
+                  {Object.entries(debugReport.sourceEnumeration.zeroReasonChecks).map(([k, v]) => (
+                    <div key={k} className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{k}</span>
+                      <span className="font-mono">{String(v)}</span>
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Query: {debugReport.sourceEnumeration.query}
+                  </p>
+                </div>
+              )}
+
+              {/* Top Failure Reasons */}
+              {debugReport.topFailureReasons.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium mb-2">Top Failure Reasons</p>
+                  <div className="space-y-1">
+                    {debugReport.topFailureReasons.map((r) => (
+                      <div key={r.reason} className="flex items-center justify-between text-sm py-1 border-b border-border/30">
+                        <span className="text-muted-foreground">{r.reason.replace(/_/g, ' ')}</span>
+                        <Badge variant="secondary" className="text-xs">{r.count}×</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Environment */}
+              <div>
+                <p className="text-sm font-medium mb-2">Environment</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  {Object.entries(debugReport.environment).map(([k, v]) => (
+                    <div key={k} className="flex justify-between">
+                      <span className="text-muted-foreground">{k}</span>
+                      <span className={v ? 'text-primary' : 'text-destructive'}>{String(v)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* MVE */}
+              {debugReport.minimumViableExport && (
+                <div className={`p-3 rounded-md text-sm ${debugReport.minimumViableExport.possible ? 'bg-primary/10' : 'bg-destructive/10'}`}>
+                  <p className="font-medium">{debugReport.minimumViableExport.possible ? '✅ Minimum Viable Export possible' : '❌ Minimum Viable Export NOT possible'}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{debugReport.minimumViableExport.explanation}</p>
+                </div>
+              )}
+
+              {/* Payload explanation */}
+              <p className="text-sm text-muted-foreground">{debugReport.payloadBuild.explanation}</p>
+
+              {/* Toggle full report */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFullReport(!showFullReport)}
+                className="text-xs"
+              >
+                {showFullReport ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+                {showFullReport ? 'Hide' : 'View'} Full Debug Report
+              </Button>
+
+              {showFullReport && (
+                <pre className="p-3 bg-muted rounded-md text-xs overflow-x-auto max-h-[500px] overflow-y-auto font-mono whitespace-pre-wrap">
+                  {JSON.stringify(debugReport, null, 2)}
+                </pre>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Last Sync Summary */}
         {status?.lastSync && (
@@ -296,20 +428,13 @@ export default function MerchantIntegrationPage() {
                 <Clock className="h-5 w-5" />
                 Last Sync
               </CardTitle>
-              <CardDescription>
-                {formatDate(status.lastSync.completedAt || status.lastSync.startedAt)}
-              </CardDescription>
+              <CardDescription>{formatDate(status.lastSync.completedAt || status.lastSync.startedAt)}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Status</p>
-                  <Badge
-                    variant={status.lastSync.status === 'completed' ? 'default' : 'destructive'}
-                    className="mt-1"
-                  >
-                    {status.lastSync.status}
-                  </Badge>
+                  <Badge variant={status.lastSync.status === 'completed' ? 'default' : 'destructive'} className="mt-1">{status.lastSync.status}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Products</p>
@@ -317,9 +442,7 @@ export default function MerchantIntegrationPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">With Issues</p>
-                  <p className="text-2xl font-bold text-destructive">
-                    {status.lastSync.productsWithIssues ?? '—'}
-                  </p>
+                  <p className="text-2xl font-bold text-destructive">{status.lastSync.productsWithIssues ?? '—'}</p>
                 </div>
               </div>
             </CardContent>
@@ -338,6 +461,7 @@ export default function MerchantIntegrationPage() {
                   <thead>
                     <tr className="border-b border-border text-left">
                       <th className="pb-2 text-xs text-muted-foreground font-medium">Date</th>
+                      <th className="pb-2 text-xs text-muted-foreground font-medium">Type</th>
                       <th className="pb-2 text-xs text-muted-foreground font-medium">Status</th>
                       <th className="pb-2 text-xs text-muted-foreground font-medium">Products</th>
                       <th className="pb-2 text-xs text-muted-foreground font-medium">Issues</th>
@@ -347,22 +471,19 @@ export default function MerchantIntegrationPage() {
                   <tbody>
                     {logs.map((log) => {
                       const topIssue = log.issues_summary
-                        ? Object.entries(log.issues_summary).sort(([, a], [, b]) => b - a)[0]
+                        ? Object.entries(log.issues_summary).filter(([k]) => !k.startsWith('_')).sort(([, a], [, b]) => b - a)[0]
                         : null;
                       return (
                         <tr key={log.id} className="border-b border-border/50">
-                          <td className="py-2 text-muted-foreground">
-                            {formatDate(log.completed_at || log.started_at)}
+                          <td className="py-2 text-muted-foreground">{formatDate(log.completed_at || log.started_at)}</td>
+                          <td className="py-2">
+                            <Badge variant={log.sync_type === 'debug_dry_run' ? 'outline' : 'secondary'} className="text-xs">
+                              {log.sync_type === 'debug_dry_run' ? '🔍 debug' : log.sync_type}
+                            </Badge>
                           </td>
                           <td className="py-2">
                             <Badge
-                              variant={
-                                log.status === 'completed'
-                                  ? 'default'
-                                  : log.status === 'running'
-                                  ? 'secondary'
-                                  : 'destructive'
-                              }
+                              variant={log.status === 'completed' ? 'default' : log.status === 'running' ? 'secondary' : 'destructive'}
                               className="text-xs"
                             >
                               {log.status}
@@ -384,7 +505,7 @@ export default function MerchantIntegrationPage() {
         )}
 
         {/* Issues Breakdown from last sync */}
-        {logs[0]?.issues_summary && Object.keys(logs[0].issues_summary).length > 0 && (
+        {logs[0]?.issues_summary && Object.keys(logs[0].issues_summary).filter(k => !k.startsWith('_')).length > 0 && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">Issues Breakdown (Last Sync)</CardTitle>
@@ -392,26 +513,17 @@ export default function MerchantIntegrationPage() {
             <CardContent>
               <div className="space-y-2">
                 {Object.entries(logs[0].issues_summary)
+                  .filter(([k]) => !k.startsWith('_'))
                   .sort(([, a], [, b]) => b - a)
                   .slice(0, 20)
                   .map(([key, count]) => {
                     const [severity, ...descParts] = key.split(':');
                     const desc = descParts.join(':');
                     return (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between text-sm py-1 border-b border-border/30"
-                      >
+                      <div key={key} className="flex items-center justify-between text-sm py-1 border-b border-border/30">
                         <div className="flex items-center gap-2">
-                          <Badge
-                            variant={severity === 'error' ? 'destructive' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {severity}
-                          </Badge>
-                          <span className="text-muted-foreground truncate max-w-[400px]">
-                            {desc}
-                          </span>
+                          <Badge variant={severity === 'error' ? 'destructive' : 'secondary'} className="text-xs">{severity}</Badge>
+                          <span className="text-muted-foreground truncate max-w-[400px]">{desc || key}</span>
                         </div>
                         <span className="font-mono text-xs">{count}×</span>
                       </div>
