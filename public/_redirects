@@ -96,6 +96,8 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
 /api/shopping-performance https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/shopping-optimizer?action=performance 200
 /api/shopping-winners https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/shopping-optimizer?action=winners 200
 /api/cj-us-products https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/cj-us-hunter?action=list 200
+/api/product-opportunities https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/revenue-accelerator?action=opportunities 200
+/api/revenue-insights https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/revenue-accelerator?action=insights 200
 
 # ═══ SPA FALLBACK ═══
 /* /index.html 200
