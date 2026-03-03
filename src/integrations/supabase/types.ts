@@ -5881,6 +5881,7 @@ export type Database = {
       shopping_optimizations: {
         Row: {
           applied_at: string | null
+          boost_score: number | null
           created_at: string
           google_product_category: string | null
           google_product_category_id: number | null
@@ -5898,6 +5899,7 @@ export type Database = {
         }
         Insert: {
           applied_at?: string | null
+          boost_score?: number | null
           created_at?: string
           google_product_category?: string | null
           google_product_category_id?: number | null
@@ -5915,6 +5917,7 @@ export type Database = {
         }
         Update: {
           applied_at?: string | null
+          boost_score?: number | null
           created_at?: string
           google_product_category?: string | null
           google_product_category_id?: number | null

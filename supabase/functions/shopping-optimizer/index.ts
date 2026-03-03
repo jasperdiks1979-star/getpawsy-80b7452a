@@ -40,7 +40,6 @@ const TAXONOMY: Record<string, { id: number; path: string }> = {
 
 function mapTaxonomy(name: string, category: string | null): { id: number; path: string } | null {
   const text = `${name} ${category || ""}`.toLowerCase();
-  // Try most specific first (longer keys first)
   const sorted = Object.entries(TAXONOMY).sort((a, b) => b[0].length - a[0].length);
   for (const [key, val] of sorted) {
     if (text.includes(key)) return val;
@@ -70,7 +69,6 @@ function buildProductType(name: string, category: string | null): string {
   return `Pet Supplies > ${petLabel} Supplies`;
 }
 
-// High-intent keyword bank by pet type and product type
 const KEYWORD_BANK: Record<string, string[]> = {
   "cat_toy": ["interactive cat toy", "cat enrichment toy", "indoor cat toy", "cat stimulation toy", "cat play toy"],
   "cat_bed": ["cozy cat bed", "cat sleeping bed", "indoor cat bed", "cat napping spot"],
@@ -97,33 +95,268 @@ function getKeywords(name: string, category: string | null): string[] {
   return KEYWORD_BANK[key] || KEYWORD_BANK["pet_general"] || [];
 }
 
+// ── Visibility Boost Scoring Engine ──
+// Weights: price competitiveness 30%, image quality 20%, keyword demand 25%, category popularity 25%
+const HIGH_DEMAND_KEYWORDS = [
+  "interactive", "enrichment", "training", "orthopedic", "no pull", "harness",
+  "chew resistant", "calming", "self cleaning", "automatic", "waterproof",
+  "indestructible", "elevated", "slow feeder", "puzzle", "scratch",
+];
+
+const HIGH_POP_CATEGORIES = [
+  "cat toy", "dog toy", "dog bed", "cat bed", "dog harness", "cat tree",
+  "dog leash", "dog training", "litter box", "pet carrier", "dog collar",
+];
+
+function calcBoostScore(p: { name: string; price: number; compare_at_price: number | null; category: string | null; image_url: string | null }): number {
+  const text = `${p.name} ${p.category || ""}`.toLowerCase();
+
+  // Price competitiveness (0–1): sweet spot $15–$70
+  let priceScore = 0.3;
+  if (p.price >= 15 && p.price <= 70) priceScore = 1;
+  else if (p.price > 70 && p.price <= 120) priceScore = 0.6;
+  else if (p.price > 120) priceScore = 0.3;
+  // Bonus for margin availability
+  if (p.compare_at_price && p.compare_at_price > p.price) {
+    priceScore = Math.min(1, priceScore + 0.15);
+  }
+
+  // Image quality proxy (0–1): has image = 0.7, CDN image = 1
+  let imageScore = 0;
+  if (p.image_url) {
+    imageScore = 0.7;
+    if (p.image_url.includes("cdn") || p.image_url.includes("cjdropshipping") || p.image_url.startsWith("https://")) {
+      imageScore = 1;
+    }
+  }
+
+  // Keyword demand (0–1)
+  const kwMatches = HIGH_DEMAND_KEYWORDS.filter(kw => text.includes(kw));
+  const kwScore = Math.min(1, kwMatches.length * 0.25);
+
+  // Category popularity (0–1)
+  const catMatch = HIGH_POP_CATEGORIES.some(c => text.includes(c));
+  const catScore = catMatch ? 1 : 0.3;
+
+  return priceScore * 0.30 + imageScore * 0.20 + kwScore * 0.25 + catScore * 0.25;
+}
+
+async function checkImageHealth(url: string): Promise<{ reachable: boolean; contentType: string | null }> {
+  try {
+    const res = await fetch(url, { method: "HEAD", redirect: "follow" });
+    const ct = res.headers.get("content-type");
+    const ok = res.ok && !!ct && ct.startsWith("image/");
+    return { reachable: ok, contentType: ct };
+  } catch {
+    return { reachable: false, contentType: null };
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
-    // Auth check
+    const url = new URL(req.url);
+    const action = url.searchParams.get("action") || "optimize";
+
+    // ── PUBLIC action: performance (no auth) ──
+    if (action === "performance") {
+      const supabase = createClient(supabaseUrl, serviceKey);
+
+      // Fetch active products
+      const { data: products } = await supabase
+        .from("products")
+        .select("id, name, price, compare_at_price, category, image_url, description")
+        .eq("is_active", true)
+        .gt("price", 0)
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (!products?.length) {
+        return Response.json({ ok: true, topProducts: [], optimizedTitles: [], keywordSuggestions: [], imageIssues: [] }, { headers: corsHeaders });
+      }
+
+      // Score and rank
+      const scored = products.map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        category: p.category,
+        boostScore: calcBoostScore(p as any),
+      }));
+      scored.sort((a, b) => b.boostScore - a.boostScore);
+      const topProducts = scored.slice(0, 50);
+
+      // Image issues (sample first 30)
+      const imageIssues: any[] = [];
+      for (const p of products.slice(0, 30)) {
+        if (!p.image_url) {
+          imageIssues.push({ id: p.id, name: p.name, issue: "missing_image" });
+          continue;
+        }
+        const check = await checkImageHealth(p.image_url);
+        if (!check.reachable) {
+          imageIssues.push({ id: p.id, name: p.name, issue: "unreachable_image", url: p.image_url });
+        } else if (check.contentType && !["image/jpeg", "image/png", "image/webp"].includes(check.contentType)) {
+          imageIssues.push({ id: p.id, name: p.name, issue: "invalid_format", contentType: check.contentType });
+        }
+      }
+
+      // Keyword suggestions
+      const kwFreq: Record<string, number> = {};
+      for (const p of products) {
+        for (const kw of getKeywords(p.name, p.category)) {
+          kwFreq[kw] = (kwFreq[kw] || 0) + 1;
+        }
+      }
+      const keywordSuggestions = Object.entries(kwFreq)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 20)
+        .map(([keyword, count]) => ({ keyword, productCount: count }));
+
+      // Title suggestions for top products
+      const optimizedTitles = topProducts.slice(0, 20).map(p => {
+        const kws = getKeywords(p.name, p.category);
+        const primaryKw = kws[0] || "";
+        const pet = detectPetType(p.name, p.category);
+        const petLabel = pet === "cat" ? "for Cats" : pet === "dog" ? "for Dogs" : "for Pets";
+        let title = p.name.replace(/\b(best|cheap|sale|free|amazing|premium|top|rated|#1|exclusive)\b/gi, "").replace(/\s{2,}/g, " ").trim();
+        if (primaryKw && !title.toLowerCase().includes(primaryKw.split(" ")[0])) {
+          title = `${title} – ${primaryKw.charAt(0).toUpperCase() + primaryKw.slice(1)} ${petLabel}`;
+        }
+        return { id: p.id, currentTitle: p.name, suggestedTitle: title.slice(0, 150) };
+      });
+
+      return Response.json({ ok: true, topProducts, optimizedTitles, keywordSuggestions, imageIssues }, { headers: corsHeaders });
+    }
+
+    // ── Auth required for remaining actions ──
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return Response.json({ ok: false, error: "Unauthorized" }, { status: 401, headers: corsHeaders });
     }
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (!user) return Response.json({ ok: false, error: "Invalid token" }, { status: 401, headers: corsHeaders });
-    
+    const token = authHeader.replace("Bearer ", "");
     const supabase = createClient(supabaseUrl, serviceKey);
-    const { data: roleData } = await supabase.from("user_roles").select("role")
-      .eq("user_id", user.id).eq("role", "admin").maybeSingle();
-    if (!roleData) return Response.json({ ok: false, error: "Admin required" }, { status: 403, headers: corsHeaders });
 
-    const url = new URL(req.url);
-    const action = url.searchParams.get("action") || "optimize";
-    const limitParam = parseInt(url.searchParams.get("limit") || "20", 10);
-    const limit = Math.min(Math.max(limitParam, 1), 50);
+    // Allow service-role key for cron jobs
+    const isServiceRole = token === serviceKey;
+    if (!isServiceRole) {
+      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+      const { data: { user } } = await anonClient.auth.getUser(token);
+      if (!user) return Response.json({ ok: false, error: "Invalid token" }, { status: 401, headers: corsHeaders });
+      const { data: roleData } = await supabase.from("user_roles").select("role")
+        .eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      if (!roleData) return Response.json({ ok: false, error: "Admin required" }, { status: 403, headers: corsHeaders });
+    }
 
-    // ── ACTION: optimize — generate optimized titles/descriptions using AI ──
+    const limitParam = parseInt(url.searchParams.get("limit") || "50", 10);
+    const limit = Math.min(Math.max(limitParam, 1), 200);
+
+    // ── ACTION: boost — score, rank, optimize top 50, mark as priority ──
+    if (action === "boost") {
+      const { data: products } = await supabase
+        .from("products")
+        .select("id, name, description, category, price, compare_at_price, image_url, primary_species")
+        .eq("is_active", true)
+        .gt("price", 0)
+        .not("image_url", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (!products?.length) {
+        return Response.json({ ok: true, boosted: 0, results: [] }, { headers: corsHeaders });
+      }
+
+      // Score all
+      const scored = products.map(p => ({ ...p, boostScore: calcBoostScore(p as any) }));
+      scored.sort((a, b) => b.boostScore - a.boostScore);
+      const top = scored.slice(0, Math.min(limit, 50));
+
+      // Image health check on top products
+      const imageIssues: string[] = [];
+      const results: any[] = [];
+
+      for (const p of top) {
+        // Check image
+        let imageOk = true;
+        if (p.image_url) {
+          const check = await checkImageHealth(p.image_url);
+          if (!check.reachable) {
+            imageIssues.push(p.id);
+            imageOk = false;
+          }
+        }
+
+        const petType = detectPetType(p.name, p.category);
+        const taxonomy = mapTaxonomy(p.name, p.category);
+        const productType = buildProductType(p.name, p.category);
+        const keywords = getKeywords(p.name, p.category);
+        const petLabel = petType === "cat" ? "Cat" : petType === "dog" ? "Dog" : "Pet";
+
+        let cleanName = p.name
+          .replace(/\b(best|cheap|sale|free|amazing|premium|top|rated|#1|exclusive)\b/gi, "")
+          .replace(/\s{2,}/g, " ").trim();
+
+        const primaryKeyword = keywords[0] || `${petLabel} product`;
+        let optimizedTitle = cleanName;
+        if (!cleanName.toLowerCase().includes(primaryKeyword.split(" ")[0])) {
+          optimizedTitle = `${cleanName} – ${primaryKeyword.charAt(0).toUpperCase() + primaryKeyword.slice(1)}`;
+        }
+        optimizedTitle = optimizedTitle.slice(0, 150).trim();
+
+        const rawDesc = (p.description || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+        let optimizedDesc = rawDesc
+          .replace(/\b(best|cheap|sale|free|amazing|premium|top.rated|#1|exclusive|buy now|shop now|order today)\b/gi, "")
+          .replace(/[✔✓★⭐🏆🥇💯🔥✅🎉🚚📦]/g, "").replace(/\s{2,}/g, " ").trim();
+
+        if (optimizedDesc.length < 140) {
+          optimizedDesc = `${cleanName} is a ${petLabel.toLowerCase()} product designed for everyday use. ` +
+            `This ${p.category || "pet supply"} provides comfort and durability for your ${petType}. ` +
+            `Suitable for ${petType === "cat" ? "indoor cats" : petType === "dog" ? "dogs of all sizes" : "all pets"}. ` +
+            `Ships from US warehouses with tracking included.`;
+        }
+
+        let score = 50;
+        if (optimizedTitle.length >= 50 && optimizedTitle.length <= 150) score += 15;
+        if (optimizedDesc.length >= 140) score += 15;
+        if (taxonomy) score += 10;
+        if (keywords.length > 0) score += 5;
+        if (imageOk) score += 5;
+
+        const row = {
+          product_id: p.id,
+          original_title: p.name,
+          optimized_title: optimizedTitle,
+          original_description: rawDesc.slice(0, 5000),
+          optimized_description: optimizedDesc.slice(0, 5000),
+          google_product_category: taxonomy?.path || null,
+          google_product_category_id: taxonomy?.id || null,
+          product_type: productType,
+          keyword_suggestions: keywords,
+          optimization_score: score,
+          status: "priority",
+          boost_score: Math.round(p.boostScore * 100),
+        };
+
+        await supabase.from("shopping_optimizations").upsert(row, { onConflict: "product_id" });
+        results.push(row);
+      }
+
+      // Log run
+      await supabase.from("cron_job_logs").insert({
+        job_name: "shopping-visibility-boost",
+        status: "completed",
+        success: true,
+        items_processed: results.length,
+        details: { imageIssues: imageIssues.length, topScore: results[0]?.boost_score },
+      });
+
+      return Response.json({ ok: true, boosted: results.length, imageIssues: imageIssues.length, results }, { headers: corsHeaders });
+    }
+
+    // ── ACTION: optimize ──
     if (action === "optimize") {
       const { data: products } = await supabase
         .from("products")
@@ -146,40 +379,29 @@ Deno.serve(async (req: Request) => {
         const keywords = getKeywords(p.name, p.category);
         const petLabel = petType === "cat" ? "Cat" : petType === "dog" ? "Dog" : "Pet";
 
-        // Build optimized title: [Primary Keyword] + [Product Type] + [Key Feature] + [Pet Type]
-        // Strip promotional words first
         let cleanName = p.name
           .replace(/\b(best|cheap|sale|free|amazing|premium|top|rated|#1|exclusive)\b/gi, "")
-          .replace(/\s{2,}/g, " ")
-          .trim();
+          .replace(/\s{2,}/g, " ").trim();
 
-        // Ensure primary keyword appears first
         const primaryKeyword = keywords[0] || `${petLabel} product`;
         let optimizedTitle = cleanName;
         if (!cleanName.toLowerCase().includes(primaryKeyword.split(" ")[0])) {
           optimizedTitle = `${cleanName} – ${primaryKeyword.charAt(0).toUpperCase() + primaryKeyword.slice(1)}`;
         }
-        // Cap at 150 chars
         optimizedTitle = optimizedTitle.slice(0, 150).trim();
 
-        // Build optimized description
         const rawDesc = (p.description || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-        const cleanDesc = rawDesc
+        let optimizedDesc = rawDesc
           .replace(/\b(best|cheap|sale|free|amazing|premium|top.rated|#1|exclusive|buy now|shop now|order today)\b/gi, "")
-          .replace(/[✔✓★⭐🏆🥇💯🔥✅🎉🚚📦]/g, "")
-          .replace(/\s{2,}/g, " ")
-          .trim();
+          .replace(/[✔✓★⭐🏆🥇💯🔥✅🎉🚚📦]/g, "").replace(/\s{2,}/g, " ").trim();
 
-        let optimizedDesc = cleanDesc;
-        if (cleanDesc.length < 140) {
-          // Generate factual description
+        if (optimizedDesc.length < 140) {
           optimizedDesc = `${cleanName} is a ${petLabel.toLowerCase()} product designed for everyday use. ` +
             `This ${p.category || "pet supply"} provides comfort and durability for your ${petType}. ` +
             `Suitable for ${petType === "cat" ? "indoor cats" : petType === "dog" ? "dogs of all sizes" : "all pets"}. ` +
             `Ships from US warehouses with tracking included.`;
         }
 
-        // Compute optimization score (0-100)
         let score = 50;
         if (optimizedTitle.length >= 50 && optimizedTitle.length <= 150) score += 15;
         if (optimizedDesc.length >= 140) score += 15;
@@ -200,7 +422,6 @@ Deno.serve(async (req: Request) => {
           status: "pending",
         };
 
-        // Upsert into shopping_optimizations
         await supabase.from("shopping_optimizations").upsert(row, { onConflict: "product_id" });
         results.push(row);
       }
@@ -208,7 +429,7 @@ Deno.serve(async (req: Request) => {
       return Response.json({ ok: true, optimized: results.length, results }, { headers: corsHeaders });
     }
 
-    // ── ACTION: apply — apply optimized titles/descriptions to the sync pipeline ──
+    // ── ACTION: apply ──
     if (action === "apply") {
       const body = await req.json().catch(() => ({}));
       const productIds: string[] = body.productIds || [];
@@ -221,7 +442,7 @@ Deno.serve(async (req: Request) => {
         .from("shopping_optimizations")
         .select("*")
         .in("product_id", productIds)
-        .eq("status", "pending");
+        .in("status", ["pending", "priority"]);
 
       let applied = 0;
       for (const opt of (optimizations || [])) {
@@ -234,9 +455,8 @@ Deno.serve(async (req: Request) => {
       return Response.json({ ok: true, applied }, { headers: corsHeaders });
     }
 
-    // ── ACTION: insights — shopping performance analysis ──
+    // ── ACTION: insights ──
     if (action === "insights") {
-      // Products without optimizations
       const { data: unoptimized } = await supabase
         .from("products")
         .select("id, name, category")
@@ -245,7 +465,6 @@ Deno.serve(async (req: Request) => {
         .is("category", null)
         .limit(10);
 
-      // Products with short titles (< 50 chars)
       const { data: shortTitles } = await supabase
         .from("products")
         .select("id, name")
@@ -258,14 +477,12 @@ Deno.serve(async (req: Request) => {
         .slice(0, 10)
         .map(p => ({ id: p.id, name: p.name, issue: "short_title", suggestion: "Add keywords and product details to title" }));
 
-      // Category issues
       const categoryIssues = (unoptimized || []).map(p => ({
         id: p.id,
         name: p.name,
         issue: "missing_category",
       }));
 
-      // Top keyword suggestions based on product mix
       const { data: allProducts } = await supabase
         .from("products")
         .select("name, category")
@@ -284,7 +501,6 @@ Deno.serve(async (req: Request) => {
         .slice(0, 15)
         .map(([keyword, count]) => ({ keyword, productCount: count }));
 
-      // Title improvement suggestions
       const titleSuggestions = (shortTitles || [])
         .filter(p => p.name.length < 80)
         .slice(0, 10)
