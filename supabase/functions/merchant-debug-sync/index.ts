@@ -95,6 +95,44 @@ Deno.serve(async (req: Request) => {
     const hasServiceAccount = !!Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
     const hasOAuth = envConfigStatus.GOOGLE_OAUTH_CLIENT_ID && envConfigStatus.GOOGLE_OAUTH_CLIENT_SECRET;
 
+    // ── Google Auth Debug: extract GCP project info ─────────────────
+    const googleAuthDebug: Record<string, unknown> = {
+      authMethod: hasServiceAccount ? "service_account" : hasOAuth ? "oauth_token" : "NONE",
+      project_id: null,
+      client_email: null,
+      client_id: null,
+      merchantId: merchantId,
+      token_project_number_if_available: null,
+    };
+
+    const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+    if (saJson) {
+      try {
+        const sa = JSON.parse(saJson);
+        googleAuthDebug.project_id = sa.project_id || null;
+        googleAuthDebug.client_email = sa.client_email || null;
+        googleAuthDebug.client_id = sa.client_id || null;
+        // Extract project number from client_email domain if possible
+        if (sa.client_email && sa.client_email.includes("@")) {
+          googleAuthDebug.sa_email_domain = sa.client_email.split("@")[1] || null;
+        }
+        console.log(`[merchant-debug-sync] GCP project_id=${sa.project_id} client_email=${sa.client_email} client_id=${sa.client_id}`);
+      } catch (e) {
+        googleAuthDebug.parse_error = (e as Error).message;
+        console.error("[merchant-debug-sync] Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON:", (e as Error).message);
+      }
+    }
+
+    if (hasOAuth) {
+      const oauthClientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID") || "";
+      // OAuth client IDs are formatted as {project_number}-{hash}.apps.googleusercontent.com
+      const oauthMatch = oauthClientId.match(/^(\d+)-/);
+      if (oauthMatch) {
+        googleAuthDebug.token_project_number_if_available = oauthMatch[1];
+      }
+      googleAuthDebug.oauth_client_id = oauthClientId;
+    }
+
     // ── STEP A: Source Enumeration (products table probes) ───────────
     // Total rows
     const { count: totalRows, error: totalErr } = await supabase
@@ -404,6 +442,7 @@ Deno.serve(async (req: Request) => {
         merchantId: merchantId ? `***${merchantId.slice(-4)}` : null,
         authMethod,
       },
+      googleAuthDebug,
       pipeline: {
         rawCount,
         activeCount: activeCount ?? 0,
