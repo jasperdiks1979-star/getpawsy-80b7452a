@@ -18,6 +18,8 @@ import {
   Bug,
   ChevronDown,
   ChevronUp,
+  Copy,
+  ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,8 +56,25 @@ interface SyncLog {
 }
 
 interface DebugReport {
+  runId: string;
   timestamp: string;
-  environment: Record<string, unknown>;
+  mode: string;
+  envConfigStatus: Record<string, boolean>;
+  productsTableProbe: {
+    totalRows: number;
+    activeRows: number;
+    rowsWithPriceGt0: number;
+    activeAndPriced: number;
+    rowsWithImage: number;
+    rowsWithSlug: number;
+    errors: string[];
+  };
+  merchantFeedProbe: {
+    itemCount: number;
+    firstItemIds: string[];
+    error?: string;
+    flag?: string;
+  };
   sourceEnumeration: {
     table: string;
     query: string;
@@ -63,6 +82,7 @@ interface DebugReport {
     rawCountError: string | null;
     zeroReasonChecks: Record<string, unknown> | null;
   };
+  eligibilityBreakdown: Record<string, number>;
   eligibilityFiltering: {
     eligibleCount: number;
     failureBuckets: Array<{
@@ -73,7 +93,14 @@ interface DebugReport {
   };
   payloadBuild: { payloadItemsBuilt: number; explanation: string };
   googleApiStage: Record<string, unknown>;
-  pipeline: { rawCount: number; eligibleCount: number; payloadBuiltCount: number; sentCount: number };
+  pipeline: {
+    rawCount: number;
+    activeCount: number;
+    pricedCount: number;
+    eligibleCount: number;
+    payloadBuiltCount: number;
+    sentCount: number;
+  };
   topFailureReasons: Array<{ reason: string; count: number }>;
   minimumViableExport: {
     possible: boolean;
@@ -179,12 +206,12 @@ export default function MerchantIntegrationPage() {
     try {
       const { data, error } = await invokeFunction<{ ok: boolean; report: DebugReport; error?: string }>(
         'merchant-debug-sync',
-        { silent: true }
+        { silent: true, body: { mode: 'dryrun' } }
       );
       if (data?.ok && data.report) {
         setDebugReport(data.report);
         toast.success('Debug report generated');
-        await fetchLogs(); // Refresh logs to show debug entry
+        await fetchLogs();
       } else {
         toast.error(data?.error || error?.message || 'Debug run failed');
       }
@@ -192,6 +219,13 @@ export default function MerchantIntegrationPage() {
       toast.error('Debug request failed');
     } finally {
       setDebugging(false);
+    }
+  };
+
+  const copyReport = () => {
+    if (debugReport) {
+      navigator.clipboard.writeText(JSON.stringify(debugReport, null, 2));
+      toast.success('Report copied to clipboard');
     }
   };
 
@@ -205,6 +239,12 @@ export default function MerchantIntegrationPage() {
   const tokenAge = status?.tokenCreatedAt
     ? Math.round((Date.now() - new Date(status.tokenCreatedAt).getTime()) / (1000 * 60 * 60 * 24))
     : null;
+
+  // Safety guards
+  const missingEnvKeys = debugReport
+    ? Object.entries(debugReport.envConfigStatus).filter(([, v]) => !v).map(([k]) => k)
+    : [];
+  const canLiveSync = !debugReport || (debugReport.pipeline.eligibleCount > 0 && missingEnvKeys.length === 0);
 
   if (loading) {
     return (
@@ -287,10 +327,19 @@ export default function MerchantIntegrationPage() {
               </Button>
 
               {status?.connected && (
-                <Button onClick={handleSync} disabled={syncing}>
-                  {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                  Run Sync Now
-                </Button>
+                <div className="relative">
+                  <Button onClick={handleSync} disabled={syncing || !canLiveSync}>
+                    {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                    Run Sync Now
+                  </Button>
+                  {!canLiveSync && debugReport && (
+                    <p className="text-xs text-destructive mt-1 absolute whitespace-nowrap">
+                      {debugReport.pipeline.eligibleCount === 0
+                        ? '0 eligible — run Dry Run to see why'
+                        : `Missing: ${missingEnvKeys.join(', ')}`}
+                    </p>
+                  )}
+                </div>
               )}
 
               <Button onClick={handleDebugDryRun} disabled={debugging} variant="secondary">
@@ -320,27 +369,31 @@ export default function MerchantIntegrationPage() {
         {debugReport && (
           <Card className="border-amber-500/50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2 text-amber-600">
-                <Bug className="h-5 w-5" />
-                Debug Summary — Dry Run
-              </CardTitle>
-              <CardDescription>{formatDate(debugReport.timestamp)}</CardDescription>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2 text-amber-600">
+                  <Bug className="h-5 w-5" />
+                  Debug Summary — Dry Run
+                </CardTitle>
+                <Button variant="ghost" size="sm" onClick={copyReport}>
+                  <Copy className="h-4 w-4 mr-1" /> Copy report
+                </Button>
+              </div>
+              <CardDescription>Run ID: {debugReport.runId} • {formatDate(debugReport.timestamp)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Pipeline Funnel */}
-              <div className="grid grid-cols-4 gap-3 text-center">
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
                 {[
-                  { label: 'Raw (DB)', value: debugReport.pipeline.rawCount },
+                  { label: 'Total (DB)', value: debugReport.productsTableProbe.totalRows },
+                  { label: 'Active', value: debugReport.pipeline.activeCount },
+                  { label: 'Priced', value: debugReport.pipeline.pricedCount },
+                  { label: 'Raw (query)', value: debugReport.pipeline.rawCount },
                   { label: 'Eligible', value: debugReport.pipeline.eligibleCount },
-                  { label: 'Payload Built', value: debugReport.pipeline.payloadBuiltCount },
-                  { label: 'Sent (dry run)', value: debugReport.pipeline.sentCount },
-                ].map((s, i) => (
-                  <div key={s.label} className="p-3 rounded-md bg-muted/50">
-                    <p className="text-2xl font-bold">{s.value}</p>
-                    <p className="text-xs text-muted-foreground">{s.label}</p>
-                    {i < 3 && s.value === 0 && (
-                      <Badge variant="destructive" className="text-xs mt-1">⚠ 0</Badge>
-                    )}
+                  { label: 'Sent (dry)', value: debugReport.pipeline.sentCount },
+                ].map((s) => (
+                  <div key={s.label} className="p-2 rounded-md bg-muted/50">
+                    <p className="text-xl font-bold">{s.value}</p>
+                    <p className="text-[10px] text-muted-foreground">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -348,18 +401,29 @@ export default function MerchantIntegrationPage() {
               {/* Zero-reason checks */}
               {debugReport.sourceEnumeration.zeroReasonChecks && (
                 <div className="p-3 bg-destructive/10 rounded-md text-sm space-y-1">
-                  <p className="font-medium text-destructive">⚠ rawCount = 0 — Diagnostic Checks:</p>
+                  <p className="font-medium text-destructive">⚠ rawCount = 0 — Root Cause:</p>
                   {Object.entries(debugReport.sourceEnumeration.zeroReasonChecks).map(([k, v]) => (
                     <div key={k} className="flex justify-between text-xs">
                       <span className="text-muted-foreground">{k}</span>
-                      <span className="font-mono">{String(v)}</span>
+                      <span className="font-mono">{Array.isArray(v) ? v.join('; ') : String(v)}</span>
                     </div>
                   ))}
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Query: {debugReport.sourceEnumeration.query}
-                  </p>
                 </div>
               )}
+
+              {/* Merchant Feed Probe */}
+              <div className={`p-3 rounded-md text-sm ${debugReport.merchantFeedProbe.itemCount > 0 ? 'bg-primary/10' : 'bg-destructive/10'}`}>
+                <p className="font-medium">
+                  merchant-feed.xml: {debugReport.merchantFeedProbe.itemCount} items
+                  {debugReport.merchantFeedProbe.flag && <span className="text-destructive ml-2">⚠ {debugReport.merchantFeedProbe.flag}</span>}
+                </p>
+                {debugReport.merchantFeedProbe.firstItemIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">First IDs: {debugReport.merchantFeedProbe.firstItemIds.join(', ')}</p>
+                )}
+                {debugReport.merchantFeedProbe.error && (
+                  <p className="text-xs text-destructive mt-1">{debugReport.merchantFeedProbe.error}</p>
+                )}
+              </div>
 
               {/* Top Failure Reasons */}
               {debugReport.topFailureReasons.length > 0 && (
@@ -376,14 +440,16 @@ export default function MerchantIntegrationPage() {
                 </div>
               )}
 
-              {/* Environment */}
+              {/* Env Config Status */}
               <div>
-                <p className="text-sm font-medium mb-2">Environment</p>
+                <p className="text-sm font-medium mb-2 flex items-center gap-1">
+                  <ShieldAlert className="h-4 w-4" /> Environment Config
+                </p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                  {Object.entries(debugReport.environment).map(([k, v]) => (
+                  {Object.entries(debugReport.envConfigStatus).map(([k, v]) => (
                     <div key={k} className="flex justify-between">
-                      <span className="text-muted-foreground">{k}</span>
-                      <span className={v ? 'text-primary' : 'text-destructive'}>{String(v)}</span>
+                      <span className="text-muted-foreground font-mono">{k}</span>
+                      <span className={v ? 'text-primary' : 'text-destructive font-bold'}>{v ? '✓' : '✗ MISSING'}</span>
                     </div>
                   ))}
                 </div>
@@ -401,15 +467,17 @@ export default function MerchantIntegrationPage() {
               <p className="text-sm text-muted-foreground">{debugReport.payloadBuild.explanation}</p>
 
               {/* Toggle full report */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowFullReport(!showFullReport)}
-                className="text-xs"
-              >
-                {showFullReport ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
-                {showFullReport ? 'Hide' : 'View'} Full Debug Report
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowFullReport(!showFullReport)}
+                  className="text-xs"
+                >
+                  {showFullReport ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+                  {showFullReport ? 'Hide' : 'View'} Full Debug Report
+                </Button>
+              </div>
 
               {showFullReport && (
                 <pre className="p-3 bg-muted rounded-md text-xs overflow-x-auto max-h-[500px] overflow-y-auto font-mono whitespace-pre-wrap">

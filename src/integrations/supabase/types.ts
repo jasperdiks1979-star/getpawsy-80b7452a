@@ -2787,43 +2787,88 @@ export type Database = {
       merchant_sync_logs: {
         Row: {
           account_info: Json | null
+          active_count: number | null
           completed_at: string | null
           created_at: string
+          debug_report: Json | null
+          eligible_count: number | null
+          env_status: Json | null
           error_message: string | null
+          errors: Json | null
+          first10_payload_preview: Json | null
           id: string
           issues_summary: Json | null
+          mode: string | null
+          notes: string | null
+          payload_built_count: number | null
+          priced_count: number | null
           products_with_issues: number | null
+          raw_count: number | null
+          run_id: string | null
+          sample_failures: Json | null
+          sent_count: number | null
           started_at: string
           status: string
           sync_type: string
+          top_failure_reasons: Json | null
           total_products: number | null
           triggered_by: string | null
         }
         Insert: {
           account_info?: Json | null
+          active_count?: number | null
           completed_at?: string | null
           created_at?: string
+          debug_report?: Json | null
+          eligible_count?: number | null
+          env_status?: Json | null
           error_message?: string | null
+          errors?: Json | null
+          first10_payload_preview?: Json | null
           id?: string
           issues_summary?: Json | null
+          mode?: string | null
+          notes?: string | null
+          payload_built_count?: number | null
+          priced_count?: number | null
           products_with_issues?: number | null
+          raw_count?: number | null
+          run_id?: string | null
+          sample_failures?: Json | null
+          sent_count?: number | null
           started_at?: string
           status?: string
           sync_type?: string
+          top_failure_reasons?: Json | null
           total_products?: number | null
           triggered_by?: string | null
         }
         Update: {
           account_info?: Json | null
+          active_count?: number | null
           completed_at?: string | null
           created_at?: string
+          debug_report?: Json | null
+          eligible_count?: number | null
+          env_status?: Json | null
           error_message?: string | null
+          errors?: Json | null
+          first10_payload_preview?: Json | null
           id?: string
           issues_summary?: Json | null
+          mode?: string | null
+          notes?: string | null
+          payload_built_count?: number | null
+          priced_count?: number | null
           products_with_issues?: number | null
+          raw_count?: number | null
+          run_id?: string | null
+          sample_failures?: Json | null
+          sent_count?: number | null
           started_at?: string
           status?: string
           sync_type?: string
+          top_failure_reasons?: Json | null
           total_products?: number | null
           triggered_by?: string | null
         }
