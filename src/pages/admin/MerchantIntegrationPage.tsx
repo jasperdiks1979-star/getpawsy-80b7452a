@@ -58,6 +58,20 @@ export default function MerchantIntegrationPage() {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [reachability, setReachability] = useState<{ testing: boolean; result: null | { reachable: boolean; latencyMs?: number; error?: string } }>({ testing: false, result: null });
+
+  const testReachability = useCallback(async () => {
+    setReachability({ testing: true, result: null });
+    try {
+      const { data } = await invokeFunction<{ ok: boolean; reachable: boolean; latencyMs?: number; error?: string }>(
+        'merchant-reachability',
+        { silent: true }
+      );
+      setReachability({ testing: false, result: data ? { reachable: data.reachable, latencyMs: data.latencyMs, error: data.error } : { reachable: false, error: 'No response' } });
+    } catch {
+      setReachability({ testing: false, result: { reachable: false, error: 'Request failed' } });
+    }
+  }, [invokeFunction]);
 
   const fetchStatus = useCallback(async () => {
     const { data } = await invokeFunction<{ ok: boolean; status: MerchantStatus }>(
@@ -225,7 +239,7 @@ export default function MerchantIntegrationPage() {
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <Button onClick={handleConnect} disabled={connecting} variant="outline">
                 {connecting ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -245,7 +259,32 @@ export default function MerchantIntegrationPage() {
                   Run Sync Now
                 </Button>
               )}
+
+              <Button onClick={testReachability} disabled={reachability.testing} variant="secondary">
+                {reachability.testing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                )}
+                Test Connection
+              </Button>
             </div>
+
+            {reachability.result && (
+              <div className={`p-3 rounded-md text-sm flex items-start gap-2 ${reachability.result.reachable ? 'bg-primary/10' : 'bg-destructive/10'}`}>
+                {reachability.result.reachable ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    <span>Supabase reachable ✅ {reachability.result.latencyMs != null && <span className="text-muted-foreground">({reachability.result.latencyMs}ms)</span>}</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                    <span>Blocked by DNS/Private Relay/network ❌ <span className="text-muted-foreground">{reachability.result.error}</span></span>
+                  </>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
