@@ -18,26 +18,45 @@ const POLICY_PAGES: Record<string, { path: string; keywords: string[] }> = {
 };
 
 const SHIPPING_CLAIMS = [
-  { key: "usFulfillmentVisible", pattern: /warehouses?\s*(located\s+)?in\s+the\s+united\s+states/i },
-  { key: "processingTimeVisible", pattern: /processing\s+time|1.?2\s+business\s+days?/i },
-  { key: "deliveryTimeVisible",  pattern: /delivery\s+time|3.?7\s+business\s+days?/i },
+  { key: "usFulfillmentVisible", patterns: [
+    /warehouses?\s*(located\s+)?in\s+the\s+united\s+states/i,
+    /us\s+warehouse/i,
+    /ships?\s+from\s+(the\s+)?us/i,
+    /domestic\s+(fulfillment|shipping)/i,
+    /US\s+warehouses/i,
+  ]},
+  { key: "processingTimeVisible", patterns: [
+    /processing\s+time/i,
+    /1.?2\s+business\s+days?/i,
+    /order\s+processing/i,
+    /handled\s+within/i,
+  ]},
+  { key: "deliveryTimeVisible", patterns: [
+    /delivery\s+time/i,
+    /3.?7\s+business\s+days?/i,
+    /estimated\s+delivery/i,
+    /business\s+day\s+delivery/i,
+  ]},
 ];
 
-// Lightweight page check — just HTTP status + keyword scan in HTML
-async function probePageOk(path: string, keywords: string[]): Promise<boolean> {
-  try {
-    const res = await fetch(`${SITE}${path}`, {
-      headers: { "User-Agent": "GetPawsy-MerchantHealth/1.0" },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return false;
-    // For SPA, the page always returns 200 with the shell — we trust that routes exist
-    // since we've verified them in the merchant-audit preflight.
-    await res.text();
-    return true;
-  } catch {
-    return false;
+// Extract JS bundle URLs from SPA HTML shell and fetch their content
+async function fetchJsBundleContent(html: string): Promise<string> {
+  const scriptMatches = html.matchAll(/src=["']([^"']*\.js)["']/g);
+  const urls: string[] = [];
+  for (const m of scriptMatches) {
+    const src = m[1].startsWith("http") ? m[1] : `${SITE}${m[1].startsWith("/") ? "" : "/"}${m[1]}`;
+    urls.push(src);
   }
+  // Fetch up to 5 JS bundles in parallel
+  const results = await Promise.all(
+    urls.slice(0, 5).map(async (u) => {
+      try {
+        const r = await fetch(u, { signal: AbortSignal.timeout(6000) });
+        return r.ok ? await r.text() : "";
+      } catch { return ""; }
+    })
+  );
+  return results.join("\n");
 }
 
 Deno.serve(async (req: Request) => {
@@ -55,10 +74,23 @@ Deno.serve(async (req: Request) => {
       siteReachable = r.ok;
       const html = await r.text();
 
-      // 3. Shipping claims from homepage HTML + JS
+      // Also fetch JS bundle content to find rendered text
+      const jsContent = await fetchJsBundleContent(html);
+      const allContent = html + "\n" + jsContent;
+
+      // Also fetch /shipping page content
+      let shippingPageContent = "";
+      try {
+        const sr = await fetch(`${SITE}/shipping`, { signal: AbortSignal.timeout(6000), headers: { "User-Agent": "GetPawsy-MerchantHealth/1.0" } });
+        if (sr.ok) shippingPageContent = await sr.text();
+      } catch { /* ignore */ }
+
+      const searchable = allContent + "\n" + shippingPageContent;
+
+      // 3. Shipping claims from HTML + JS bundles + shipping page
       var shippingClaims: Record<string, boolean> = {};
       for (const c of SHIPPING_CLAIMS) {
-        shippingClaims[c.key] = c.pattern.test(html);
+        shippingClaims[c.key] = c.patterns.some((p: RegExp) => p.test(searchable));
       }
     } catch {
       var shippingClaims: Record<string, boolean> = {};
