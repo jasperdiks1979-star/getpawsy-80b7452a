@@ -295,19 +295,18 @@ export const Footer = () => {
               </ul>
             </FooterSection>
 
-            {/* Support + Company — collapsed on mobile */}
+            {/* Support + Company — plain <a> tags for Google crawlability */}
             <FooterSection title="Customer Service">
               <ul className="space-y-3">
                 {footerLinks.support.map((link) => (
                   <li key={link.href}>
-                    <Link 
-                      to={link.href}
-                      rel={(link as any).noFollow ? 'nofollow' : undefined}
+                    <a 
+                      href={link.href}
                       className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group"
                     >
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                       <span>{link.label}</span>
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -316,10 +315,10 @@ export const Footer = () => {
                 <ul className="space-y-3">
                   {footerLinks.company.map((link) => (
                     <li key={link.href}>
-                      <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                      <a href={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                         <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                         <span>{link.label}</span>
-                      </Link>
+                      </a>
                     </li>
                   ))}
                 </ul>

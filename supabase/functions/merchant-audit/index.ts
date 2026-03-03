@@ -58,19 +58,108 @@ const BUSINESS_SIGNALS = [
 ];
 
 /**
- * SPA-aware page checker.
- * Since GetPawsy is a React SPA, the initial HTML is just a shell (index.html).
- * Actual content lives in JS bundles. This function:
- * 1. Fetches the HTML to verify HTTP 200
- * 2. Extracts <script src="..."> URLs from the HTML
- * 3. Fetches JS bundles and searches for keywords there
- * 4. Combines HTML + JS text for comprehensive keyword matching
+ * Fetch ALL JS bundle URLs from the SPA HTML shell.
+ * Also discovers lazy chunk URLs referenced inside the entry bundle.
  */
-async function checkPage(path: string, mustContain: string[]): Promise<{
+async function getAllBundleUrls(html: string): Promise<string[]> {
+  const urls: string[] = [];
+  
+  // 1. Extract script src from HTML
+  const scriptRegex = /<script[^>]+src="([^"]+\.js)"/gi;
+  let match;
+  while ((match = scriptRegex.exec(html)) !== null) {
+    const src = match[1];
+    if (src.startsWith("/assets/") || src.startsWith("./assets/") || src.startsWith("/src/")) {
+      const fullUrl = src.startsWith("http") ? src : `${SITE}${src.startsWith(".") ? src.slice(1) : src}`;
+      urls.push(fullUrl);
+    }
+  }
+  
+  // 2. Also extract modulepreload links (Vite adds these for critical chunks)
+  const preloadRegex = /<link[^>]+rel="modulepreload"[^>]+href="([^"]+\.js)"/gi;
+  while ((match = preloadRegex.exec(html)) !== null) {
+    const src = match[1];
+    const fullUrl = src.startsWith("http") ? src : `${SITE}${src.startsWith(".") ? src.slice(1) : src}`;
+    if (!urls.includes(fullUrl)) urls.push(fullUrl);
+  }
+  
+  return urls;
+}
+
+/**
+ * Discover lazy chunk URLs from an entry bundle's source code.
+ * Vite compiles dynamic imports as: import("./ChunkName-hash.js")
+ */
+function discoverLazyChunks(jsSource: string, baseUrl: string): string[] {
+  const chunks: string[] = [];
+  // Match patterns like: import("./Shipping-abc123.js") or import("./assets/ReturnPolicy-xyz.js")
+  const importRegex = /import\(\s*["']\.?\/?([^"']+\.js)["']\s*\)/g;
+  let match;
+  while ((match = importRegex.exec(jsSource)) !== null) {
+    const chunkPath = match[1];
+    // Only include our app chunks
+    if (!chunkPath.includes("node_modules")) {
+      const fullUrl = `${SITE}/assets/${chunkPath.replace(/^(\.\/|assets\/)/, "")}`;
+      if (!chunks.includes(fullUrl)) chunks.push(fullUrl);
+    }
+  }
+  return chunks;
+}
+
+/**
+ * Fetch JS content with timeout
+ */
+async function fetchJs(url: string): Promise<string> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "GetPawsy-MerchantAudit/1.0" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.ok) return await res.text();
+  } catch { /* ignore */ }
+  return "";
+}
+
+/**
+ * Build comprehensive text corpus from all JS bundles.
+ * Fetches entry bundles, discovers lazy chunks, then fetches those too.
+ */
+async function buildSiteCorpus(html: string): Promise<string> {
+  const entryUrls = await getAllBundleUrls(html);
+  
+  // Fetch entry bundles
+  const entryTexts = await Promise.all(entryUrls.map(fetchJs));
+  const entryCorpus = entryTexts.join(" ");
+  
+  // Discover lazy chunks from entry bundles
+  const lazyUrls: string[] = [];
+  for (const text of entryTexts) {
+    const discovered = discoverLazyChunks(text, SITE);
+    for (const url of discovered) {
+      if (!entryUrls.includes(url) && !lazyUrls.includes(url)) {
+        lazyUrls.push(url);
+      }
+    }
+  }
+  
+  // Fetch lazy chunks (limit to 25 to avoid timeout)
+  const lazyTexts = await Promise.all(lazyUrls.slice(0, 25).map(fetchJs));
+  
+  return (html + " " + entryCorpus + " " + lazyTexts.join(" ")).toLowerCase();
+}
+
+/**
+ * SPA-aware page checker.
+ * Verifies HTTP 200 and checks keywords against the full site JS corpus.
+ */
+async function checkPage(
+  path: string,
+  mustContain: string[],
+  corpus: string,
+): Promise<{
   path: string; status: number | null; accessible: boolean;
   missing: string[]; present: string[]; pass: boolean;
   businessSignalsFound: string[];
-  spaVerified: boolean;
 }> {
   try {
     const res = await fetch(`${SITE}${path}`, {
@@ -79,132 +168,58 @@ async function checkPage(path: string, mustContain: string[]): Promise<{
       redirect: "follow",
     });
     const status = res.status;
-    if (!res.ok) return { path, status, accessible: false, missing: mustContain, present: [], pass: false, businessSignalsFound: [], spaVerified: false };
+    if (!res.ok) return { path, status, accessible: false, missing: mustContain, present: [], pass: false, businessSignalsFound: [] };
 
     const html = await res.text();
-    const lowerHtml = html.toLowerCase();
+    const isSpaShell = html.toLowerCase().includes('id="root"') || html.toLowerCase().includes("getpawsy");
 
-    // Verify this is our SPA (not a random 200 from another service)
-    const isSpaShell = lowerHtml.includes('id="root"') || lowerHtml.includes("getpawsy");
-
-    // Extract JS bundle URLs from <script src="..."> tags
-    const scriptUrls: string[] = [];
-    const scriptRegex = /<script[^>]+src="([^"]+\.js)"/gi;
-    let match;
-    while ((match = scriptRegex.exec(html)) !== null) {
-      const src = match[1];
-      // Only fetch our app bundles, not external scripts
-      if (src.startsWith("/assets/") || src.startsWith("./assets/") || src.startsWith("/src/")) {
-        const fullUrl = src.startsWith("http") ? src : `${SITE}${src.startsWith(".") ? src.slice(1) : src}`;
-        scriptUrls.push(fullUrl);
-      }
-    }
-
-    // Fetch JS bundles to scan for keywords (limit to first 3 to avoid timeout)
-    let combinedText = lowerHtml;
-    const bundleFetches = scriptUrls.slice(0, 3).map(async (url) => {
-      try {
-        const jsRes = await fetch(url, {
-          headers: { "User-Agent": "GetPawsy-MerchantAudit/1.0" },
-          signal: AbortSignal.timeout(8000),
-        });
-        if (jsRes.ok) {
-          const jsText = await jsRes.text();
-          return jsText.toLowerCase();
-        }
-      } catch { /* ignore individual bundle failures */ }
-      return "";
-    });
-
-    const bundleTexts = await Promise.all(bundleFetches);
-    combinedText += " " + bundleTexts.join(" ");
-
-    // Check for required keywords in combined HTML + JS content
+    // Check for required keywords in the full corpus (HTML + all JS bundles)
     const present: string[] = [];
     const missing: string[] = [];
     for (const term of mustContain) {
-      if (combinedText.includes(term.toLowerCase())) present.push(term);
+      if (corpus.includes(term.toLowerCase())) present.push(term);
       else missing.push(term);
     }
 
     // Check business signals
     const businessSignalsFound: string[] = [];
     for (const sig of BUSINESS_SIGNALS) {
-      if (combinedText.includes(sig.toLowerCase())) businessSignalsFound.push(sig);
+      if (corpus.includes(sig.toLowerCase())) businessSignalsFound.push(sig);
     }
 
     return {
       path, status, accessible: true, missing, present,
       pass: missing.length === 0 && isSpaShell,
       businessSignalsFound,
-      spaVerified: isSpaShell,
     };
   } catch (e) {
-    return { path, status: null, accessible: false, missing: mustContain, present: [], pass: false, businessSignalsFound: [], spaVerified: false };
+    return { path, status: null, accessible: false, missing: mustContain, present: [], pass: false, businessSignalsFound: [] };
   }
 }
 
 /**
- * Check footer links by scanning JS bundles for href patterns.
- * In a React SPA, footer links are in the JS, not the initial HTML.
+ * Check footer links by scanning the full JS corpus for href patterns.
+ * Now uses <a href> tags (plain HTML) for policy links.
  */
-async function checkFooterLinks(): Promise<{ found: string[]; missing: string[] }> {
-  try {
-    const res = await fetch(SITE, {
-      headers: { "User-Agent": "GetPawsy-MerchantAudit/1.0" },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) return { found: [], missing: REQUIRED_FOOTER_HREFS };
-
-    const html = await res.text();
-
-    // Extract JS bundle URLs
-    const scriptUrls: string[] = [];
-    const scriptRegex = /<script[^>]+src="([^"]+\.js)"/gi;
-    let match;
-    while ((match = scriptRegex.exec(html)) !== null) {
-      const src = match[1];
-      if (src.startsWith("/assets/") || src.startsWith("./assets/") || src.startsWith("/src/")) {
-        const fullUrl = src.startsWith("http") ? src : `${SITE}${src.startsWith(".") ? src.slice(1) : src}`;
-        scriptUrls.push(fullUrl);
-      }
+function checkFooterLinks(corpus: string): { found: string[]; missing: string[] } {
+  const found: string[] = [];
+  const missing: string[] = [];
+  for (const href of REQUIRED_FOOTER_HREFS) {
+    // Check for various compiled patterns:
+    // <a href="/shipping"> compiles to: href:"/shipping" or href="/shipping"
+    // <Link to="/shipping"> compiles to: to:"/shipping" or to="/shipping"
+    if (
+      corpus.includes(`href="${href}"`) ||
+      corpus.includes(`href:"${href}"`) ||
+      corpus.includes(`to:"${href}"`) ||
+      corpus.includes(`to="${href}"`)
+    ) {
+      found.push(href);
+    } else {
+      missing.push(href);
     }
-
-    // Fetch and combine JS content
-    let combinedText = html.toLowerCase();
-    const bundleFetches = scriptUrls.slice(0, 3).map(async (url) => {
-      try {
-        const jsRes = await fetch(url, {
-          headers: { "User-Agent": "GetPawsy-MerchantAudit/1.0" },
-          signal: AbortSignal.timeout(8000),
-        });
-        if (jsRes.ok) return (await jsRes.text()).toLowerCase();
-      } catch { /* ignore */ }
-      return "";
-    });
-    const bundleTexts = await Promise.all(bundleFetches);
-    combinedText += " " + bundleTexts.join(" ");
-
-    const found: string[] = [];
-    const missing: string[] = [];
-    for (const href of REQUIRED_FOOTER_HREFS) {
-      // Check for href="/shipping" or href: "/shipping" patterns (JSX compiled)
-      if (
-        combinedText.includes(`href="${href}"`) ||
-        combinedText.includes(`href:"${href}"`) ||
-        combinedText.includes(`to:"${href}"`) ||
-        combinedText.includes(`to="${href}"`)
-      ) {
-        found.push(href);
-      } else {
-        missing.push(href);
-      }
-    }
-
-    return { found, missing };
-  } catch {
-    return { found: [], missing: REQUIRED_FOOTER_HREFS };
   }
+  return { found, missing };
 }
 
 function buildStableOfferId(product: { id: string; slug?: string | null }): string {
@@ -276,13 +291,20 @@ Deno.serve(async (req: Request) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ── Build site corpus (shared by preflight + audit) ─────────
+    const homepageRes = await fetch(SITE, {
+      headers: { "User-Agent": "GetPawsy-MerchantAudit/1.0" },
+      signal: AbortSignal.timeout(10000),
+    });
+    const homepageHtml = homepageRes.ok ? await homepageRes.text() : "";
+    const corpus = await buildSiteCorpus(homepageHtml);
+
     // ── ACTION: preflight ───────────────────────────────────────
     if (action === "preflight") {
-      // Run page checks and footer check in parallel
-      const [pageResults, footerResult] = await Promise.all([
-        Promise.all(REQUIRED_PAGES.map(p => checkPage(p.path, p.mustContain))),
-        checkFooterLinks(),
-      ]);
+      const pageResults = await Promise.all(
+        REQUIRED_PAGES.map(p => checkPage(p.path, p.mustContain, corpus))
+      );
+      const footerResult = checkFooterLinks(corpus);
 
       const allPagesPass = pageResults.every(r => r.pass);
 
@@ -309,7 +331,6 @@ Deno.serve(async (req: Request) => {
       const failures: string[] = [];
       for (const r of pageResults) {
         if (!r.accessible) failures.push(`${r.path}: not accessible (HTTP ${r.status})`);
-        else if (!r.spaVerified) failures.push(`${r.path}: not a valid SPA page`);
         else if (r.missing.length > 0) failures.push(`${r.path} missing content keyword: ${r.missing.map(m => `"${m}"`).join(", ")}`);
       }
       if (footerResult.missing.length > 0) {
@@ -328,14 +349,18 @@ Deno.serve(async (req: Request) => {
         pages: pageResults,
         footerLinks: footerResult,
         productPageCheck: { slug: sampleProduct?.slug || null, ok: productPageOk },
+        corpusStats: {
+          totalLength: corpus.length,
+          bundlesScanned: true,
+        },
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // ── ACTION: audit (default) ─────────────────────────────────
-    const [results, footerResult] = await Promise.all([
-      Promise.all(REQUIRED_PAGES.map(p => checkPage(p.path, p.mustContain))),
-      checkFooterLinks(),
-    ]);
+    const results = await Promise.all(
+      REQUIRED_PAGES.map(p => checkPage(p.path, p.mustContain, corpus))
+    );
+    const footerResult = checkFooterLinks(corpus);
     const allPass = results.every(r => r.pass);
 
     return new Response(JSON.stringify({
