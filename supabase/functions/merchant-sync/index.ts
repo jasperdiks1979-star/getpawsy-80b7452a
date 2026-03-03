@@ -193,6 +193,36 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // ── Google Auth Debug ───────────────────────────────────────────
+    const googleAuthDebug: Record<string, unknown> = {
+      authMethod: "oauth_token",
+      project_id: null,
+      client_email: null,
+      client_id: null,
+      merchantId,
+      token_project_number_if_available: null,
+    };
+
+    const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+    if (saJson) {
+      try {
+        const sa = JSON.parse(saJson);
+        googleAuthDebug.project_id = sa.project_id || null;
+        googleAuthDebug.client_email = sa.client_email || null;
+        googleAuthDebug.client_id = sa.client_id || null;
+        console.log(`[merchant-sync] SA GCP project_id=${sa.project_id} client_email=${sa.client_email}`);
+      } catch (_) { /* ignore parse errors */ }
+    }
+
+    // Extract project number from OAuth client ID
+    const oauthMatch = clientId.match(/^(\d+)-/);
+    if (oauthMatch) {
+      googleAuthDebug.token_project_number_if_available = oauthMatch[1];
+    }
+    googleAuthDebug.oauth_client_id = clientId;
+
+    console.log(`[merchant-sync] googleAuthDebug:`, JSON.stringify(googleAuthDebug));
+
     // Create sync log
     const { data: syncLog } = await supabase
       .from("merchant_sync_logs")
@@ -463,6 +493,7 @@ Deno.serve(async (req: Request) => {
         errorCount,
         skippedReasons,
         topErrors: errors.slice(0, 10),
+        googleAuthDebug,
         sourceQuery,
         googleStatusSummary: modeEffective === "live" ? {
           totalProducts: googleTotalProducts,
