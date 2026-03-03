@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
       .limit(1)
       .maybeSingle();
 
-    const merchantId = Deno.env.get("GOOGLE_MERCHANT_CENTER_ID");
+    const merchantId = Deno.env.get("GOOGLE_MERCHANT_ID");
 
     return new Response(
       JSON.stringify({

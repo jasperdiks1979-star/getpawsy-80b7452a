@@ -47,7 +47,7 @@ Add these secrets in Lovable Cloud:
 | `GOOGLE_OAUTH_CLIENT_ID` | Your OAuth Client ID |
 | `GOOGLE_OAUTH_CLIENT_SECRET` | Your OAuth Client Secret |
 | `GOOGLE_OAUTH_REDIRECT_URI` | `https://getpawsy.pet/api/merchant-oauth-callback` |
-| `GOOGLE_MERCHANT_CENTER_ID` | Your numeric Merchant Center ID |
+| `GOOGLE_MERCHANT_ID` | Your numeric Merchant Center ID |
 | `APP_BASE_URL` | `https://getpawsy.pet` |
 | `TOKEN_ENCRYPTION_KEY` | A random 32+ character string (e.g., generate with `openssl rand -hex 32`) |
 

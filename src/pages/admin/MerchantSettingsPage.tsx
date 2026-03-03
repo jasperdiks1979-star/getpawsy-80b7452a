@@ -45,7 +45,7 @@ const SECRET_META: {
     validationHint: 'https://',
   },
   {
-    key: 'GOOGLE_MERCHANT_CENTER_ID',
+    key: 'GOOGLE_MERCHANT_ID',
     label: 'Merchant Center ID',
     description: 'Numeric ID from Google Merchant Center',
   },

@@ -182,12 +182,13 @@ Deno.serve(async (req: Request) => {
     const encryptionKey = Deno.env.get("TOKEN_ENCRYPTION_KEY")!;
     const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
     const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
-    const merchantId = tokenRecord.merchant_center_id || Deno.env.get("GOOGLE_MERCHANT_CENTER_ID");
+    const merchantId = tokenRecord.merchant_center_id || Deno.env.get("GOOGLE_MERCHANT_ID");
     const merchantIdLast4 = merchantId ? merchantId.slice(-4) : "none";
+    const merchantIdSource = tokenRecord.merchant_center_id ? "oauth_token_record" : "GOOGLE_MERCHANT_ID";
 
     if (!merchantId) {
       return new Response(
-        JSON.stringify({ ok: false, error: "GOOGLE_MERCHANT_CENTER_ID not configured" }),
+        JSON.stringify({ ok: false, error: "GOOGLE_MERCHANT_ID not configured" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -411,7 +412,8 @@ Deno.serve(async (req: Request) => {
     const debugSummary = {
       runId,
       mode_effective: modeEffective,
-      merchantId_last4: merchantIdLast4,
+      merchantId_used: merchantIdLast4,
+      merchantId_source: merchantIdSource,
       sourceQuery,
       rawCount: totalRaw,
       batchSize: products?.length ?? 0,
@@ -451,6 +453,8 @@ Deno.serve(async (req: Request) => {
         ok: true,
         runId,
         mode_effective: modeEffective,
+        merchantId_used: merchantIdLast4,
+        merchantId_source: merchantIdSource,
         rawCount: totalRaw,
         eligibleCount,
         payloadBuiltCount,

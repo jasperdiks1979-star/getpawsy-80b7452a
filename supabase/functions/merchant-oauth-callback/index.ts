@@ -82,7 +82,7 @@ Deno.serve(async (req: Request) => {
     const fallbackRedirect = `${supabaseUrl}/functions/v1/merchant-oauth-callback`;
     const redirectUri = configuredRedirect || fallbackRedirect;
     const encryptionKey = Deno.env.get("TOKEN_ENCRYPTION_KEY");
-    const merchantId = Deno.env.get("GOOGLE_MERCHANT_CENTER_ID");
+    const merchantId = Deno.env.get("GOOGLE_MERCHANT_ID");
 
     console.log("[merchant-oauth-callback] Redirect URI used for token exchange:", redirectUri);
 
