@@ -84,7 +84,6 @@ Deno.serve(async (req: Request) => {
       GOOGLE_OAUTH_CLIENT_SECRET: !!Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET"),
       GOOGLE_OAUTH_REDIRECT_URI: !!Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI"),
       GOOGLE_MERCHANT_ID: !!Deno.env.get("GOOGLE_MERCHANT_ID"),
-      GOOGLE_MERCHANT_CENTER_ID: !!Deno.env.get("GOOGLE_MERCHANT_CENTER_ID"),
       GOOGLE_SERVICE_ACCOUNT_JSON: !!Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON"),
       TOKEN_ENCRYPTION_KEY: !!Deno.env.get("TOKEN_ENCRYPTION_KEY"),
       SUPABASE_URL: !!Deno.env.get("SUPABASE_URL"),
@@ -92,7 +91,7 @@ Deno.serve(async (req: Request) => {
       SUPABASE_ANON_KEY: !!Deno.env.get("SUPABASE_ANON_KEY"),
     };
 
-    const merchantId = Deno.env.get("GOOGLE_MERCHANT_ID") || Deno.env.get("GOOGLE_MERCHANT_CENTER_ID") || null;
+    const merchantId = Deno.env.get("GOOGLE_MERCHANT_ID") || null;
     const hasServiceAccount = !!Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
     const hasOAuth = envConfigStatus.GOOGLE_OAUTH_CLIENT_ID && envConfigStatus.GOOGLE_OAUTH_CLIENT_SECRET;
 
