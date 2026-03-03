@@ -118,6 +118,7 @@ interface LiveSyncResult {
   ok: boolean;
   runId: string;
   mode_effective: string;
+  compliance_safe?: boolean;
   rawCount: number;
   eligibleCount: number;
   payloadBuiltCount: number;
@@ -127,6 +128,15 @@ interface LiveSyncResult {
   skippedReasons: Record<string, number>;
   topErrors: Array<{ offerId: string; status?: number; reason: string }>;
   sourceQuery: string;
+  complianceSummary?: {
+    total_products_processed: number;
+    sanitized_titles_count: number;
+    sanitized_descriptions_count: number;
+    removed_promotional_phrases_count: number;
+    products_blocked_for_compliance: number;
+    blocked_reasons: Record<string, number>;
+    final_export_count: number;
+  };
   googleStatusSummary: {
     totalProducts: number;
     productsWithIssues: number;
@@ -444,6 +454,29 @@ export default function MerchantIntegrationPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Compliance Summary */}
+              {liveSyncResult.complianceSummary && (
+                <div className="p-3 bg-muted/50 rounded-md space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Compliance Safe Mode {liveSyncResult.compliance_safe ? 'ON' : 'OFF'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                    <div><span className="text-muted-foreground">Titles sanitized:</span> <span className="font-mono font-bold">{liveSyncResult.complianceSummary.sanitized_titles_count}</span></div>
+                    <div><span className="text-muted-foreground">Descriptions sanitized:</span> <span className="font-mono font-bold">{liveSyncResult.complianceSummary.sanitized_descriptions_count}</span></div>
+                    <div><span className="text-muted-foreground">Phrases removed:</span> <span className="font-mono font-bold">{liveSyncResult.complianceSummary.removed_promotional_phrases_count}</span></div>
+                    <div><span className="text-muted-foreground">Blocked:</span> <span className={`font-mono font-bold ${liveSyncResult.complianceSummary.products_blocked_for_compliance > 0 ? 'text-destructive' : ''}`}>{liveSyncResult.complianceSummary.products_blocked_for_compliance}</span></div>
+                  </div>
+                  {Object.keys(liveSyncResult.complianceSummary.blocked_reasons).length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(liveSyncResult.complianceSummary.blocked_reasons).map(([reason, count]) => (
+                        <Badge key={reason} variant="destructive" className="text-xs">{reason}: {count}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Skipped reasons */}
               {Object.keys(liveSyncResult.skippedReasons).length > 0 && (
