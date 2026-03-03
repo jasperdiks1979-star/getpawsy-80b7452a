@@ -5878,6 +5878,75 @@ export type Database = {
         }
         Relationships: []
       }
+      shopping_optimizations: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          google_product_category: string | null
+          google_product_category_id: number | null
+          id: string
+          keyword_suggestions: string[] | null
+          optimization_score: number | null
+          optimized_description: string | null
+          optimized_title: string | null
+          original_description: string | null
+          original_title: string | null
+          product_id: string
+          product_type: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          google_product_category?: string | null
+          google_product_category_id?: number | null
+          id?: string
+          keyword_suggestions?: string[] | null
+          optimization_score?: number | null
+          optimized_description?: string | null
+          optimized_title?: string | null
+          original_description?: string | null
+          original_title?: string | null
+          product_id: string
+          product_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          google_product_category?: string | null
+          google_product_category_id?: number | null
+          id?: string
+          keyword_suggestions?: string[] | null
+          optimization_score?: number | null
+          optimized_description?: string | null
+          optimized_title?: string | null
+          original_description?: string | null
+          original_title?: string | null
+          product_id?: string
+          product_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_optimizations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shopping_optimizations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_health_checks: {
         Row: {
           all_healthy: boolean

@@ -41,6 +41,7 @@ const sections = [
       { to: '/admin/analytics-hub', label: 'Analytics Hub', icon: Gauge, desc: 'Traffic & conversion data' },
       { to: '/admin/revenue-scaling', label: 'Revenue Scaling', icon: TrendingUp, desc: '12-month blueprint' },
       { to: '/dashboard', label: 'Product Manager', icon: Package, desc: 'Products, orders, CJ tools' },
+      { to: '/admin/shopping-optimizer', label: 'Shopping Traffic Engine', icon: Zap, desc: 'Optimize product data for Google Shopping' },
     ],
   },
   {

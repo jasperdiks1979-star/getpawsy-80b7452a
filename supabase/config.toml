@@ -209,3 +209,6 @@ verify_jwt = false
 
 [functions.merchant-health]
 verify_jwt = false
+
+[functions.shopping-optimizer]
+verify_jwt = false
