@@ -153,7 +153,7 @@ export function ProductSchema({
           handlingTime: {
             '@type': 'QuantitativeValue',
             minValue: 1,
-            maxValue: 3,
+            maxValue: 2,
             unitCode: 'd',
           },
           transitTime: {
