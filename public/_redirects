@@ -92,6 +92,7 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
 /api/merchant-audit?* https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-audit 200
 /api/merchant-status https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-status 200
 /api/merchant-sync https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-sync 200
+/api/merchant-health https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-health 200
 
 # ═══ SPA FALLBACK ═══
 /* /index.html 200
