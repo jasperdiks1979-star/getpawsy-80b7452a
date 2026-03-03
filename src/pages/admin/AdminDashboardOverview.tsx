@@ -63,6 +63,7 @@ const sections = [
       { to: '/admin/edge-diagnostics', label: 'Edge Diagnostics', icon: Activity, desc: 'Edge function health' },
       { to: '/admin/sitemap-ping', label: 'Sitemap Ping', icon: Activity, desc: 'Google & Bing ping' },
       { to: '/admin/security-credentials', label: 'Security & Credentials', icon: ShieldAlert, desc: 'API key management' },
+      { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert, desc: 'Anti-suspension shield' },
     ],
   },
 ];

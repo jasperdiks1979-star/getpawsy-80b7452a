@@ -206,3 +206,6 @@ verify_jwt = false
 
 [functions.api-health]
 verify_jwt = false
+
+[functions.merchant-health]
+verify_jwt = false
