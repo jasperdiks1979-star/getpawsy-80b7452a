@@ -250,6 +250,7 @@ const SitemapPingPage = lazyWithRetry(() => import("./pages/admin/SitemapPingPag
 const MerchantFixChecklist = lazyWithRetry(() => import("./pages/MerchantFixChecklist"));
 const MerchantIntegrationPage = lazyWithRetry(() => import("./pages/admin/MerchantIntegrationPage"));
 const MerchantSettingsPage = lazyWithRetry(() => import("./pages/admin/MerchantSettingsPage"));
+const MerchantReadinessPage = lazyWithRetry(() => import("./pages/admin/MerchantReadinessPage"));
 const MerchantOAuthCallback = lazyWithRetry(() => import("./pages/MerchantOAuthCallback"));
 
 // Diagnostics pages (hidden, noindex)
@@ -619,6 +620,7 @@ const App = () => {
                         <Route path="seo-console" element={<Suspense fallback={<RouteLoader />}><SeoConsolePage /></Suspense>} />
                         <Route path="integrations/merchant" element={<Suspense fallback={<RouteLoader />}><MerchantIntegrationPage /></Suspense>} />
                         <Route path="integrations/merchant/settings" element={<Suspense fallback={<RouteLoader />}><MerchantSettingsPage /></Suspense>} />
+                        <Route path="integrations/merchant/readiness" element={<Suspense fallback={<RouteLoader />}><MerchantReadinessPage /></Suspense>} />
                       </Route>
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />

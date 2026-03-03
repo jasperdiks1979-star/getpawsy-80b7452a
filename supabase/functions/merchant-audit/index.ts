@@ -42,10 +42,10 @@ const corsHeaders = {
 const SITE = "https://getpawsy.pet";
 
 const REQUIRED_PAGES = [
-  { path: "/policies/shipping", mustContain: ["GetPawsy", "shipping", "business days"] },
-  { path: "/policies/returns", mustContain: ["GetPawsy", "return", "refund"] },
-  { path: "/policies/privacy", mustContain: ["GetPawsy", "data", "information"] },
-  { path: "/policies/terms", mustContain: ["GetPawsy", "terms"] },
+  { path: "/shipping", mustContain: ["GetPawsy", "shipping", "business days"] },
+  { path: "/returns", mustContain: ["GetPawsy", "return", "refund"] },
+  { path: "/privacy", mustContain: ["GetPawsy", "data", "information"] },
+  { path: "/terms", mustContain: ["GetPawsy", "terms"] },
   { path: "/contact", mustContain: ["GetPawsy", "email"] },
   { path: "/about", mustContain: ["GetPawsy"] },
 ];
