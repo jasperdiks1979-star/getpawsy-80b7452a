@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { sanitizeProduct, type ComplianceSummary } from "./compliance-sanitizer.ts";
+import { sanitizeProduct, type ComplianceSummary, mapGoogleCategory } from "./compliance-sanitizer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,7 +62,7 @@ function normalizeWeight(rawGrams: number | null | undefined, title: string): nu
   return Math.round(kg * 100) / 100;
 }
 
-function validateImageUrl(url: string | null): { valid: boolean; url: string; reason?: string } {
+function validateImageUrlSync(url: string | null): { valid: boolean; url: string; reason?: string } {
   const PLACEHOLDER = "https://getpawsy.pet/images/merchant-placeholder.jpg";
   if (!url || url.trim() === "") return { valid: false, url: PLACEHOLDER, reason: "empty_url" };
   if (!url.startsWith("https://") && !url.startsWith("http://"))
@@ -70,7 +70,32 @@ function validateImageUrl(url: string | null): { valid: boolean; url: string; re
   let cleaned = url.startsWith("http://") ? url.replace("http://", "https://") : url;
   if (cleaned.includes(" ") || cleaned.length < 15)
     return { valid: false, url: PLACEHOLDER, reason: "malformed_url" };
+  // Check for illegal chars in URL
+  try { new URL(cleaned); } catch { return { valid: false, url: PLACEHOLDER, reason: "unparseable_url" }; }
   return { valid: true, url: cleaned };
+}
+
+/** Live image validation: HEAD request to check accessibility + content-type */
+async function validateImageLive(url: string): Promise<{ valid: boolean; finalUrl: string; reason?: string; rewritten: boolean }> {
+  const syncCheck = validateImageUrlSync(url);
+  if (!syncCheck.valid) return { valid: false, finalUrl: syncCheck.url, reason: syncCheck.reason, rewritten: false };
+
+  try {
+    const res = await fetch(syncCheck.url, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(5000),
+      redirect: "follow",
+    });
+    if (!res.ok) return { valid: false, finalUrl: syncCheck.url, reason: `http_${res.status}`, rewritten: false };
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.startsWith("image/")) return { valid: false, finalUrl: syncCheck.url, reason: `bad_content_type:${ct.substring(0, 50)}`, rewritten: false };
+    // If redirected, use final URL
+    const finalUrl = res.url || syncCheck.url;
+    const rewritten = finalUrl !== syncCheck.url;
+    return { valid: true, finalUrl, rewritten };
+  } catch (e) {
+    return { valid: false, finalUrl: syncCheck.url, reason: `fetch_error:${(e as Error).message?.substring(0, 60)}`, rewritten: false };
+  }
 }
 
 // ── Google Content API upsert ───────────────────────────────────
@@ -312,6 +337,14 @@ Deno.serve(async (req: Request) => {
     let removedPhrasesCount = 0;
     let blockedForCompliance = 0;
     const blockedReasons: Record<string, number> = {};
+    let descriptionsFallbackCount = 0;
+    let googleCategorySetCount = 0;
+    let googleCategoryOmittedCount = 0;
+    let googleCategoryInvalidPrevented = 0;
+    let imageLinkValidCount = 0;
+    let imageLinkRewrittenCount = 0;
+    let additionalImagesRemovedCount = 0;
+    const imageFailuresSample: Array<{ url: string; reason: string }> = [];
 
     const payloads: Array<Record<string, unknown>> = [];
 
@@ -327,10 +360,18 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      const imageResult = validateImageUrl(p.image_url);
-      if (!imageResult.valid && !imageResult.url) {
-        skippedReasons["no_image"] = (skippedReasons["no_image"] || 0) + 1;
-        continue;
+      // ── LIVE IMAGE VALIDATION ──────────────────────────────
+      const imageResult = await validateImageLive(p.image_url);
+      const PLACEHOLDER = "https://getpawsy.pet/images/merchant-placeholder.jpg";
+      let finalImageLink = imageResult.valid ? imageResult.finalUrl : PLACEHOLDER;
+
+      if (imageResult.valid) {
+        imageLinkValidCount++;
+        if (imageResult.rewritten) imageLinkRewrittenCount++;
+      } else {
+        if (imageFailuresSample.length < 10) {
+          imageFailuresSample.push({ url: p.image_url || "(null)", reason: imageResult.reason || "unknown" });
+        }
       }
 
       eligibleCount++;
@@ -339,11 +380,17 @@ Deno.serve(async (req: Request) => {
       const rawTitle = (p.name || "").substring(0, 150);
       const rawDesc = (p.description || p.name || "").substring(0, 5000);
 
-      const compliance = sanitizeProduct({ title: rawTitle, description: rawDesc });
+      const compliance = sanitizeProduct({
+        title: rawTitle,
+        description: rawDesc,
+        category: null,
+        weightKg,
+      });
 
       if (compliance.titleChanged) sanitizedTitlesCount++;
       if (compliance.descriptionChanged) sanitizedDescriptionsCount++;
       removedPhrasesCount += compliance.removedPhrases.length;
+      if (compliance.descriptionFallbackGenerated) descriptionsFallbackCount++;
 
       if (COMPLIANCE_SAFE && compliance.blocked) {
         blockedForCompliance++;
@@ -353,12 +400,27 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // Additional images
+      // ── GOOGLE PRODUCT CATEGORY (numeric only) ─────────────
+      const categoryId = compliance.googleProductCategory;
+      if (categoryId !== null && typeof categoryId === "number") {
+        googleCategorySetCount++;
+      } else {
+        googleCategoryOmittedCount++;
+      }
+
+      // ── ADDITIONAL IMAGES (live validated) ──────────────────
       const additionalImages: string[] = [];
       if (p.images && Array.isArray(p.images)) {
-        for (const img of (p.images as string[]).slice(0, 9)) {
-          const r = validateImageUrl(img);
-          if (r.valid) additionalImages.push(r.url);
+        for (const img of (p.images as string[]).slice(0, 10)) {
+          const r = await validateImageLive(img);
+          if (r.valid) {
+            additionalImages.push(r.finalUrl);
+          } else {
+            additionalImagesRemovedCount++;
+            if (imageFailuresSample.length < 10) {
+              imageFailuresSample.push({ url: img || "(null)", reason: `additional:${r.reason || "unknown"}` });
+            }
+          }
         }
       }
 
@@ -367,7 +429,7 @@ Deno.serve(async (req: Request) => {
         title: compliance.sanitizedTitle,
         description: compliance.sanitizedDescription,
         link: `https://getpawsy.pet/product/${p.slug}`,
-        imageLink: imageResult.url,
+        imageLink: finalImageLink,
         contentLanguage: "en",
         targetCountry: "US",
         channel: "online",
@@ -378,8 +440,9 @@ Deno.serve(async (req: Request) => {
         shippingWeight: { value: weightKg.toString(), unit: "kg" },
       };
 
-      if (compliance.googleProductCategory) {
-        googleProduct.googleProductCategory = compliance.googleProductCategory;
+      // Only set numeric category ID
+      if (categoryId !== null && typeof categoryId === "number") {
+        googleProduct.googleProductCategory = categoryId;
       }
 
       if (additionalImages.length > 0) {
@@ -478,6 +541,11 @@ Deno.serve(async (req: Request) => {
       products_blocked_for_compliance: blockedForCompliance,
       blocked_reasons: blockedReasons,
       final_export_count: payloadBuiltCount,
+      descriptions_fallback_generated_count: descriptionsFallbackCount,
+      products_still_blocked_count: blockedForCompliance,
+      google_category_set_count: googleCategorySetCount,
+      google_category_omitted_count: googleCategoryOmittedCount,
+      google_category_invalid_prevented_count: googleCategoryInvalidPrevented,
     };
 
     console.log(`[merchant-sync] COMPLIANCE: titles=${sanitizedTitlesCount} descs=${sanitizedDescriptionsCount} phrases=${removedPhrasesCount} blocked=${blockedForCompliance}`);
@@ -540,6 +608,12 @@ Deno.serve(async (req: Request) => {
         skippedReasons,
         topErrors: errors.slice(0, 10),
         complianceSummary,
+        imageDiagnostics: {
+          image_link_valid_count: imageLinkValidCount,
+          image_link_rewritten_count: imageLinkRewrittenCount,
+          additional_images_removed_count: additionalImagesRemovedCount,
+          image_failures_sample: imageFailuresSample,
+        },
         googleAuthDebug,
         sourceQuery,
         googleStatusSummary: modeEffective === "live" ? {
