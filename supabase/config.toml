@@ -203,3 +203,6 @@ verify_jwt = false
 
 [functions.merchant-audit]
 verify_jwt = false
+
+[functions.api-health]
+verify_jwt = false
