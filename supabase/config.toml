@@ -212,3 +212,6 @@ verify_jwt = false
 
 [functions.shopping-optimizer]
 verify_jwt = false
+
+[functions.cj-us-hunter]
+verify_jwt = false
