@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { sanitizeProduct, type ComplianceSummary } from "./compliance-sanitizer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -295,7 +296,8 @@ Deno.serve(async (req: Request) => {
     const totalRaw = rawCount ?? 0;
     console.log(`[merchant-sync] rawCount=${totalRaw}, batch=${products?.length ?? 0}, limit=${limit}, merchantId_last4=${merchantIdLast4}`);
 
-    // ── STEP 2: Eligibility + payload build ─────────────────────
+    // ── STEP 2: Eligibility + payload build + COMPLIANCE SANITIZATION ─
+    const COMPLIANCE_SAFE = true;
     let eligibleCount = 0;
     let payloadBuiltCount = 0;
     let attemptedSendCount = 0;
@@ -304,10 +306,16 @@ Deno.serve(async (req: Request) => {
     const errors: Array<{ offerId: string; status?: number; reason: string }> = [];
     const skippedReasons: Record<string, number> = {};
 
+    // Compliance counters
+    let sanitizedTitlesCount = 0;
+    let sanitizedDescriptionsCount = 0;
+    let removedPhrasesCount = 0;
+    let blockedForCompliance = 0;
+    const blockedReasons: Record<string, number> = {};
+
     const payloads: Array<Record<string, unknown>> = [];
 
     for (const p of (products || [])) {
-      // Skip checks (matching cj-google-sync)
       if (!p.price || p.price <= 0) {
         skippedReasons["missing_price"] = (skippedReasons["missing_price"] || 0) + 1;
         continue;
@@ -327,6 +335,24 @@ Deno.serve(async (req: Request) => {
 
       eligibleCount++;
 
+      // ── COMPLIANCE SANITIZATION ──────────────────────────────
+      const rawTitle = (p.name || "").substring(0, 150);
+      const rawDesc = (p.description || p.name || "").substring(0, 5000);
+
+      const compliance = sanitizeProduct({ title: rawTitle, description: rawDesc });
+
+      if (compliance.titleChanged) sanitizedTitlesCount++;
+      if (compliance.descriptionChanged) sanitizedDescriptionsCount++;
+      removedPhrasesCount += compliance.removedPhrases.length;
+
+      if (COMPLIANCE_SAFE && compliance.blocked) {
+        blockedForCompliance++;
+        const reason = compliance.blockReason || "unknown";
+        blockedReasons[reason] = (blockedReasons[reason] || 0) + 1;
+        skippedReasons[`compliance:${reason}`] = (skippedReasons[`compliance:${reason}`] || 0) + 1;
+        continue;
+      }
+
       // Additional images
       const additionalImages: string[] = [];
       if (p.images && Array.isArray(p.images)) {
@@ -338,8 +364,8 @@ Deno.serve(async (req: Request) => {
 
       const googleProduct: Record<string, unknown> = {
         offerId: p.id,
-        title: (p.name || "").substring(0, 150),
-        description: (p.description || p.name || "").substring(0, 5000),
+        title: compliance.sanitizedTitle,
+        description: compliance.sanitizedDescription,
         link: `https://getpawsy.pet/product/${p.slug}`,
         imageLink: imageResult.url,
         contentLanguage: "en",
@@ -351,6 +377,11 @@ Deno.serve(async (req: Request) => {
         brand: "GetPawsy",
         shippingWeight: { value: weightKg.toString(), unit: "kg" },
       };
+
+      if (compliance.googleProductCategory) {
+        googleProduct.googleProductCategory = compliance.googleProductCategory;
+      }
+
       if (additionalImages.length > 0) {
         googleProduct.additionalImageLinks = additionalImages;
       }
@@ -438,6 +469,19 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // ── Compliance summary ─────────────────────────────────────
+    const complianceSummary: ComplianceSummary = {
+      total_products_processed: eligibleCount,
+      sanitized_titles_count: sanitizedTitlesCount,
+      sanitized_descriptions_count: sanitizedDescriptionsCount,
+      removed_promotional_phrases_count: removedPhrasesCount,
+      products_blocked_for_compliance: blockedForCompliance,
+      blocked_reasons: blockedReasons,
+      final_export_count: payloadBuiltCount,
+    };
+
+    console.log(`[merchant-sync] COMPLIANCE: titles=${sanitizedTitlesCount} descs=${sanitizedDescriptionsCount} phrases=${removedPhrasesCount} blocked=${blockedForCompliance}`);
+
     // ── Persist to merchant_sync_logs ────────────────────────────
     const debugSummary = {
       runId,
@@ -456,6 +500,7 @@ Deno.serve(async (req: Request) => {
       topErrors: errors.slice(0, 10),
       googleTotalProducts,
       googleProductsWithIssues,
+      complianceSummary,
     };
 
     if (syncId) {
@@ -483,6 +528,7 @@ Deno.serve(async (req: Request) => {
         ok: true,
         runId,
         mode_effective: modeEffective,
+        compliance_safe: COMPLIANCE_SAFE,
         merchantId_used: merchantIdLast4,
         merchantId_source: merchantIdSource,
         rawCount: totalRaw,
@@ -493,6 +539,7 @@ Deno.serve(async (req: Request) => {
         errorCount,
         skippedReasons,
         topErrors: errors.slice(0, 10),
+        complianceSummary,
         googleAuthDebug,
         sourceQuery,
         googleStatusSummary: modeEffective === "live" ? {
@@ -500,11 +547,6 @@ Deno.serve(async (req: Request) => {
           productsWithIssues: googleProductsWithIssues,
           issuesSummary,
         } : null,
-        summary: {
-          totalProducts: modeEffective === "live" ? googleTotalProducts : 0,
-          productsWithIssues: googleProductsWithIssues,
-          issuesSummary,
-        },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
