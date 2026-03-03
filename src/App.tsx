@@ -250,6 +250,7 @@ const SitemapPingPage = lazyWithRetry(() => import("./pages/admin/SitemapPingPag
 const MerchantFixChecklist = lazyWithRetry(() => import("./pages/MerchantFixChecklist"));
 const MerchantIntegrationPage = lazyWithRetry(() => import("./pages/admin/MerchantIntegrationPage"));
 const MerchantSettingsPage = lazyWithRetry(() => import("./pages/admin/MerchantSettingsPage"));
+const MerchantOAuthCallback = lazyWithRetry(() => import("./pages/MerchantOAuthCallback"));
 
 // Diagnostics pages (hidden, noindex)
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
@@ -403,6 +404,7 @@ const App = () => {
                       <Route path="/contact" element={<Suspense fallback={<RouteLoader />}><Contact /></Suspense>} />
                       <Route path="/shipping" element={<Suspense fallback={<RouteLoader />}><Shipping /></Suspense>} />
                       <Route path="/faq" element={<Suspense fallback={<RouteLoader />}><FAQ /></Suspense>} />
+                      <Route path="/api/merchant-oauth-callback" element={<Suspense fallback={<RouteLoader />}><MerchantOAuthCallback /></Suspense>} />
                       <Route path="/track" element={<Suspense fallback={<RouteLoader />}><TrackOrder /></Suspense>} />
                       <Route path="/bestsellers" element={<Suspense fallback={<RouteLoader />}><Bestsellers /></Suspense>} />
                       <Route path="/bestseller/:slug" element={<Suspense fallback={<RouteLoader />}><BestsellerDetail /></Suspense>} />
