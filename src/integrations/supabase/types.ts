@@ -5950,6 +5950,72 @@ export type Database = {
           },
         ]
       }
+      shopping_winners: {
+        Row: {
+          created_at: string
+          google_category: string | null
+          google_category_id: number | null
+          id: string
+          image_issue: string | null
+          image_ok: boolean | null
+          keyword_suggestions: string[] | null
+          optimized_description: string
+          optimized_title: string
+          priority_feed: boolean | null
+          product_id: string
+          product_type: string | null
+          score: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          google_category?: string | null
+          google_category_id?: number | null
+          id?: string
+          image_issue?: string | null
+          image_ok?: boolean | null
+          keyword_suggestions?: string[] | null
+          optimized_description?: string
+          optimized_title?: string
+          priority_feed?: boolean | null
+          product_id: string
+          product_type?: string | null
+          score?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          google_category?: string | null
+          google_category_id?: number | null
+          id?: string
+          image_issue?: string | null
+          image_ok?: boolean | null
+          keyword_suggestions?: string[] | null
+          optimized_description?: string
+          optimized_title?: string
+          priority_feed?: boolean | null
+          product_id?: string
+          product_type?: string | null
+          score?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_winners_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shopping_winners_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_health_checks: {
         Row: {
           all_healthy: boolean

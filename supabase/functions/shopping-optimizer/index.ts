@@ -523,6 +523,154 @@ Deno.serve(async (req: Request) => {
       }, { headers: corsHeaders });
     }
 
+    // ── ACTION: winners — select top 20, save to shopping_winners, public API ──
+    if (action === "winners") {
+      const supabaseSR = createClient(supabaseUrl, serviceKey);
+
+      const { data: products } = await supabaseSR
+        .from("products")
+        .select("id, name, description, category, price, compare_at_price, image_url, stock, weight, slug, cj_product_id")
+        .eq("is_active", true)
+        .gt("price", 0)
+        .not("image_url", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (!products?.length) {
+        return Response.json({ ok: true, topProducts: [], optimizedTitles: [], categories: [], imageIssues: [] }, { headers: corsHeaders });
+      }
+
+      // Score each product
+      const scored = products.map(p => {
+        let score = 0;
+        const text = `${p.name} ${p.category || ""}`.toLowerCase();
+
+        // Image quality proxy: has CDN image = +3
+        if (p.image_url) {
+          score += 3;
+        }
+
+        // Clear product category = +2
+        const taxonomy = mapTaxonomy(p.name, p.category);
+        if (taxonomy) score += 2;
+
+        // Price under $80 = +2
+        if (p.price && p.price < 80) score += 2;
+
+        // Visual product (toy, feeder, carrier, bed, tree) = +2
+        const visualKeywords = ["toy", "feeder", "carrier", "bed", "tree", "fountain", "bowl", "crate"];
+        if (visualKeywords.some(kw => text.includes(kw))) score += 2;
+
+        // Has margin data = +1
+        if (p.compare_at_price && p.compare_at_price > p.price) score += 1;
+
+        // In stock = +1
+        if (p.stock && p.stock > 0) score += 1;
+
+        // Generic / unclear product = -1
+        const genericWords = ["accessory", "item", "product", "thing", "stuff"];
+        if (genericWords.some(gw => text.includes(gw))) score -= 1;
+
+        // Keyword richness
+        const kwMatches = HIGH_DEMAND_KEYWORDS.filter(kw => text.includes(kw));
+        score += Math.min(kwMatches.length, 3);
+
+        return { ...p, score };
+      });
+
+      scored.sort((a, b) => b.score - a.score);
+      const top20 = scored.slice(0, 20);
+
+      // Process winners: optimize titles, check images, map categories
+      const topProducts: any[] = [];
+      const optimizedTitles: any[] = [];
+      const categories: any[] = [];
+      const imageIssues: any[] = [];
+
+      // Clear old winners
+      await supabaseSR.from("shopping_winners").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+      for (const p of top20) {
+        const petType = detectPetType(p.name, p.category);
+        const taxonomy = mapTaxonomy(p.name, p.category);
+        const productType = buildProductType(p.name, p.category);
+        const keywords = getKeywords(p.name, p.category);
+        const petLabel = petType === "cat" ? "Cat" : petType === "dog" ? "Dog" : "Pet";
+
+        // Title optimization
+        let cleanName = p.name
+          .replace(/\b(best|cheap|sale|free|amazing|premium|top|rated|#1|exclusive)\b/gi, "")
+          .replace(/\s{2,}/g, " ").trim();
+        const primaryKw = keywords[0] || `${petLabel} product`;
+        let optTitle = cleanName;
+        if (!cleanName.toLowerCase().includes(primaryKw.split(" ")[0])) {
+          optTitle = `${cleanName} – ${primaryKw.charAt(0).toUpperCase() + primaryKw.slice(1)}`;
+        }
+        optTitle = optTitle.slice(0, 150).trim();
+
+        // Description optimization
+        const rawDesc = (p.description || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+        let optDesc = rawDesc
+          .replace(/\b(best|cheap|sale|free|amazing|premium|top.rated|#1|exclusive|buy now|shop now|order today)\b/gi, "")
+          .replace(/[✔✓★⭐🏆🥇💯🔥✅🎉🚚📦]/g, "").replace(/\s{2,}/g, " ").trim();
+        if (optDesc.length < 140) {
+          optDesc = `${cleanName} is a ${petLabel.toLowerCase()} product designed for everyday use. ` +
+            `This ${p.category || "pet supply"} provides comfort and durability. ` +
+            `Suitable for ${petType === "cat" ? "indoor cats" : petType === "dog" ? "dogs of all sizes" : "all pets"}. ` +
+            `Ships from US warehouses with tracking.`;
+        }
+
+        // Image check
+        let imageOk = true;
+        let imageIssue: string | null = null;
+        if (p.image_url) {
+          try {
+            const imgRes = await fetch(p.image_url, { method: "HEAD", redirect: "follow" });
+            const ct = imgRes.headers.get("content-type");
+            if (!imgRes.ok || !ct || !ct.startsWith("image/")) {
+              imageOk = false;
+              imageIssue = "unreachable_or_invalid";
+            }
+          } catch {
+            imageOk = false;
+            imageIssue = "fetch_failed";
+          }
+        }
+        if (!imageOk) imageIssues.push({ id: p.id, name: p.name, issue: imageIssue });
+
+        // Save winner
+        const row = {
+          product_id: p.id,
+          score: p.score,
+          optimized_title: optTitle,
+          optimized_description: optDesc.slice(0, 5000),
+          google_category: taxonomy?.path || null,
+          google_category_id: taxonomy?.id || null,
+          product_type: productType,
+          keyword_suggestions: keywords,
+          image_ok: imageOk,
+          image_issue: imageIssue,
+          priority_feed: true,
+        };
+        await supabaseSR.from("shopping_winners").upsert(row, { onConflict: "product_id" });
+
+        topProducts.push({ id: p.id, name: p.name, price: p.price, score: p.score, category: p.category });
+        optimizedTitles.push({ id: p.id, original: p.name, optimized: optTitle });
+        if (taxonomy) categories.push({ id: p.id, name: p.name, category: taxonomy.path });
+      }
+
+      // Log run
+      await supabaseSR.from("cron_job_logs").insert({
+        job_name: "shopping-winners-refresh",
+        status: "completed",
+        success: true,
+        items_processed: top20.length,
+        details: { imageIssues: imageIssues.length, topScore: top20[0]?.score },
+      });
+
+      return Response.json({ ok: true, topProducts, optimizedTitles, categories, imageIssues }, { headers: corsHeaders });
+    }
+
     return Response.json({ ok: false, error: `Unknown action: ${action}` }, { status: 400, headers: corsHeaders });
   } catch (err) {
     return Response.json({ ok: false, error: (err as Error).message }, { status: 500, headers: corsHeaders });
