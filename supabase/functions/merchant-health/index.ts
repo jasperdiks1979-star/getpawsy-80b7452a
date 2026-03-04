@@ -39,6 +39,23 @@ const SHIPPING_CLAIMS = [
   ]},
 ];
 
+/** Probe a policy page: HTTP 200 + contains at least one keyword */
+async function probePageOk(path: string, keywords: string[]): Promise<boolean> {
+  try {
+    const res = await fetch(`${SITE}${path}`, {
+      signal: AbortSignal.timeout(8000),
+      headers: { "User-Agent": "GetPawsy-MerchantHealth/1.0" },
+    });
+    if (!res.ok) return false;
+    const html = await res.text();
+    const jsContent = await fetchJsBundleContent(html);
+    const all = (html + "\n" + jsContent).toLowerCase();
+    return keywords.some((kw) => all.includes(kw.toLowerCase()));
+  } catch {
+    return false;
+  }
+}
+
 // Extract JS bundle URLs from SPA HTML shell and fetch their content
 async function fetchJsBundleContent(html: string): Promise<string> {
   const scriptMatches = html.matchAll(/src=["']([^"']*\.js)["']/g);
