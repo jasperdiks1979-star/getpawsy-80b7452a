@@ -360,6 +360,17 @@ Deno.serve(async (req: Request) => {
 
     const accessToken = tokenResult.access_token;
 
+    // ── PRE-EXPORT: Auto-deactivate zero-stock products ─────────
+    const { count: deactivatedCount } = await supabase
+      .from("products")
+      .update({ is_active: false })
+      .eq("is_active", true)
+      .or("stock.is.null,stock.lte.0")
+      .select("id", { count: "exact", head: true });
+    if (deactivatedCount && deactivatedCount > 0) {
+      console.log(`[merchant-sync] Auto-deactivated ${deactivatedCount} zero-stock products before export`);
+    }
+
     // ── STEP 1: Source query ────────────────────────────────────
     const sourceQuery = "SELECT id,name,slug,description,price,image_url,stock,weight,cj_product_id,is_active,images FROM products WHERE is_active=true AND price>0 ORDER BY id";
 
