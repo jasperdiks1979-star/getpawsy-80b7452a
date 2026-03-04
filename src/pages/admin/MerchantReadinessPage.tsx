@@ -21,6 +21,8 @@ interface PreflightResult {
   failures: string[];
   pages: PreflightCheck[];
   footerLinks: { found: string[]; missing: string[] };
+  shippingClaims: { found: string[]; missing: string[] };
+  feedAvailability: { ok: boolean; activeWithNoStock: Array<{ id: string; name: string; stock: number | null }> };
   productPageCheck: { slug: string | null; ok: boolean };
 }
 
@@ -33,12 +35,6 @@ export default function MerchantReadinessPage() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('merchant-audit', {
-        body: {},
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      // The function uses query params, so we need to call it differently
       const session = (await supabase.auth.getSession()).data.session;
       if (!session) throw new Error('Not authenticated');
 
@@ -69,11 +65,18 @@ export default function MerchantReadinessPage() {
       `Ready for Review: ${result.ready_for_review ? 'YES ✅' : 'NO ❌'}`,
       '',
       '## Policy Pages',
-      ...result.pages.map(p => `- [${p.pass ? '✅' : '❌'}] ${p.path} (HTTP ${p.status})`),
+      ...result.pages.map(p => `- [${p.pass ? '✅' : '❌'}] ${p.path} (HTTP ${p.status})${p.missing.length > 0 ? ` — missing: ${p.missing.join(', ')}` : ''}`),
       '',
       '## Footer Links',
       `- Found: ${result.footerLinks.found.join(', ') || 'none'}`,
       `- Missing: ${result.footerLinks.missing.join(', ') || 'none'}`,
+      '',
+      '## Shipping Claims',
+      `- Found: ${result.shippingClaims?.found?.join(', ') || 'none'}`,
+      `- Missing: ${result.shippingClaims?.missing?.join(', ') || 'none'}`,
+      '',
+      '## Feed Availability',
+      `- ${result.feedAvailability?.ok ? '✅ All active products have stock' : `❌ ${result.feedAvailability?.activeWithNoStock?.length || 0} active product(s) with no stock`}`,
       '',
       '## Product Page',
       `- [${result.productPageCheck.ok ? '✅' : '❌'}] /product/${result.productPageCheck.slug}`,
@@ -149,6 +152,49 @@ export default function MerchantReadinessPage() {
               ))}
             </div>
           </div>
+
+          {/* Shipping Claims */}
+          {result.shippingClaims && (
+            <div className="bg-card rounded-xl border p-4">
+              <h3 className="font-semibold mb-3">Shipping Claims Detection</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ...result.shippingClaims.found.map(l => ({ label: l, ok: true })),
+                  ...result.shippingClaims.missing.map(l => ({ label: l, ok: false })),
+                ].map(item => (
+                  <div key={item.label} className="flex items-center gap-2 text-sm">
+                    {item.ok ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <XCircle className="w-3.5 h-3.5 text-destructive" />}
+                    <span className={item.ok ? '' : 'text-destructive'}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Feed Availability */}
+          {result.feedAvailability && (
+            <div className="bg-card rounded-xl border p-4">
+              <h3 className="font-semibold mb-3">Feed Availability</h3>
+              {result.feedAvailability.ok ? (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle className="w-4 h-4" />
+                  All active products have stock &gt; 0
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-destructive">
+                    <XCircle className="w-4 h-4" />
+                    {result.feedAvailability.activeWithNoStock.length} active product(s) with no stock
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1 ml-6">
+                    {result.feedAvailability.activeWithNoStock.slice(0, 5).map(p => (
+                      <div key={p.id}>{p.name} (stock: {p.stock ?? 'null'})</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Footer Links */}
           <div className="bg-card rounded-xl border p-4">

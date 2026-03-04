@@ -42,12 +42,24 @@ const corsHeaders = {
 const SITE = "https://getpawsy.pet";
 
 const REQUIRED_PAGES = [
-  { path: "/shipping", mustContain: ["business days"] },
+  { path: "/shipping", mustContain: ["business days", "processing time", "us warehouse"] },
   { path: "/returns", mustContain: ["refund"] },
   { path: "/privacy", mustContain: ["information"] },
   { path: "/terms", mustContain: ["terms"] },
   { path: "/contact", mustContain: ["email"] },
   { path: "/about", mustContain: ["getpawsy"] },
+];
+
+const SHIPPING_CLAIM_KEYWORDS = [
+  "processing time",
+  "1–2 business days",
+  "1-2 business days",
+  "delivery time",
+  "3–7 business days",
+  "3-7 business days",
+  "us warehouse",
+  "us warehouses",
+  "us fulfillment",
 ];
 
 const REQUIRED_FOOTER_HREFS = ["/shipping", "/returns", "/privacy", "/terms", "/contact", "/about"];
@@ -57,58 +69,7 @@ const BUSINESS_SIGNALS = [
   "netherlands", "kvk", "78156955",
 ];
 
-/**
- * Fetch ALL JS bundle URLs from the SPA HTML shell.
- * Also discovers lazy chunk URLs referenced inside the entry bundle.
- */
-async function getAllBundleUrls(html: string): Promise<string[]> {
-  const urls: string[] = [];
-  
-  // 1. Extract script src from HTML
-  const scriptRegex = /<script[^>]+src="([^"]+\.js)"/gi;
-  let match;
-  while ((match = scriptRegex.exec(html)) !== null) {
-    const src = match[1];
-    if (src.startsWith("/assets/") || src.startsWith("./assets/") || src.startsWith("/src/")) {
-      const fullUrl = src.startsWith("http") ? src : `${SITE}${src.startsWith(".") ? src.slice(1) : src}`;
-      urls.push(fullUrl);
-    }
-  }
-  
-  // 2. Also extract modulepreload links (Vite adds these for critical chunks)
-  const preloadRegex = /<link[^>]+rel="modulepreload"[^>]+href="([^"]+\.js)"/gi;
-  while ((match = preloadRegex.exec(html)) !== null) {
-    const src = match[1];
-    const fullUrl = src.startsWith("http") ? src : `${SITE}${src.startsWith(".") ? src.slice(1) : src}`;
-    if (!urls.includes(fullUrl)) urls.push(fullUrl);
-  }
-  
-  return urls;
-}
-
-/**
- * Discover lazy chunk URLs from an entry bundle's source code.
- * Vite compiles dynamic imports as: import("./ChunkName-hash.js")
- */
-function discoverLazyChunks(jsSource: string, baseUrl: string): string[] {
-  const chunks: string[] = [];
-  // Match patterns like: import("./Shipping-abc123.js") or import("./assets/ReturnPolicy-xyz.js")
-  const importRegex = /import\(\s*["']\.?\/?([^"']+\.js)["']\s*\)/g;
-  let match;
-  while ((match = importRegex.exec(jsSource)) !== null) {
-    const chunkPath = match[1];
-    // Only include our app chunks
-    if (!chunkPath.includes("node_modules")) {
-      const fullUrl = `${SITE}/assets/${chunkPath.replace(/^(\.\/|assets\/)/, "")}`;
-      if (!chunks.includes(fullUrl)) chunks.push(fullUrl);
-    }
-  }
-  return chunks;
-}
-
-/**
- * Fetch JS content with timeout
- */
+/** Fetch JS content with timeout */
 async function fetchJs(url: string): Promise<string> {
   try {
     const res = await fetch(url, {
@@ -120,42 +81,70 @@ async function fetchJs(url: string): Promise<string> {
   return "";
 }
 
-/**
- * Build comprehensive text corpus from all JS bundles.
- * Fetches entry bundles, discovers lazy chunks, then fetches those too.
- */
-async function buildSiteCorpus(html: string): Promise<string> {
-  const entryUrls = await getAllBundleUrls(html);
-  
-  // Fetch entry bundles
-  const entryTexts = await Promise.all(entryUrls.map(fetchJs));
-  const entryCorpus = entryTexts.join(" ");
-  
-  // Discover lazy chunks from entry bundles
-  const lazyUrls: string[] = [];
-  for (const text of entryTexts) {
-    const discovered = discoverLazyChunks(text, SITE);
-    for (const url of discovered) {
-      if (!entryUrls.includes(url) && !lazyUrls.includes(url)) {
-        lazyUrls.push(url);
-      }
+/** Extract all JS bundle URLs from HTML (scripts + modulepreload) */
+function extractBundleUrls(html: string): string[] {
+  const urls: string[] = [];
+  const scriptRegex = /<script[^>]+src="([^"]+\.js)"/gi;
+  let match;
+  while ((match = scriptRegex.exec(html)) !== null) {
+    const src = match[1];
+    const fullUrl = src.startsWith("http") ? src : `${SITE}${src.startsWith(".") ? src.slice(1) : src}`;
+    urls.push(fullUrl);
+  }
+  const preloadRegex = /<link[^>]+rel="modulepreload"[^>]+href="([^"]+\.js)"/gi;
+  while ((match = preloadRegex.exec(html)) !== null) {
+    const src = match[1];
+    const fullUrl = src.startsWith("http") ? src : `${SITE}${src.startsWith(".") ? src.slice(1) : src}`;
+    if (!urls.includes(fullUrl)) urls.push(fullUrl);
+  }
+  return urls;
+}
+
+/** Discover lazy chunk URLs from JS source */
+function discoverLazyChunks(jsSource: string): string[] {
+  const chunks: string[] = [];
+  const importRegex = /import\(\s*["']\.?\/?([^"']+\.js)["']\s*\)/g;
+  let match;
+  while ((match = importRegex.exec(jsSource)) !== null) {
+    const chunkPath = match[1];
+    if (!chunkPath.includes("node_modules")) {
+      const fullUrl = `${SITE}/assets/${chunkPath.replace(/^(\.\/|assets\/)/, "")}`;
+      if (!chunks.includes(fullUrl)) chunks.push(fullUrl);
     }
   }
-  
-  // Fetch lazy chunks (limit to 25 to avoid timeout)
-  const lazyTexts = await Promise.all(lazyUrls.slice(0, 25).map(fetchJs));
-  
+  return chunks;
+}
+
+/**
+ * Build comprehensive text corpus from HTML + all JS bundles (entry + lazy).
+ * This is the global corpus used for footer link checks and business signals.
+ */
+async function buildGlobalCorpus(html: string): Promise<string> {
+  const entryUrls = extractBundleUrls(html);
+  const entryTexts = await Promise.all(entryUrls.map(fetchJs));
+  const entryCorpus = entryTexts.join(" ");
+
+  // Discover lazy chunks
+  const lazyUrls: string[] = [];
+  for (const text of entryTexts) {
+    for (const url of discoverLazyChunks(text)) {
+      if (!entryUrls.includes(url) && !lazyUrls.includes(url)) lazyUrls.push(url);
+    }
+  }
+  const lazyTexts = await Promise.all(lazyUrls.slice(0, 30).map(fetchJs));
+
   return (html + " " + entryCorpus + " " + lazyTexts.join(" ")).toLowerCase();
 }
 
 /**
  * SPA-aware page checker.
- * Verifies HTTP 200 and checks keywords against the full site JS corpus.
+ * Fetches the page HTML, checks status, and searches for keywords
+ * in the GLOBAL corpus (which includes all JS bundles).
  */
 async function checkPage(
   path: string,
   mustContain: string[],
-  corpus: string,
+  globalCorpus: string,
 ): Promise<{
   path: string; status: number | null; accessible: boolean;
   missing: string[]; present: string[]; pass: boolean;
@@ -170,26 +159,26 @@ async function checkPage(
     const status = res.status;
     if (!res.ok) return { path, status, accessible: false, missing: mustContain, present: [], pass: false, businessSignalsFound: [] };
 
-    const html = await res.text();
-    const isSpaShell = html.toLowerCase().includes('id="root"') || html.toLowerCase().includes("getpawsy");
+    await res.text(); // consume body
+    const isSpaShell = true; // All pages are SPA routes returning 200
 
-    // Check for required keywords in the full corpus (HTML + all JS bundles)
+    // Check keywords in global corpus (contains ALL JS bundles)
     const present: string[] = [];
     const missing: string[] = [];
     for (const term of mustContain) {
-      if (corpus.includes(term.toLowerCase())) present.push(term);
+      if (globalCorpus.includes(term.toLowerCase())) present.push(term);
       else missing.push(term);
     }
 
-    // Check business signals
+    // Business signals
     const businessSignalsFound: string[] = [];
     for (const sig of BUSINESS_SIGNALS) {
-      if (corpus.includes(sig.toLowerCase())) businessSignalsFound.push(sig);
+      if (globalCorpus.includes(sig.toLowerCase())) businessSignalsFound.push(sig);
     }
 
     return {
       path, status, accessible: true, missing, present,
-      pass: missing.length === 0 && isSpaShell,
+      pass: missing.length === 0,
       businessSignalsFound,
     };
   } catch (e) {
@@ -198,21 +187,43 @@ async function checkPage(
 }
 
 /**
- * Check footer links by scanning the full JS corpus for href patterns.
- * Now uses <a href> tags (plain HTML) for policy links.
+ * Check shipping claims are present in the global corpus.
+ */
+function checkShippingClaims(corpus: string): { found: string[]; missing: string[] } {
+  const found: string[] = [];
+  const missing: string[] = [];
+  
+  // Group related keywords - at least one from each group must be present
+  const groups = [
+    { name: "processing_time", keywords: ["processing time"] },
+    { name: "processing_duration", keywords: ["1–2 business days", "1-2 business days"] },
+    { name: "delivery_time", keywords: ["delivery time", "shipping time"] },
+    { name: "delivery_duration", keywords: ["3–7 business days", "3-7 business days"] },
+    { name: "us_fulfillment", keywords: ["us warehouse", "us warehouses", "us fulfillment", "united states"] },
+  ];
+  
+  for (const group of groups) {
+    if (group.keywords.some(kw => corpus.includes(kw))) {
+      found.push(group.name);
+    } else {
+      missing.push(`${group.name} (needs one of: ${group.keywords.join(" | ")})`);
+    }
+  }
+  
+  return { found, missing };
+}
+
+/**
+ * Check footer links in the global corpus.
  */
 function checkFooterLinks(corpus: string): { found: string[]; missing: string[] } {
   const found: string[] = [];
   const missing: string[] = [];
   for (const href of REQUIRED_FOOTER_HREFS) {
-    // Minified JS may use single quotes, double quotes, backticks, or varied spacing.
-    // Check broadly: any occurrence of the path as a string value in the corpus.
     const patterns = [
       `href="${href}"`, `href:'${href}'`, `href:"${href}"`,
-      `href:"${href}"`, `href: "${href}"`, `href: '${href}'`,
       `to:"${href}"`, `to:'${href}'`, `to="${href}"`, `to='${href}'`,
-      `"${href}"`,  // raw string literal in object like { href: "/shipping" }
-      `'${href}'`,  // single-quoted variant
+      `"${href}"`, `'${href}'`,
     ];
     if (patterns.some(p => corpus.includes(p))) {
       found.push(href);
@@ -292,20 +303,21 @@ Deno.serve(async (req: Request) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ── Build site corpus (shared by preflight + audit) ─────────
+    // ── Build global corpus (shared by all checks) ──────────────
     const homepageRes = await fetch(SITE, {
       headers: { "User-Agent": "GetPawsy-MerchantAudit/1.0" },
       signal: AbortSignal.timeout(10000),
     });
     const homepageHtml = homepageRes.ok ? await homepageRes.text() : "";
-    const corpus = await buildSiteCorpus(homepageHtml);
+    const globalCorpus = await buildGlobalCorpus(homepageHtml);
 
     // ── ACTION: preflight ───────────────────────────────────────
     if (action === "preflight") {
       const pageResults = await Promise.all(
-        REQUIRED_PAGES.map(p => checkPage(p.path, p.mustContain, corpus))
+        REQUIRED_PAGES.map(p => checkPage(p.path, p.mustContain, globalCorpus))
       );
-      const footerResult = checkFooterLinks(corpus);
+      const footerResult = checkFooterLinks(globalCorpus);
+      const shippingClaimsResult = checkShippingClaims(globalCorpus);
 
       const allPagesPass = pageResults.every(r => r.pass);
 
@@ -329,19 +341,36 @@ Deno.serve(async (req: Request) => {
         } catch { /* ignore */ }
       }
 
+      // Feed availability check
+      const { data: stockIssues } = await supabase
+        .from("products")
+        .select("id, name, stock")
+        .eq("is_active", true)
+        .or("stock.is.null,stock.lte.0")
+        .limit(10);
+      
+      const feedAvailabilityOk = !stockIssues || stockIssues.length === 0;
+
       const failures: string[] = [];
       for (const r of pageResults) {
         if (!r.accessible) failures.push(`${r.path}: not accessible (HTTP ${r.status})`);
-        else if (r.missing.length > 0) failures.push(`${r.path} missing content keyword: ${r.missing.map(m => `"${m}"`).join(", ")}`);
+        else if (r.missing.length > 0) failures.push(`${r.path} missing keyword: ${r.missing.map(m => `"${m}"`).join(", ")}`);
       }
       if (footerResult.missing.length > 0) {
         failures.push(`Footer missing links: ${footerResult.missing.join(", ")}`);
       }
+      if (shippingClaimsResult.missing.length > 0) {
+        failures.push(`Shipping claims missing: ${shippingClaimsResult.missing.join(", ")}`);
+      }
       if (sampleProduct?.slug && !productPageOk) {
         failures.push(`Product page /product/${sampleProduct.slug}: not accessible`);
       }
+      if (!feedAvailabilityOk) {
+        failures.push(`Feed availability mismatch: ${stockIssues!.length} active product(s) with stock=0 or null`);
+      }
 
-      const readyForReview = allPagesPass && footerResult.missing.length === 0 && productPageOk;
+      const readyForReview = allPagesPass && footerResult.missing.length === 0 
+        && shippingClaimsResult.missing.length === 0 && productPageOk && feedAvailabilityOk;
 
       return new Response(JSON.stringify({
         ok: true,
@@ -349,9 +378,14 @@ Deno.serve(async (req: Request) => {
         failures,
         pages: pageResults,
         footerLinks: footerResult,
+        shippingClaims: shippingClaimsResult,
+        feedAvailability: {
+          ok: feedAvailabilityOk,
+          activeWithNoStock: (stockIssues || []).map((p: any) => ({ id: p.id, name: p.name, stock: p.stock })),
+        },
         productPageCheck: { slug: sampleProduct?.slug || null, ok: productPageOk },
         corpusStats: {
-          totalLength: corpus.length,
+          totalLength: globalCorpus.length,
           bundlesScanned: true,
         },
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -359,16 +393,18 @@ Deno.serve(async (req: Request) => {
 
     // ── ACTION: audit (default) ─────────────────────────────────
     const results = await Promise.all(
-      REQUIRED_PAGES.map(p => checkPage(p.path, p.mustContain, corpus))
+      REQUIRED_PAGES.map(p => checkPage(p.path, p.mustContain, globalCorpus))
     );
-    const footerResult = checkFooterLinks(corpus);
+    const footerResult = checkFooterLinks(globalCorpus);
+    const shippingClaimsResult = checkShippingClaims(globalCorpus);
     const allPass = results.every(r => r.pass);
 
     return new Response(JSON.stringify({
       ok: true,
-      overallPass: allPass && footerResult.missing.length === 0,
+      overallPass: allPass && footerResult.missing.length === 0 && shippingClaimsResult.missing.length === 0,
       pages: results,
       footerLinks: footerResult,
+      shippingClaims: shippingClaimsResult,
       recommendations: allPass ? [] : [
         "Ensure all policy pages are accessible and contain required business information.",
         "Add missing content (business name, contact email, refund terms) to failing pages.",
