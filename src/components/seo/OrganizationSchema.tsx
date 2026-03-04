@@ -15,6 +15,8 @@ export function OrganizationSchema() {
     logo: `${SITE_URL}/favicon.png`,
     email: 'support@getpawsy.pet',
     brand: 'GetPawsy',
+    vatID: 'NL003295015B69',
+    taxID: 'NL003295015B69',
     parentOrganization: {
       '@type': 'Organization',
       name: 'Skidzo',
