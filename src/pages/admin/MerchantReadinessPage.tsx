@@ -22,7 +22,7 @@ interface PreflightResult {
   pages: PreflightCheck[];
   footerLinks: { found: string[]; missing: string[] };
   shippingClaims: { found: string[]; missing: string[] };
-  feedAvailability: { ok: boolean; activeWithNoStock: Array<{ id: string; name: string; stock: number | null }> };
+  feedAvailability: { ok: boolean; mismatches: Array<{ id: string; name: string; stock: number | null; feedAvail: string; expected: string }>; missingStockCount: number; totalChecked: number };
   productPageCheck: { slug: string | null; ok: boolean };
 }
 
@@ -76,7 +76,7 @@ export default function MerchantReadinessPage() {
       `- Missing: ${result.shippingClaims?.missing?.join(', ') || 'none'}`,
       '',
       '## Feed Availability',
-      `- ${result.feedAvailability?.ok ? '✅ All active products have stock' : `❌ ${result.feedAvailability?.activeWithNoStock?.length || 0} active product(s) with no stock`}`,
+      `- ${result.feedAvailability?.ok ? `✅ All ${result.feedAvailability?.totalChecked || 0} products have consistent stock→availability mapping` : `❌ ${result.feedAvailability?.mismatches?.length || 0} product(s) with mismatched availability`}`,
       '',
       '## Product Page',
       `- [${result.productPageCheck.ok ? '✅' : '❌'}] /product/${result.productPageCheck.slug}`,
@@ -174,21 +174,24 @@ export default function MerchantReadinessPage() {
           {/* Feed Availability */}
           {result.feedAvailability && (
             <div className="bg-card rounded-xl border p-4">
-              <h3 className="font-semibold mb-3">Feed Availability</h3>
+              <h3 className="font-semibold mb-3">Feed Availability Consistency</h3>
               {result.feedAvailability.ok ? (
                 <div className="flex items-center gap-2 text-sm text-green-600">
                   <CheckCircle className="w-4 h-4" />
-                  All active products have stock &gt; 0
+                  Stock→availability mapping consistent ({result.feedAvailability.totalChecked} products checked)
+                  {result.feedAvailability.missingStockCount > 0 && (
+                    <span className="text-muted-foreground ml-2">({result.feedAvailability.missingStockCount} with null stock → treated as out_of_stock)</span>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-destructive">
                     <XCircle className="w-4 h-4" />
-                    {result.feedAvailability.activeWithNoStock.length} active product(s) with no stock
+                    {result.feedAvailability.mismatches.length} product(s) with mismatched stock→availability
                   </div>
                   <div className="text-xs text-muted-foreground space-y-1 ml-6">
-                    {result.feedAvailability.activeWithNoStock.slice(0, 5).map(p => (
-                      <div key={p.id}>{p.name} (stock: {p.stock ?? 'null'})</div>
+                    {result.feedAvailability.mismatches.slice(0, 5).map(p => (
+                      <div key={p.id}>{p.name} — stock: {p.stock ?? 'null'}, feed: {p.feedAvail}, expected: {p.expected}</div>
                     ))}
                   </div>
                 </div>
