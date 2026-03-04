@@ -71,6 +71,16 @@ Deno.serve(async (req: Request) => {
       .eq("is_active", true)
       .gt("price", 0);
 
+    // Availability mismatch count: active products with stock <= 0 or null
+    const { data: mismatchSample } = await supabase
+      .from("products")
+      .select("id, name, slug, stock")
+      .eq("is_active", true)
+      .gt("price", 0)
+      .or("stock.is.null,stock.lte.0")
+      .limit(10);
+    const availabilityMismatchCount = (mismatchSample || []).length;
+
     const merchantId = Deno.env.get("GOOGLE_MERCHANT_ID");
 
     // Config flags
@@ -92,6 +102,12 @@ Deno.serve(async (req: Request) => {
           lastError: tokenData?.last_error || null,
           lastErrorAt: tokenData?.last_error_at || null,
           exportableProductCount: activeProductCount || 0,
+          availabilityMismatchCount,
+          availabilityMismatchSample: (mismatchSample || []).map(p => ({
+            id: p.id, name: p.name, slug: p.slug, stock: p.stock,
+            feedAvailability: "out_of_stock",
+            note: "active but stock<=0 — correctly sent as out_of_stock in feed",
+          })),
           lastSync: lastSync
             ? {
                 status: lastSync.status,

@@ -510,7 +510,7 @@ Deno.serve(async (req: Request) => {
         contentLanguage: "en",
         targetCountry: "US",
         channel: "online",
-        availability: p.stock && p.stock > 0 ? "in stock" : "out of stock",
+        availability: (Number.isFinite(p.stock) && Math.floor(p.stock as number) > 0) ? "in stock" : "out of stock",
         condition: "new",
         price: { value: p.price.toFixed(2), currency: "USD" },
         brand: "GetPawsy",
