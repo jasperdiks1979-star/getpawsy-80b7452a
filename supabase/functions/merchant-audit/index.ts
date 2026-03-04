@@ -100,40 +100,67 @@ function extractBundleUrls(html: string): string[] {
   return urls;
 }
 
-/** Discover lazy chunk URLs from JS source */
+/** Discover lazy chunk URLs from JS source using multiple Vite patterns */
 function discoverLazyChunks(jsSource: string): string[] {
-  const chunks: string[] = [];
-  const importRegex = /import\(\s*["']\.?\/?([^"']+\.js)["']\s*\)/g;
-  let match;
-  while ((match = importRegex.exec(jsSource)) !== null) {
-    const chunkPath = match[1];
-    if (!chunkPath.includes("node_modules")) {
-      const fullUrl = `${SITE}/assets/${chunkPath.replace(/^(\.\/|assets\/)/, "")}`;
-      if (!chunks.includes(fullUrl)) chunks.push(fullUrl);
+  const chunks = new Set<string>();
+  // Pattern 1: import("./chunk.js")
+  const patterns = [
+    /import\(\s*["']\.?\/?([^"']+\.js)["']\s*\)/g,
+    // Pattern 2: Vite's __vitePreload(() => import("./chunk.js"))
+    /__vitePreload\(\s*\(\)\s*=>\s*import\(\s*["']\.?\/?([^"']+\.js)["']\s*\)/g,
+    // Pattern 3: Vite string concat: "/assets/" + "chunk-abc.js"
+    /["']\/assets\/["']\s*\+\s*["']([^"']+\.js)["']/g,
+    // Pattern 4: direct asset references "/assets/chunk.js"
+    /["']\/assets\/([^"']+\.js)["']/g,
+  ];
+  for (const regex of patterns) {
+    let match;
+    while ((match = regex.exec(jsSource)) !== null) {
+      const chunkPath = match[1];
+      if (!chunkPath.includes("node_modules")) {
+        const cleanPath = chunkPath.replace(/^(\.\/|assets\/)/, "");
+        chunks.add(`${SITE}/assets/${cleanPath}`);
+      }
     }
   }
-  return chunks;
+  return Array.from(chunks);
 }
 
 /**
  * Build comprehensive text corpus from HTML + all JS bundles (entry + lazy).
- * This is the global corpus used for footer link checks and business signals.
+ * Uses multi-level discovery to find deeply nested Vite chunks (router → page).
  */
 async function buildGlobalCorpus(html: string): Promise<string> {
-  const entryUrls = extractBundleUrls(html);
-  const entryTexts = await Promise.all(entryUrls.map(fetchJs));
-  const entryCorpus = entryTexts.join(" ");
+  const allUrls = new Set<string>();
+  const allTexts: string[] = [html];
 
-  // Discover lazy chunks
-  const lazyUrls: string[] = [];
+  // Level 0: entry bundles from HTML
+  const entryUrls = extractBundleUrls(html);
+  for (const u of entryUrls) allUrls.add(u);
+  const entryTexts = await Promise.all(entryUrls.map(fetchJs));
+  allTexts.push(...entryTexts);
+
+  // Level 1: lazy chunks discovered from entry bundles
+  const level1Urls: string[] = [];
   for (const text of entryTexts) {
     for (const url of discoverLazyChunks(text)) {
-      if (!entryUrls.includes(url) && !lazyUrls.includes(url)) lazyUrls.push(url);
+      if (!allUrls.has(url)) { allUrls.add(url); level1Urls.push(url); }
     }
   }
-  const lazyTexts = await Promise.all(lazyUrls.slice(0, 30).map(fetchJs));
+  const level1Texts = await Promise.all(level1Urls.slice(0, 40).map(fetchJs));
+  allTexts.push(...level1Texts);
 
-  return (html + " " + entryCorpus + " " + lazyTexts.join(" ")).toLowerCase();
+  // Level 2: lazy chunks discovered from level-1 chunks (page components)
+  const level2Urls: string[] = [];
+  for (const text of level1Texts) {
+    for (const url of discoverLazyChunks(text)) {
+      if (!allUrls.has(url)) { allUrls.add(url); level2Urls.push(url); }
+    }
+  }
+  const level2Texts = await Promise.all(level2Urls.slice(0, 40).map(fetchJs));
+  allTexts.push(...level2Texts);
+
+  return allTexts.join(" ").toLowerCase();
 }
 
 /**

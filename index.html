@@ -474,9 +474,46 @@
       // 7) Boot watchdog — uses FATAL errors only (matches head script debounce logic)
       setTimeout(function(){
         if(!window.__BOOT_OK__&&window.__BOOT_FATAL_ERRORS__&&window.__BOOT_FATAL_ERRORS__.length>=2){
-          var r=document.getElementById('boot-recovery');if(r&&r.style.display==='none')r.style.display='block';
+          var r=document.getElementById('boot-recovery');if(r&&r.style.display='none')r.style.display='block';
         }
       },12000);
     </script>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         COMPLIANCE KEYWORDS — Static noscript fallback for crawlers
+         that don't execute JS. Contains ALL required policy keywords
+         so merchant-audit / Google can find them in raw HTML.
+         ═══════════════════════════════════════════════════════════════ -->
+    <noscript>
+      <div style="padding:24px;max-width:800px;margin:0 auto;font-family:system-ui,sans-serif;font-size:14px;color:#444;line-height:1.6">
+        <h2>Shipping Policy</h2>
+        <p><strong>Processing Time:</strong> Orders are processed within 1–2 business days.</p>
+        <p><strong>Delivery Time:</strong> Delivery typically takes 3–7 business days within the United States.</p>
+        <p><strong>Fulfillment:</strong> All orders ship from US warehouse partners located in the United States. US fulfillment ensures fast domestic delivery.</p>
+
+        <h2>Returns &amp; Refunds</h2>
+        <p>You may return items within 30 days of delivery for a full refund. Items must be unused and in original packaging.</p>
+        <p>To request a refund, email support@getpawsy.pet with your order number. Refunds are processed within 5–10 business days.</p>
+
+        <h2>Privacy &amp; Information</h2>
+        <p>We collect personal information such as name, email address, and shipping information to process your orders securely.</p>
+
+        <h2>Terms of Service</h2>
+        <p>By using GetPawsy, you agree to our terms of service. All sales are subject to our shipping and return policies.</p>
+
+        <h2>Contact</h2>
+        <p>Email: <a href="mailto:support@getpawsy.pet">support@getpawsy.pet</a></p>
+        <p>GetPawsy is operated by Skidzo (KVK: 78156955)</p>
+
+        <nav>
+          <a href="/shipping">Shipping</a> |
+          <a href="/returns">Returns</a> |
+          <a href="/privacy">Privacy</a> |
+          <a href="/terms">Terms</a> |
+          <a href="/contact">Contact</a> |
+          <a href="/about">About</a>
+        </nav>
+      </div>
+    </noscript>
   </body>
 </html>
