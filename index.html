@@ -440,10 +440,59 @@
         <p id="boot-error-msg" style="font-size:10px;color:#b45309;margin-top:4px;word-break:break-all;max-width:1280px;margin-left:auto;margin-right:auto"></p>
       </div>
     </div>
+    <!-- ═══════════════════════════════════════════════════════════════
+         CRAWLER / NO-JS FALLBACK — Contains ALL required policy keywords
+         so Google / merchant-audit can find them in raw HTML fetch.
+         Replaces "JavaScript required" message with actual content.
+         ═══════════════════════════════════════════════════════════════ -->
     <noscript>
-      <div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#fef3c7;padding:12px 16px;text-align:center;font-family:sans-serif;font-size:14px">
-        JavaScript is required. <a href="/products" style="color:#1a1a1a;font-weight:600;text-decoration:underline">Browse Products</a> |
-        <a href="/bestsellers" style="color:#1a1a1a;font-weight:600;text-decoration:underline">Shop Bestsellers</a>
+      <div style="padding:24px;max-width:900px;margin:0 auto;font-family:system-ui,sans-serif;font-size:14px;color:#333;line-height:1.7">
+        <h1 style="font-size:24px;margin-bottom:8px">GetPawsy — Pet Supplies</h1>
+        <p>GetPawsy is operated by Skidzo (KVK: 78156955), serving United States customers. Currency: USD.</p>
+
+        <hr style="margin:16px 0;border:none;border-top:1px solid #ddd">
+
+        <h2 style="font-size:18px">Shipping Policy</h2>
+        <p><strong>Processing Time:</strong> 1–2 business days. Orders are processed within 1–2 business days after payment confirmation.</p>
+        <p><strong>Delivery Time:</strong> 3–7 business days. Delivery typically takes 3–7 business days within the United States.</p>
+        <p><strong>Ships from US warehouses.</strong> All orders ship from US warehouse partners located in the United States. US fulfillment ensures fast domestic delivery via USPS or UPS.</p>
+        <p>Free shipping on orders over $49. Flat rate $4.99 for smaller orders. Business days exclude weekends and U.S. holidays.</p>
+
+        <h2 style="font-size:18px">Returns &amp; Refunds</h2>
+        <p><strong>30-day returns.</strong> You may return items within 30 days of delivery for a full refund.</p>
+        <p>Return window: 30 days from delivery date. Items must be unused and in original packaging.</p>
+        <p>To request a refund, email support@getpawsy.pet with your order number. Refunds are processed within 5–10 business days to your original payment method.</p>
+
+        <h2 style="font-size:18px">Privacy Policy</h2>
+        <p>We collect personal information such as name, email address, and shipping information to process your orders securely.</p>
+        <p>Information we collect includes: contact details, billing and shipping addresses, and order history. Payment information is processed securely via Stripe.</p>
+        <p>We use cookies and analytics tools to improve your shopping experience. We do not sell your personal information.</p>
+        <p>For privacy requests, contact: <a href="mailto:support@getpawsy.pet">support@getpawsy.pet</a></p>
+
+        <h2 style="font-size:18px">Terms of Service</h2>
+        <p>By using GetPawsy, you agree to our terms of service. All sales are subject to our shipping and return policies.</p>
+        <p>Limitation of liability: GetPawsy (Skidzo) is not liable for indirect, incidental, or consequential damages arising from use of our products or services beyond the purchase price of the item.</p>
+
+        <h2 style="font-size:18px">Contact Us</h2>
+        <p>Email: <a href="mailto:support@getpawsy.pet">support@getpawsy.pet</a></p>
+        <p>Support hours: Mon–Fri 9:00–17:00 (EST)</p>
+        <p>Response time: within 24 hours on business days.</p>
+        <p>GetPawsy is operated by Skidzo (KVK: 78156955), Apeldoorn, Netherlands.</p>
+
+        <h2 style="font-size:18px">About GetPawsy</h2>
+        <p>GetPawsy is an online pet supplies store operated by Skidzo, serving United States customers with fast domestic shipping from US warehouses. Currency: USD ($).</p>
+
+        <hr style="margin:16px 0;border:none;border-top:1px solid #ddd">
+        <nav style="display:flex;flex-wrap:wrap;gap:12px;font-size:13px">
+          <a href="/shipping">Shipping</a>
+          <a href="/returns">Returns</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/contact">Contact</a>
+          <a href="/about">About</a>
+          <a href="/products">Shop All Products</a>
+          <a href="/bestsellers">Bestsellers</a>
+        </nav>
       </div>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>
@@ -474,46 +523,9 @@
       // 7) Boot watchdog — uses FATAL errors only (matches head script debounce logic)
       setTimeout(function(){
         if(!window.__BOOT_OK__&&window.__BOOT_FATAL_ERRORS__&&window.__BOOT_FATAL_ERRORS__.length>=2){
-          var r=document.getElementById('boot-recovery');if(r&&r.style.display='none')r.style.display='block';
+          var r=document.getElementById('boot-recovery');if(r&&r.style.display==='none')r.style.display='block';
         }
       },12000);
     </script>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         COMPLIANCE KEYWORDS — Static noscript fallback for crawlers
-         that don't execute JS. Contains ALL required policy keywords
-         so merchant-audit / Google can find them in raw HTML.
-         ═══════════════════════════════════════════════════════════════ -->
-    <noscript>
-      <div style="padding:24px;max-width:800px;margin:0 auto;font-family:system-ui,sans-serif;font-size:14px;color:#444;line-height:1.6">
-        <h2>Shipping Policy</h2>
-        <p><strong>Processing Time:</strong> Orders are processed within 1–2 business days.</p>
-        <p><strong>Delivery Time:</strong> Delivery typically takes 3–7 business days within the United States.</p>
-        <p><strong>Fulfillment:</strong> All orders ship from US warehouse partners located in the United States. US fulfillment ensures fast domestic delivery.</p>
-
-        <h2>Returns &amp; Refunds</h2>
-        <p>You may return items within 30 days of delivery for a full refund. Items must be unused and in original packaging.</p>
-        <p>To request a refund, email support@getpawsy.pet with your order number. Refunds are processed within 5–10 business days.</p>
-
-        <h2>Privacy &amp; Information</h2>
-        <p>We collect personal information such as name, email address, and shipping information to process your orders securely.</p>
-
-        <h2>Terms of Service</h2>
-        <p>By using GetPawsy, you agree to our terms of service. All sales are subject to our shipping and return policies.</p>
-
-        <h2>Contact</h2>
-        <p>Email: <a href="mailto:support@getpawsy.pet">support@getpawsy.pet</a></p>
-        <p>GetPawsy is operated by Skidzo (KVK: 78156955)</p>
-
-        <nav>
-          <a href="/shipping">Shipping</a> |
-          <a href="/returns">Returns</a> |
-          <a href="/privacy">Privacy</a> |
-          <a href="/terms">Terms</a> |
-          <a href="/contact">Contact</a> |
-          <a href="/about">About</a>
-        </nav>
-      </div>
-    </noscript>
   </body>
 </html>
