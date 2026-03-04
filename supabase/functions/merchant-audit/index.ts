@@ -313,21 +313,26 @@ Deno.serve(async (req: Request) => {
         const sanitizedDesc = sanitizeTextBasic((p.description || p.name || "").substring(0, 5000));
         const categoryId = mapCategory(p.name || "");
         const stockNormalized = Number.isFinite(p.stock) ? Math.floor(p.stock) : 0;
-        const expectedAvailability = stockNormalized > 0 ? "in_stock" : "out_of_stock";
-        const payloadAvailability = stockNormalized > 0 ? "in stock" : "out of stock";
+        const feedAvailability = stockNormalized > 0 ? "in_stock" : "out_of_stock";
+        const storefrontAvailability = stockNormalized > 0 ? "in_stock" : "out_of_stock";
+        const match = feedAvailability === storefrontAvailability;
         return {
           offerId: buildStableOfferId(p),
           id: p.id,
+          slug: p.slug,
+          stock: p.stock,
+          is_active: p.is_active,
+          stockNormalized,
+          feedAvailability,
+          storefrontAvailability,
+          match,
+          mismatchReason: match ? null : `feed=${feedAvailability} storefront=${storefrontAvailability}`,
           title: sanitizedTitle,
           description: sanitizedDesc.length < 140 ? `${sanitizedTitle} is a pet product. Check listing for details.` : sanitizedDesc,
           link: `https://getpawsy.pet/product/${p.slug}`,
           googleProductCategory: categoryId,
           image_link: p.image_url,
           additional_image_links: (p.images || []).slice(0, 5),
-          stockNormalized,
-          expectedAvailability,
-          payloadAvailability,
-          match: true, // always matches because both derive from stockNormalized
         };
       });
 
@@ -389,8 +394,8 @@ Deno.serve(async (req: Request) => {
         const stockNormalized = Number.isFinite(p.stock) ? Math.floor(p.stock as number) : 0;
         if (p.stock === null || p.stock === undefined) missingStockCount++;
         const expected = stockNormalized > 0 ? "in stock" : "out of stock";
-        // Replicate exact merchant-sync logic
-        const feedAvail = (p.stock && (p.stock as number) > 0) ? "in stock" : "out of stock";
+        // Must match merchant-sync logic exactly (uses same normalization)
+        const feedAvail = (Number.isFinite(p.stock) && Math.floor(p.stock as number) > 0) ? "in stock" : "out of stock";
         if (feedAvail !== expected) {
           feedMismatches.push({ id: p.id, name: p.name, stock: p.stock, feedAvail, expected });
         }
