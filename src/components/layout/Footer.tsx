@@ -335,7 +335,7 @@ export const Footer = () => {
                <p className="text-background/80"><strong className="text-background">Business Name:</strong> GetPawsy</p>
                 <p className="text-background/80"><strong className="text-background">Operated by:</strong> Skidzo (Chamber of Commerce: 78156955)</p>
                 <p className="text-background/80"><strong className="text-background">VAT ID:</strong> NL003295015B69</p>
-                <p className="text-background/80"><strong className="text-background">Business Address:</strong> Apeldoorn, Netherlands</p>
+                <p className="text-background/80"><strong className="text-background">Business Address:</strong> Apeldoorn, Gelderland, Netherlands</p>
               </div>
               <div className="space-y-2 text-sm">
                 <p className="text-background/80"><strong className="text-background">Support Email:</strong> <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
@@ -354,8 +354,13 @@ export const Footer = () => {
               </div>
             </div>
             <p className="text-sm text-background/60 mt-4 max-w-3xl">
-              GetPawsy is an online pet supplies retailer operated by Skidzo. Orders are fulfilled from warehouses located in the United States and shipped directly to customers across the United States.
+              GetPawsy is operated by Skidzo, a registered business in the Netherlands.
+              We serve United States customers and fulfill orders via US warehouse partners.
             </p>
+            <div className="mt-3 space-y-1 text-sm text-background/60">
+              <p>Business registration: Netherlands (Apeldoorn, Gelderland)</p>
+              <p>KVK: 78156955 · VAT: NL003295015B69</p>
+            </div>
           </div>
 
           {/* Dog Training Collection Highlights */}

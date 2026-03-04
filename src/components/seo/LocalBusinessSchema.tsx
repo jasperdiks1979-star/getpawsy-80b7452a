@@ -32,6 +32,7 @@ export function LocalBusinessSchema({
     taxID: 'NL003295015B69',
     address: {
       '@type': 'PostalAddress',
+      addressRegion: 'Gelderland',
       addressLocality: 'Apeldoorn',
       addressCountry: 'NL',
     },

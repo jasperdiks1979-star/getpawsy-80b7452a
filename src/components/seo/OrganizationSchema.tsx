@@ -25,6 +25,7 @@ export function OrganizationSchema() {
       'GetPawsy is an online pet supplies retailer operated by Skidzo. Orders are fulfilled from warehouses located in the United States and shipped directly to customers across the United States.',
     address: {
       '@type': 'PostalAddress',
+      addressRegion: 'Gelderland',
       addressLocality: 'Apeldoorn',
       addressCountry: 'NL',
     },
