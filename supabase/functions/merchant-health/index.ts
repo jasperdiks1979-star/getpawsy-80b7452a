@@ -21,9 +21,10 @@ const SHIPPING_CLAIMS = [
   { key: "usFulfillmentVisible", patterns: [
     /warehouses?\s*(located\s+)?in\s+the\s+united\s+states/i,
     /us\s+warehouse/i,
+    /us\s+warehouses/i,
     /ships?\s+from\s+(the\s+)?us/i,
     /domestic\s+(fulfillment|shipping)/i,
-    /US\s+warehouses/i,
+    /us\s+fulfillment/i,
   ]},
   { key: "processingTimeVisible", patterns: [
     /processing\s+time/i,
@@ -33,6 +34,7 @@ const SHIPPING_CLAIMS = [
   ]},
   { key: "deliveryTimeVisible", patterns: [
     /delivery\s+time/i,
+    /shipping\s+time/i,
     /3.?7\s+business\s+days?/i,
     /estimated\s+delivery/i,
     /business\s+day\s+delivery/i,
