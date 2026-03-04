@@ -147,6 +147,7 @@ export const Footer = () => {
       { label: 'Cat Carriers', href: '/collections/best-cat-carriers' },
     ],
     support: [
+      { label: 'Help Center', href: '/help' },
       { label: 'Contact', href: '/contact' },
       { label: 'Shipping Policy', href: '/shipping' },
       { label: 'Returns & Refunds', href: '/returns' },
