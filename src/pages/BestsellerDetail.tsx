@@ -70,6 +70,7 @@ import { PostAddUpsellModal } from '@/components/products/PostAddUpsellModal';
 import { VolumeDiscountSelector } from '@/components/products/VolumeDiscountSelector';
 import { OrderBump } from '@/components/products/OrderBump';
 import { TrustMicrocopy } from '@/components/products/TrustMicrocopy';
+import { ShippingTransparency } from '@/components/products/ShippingTransparency';
 import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
@@ -1218,6 +1219,7 @@ const BestsellerDetail = () => {
 
                 {/* Trust Microcopy - Below Add to Cart */}
                 <TrustMicrocopy className="pt-3" />
+                <ShippingTransparency variant="inline" className="mt-2" />
 
                 {/* Order Bump - Inline Upsell */}
                 {orderBumpProduct && (
