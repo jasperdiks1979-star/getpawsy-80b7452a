@@ -334,6 +334,7 @@ export const Footer = () => {
               <div className="space-y-2 text-sm">
                <p className="text-background/80"><strong className="text-background">Business Name:</strong> GetPawsy</p>
                 <p className="text-background/80"><strong className="text-background">Operated by:</strong> Skidzo (Chamber of Commerce: 78156955)</p>
+                <p className="text-background/80"><strong className="text-background">VAT ID:</strong> NL003295015B69</p>
                 <p className="text-background/80"><strong className="text-background">Business Address:</strong> Apeldoorn, Netherlands</p>
               </div>
               <div className="space-y-2 text-sm">
@@ -415,7 +416,7 @@ export const Footer = () => {
                   Customer support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-background/60 hover:text-primary transition-colors">{SUPPORT_EMAIL}</a> | <Link to="/returns" className="text-background/60 hover:text-primary transition-colors">Returns Policy</Link>
                 </p>
                 <p className="text-background/30 text-[10px]">
-                  GetPawsy is operated by Skidzo, a registered business. All orders, payments, and customer service handled in accordance with US consumer protection standards.
+                  GetPawsy is operated by Skidzo, a registered business in the Netherlands (KVK 78156955, VAT NL003295015B69). All orders, payments, and customer service handled in accordance with US consumer protection standards.
                 </p>
               </div>
               
