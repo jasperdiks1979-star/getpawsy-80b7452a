@@ -442,7 +442,7 @@ Deno.serve(async (req: Request) => {
           totalLength: globalCorpus.length,
           bundlesScanned: true,
         },
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" } });
     }
 
     // ── ACTION: audit (default) ─────────────────────────────────

@@ -15,6 +15,14 @@ interface PreflightCheck {
   businessSignalsFound: string[];
 }
 
+interface FeedMismatch {
+  id: string;
+  name: string;
+  stock: number | null;
+  feedAvail: string;
+  expected: string;
+}
+
 interface PreflightResult {
   ok: boolean;
   ready_for_review: boolean;
@@ -22,7 +30,12 @@ interface PreflightResult {
   pages: PreflightCheck[];
   footerLinks: { found: string[]; missing: string[] };
   shippingClaims: { found: string[]; missing: string[] };
-  feedAvailability: { ok: boolean; mismatches: Array<{ id: string; name: string; stock: number | null; feedAvail: string; expected: string }>; missingStockCount: number; totalChecked: number };
+  feedAvailability: {
+    ok: boolean;
+    mismatches: FeedMismatch[];
+    missingStockCount: number;
+    totalChecked: number;
+  };
   productPageCheck: { slug: string | null; ok: boolean };
 }
 
@@ -30,28 +43,51 @@ export default function MerchantReadinessPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PreflightResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastRunAt, setLastRunAt] = useState<string | null>(null);
 
   const runPreflight = async () => {
-    setLoading(true);
+    // Hard reset: clear ALL previous state before fetching
+    setResult(null);
     setError(null);
+    setLoading(true);
+    setLastRunAt(null);
+
     try {
       const session = (await supabase.auth.getSession()).data.session;
       if (!session) throw new Error('Not authenticated');
 
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/merchant-audit?action=preflight`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/merchant-audit?action=preflight&t=${Date.now()}`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Cache-Control': 'no-store',
           },
         }
       );
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Preflight failed');
-      setResult(json);
+
+      // Normalize: ensure feedAvailability always has expected shape
+      const feedAvailability = json.feedAvailability ?? { ok: true, mismatches: [], missingStockCount: 0, totalChecked: 0 };
+      feedAvailability.mismatches = Array.isArray(feedAvailability.mismatches) ? feedAvailability.mismatches : [];
+
+      const normalized: PreflightResult = {
+        ...json,
+        feedAvailability,
+      };
+
+      // Dev diagnostics
+      console.log('[MerchantReadiness] availabilityMismatches count:', feedAvailability.mismatches.length);
+      if (feedAvailability.mismatches.length > 0) {
+        console.log('[MerchantReadiness] first 3 mismatch IDs:', feedAvailability.mismatches.slice(0, 3).map((m: FeedMismatch) => m.id));
+      }
+
+      setResult(normalized);
+      setLastRunAt(new Date().toISOString());
     } catch (e: any) {
-      setError(e.message);
+      setError(e?.message || 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -59,6 +95,7 @@ export default function MerchantReadinessPage() {
 
   const copyChecklist = () => {
     if (!result) return;
+    const fa = result.feedAvailability;
     const lines = [
       '# Google Merchant Center Review Checklist',
       `Date: ${new Date().toISOString().split('T')[0]}`,
@@ -68,18 +105,18 @@ export default function MerchantReadinessPage() {
       ...result.pages.map(p => `- [${p.pass ? '✅' : '❌'}] ${p.path} (HTTP ${p.status})${p.missing.length > 0 ? ` — missing: ${p.missing.join(', ')}` : ''}`),
       '',
       '## Footer Links',
-      `- Found: ${result.footerLinks.found.join(', ') || 'none'}`,
-      `- Missing: ${result.footerLinks.missing.join(', ') || 'none'}`,
+      `- Found: ${result.footerLinks?.found?.join(', ') || 'none'}`,
+      `- Missing: ${result.footerLinks?.missing?.join(', ') || 'none'}`,
       '',
       '## Shipping Claims',
       `- Found: ${result.shippingClaims?.found?.join(', ') || 'none'}`,
       `- Missing: ${result.shippingClaims?.missing?.join(', ') || 'none'}`,
       '',
       '## Feed Availability',
-      `- ${result.feedAvailability?.ok ? `✅ All ${result.feedAvailability?.totalChecked || 0} products have consistent stock→availability mapping` : `❌ ${result.feedAvailability?.mismatches?.length || 0} product(s) with mismatched availability`}`,
+      `- ${fa.ok ? `✅ All ${fa.totalChecked} products have consistent stock→availability mapping` : `❌ ${fa.mismatches.length} product(s) with mismatched availability`}`,
       '',
       '## Product Page',
-      `- [${result.productPageCheck.ok ? '✅' : '❌'}] /product/${result.productPageCheck.slug}`,
+      `- [${result.productPageCheck?.ok ? '✅' : '❌'}] /product/${result.productPageCheck?.slug ?? '?'}`,
       '',
       result.failures.length > 0 ? '## Failures\n' + result.failures.map(f => `- ${f}`).join('\n') : '## No failures detected',
     ];
@@ -95,6 +132,9 @@ export default function MerchantReadinessPage() {
         <div>
           <h1 className="text-2xl font-bold">Merchant Center Readiness</h1>
           <p className="text-muted-foreground text-sm">Run preflight checks before requesting Google review</p>
+          {lastRunAt && (
+            <p className="text-muted-foreground text-xs mt-1">Last run at: {new Date(lastRunAt).toLocaleString()}</p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button onClick={runPreflight} disabled={loading}>
@@ -159,8 +199,8 @@ export default function MerchantReadinessPage() {
               <h3 className="font-semibold mb-3">Shipping Claims Detection</h3>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  ...result.shippingClaims.found.map(l => ({ label: l, ok: true })),
-                  ...result.shippingClaims.missing.map(l => ({ label: l, ok: false })),
+                  ...(result.shippingClaims.found || []).map(l => ({ label: l, ok: true })),
+                  ...(result.shippingClaims.missing || []).map(l => ({ label: l, ok: false })),
                 ].map(item => (
                   <div key={item.label} className="flex items-center gap-2 text-sm">
                     {item.ok ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <XCircle className="w-3.5 h-3.5 text-destructive" />}
@@ -171,39 +211,40 @@ export default function MerchantReadinessPage() {
             </div>
           )}
 
-          {/* Feed Availability */}
-          {result.feedAvailability && (
-            <div className="bg-card rounded-xl border p-4">
-              <h3 className="font-semibold mb-3">Feed Availability Consistency</h3>
-              {result.feedAvailability.ok ? (
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="w-4 h-4" />
-                  Stock→availability mapping consistent ({result.feedAvailability.totalChecked} products checked)
-                  {result.feedAvailability.missingStockCount > 0 && (
-                    <span className="text-muted-foreground ml-2">({result.feedAvailability.missingStockCount} with null stock → treated as out_of_stock)</span>
-                  )}
+          {/* Feed Availability — derived ONLY from result.feedAvailability */}
+          <div className="bg-card rounded-xl border p-4">
+            <h3 className="font-semibold mb-3">Feed Availability Consistency</h3>
+            {result.feedAvailability.mismatches.length === 0 ? (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <CheckCircle className="w-4 h-4" />
+                Stock→availability mapping consistent ({result.feedAvailability.totalChecked} products checked)
+                {result.feedAvailability.missingStockCount > 0 && (
+                  <span className="text-muted-foreground ml-2">({result.feedAvailability.missingStockCount} with null stock → treated as out_of_stock)</span>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-destructive">
+                  <XCircle className="w-4 h-4" />
+                  {result.feedAvailability.mismatches.length} product(s) with mismatched stock→availability
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-destructive">
-                    <XCircle className="w-4 h-4" />
-                    {result.feedAvailability.mismatches.length} product(s) with mismatched stock→availability
-                  </div>
-                  <div className="text-xs text-muted-foreground space-y-1 ml-6">
-                    {result.feedAvailability.mismatches.slice(0, 5).map(p => (
-                      <div key={p.id}>{p.name} — stock: {p.stock ?? 'null'}, feed: {p.feedAvail}, expected: {p.expected}</div>
-                    ))}
-                  </div>
+                <div className="text-xs text-muted-foreground space-y-1 ml-6">
+                  {result.feedAvailability.mismatches.slice(0, 5).map(p => (
+                    <div key={p.id}>{p.name} — stock: {p.stock ?? 'null'}, feed: {p.feedAvail}, expected: {p.expected}</div>
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* Footer Links */}
           <div className="bg-card rounded-xl border p-4">
             <h3 className="font-semibold mb-3">Footer Link Presence</h3>
             <div className="grid grid-cols-2 gap-2">
-              {[...result.footerLinks.found.map(l => ({ path: l, ok: true })), ...result.footerLinks.missing.map(l => ({ path: l, ok: false }))].map(item => (
+              {[
+                ...(result.footerLinks?.found || []).map(l => ({ path: l, ok: true })),
+                ...(result.footerLinks?.missing || []).map(l => ({ path: l, ok: false })),
+              ].map(item => (
                 <div key={item.path} className="flex items-center gap-2 text-sm">
                   {item.ok ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <XCircle className="w-3.5 h-3.5 text-destructive" />}
                   <code>{item.path}</code>
@@ -216,8 +257,8 @@ export default function MerchantReadinessPage() {
           <div className="bg-card rounded-xl border p-4">
             <h3 className="font-semibold mb-3">Sample Product Page</h3>
             <div className="flex items-center gap-2">
-              {result.productPageCheck.ok ? <CheckCircle className="w-4 h-4 text-green-600" /> : <XCircle className="w-4 h-4 text-destructive" />}
-              <code className="text-sm">/product/{result.productPageCheck.slug}</code>
+              {result.productPageCheck?.ok ? <CheckCircle className="w-4 h-4 text-green-600" /> : <XCircle className="w-4 h-4 text-destructive" />}
+              <code className="text-sm">/product/{result.productPageCheck?.slug ?? '?'}</code>
             </div>
           </div>
 
