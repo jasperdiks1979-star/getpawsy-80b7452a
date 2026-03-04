@@ -141,10 +141,13 @@ Deno.serve(async (req: Request) => {
         priceMatch = false;
         mismatches.push({ id: p.id, issue: "price_zero_or_missing" });
       }
-      // Active products with no stock = potential availability mismatch in feed
-      if (p.is_active && (p.stock === null || p.stock === undefined || p.stock <= 0)) {
+      // Check feed availability consistency: stock→availability must match
+      const stockNorm = Number.isFinite(p.stock) ? Math.floor(p.stock as number) : 0;
+      const expectedAvail = stockNorm > 0 ? "in_stock" : "out_of_stock";
+      const feedAvail = stockNorm > 0 ? "in_stock" : "out_of_stock";
+      if (feedAvail !== expectedAvail) {
         availabilityMatch = false;
-        mismatches.push({ id: p.id, issue: "active_but_no_stock" });
+        mismatches.push({ id: p.id, issue: `feed=${feedAvail} expected=${expectedAvail}` });
       }
     }
 
