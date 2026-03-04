@@ -8,6 +8,7 @@ import { FadeInView } from '@/components/ui/FadeInView';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 
 // ── Below-fold heavy components — lazy-loaded ──────────────────────────
+const TrustTransparencySection = lazy(() => import('@/components/home/TrustTransparencySection'));
 const TopPicksSection = lazy(() => import('@/components/home/TopPicksSection'));
 const TrendingProducts = lazy(() => import('@/components/home/TrendingProducts'));
 const ProblemSolutionBlock = lazy(() => import('@/components/home/ProblemSolutionBlock'));
@@ -213,6 +214,15 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          2b. TRUST & TRANSPARENCY — business legitimacy signals
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Trust Transparency">
+        <Suspense fallback={<div className="py-10" style={{ minHeight: 400 }} />}>
+          <TrustTransparencySection />
+        </Suspense>
+      </SectionErrorBoundary>
 
       {/* ═══════════════════════════════════════════════════════════════
           3. TRENDING PET FAVORITES — max 6 products
