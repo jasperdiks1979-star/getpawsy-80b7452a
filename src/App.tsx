@@ -178,6 +178,7 @@ const CookiePolicy = lazyWithRetry(() => import("./pages/CookiePolicy"));
 const Contact = lazyWithRetry(() => import("./pages/Contact"));
 const Shipping = lazyWithRetry(() => import("./pages/Shipping"));
 const FAQ = lazyWithRetry(() => import("./pages/FAQ"));
+const HelpCenter = lazyWithRetry(() => import("./pages/HelpCenter"));
 const TrackOrder = lazyWithRetry(() => import("./pages/TrackOrder"));
 const BestsellerDetail = lazyWithRetry(() => import("./pages/BestsellerDetail"));
 const Bestsellers = lazyWithRetry(() => import("./pages/Bestsellers"));
@@ -407,6 +408,7 @@ const App = () => {
                       <Route path="/contact" element={<Suspense fallback={<RouteLoader />}><Contact /></Suspense>} />
                       <Route path="/shipping" element={<Suspense fallback={<RouteLoader />}><Shipping /></Suspense>} />
                       <Route path="/faq" element={<Suspense fallback={<RouteLoader />}><FAQ /></Suspense>} />
+                      <Route path="/help" element={<Suspense fallback={<RouteLoader />}><HelpCenter /></Suspense>} />
                       <Route path="/api/merchant-oauth-callback" element={<Suspense fallback={<RouteLoader />}><MerchantOAuthCallback /></Suspense>} />
                       <Route path="/track" element={<Suspense fallback={<RouteLoader />}><TrackOrder /></Suspense>} />
                       <Route path="/bestsellers" element={<Suspense fallback={<RouteLoader />}><Bestsellers /></Suspense>} />
