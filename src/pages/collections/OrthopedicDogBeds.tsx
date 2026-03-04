@@ -1001,7 +1001,7 @@ export default function OrthopedicDogBeds() {
         <div className="container flex items-center justify-between gap-4">
           <div className="hidden sm:block">
             <p className="text-sm font-semibold">Orthopedic Dog Beds</p>
-            <p className="text-xs text-muted-foreground">Free shipping over $35 · 30-day guarantee</p>
+            <p className="text-xs text-muted-foreground">Free shipping over $49 · 30-day guarantee</p>
           </div>
           <Button size="lg" className="w-full sm:w-auto" asChild>
             <a href="#products">Shop Orthopedic Beds <ArrowRight className="w-4 h-4 ml-1" /></a>

@@ -76,6 +76,40 @@ const Shipping = () => {
               </div>
             </section>
 
+            {/* Processing Time */}
+            <section className="mb-12">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-primary" />
+                </div>
+                <h2 className="text-2xl font-display font-bold text-foreground">
+                  Processing Time
+                </h2>
+              </div>
+              <div className="bg-card rounded-2xl shadow-card p-6">
+                <p className="text-foreground mb-4">
+                  Orders are processed within <strong>1–2 business days</strong> after payment is confirmed. Orders placed on weekends or U.S. holidays will be processed on the next business day.
+                </p>
+              </div>
+            </section>
+
+            {/* Shipping Time */}
+            <section className="mb-12">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Truck className="w-6 h-6 text-primary" />
+                </div>
+                <h2 className="text-2xl font-display font-bold text-foreground">
+                  Shipping Time
+                </h2>
+              </div>
+              <div className="bg-card rounded-2xl shadow-card p-6">
+                <p className="text-foreground mb-4">
+                  Delivery typically takes <strong>3–7 business days</strong> within the United States after your order has been dispatched. Delivery estimates are also shown on each product page so you know what to expect before you order.
+                </p>
+              </div>
+            </section>
+
             {/* Fulfillment */}
             <section className="mb-12">
               <div className="flex items-center gap-3 mb-6">
@@ -83,27 +117,19 @@ const Shipping = () => {
                   <Package className="w-6 h-6 text-primary" />
                 </div>
                 <h2 className="text-2xl font-display font-bold text-foreground">
-                  How We Fulfill Orders
+                  Fulfillment
                 </h2>
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-4">
-                   Orders are fulfilled from warehouses located in the United States. Our shipping carriers include USPS and UPS, depending on your destination and order size. Every order includes tracking information so you can follow your package from dispatch to delivery.
-                </p>
-                <p className="text-foreground mb-4">
-                  <strong>Processing time:</strong> 1–2 business days after payment confirmation.<br />
-                  <strong>Delivery time:</strong> 3–7 business days after dispatch.<br />
-                  <strong>Tracking:</strong> Provided for every order via email.
-                </p>
-                <p className="text-muted-foreground mb-4">
-                  Delivery estimates are based on orders shipped within the United States.
+                  All orders ship from US warehouse partners located in the United States. Our shipping carriers include USPS and UPS, depending on your destination and order size. Every order includes tracking information so you can follow your package from dispatch to delivery.
                 </p>
                 <p className="text-muted-foreground mb-4">
                   Skidzo, the legal entity operating GetPawsy, coordinates all fulfillment logistics and is fully responsible for ensuring your order reaches you safely and on time.
                 </p>
                 <div className="p-4 bg-muted/50 rounded-xl">
                   <p className="text-sm text-muted-foreground">
-                    If a product is temporarily unavailable at a U.S. fulfillment center, delivery may take slightly longer. In such cases, the estimated delivery time shown on the product page will reflect this.
+                    If a product is temporarily unavailable at a US warehouse, delivery may take slightly longer. In such cases, the estimated delivery time shown on the product page will reflect this.
                   </p>
                 </div>
               </div>
@@ -143,31 +169,16 @@ const Shipping = () => {
               </div>
             </section>
 
-            {/* Processing & Delivery */}
+            {/* Summary Block - keyword-rich for crawlers */}
             <section className="mb-12">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-primary" />
-                </div>
-                <h2 className="text-2xl font-display font-bold text-foreground">
-                  Processing & Delivery Times
-                </h2>
-              </div>
-              <div className="bg-card rounded-2xl shadow-card p-6">
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">Order Processing</h3>
-                    <p className="text-muted-foreground">
-                      Orders are processed within <strong className="text-foreground">{PROCESSING_TIME}</strong> after payment is confirmed. Orders placed on weekends or holidays will be processed on the next business day.
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">Estimated Delivery</h3>
-                    <p className="text-muted-foreground">
-                      Once your order has been dispatched, estimated delivery is <strong className="text-foreground">{DELIVERY_TIME_STANDARD}</strong>. Delivery estimates are also shown on each product page so you know what to expect before you order.
-                    </p>
-                  </div>
-                </div>
+              <div className="bg-muted/40 rounded-2xl p-6">
+                <h2 className="text-lg font-display font-semibold text-foreground mb-3">Shipping Summary</h2>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>• <strong className="text-foreground">Processing time:</strong> Orders are processed within 1–2 business days.</li>
+                  <li>• <strong className="text-foreground">Shipping time:</strong> Delivery typically takes 3–7 business days within the United States.</li>
+                  <li>• <strong className="text-foreground">Fulfillment:</strong> All orders ship from US warehouse partners.</li>
+                  <li>• <strong className="text-foreground">Free shipping</strong> on orders over ${FREE_SHIPPING_THRESHOLD}.</li>
+                </ul>
               </div>
             </section>
 
