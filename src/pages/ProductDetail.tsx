@@ -35,6 +35,7 @@ import USProductDescription from '@/components/products/USProductDescription';
 import { generateClarityIntro } from '@/components/products/ClarityIntro';
 import { DeliveryReassurance } from '@/components/products/DeliveryReassurance';
 import { TrustMicrocopy } from '@/components/products/TrustMicrocopy';
+import { ShippingTransparency } from '@/components/products/ShippingTransparency';
 import { WhyPetParentsLoveThis } from '@/components/products/WhyPetParentsLoveThis';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { FAQSchema, generateProductFAQs } from '@/components/seo/FAQSchema';
@@ -1145,6 +1146,7 @@ const ProductDetail = () => {
               className="pt-4 pb-2"
             >
               <TrustMicrocopy />
+              <ShippingTransparency variant="inline" className="mt-2" />
             </motion.div>
 
             {/* Bundle Upsell — contextual companion product */}

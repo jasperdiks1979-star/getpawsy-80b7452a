@@ -98,6 +98,7 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
 /api/cj-us-products https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/cj-us-hunter?action=list 200
 /api/product-opportunities https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/revenue-accelerator?action=opportunities 200
 /api/revenue-insights https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/revenue-accelerator?action=insights 200
+/api/merchant-compliance-check https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-health 200
 
 # ═══ SPA FALLBACK ═══
 /* /index.html 200
