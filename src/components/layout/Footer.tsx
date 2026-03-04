@@ -390,6 +390,16 @@ export const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="border-t border-background/10">
+          {/* Shipping Claims — plain text for crawler visibility */}
+          <div className="container px-4 md:px-6 py-4 border-b border-background/10">
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-background/60">
+              <span>Processing time: 1–2 business days</span>
+              <span>Delivery time: 3–7 business days</span>
+              <span>Ships from US warehouses</span>
+              <span>30-day returns</span>
+              <span>Secure checkout</span>
+            </div>
+          </div>
         <div className="container px-4 md:px-6 py-6">
             <div className="flex flex-col gap-4">
               {/* US Trust Section */}
