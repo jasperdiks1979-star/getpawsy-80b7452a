@@ -247,7 +247,7 @@ export function generateSafeDescription(productName: string): string {
   const productType = guessProductType(productName);
   const material = guessMaterial(productName);
   const materialStr = material ? ` Made from ${material}.` : "";
-  return `${productName} is a ${productType} designed for ${animal} owners looking for practical and reliable pet accessories.${materialStr} This product provides comfort, durability, and everyday usability. Suitable for home or travel use.`;
+  return `${productName} is a ${productType} designed for everyday pet care and comfort. It supports routine use at home or while traveling. The design focuses on practical use and durability.${materialStr} Suitable for ${animal} depending on the selected option and size.`;
 }
 
 export function sanitizeDescription(description: string): { sanitized: string; removed: string[] } {
