@@ -74,6 +74,28 @@ function normalizeWeight(rawGrams: number | null | undefined, title: string): { 
   return { kg: Math.round(kg * 100) / 100, suspicious, converted };
 }
 
+const VALID_IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|webp)(\?.*)?$/i;
+
+/** Detect truncated / invalid image URLs before any HTTP check */
+function isImageUrlTruncated(url: string): string | false {
+  if (!url || url.trim() === "") return "empty_url";
+  // Ends with "-"
+  if (url.replace(/\?.*$/, "").endsWith("-")) return "url_ends_with_dash";
+  // No valid extension
+  if (!VALID_IMAGE_EXTENSIONS.test(url)) {
+    // CJ-specific: host is CJ but no valid image extension
+    if (url.includes("oss-cf.cjdropshipping.com")) return "cj_no_extension";
+    return "no_valid_extension";
+  }
+  // Filename portion too short (< 40 chars after last "/")
+  const lastSlash = url.lastIndexOf("/");
+  if (lastSlash >= 0 && url.length - lastSlash - 1 < 40) {
+    // Only flag for CJ URLs where truncation is common
+    if (url.includes("oss-cf.cjdropshipping.com")) return "cj_filename_too_short";
+  }
+  return false;
+}
+
 function validateImageUrlSync(url: string | null): { valid: boolean; url: string; reason?: string } {
   const PLACEHOLDER = "https://getpawsy.pet/images/merchant-placeholder.jpg";
   if (!url || url.trim() === "") return { valid: false, url: PLACEHOLDER, reason: "empty_url" };
@@ -498,10 +520,11 @@ Deno.serve(async (req: Request) => {
         cloudinaryRewriteCount++;
       }
 
-      // CJ dropshipping truncated URL check
-      if (imageUrl.includes("oss-cf.cjdropshipping.com") && imageUrl.length < 30) {
+      // ── HARD image truncation / validity check ──
+      const imgTruncated = isImageUrlTruncated(imageUrl);
+      if (imgTruncated) {
         exclusionReport["invalid_image_url"] = (exclusionReport["invalid_image_url"] || 0) + 1;
-        if (imageFailuresSample.length < 10) imageFailuresSample.push({ url: imageUrl, reason: "truncated_cj_url" });
+        if (imageFailuresSample.length < 10) imageFailuresSample.push({ url: imageUrl, reason: imgTruncated });
         continue;
       }
 
