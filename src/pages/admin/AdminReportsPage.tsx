@@ -23,6 +23,9 @@ const REPORTS: ReportItem[] = [
   },
 ];
 
+// Dynamic PDF reports (generated client-side)
+import { ComplianceAuditDownload } from "@/components/admin/ComplianceAuditDownload";
+
 const AdminReportsPage = () => {
   const { isAdmin, isLoading } = useAuth();
   const [previewReport, setPreviewReport] = useState<ReportItem | null>(null);
@@ -81,6 +84,22 @@ const AdminReportsPage = () => {
             </Card>
           ))}
         </div>
+
+        {/* Generated Reports */}
+        <Card>
+          <CardHeader className="flex flex-row items-start gap-4 space-y-0">
+            <div className="rounded-lg bg-primary/10 p-3">
+              <FileText className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-lg">Google Merchant Center Compliance Audit</CardTitle>
+              <CardDescription className="mt-1">Full 13-step compliance audit report — generated live</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ComplianceAuditDownload />
+          </CardContent>
+        </Card>
       </div>
 
       {/* PDF Preview Modal */}
