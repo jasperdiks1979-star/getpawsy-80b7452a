@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { sanitizeProduct, type ComplianceSummary, mapGoogleCategory } from "./compliance-sanitizer.ts";
+import { sanitizeProduct, type ComplianceSummary, mapGoogleCategory, rewriteCloudinaryUrl, generateSafeDescription } from "./compliance-sanitizer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,18 +55,26 @@ function buildStableOfferId(product: { id: string; slug?: string | null }): stri
 // ── Weight normalization (matching cj-google-sync) ──────────────
 const LARGE_ITEM_PATTERNS = /xl|large|60"|69"|77"|84"|90"|cat tree|dog bed|stroller|cage|aviary/i;
 
-function normalizeWeight(rawGrams: number | null | undefined, title: string): number {
+function normalizeWeight(rawGrams: number | null | undefined, title: string): { kg: number; suspicious: boolean; converted: boolean } {
   let grams = rawGrams ?? 0;
   if (!grams || isNaN(grams)) grams = 0;
   let kg: number;
-  if (grams === 0) kg = 0.2;
-  else if (grams >= 100 && grams <= 200000) kg = grams / 1000;
-  else if (grams > 0 && grams < 100) kg = grams;
-  else kg = 0.2;
+  let converted = false;
+
+  // Detect if value is likely grams (>= 100) and convert
+  if (grams === 0) { kg = 0.2; }
+  else if (grams >= 100 && grams <= 200000) { kg = grams / 1000; converted = true; }
+  else if (grams > 0 && grams < 100) { kg = grams; }
+  else { kg = 0.2; }
+
   if (kg < 0.05) kg = 0.2;
-  if (kg > 30) kg = 25;
   if (LARGE_ITEM_PATTERNS.test(title) && kg < 5) kg = 5;
-  return Math.round(kg * 100) / 100;
+
+  // Flag suspicious weights (>50kg = likely invalid for pet accessories)
+  const suspicious = kg > 50;
+  if (kg > 25) kg = 25; // cap at 25kg for export
+
+  return { kg: Math.round(kg * 100) / 100, suspicious, converted };
 }
 
 function validateImageUrlSync(url: string | null): { valid: boolean; url: string; reason?: string } {
@@ -395,6 +403,7 @@ Deno.serve(async (req: Request) => {
 
     // ── STEP 2: Eligibility + payload build + COMPLIANCE SANITIZATION ─
     const COMPLIANCE_SAFE = true;
+    const MAX_BATCH_SIZE = body.max_batch_size || 100; // STEP 7: Export limit safety
     let eligibleCount = 0;
     let payloadBuiltCount = 0;
     let attemptedSendCount = 0;
@@ -415,26 +424,54 @@ Deno.serve(async (req: Request) => {
     let googleCategoryInvalidPrevented = 0;
     let imageLinkValidCount = 0;
     let imageLinkRewrittenCount = 0;
+    let cloudinaryRewriteCount = 0;
     let additionalImagesRemovedCount = 0;
+    let weightNormalizedCount = 0;
+    let weightSuspiciousCount = 0;
     const imageFailuresSample: Array<{ url: string; reason: string }> = [];
+    const exclusionReport: Record<string, number> = {};
 
     const payloads: Array<Record<string, unknown>> = [];
     const exportedOfferIds: Set<string> = new Set();
 
     for (const p of (products || [])) {
+      // STEP 1: Eligibility checks
       if (!p.price || p.price <= 0) {
         skippedReasons["missing_price"] = (skippedReasons["missing_price"] || 0) + 1;
+        exclusionReport["missing_price"] = (exclusionReport["missing_price"] || 0) + 1;
+        continue;
+      }
+      if (!p.slug) {
+        skippedReasons["missing_slug"] = (skippedReasons["missing_slug"] || 0) + 1;
+        exclusionReport["missing_slug"] = (exclusionReport["missing_slug"] || 0) + 1;
         continue;
       }
 
-      const weightKg = normalizeWeight(p.weight, p.name || "");
-      if (weightKg > 30) {
-        skippedReasons["weight_over_30kg"] = (skippedReasons["weight_over_30kg"] || 0) + 1;
+      // STEP 4: Weight normalization with gram detection
+      const weightResult = normalizeWeight(p.weight, p.name || "");
+      if (weightResult.suspicious) {
+        weightSuspiciousCount++;
+        skippedReasons["weight_over_50kg"] = (skippedReasons["weight_over_50kg"] || 0) + 1;
+        exclusionReport["suspicious_weight"] = (exclusionReport["suspicious_weight"] || 0) + 1;
         continue;
       }
+      if (weightResult.converted) weightNormalizedCount++;
+      const weightKg = weightResult.kg;
 
-      // ── LIVE IMAGE VALIDATION ──────────────────────────────
-      const imageResult = await validateImageLive(p.image_url);
+      // STEP 2: Image resolution fix with Cloudinary rewrite
+      let imageUrl = p.image_url;
+      if (!imageUrl) {
+        skippedReasons["missing_image"] = (skippedReasons["missing_image"] || 0) + 1;
+        exclusionReport["invalid_image"] = (exclusionReport["invalid_image"] || 0) + 1;
+        continue;
+      }
+      const cloudinaryResult = rewriteCloudinaryUrl(imageUrl);
+      if (cloudinaryResult.rewritten) {
+        imageUrl = cloudinaryResult.url;
+        cloudinaryRewriteCount++;
+      }
+
+      const imageResult = await validateImageLive(imageUrl);
       const PLACEHOLDER = "https://getpawsy.pet/images/merchant-placeholder.jpg";
       let finalImageLink = imageResult.valid ? imageResult.finalUrl : PLACEHOLDER;
 
@@ -442,16 +479,26 @@ Deno.serve(async (req: Request) => {
         imageLinkValidCount++;
         if (imageResult.rewritten) imageLinkRewrittenCount++;
       } else {
+        // STEP 1: If product has no valid image, exclude from export
         if (imageFailuresSample.length < 10) {
-          imageFailuresSample.push({ url: p.image_url || "(null)", reason: imageResult.reason || "unknown" });
+          imageFailuresSample.push({ url: imageUrl || "(null)", reason: imageResult.reason || "unknown" });
         }
+        skippedReasons["invalid_image"] = (skippedReasons["invalid_image"] || 0) + 1;
+        exclusionReport["invalid_image"] = (exclusionReport["invalid_image"] || 0) + 1;
+        continue;
       }
 
       eligibleCount++;
 
-      // ── COMPLIANCE SANITIZATION ──────────────────────────────
+      // STEP 1: Auto-generate safe description if missing
+      let rawDesc = (p.description || "").substring(0, 5000);
+      if (!rawDesc || rawDesc.trim().length < 10) {
+        rawDesc = generateSafeDescription(p.name || "Pet Accessory");
+        descriptionsFallbackCount++;
+      }
+
+      // STEP 3: Title sanitization (incl. dropship cleanup)
       const rawTitle = (p.name || "").substring(0, 150);
-      const rawDesc = (p.description || p.name || "").substring(0, 5000);
 
       const compliance = sanitizeProduct({
         title: rawTitle,
@@ -470,10 +517,11 @@ Deno.serve(async (req: Request) => {
         const reason = compliance.blockReason || "unknown";
         blockedReasons[reason] = (blockedReasons[reason] || 0) + 1;
         skippedReasons[`compliance:${reason}`] = (skippedReasons[`compliance:${reason}`] || 0) + 1;
+        exclusionReport["compliance_blocked"] = (exclusionReport["compliance_blocked"] || 0) + 1;
         continue;
       }
 
-      // ── GOOGLE PRODUCT CATEGORY (numeric only) ─────────────
+      // STEP 5: Google product category mapping
       const categoryId = compliance.googleProductCategory;
       if (categoryId !== null && typeof categoryId === "number") {
         googleCategorySetCount++;
@@ -481,11 +529,15 @@ Deno.serve(async (req: Request) => {
         googleCategoryOmittedCount++;
       }
 
-      // ── ADDITIONAL IMAGES (live validated, optional) ────────
+      // Additional images (live validated)
       const additionalImages: string[] = [];
       if (SEND_ADDITIONAL_IMAGES && p.images && Array.isArray(p.images)) {
         for (const img of (p.images as string[]).slice(0, 10)) {
-          const r = await validateImageLive(img);
+          // Also rewrite Cloudinary URLs for additional images
+          const cldResult = rewriteCloudinaryUrl(img);
+          const imgToValidate = cldResult.rewritten ? cldResult.url : img;
+          if (cldResult.rewritten) cloudinaryRewriteCount++;
+          const r = await validateImageLive(imgToValidate);
           if (r.valid) {
             additionalImages.push(r.finalUrl);
           } else {
@@ -497,9 +549,12 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // ── STABLE OFFER ID ────────────────────────────────────
+      // Stable offer ID
       const offerId = buildStableOfferId(p);
       exportedOfferIds.add(offerId);
+
+      // STEP 1: Stock-based availability
+      const availability = (Number.isFinite(p.stock) && Math.floor(p.stock as number) > 0) ? "in stock" : "out of stock";
 
       const googleProduct: Record<string, unknown> = {
         offerId,
@@ -510,7 +565,7 @@ Deno.serve(async (req: Request) => {
         contentLanguage: "en",
         targetCountry: "US",
         channel: "online",
-        availability: (Number.isFinite(p.stock) && Math.floor(p.stock as number) > 0) ? "in stock" : "out of stock",
+        availability,
         condition: "new",
         price: { value: p.price.toFixed(2), currency: "USD" },
         brand: "GetPawsy",
@@ -528,6 +583,38 @@ Deno.serve(async (req: Request) => {
 
       payloads.push(googleProduct);
       payloadBuiltCount++;
+
+      // STEP 7: Enforce max batch size
+      if (payloadBuiltCount >= MAX_BATCH_SIZE) {
+        console.log(`[merchant-sync] Batch limit reached (${MAX_BATCH_SIZE}), stopping payload build`);
+        break;
+      }
+    }
+
+    // STEP 9: Failsafe — abort if >10% validation failure rate
+    const totalScanned = products?.length ?? 0;
+    const totalExcluded = totalScanned - payloadBuiltCount;
+    const failureRate = totalScanned > 0 ? totalExcluded / totalScanned : 0;
+
+    if (failureRate > 0.10 && totalScanned >= 10) {
+      const failsafeMsg = `Merchant feed halted due to high validation failure rate (${(failureRate * 100).toFixed(1)}% excluded). ${totalExcluded}/${totalScanned} products failed validation.`;
+      console.error(`[merchant-sync] FAILSAFE: ${failsafeMsg}`);
+      if (syncId) await markFailed(supabase, syncId, failsafeMsg);
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: failsafeMsg,
+          runId,
+          failsafe: true,
+          exportReport: {
+            scanned: totalScanned,
+            exported: 0,
+            excluded: exclusionReport,
+            failureRate: `${(failureRate * 100).toFixed(1)}%`,
+          },
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     console.log(`[merchant-sync] eligibleCount=${eligibleCount} payloadBuiltCount=${payloadBuiltCount} modeEffective=${modeEffective} exportedOfferIds=${exportedOfferIds.size}`);
@@ -683,6 +770,19 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[merchant-sync] COMPLIANCE: titles=${sanitizedTitlesCount} descs=${sanitizedDescriptionsCount} phrases=${removedPhrasesCount} blocked=${blockedForCompliance}`);
 
+    // ── STEP 8: Structured export report ──────────────────────────
+    const exportReport = {
+      scanned: totalScanned,
+      exported: modeEffective === "live" ? successCount : payloadBuiltCount,
+      excluded: exclusionReport,
+      failureRate: `${(failureRate * 100).toFixed(1)}%`,
+      cloudinary_rewrites: cloudinaryRewriteCount,
+      weight_normalized: weightNormalizedCount,
+      weight_suspicious_excluded: weightSuspiciousCount,
+      descriptions_auto_generated: descriptionsFallbackCount,
+      batch_limit_applied: MAX_BATCH_SIZE,
+    };
+
     // ── Persist to merchant_sync_logs ────────────────────────────
     const debugSummary = {
       runId,
@@ -703,6 +803,7 @@ Deno.serve(async (req: Request) => {
       googleProductsWithIssues,
       complianceSummary,
       pruneSummary,
+      exportReport,
     };
 
     if (syncId) {
@@ -742,9 +843,11 @@ Deno.serve(async (req: Request) => {
         skippedReasons,
         topErrors: errors.slice(0, 10),
         complianceSummary,
+        exportReport,
         imageDiagnostics: {
           image_link_valid_count: imageLinkValidCount,
           image_link_rewritten_count: imageLinkRewrittenCount,
+          cloudinary_rewrite_count: cloudinaryRewriteCount,
           additional_images_removed_count: additionalImagesRemovedCount,
           image_failures_sample: imageFailuresSample,
           send_additional_images: SEND_ADDITIONAL_IMAGES,
