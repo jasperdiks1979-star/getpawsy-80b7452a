@@ -182,6 +182,19 @@ export interface ComplianceSummary {
   google_category_invalid_prevented_count: number;
 }
 
+// ── Dropship title cleanup patterns ───────────────────────────────
+const DROPSHIP_TITLE_PATTERNS: Array<[RegExp, (match: string, ...groups: string[]) => string]> = [
+  // "Portable Pet Agility Pet Training Set Dog Obstacle Exercise" → "Dog Agility Training Set – Obstacle Course for Active Dogs"
+  [/^(?:Portable\s+)?(?:Pet\s+)?(\w+)\s+(?:Pet\s+)?(\w+)\s+Set\s+(?:Dog|Cat|Pet)\s+(\w+)\s+(\w+)$/i,
+    (_m, g1, g2, g3, _g4) => `Dog ${g1} ${g2} Set – ${g3} Course for Active Dogs`],
+  // Remove repeated "Pet" in titles
+  [/\bPet\s+(?=.*\bPet\b)/gi, () => ""],
+  // "New Style Hot Sale XXX" → "XXX"
+  [/^(?:New\s+Style\s+)?(?:Hot\s+Sale\s+)?/i, () => ""],
+  // Collapse repeated product type words: "Dog Dog" → "Dog"
+  [/\b(\w{3,})\s+\1\b/gi, (_m, w) => w],
+];
+
 export function sanitizeTitle(title: string): { sanitized: string; removed: string[] } {
   let result = title;
   const removed: string[] = [];
@@ -199,11 +212,42 @@ export function sanitizeTitle(title: string): { sanitized: string; removed: stri
     if (matches) { removed.push(...matches.map(m => `phrase:${m.trim()}`)); result = result.replace(re, ""); }
   }
 
+  // Dropship-style title cleanup
+  for (const [pattern, replacer] of DROPSHIP_TITLE_PATTERNS) {
+    const before = result;
+    result = result.replace(pattern, replacer as (...args: string[]) => string);
+    if (result !== before) removed.push(`dropship_title_cleanup`);
+  }
+
   result = result.replace(/\b([A-Z]{5,})\b/g, (match) => match.charAt(0) + match.slice(1).toLowerCase());
   result = result.replace(/\s{2,}/g, " ").trim();
   result = result.replace(/^[,.\-–—:;|]+\s*/, "").replace(/\s*[,.\-–—:;|]+$/, "");
 
+  // Enforce 150 char limit
+  if (result.length > 150) result = result.substring(0, 147) + "...";
+
   return { sanitized: result, removed };
+}
+
+// ── Cloudinary image URL rewriting ────────────────────────────────
+export function rewriteCloudinaryUrl(url: string): { url: string; rewritten: boolean } {
+  if (!url) return { url, rewritten: false };
+  // Match Cloudinary transforms with small widths (w_100 to w_799)
+  const smallWidthRe = /\/(?:w_[1-7]\d{0,2}|w_800)\b/;
+  if (smallWidthRe.test(url)) {
+    const newUrl = url.replace(/w_\d+/, "w_1000");
+    return { url: newUrl, rewritten: true };
+  }
+  return { url, rewritten: false };
+}
+
+// ── Fallback description generator ───────────────────────────────
+export function generateSafeDescription(productName: string): string {
+  const animal = guessAnimal(productName);
+  const productType = guessProductType(productName);
+  const material = guessMaterial(productName);
+  const materialStr = material ? ` Made from ${material}.` : "";
+  return `${productName} is a ${productType} designed for ${animal} owners looking for practical and reliable pet accessories.${materialStr} This product provides comfort, durability, and everyday usability. Suitable for home or travel use.`;
 }
 
 export function sanitizeDescription(description: string): { sanitized: string; removed: string[] } {
