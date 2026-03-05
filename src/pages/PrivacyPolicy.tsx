@@ -1,4 +1,5 @@
 import { Layout } from '@/components/layout/Layout';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Shield, Mail } from 'lucide-react';
 
@@ -7,6 +8,11 @@ const PrivacyPolicy = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>Privacy Policy | GetPawsy</title>
+        <meta name="description" content="GetPawsy privacy policy. Learn how we collect, use, and protect your personal information. Operated by Skidzo, Netherlands." />
+        <link rel="canonical" href="https://getpawsy.pet/privacy" />
+      </Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6 max-w-4xl mx-auto">
           <motion.div

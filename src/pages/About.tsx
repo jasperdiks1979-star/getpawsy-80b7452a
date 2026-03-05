@@ -1,4 +1,5 @@
 import { Layout } from '@/components/layout/Layout';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Heart, Shield, Truck, PawPrint, CheckCircle, Mail, Clock, Package, Building2, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,11 @@ import {
 const About = () => {
   return (
     <Layout>
+      <Helmet>
+        <title>About GetPawsy | Pet Supplies Store</title>
+        <meta name="description" content="GetPawsy is operated by Skidzo, a registered business in the Netherlands. We serve US customers with quality pet products and fast shipping." />
+        <link rel="canonical" href="https://getpawsy.pet/about" />
+      </Helmet>
       <div className="min-h-screen">
         {/* Hero Section */}
         <section className="relative py-20 lg:py-28 overflow-hidden">

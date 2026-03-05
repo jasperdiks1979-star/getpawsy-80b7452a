@@ -1,4 +1,5 @@
 import { Layout } from '@/components/layout/Layout';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { RotateCcw, Mail, Clock, Package, AlertCircle, CheckCircle, XCircle, HelpCircle, Building2, Camera, ShieldCheck } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -56,6 +57,11 @@ const ReturnPolicy = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>Return & Refund Policy | GetPawsy</title>
+        <meta name="description" content="GetPawsy 30-day return and refund policy. Unused items eligible for full refund. Contact support@getpawsy.pet for return instructions." />
+        <link rel="canonical" href="https://getpawsy.pet/returns" />
+      </Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6 max-w-4xl mx-auto">
           <motion.div

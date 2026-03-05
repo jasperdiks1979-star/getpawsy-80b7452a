@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Layout } from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
 import { Mail, Clock, Send, MessageSquare, CheckCircle, Building2 } from 'lucide-react';
@@ -135,6 +136,11 @@ const Contact = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>Contact Us | GetPawsy</title>
+        <meta name="description" content="Contact GetPawsy customer support. Email support@getpawsy.pet for order help, shipping questions, and returns. We respond within 24 hours." />
+        <link rel="canonical" href="https://getpawsy.pet/contact" />
+      </Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6">
           <motion.div
