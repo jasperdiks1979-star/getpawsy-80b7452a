@@ -469,11 +469,14 @@ Deno.serve(async (req: Request) => {
     // ══════════════════════════════════════════════════════════════
     // B) ELIGIBILITY + PAYLOAD BUILD
     // ══════════════════════════════════════════════════════════════
-    let eligibleCount = 0;
+    // IMPORTANT: eligibleCount = payloadBuiltCount. They are the SAME metric.
+    // A product is "eligible" only if it passes ALL hard filters AND is built into a payload.
+    // OOS products are NOT excluded — they get availability="out_of_stock".
     let payloadBuiltCount = 0;
     let attemptedSendCount = 0;
     let successCount = 0;
     let errorCount = 0;
+    let oosIncludedCount = 0; // OOS items sent as out_of_stock (NOT excluded)
     const errors: Array<{ offerId: string; status?: number; reason: string }> = [];
     const exclusionReport: Record<string, number> = {};
 
@@ -498,7 +501,7 @@ Deno.serve(async (req: Request) => {
     const exportedOfferIds: Set<string> = new Set();
 
     for (const p of allProducts) {
-      // ── Eligibility checks ──
+      // ── Hard exclusion checks (only truly broken items) ──
       if (!p.price || p.price <= 0) {
         exclusionReport["missing_price"] = (exclusionReport["missing_price"] || 0) + 1;
         continue;
@@ -508,7 +511,7 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // Weight normalization
+      // Weight normalization (grams→kg; >1000 assume grams)
       const weightResult = normalizeWeight(p.weight, p.name || "");
       if (weightResult.suspicious) {
         weightSuspiciousCount++;
@@ -525,14 +528,14 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // Cloudinary rewrite
+      // Cloudinary rewrite (upgrade small widths to w_1000)
       const cloudinaryResult = rewriteCloudinaryUrl(imageUrl);
       if (cloudinaryResult.rewritten) {
         imageUrl = cloudinaryResult.url;
         cloudinaryRewriteCount++;
       }
 
-      // ── HARD image truncation / validity check ──
+      // HARD image truncation / validity check
       const imgTruncated = isImageUrlTruncated(imageUrl);
       if (imgTruncated) {
         exclusionReport["invalid_image_url"] = (exclusionReport["invalid_image_url"] || 0) + 1;
@@ -552,9 +555,7 @@ Deno.serve(async (req: Request) => {
       if (imageResult.rewritten) imageLinkRewrittenCount++;
       const finalImageLink = imageResult.finalUrl;
 
-      eligibleCount++;
-
-      // Description: fallback if missing
+      // Description: auto-generate factual fallback if missing/short
       let rawDesc = (p.description || "").substring(0, 5000);
       if (!rawDesc || rawDesc.trim().length < 10) {
         rawDesc = generateSafeDescription(p.name || "Pet Accessory");
@@ -574,7 +575,10 @@ Deno.serve(async (req: Request) => {
       if (compliance.titleChanged) sanitizedTitlesCount++;
       if (compliance.descriptionChanged) sanitizedDescriptionsCount++;
       removedPhrasesCount += compliance.removedPhrases.length;
-      if (compliance.descriptionFallbackGenerated) descriptionsFallbackCount++;
+      // Only count sanitizer-generated fallbacks if we didn't already generate one above
+      if (compliance.descriptionFallbackGenerated && rawDesc === (p.description || "").substring(0, 5000)) {
+        descriptionsFallbackCount++;
+      }
 
       if (compliance.blocked) {
         blockedForCompliance++;
@@ -584,7 +588,7 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // ── C) Google product category ──
+      // Google product category (numeric IDs only; omit if uncertain)
       const categoryId = compliance.googleProductCategory;
       if (categoryId !== null && typeof categoryId === "number" && categoryId > 0) {
         googleCategorySetCount++;
@@ -592,20 +596,37 @@ Deno.serve(async (req: Request) => {
         googleCategoryOmittedCount++;
       }
 
-      // Additional images
+      // Additional images — validate each, drop invalid
       const additionalImages: string[] = [];
       if (SEND_ADDITIONAL_IMAGES && p.images && Array.isArray(p.images)) {
         for (const img of (p.images as string[]).slice(0, 10)) {
+          if (!img || typeof img !== "string") { additionalImagesRemovedCount++; continue; }
+          // Validate encoding — reject URLs with unescaped spaces, control chars
+          if (/[\s\x00-\x1F]/.test(img) || !img.startsWith("http")) {
+            additionalImagesRemovedCount++;
+            if (imageFailuresSample.length < 10) {
+              imageFailuresSample.push({ url: img.substring(0, 100), reason: "additional:invalid_encoding" });
+            }
+            continue;
+          }
           const cldResult = rewriteCloudinaryUrl(img);
           const imgToValidate = cldResult.rewritten ? cldResult.url : img;
           if (cldResult.rewritten) cloudinaryRewriteCount++;
+          const truncCheck = isImageUrlTruncated(imgToValidate);
+          if (truncCheck) {
+            additionalImagesRemovedCount++;
+            if (imageFailuresSample.length < 10) {
+              imageFailuresSample.push({ url: img.substring(0, 100), reason: `additional:${truncCheck}` });
+            }
+            continue;
+          }
           const r = await validateImageLive(imgToValidate);
           if (r.valid) {
             additionalImages.push(r.finalUrl);
           } else {
             additionalImagesRemovedCount++;
             if (imageFailuresSample.length < 10) {
-              imageFailuresSample.push({ url: img, reason: `additional:${r.reason || "unknown"}` });
+              imageFailuresSample.push({ url: img.substring(0, 100), reason: `additional:${r.reason || "unknown"}` });
             }
           }
         }
@@ -615,9 +636,10 @@ Deno.serve(async (req: Request) => {
       const offerId = buildStableOfferId(p);
       exportedOfferIds.add(offerId);
 
-      // Stock-based availability (do NOT exclude out_of_stock — send as out_of_stock)
+      // Stock→availability: OOS items are INCLUDED with availability="out of stock"
       const stockNum = Number.isFinite(p.stock) ? Math.floor(p.stock as number) : 0;
       const availability = stockNum > 0 ? "in stock" : "out of stock";
+      if (stockNum <= 0) oosIncludedCount++;
 
       const googleProduct: Record<string, unknown> = {
         offerId,
@@ -646,6 +668,9 @@ Deno.serve(async (req: Request) => {
       payloads.push(googleProduct);
       payloadBuiltCount++;
     }
+
+    // eligibleCount === payloadBuiltCount (same metric, kept for report compatibility)
+    const eligibleCount = payloadBuiltCount;
 
     // ══════════════════════════════════════════════════════════════
     // FAILSAFE: abort if >10% validation failure rate
@@ -679,7 +704,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`[merchant-sync] SCAN COMPLETE: raw=${rawCount} scanned=${totalScannedCount} eligible=${eligibleCount} payloads=${payloadBuiltCount}`);
+    console.log(`[merchant-sync] SCAN COMPLETE: raw=${rawCount} scanned=${totalScannedCount} eligible=${eligibleCount} payloads=${payloadBuiltCount} oos_included=${oosIncludedCount} descriptions_fallback=${descriptionsFallbackCount}`);
 
     // ══════════════════════════════════════════════════════════════
     // F) SEND IN SAFE BATCHES (live only)
@@ -852,11 +877,13 @@ Deno.serve(async (req: Request) => {
       mode_effective: modeEffective,
       merchantId_used: merchantIdMasked,
       merchantId_length: merchantId.length,
+      merchantId_valid: merchantId.length >= 9 && /^\d+$/.test(merchantId),
       merchantId_source: merchantIdSource,
       rawCount,
       scannedCount: totalScannedCount,
-      eligibleCount,
+      eligibleCount, // === payloadBuiltCount (same metric)
       payloadBuiltCount,
+      oosIncludedCount, // OOS items exported as out_of_stock (NOT excluded)
       attemptedSendCount,
       successCount,
       errorCount,
@@ -875,6 +902,7 @@ Deno.serve(async (req: Request) => {
         weight_suspicious_excluded: weightSuspiciousCount,
         send_additional_images: SEND_ADDITIONAL_IMAGES,
       },
+      descriptions_fallback_count: descriptionsFallbackCount,
       site_readiness: siteReadiness,
       topErrors: errors.slice(0, 10),
       googleStatusSummary: modeEffective === "live" ? {
