@@ -471,12 +471,12 @@ Deno.serve(async (req: Request) => {
     // ══════════════════════════════════════════════════════════════
     // IMPORTANT: eligibleCount = payloadBuiltCount. They are the SAME metric.
     // A product is "eligible" only if it passes ALL hard filters AND is built into a payload.
-    // OOS products are NOT excluded — they get availability="out_of_stock".
+    // OOS products (stock <= 0) are EXCLUDED from the feed entirely for clean compliance.
     let payloadBuiltCount = 0;
     let attemptedSendCount = 0;
     let successCount = 0;
     let errorCount = 0;
-    let oosIncludedCount = 0; // OOS items sent as out_of_stock (NOT excluded)
+    let oosExcludedCount = 0; // OOS items excluded from feed
     const errors: Array<{ offerId: string; status?: number; reason: string }> = [];
     const exclusionReport: Record<string, number> = {};
 
@@ -508,6 +508,14 @@ Deno.serve(async (req: Request) => {
       }
       if (!p.slug) {
         exclusionReport["missing_slug"] = (exclusionReport["missing_slug"] || 0) + 1;
+        continue;
+      }
+
+      // ── OOS exclusion: stock <= 0 means DO NOT export ──
+      const stockRaw = Number.isFinite(p.stock) ? Math.floor(p.stock as number) : 0;
+      if (stockRaw <= 0) {
+        oosExcludedCount++;
+        exclusionReport["oos"] = (exclusionReport["oos"] || 0) + 1;
         continue;
       }
 
@@ -636,10 +644,8 @@ Deno.serve(async (req: Request) => {
       const offerId = buildStableOfferId(p);
       exportedOfferIds.add(offerId);
 
-      // Stock→availability: OOS items are INCLUDED with availability="out of stock"
-      const stockNum = Number.isFinite(p.stock) ? Math.floor(p.stock as number) : 0;
-      const availability = stockNum > 0 ? "in stock" : "out of stock";
-      if (stockNum <= 0) oosIncludedCount++;
+      // Stock already validated > 0 above, so availability is always "in stock"
+      const availability = "in stock";
 
       const googleProduct: Record<string, unknown> = {
         offerId,
@@ -678,7 +684,7 @@ Deno.serve(async (req: Request) => {
     const totalExcluded = totalScannedCount - payloadBuiltCount;
     const failureRate = totalScannedCount > 0 ? totalExcluded / totalScannedCount : 0;
 
-    if (failureRate > 0.10 && totalScannedCount >= 10) {
+    if (failureRate > 0.30 && totalScannedCount >= 10) {
       const failsafeMsg = `Merchant feed halted: ${(failureRate * 100).toFixed(1)}% excluded (${totalExcluded}/${totalScannedCount}).`;
       console.error(`[merchant-sync] FAILSAFE: ${failsafeMsg}`);
       if (syncId) await markFailed(supabase, syncId, failsafeMsg);
@@ -704,7 +710,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`[merchant-sync] SCAN COMPLETE: raw=${rawCount} scanned=${totalScannedCount} eligible=${eligibleCount} payloads=${payloadBuiltCount} oos_included=${oosIncludedCount} descriptions_fallback=${descriptionsFallbackCount}`);
+    console.log(`[merchant-sync] SCAN COMPLETE: raw=${rawCount} scanned=${totalScannedCount} eligible=${eligibleCount} payloads=${payloadBuiltCount} oos_excluded=${oosExcludedCount} descriptions_fallback=${descriptionsFallbackCount}`);
 
     // ══════════════════════════════════════════════════════════════
     // F) SEND IN SAFE BATCHES (live only)
@@ -883,7 +889,8 @@ Deno.serve(async (req: Request) => {
       scannedCount: totalScannedCount,
       eligibleCount, // === payloadBuiltCount (same metric)
       payloadBuiltCount,
-      oosIncludedCount, // OOS items exported as out_of_stock (NOT excluded)
+      exportedCount: payloadBuiltCount, // alias for clarity
+      oosExcludedCount, // OOS items excluded from feed
       attemptedSendCount,
       successCount,
       errorCount,
@@ -903,6 +910,8 @@ Deno.serve(async (req: Request) => {
         send_additional_images: SEND_ADDITIONAL_IMAGES,
       },
       descriptions_fallback_count: descriptionsFallbackCount,
+      sampleOfferIds: payloads.slice(0, 10).map(p => p.offerId),
+      compliance_safe: errorCount === 0 && payloadBuiltCount > 0,
       site_readiness: siteReadiness,
       topErrors: errors.slice(0, 10),
       googleStatusSummary: modeEffective === "live" ? {
