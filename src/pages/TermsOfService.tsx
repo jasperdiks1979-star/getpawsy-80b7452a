@@ -1,4 +1,5 @@
 import { Layout } from '@/components/layout/Layout';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { FileText, Mail, AlertTriangle } from 'lucide-react';
 import {
@@ -13,6 +14,11 @@ const TermsOfService = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>Terms of Service | GetPawsy</title>
+        <meta name="description" content="GetPawsy terms of service. Read our terms and conditions for using the GetPawsy online store. Operated by Skidzo, Netherlands." />
+        <link rel="canonical" href="https://getpawsy.pet/terms" />
+      </Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6 max-w-4xl mx-auto">
           <motion.div
