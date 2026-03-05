@@ -12,6 +12,7 @@ const Footer = lazy(() => import('./Footer').then(m => ({ default: m.Footer })))
 // TrendingNowStrip is tiny (~1KB), static data, above-the-fold — NOT lazy to prevent CLS
 import { TrendingNowStrip } from '../marketing/TrendingNowStrip';
 import { OrganizationSchema } from '../seo/OrganizationSchema';
+import { SitewiseTrustBar } from './SitewiseTrustBar';
 
 // Lazy-load all non-critical marketing/overlay widgets
 const WelcomePopup = lazy(() => import('../marketing/WelcomePopup').then(m => ({ default: m.WelcomePopup })).catch(() => ({ default: () => null })));
@@ -104,6 +105,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <PageTransition>
         <main className="flex-1 w-full max-w-[100vw] overflow-x-hidden pb-safe">{children}</main>
       </PageTransition>
+      <SitewiseTrustBar />
       <Suspense fallback={null}>
         <Footer />
       </Suspense>
