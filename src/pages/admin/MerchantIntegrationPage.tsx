@@ -146,7 +146,7 @@ interface LiveSyncResult {
 }
 
 export default function MerchantIntegrationPage() {
-  const { invokeFunction } = useAuthenticatedFetch();
+  const { invokeFunction, refreshSessionIfNeeded } = useAuthenticatedFetch();
   const navigate = useNavigate();
   const [status, setStatus] = useState<MerchantStatus | null>(null);
   const [logs, setLogs] = useState<SyncLog[]>([]);
@@ -223,23 +223,46 @@ export default function MerchantIntegrationPage() {
     setSyncing(true);
     setLiveSyncResult(null);
     try {
-      const { data, error } = await invokeFunction<LiveSyncResult>(
-        'merchant-sync',
-        { body: { mode: 'live' } }
-      );
-      if (data) {
-        setLiveSyncResult(data);
-        if (data.ok) {
-          toast.success(`Sync: ${data.successCount} sent, ${data.errorCount} errors`);
-        } else {
-          toast.error(data.error || 'Sync failed');
-        }
-        await Promise.all([fetchStatus(), fetchLogs()]);
-      } else {
-        toast.error(error?.message || 'Sync failed');
+      // Use raw fetch with extended timeout (5 min) — supabase.functions.invoke
+      // has a short default timeout that causes "Failed to send a request" for
+      // long-running syncs (image validation + API batches takes 3+ minutes).
+      const session = await refreshSessionIfNeeded();
+      if (!session?.access_token) {
+        toast.error('Session expired. Please log in again.');
+        setSyncing(false);
+        return;
       }
-    } catch {
-      toast.error('Sync request failed');
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300_000); // 5 min
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/merchant-sync`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+            'apikey': anonKey,
+          },
+          body: JSON.stringify({ mode: 'live' }),
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeoutId);
+      const data = await res.json() as LiveSyncResult;
+      setLiveSyncResult(data);
+      if (data.ok) {
+        toast.success(`Sync: ${data.successCount} sent, ${data.errorCount} errors`);
+      } else {
+        toast.error(data.error || 'Sync failed');
+      }
+      await Promise.all([fetchStatus(), fetchLogs()]);
+    } catch (e) {
+      const msg = (e as Error).name === 'AbortError'
+        ? 'Sync timed out (>5 min). Check logs for status.'
+        : 'Sync request failed';
+      toast.error(msg);
     } finally {
       setSyncing(false);
     }
