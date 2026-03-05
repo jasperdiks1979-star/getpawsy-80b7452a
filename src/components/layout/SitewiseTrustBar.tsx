@@ -15,7 +15,7 @@ export function SitewiseTrustBar() {
       <div className="container mx-auto flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <Truck className="w-4 h-4 text-primary flex-shrink-0" />
-          <span>Free US Shipping ${FREE_SHIPPING_THRESHOLD}+</span>
+          <span>Free US Shipping on orders ${FREE_SHIPPING_THRESHOLD}+</span>
         </div>
         <div className="flex items-center gap-2">
           <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />
