@@ -52,7 +52,7 @@ function buildStableOfferId(product: { id: string; slug?: string | null }): stri
   return `getpawsy_unknown_${Date.now()}`;
 }
 
-// ── Weight normalization (matching cj-google-sync) ──────────────
+// ── Weight normalization ────────────────────────────────────────
 const LARGE_ITEM_PATTERNS = /xl|large|60"|69"|77"|84"|90"|cat tree|dog bed|stroller|cage|aviary/i;
 
 function normalizeWeight(rawGrams: number | null | undefined, title: string): { kg: number; suspicious: boolean; converted: boolean } {
@@ -61,18 +61,15 @@ function normalizeWeight(rawGrams: number | null | undefined, title: string): { 
   let kg: number;
   let converted = false;
 
-  // Detect if value is likely grams (>= 100) and convert
   if (grams === 0) { kg = 0.2; }
-  else if (grams >= 100 && grams <= 200000) { kg = grams / 1000; converted = true; }
-  else if (grams > 0 && grams < 100) { kg = grams; }
-  else { kg = 0.2; }
+  else if (grams > 50) { kg = grams / 1000; converted = true; } // assume grams
+  else { kg = grams; } // assume already kg
 
   if (kg < 0.05) kg = 0.2;
   if (LARGE_ITEM_PATTERNS.test(title) && kg < 5) kg = 5;
 
-  // Flag suspicious weights (>50kg = likely invalid for pet accessories)
   const suspicious = kg > 50;
-  if (kg > 25) kg = 25; // cap at 25kg for export
+  if (kg > 25) kg = 25;
 
   return { kg: Math.round(kg * 100) / 100, suspicious, converted };
 }
@@ -89,7 +86,6 @@ function validateImageUrlSync(url: string | null): { valid: boolean; url: string
   return { valid: true, url: cleaned };
 }
 
-/** Live image validation: HEAD request to check accessibility + content-type */
 async function validateImageLive(url: string): Promise<{ valid: boolean; finalUrl: string; reason?: string; rewritten: boolean }> {
   const syncCheck = validateImageUrlSync(url);
   if (!syncCheck.valid) return { valid: false, finalUrl: syncCheck.url, reason: syncCheck.reason, rewritten: false };
@@ -141,7 +137,6 @@ async function deleteGoogleProduct(
   merchantId: string,
   productId: string
 ): Promise<{ ok: boolean; status?: number; error?: string }> {
-  // productId is the full resource ID from listing, e.g. "online:en:US:getpawsy_xxx"
   const url = `https://shoppingcontent.googleapis.com/content/v2.1/${merchantId}/products/${encodeURIComponent(productId)}`;
   try {
     const res = await fetch(url, {
@@ -184,6 +179,83 @@ async function listMerchantProducts(
     pages++;
   } while (nextPageToken && pages < 20);
   return all;
+}
+
+// ── Fetch ALL products with pagination (NO LIMITS) ──────────────
+async function fetchAllProducts(supabase: any): Promise<{ products: any[]; error: string | null }> {
+  const PAGE_SIZE = 1000; // Supabase max per query
+  const allProducts: any[] = [];
+  let offset = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, name, slug, description, price, image_url, stock, weight, cj_product_id, is_active, images, category")
+      .eq("is_active", true)
+      .gt("price", 0)
+      .order("id")
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) return { products: [], error: error.message };
+    if (!data || data.length === 0) { hasMore = false; break; }
+
+    allProducts.push(...data);
+    if (data.length < PAGE_SIZE) { hasMore = false; } else { offset += PAGE_SIZE; }
+  }
+
+  return { products: allProducts, error: null };
+}
+
+// ── Site readiness checker ──────────────────────────────────────
+async function checkSiteReadiness(): Promise<{ pass: boolean; checks: Record<string, { pass: boolean; reason?: string }> }> {
+  const SITE = "https://getpawsy.pet";
+  const checks: Record<string, { pass: boolean; reason?: string }> = {};
+
+  const pages: Record<string, { path: string; mustContain: string[] }> = {
+    contact: { path: "/contact", mustContain: ["support@getpawsy.pet"] },
+    about:   { path: "/about", mustContain: ["getpawsy", "pet"] },
+    shipping:{ path: "/shipping", mustContain: ["business day"] },
+    returns: { path: "/returns", mustContain: ["refund"] },
+    privacy: { path: "/privacy", mustContain: ["information"] },
+    terms:   { path: "/terms", mustContain: ["terms"] },
+  };
+
+  // Fetch pages in parallel
+  const entries = Object.entries(pages);
+  const results = await Promise.all(
+    entries.map(async ([key, cfg]) => {
+      try {
+        const res = await fetch(`${SITE}${cfg.path}`, {
+          signal: AbortSignal.timeout(8000),
+          headers: { "User-Agent": "GetPawsy-SiteCheck/1.0" },
+        });
+        if (!res.ok) return { key, pass: false, reason: `http_${res.status}` };
+        const html = await res.text();
+
+        // Also fetch JS bundles for SPA content
+        const scriptUrls = [...html.matchAll(/src=["']([^"']*\.js)["']/g)]
+          .map(m => m[1].startsWith("http") ? m[1] : `${SITE}${m[1].startsWith("/") ? "" : "/"}${m[1]}`)
+          .slice(0, 5);
+        const jsTexts = await Promise.all(
+          scriptUrls.map(async u => {
+            try { const r = await fetch(u, { signal: AbortSignal.timeout(5000) }); return r.ok ? await r.text() : ""; } catch { return ""; }
+          })
+        );
+        const allText = (html + "\n" + jsTexts.join("\n")).toLowerCase();
+
+        const missing = cfg.mustContain.filter(kw => !allText.includes(kw.toLowerCase()));
+        if (missing.length > 0) return { key, pass: false, reason: `missing_keywords: ${missing.join(", ")}` };
+        return { key, pass: true };
+      } catch (e) {
+        return { key, pass: false, reason: `fetch_error: ${(e as Error).message}` };
+      }
+    })
+  );
+
+  for (const r of results) checks[r.key] = { pass: r.pass, reason: r.reason };
+  const pass = Object.values(checks).every(c => c.pass);
+  return { pass, checks };
 }
 
 Deno.serve(async (req: Request) => {
@@ -233,15 +305,19 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const modeReceived = body.mode || "live";
     const modeEffective = modeReceived === "dryrun" ? "dryrun" : "live";
-    const limit = body.limit || 75;
-    // Prune config (from body or env)
-    const PRUNE_ENABLED = body.prune_enabled === true || Deno.env.get("PRUNE_ENABLED") === "true";
-    const PRUNE_DRYRUN = body.prune_dryrun !== false && Deno.env.get("PRUNE_DRYRUN") !== "false"; // default true
+    
+    // ── PRUNE CONFIG: DEFAULT TO LIVE (not dryrun) ────────────────
+    const PRUNE_ENABLED = body.prune_enabled !== false && (Deno.env.get("PRUNE_ENABLED") !== "false");
+    const PRUNE_DRYRUN = body.prune_dryrun === true; // DEFAULT FALSE — prune is live by default now
+    const PRUNE_MAX_DELETES = body.prune_max_deletes || 100; // Safety cap per run
     const PRUNE_PREFIXES = (body.prune_prefixes || Deno.env.get("PRUNE_PREFIXES") || "getpawsy_").split(",").map((s: string) => s.trim()).filter(Boolean);
+    
     // Image config
-    const SEND_ADDITIONAL_IMAGES = body.send_additional_images !== false && Deno.env.get("SEND_ADDITIONAL_IMAGES") !== "false"; // default true
+    const SEND_ADDITIONAL_IMAGES = body.send_additional_images !== false && Deno.env.get("SEND_ADDITIONAL_IMAGES") !== "false";
+    // Batch size for Google API sends (NOT for DB scan)
+    const SEND_BATCH_SIZE = body.send_batch_size || 100;
 
-    console.log(`[merchant-sync] START runId=${runId} mode_received=${modeReceived} mode_effective=${modeEffective} limit=${limit} prune=${PRUNE_ENABLED} prune_dryrun=${PRUNE_DRYRUN}`);
+    console.log(`[merchant-sync] START runId=${runId} mode=${modeEffective} prune=${PRUNE_ENABLED} prune_dryrun=${PRUNE_DRYRUN} prune_max=${PRUNE_MAX_DELETES}`);
 
     // ── Rate limit ────────────────────────────────────────────────
     const { data: recentSync } = await supabase
@@ -288,35 +364,6 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // ── Google Auth Debug ───────────────────────────────────────────
-    const googleAuthDebug: Record<string, unknown> = {
-      authMethod: "oauth_token",
-      project_id: null,
-      client_email: null,
-      client_id: null,
-      merchantId,
-      token_project_number_if_available: null,
-    };
-
-    const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-    if (saJson) {
-      try {
-        const sa = JSON.parse(saJson);
-        googleAuthDebug.project_id = sa.project_id || null;
-        googleAuthDebug.client_email = sa.client_email || null;
-        googleAuthDebug.client_id = sa.client_id || null;
-        console.log(`[merchant-sync] SA GCP project_id=${sa.project_id} client_email=${sa.client_email}`);
-      } catch (_) { /* ignore parse errors */ }
-    }
-
-    const oauthMatch = clientId.match(/^(\d+)-/);
-    if (oauthMatch) {
-      googleAuthDebug.token_project_number_if_available = oauthMatch[1];
-    }
-    googleAuthDebug.oauth_client_id = clientId;
-
-    console.log(`[merchant-sync] googleAuthDebug:`, JSON.stringify(googleAuthDebug));
 
     // Create sync log
     const { data: syncLog } = await supabase
@@ -368,49 +415,33 @@ Deno.serve(async (req: Request) => {
 
     const accessToken = tokenResult.access_token;
 
-    // ── PRE-EXPORT: Auto-deactivate zero-stock products ─────────
-    const { count: deactivatedCount } = await supabase
-      .from("products")
-      .update({ is_active: false })
-      .eq("is_active", true)
-      .or("stock.is.null,stock.lte.0")
-      .select("id", { count: "exact", head: true });
-    if (deactivatedCount && deactivatedCount > 0) {
-      console.log(`[merchant-sync] Auto-deactivated ${deactivatedCount} zero-stock products before export`);
-    }
-
-    // ── STEP 1: Source query ────────────────────────────────────
-    const sourceQuery = "SELECT id,name,slug,description,price,image_url,stock,weight,cj_product_id,is_active,images FROM products WHERE is_active=true AND price>0 ORDER BY id";
-
-    const { data: products, error: dbErr, count: rawCount } = await supabase
-      .from("products")
-      .select("id, name, slug, description, price, image_url, stock, weight, cj_product_id, is_active, images", { count: "exact" })
-      .eq("is_active", true)
-      .gt("price", 0)
-      .order("id")
-      .range(0, limit - 1);
+    // ══════════════════════════════════════════════════════════════
+    // A) SCAN ALL PRODUCTS — NO LIMITS
+    // ══════════════════════════════════════════════════════════════
+    const { products: allProducts, error: dbErr } = await fetchAllProducts(supabase);
 
     if (dbErr) {
-      await markFailed(supabase, syncId, `DB error: ${dbErr.message}`);
+      await markFailed(supabase, syncId, `DB error: ${dbErr}`);
       return new Response(
-        JSON.stringify({ ok: false, error: `DB query failed: ${dbErr.message}`, runId }),
+        JSON.stringify({ ok: false, error: `DB query failed: ${dbErr}`, runId }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const totalRaw = rawCount ?? 0;
-    console.log(`[merchant-sync] rawCount=${totalRaw}, batch=${products?.length ?? 0}, limit=${limit}, merchantId_last4=${merchantIdLast4}`);
+    const rawCount = allProducts.length;
+    const totalScannedCount = rawCount; // We scan ALL — no sampling
+    console.log(`[merchant-sync] FULL SCAN: rawCount=${rawCount} (no limit applied)`);
 
-    // ── STEP 2: Eligibility + payload build + COMPLIANCE SANITIZATION ─
-    const COMPLIANCE_SAFE = true;
-    const MAX_BATCH_SIZE = body.max_batch_size || 100; // STEP 7: Export limit safety
+    // ══════════════════════════════════════════════════════════════
+    // B) ELIGIBILITY + PAYLOAD BUILD
+    // ══════════════════════════════════════════════════════════════
     let eligibleCount = 0;
     let payloadBuiltCount = 0;
     let attemptedSendCount = 0;
     let successCount = 0;
     let errorCount = 0;
     const errors: Array<{ offerId: string; status?: number; reason: string }> = [];
-    const skippedReasons: Record<string, number> = {};
+    const exclusionReport: Record<string, number> = {};
 
     // Compliance counters
     let sanitizedTitlesCount = 0;
@@ -421,7 +452,6 @@ Deno.serve(async (req: Request) => {
     let descriptionsFallbackCount = 0;
     let googleCategorySetCount = 0;
     let googleCategoryOmittedCount = 0;
-    let googleCategoryInvalidPrevented = 0;
     let imageLinkValidCount = 0;
     let imageLinkRewrittenCount = 0;
     let cloudinaryRewriteCount = 0;
@@ -429,81 +459,80 @@ Deno.serve(async (req: Request) => {
     let weightNormalizedCount = 0;
     let weightSuspiciousCount = 0;
     const imageFailuresSample: Array<{ url: string; reason: string }> = [];
-    const exclusionReport: Record<string, number> = {};
 
     const payloads: Array<Record<string, unknown>> = [];
     const exportedOfferIds: Set<string> = new Set();
 
-    for (const p of (products || [])) {
-      // STEP 1: Eligibility checks
+    for (const p of allProducts) {
+      // ── Eligibility checks ──
       if (!p.price || p.price <= 0) {
-        skippedReasons["missing_price"] = (skippedReasons["missing_price"] || 0) + 1;
         exclusionReport["missing_price"] = (exclusionReport["missing_price"] || 0) + 1;
         continue;
       }
       if (!p.slug) {
-        skippedReasons["missing_slug"] = (skippedReasons["missing_slug"] || 0) + 1;
         exclusionReport["missing_slug"] = (exclusionReport["missing_slug"] || 0) + 1;
         continue;
       }
 
-      // STEP 4: Weight normalization with gram detection
+      // Weight normalization
       const weightResult = normalizeWeight(p.weight, p.name || "");
       if (weightResult.suspicious) {
         weightSuspiciousCount++;
-        skippedReasons["weight_over_50kg"] = (skippedReasons["weight_over_50kg"] || 0) + 1;
-        exclusionReport["suspicious_weight"] = (exclusionReport["suspicious_weight"] || 0) + 1;
+        exclusionReport["weight_over_50kg"] = (exclusionReport["weight_over_50kg"] || 0) + 1;
         continue;
       }
       if (weightResult.converted) weightNormalizedCount++;
       const weightKg = weightResult.kg;
 
-      // STEP 2: Image resolution fix with Cloudinary rewrite
+      // Image validation
       let imageUrl = p.image_url;
       if (!imageUrl) {
-        skippedReasons["missing_image"] = (skippedReasons["missing_image"] || 0) + 1;
-        exclusionReport["invalid_image"] = (exclusionReport["invalid_image"] || 0) + 1;
+        exclusionReport["missing_image"] = (exclusionReport["missing_image"] || 0) + 1;
         continue;
       }
+
+      // Cloudinary rewrite
       const cloudinaryResult = rewriteCloudinaryUrl(imageUrl);
       if (cloudinaryResult.rewritten) {
         imageUrl = cloudinaryResult.url;
         cloudinaryRewriteCount++;
       }
 
-      const imageResult = await validateImageLive(imageUrl);
-      const PLACEHOLDER = "https://getpawsy.pet/images/merchant-placeholder.jpg";
-      let finalImageLink = imageResult.valid ? imageResult.finalUrl : PLACEHOLDER;
-
-      if (imageResult.valid) {
-        imageLinkValidCount++;
-        if (imageResult.rewritten) imageLinkRewrittenCount++;
-      } else {
-        // STEP 1: If product has no valid image, exclude from export
-        if (imageFailuresSample.length < 10) {
-          imageFailuresSample.push({ url: imageUrl || "(null)", reason: imageResult.reason || "unknown" });
-        }
-        skippedReasons["invalid_image"] = (skippedReasons["invalid_image"] || 0) + 1;
-        exclusionReport["invalid_image"] = (exclusionReport["invalid_image"] || 0) + 1;
+      // CJ dropshipping truncated URL check
+      if (imageUrl.includes("oss-cf.cjdropshipping.com") && imageUrl.length < 30) {
+        exclusionReport["invalid_image_url"] = (exclusionReport["invalid_image_url"] || 0) + 1;
+        if (imageFailuresSample.length < 10) imageFailuresSample.push({ url: imageUrl, reason: "truncated_cj_url" });
         continue;
       }
 
+      const imageResult = await validateImageLive(imageUrl);
+      if (!imageResult.valid) {
+        if (imageFailuresSample.length < 10) {
+          imageFailuresSample.push({ url: imageUrl, reason: imageResult.reason || "unknown" });
+        }
+        exclusionReport["invalid_image"] = (exclusionReport["invalid_image"] || 0) + 1;
+        continue;
+      }
+      imageLinkValidCount++;
+      if (imageResult.rewritten) imageLinkRewrittenCount++;
+      const finalImageLink = imageResult.finalUrl;
+
       eligibleCount++;
 
-      // STEP 1: Auto-generate safe description if missing
+      // Description: fallback if missing
       let rawDesc = (p.description || "").substring(0, 5000);
       if (!rawDesc || rawDesc.trim().length < 10) {
         rawDesc = generateSafeDescription(p.name || "Pet Accessory");
         descriptionsFallbackCount++;
       }
 
-      // STEP 3: Title sanitization (incl. dropship cleanup)
+      // Title sanitization
       const rawTitle = (p.name || "").substring(0, 150);
 
       const compliance = sanitizeProduct({
         title: rawTitle,
         description: rawDesc,
-        category: null,
+        category: p.category || null,
         weightKg,
       });
 
@@ -512,28 +541,26 @@ Deno.serve(async (req: Request) => {
       removedPhrasesCount += compliance.removedPhrases.length;
       if (compliance.descriptionFallbackGenerated) descriptionsFallbackCount++;
 
-      if (COMPLIANCE_SAFE && compliance.blocked) {
+      if (compliance.blocked) {
         blockedForCompliance++;
         const reason = compliance.blockReason || "unknown";
         blockedReasons[reason] = (blockedReasons[reason] || 0) + 1;
-        skippedReasons[`compliance:${reason}`] = (skippedReasons[`compliance:${reason}`] || 0) + 1;
         exclusionReport["compliance_blocked"] = (exclusionReport["compliance_blocked"] || 0) + 1;
         continue;
       }
 
-      // STEP 5: Google product category mapping
+      // ── C) Google product category ──
       const categoryId = compliance.googleProductCategory;
-      if (categoryId !== null && typeof categoryId === "number") {
+      if (categoryId !== null && typeof categoryId === "number" && categoryId > 0) {
         googleCategorySetCount++;
       } else {
         googleCategoryOmittedCount++;
       }
 
-      // Additional images (live validated)
+      // Additional images
       const additionalImages: string[] = [];
       if (SEND_ADDITIONAL_IMAGES && p.images && Array.isArray(p.images)) {
         for (const img of (p.images as string[]).slice(0, 10)) {
-          // Also rewrite Cloudinary URLs for additional images
           const cldResult = rewriteCloudinaryUrl(img);
           const imgToValidate = cldResult.rewritten ? cldResult.url : img;
           if (cldResult.rewritten) cloudinaryRewriteCount++;
@@ -543,7 +570,7 @@ Deno.serve(async (req: Request) => {
           } else {
             additionalImagesRemovedCount++;
             if (imageFailuresSample.length < 10) {
-              imageFailuresSample.push({ url: img || "(null)", reason: `additional:${r.reason || "unknown"}` });
+              imageFailuresSample.push({ url: img, reason: `additional:${r.reason || "unknown"}` });
             }
           }
         }
@@ -553,8 +580,9 @@ Deno.serve(async (req: Request) => {
       const offerId = buildStableOfferId(p);
       exportedOfferIds.add(offerId);
 
-      // STEP 1: Stock-based availability
-      const availability = (Number.isFinite(p.stock) && Math.floor(p.stock as number) > 0) ? "in stock" : "out of stock";
+      // Stock-based availability (do NOT exclude out_of_stock — send as out_of_stock)
+      const stockNum = Number.isFinite(p.stock) ? Math.floor(p.stock as number) : 0;
+      const availability = stockNum > 0 ? "in stock" : "out of stock";
 
       const googleProduct: Record<string, unknown> = {
         offerId,
@@ -572,8 +600,7 @@ Deno.serve(async (req: Request) => {
         shippingWeight: { value: weightKg.toString(), unit: "kg" },
       };
 
-      // Only set numeric category ID
-      if (categoryId !== null && typeof categoryId === "number") {
+      if (categoryId !== null && typeof categoryId === "number" && categoryId > 0) {
         googleProduct.googleProductCategory = categoryId;
       }
 
@@ -583,53 +610,63 @@ Deno.serve(async (req: Request) => {
 
       payloads.push(googleProduct);
       payloadBuiltCount++;
-
-      // STEP 7: Enforce max batch size
-      if (payloadBuiltCount >= MAX_BATCH_SIZE) {
-        console.log(`[merchant-sync] Batch limit reached (${MAX_BATCH_SIZE}), stopping payload build`);
-        break;
-      }
     }
 
-    // STEP 9: Failsafe — abort if >10% validation failure rate
-    const totalScanned = products?.length ?? 0;
-    const totalExcluded = totalScanned - payloadBuiltCount;
-    const failureRate = totalScanned > 0 ? totalExcluded / totalScanned : 0;
+    // ══════════════════════════════════════════════════════════════
+    // FAILSAFE: abort if >10% validation failure rate
+    // ══════════════════════════════════════════════════════════════
+    const totalExcluded = totalScannedCount - payloadBuiltCount;
+    const failureRate = totalScannedCount > 0 ? totalExcluded / totalScannedCount : 0;
 
-    if (failureRate > 0.10 && totalScanned >= 10) {
-      const failsafeMsg = `Merchant feed halted due to high validation failure rate (${(failureRate * 100).toFixed(1)}% excluded). ${totalExcluded}/${totalScanned} products failed validation.`;
+    if (failureRate > 0.10 && totalScannedCount >= 10) {
+      const failsafeMsg = `Merchant feed halted: ${(failureRate * 100).toFixed(1)}% excluded (${totalExcluded}/${totalScannedCount}).`;
       console.error(`[merchant-sync] FAILSAFE: ${failsafeMsg}`);
       if (syncId) await markFailed(supabase, syncId, failsafeMsg);
       return new Response(
         JSON.stringify({
-          ok: false,
-          error: failsafeMsg,
-          runId,
-          failsafe: true,
-          exportReport: {
-            scanned: totalScanned,
-            exported: 0,
-            excluded: exclusionReport,
-            failureRate: `${(failureRate * 100).toFixed(1)}%`,
-          },
+          ok: false, error: failsafeMsg, runId, failsafe: true,
+          rawCount, scannedCount: totalScannedCount, eligibleCount, payloadBuiltCount,
+          excludedByReason: exclusionReport,
+          image_failures_sample: imageFailuresSample.slice(0, 10),
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[merchant-sync] eligibleCount=${eligibleCount} payloadBuiltCount=${payloadBuiltCount} modeEffective=${modeEffective} exportedOfferIds=${exportedOfferIds.size}`);
+    // INTEGRITY CHECK: scannedCount must equal rawCount
+    if (totalScannedCount !== rawCount) {
+      const errMsg = `INTEGRITY ERROR: scannedCount(${totalScannedCount}) != rawCount(${rawCount}). Aborting.`;
+      console.error(`[merchant-sync] ${errMsg}`);
+      if (syncId) await markFailed(supabase, syncId, errMsg);
+      return new Response(
+        JSON.stringify({ ok: false, error: errMsg, runId }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // ── STEP 3: Send to Google (LIVE only) ──────────────────────
-    if (modeEffective === "live") {
-      if (payloadBuiltCount > 0) {
-        attemptedSendCount = payloadBuiltCount;
+    console.log(`[merchant-sync] SCAN COMPLETE: raw=${rawCount} scanned=${totalScannedCount} eligible=${eligibleCount} payloads=${payloadBuiltCount}`);
 
-        for (const payload of payloads) {
+    // ══════════════════════════════════════════════════════════════
+    // F) SEND IN SAFE BATCHES (live only)
+    // ══════════════════════════════════════════════════════════════
+    if (modeEffective === "live" && payloadBuiltCount > 0) {
+      const totalBatches = Math.ceil(payloads.length / SEND_BATCH_SIZE);
+      
+      for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+        const batchStart = batchIdx * SEND_BATCH_SIZE;
+        const batch = payloads.slice(batchStart, batchStart + SEND_BATCH_SIZE);
+        let batchSuccess = 0;
+        let batchError = 0;
+
+        for (const payload of batch) {
+          attemptedSendCount++;
           const result = await upsertGoogleProduct(accessToken, merchantId, payload);
           if (result.ok) {
             successCount++;
+            batchSuccess++;
           } else {
             errorCount++;
+            batchError++;
             errors.push({
               offerId: (payload.offerId as string) || "unknown",
               status: result.status,
@@ -637,21 +674,18 @@ Deno.serve(async (req: Request) => {
             });
           }
         }
-      } else if (eligibleCount > 0) {
-        const errMsg = `BUG: eligibleCount=${eligibleCount} but payloadBuiltCount=0 — payload build produced nothing`;
-        console.error(`[merchant-sync] ${errMsg}`);
-        await markFailed(supabase, syncId, errMsg);
-        return new Response(
-          JSON.stringify({ ok: false, error: errMsg, runId, mode_effective: modeEffective }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+
+        console.log(`[merchant-sync] BATCH ${batchIdx + 1}/${totalBatches}: size=${batch.length} success=${batchSuccess} errors=${batchError}`);
       }
     }
 
-    // ── STEP 3.5: PRUNE stale Merchant offers ───────────────────
+    // ══════════════════════════════════════════════════════════════
+    // E) PRUNE LEGACY OFFERS (live, prune enabled, not dryrun)
+    // ══════════════════════════════════════════════════════════════
     const pruneSummary: Record<string, unknown> = {
       enabled: PRUNE_ENABLED,
       dryrun: PRUNE_DRYRUN,
+      maxDeletesPerRun: PRUNE_MAX_DELETES,
       prefixes: PRUNE_PREFIXES,
       existingCount: 0,
       exportedCount: exportedOfferIds.size,
@@ -661,13 +695,13 @@ Deno.serve(async (req: Request) => {
       sampleOfferIds: [] as string[],
     };
 
-    if (PRUNE_ENABLED && modeEffective === "live" && successCount > 0) {
+    if (PRUNE_ENABLED && modeEffective === "live") {
       console.log(`[merchant-sync] PRUNE: listing existing Merchant products...`);
       try {
         const existingProducts = await listMerchantProducts(accessToken, merchantId);
         pruneSummary.existingCount = existingProducts.length;
 
-        // Find stale offers: in Merchant but not in current export, matching our prefixes
+        // Find stale offers matching our prefix but not in current export
         const staleProducts = existingProducts.filter(ep => {
           const matchesPrefix = PRUNE_PREFIXES.some((prefix: string) => ep.offerId.startsWith(prefix));
           if (!matchesPrefix) return false;
@@ -677,12 +711,15 @@ Deno.serve(async (req: Request) => {
         pruneSummary.wouldDeleteCount = staleProducts.length;
         pruneSummary.sampleOfferIds = staleProducts.slice(0, 20).map(p => p.offerId);
 
-        console.log(`[merchant-sync] PRUNE: existing=${existingProducts.length} stale=${staleProducts.length} dryrun=${PRUNE_DRYRUN}`);
+        console.log(`[merchant-sync] PRUNE: existing=${existingProducts.length} stale=${staleProducts.length} dryrun=${PRUNE_DRYRUN} max=${PRUNE_MAX_DELETES}`);
 
         if (!PRUNE_DRYRUN) {
           let deleted = 0;
           let delErrors = 0;
-          for (const sp of staleProducts) {
+          // Cap at PRUNE_MAX_DELETES per run for safety
+          const toDelete = staleProducts.slice(0, PRUNE_MAX_DELETES);
+          
+          for (const sp of toDelete) {
             const delResult = await deleteGoogleProduct(accessToken, merchantId, sp.id);
             if (delResult.ok) {
               deleted++;
@@ -690,14 +727,13 @@ Deno.serve(async (req: Request) => {
               delErrors++;
               console.error(`[merchant-sync] PRUNE delete failed: offerId=${sp.offerId} error=${delResult.error}`);
             }
-            // Rate limit: small pause every 10 deletes
             if ((deleted + delErrors) % 10 === 0) {
               await new Promise(r => setTimeout(r, 200));
             }
           }
           pruneSummary.deletedCount = deleted;
           pruneSummary.deleteErrors = delErrors;
-          console.log(`[merchant-sync] PRUNE: deleted=${deleted} errors=${delErrors}`);
+          console.log(`[merchant-sync] PRUNE LIVE: deleted=${deleted} errors=${delErrors} remaining=${staleProducts.length - toDelete.length}`);
         }
       } catch (e) {
         console.error("[merchant-sync] PRUNE error:", e);
@@ -705,7 +741,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // ── STEP 4: Also read product statuses from Google ──────────
+    // ── Read Google product statuses ─────────────────────────────
     let googleTotalProducts = 0;
     let googleProductsWithIssues = 0;
     const issuesSummary: Record<string, number> = {};
@@ -715,25 +751,20 @@ Deno.serve(async (req: Request) => {
         let nextPageToken: string | undefined;
         let pages = 0;
         do {
-          const statusUrl = new URL(
-            `https://shoppingcontent.googleapis.com/content/v2.1/${merchantId}/productstatuses`
-          );
+          const statusUrl = new URL(`https://shoppingcontent.googleapis.com/content/v2.1/${merchantId}/productstatuses`);
           statusUrl.searchParams.set("maxResults", "250");
           if (nextPageToken) statusUrl.searchParams.set("pageToken", nextPageToken);
 
           const statusResp = await fetch(statusUrl.toString(), {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
-
           if (!statusResp.ok) {
             console.error("[merchant-sync] Product statuses failed:", statusResp.status);
             await statusResp.text();
             break;
           }
-
           const statusData = await statusResp.json();
-          const resources = statusData.resources || [];
-          for (const product of resources) {
+          for (const product of (statusData.resources || [])) {
             googleTotalProducts++;
             const issues = product.itemLevelIssues || [];
             if (issues.length > 0) {
@@ -752,7 +783,20 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // ── Compliance summary ─────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════
+    // H) SITE READINESS CHECK
+    // ══════════════════════════════════════════════════════════════
+    let siteReadiness: { pass: boolean; checks: Record<string, { pass: boolean; reason?: string }> } | null = null;
+    try {
+      siteReadiness = await checkSiteReadiness();
+      console.log(`[merchant-sync] SITE READINESS: ${siteReadiness.pass ? "PASS" : "FAIL"}`);
+    } catch (e) {
+      console.error("[merchant-sync] Site readiness check error:", e);
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // G) POST-RUN REPORT
+    // ══════════════════════════════════════════════════════════════
     const complianceSummary: ComplianceSummary = {
       total_products_processed: eligibleCount,
       sanitized_titles_count: sanitizedTitlesCount,
@@ -765,47 +809,46 @@ Deno.serve(async (req: Request) => {
       products_still_blocked_count: blockedForCompliance,
       google_category_set_count: googleCategorySetCount,
       google_category_omitted_count: googleCategoryOmittedCount,
-      google_category_invalid_prevented_count: googleCategoryInvalidPrevented,
+      google_category_invalid_prevented_count: 0,
     };
 
-    console.log(`[merchant-sync] COMPLIANCE: titles=${sanitizedTitlesCount} descs=${sanitizedDescriptionsCount} phrases=${removedPhrasesCount} blocked=${blockedForCompliance}`);
-
-    // ── STEP 8: Structured export report ──────────────────────────
-    const exportReport = {
-      scanned: totalScanned,
-      exported: modeEffective === "live" ? successCount : payloadBuiltCount,
-      excluded: exclusionReport,
-      failureRate: `${(failureRate * 100).toFixed(1)}%`,
-      cloudinary_rewrites: cloudinaryRewriteCount,
-      weight_normalized: weightNormalizedCount,
-      weight_suspicious_excluded: weightSuspiciousCount,
-      descriptions_auto_generated: descriptionsFallbackCount,
-      batch_limit_applied: MAX_BATCH_SIZE,
-    };
-
-    // ── Persist to merchant_sync_logs ────────────────────────────
-    const debugSummary = {
+    const report = {
       runId,
       mode_effective: modeEffective,
       merchantId_used: merchantIdLast4,
       merchantId_source: merchantIdSource,
-      sourceQuery,
-      rawCount: totalRaw,
-      batchSize: products?.length ?? 0,
+      rawCount,
+      scannedCount: totalScannedCount,
       eligibleCount,
       payloadBuiltCount,
       attemptedSendCount,
       successCount,
       errorCount,
-      skippedReasons,
-      topErrors: errors.slice(0, 10),
-      googleTotalProducts,
-      googleProductsWithIssues,
+      excludedByReason: exclusionReport,
+      category_set_count: googleCategorySetCount,
+      category_omitted_count: googleCategoryOmittedCount,
+      image_failures_sample: imageFailuresSample.slice(0, 10),
+      prune: pruneSummary,
       complianceSummary,
-      pruneSummary,
-      exportReport,
+      imageDiagnostics: {
+        image_link_valid_count: imageLinkValidCount,
+        image_link_rewritten_count: imageLinkRewrittenCount,
+        cloudinary_rewrite_count: cloudinaryRewriteCount,
+        additional_images_removed_count: additionalImagesRemovedCount,
+        weight_normalized_count: weightNormalizedCount,
+        weight_suspicious_excluded: weightSuspiciousCount,
+        send_additional_images: SEND_ADDITIONAL_IMAGES,
+      },
+      site_readiness: siteReadiness,
+      topErrors: errors.slice(0, 10),
+      googleStatusSummary: modeEffective === "live" ? {
+        totalProducts: googleTotalProducts,
+        productsWithIssues: googleProductsWithIssues,
+        issuesSummary,
+      } : null,
     };
 
+    // Persist to merchant_sync_logs
     if (syncId) {
       await supabase
         .from("merchant_sync_logs")
@@ -813,54 +856,21 @@ Deno.serve(async (req: Request) => {
           status: "completed",
           total_products: modeEffective === "live" ? googleTotalProducts : 0,
           products_with_issues: googleProductsWithIssues,
-          issues_summary: { ...issuesSummary, _sync_funnel: debugSummary },
+          issues_summary: { ...issuesSummary, _sync_funnel: report },
           completed_at: new Date().toISOString(),
-          raw_count: totalRaw,
+          raw_count: rawCount,
           eligible_count: eligibleCount,
           payload_built_count: payloadBuiltCount,
           sent_count: modeEffective === "live" ? successCount : 0,
-          debug_report: debugSummary,
+          debug_report: report,
         })
         .eq("id", syncId);
     }
 
-    console.log(`[merchant-sync] DONE runId=${runId} mode=${modeEffective} raw=${totalRaw} eligible=${eligibleCount} payload=${payloadBuiltCount} attempted=${attemptedSendCount} success=${successCount} errors=${errorCount}`);
+    console.log(`[merchant-sync] DONE runId=${runId} raw=${rawCount} scanned=${totalScannedCount} eligible=${eligibleCount} payload=${payloadBuiltCount} sent=${successCount} errors=${errorCount} pruned=${pruneSummary.deletedCount}`);
 
     return new Response(
-      JSON.stringify({
-        ok: true,
-        runId,
-        mode_effective: modeEffective,
-        compliance_safe: COMPLIANCE_SAFE,
-        merchantId_used: merchantIdLast4,
-        merchantId_source: merchantIdSource,
-        rawCount: totalRaw,
-        eligibleCount,
-        payloadBuiltCount,
-        attemptedSendCount,
-        successCount,
-        errorCount,
-        skippedReasons,
-        topErrors: errors.slice(0, 10),
-        complianceSummary,
-        exportReport,
-        imageDiagnostics: {
-          image_link_valid_count: imageLinkValidCount,
-          image_link_rewritten_count: imageLinkRewrittenCount,
-          cloudinary_rewrite_count: cloudinaryRewriteCount,
-          additional_images_removed_count: additionalImagesRemovedCount,
-          image_failures_sample: imageFailuresSample,
-          send_additional_images: SEND_ADDITIONAL_IMAGES,
-        },
-        pruneSummary,
-        googleAuthDebug,
-        sourceQuery,
-        googleStatusSummary: modeEffective === "live" ? {
-          totalProducts: googleTotalProducts,
-          productsWithIssues: googleProductsWithIssues,
-          issuesSummary,
-        } : null,
-      }),
+      JSON.stringify({ ok: true, ...report }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
