@@ -304,6 +304,7 @@ const BestSelfCleaningLitterBox2026 = lazyWithRetry(() => import("./pages/guides
 const IndoorCatFurnitureGuide = lazyWithRetry(() => import("./pages/guides/IndoorCatFurnitureGuide"));
 const GrowthVerification = lazyWithRetry(() => import("./pages/GrowthVerification"));
 const Healthz = lazyWithRetry(() => import("./pages/Healthz"));
+const ComplianceEvidence = lazyWithRetry(() => import("./pages/ComplianceEvidence"));
 const WhyTrustOurReviews = lazyWithRetry(() => import("./pages/WhyTrustOurReviews"));
 const AboutTheAuthor = lazyWithRetry(() => import("./pages/AboutTheAuthor"));
 const HowWeTestProducts = lazyWithRetry(() => import("./pages/HowWeTestProducts"));
@@ -389,6 +390,7 @@ const App = () => {
                     <Routes>
                       <Route path="/" element={<Suspense fallback={null}><Index /></Suspense>} />
                       <Route path="/healthz" element={<Suspense fallback={null}><Healthz /></Suspense>} />
+                      <Route path="/compliance" element={<Suspense fallback={null}><ComplianceEvidence /></Suspense>} />
                       <Route path="/products" element={<Suspense fallback={<RouteLoader />}><Products /></Suspense>} />
                       <Route path="/product/:id" element={<Suspense fallback={<RouteLoader />}><ProductDetail /></Suspense>} />
                       <Route path="/cart" element={<Suspense fallback={<RouteLoader />}><Cart /></Suspense>} />

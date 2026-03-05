@@ -377,7 +377,7 @@ Deno.serve(async (req: Request) => {
     const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
     const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
     const merchantId = tokenRecord.merchant_center_id || Deno.env.get("GOOGLE_MERCHANT_ID");
-    const merchantIdLast4 = merchantId ? merchantId.slice(-4) : "none";
+    const merchantIdMasked = merchantId ? `***${merchantId.slice(-6)}` : "none";
     const merchantIdSource = tokenRecord.merchant_center_id ? "oauth_token_record" : "GOOGLE_MERCHANT_ID";
 
     if (!merchantId) {
@@ -386,6 +386,18 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // CRITICAL: merchantId must be the FULL ID (10 digits for account 5717571566)
+    if (merchantId.length < 9) {
+      const errMsg = `MERCHANT_ID_TRUNCATED: merchantId="${merchantId}" (length=${merchantId.length}) is too short. Expected full 10-digit ID. Source: ${merchantIdSource}. Aborting.`;
+      console.error(`[merchant-sync] ${errMsg}`);
+      return new Response(
+        JSON.stringify({ ok: false, error: errMsg, runId }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`[merchant-sync] MerchantId validated: masked=${merchantIdMasked} length=${merchantId.length} source=${merchantIdSource}`);
 
     // Create sync log
     const { data: syncLog } = await supabase
@@ -838,7 +850,8 @@ Deno.serve(async (req: Request) => {
     const report = {
       runId,
       mode_effective: modeEffective,
-      merchantId_used: merchantIdLast4,
+      merchantId_used: merchantIdMasked,
+      merchantId_length: merchantId.length,
       merchantId_source: merchantIdSource,
       rawCount,
       scannedCount: totalScannedCount,

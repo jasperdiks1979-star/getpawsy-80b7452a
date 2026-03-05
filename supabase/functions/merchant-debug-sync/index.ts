@@ -92,6 +92,8 @@ Deno.serve(async (req: Request) => {
     };
 
     const merchantId = Deno.env.get("GOOGLE_MERCHANT_ID") || null;
+    const merchantIdLength = merchantId ? merchantId.length : 0;
+    const merchantIdValid = merchantIdLength >= 9;
     const hasServiceAccount = !!Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
     const hasOAuth = envConfigStatus.GOOGLE_OAUTH_CLIENT_ID && envConfigStatus.GOOGLE_OAUTH_CLIENT_SECRET;
 
@@ -101,7 +103,9 @@ Deno.serve(async (req: Request) => {
       project_id: null,
       client_email: null,
       client_id: null,
-      merchantId: merchantId,
+      merchantId: merchantId ? `***${merchantId.slice(-6)}` : null,
+      merchantId_length: merchantIdLength,
+      merchantId_valid: merchantIdValid,
       token_project_number_if_available: null,
     };
 
@@ -439,7 +443,9 @@ Deno.serve(async (req: Request) => {
         wouldCallEndpoint: payloadBuiltCount > 0
           ? "POST https://shoppingcontent.googleapis.com/content/v2.1/{merchantId}/products"
           : null,
-        merchantId: merchantId ? `***${merchantId.slice(-4)}` : null,
+        merchantId: merchantId ? `***${merchantId.slice(-6)}` : null,
+        merchantId_length: merchantIdLength,
+        merchantId_valid: merchantIdValid,
         authMethod,
       },
       googleAuthDebug,

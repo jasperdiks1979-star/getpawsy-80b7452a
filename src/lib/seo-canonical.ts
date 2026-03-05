@@ -27,6 +27,7 @@ export function buildCanonicalUrl(path: string): string {
  */
 export const NOINDEX_PATHS = new Set([
   '/cart',
+  '/compliance',
   '/checkout',
   '/account',
   '/auth',
