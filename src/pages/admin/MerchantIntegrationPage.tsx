@@ -1200,6 +1200,7 @@ export default function MerchantIntegrationPage() {
               </div>
             )}
           </CardContent>
+        </Card>
 
         {/* Last Sync Summary */}
         {status?.lastSync && (
