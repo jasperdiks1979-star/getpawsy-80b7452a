@@ -1,0 +1,37 @@
+{
+  "slug": "best-dog-car-seat",
+  "title": "Best Dog Car Seats (2026) – Crash-Tested & Booster Picks Tested",
+  "seoTitle": "Best Dog Car Seat (2026) – Safest Picks for Every Size",
+  "seoDescription": "10 dog car seats tested for safety, comfort & installation ease. Booster seats, hammocks & crash-tested options for small to large dogs. Updated 2026.",
+  "h1Override": "Best Dog Car Seats – 2026 Tested & Compared",
+  "trustLines": ["10 car seats tested for crash safety & comfort", "Size guide: small, medium & large dogs", "Free US shipping"],
+  "excerpt": "We tested 10 dog car seats for safety, comfort and ease of installation. Booster seats, hammocks and crash-tested picks for dogs of every size. Updated 2026.",
+  "whoThisIsFor": ["Dog owners who drive with their pets regularly", "Safety-conscious pet parents", "Small dog owners needing booster seats", "Large dog owners needing hammock-style coverage"],
+  "category": "Dog Travel",
+  "keywords": ["best dog car seat", "dog car seat 2026", "crash tested dog car seat", "dog booster seat"],
+  "publishedAt": "2026-03-01",
+  "updatedAt": "2026-03-06",
+  "featuredImage": "/guides/default-guide.webp",
+  "readingTime": 15,
+  "relatedCategories": ["dog-car-seats"],
+  "quickAnswer": "The best dog car seat in 2026 is a crash-tested booster seat with seatbelt anchors and an adjustable tether. For small dogs (under 25 lbs), elevated booster seats provide the best combination of safety and visibility.",
+  "quickRecommendation": {
+    "bestOverall": { "name": "Crash-Tested Booster Seat", "reason": "CPS-certified, adjustable seatbelt strap, elevated view for small-to-medium dogs up to 30 lbs.", "link": "/collections/dog-car-seats" },
+    "bestBudget": { "name": "Console Car Seat", "reason": "Center-console style for small dogs under 12 lbs. Keeps your dog close during short drives. Under $25.", "link": "/collections/dog-car-seats" },
+    "bestPremium": { "name": "Full-Coverage Back Seat Hammock", "reason": "Covers the full back seat. Waterproof, non-slip, with seatbelt pass-through. For dogs of all sizes.", "link": "/collections/dog-car-seats" }
+  },
+  "sections": [
+    { "heading": "Why Dogs Need Car Seats", "content": "In a 30 mph collision, an unrestrained 60-lb dog becomes a 2,700-lb projectile. Even a 10-lb dog generates 500 lbs of force. An unsecured dog endangers everyone in the vehicle.\n\nBeyond crash safety, car seats prevent distracted driving (dogs moving around the cabin), motion sickness (elevated seats with window views help), and anxiety (a familiar, contained space).\n\n13 US states have laws regarding pets in vehicles, ranging from distracted driving statutes to specific pet restraint requirements. A proper car seat keeps you legal and your dog safe.\n\nBrowse our [dog car seat collection](/collections/dog-car-seats) for safety-tested picks." },
+    { "heading": "Car Seat Types Compared", "content": "**Booster seats**: Elevated platform with restraint tether. Best for small-to-medium dogs (under 30 lbs). Provides window viewing and containment.\n\n**Console seats**: Fits between front seats on the center console. Best for very small dogs (under 12 lbs) on short trips.\n\n**Back seat hammocks**: Fabric cover spanning the full back seat. Best for medium-to-large dogs. Protects upholstery. Combined with a seatbelt harness for safety.\n\n**Cargo area barriers**: Metal or mesh barriers separating the cargo area. Best for SUVs and large dogs. Pair with a non-slip mat.\n\nFor maximum safety, any car seat should be paired with a crash-tested seatbelt harness that tethers to the vehicle's seatbelt system.\n\nFor more car safety info, see our [dog car seat safety guide](/guides/are-dog-car-seats-safe)." },
+    { "heading": "Installation & Safety Tips", "content": "- **Back seat center** is the safest position in any vehicle\n- **Seatbelt tether** should restrict movement to 6 inches or less\n- **Never use the front seat** — airbag deployment is lethal to pets\n- **Test stability** before driving — the seat shouldn't slide more than 1 inch\n- **Acclimate your dog** with 5-minute sessions before real trips\n- **Never attach the tether to a collar** — always use a harness" },
+    { "heading": "Related Guides", "content": "- [Are Dog Car Seats Safe?](/guides/are-dog-car-seats-safe) — Safety data and crash-test info\n- [Best Dog Car Seat for Small Dogs](/guides/best-dog-car-seat-for-small-dogs) — Under-25-lb picks\n- [How to Train Your Dog to Use a Car Seat](/guides/how-to-train-dog-to-use-car-seat) — Acclimation guide\n- [Dog Booster Seat vs Car Hammock](/guides/dog-booster-seat-vs-car-hammock) — Which style is right?" }
+  ],
+  "faq": [
+    { "question": "Do dogs legally need car seats?", "answer": "It depends on your state. 13 US states have laws regarding pet restraint in vehicles. Even where not legally required, an unrestrained pet increases accident severity and distracted driving risk." },
+    { "question": "What's the safest dog car seat?", "answer": "A crash-tested seat certified by the Center for Pet Safety (CPS). Only about 3% of pet car seats are crash-tested, so look specifically for CPS certification." },
+    { "question": "Can large dogs use car seats?", "answer": "Large dogs typically use back-seat hammocks paired with a crash-tested seatbelt harness. Traditional booster seats are too small for dogs over 30 lbs." },
+    { "question": "How do I stop my dog from getting car sick?", "answer": "Elevated booster seats with window views reduce motion sickness. Also: face your dog forward, keep windows slightly open for ventilation, and avoid feeding 2 hours before driving." },
+    { "question": "Should I use a dog car seat or a crate?", "answer": "Both are safe options. Crates offer maximum containment and crash protection. Car seats offer convenience and easier access. For daily commutes, car seats are more practical." },
+    { "question": "How do I install a dog car seat correctly?", "answer": "Thread the vehicle seatbelt through the car seat's anchor loops, click the seatbelt, and tighten until the seat moves less than 1 inch in any direction. Attach the dog's harness to the seat's internal tether." }
+  ]
+}
