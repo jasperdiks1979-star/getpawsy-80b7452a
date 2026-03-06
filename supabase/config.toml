@@ -227,3 +227,6 @@ verify_jwt = false
 
 [functions.optimize-merchant-feed]
 verify_jwt = false
+
+[functions.shopping-traffic-engine]
+verify_jwt = false
