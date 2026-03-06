@@ -719,6 +719,7 @@ Deno.serve(async (req: Request) => {
     // F) SEND IN SAFE BATCHES (live only)
     // ══════════════════════════════════════════════════════════════
     if (modeEffective === "live" && payloadBuiltCount > 0) {
+      console.log(`[merchant-sync] LIVE SEND START: ${payloadBuiltCount} payloads to send via Google Content API`);
       const totalBatches = Math.ceil(payloads.length / SEND_BATCH_SIZE);
       
       for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
@@ -726,6 +727,8 @@ Deno.serve(async (req: Request) => {
         const batch = payloads.slice(batchStart, batchStart + SEND_BATCH_SIZE);
         let batchSuccess = 0;
         let batchError = 0;
+
+        console.log(`[merchant-sync] SENDING BATCH ${batchIdx + 1}/${totalBatches}: ${batch.length} products to Google Merchant Center`);
 
         for (const payload of batch) {
           attemptedSendCount++;
@@ -747,8 +750,14 @@ Deno.serve(async (req: Request) => {
           }
         }
 
-        console.log(`[merchant-sync] BATCH ${batchIdx + 1}/${totalBatches}: size=${batch.length} success=${batchSuccess} errors=${batchError}`);
+        console.log(`[merchant-sync] BATCH ${batchIdx + 1}/${totalBatches} DONE: success=${batchSuccess} errors=${batchError}`);
       }
+
+      console.log(`[merchant-sync] LIVE SEND COMPLETE: attempted=${attemptedSendCount} success=${successCount} errors=${errorCount}`);
+    } else if (modeEffective === "live" && payloadBuiltCount === 0) {
+      console.log(`[merchant-sync] LIVE SEND SKIPPED: 0 payloads built — nothing to send`);
+    } else if (modeEffective === "dryrun") {
+      console.log(`[merchant-sync] DRY RUN: ${payloadBuiltCount} payloads built but NOT sent (mode=dryrun)`);
     }
 
     // ══════════════════════════════════════════════════════════════
