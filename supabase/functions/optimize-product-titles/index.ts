@@ -59,6 +59,7 @@ serve(async (req) => {
     const body = await req.json();
     const dryRun = body.dryRun ?? true;
     const limitProducts = body.limit ?? 0; // 0 = all
+    const offsetProducts = body.offset ?? 0;
 
     // Fetch active products
     let query = adminSupabase
@@ -68,14 +69,13 @@ serve(async (req) => {
       .order("name");
 
     if (limitProducts > 0) {
-      query = query.limit(limitProducts);
+      query = query.range(offsetProducts, offsetProducts + limitProducts - 1);
     }
 
     const { data: products, error: fetchError } = await query;
     if (fetchError) throw new Error(`Fetch error: ${fetchError.message}`);
     if (!products || products.length === 0) {
-      return new Response(JSON.stringify({ error: "No products found" }), {
-        status: 404,
+      return new Response(JSON.stringify({ totalProducts: 0, optimizedCount: 0, errorCount: 0, updatedCount: 0, dryRun, samples: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
