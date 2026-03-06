@@ -51,6 +51,10 @@ interface ProductCardProps {
   priority?: boolean;
   /** Show "Popular Choice" badge for top-performing products */
   popularChoice?: boolean;
+  /** Show "Best Seller" badge */
+  bestSeller?: boolean;
+  /** Show "Top Rated" badge */
+  topRated?: boolean;
   /** Show species badge (cat-only, dog-only, cats & dogs) */
   showSpeciesBadge?: boolean;
   /** Override species classification */
