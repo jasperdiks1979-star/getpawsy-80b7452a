@@ -163,6 +163,8 @@ export default function MerchantIntegrationPage() {
   const [reachability, setReachability] = useState<{ testing: boolean; result: null | { reachable: boolean; latencyMs?: number; error?: string } }>({ testing: false, result: null });
   const [titleOptRunning, setTitleOptRunning] = useState(false);
   const [titleOptReport, setTitleOptReport] = useState<any>(null);
+  const [feedOptRunning, setFeedOptRunning] = useState(false);
+  const [feedOptReport, setFeedOptReport] = useState<any>(null);
 
   const testReachability = useCallback(async () => {
     setReachability({ testing: true, result: null });
