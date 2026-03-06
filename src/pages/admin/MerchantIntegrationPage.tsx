@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch';
 import { toast } from 'sonner';
 import {
+  Database,
   RefreshCw,
   Link2,
   CheckCircle2,
