@@ -195,9 +195,19 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
           
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
-            {popularChoice && !isOutOfStock && (
+            {bestSeller && !isOutOfStock && (
+              <Badge className="bg-amber-500 text-white shadow-soft text-[10px]">
+                🏆 Best Seller
+              </Badge>
+            )}
+            {topRated && !isOutOfStock && !bestSeller && (
+              <Badge className="bg-emerald-600 text-white shadow-soft text-[10px]">
+                ⭐ Top Rated
+              </Badge>
+            )}
+            {popularChoice && !isOutOfStock && !bestSeller && !topRated && (
               <Badge className="bg-primary text-primary-foreground shadow-soft text-[10px]">
-                ⭐ Popular Choice
+                🔥 Popular Choice
               </Badge>
             )}
             {discount && discount > 0 && (
