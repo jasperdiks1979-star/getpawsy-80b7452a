@@ -165,6 +165,8 @@ export default function MerchantIntegrationPage() {
   const [titleOptReport, setTitleOptReport] = useState<any>(null);
   const [feedOptRunning, setFeedOptRunning] = useState(false);
   const [feedOptReport, setFeedOptReport] = useState<any>(null);
+  const [trafficRunning, setTrafficRunning] = useState(false);
+  const [trafficReport, setTrafficReport] = useState<any>(null);
 
   const testReachability = useCallback(async () => {
     setReachability({ testing: true, result: null });
@@ -1061,6 +1063,143 @@ export default function MerchantIntegrationPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Google Shopping Traffic Engine */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5" />
+              Google Shopping Traffic Engine
+            </CardTitle>
+            <CardDescription>Detect high-potential products and boost visibility with custom_label_5 (high_visibility), custom_label_6 (bestseller_candidate), custom_label_7 (high_search_demand)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={trafficRunning}
+                onClick={async () => {
+                  setTrafficRunning(true);
+                  setTrafficReport(null);
+                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/shopping-traffic-engine`;
+                  try {
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const token = sessionData?.session?.access_token;
+                    if (!token) throw new Error('Not authenticated');
+                    const res = await fetch(endpoint, {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ dryRun: true, limit: 20 }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                    setTrafficReport(json);
+                    toast.success(`Preview: ${json?.totalProducts ?? 0} products analyzed`);
+                  } catch (err: any) {
+                    setTrafficReport({ _error: err.message });
+                    toast.error(err.message);
+                  } finally {
+                    setTrafficRunning(false);
+                  }
+                }}
+              >
+                {trafficRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Bug className="h-4 w-4 mr-1" />}
+                Preview Traffic Boost (20)
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                disabled={trafficRunning}
+                onClick={async () => {
+                  if (!confirm('This will score ALL active products and assign traffic labels. Continue?')) return;
+                  setTrafficRunning(true);
+                  setTrafficReport(null);
+                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/shopping-traffic-engine`;
+                  try {
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const token = sessionData?.session?.access_token;
+                    if (!token) throw new Error('Not authenticated');
+                    const res = await fetch(endpoint, {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ dryRun: false, limit: 500 }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                    setTrafficReport(json);
+                    toast.success(`Done! ${json?.updatedCount ?? 0} products updated with traffic labels.`);
+                  } catch (err: any) {
+                    setTrafficReport({ _error: err.message });
+                    toast.error(err.message);
+                  } finally {
+                    setTrafficRunning(false);
+                  }
+                }}
+              >
+                {trafficRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                Activate Traffic Engine
+              </Button>
+            </div>
+
+            {trafficReport?._error && (
+              <div className="p-3 bg-destructive/10 border border-destructive/30 rounded text-sm">
+                <p className="font-medium text-destructive">❌ {trafficReport._error}</p>
+              </div>
+            )}
+
+            {trafficReport && !trafficReport._error && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-5 gap-3">
+                  <div className="p-2 bg-muted rounded text-center">
+                    <p className="text-xs text-muted-foreground">Total Analyzed</p>
+                    <p className="text-lg font-bold">{trafficReport.totalProducts}</p>
+                  </div>
+                  <div className="p-2 bg-primary/10 rounded text-center">
+                    <p className="text-xs text-muted-foreground">High Visibility</p>
+                    <p className="text-lg font-bold text-primary">{trafficReport.highVisibilityCount}</p>
+                  </div>
+                  <div className="p-2 bg-primary/10 rounded text-center">
+                    <p className="text-xs text-muted-foreground">Bestseller Candidates</p>
+                    <p className="text-lg font-bold text-primary">{trafficReport.bestsellerCandidateCount}</p>
+                  </div>
+                  <div className="p-2 bg-primary/10 rounded text-center">
+                    <p className="text-xs text-muted-foreground">High Demand</p>
+                    <p className="text-lg font-bold text-primary">{trafficReport.highSearchDemandCount}</p>
+                  </div>
+                  <div className="p-2 bg-muted rounded text-center">
+                    <p className="text-xs text-muted-foreground">Updated</p>
+                    <p className="text-lg font-bold">{trafficReport.updatedCount}</p>
+                  </div>
+                </div>
+                {trafficReport.dryRun && (
+                  <Badge variant="outline" className="text-xs">🔍 Dry Run — no changes applied</Badge>
+                )}
+                {trafficReport.samples?.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Top 5 Products by Score</p>
+                    {trafficReport.samples.map((s: any) => (
+                      <div key={s.id} className="p-3 border border-border/50 rounded text-xs space-y-1">
+                        <div className="font-medium text-foreground">{s.name}</div>
+                        <div className="text-muted-foreground">${s.price} · {s.category || '—'}</div>
+                        <div className="flex gap-2 mt-1 flex-wrap">
+                          <Badge variant="secondary" className="text-xs">vis: {s.visibilityScore}</Badge>
+                          <Badge variant="secondary" className="text-xs">bs: {s.bestsellerScore}</Badge>
+                          <Badge variant="secondary" className="text-xs">demand: {s.demandScore}</Badge>
+                          {s.custom_label_5 && <Badge className="text-xs bg-green-600">⚡ {s.custom_label_5}</Badge>}
+                          {s.custom_label_6 && <Badge className="text-xs bg-blue-600">🏆 {s.custom_label_6}</Badge>}
+                          {s.custom_label_7 && <Badge className="text-xs bg-orange-600">🔥 {s.custom_label_7}</Badge>}
+                        </div>
+                        {s.reasons?.length > 0 && (
+                          <div className="text-muted-foreground mt-1">Reasons: {s.reasons.join(', ')}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
 
         {/* Last Sync Summary */}
         {status?.lastSync && (
