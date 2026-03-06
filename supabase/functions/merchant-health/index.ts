@@ -35,6 +35,7 @@ const SHIPPING_CLAIMS = [
   { key: "deliveryTimeVisible", patterns: [
     /delivery\s+time/i,
     /shipping\s+time/i,
+    /5.?10\s+business\s+days?/i,
     /3.?7\s+business\s+days?/i,
     /estimated\s+delivery/i,
     /business\s+day\s+delivery/i,
