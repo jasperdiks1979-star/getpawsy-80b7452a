@@ -554,6 +554,17 @@ export default function MerchantIntegrationPage() {
                 </div>
               )}
 
+              {/* Zero-sent warning for live mode */}
+              {liveSyncResult.mode_effective === 'live' && liveSyncResult.ok && liveSyncResult.attemptedSendCount === 0 && liveSyncResult.eligibleCount > 0 && (
+                <div className="p-3 bg-destructive/10 rounded-md text-sm flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-destructive">Warning: 0 products sent despite {liveSyncResult.eligibleCount} eligible</p>
+                    <p className="text-muted-foreground text-xs mt-1">This may indicate a token issue or API failure. Check the full response for details.</p>
+                  </div>
+                </div>
+              )}
+
               {/* Funnel counters */}
               <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
                 {[
