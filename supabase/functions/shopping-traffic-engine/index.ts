@@ -29,7 +29,7 @@ interface Product {
   price: number;
   cost_price: number | null;
   category: string | null;
-  subcategory: string | null;
+  
   image_url: string | null;
   additional_images: string[] | null;
   weight: number | null;
@@ -81,8 +81,7 @@ function scoreVisibility(p: Product): { score: number; reasons: string[] } {
   // Category demand
   const nameLower = (p.name || "").toLowerCase();
   const catLower = (p.category || "").toLowerCase();
-  const subCatLower = (p.subcategory || "").toLowerCase();
-  const combined = `${nameLower} ${catLower} ${subCatLower}`;
+  const combined = `${nameLower} ${catLower}`;
   
   if (HIGH_DEMAND_CATEGORIES.some(c => combined.includes(c))) {
     score += 3;
@@ -122,7 +121,7 @@ function scoreBestseller(p: Product): number {
   else if (p.price > 50 && p.price <= 80) score += 1;
 
   // Popular category
-  const combined = `${(p.name || "").toLowerCase()} ${(p.category || "").toLowerCase()} ${(p.subcategory || "").toLowerCase()}`;
+  const combined = `${(p.name || "").toLowerCase()} ${(p.category || "").toLowerCase()}`;
   if (POPULAR_CATEGORIES.some(c => combined.includes(c))) score += 3;
 
   // Good title
@@ -140,7 +139,7 @@ function scoreBestseller(p: Product): number {
 
 function scoreDemand(p: Product): number {
   let score = 0;
-  const combined = `${(p.name || "").toLowerCase()} ${(p.category || "").toLowerCase()} ${(p.subcategory || "").toLowerCase()} ${(p.product_type || "").toLowerCase()}`;
+  const combined = `${(p.name || "").toLowerCase()} ${(p.category || "").toLowerCase()} ${(p.product_type || "").toLowerCase()}`;
 
   // Direct high-demand category match
   for (const cat of HIGH_DEMAND_CATEGORIES) {
