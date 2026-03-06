@@ -1077,7 +1077,7 @@ const ProductDetail = () => {
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${inStock ? 'bg-success' : 'bg-destructive'}`} />
               <span className="font-medium text-foreground">
-                {inStock ? 'In Stock — Ships within 24 hours from US warehouse' : 'Out of Stock'}
+                {inStock ? 'In Stock — Ready to ship' : 'Out of Stock'}
               </span>
             </div>
 

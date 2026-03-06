@@ -1,4 +1,9 @@
 import { Package, Clock, Truck } from 'lucide-react';
+import {
+  PROCESSING_TIME,
+  DELIVERY_TIME_STANDARD,
+  SUPPORT_EMAIL,
+} from '@/lib/shipping-constants';
 
 interface ShippingTransparencyProps {
   className?: string;
@@ -25,9 +30,9 @@ export const ShippingTransparency = ({
   const noscriptBlock = (
     <noscript>
       <div style={{ padding: '16px', fontSize: '14px', color: '#555' }}>
-        <p>Processing Time: 1–2 business days</p>
-        <p>Delivery Time: 3–7 business days within the United States</p>
-        <p>Fulfillment: Orders ship from US warehouse partners</p>
+        <p>Processing Time: {PROCESSING_TIME}</p>
+        <p>Delivery Time: {DELIVERY_TIME_STANDARD} to the United States</p>
+        <p>Fulfillment: Orders are delivered via trusted international carrier partners</p>
       </div>
     </noscript>
   );
@@ -38,15 +43,15 @@ export const ShippingTransparency = ({
         <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground ${className}`}>
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3 text-primary" />
-            Processing Time: 1–2 business days
+            Processing Time: {PROCESSING_TIME}
           </span>
           <span className="flex items-center gap-1">
             <Truck className="w-3 h-3 text-primary" />
-            Delivery Time: 3–7 business days within the United States
+            Delivery Time: {DELIVERY_TIME_STANDARD} to the United States
           </span>
           <span className="flex items-center gap-1">
             <Package className="w-3 h-3 text-primary" />
-            Ships from US warehouse partners
+            All orders receive a tracking number
           </span>
         </div>
         {noscriptBlock}
@@ -60,19 +65,19 @@ export const ShippingTransparency = ({
         <div className="flex items-center gap-2 text-sm text-foreground">
           <Clock className="w-4 h-4 text-primary flex-shrink-0" />
           <span>
-            <strong>Processing Time:</strong> 1–2 business days
+            <strong>Processing Time:</strong> {PROCESSING_TIME}
           </span>
         </div>
         <div className="flex items-center gap-2 text-sm text-foreground">
           <Truck className="w-4 h-4 text-primary flex-shrink-0" />
           <span>
-            <strong>Delivery Time:</strong> 3–7 business days within the United States
+            <strong>Delivery Time:</strong> {DELIVERY_TIME_STANDARD} to the United States
           </span>
         </div>
         <div className="flex items-center gap-2 text-sm text-foreground">
           <Package className="w-4 h-4 text-primary flex-shrink-0" />
           <span>
-            <strong>Fulfillment:</strong> Orders ship from US warehouse partners
+            <strong>Tracking:</strong> All orders receive a tracking number
           </span>
         </div>
       </div>

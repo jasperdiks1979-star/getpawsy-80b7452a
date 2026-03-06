@@ -23,11 +23,11 @@ export function LocalBusinessSchema({
     '@id': `${baseUrl}/#localbusiness`,
     name: 'GetPawsy',
     alternateName: 'GetPawsy Pet Products',
-    description: 'GetPawsy is an online pet supplies retailer operated by Skidzo. Orders are fulfilled from warehouses located in the United States and shipped directly to customers across the United States.',
+    description: 'GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. Orders are shipped directly to customers across the United States.',
     url: baseUrl,
     logo: `${baseUrl}/favicon.png`,
     image: `${baseUrl}/og-image.png`,
-    email: 'support@getpawsy.pet',
+    email: 'info@getpawsy.pet',
     vatID: 'NL003295015B69',
     taxID: 'NL003295015B69',
     address: {
@@ -38,7 +38,7 @@ export function LocalBusinessSchema({
     },
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'support@getpawsy.pet',
+      email: 'info@getpawsy.pet',
       contactType: 'customer service',
       availableLanguage: 'English',
       hoursAvailable: {

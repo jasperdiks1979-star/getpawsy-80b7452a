@@ -45,7 +45,7 @@ const About = () => {
               </h1>
               
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                A pet-first brand built on trust, quality, and a genuine love for animals.
+                GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals.
               </p>
             </motion.div>
           </div>
@@ -70,10 +70,10 @@ const About = () => {
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
-                  GetPawsy is an online pet supply store dedicated to providing thoughtfully curated products for dogs and cats. We focus on quality, comfort, and practical design—because your pet deserves products that truly deliver.
+                  GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. Customer satisfaction is our priority.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  We noticed that finding quality pet products online often meant sifting through endless options, unclear sizing, and questionable quality. So we set out to change that by offering a carefully selected range of pet essentials that pet parents can trust.
+                  We carefully select our pet products to ensure quality and comfort for your pets. Finding quality pet products online often means sifting through endless options, unclear sizing, and questionable quality. We set out to change that.
                 </p>
                 <p className="text-muted-foreground">
                   Today, GetPawsy serves pet parents across the United States with a smooth, reliable shopping experience from browse to delivery.
@@ -272,14 +272,14 @@ const About = () => {
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
-                  We work with trusted fulfillment partners, primarily based in the United States, to ensure your orders are handled with care and delivered reliably.
+                  We work with trusted logistics and carrier partners to ensure your orders are delivered reliably to the United States.
                 </p>
                 
                 <div className="space-y-4 mb-6">
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
                     <p className="text-foreground">
-                      Orders ship from <strong>US fulfillment centers</strong> when available.
+                      <strong>Shipping destination:</strong> United States
                     </p>
                   </div>
                   <div className="flex items-start gap-3">

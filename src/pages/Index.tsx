@@ -99,17 +99,17 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Dog Training Essentials – Fast 3–7 Day US Shipping | GetPawsy</title>
-        <meta name="description" content="Top-rated dog training tools for potty training, leash control & behavior correction. Free US shipping $49+, 30-day returns. 3–7 day delivery from US warehouses." />
+        <title>Pet Supplies – Free US Shipping | GetPawsy</title>
+        <meta name="description" content="High-quality pet products for dogs, cats & small animals. Free US shipping $49+, 30-day returns. Estimated delivery: 5–10 business days." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Dog Training Essentials – Fast 3–7 Day US Shipping | GetPawsy" />
-        <meta property="og:description" content="Top-rated potty training pads, no-pull harnesses & behavior tools. Free US shipping $49+, 30-day returns." />
+        <meta property="og:title" content="Pet Supplies – Free US Shipping | GetPawsy" />
+        <meta property="og:description" content="High-quality pet products for dogs, cats & small animals. Free US shipping $49+, 30-day returns." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Dog Training Essentials – Fast US Shipping | GetPawsy" />
-        <meta name="twitter:description" content="Top-rated dog training tools. Free shipping $49+, 30-day returns. 3–7 day US delivery." />
+        <meta name="twitter:title" content="Pet Supplies – Free US Shipping | GetPawsy" />
+        <meta name="twitter:description" content="High-quality pet products. Free shipping $49+, 30-day returns. 5–10 day US delivery." />
       </Helmet>
       <Suspense fallback={null}>
         <WebsiteSchema />

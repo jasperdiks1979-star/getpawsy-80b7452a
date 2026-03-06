@@ -6,12 +6,19 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Truck, RotateCcw } from 'lucide-react';
+import {
+  PROCESSING_TIME,
+  DELIVERY_TIME_STANDARD,
+  FREE_SHIPPING_THRESHOLD,
+  RETURN_WINDOW_DAYS,
+  SUPPORT_EMAIL,
+} from '@/lib/shipping-constants';
 
 /**
  * Shipping & Returns accordion for product pages.
  * Contains exact Google Merchant Center compliance keywords
  * in static HTML: "Processing Time", "business days",
- * "Delivery Time", "US warehouse partners", "30-day returns", "refund".
+ * "Delivery Time", "United States", "return policy", "refund".
  */
 export function ProductShippingReturns({ className = '' }: { className?: string }) {
   return (
@@ -25,11 +32,11 @@ export function ProductShippingReturns({ className = '' }: { className?: string 
         </AccordionTrigger>
         <AccordionContent>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li><strong className="text-foreground">Processing Time:</strong> 1–2 business days</li>
-            <li><strong className="text-foreground">Delivery Time:</strong> 3–7 business days within the United States</li>
-            <li><strong className="text-foreground">Fulfillment:</strong> Ships from US warehouse partners</li>
-            <li><strong className="text-foreground">Tracking:</strong> Tracking number provided by email after dispatch</li>
-            <li><strong className="text-foreground">Free shipping</strong> on orders over $49</li>
+            <li><strong className="text-foreground">Processing Time:</strong> {PROCESSING_TIME}</li>
+            <li><strong className="text-foreground">Delivery Time:</strong> {DELIVERY_TIME_STANDARD} to the United States</li>
+            <li><strong className="text-foreground">Tracking:</strong> All orders receive a tracking number</li>
+            <li><strong className="text-foreground">Carriers:</strong> Orders are delivered via trusted international carrier partners</li>
+            <li><strong className="text-foreground">Free shipping</strong> on orders over ${FREE_SHIPPING_THRESHOLD}</li>
           </ul>
           <Link to="/shipping" className="inline-block mt-3 text-sm text-primary hover:underline font-medium">
             View full Shipping Policy →
@@ -46,10 +53,10 @@ export function ProductShippingReturns({ className = '' }: { className?: string 
         </AccordionTrigger>
         <AccordionContent>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li><strong className="text-foreground">30-day returns</strong> on all products</li>
+            <li><strong className="text-foreground">{RETURN_WINDOW_DAYS}-day return policy</strong> on all products</li>
             <li>Items must be unused and in original packaging</li>
             <li>Full refund issued after returned item is received and inspected</li>
-            <li>Contact <a href="mailto:support@getpawsy.pet" className="text-primary hover:underline">support@getpawsy.pet</a> with your order number to start a return</li>
+            <li>Contact <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a> with your order number to start a return</li>
           </ul>
           <Link to="/returns" className="inline-block mt-3 text-sm text-primary hover:underline font-medium">
             View full Returns Policy →

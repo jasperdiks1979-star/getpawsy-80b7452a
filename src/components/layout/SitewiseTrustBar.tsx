@@ -15,7 +15,7 @@ export function SitewiseTrustBar() {
       <div className="container mx-auto flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <Truck className="w-4 h-4 text-primary flex-shrink-0" />
-          <span>Free US Shipping on orders ${FREE_SHIPPING_THRESHOLD}+</span>
+          <span>Free Shipping on orders ${FREE_SHIPPING_THRESHOLD}+</span>
         </div>
         <div className="flex items-center gap-2">
           <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />
@@ -23,13 +23,16 @@ export function SitewiseTrustBar() {
         </div>
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
-          <span>Secure Checkout</span>
+          <span>Secure Checkout • SSL Encryption</span>
         </div>
         <div className="flex items-center gap-2">
           <Headphones className="w-4 h-4 text-primary flex-shrink-0" />
-          <span>Customer Support</span>
+          <span>Customer Support via Email</span>
         </div>
       </div>
+      <p className="text-center text-xs text-muted-foreground/60 mt-2">
+        We carefully select our pet products to ensure quality and comfort for your pets.
+      </p>
     </section>
   );
 }

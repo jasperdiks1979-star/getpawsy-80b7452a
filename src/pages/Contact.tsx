@@ -138,7 +138,7 @@ const Contact = () => {
     <Layout>
       <Helmet>
         <title>Contact Us | GetPawsy</title>
-        <meta name="description" content="Contact GetPawsy customer support. Email support@getpawsy.pet for order help, shipping questions, and returns. We respond within 24 hours." />
+        <meta name="description" content="Contact GetPawsy customer support. Email info@getpawsy.pet for order help, shipping questions, and returns. We respond within 24 hours." />
         <link rel="canonical" href="https://getpawsy.pet/contact" />
       </Helmet>
       <div className="min-h-screen py-16 lg:py-24">
@@ -314,6 +314,9 @@ const Contact = () => {
                     </div>
                     <p className="text-xs text-muted-foreground mt-3">
                       Skidzo operates and is fully responsible for the GetPawsy webshop, including all orders, payments, shipping, and customer service.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2 italic">
+                      GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals.
                     </p>
                   </div>
                 </div>
