@@ -272,7 +272,7 @@ export function MerchantCleanupDiagnostics() {
                 {/* Legacy Items */}
                 {legacy && legacy.staleCount > 0 && (
                   <div className="p-3 bg-amber-500/10 rounded-md text-sm space-y-1">
-                    <p className="font-medium text-amber-700">🗑️ {legacy.staleCount} stale Merchant items</p>
+                    <p className="font-medium text-amber-700 dark:text-amber-400">🗑️ {legacy.staleCount} stale Merchant items</p>
                     <p className="text-xs text-muted-foreground">
                       Items with getpawsy_ prefix no longer in current export.
                       {legacy.nonPrefixCount > 0 && ` Plus ${legacy.nonPrefixCount} non-prefixed items.`}
