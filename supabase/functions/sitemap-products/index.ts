@@ -19,7 +19,7 @@ serve(async (req) => {
     // Tier B2 is index,follow but NOT in sitemaps (crawl budget control)
     const { data: products, error } = await sb
       .from("products")
-      .select("slug, updated_at, is_active, is_duplicate, stock, name, seo_tier")
+      .select("slug, updated_at, is_active, is_duplicate, stock, name, seo_tier, image_url, images")
       .eq("is_active", true)
       .not("slug", "is", null)
       .in("seo_tier", ["A", "B1"])
