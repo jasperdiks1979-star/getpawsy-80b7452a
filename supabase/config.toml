@@ -218,3 +218,6 @@ verify_jwt = false
 
 [functions.revenue-accelerator]
 verify_jwt = false
+
+[functions.verify-oos-stock]
+verify_jwt = false
