@@ -224,3 +224,6 @@ verify_jwt = false
 
 [functions.optimize-product-titles]
 verify_jwt = false
+
+[functions.optimize-merchant-feed]
+verify_jwt = false

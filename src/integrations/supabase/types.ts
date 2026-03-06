@@ -4588,8 +4588,14 @@ export type Database = {
           compare_at_price: number | null
           cost_price: number | null
           created_at: string
+          custom_label_0: string | null
+          custom_label_1: string | null
+          custom_label_2: string | null
+          custom_label_3: string | null
+          custom_label_4: string | null
           dedupe_key: string | null
           description: string | null
+          google_product_category: string | null
           id: string
           image_url: string | null
           images: string[] | null
@@ -4601,6 +4607,7 @@ export type Database = {
           price: number
           primary_intent: string | null
           primary_species: string | null
+          product_type: string | null
           seo_tier: string
           shipping_time: string | null
           sku: string | null
@@ -4624,8 +4631,14 @@ export type Database = {
           compare_at_price?: number | null
           cost_price?: number | null
           created_at?: string
+          custom_label_0?: string | null
+          custom_label_1?: string | null
+          custom_label_2?: string | null
+          custom_label_3?: string | null
+          custom_label_4?: string | null
           dedupe_key?: string | null
           description?: string | null
+          google_product_category?: string | null
           id?: string
           image_url?: string | null
           images?: string[] | null
@@ -4637,6 +4650,7 @@ export type Database = {
           price: number
           primary_intent?: string | null
           primary_species?: string | null
+          product_type?: string | null
           seo_tier?: string
           shipping_time?: string | null
           sku?: string | null
@@ -4660,8 +4674,14 @@ export type Database = {
           compare_at_price?: number | null
           cost_price?: number | null
           created_at?: string
+          custom_label_0?: string | null
+          custom_label_1?: string | null
+          custom_label_2?: string | null
+          custom_label_3?: string | null
+          custom_label_4?: string | null
           dedupe_key?: string | null
           description?: string | null
+          google_product_category?: string | null
           id?: string
           image_url?: string | null
           images?: string[] | null
@@ -4673,6 +4693,7 @@ export type Database = {
           price?: number
           primary_intent?: string | null
           primary_species?: string | null
+          product_type?: string | null
           seo_tier?: string
           shipping_time?: string | null
           sku?: string | null

@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch';
 import { toast } from 'sonner';
 import {
+  Database,
   RefreshCw,
   Link2,
   CheckCircle2,
@@ -162,6 +163,8 @@ export default function MerchantIntegrationPage() {
   const [reachability, setReachability] = useState<{ testing: boolean; result: null | { reachable: boolean; latencyMs?: number; error?: string } }>({ testing: false, result: null });
   const [titleOptRunning, setTitleOptRunning] = useState(false);
   const [titleOptReport, setTitleOptReport] = useState<any>(null);
+  const [feedOptRunning, setFeedOptRunning] = useState(false);
+  const [feedOptReport, setFeedOptReport] = useState<any>(null);
 
   const testReachability = useCallback(async () => {
     setReachability({ testing: true, result: null });
@@ -894,6 +897,162 @@ export default function MerchantIntegrationPage() {
                         <div className="text-destructive/70 line-through">{s.original}</div>
                         <div className="text-primary font-medium">{s.optimized}</div>
                         <span className="text-muted-foreground">{s.charCount} chars</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Google Merchant Feed Optimizer */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Google Merchant Feed Optimizer
+            </CardTitle>
+            <CardDescription>Enrich products with product_type, google_product_category, and custom labels for better Shopping visibility</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={feedOptRunning}
+                onClick={async () => {
+                  setFeedOptRunning(true);
+                  setFeedOptReport(null);
+                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-merchant-feed`;
+                  try {
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const token = sessionData?.session?.access_token;
+                    if (!token) throw new Error('Not authenticated');
+                    const res = await fetch(endpoint, {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ dryRun: true, limit: 20 }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                    setFeedOptReport(json);
+                    toast.success(`Preview: ${json?.enrichedCount ?? 0} products enriched`);
+                  } catch (err: any) {
+                    setFeedOptReport({ _error: err.message });
+                    toast.error(err.message);
+                  } finally {
+                    setFeedOptRunning(false);
+                  }
+                }}
+              >
+                {feedOptRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Bug className="h-4 w-4 mr-1" />}
+                Preview Feed Optimization (20)
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                disabled={feedOptRunning}
+                onClick={async () => {
+                  if (!confirm('This will enrich ALL active products with Google Shopping attributes in chunks of 50. Continue?')) return;
+                  setFeedOptRunning(true);
+                  setFeedOptReport(null);
+                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-merchant-feed`;
+                  try {
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const token = sessionData?.session?.access_token;
+                    if (!token) throw new Error('Not authenticated');
+
+                    const CHUNK = 50;
+                    let totalEnriched = 0, totalUpdated = 0, totalErrors = 0, totalProducts = 0;
+                    let allSamples: any[] = [];
+                    let chunkIndex = 0;
+                    let hasMore = true;
+
+                    while (hasMore) {
+                      toast.info(`Processing chunk ${chunkIndex + 1}...`);
+                      const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dryRun: false, limit: CHUNK, offset: chunkIndex * CHUNK }),
+                      });
+                      const json = await res.json().catch(() => ({}));
+                      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+
+                      totalEnriched += json.enrichedCount || 0;
+                      totalUpdated += json.updatedCount || 0;
+                      totalErrors += json.errorCount || 0;
+                      totalProducts += json.totalProducts || 0;
+                      if (json.samples) allSamples.push(...json.samples);
+
+                      hasMore = (json.totalProducts || 0) >= CHUNK;
+                      chunkIndex++;
+
+                      setFeedOptReport({
+                        totalProducts, enrichedCount: totalEnriched, updatedCount: totalUpdated,
+                        errorCount: totalErrors, dryRun: false, samples: allSamples.slice(0, 10),
+                        _chunksCompleted: chunkIndex,
+                      });
+                    }
+                    toast.success(`Done! ${totalUpdated} products enriched across ${chunkIndex} chunks.`);
+                  } catch (err: any) {
+                    setFeedOptReport((prev: any) => ({ ...prev, _error: err.message }));
+                    toast.error(err.message);
+                  } finally {
+                    setFeedOptRunning(false);
+                  }
+                }}
+              >
+                {feedOptRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                Optimize Entire Feed
+              </Button>
+            </div>
+
+            {feedOptReport?._error && (
+              <div className="p-3 bg-destructive/10 border border-destructive/30 rounded text-sm">
+                <p className="font-medium text-destructive">❌ {feedOptReport._error}</p>
+              </div>
+            )}
+
+            {feedOptReport && !feedOptReport._error && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="p-2 bg-muted rounded text-center">
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="text-lg font-bold">{feedOptReport.totalProducts}</p>
+                  </div>
+                  <div className="p-2 bg-primary/10 rounded text-center">
+                    <p className="text-xs text-muted-foreground">Enriched</p>
+                    <p className="text-lg font-bold">{feedOptReport.enrichedCount}</p>
+                  </div>
+                  <div className="p-2 bg-muted rounded text-center">
+                    <p className="text-xs text-muted-foreground">Updated</p>
+                    <p className="text-lg font-bold">{feedOptReport.updatedCount}</p>
+                  </div>
+                  <div className="p-2 bg-destructive/10 rounded text-center">
+                    <p className="text-xs text-muted-foreground">Errors</p>
+                    <p className="text-lg font-bold">{feedOptReport.errorCount}</p>
+                  </div>
+                </div>
+                {feedOptReport.dryRun && (
+                  <Badge variant="outline" className="text-xs">🔍 Dry Run — no changes applied</Badge>
+                )}
+                {feedOptReport.samples?.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Sample Results</p>
+                    {feedOptReport.samples.slice(0, 5).map((s: any) => (
+                      <div key={s.id} className="p-3 border border-border/50 rounded text-xs space-y-1">
+                        <div className="font-medium text-foreground">{s.name}</div>
+                        <div className="text-muted-foreground">Category: {s.category || '—'}</div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
+                          <div><span className="text-muted-foreground">product_type:</span> <span className="text-primary">{s.product_type}</span></div>
+                          <div><span className="text-muted-foreground">google_category:</span> <span className="text-primary">{s.google_product_category}</span></div>
+                          <div><span className="text-muted-foreground">animal:</span> <Badge variant="secondary" className="text-xs">{s.custom_label_0}</Badge></div>
+                          <div><span className="text-muted-foreground">price:</span> <Badge variant="secondary" className="text-xs">{s.custom_label_1}</Badge></div>
+                          <div><span className="text-muted-foreground">margin:</span> <Badge variant="secondary" className="text-xs">{s.custom_label_2}</Badge></div>
+                          <div><span className="text-muted-foreground">shipping:</span> <Badge variant="secondary" className="text-xs">{s.custom_label_3}</Badge></div>
+                          <div><span className="text-muted-foreground">group:</span> <Badge variant="secondary" className="text-xs">{s.custom_label_4}</Badge></div>
+                        </div>
                       </div>
                     ))}
                   </div>
