@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { SeoUrlChecker } from '@/components/admin/SeoUrlChecker';
+import { MerchantCleanupDiagnostics } from '@/components/admin/MerchantCleanupDiagnostics';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -1466,6 +1467,9 @@ export default function MerchantIntegrationPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Merchant Cleanup Diagnostics */}
+        <MerchantCleanupDiagnostics />
 
         {/* SEO Crawl Status Checker */}
         <SeoUrlChecker />
