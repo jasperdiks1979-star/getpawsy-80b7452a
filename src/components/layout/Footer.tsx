@@ -239,8 +239,8 @@ export const Footer = () => {
                 </span>
               </Link>
                <p className="text-background/70 leading-relaxed max-w-sm">
-                Dog training essentials shipped from warehouses located in the United States. 
-                Potty training. Behavior correction. Safer walks.
+                GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. 
+                Customer satisfaction is our priority.
                </p>
               
               {/* Social Links */}
@@ -397,11 +397,13 @@ export const Footer = () => {
               </div>
             </div>
             <p className="text-sm text-background/60 mt-4 max-w-3xl">
-              GetPawsy is operated by Skidzo, a registered business in the Netherlands.
-              We serve United States customers and fulfill orders via US warehouse partners.
+              GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals.
+              We carefully select our pet products to ensure quality and comfort for your pets.
+              Customer support available via email.
             </p>
             <div className="mt-3 space-y-1 text-sm text-background/60">
-              <p>Business registration: Netherlands (Apeldoorn, Gelderland)</p>
+              <p>Operating location: Netherlands</p>
+              <p>Shipping destination: United States</p>
               <p>KVK: 78156955 · VAT: NL003295015B69</p>
             </div>
           </div>
@@ -444,10 +446,11 @@ export const Footer = () => {
           <div className="container px-4 md:px-6 py-4 border-b border-background/10">
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-background/60">
               <span>Processing time: 1–2 business days</span>
-              <span>Delivery time: 3–7 business days</span>
-              <span>Ships from US warehouses</span>
+              <span>Delivery time: 5–10 business days</span>
+              <span>Tracking included with every order</span>
               <span>30-day returns</span>
               <span>Secure checkout</span>
+              <span>Customer support available via email</span>
             </div>
           </div>
         <div className="container px-4 md:px-6 py-6">
@@ -455,8 +458,8 @@ export const Footer = () => {
               {/* US Trust Section */}
               <div className="flex flex-col items-center gap-2 text-xs text-background/40 border-b border-background/10 pb-4">
                 <div className="flex flex-wrap justify-center gap-4 text-background/60 mb-2">
-                  <span>📦 Ships from US warehouses</span>
-                  <span>🚚 3–7 business day delivery</span>
+                  <span>📦 Free shipping to the United States</span>
+                  <span>🚚 5–10 business day delivery</span>
                   <span>↩️ 30-day easy returns</span>
                   <span>🔒 Secure checkout</span>
                 </div>
