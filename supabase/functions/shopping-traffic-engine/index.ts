@@ -31,7 +31,7 @@ interface Product {
   category: string | null;
   
   image_url: string | null;
-  additional_images: string[] | null;
+  images: string[] | null;
   weight: number | null;
   stock: number | null;
   description: string | null;
@@ -73,7 +73,7 @@ function scoreVisibility(p: Product): { score: number; reasons: string[] } {
     score += 2;
     reasons.push("has_image");
   }
-  if (p.additional_images && p.additional_images.length >= 2) {
+  if (p.images && p.images.length >= 2) {
     score += 2;
     reasons.push("multiple_images");
   }
@@ -129,7 +129,7 @@ function scoreBestseller(p: Product): number {
 
   // Has clear image
   if (p.image_url && p.image_url.length > 10) score += 2;
-  if (p.additional_images && p.additional_images.length >= 1) score += 1;
+  if (p.images && p.images.length >= 1) score += 1;
 
   // Has structured data
   if (p.product_type) score += 1;
@@ -177,7 +177,7 @@ serve(async (req) => {
     // Fetch active products
     const { data: products, error: fetchErr } = await supabase
       .from("products")
-      .select("id, name, slug, price, cost_price, category, image_url, additional_images, weight, stock, description, product_type, google_product_category, custom_label_0, species")
+      .select("id, name, slug, price, cost_price, category, image_url, images, weight, stock, description, product_type, google_product_category, custom_label_0, species")
       .eq("is_active", true)
       .limit(limit);
 
