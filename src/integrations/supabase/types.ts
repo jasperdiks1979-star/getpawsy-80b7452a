@@ -4593,6 +4593,9 @@ export type Database = {
           custom_label_2: string | null
           custom_label_3: string | null
           custom_label_4: string | null
+          custom_label_5: string | null
+          custom_label_6: string | null
+          custom_label_7: string | null
           dedupe_key: string | null
           description: string | null
           google_product_category: string | null
@@ -4636,6 +4639,9 @@ export type Database = {
           custom_label_2?: string | null
           custom_label_3?: string | null
           custom_label_4?: string | null
+          custom_label_5?: string | null
+          custom_label_6?: string | null
+          custom_label_7?: string | null
           dedupe_key?: string | null
           description?: string | null
           google_product_category?: string | null
@@ -4679,6 +4685,9 @@ export type Database = {
           custom_label_2?: string | null
           custom_label_3?: string | null
           custom_label_4?: string | null
+          custom_label_5?: string | null
+          custom_label_6?: string | null
+          custom_label_7?: string | null
           dedupe_key?: string | null
           description?: string | null
           google_product_category?: string | null
