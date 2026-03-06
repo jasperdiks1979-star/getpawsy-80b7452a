@@ -19,7 +19,7 @@ serve(async (req) => {
     // Tier B2 is index,follow but NOT in sitemaps (crawl budget control)
     const { data: products, error } = await sb
       .from("products")
-      .select("slug, updated_at, is_active, is_duplicate, stock, name, seo_tier")
+      .select("slug, updated_at, is_active, is_duplicate, stock, name, seo_tier, image_url, images")
       .eq("is_active", true)
       .not("slug", "is", null)
       .in("seo_tier", ["A", "B1"])
@@ -77,22 +77,43 @@ serve(async (req) => {
     const start = (validPage - 1) * MAX_URLS_PER_SITEMAP;
     const slice = uniqueProducts.slice(start, start + MAX_URLS_PER_SITEMAP);
 
-    // Generate XML
+    // Generate XML with image sitemap extension
     const urls = slice.map(p => {
       const loc = `${CANONICAL_HOST}/product/${p.slug}`;
       const lastmod = p.updated_at
         ? new Date(p.updated_at).toISOString().split("T")[0]
         : new Date().toISOString().split("T")[0];
+
+      // Collect all product images
+      const allImages: string[] = [];
+      if (p.image_url) allImages.push(p.image_url);
+      if (Array.isArray(p.images)) {
+        for (const img of p.images) {
+          if (typeof img === 'string' && img && !allImages.includes(img)) {
+            allImages.push(img);
+          }
+        }
+      }
+
+      const imageXml = allImages.slice(0, 10).map(img =>
+        `    <image:image>
+      <image:loc>${escapeXml(img)}</image:loc>
+      <image:title>${escapeXml(p.name || '')}</image:title>
+    </image:image>`
+      ).join("\n");
+
       return `  <url>
     <loc>${escapeXml(loc)}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
+${imageXml}
   </url>`;
     });
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${urls.join("\n")}
 </urlset>`;
 
