@@ -769,7 +769,7 @@ export default function MerchantIntegrationPage() {
                 size="sm"
                 disabled={titleOptRunning}
                 onClick={async () => {
-                  if (!confirm('This will rewrite ALL active product titles. Original names will be backed up. Continue?')) return;
+                  if (!confirm('This will rewrite ALL active product titles in chunks of 50. Original names will be backed up. Continue?')) return;
                   setTitleOptRunning(true);
                   setTitleOptReport(null);
                   const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`;
@@ -777,20 +777,54 @@ export default function MerchantIntegrationPage() {
                     const { data: sessionData } = await supabase.auth.getSession();
                     const token = sessionData?.session?.access_token;
                     if (!token) throw new Error('Not authenticated. Please log in as admin first.');
-                    const res = await fetch(endpoint, {
-                      method: 'POST',
-                      headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({ dryRun: false }),
-                    });
-                    const json = await res.json().catch(() => ({}));
-                    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-                    setTitleOptReport(json);
-                    toast.success(`${json?.updatedCount ?? 0} titles updated!`);
+                    
+                    const CHUNK = 50;
+                    let totalOptimized = 0;
+                    let totalUpdated = 0;
+                    let totalErrors = 0;
+                    let totalProducts = 0;
+                    let allSamples: any[] = [];
+                    let chunkIndex = 0;
+                    let hasMore = true;
+
+                    while (hasMore) {
+                      toast.info(`Processing chunk ${chunkIndex + 1}...`);
+                      const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ dryRun: false, limit: CHUNK, offset: chunkIndex * CHUNK }),
+                      });
+                      const json = await res.json().catch(() => ({}));
+                      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                      
+                      totalOptimized += json.optimizedCount || 0;
+                      totalUpdated += json.updatedCount || 0;
+                      totalErrors += json.errorCount || 0;
+                      totalProducts += json.totalProducts || 0;
+                      if (json.samples) allSamples.push(...json.samples);
+                      
+                      // If we got fewer products than CHUNK, we're done
+                      hasMore = (json.totalProducts || 0) >= CHUNK;
+                      chunkIndex++;
+                      
+                      // Update report progressively
+                      setTitleOptReport({
+                        totalProducts: totalProducts,
+                        optimizedCount: totalOptimized,
+                        updatedCount: totalUpdated,
+                        errorCount: totalErrors,
+                        dryRun: false,
+                        samples: allSamples.slice(0, 10),
+                        _chunksCompleted: chunkIndex,
+                      });
+                    }
+                    
+                    toast.success(`Done! ${totalUpdated} titles updated across ${chunkIndex} chunks.`);
                   } catch (err: any) {
-                    setTitleOptReport({ _testError: err.message || 'Failed' });
+                    setTitleOptReport((prev: any) => ({ ...prev, _testError: err.message || 'Failed' }));
                     toast.error(err.message || 'Failed');
                   } finally {
                     setTitleOptRunning(false);
