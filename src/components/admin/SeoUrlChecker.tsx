@@ -52,7 +52,7 @@ function analyzeUrl(inputUrl: string): CheckResult {
   const robotsTag = isNoindex ? 'noindex, follow' : 'index, follow';
 
   // Build canonical
-  const cleanPath = path.replace(/\\/+$/, '') || '';
+  const cleanPath = path.replace(/\/+$/, '') || '';
   const canonical = `${SITE_URL}${cleanPath}`;
 
   // Check sitemap inclusion
