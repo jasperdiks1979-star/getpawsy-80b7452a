@@ -38,7 +38,6 @@ interface Product {
   product_type: string | null;
   google_product_category: string | null;
   custom_label_0: string | null;
-  species: string | null;
 }
 
 interface ScoredProduct {
@@ -150,7 +149,7 @@ function scoreDemand(p: Product): number {
   }
 
   // Dog/cat specific boost (these have higher Shopping volume)
-  const animal = (p.custom_label_0 || p.species || "").toLowerCase();
+  const animal = (p.custom_label_0 || "").toLowerCase();
   if (animal === "dog") score += 2;
   else if (animal === "cat") score += 1;
 
@@ -177,7 +176,7 @@ serve(async (req) => {
     // Fetch active products
     const { data: products, error: fetchErr } = await supabase
       .from("products")
-      .select("id, name, slug, price, cost_price, category, image_url, images, weight, stock, description, product_type, google_product_category, custom_label_0, species")
+      .select("id, name, slug, price, cost_price, category, image_url, images, weight, stock, description, product_type, google_product_category, custom_label_0")
       .eq("is_active", true)
       .limit(limit);
 
