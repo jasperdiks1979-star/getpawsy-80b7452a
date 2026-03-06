@@ -284,21 +284,25 @@ Deno.serve(async (req: Request) => {
         failed = true;
       }
 
-      // Soft fails (cj-google-sync uses placeholders/fallbacks, doesn't skip)
+      // Hard fails — must match merchant-sync and vite-plugin exclusion rules
       if (!isValidImageUrl(p.image_url)) {
         addToBucket("missing_image", p);
+        failed = true;
       }
 
       if (!p.description || p.description.trim() === "") {
         addToBucket("missing_description", p);
+        failed = true;
       }
 
       if (!p.slug) {
         addToBucket("missing_link", p);
+        failed = true;
       }
 
       if (!p.stock || p.stock <= 0) {
         addToBucket("oos", p);
+        failed = true;
       }
 
       // GTIN/MPN — cj-google-sync doesn't use them but Merchant requires identifiers
