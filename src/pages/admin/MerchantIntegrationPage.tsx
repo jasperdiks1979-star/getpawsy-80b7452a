@@ -695,20 +695,33 @@ export default function MerchantIntegrationPage() {
                 disabled={titleOptRunning}
                 onClick={async () => {
                   setTitleOptReport(null);
+                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`;
                   try {
-                    const { data, error } = await invokeFunction<any>(
-                      'optimize-product-titles',
-                      { silent: true, body: { dryRun: true, limit: 1 } }
-                    );
-                    if (error) {
-                      setTitleOptReport({ _testError: String(error) });
-                      toast.error(`Test failed: ${error}`);
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const token = sessionData?.session?.access_token;
+                    if (!token) {
+                      setTitleOptReport({ _testError: 'Not authenticated. Please log in as admin first.', _httpStatus: 0 });
+                      toast.error('Not authenticated. Please log in first.');
+                      return;
+                    }
+                    const res = await fetch(endpoint, {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ dryRun: true, limit: 1 }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                      setTitleOptReport({ _testError: json.error || `HTTP ${res.status}`, _httpStatus: res.status, _responseBody: JSON.stringify(json) });
+                      toast.error(`Test failed: HTTP ${res.status} – ${json.error || 'Unknown'}`);
                     } else {
-                      setTitleOptReport({ _testSuccess: true, endpoint: `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/optimize-product-titles`, ...data });
+                      setTitleOptReport({ _testSuccess: true, _httpStatus: res.status, endpoint, ...json });
                       toast.success('Function reachable ✓');
                     }
                   } catch (err: any) {
-                    setTitleOptReport({ _testError: err.message || 'Unknown error' });
+                    setTitleOptReport({ _testError: err.message || 'Network error', _httpStatus: 0 });
                     toast.error(`Test failed: ${err.message}`);
                   }
                 }}
@@ -723,14 +736,23 @@ export default function MerchantIntegrationPage() {
                 onClick={async () => {
                   setTitleOptRunning(true);
                   setTitleOptReport(null);
+                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`;
                   try {
-                    const { data, error } = await invokeFunction<any>(
-                      'optimize-product-titles',
-                      { silent: true, body: { dryRun: true, limit: 20 } }
-                    );
-                    if (error) throw new Error(String(error));
-                    setTitleOptReport(data);
-                    toast.success(`Preview: ${data?.optimizedCount ?? 0} titles optimized`);
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const token = sessionData?.session?.access_token;
+                    if (!token) throw new Error('Not authenticated. Please log in as admin first.');
+                    const res = await fetch(endpoint, {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ dryRun: true, limit: 20 }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                    setTitleOptReport(json);
+                    toast.success(`Preview: ${json?.optimizedCount ?? 0} titles optimized`);
                   } catch (err: any) {
                     setTitleOptReport({ _testError: err.message || 'Failed' });
                     toast.error(err.message || 'Failed');
@@ -750,14 +772,23 @@ export default function MerchantIntegrationPage() {
                   if (!confirm('This will rewrite ALL active product titles. Original names will be backed up. Continue?')) return;
                   setTitleOptRunning(true);
                   setTitleOptReport(null);
+                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`;
                   try {
-                    const { data, error } = await invokeFunction<any>(
-                      'optimize-product-titles',
-                      { silent: true, body: { dryRun: false } }
-                    );
-                    if (error) throw new Error(String(error));
-                    setTitleOptReport(data);
-                    toast.success(`${data?.updatedCount ?? 0} titles updated!`);
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const token = sessionData?.session?.access_token;
+                    if (!token) throw new Error('Not authenticated. Please log in as admin first.');
+                    const res = await fetch(endpoint, {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ dryRun: false }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                    setTitleOptReport(json);
+                    toast.success(`${json?.updatedCount ?? 0} titles updated!`);
                   } catch (err: any) {
                     setTitleOptReport({ _testError: err.message || 'Failed' });
                     toast.error(err.message || 'Failed');
@@ -775,13 +806,23 @@ export default function MerchantIntegrationPage() {
               <div className="p-3 bg-destructive/10 border border-destructive/30 rounded text-sm space-y-1">
                 <p className="font-medium text-destructive">❌ Error Details</p>
                 <p className="text-xs text-muted-foreground font-mono break-all">{titleOptReport._testError}</p>
-                <p className="text-xs text-muted-foreground">Endpoint: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/optimize-product-titles</p>
+                {titleOptReport._httpStatus !== undefined && (
+                  <p className="text-xs text-muted-foreground">HTTP Status: {titleOptReport._httpStatus}</p>
+                )}
+                {titleOptReport._responseBody && (
+                  <p className="text-xs text-muted-foreground font-mono break-all">Response: {titleOptReport._responseBody}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Endpoint: https://{import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles</p>
+                {titleOptReport._httpStatus === 401 && (
+                  <p className="text-xs text-destructive font-medium">⚠️ Authorization failed. Make sure you are logged in as an admin user.</p>
+                )}
               </div>
             )}
             {titleOptReport?._testSuccess && (
               <div className="p-3 bg-primary/10 border border-primary/30 rounded text-sm space-y-1">
-                <p className="font-medium text-primary">✅ Function Reachable</p>
+                <p className="font-medium text-primary">✅ Function Reachable (HTTP {titleOptReport._httpStatus})</p>
                 <p className="text-xs text-muted-foreground font-mono break-all">{titleOptReport.endpoint}</p>
+                <p className="text-xs text-muted-foreground">Auth: Bearer token sent ✓</p>
               </div>
             )}
 
