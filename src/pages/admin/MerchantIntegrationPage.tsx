@@ -119,7 +119,9 @@ interface DebugReport {
 interface LiveSyncResult {
   ok: boolean;
   runId: string;
+  timestamp?: string;
   mode_effective: string;
+  durationMs?: number;
   compliance_safe?: boolean;
   rawCount: number;
   eligibleCount: number;
@@ -127,6 +129,8 @@ interface LiveSyncResult {
   attemptedSendCount: number;
   successCount: number;
   errorCount: number;
+  successProductIds?: string[];
+  failedProductIds?: string[];
   skippedReasons: Record<string, number>;
   topErrors: Array<{ offerId: string; status?: number; reason: string }>;
   sourceQuery: string;
@@ -146,6 +150,8 @@ interface LiveSyncResult {
   } | null;
   error?: string;
 }
+
+type SyncPhase = 'idle' | 'preparing' | 'sending' | 'awaiting' | 'completed';
 
 export default function MerchantIntegrationPage() {
   const { invokeFunction, refreshSessionIfNeeded } = useAuthenticatedFetch();
