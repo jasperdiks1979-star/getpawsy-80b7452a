@@ -684,10 +684,14 @@ export default function MerchantIntegrationPage() {
                   <Bug className="h-5 w-5" />
                   Debug Summary — Dry Run
                 </CardTitle>
-                <Button variant="ghost" size="sm" onClick={copyReport}>
-                  <Copy className="h-4 w-4 mr-1" /> Copy report
-                </Button>
-              </div>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={copyReport}>
+                    <Copy className="h-4 w-4 mr-1" /> Copy
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => downloadJson(debugReport, `merchant-dryrun-${debugReport.runId.slice(0, 8)}.json`)}>
+                    <Database className="h-4 w-4 mr-1" /> Download JSON
+                  </Button>
+                </div>
               <CardDescription>Run ID: {debugReport.runId} • {formatDate(debugReport.timestamp)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
