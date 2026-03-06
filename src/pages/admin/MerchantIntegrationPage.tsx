@@ -160,6 +160,8 @@ export default function MerchantIntegrationPage() {
   const [showLiveErrors, setShowLiveErrors] = useState(false);
   const [showLiveFullResponse, setShowLiveFullResponse] = useState(false);
   const [reachability, setReachability] = useState<{ testing: boolean; result: null | { reachable: boolean; latencyMs?: number; error?: string } }>({ testing: false, result: null });
+  const [titleOptRunning, setTitleOptRunning] = useState(false);
+  const [titleOptReport, setTitleOptReport] = useState<any>(null);
 
   const testReachability = useCallback(async () => {
     setReachability({ testing: true, result: null });
@@ -675,6 +677,113 @@ export default function MerchantIntegrationPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Title Optimizer */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Google Shopping Title Optimizer
+            </CardTitle>
+            <CardDescription>AI-powered title optimization for better Shopping match rates</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={titleOptRunning}
+                onClick={async () => {
+                  setTitleOptRunning(true);
+                  setTitleOptReport(null);
+                  try {
+                    const { data, error } = await invokeFunction<any>(
+                      'optimize-product-titles',
+                      { silent: true, body: { dryRun: true, limit: 20 } }
+                    );
+                    if (error) throw new Error(String(error));
+                    setTitleOptReport(data);
+                    toast.success(`Preview: ${data?.optimizedCount ?? 0} titles optimized`);
+                  } catch (err: any) {
+                    toast.error(err.message || 'Failed');
+                  } finally {
+                    setTitleOptRunning(false);
+                  }
+                }}
+              >
+                {titleOptRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Bug className="h-4 w-4 mr-1" />}
+                Preview (20 products)
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                disabled={titleOptRunning}
+                onClick={async () => {
+                  if (!confirm('This will rewrite ALL active product titles. Original names will be backed up. Continue?')) return;
+                  setTitleOptRunning(true);
+                  setTitleOptReport(null);
+                  try {
+                    const { data, error } = await invokeFunction<any>(
+                      'optimize-product-titles',
+                      { silent: true, body: { dryRun: false } }
+                    );
+                    if (error) throw new Error(String(error));
+                    setTitleOptReport(data);
+                    toast.success(`${data?.updatedCount ?? 0} titles updated!`);
+                  } catch (err: any) {
+                    toast.error(err.message || 'Failed');
+                  } finally {
+                    setTitleOptRunning(false);
+                  }
+                }}
+              >
+                {titleOptRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                Optimize All Titles
+              </Button>
+            </div>
+
+            {titleOptReport && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="p-2 bg-muted rounded text-center">
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="text-lg font-bold">{titleOptReport.totalProducts}</p>
+                  </div>
+                  <div className="p-2 bg-primary/10 rounded text-center">
+                    <p className="text-xs text-muted-foreground">Optimized</p>
+                    <p className="text-lg font-bold">{titleOptReport.optimizedCount}</p>
+                  </div>
+                  <div className="p-2 bg-muted rounded text-center">
+                    <p className="text-xs text-muted-foreground">Updated</p>
+                    <p className="text-lg font-bold">{titleOptReport.updatedCount}</p>
+                  </div>
+                  <div className="p-2 bg-destructive/10 rounded text-center">
+                    <p className="text-xs text-muted-foreground">Errors</p>
+                    <p className="text-lg font-bold">{titleOptReport.errorCount}</p>
+                  </div>
+                </div>
+                {titleOptReport.dryRun && (
+                  <Badge variant="outline" className="text-xs">🔍 Dry Run — no changes applied</Badge>
+                )}
+                {titleOptReport.samples?.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Sample Results</p>
+                    {titleOptReport.samples.map((s: any) => (
+                      <div key={s.id} className="p-2 border border-border/50 rounded text-xs space-y-1">
+                        <div className="text-muted-foreground">
+                          <span className="font-medium text-foreground">{s.category}</span>
+                        </div>
+                        <div className="text-destructive/70 line-through">{s.original}</div>
+                        <div className="text-primary font-medium">{s.optimized}</div>
+                        <span className="text-muted-foreground">{s.charCount} chars</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Last Sync Summary */}
         {status?.lastSync && (
