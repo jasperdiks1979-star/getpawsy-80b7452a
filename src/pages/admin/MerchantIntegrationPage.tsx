@@ -167,6 +167,7 @@ export default function MerchantIntegrationPage() {
   const [liveSyncResult, setLiveSyncResult] = useState<LiveSyncResult | null>(null);
   const [showLiveErrors, setShowLiveErrors] = useState(false);
   const [showLiveFullResponse, setShowLiveFullResponse] = useState(false);
+  const [syncPhase, setSyncPhase] = useState<SyncPhase>('idle');
   const [reachability, setReachability] = useState<{ testing: boolean; result: null | { reachable: boolean; latencyMs?: number; error?: string } }>({ testing: false, result: null });
   const [titleOptRunning, setTitleOptRunning] = useState(false);
   const [titleOptReport, setTitleOptReport] = useState<any>(null);
@@ -236,20 +237,20 @@ export default function MerchantIntegrationPage() {
   const handleSync = async () => {
     setSyncing(true);
     setLiveSyncResult(null);
+    setSyncPhase('preparing');
     try {
-      // Use raw fetch with extended timeout (5 min) — supabase.functions.invoke
-      // has a short default timeout that causes "Failed to send a request" for
-      // long-running syncs (image validation + API batches takes 3+ minutes).
       const session = await refreshSessionIfNeeded();
       if (!session?.access_token) {
         toast.error('Session expired. Please log in again.');
         setSyncing(false);
+        setSyncPhase('idle');
         return;
       }
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300_000); // 5 min
+      const timeoutId = setTimeout(() => controller.abort(), 300_000);
+      setSyncPhase('sending');
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/merchant-sync`,
         {
@@ -264,10 +265,13 @@ export default function MerchantIntegrationPage() {
         }
       );
       clearTimeout(timeoutId);
+      setSyncPhase('awaiting');
       const data = await res.json() as LiveSyncResult;
       setLiveSyncResult(data);
+      setSyncPhase('completed');
       if (data.ok) {
-        toast.success(`Sync: ${data.successCount} sent, ${data.errorCount} errors`);
+        const label = data.errorCount > 0 ? 'LIVE sync completed with warnings' : 'LIVE sync completed';
+        toast.success(`${label}: ${data.successCount} sent, ${data.errorCount} errors`);
       } else {
         toast.error(data.error || 'Sync failed');
       }
@@ -277,6 +281,7 @@ export default function MerchantIntegrationPage() {
         ? 'Sync timed out (>5 min). Check logs for status.'
         : 'Sync request failed';
       toast.error(msg);
+      setSyncPhase('idle');
     } finally {
       setSyncing(false);
     }
@@ -316,6 +321,19 @@ export default function MerchantIntegrationPage() {
       navigator.clipboard.writeText(JSON.stringify(liveSyncResult, null, 2));
       toast.success('Result copied to clipboard');
     }
+  };
+
+  const downloadJson = (data: object, filename: string) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('JSON downloaded');
   };
 
   const formatDate = (d: string | null) => {
