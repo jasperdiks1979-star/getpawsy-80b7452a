@@ -296,15 +296,36 @@ const ProductDetail = () => {
     recentlyViewedIds,
   });
 
-  // Fetch guides for Related Guides section
+  // Fetch guides for Related Guides section — improved category matching
   const { data: allGuides } = useGuidesList();
   const relatedGuides = useMemo(() => {
     if (!allGuides || !product?.category) return [];
-    const cat = product.category.toLowerCase();
-    return allGuides.filter((g) =>
-      g.keywords.some((kw) => cat.includes(kw.split(' ')[0])) ||
-      g.relatedCategories.some((rc) => cat.includes(rc.replace(/-/g, ' ').split(' ')[0]))
-    ).slice(0, 3);
+    const cat = product.category.toLowerCase().replace(/-/g, ' ');
+    const animalType = cat.includes('dog') ? 'dog' : cat.includes('cat') ? 'cat' : '';
+
+    return allGuides.filter((g) => {
+      // Match by relatedCategories (strongest signal)
+      const catMatch = g.relatedCategories?.some((rc) => {
+        const rcNorm = rc.replace(/-/g, ' ').toLowerCase();
+        return cat.includes(rcNorm) || rcNorm.includes(cat);
+      });
+      if (catMatch) return true;
+
+      // Match by keywords against product category
+      const kwMatch = g.keywords?.some((kw) => {
+        const kwNorm = kw.toLowerCase();
+        return cat.split(' ').some((w) => w.length > 3 && kwNorm.includes(w));
+      });
+      if (kwMatch) return true;
+
+      // Match by animal type + guide category
+      if (animalType && g.category?.toLowerCase().includes(animalType)) {
+        const guideCategory = g.category.toLowerCase();
+        return cat.split(' ').some((w) => w.length > 3 && guideCategory.includes(w));
+      }
+
+      return false;
+    }).slice(0, 4);
   }, [allGuides, product?.category]);
 
   // Fetch product reviews
