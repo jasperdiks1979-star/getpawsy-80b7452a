@@ -692,6 +692,7 @@ export default function MerchantIntegrationPage() {
                     <Database className="h-4 w-4 mr-1" /> Download JSON
                   </Button>
                 </div>
+              </div>
               <CardDescription>Run ID: {debugReport.runId} • {formatDate(debugReport.timestamp)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
