@@ -6,11 +6,11 @@ export const CategoryTrustStrip = () => {
     <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 py-3 px-4 bg-muted/50 rounded-xl border border-border text-xs text-muted-foreground">
       <div className="flex items-center gap-1.5">
         <Package className="w-3.5 h-3.5 text-primary" />
-        <span>Ships from US warehouses</span>
+        <span>Free Shipping to the US</span>
       </div>
       <div className="flex items-center gap-1.5">
         <Truck className="w-3.5 h-3.5 text-primary" />
-        <span>Free Shipping Over ${FREE_SHIPPING_THRESHOLD}</span>
+        <span>Delivery: 5–10 Business Days</span>
       </div>
       <div className="flex items-center gap-1.5">
         <RotateCcw className="w-3.5 h-3.5 text-primary" />
