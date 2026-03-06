@@ -14,7 +14,7 @@ import { execSync } from 'child_process';
 const BASE_URL = 'https://getpawsy.pet';
 const SUPABASE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc';
-const FREE_SHIPPING_THRESHOLD = 35;
+const FREE_SHIPPING_THRESHOLD = 49;
 
 // ── Supabase REST helper ──────────────────────────────────────────────
 
@@ -399,10 +399,15 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): string
 
   // Build extra fields
   let extra = '';
-  if (p.sku) { extra += `      <g:mpn>${esc(p.sku)}</g:mpn>\n`; }
-  else { extra += `      <g:identifier_exists>no</g:identifier_exists>\n`; }
+  // GTIN / identifier handling (Phase 3)
+  if (p.sku) {
+    extra += `      <g:mpn>${esc(p.sku)}</g:mpn>\n`;
+  } else {
+    extra += `      <g:identifier_exists>no</g:identifier_exists>\n`;
+    extra += `      <g:mpn>${esc(p.id)}</g:mpn>\n`;
+  }
 
-  // Additional images — only valid https URLs
+  // Additional images — only valid https URLs (Phase 7)
   if (p.images && p.images.length > 1) {
     for (const ai of p.images.slice(1, 11)) {
       const sanitized = sanitizeImageUrl(ai);
@@ -435,6 +440,8 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): string
 ${priceXml}
       <g:condition>new</g:condition>
       <g:brand>GetPawsy</g:brand>
+      <g:adult>no</g:adult>
+      <g:age_group>adult</g:age_group>
 ${extra}      <g:product_type>${esc(getProductType(p.category))}</g:product_type>
       <g:google_product_category>${esc(getGoogleProductCategory(p.category))}</g:google_product_category>
       <g:shipping>
