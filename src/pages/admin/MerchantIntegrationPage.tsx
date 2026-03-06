@@ -266,7 +266,30 @@ export default function MerchantIntegrationPage() {
       );
       clearTimeout(timeoutId);
       setSyncPhase('awaiting');
-      const data = await res.json() as LiveSyncResult;
+      
+      // Handle non-JSON responses (e.g. HTML error pages, empty responses)
+      const responseText = await res.text();
+      let data: LiveSyncResult;
+      try {
+        data = JSON.parse(responseText) as LiveSyncResult;
+      } catch {
+        const truncated = responseText.substring(0, 200);
+        const errMsg = res.ok
+          ? `Invalid response from sync (not JSON): ${truncated}`
+          : `Sync failed (HTTP ${res.status}): ${truncated}`;
+        toast.error(errMsg);
+        setLiveSyncResult({
+          ok: false, runId: '', mode_effective: 'live', rawCount: 0,
+          eligibleCount: 0, payloadBuiltCount: 0, attemptedSendCount: 0,
+          successCount: 0, errorCount: 0, skippedReasons: {},
+          topErrors: [], sourceQuery: '', googleStatusSummary: null,
+          error: errMsg,
+        });
+        setSyncPhase('completed');
+        setSyncing(false);
+        return;
+      }
+      
       setLiveSyncResult(data);
       setSyncPhase('completed');
       if (data.ok) {
@@ -277,11 +300,19 @@ export default function MerchantIntegrationPage() {
       }
       await Promise.all([fetchStatus(), fetchLogs()]);
     } catch (e) {
-      const msg = (e as Error).name === 'AbortError'
-        ? 'Sync timed out (>5 min). Check logs for status.'
-        : 'Sync request failed';
+      const err = e as Error;
+      const msg = err.name === 'AbortError'
+        ? 'Sync timed out (>5 min). The sync may still be running on the server — check logs.'
+        : `Sync request failed: ${err.message || 'Network error'}`;
       toast.error(msg);
-      setSyncPhase('idle');
+      setLiveSyncResult({
+        ok: false, runId: '', mode_effective: 'live', rawCount: 0,
+        eligibleCount: 0, payloadBuiltCount: 0, attemptedSendCount: 0,
+        successCount: 0, errorCount: 0, skippedReasons: {},
+        topErrors: [], sourceQuery: '', googleStatusSummary: null,
+        error: msg,
+      });
+      setSyncPhase('completed');
     } finally {
       setSyncing(false);
     }
