@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface DesktopProductGalleryProps {
   images: string[];
   productName: string;
+  category?: string;
   discount?: number;
   onImageClick?: (index: number) => void;
   badge?: React.ReactNode;
@@ -18,11 +19,17 @@ interface DesktopProductGalleryProps {
 export function DesktopProductGallery({
   images,
   productName,
+  category,
   discount,
   onImageClick,
   badge,
   className,
 }: DesktopProductGalleryProps) {
+  const keywordAlt = (idx: number) => {
+    const base = productName;
+    const suffix = category ? ` - ${category}` : '';
+    return idx === 0 ? `${base}${suffix} | GetPawsy` : `${base}${suffix} - View ${idx + 1}`;
+  };
   const [selectedImage, setSelectedImage] = React.useState(0);
   const [direction, setDirection] = React.useState(0);
   const [isHovering, setIsHovering] = React.useState(false);
@@ -229,7 +236,7 @@ export function DesktopProductGallery({
               )}>
                 <OptimizedImage
                   src={images[selectedImage]}
-                  alt={`${productName} - Image ${selectedImage + 1}`}
+                  alt={keywordAlt(selectedImage)}
                   className="object-contain pointer-events-none"
                   containerClassName="w-full h-full"
                   priority={selectedImage < 2}
@@ -244,7 +251,7 @@ export function DesktopProductGallery({
                 >
                   <img
                     src={images[selectedImage]}
-                    alt={`${productName} - Zoomed view`}
+                    alt={`${productName}${category ? ` ${category}` : ''} - Zoomed view`}
                     className="absolute w-[200%] h-[200%] max-w-none pointer-events-none object-contain"
                     style={{
                       left: `${50 - zoomPosition.x}%`,
@@ -354,7 +361,7 @@ export function DesktopProductGallery({
                   {/* Priority load first 2 thumbnails, lazy load rest */}
                   <OptimizedImage
                     src={img}
-                    alt={`${productName} thumbnail ${idx + 1}`}
+                    alt={`${productName}${category ? ` ${category}` : ''} thumbnail ${idx + 1}`}
                     aspectRatio="square"
                     className="object-cover"
                     priority={idx < 2}

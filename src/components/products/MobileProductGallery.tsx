@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 interface MobileProductGalleryProps {
   images: string[];
   productName: string;
+  category?: string;
   discount?: number;
   onImageClick?: (index: number) => void;
   badge?: React.ReactNode;
@@ -17,11 +18,17 @@ interface MobileProductGalleryProps {
 export function MobileProductGallery({
   images,
   productName,
+  category,
   discount,
   onImageClick,
   badge,
   className,
 }: MobileProductGalleryProps) {
+  const keywordAlt = (idx: number) => {
+    const base = productName;
+    const suffix = category ? ` - ${category}` : '';
+    return idx === 0 ? `${base}${suffix} | GetPawsy` : `${base}${suffix} - View ${idx + 1}`;
+  };
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     dragFree: false,
@@ -130,7 +137,7 @@ export function MobileProductGallery({
                 {idx === 0 ? (
                   <img
                     src={img}
-                    alt={`${productName} - Image ${idx + 1}`}
+                    alt={keywordAlt(idx)}
                     loading="eager"
                     fetchPriority="high"
                     decoding="async"
@@ -139,7 +146,7 @@ export function MobileProductGallery({
                 ) : (
                   <OptimizedImage
                     src={img}
-                    alt={`${productName} - Image ${idx + 1}`}
+                    alt={keywordAlt(idx)}
                     className="object-contain pointer-events-none"
                     containerClassName="w-full h-full p-2"
                     priority={false}
@@ -197,7 +204,7 @@ export function MobileProductGallery({
             >
               <OptimizedImage
                 src={img}
-                alt={`Thumbnail ${idx + 1}`}
+                alt={`${productName}${category ? ` ${category}` : ''} thumbnail ${idx + 1}`}
                 aspectRatio="square"
                 className="object-cover"
                 priority={idx < 2}
