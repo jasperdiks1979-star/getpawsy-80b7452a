@@ -70,6 +70,8 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   reviewCount,
   priority = false,
   popularChoice = false,
+  bestSeller = false,
+  topRated = false,
   showSpeciesBadge = false,
   species,
 }, ref) => {
