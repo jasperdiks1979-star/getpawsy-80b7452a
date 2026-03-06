@@ -255,6 +255,7 @@ const MerchantReadinessPage = lazyWithRetry(() => import("./pages/admin/Merchant
 const MerchantHealthPage = lazyWithRetry(() => import("./pages/admin/MerchantHealthPage"));
 const MerchantOAuthCallback = lazyWithRetry(() => import("./pages/MerchantOAuthCallback"));
 const ShoppingOptimizerPage = lazyWithRetry(() => import("./pages/admin/ShoppingOptimizerPage"));
+const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
 
 // Diagnostics pages (hidden, noindex)
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
