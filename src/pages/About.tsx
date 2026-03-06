@@ -272,14 +272,14 @@ const About = () => {
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
-                  We work with trusted fulfillment partners, primarily based in the United States, to ensure your orders are handled with care and delivered reliably.
+                  We work with trusted logistics and carrier partners to ensure your orders are delivered reliably to the United States.
                 </p>
                 
                 <div className="space-y-4 mb-6">
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
                     <p className="text-foreground">
-                      Orders ship from <strong>US fulfillment centers</strong> when available.
+                      <strong>Shipping destination:</strong> United States
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
