@@ -135,13 +135,15 @@ export default function ShopHub() {
         <section className="border-t border-border pt-8">
           <h2 className="text-lg font-bold text-foreground mb-4">Quick Links</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <Link to="/trending-pet-products" className="text-primary hover:underline">Trending Products</Link>
+            <Link to="/recent-products" className="text-primary hover:underline">Recent Products</Link>
+            <Link to="/bestsellers" className="text-primary hover:underline">Bestsellers</Link>
+            <Link to="/guides" className="text-primary hover:underline">Pet Care Guides</Link>
             <Link to="/dog/training" className="text-primary hover:underline">Dog Training Guides</Link>
             <Link to="/dog/travel" className="text-primary hover:underline">Dog Travel Guides</Link>
             <Link to="/cat/training" className="text-primary hover:underline">Cat Training Guides</Link>
             <Link to="/cat/travel" className="text-primary hover:underline">Cat Travel Guides</Link>
-            <Link to="/bestsellers" className="text-primary hover:underline">Bestsellers</Link>
             <Link to="/blog" className="text-primary hover:underline">Pet Care Blog</Link>
-            <Link to="/guides" className="text-primary hover:underline">Buying Guides</Link>
             <Link to="/products" className="text-primary hover:underline">All Products</Link>
           </div>
         </section>

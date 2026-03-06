@@ -1,0 +1,71 @@
+{
+  "slug": "how-to-travel-with-cat",
+  "title": "How to Travel With a Cat – Complete Safety & Comfort Guide (2026)",
+  "metaTitle": "How to Travel With a Cat – Car, Plane & Road Trip Guide 2026",
+  "metaDescription": "Expert tips for traveling with your cat by car or plane. Covers carrier selection, anxiety reduction, feeding schedules, and safety essentials.",
+  "excerpt": "Everything you need to know about traveling with a cat — from car trips and flights to hotel stays. Covers carrier prep, anxiety management, and safety tips.",
+  "category": "Cat Carriers",
+  "keywords": ["how to travel with cat", "traveling with a cat", "cat travel tips", "cat road trip", "flying with a cat"],
+  "publishedAt": "2026-03-06",
+  "updatedAt": "2026-03-06",
+  "readingTime": 17,
+  "relatedCategories": ["cat-carriers"],
+  "relatedGuides": ["best-cat-carrier", "how-to-choose-cat-carrier"],
+  "heroImage": "/images/guides/travel-with-cat.jpg",
+  "sections": [
+    {
+      "type": "intro",
+      "heading": "How to Travel Safely and Comfortably With Your Cat",
+      "content": "Cats are creatures of habit, and travel disrupts everything they know. But with the right preparation, traveling with your cat can be stress-free — whether you're driving to the vet, flying cross-country, or road-tripping to a new home.\n\nThis guide covers everything: carrier prep, anxiety management, feeding schedules, safety requirements, and what to pack. Follow these steps and your cat will handle travel like a seasoned explorer."
+    },
+    {
+      "type": "tutorial",
+      "heading": "Before the Trip: Carrier Training",
+      "content": "Start carrier training 2–3 weeks before travel:\n\n**Week 1:** Place the carrier in your cat's favorite room with the door open. Add a familiar blanket and treats. Let your cat explore freely.\n\n**Week 2:** Start closing the door for 5-minute intervals while you're in the room. Gradually increase to 15–20 minutes.\n\n**Week 3:** Take short car rides (5–10 minutes). End each ride with treats and praise. By travel day, your cat should see the carrier as a safe space."
+    },
+    {
+      "type": "tutorial",
+      "heading": "Traveling by Car",
+      "content": "**Secure the carrier:** Use a seat belt loop or place the carrier in the footwell behind the passenger seat. Never let your cat roam freely in the car.\n\n**Temperature control:** Keep the car between 65–75°F. Never leave a cat in a parked car.\n\n**Feeding:** Stop feeding 4 hours before the trip to prevent nausea. Offer water at rest stops every 2 hours.\n\n**Litter:** For trips over 3 hours, bring a portable litter box. Stop every 2–3 hours for bathroom breaks.\n\n**Calming aids:** Feliway spray on the carrier blanket, calming treats 30 minutes before departure, or a vet-prescribed anti-anxiety medication for long trips."
+    },
+    {
+      "type": "tutorial",
+      "heading": "Flying With Your Cat",
+      "content": "**Booking:** Most airlines allow one pet per cabin. Book early — spots are limited. Expect a $95–$125 pet fee each way.\n\n**Carrier requirements:** Soft-sided, airline-approved, fits under the seat (typically 17\"×11\"×9.5\"). Practice fitting your cat inside for 1–2 hours at home.\n\n**At the airport:** Check in at the counter (not kiosk). Remove your cat from the carrier at TSA — carry your cat through the metal detector while the carrier goes through X-ray.\n\n**During flight:** Keep the carrier under the seat with the mesh side facing you. Avoid opening the carrier during the flight."
+    },
+    {
+      "type": "tutorial",
+      "heading": "What to Pack for Cat Travel",
+      "content": "Essential travel kit:\n\n- Carrier with familiar blanket\n- Portable litter box + litter bags\n- 3-day supply of regular food\n- Collapsible water bowl\n- Medications (if any)\n- Vaccination records and health certificate\n- Feliway spray or calming treats\n- Paper towels and waste bags\n- Harness and leash (for rest stops)\n- Recent photo of your cat (in case of escape)"
+    },
+    {
+      "type": "faq",
+      "heading": "Frequently Asked Questions",
+      "items": [
+        {
+          "question": "How long can a cat stay in a carrier?",
+          "answer": "For healthy adult cats, 4–6 hours is the maximum without a break. For trips longer than 4 hours, stop every 2–3 hours for water and a litter box break in a secure, enclosed space (like the car with doors closed)."
+        },
+        {
+          "question": "Can I sedate my cat for travel?",
+          "answer": "Never sedate a cat without veterinary guidance. Sedation can cause respiratory issues, especially during flights at altitude. Ask your vet about Gabapentin or Feliway as safer alternatives."
+        },
+        {
+          "question": "Should I feed my cat before a car trip?",
+          "answer": "Stop feeding 4 hours before departure to prevent motion sickness. Offer small amounts of water. Resume normal feeding when you arrive at your destination."
+        },
+        {
+          "question": "How do I prevent my cat from meowing in the car?",
+          "answer": "Spray Feliway on the carrier blanket 15 minutes before loading. Cover the carrier with a light cloth to reduce visual stimulation. Play calming music at low volume. Avoid talking to your cat excessively — it can increase anxiety."
+        }
+      ]
+    }
+  ],
+  "productCategories": ["cat-carriers"],
+  "internalLinks": [
+    {"text": "Best Cat Carrier", "href": "/guides/best-cat-carrier"},
+    {"text": "Best Cat Carrier Backpack", "href": "/guides/best-cat-carrier-backpack"},
+    {"text": "How to Choose a Cat Carrier", "href": "/guides/how-to-choose-cat-carrier"},
+    {"text": "Cat Carriers Collection", "href": "/products?category=cat-carriers"}
+  ]
+}

@@ -150,10 +150,16 @@ export const Footer = () => {
     guideLinks: [
       { label: 'Best Cat Litter Box 2026', href: '/guides/best-cat-litter-box-2026' },
       { label: 'Best Dog Carriers for Travel', href: '/guides/best-dog-carriers-for-travel' },
-      { label: 'Best Interactive Dog Toys', href: '/guides/best-interactive-dog-toys' },
-      { label: 'Best Dog Beds for Large Dogs', href: '/guides/best-dog-beds-for-large-dogs' },
       { label: 'Best Cat Trees for Indoor Cats', href: '/guides/best-cat-trees-for-indoor-cats' },
+      { label: 'Best Automatic Cat Feeder', href: '/guides/best-automatic-cat-feeder' },
       { label: 'All Guides', href: '/guides' },
+    ],
+    discoverLinks: [
+      { label: 'Shop All', href: '/shop' },
+      { label: 'Trending Products', href: '/trending-pet-products' },
+      { label: 'Recent Products', href: '/recent-products' },
+      { label: 'Bestsellers', href: '/bestsellers' },
+      { label: 'All Products', href: '/products' },
     ],
     support: [
       { label: 'Help Center', href: '/help' },
@@ -221,7 +227,7 @@ export const Footer = () => {
       {/* Main Footer */}
       <div className="bg-foreground text-background w-full">
         <div className="container px-4 md:px-6 py-16 max-w-full">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-10">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-8 lg:gap-10">
             {/* Brand Column */}
             <div className="col-span-2 md:col-span-2 space-y-6">
               <Link to="/" className="inline-flex items-center gap-3 group">
@@ -309,6 +315,20 @@ export const Footer = () => {
             <FooterSection title="📚 Pet Care Guides">
               <ul className="space-y-3">
                 {footerLinks.guideLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      <span>{link.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </FooterSection>
+
+            {/* Discover — crawl hub links */}
+            <FooterSection title="🛍️ Discover">
+              <ul className="space-y-3">
+                {footerLinks.discoverLinks.map((link) => (
                   <li key={link.href}>
                     <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />

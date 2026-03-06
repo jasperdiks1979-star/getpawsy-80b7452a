@@ -10,20 +10,80 @@ const BASE_URL = 'https://getpawsy.pet';
 
 // Category hub metadata for topical authority
 const CATEGORY_HUBS: Record<string, { description: string; shopCategory: string; shopLabel: string }> = {
-  'Small Pets': {
-    description: 'Expert guides on habitats, nutrition, and care for guinea pigs, hamsters, and other small pets.',
-    shopCategory: 'small-pet-habitats',
-    shopLabel: 'Shop Small Pet Habitats',
+  'Cat Litter': {
+    description: 'Expert guides on choosing, maintaining, and optimizing cat litter boxes for odor control and multi-cat homes.',
+    shopCategory: 'cat-litter-boxes',
+    shopLabel: 'Shop Litter Boxes',
   },
   'Cat Furniture': {
     description: 'How to choose the right cat trees, condos, and climbing structures for your indoor cat.',
     shopCategory: 'cat-trees-and-condos',
     shopLabel: 'Shop Cat Trees & Condos',
   },
+  'Cat Carriers': {
+    description: 'Reviews and guides for cat carriers, backpacks, and travel gear for safe adventures.',
+    shopCategory: 'cat-carriers',
+    shopLabel: 'Shop Cat Carriers',
+  },
+  'Cat Travel': {
+    description: 'Tips and products for traveling safely with your cat by car or plane.',
+    shopCategory: 'cat-carriers',
+    shopLabel: 'Shop Cat Travel Gear',
+  },
+  'Cat Toys': {
+    description: 'Interactive, solo, and enrichment toys to keep indoor cats stimulated and happy.',
+    shopCategory: 'cat-toys',
+    shopLabel: 'Shop Cat Toys',
+  },
+  'Cat Feeding': {
+    description: 'Automatic feeders, water fountains, and feeding guides for healthier cats.',
+    shopCategory: 'automatic-cat-feeders',
+    shopLabel: 'Shop Cat Feeders',
+  },
+  'Cat Beds': {
+    description: 'Cozy, calming, and heated cat beds tested for comfort and durability.',
+    shopCategory: 'cat-beds',
+    shopLabel: 'Shop Cat Beds',
+  },
+  'Dog Toys': {
+    description: 'Interactive, puzzle, and chew toys for bored dogs, aggressive chewers, and training.',
+    shopCategory: 'dog-toys',
+    shopLabel: 'Shop Dog Toys & Games',
+  },
+  'Dog Beds': {
+    description: 'Orthopedic, elevated, and cooling dog beds for large breeds, arthritis, and everyday comfort.',
+    shopCategory: 'dog-beds',
+    shopLabel: 'Shop Dog Beds',
+  },
+  'Dog Training': {
+    description: 'Training equipment, methods, and toy-based techniques for every stage of your dog\'s life.',
+    shopCategory: 'dog-training-accessories',
+    shopLabel: 'Shop Training Equipment',
+  },
+  'Dog Travel': {
+    description: 'Car seats, ramps, carriers, and travel safety gear for dogs on the move.',
+    shopCategory: 'dog-carriers',
+    shopLabel: 'Shop Dog Travel Gear',
+  },
+  'Small Pets': {
+    description: 'Expert guides on habitats, nutrition, and care for guinea pigs, hamsters, and other small pets.',
+    shopCategory: 'small-pet-habitats',
+    shopLabel: 'Shop Small Pet Habitats',
+  },
   'Dog Activities': {
     description: 'Enrichment ideas, outdoor games, and training activities to keep your dog happy and healthy.',
     shopCategory: 'dog-toys',
     shopLabel: 'Shop Dog Toys & Games',
+  },
+  'Cat Care': {
+    description: 'General care, enrichment, and wellness tips for indoor and outdoor cats.',
+    shopCategory: 'cat-toys',
+    shopLabel: 'Shop Cat Enrichment',
+  },
+  'Cat Accessories': {
+    description: 'Harnesses, leashes, and accessories for adventurous cats.',
+    shopCategory: 'cat-carriers',
+    shopLabel: 'Shop Cat Accessories',
   },
 };
 

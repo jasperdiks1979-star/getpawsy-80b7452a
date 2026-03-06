@@ -1,0 +1,70 @@
+{
+  "slug": "how-to-choose-cat-carrier",
+  "title": "How to Choose the Right Cat Carrier – Complete Buyer's Guide (2026)",
+  "metaTitle": "How to Choose a Cat Carrier – Size, Type & Safety Guide 2026",
+  "metaDescription": "Learn how to choose the perfect cat carrier for vet visits, travel, and everyday use. Size guide, safety tips, and expert recommendations.",
+  "excerpt": "Not sure which cat carrier to buy? This guide covers size selection, carrier types, safety features, and airline compatibility to help you pick the perfect carrier.",
+  "category": "Cat Carriers",
+  "keywords": ["how to choose cat carrier", "cat carrier size guide", "cat carrier buying guide", "best type of cat carrier"],
+  "publishedAt": "2026-03-06",
+  "updatedAt": "2026-03-06",
+  "readingTime": 14,
+  "relatedCategories": ["cat-carriers"],
+  "relatedGuides": ["best-cat-carrier", "best-cat-carrier-backpack"],
+  "heroImage": "/images/guides/choose-cat-carrier.jpg",
+  "sections": [
+    {
+      "type": "intro",
+      "heading": "How to Choose the Right Cat Carrier",
+      "content": "Choosing the right cat carrier is one of the most important purchases you'll make as a cat parent. The wrong carrier causes stress, escape attempts, and safety risks. The right one makes vet visits, travel, and emergencies dramatically easier.\n\nThis guide walks you through every factor — from measuring your cat to understanding carrier types, airline regulations, and safety features. By the end, you'll know exactly which carrier fits your cat and your lifestyle."
+    },
+    {
+      "type": "tutorial",
+      "heading": "Step 1: Measure Your Cat",
+      "content": "Before shopping, you need three measurements:\n\n**Length:** Measure from nose tip to base of tail. Add 4 inches.\n**Height:** Measure from floor to top of head (standing). Add 3 inches.\n**Width:** Measure shoulder width. Add 3 inches.\n\nYour cat should be able to stand up, turn around, and lie down comfortably inside the carrier. Too small causes stress; too large allows sliding during transport."
+    },
+    {
+      "type": "tutorial",
+      "heading": "Step 2: Choose Your Carrier Type",
+      "content": "**Hard-shell carriers** are the safest option for car travel and vet visits. They're easy to clean, stack-proof, and provide structure during accidents. Best for: anxious cats, car travel, multi-pet households.\n\n**Soft-sided carriers** are lighter, more portable, and often airline-approved. They conform to under-seat spaces and have multiple ventilation panels. Best for: air travel, calm cats, short trips.\n\n**Backpack carriers** free your hands and distribute weight across your back. Best for: hiking, public transit, outdoor adventures.\n\n**Expandable carriers** give your cat extra space at the destination. They start compact and unfold into a larger play area. Best for: longer trips, vet waiting rooms."
+    },
+    {
+      "type": "tutorial",
+      "heading": "Step 3: Check Safety Features",
+      "content": "Essential safety features to look for:\n\n- **Locking zippers** — prevents escape during transport\n- **Interior safety leash** — clips to harness for open-door loading\n- **Reinforced bottom** — prevents sagging and keeps structure\n- **Seat belt loops** — secures carrier in car\n- **Ventilation** — mesh panels on at least 2 sides for airflow"
+    },
+    {
+      "type": "tutorial",
+      "heading": "Step 4: Consider Airline Requirements",
+      "content": "If you fly with your cat, the carrier must fit under the seat in front of you. Standard dimensions:\n\n- **Most airlines:** 17\"L × 11\"W × 9.5\"H\n- **Southwest:** 18.5\"L × 8.5\"W × 13.5\"H\n- **International flights:** Check carrier-specific policies\n\nSoft-sided carriers compress better and are more likely to fit. Always verify with your airline before booking."
+    },
+    {
+      "type": "faq",
+      "heading": "Frequently Asked Questions",
+      "items": [
+        {
+          "question": "What size cat carrier do I need?",
+          "answer": "Measure your cat's length (nose to tail base), height (floor to head), and width (shoulders). Add 3–4 inches to each measurement. Your cat should stand, turn around, and lie down inside the carrier."
+        },
+        {
+          "question": "Hard-shell or soft-sided carrier — which is better?",
+          "answer": "Hard-shell carriers are safer for car travel and anxious cats. Soft-sided carriers are better for air travel and short trips. If you only buy one, a hard-shell carrier with a top-loading door is the most versatile."
+        },
+        {
+          "question": "How do I get my cat used to a carrier?",
+          "answer": "Leave the carrier open at home for 1–2 weeks. Place treats, a familiar blanket, and catnip inside. Feed meals near the carrier, then inside it. Take short car rides before the first vet trip."
+        },
+        {
+          "question": "Can I use a dog carrier for my cat?",
+          "answer": "Small dog carriers often work, but verify the ventilation and escape-proof features. Cat carriers typically have tighter mesh and more secure latches because cats are more likely to attempt escape."
+        }
+      ]
+    }
+  ],
+  "productCategories": ["cat-carriers"],
+  "internalLinks": [
+    {"text": "Best Cat Carrier", "href": "/guides/best-cat-carrier"},
+    {"text": "Best Cat Carrier Backpack", "href": "/guides/best-cat-carrier-backpack"},
+    {"text": "Cat Carriers Collection", "href": "/products?category=cat-carriers"}
+  ]
+}
