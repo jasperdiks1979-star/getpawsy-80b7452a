@@ -119,7 +119,9 @@ interface DebugReport {
 interface LiveSyncResult {
   ok: boolean;
   runId: string;
+  timestamp?: string;
   mode_effective: string;
+  durationMs?: number;
   compliance_safe?: boolean;
   rawCount: number;
   eligibleCount: number;
@@ -127,6 +129,8 @@ interface LiveSyncResult {
   attemptedSendCount: number;
   successCount: number;
   errorCount: number;
+  successProductIds?: string[];
+  failedProductIds?: string[];
   skippedReasons: Record<string, number>;
   topErrors: Array<{ offerId: string; status?: number; reason: string }>;
   sourceQuery: string;
@@ -147,6 +151,8 @@ interface LiveSyncResult {
   error?: string;
 }
 
+type SyncPhase = 'idle' | 'preparing' | 'sending' | 'awaiting' | 'completed';
+
 export default function MerchantIntegrationPage() {
   const { invokeFunction, refreshSessionIfNeeded } = useAuthenticatedFetch();
   const navigate = useNavigate();
@@ -161,6 +167,7 @@ export default function MerchantIntegrationPage() {
   const [liveSyncResult, setLiveSyncResult] = useState<LiveSyncResult | null>(null);
   const [showLiveErrors, setShowLiveErrors] = useState(false);
   const [showLiveFullResponse, setShowLiveFullResponse] = useState(false);
+  const [syncPhase, setSyncPhase] = useState<SyncPhase>('idle');
   const [reachability, setReachability] = useState<{ testing: boolean; result: null | { reachable: boolean; latencyMs?: number; error?: string } }>({ testing: false, result: null });
   const [titleOptRunning, setTitleOptRunning] = useState(false);
   const [titleOptReport, setTitleOptReport] = useState<any>(null);
@@ -230,20 +237,20 @@ export default function MerchantIntegrationPage() {
   const handleSync = async () => {
     setSyncing(true);
     setLiveSyncResult(null);
+    setSyncPhase('preparing');
     try {
-      // Use raw fetch with extended timeout (5 min) — supabase.functions.invoke
-      // has a short default timeout that causes "Failed to send a request" for
-      // long-running syncs (image validation + API batches takes 3+ minutes).
       const session = await refreshSessionIfNeeded();
       if (!session?.access_token) {
         toast.error('Session expired. Please log in again.');
         setSyncing(false);
+        setSyncPhase('idle');
         return;
       }
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300_000); // 5 min
+      const timeoutId = setTimeout(() => controller.abort(), 300_000);
+      setSyncPhase('sending');
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/merchant-sync`,
         {
@@ -258,10 +265,13 @@ export default function MerchantIntegrationPage() {
         }
       );
       clearTimeout(timeoutId);
+      setSyncPhase('awaiting');
       const data = await res.json() as LiveSyncResult;
       setLiveSyncResult(data);
+      setSyncPhase('completed');
       if (data.ok) {
-        toast.success(`Sync: ${data.successCount} sent, ${data.errorCount} errors`);
+        const label = data.errorCount > 0 ? 'LIVE sync completed with warnings' : 'LIVE sync completed';
+        toast.success(`${label}: ${data.successCount} sent, ${data.errorCount} errors`);
       } else {
         toast.error(data.error || 'Sync failed');
       }
@@ -271,6 +281,7 @@ export default function MerchantIntegrationPage() {
         ? 'Sync timed out (>5 min). Check logs for status.'
         : 'Sync request failed';
       toast.error(msg);
+      setSyncPhase('idle');
     } finally {
       setSyncing(false);
     }
@@ -310,6 +321,19 @@ export default function MerchantIntegrationPage() {
       navigator.clipboard.writeText(JSON.stringify(liveSyncResult, null, 2));
       toast.success('Result copied to clipboard');
     }
+  };
+
+  const downloadJson = (data: object, filename: string) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('JSON downloaded');
   };
 
   const formatDate = (d: string | null) => {
@@ -447,6 +471,47 @@ export default function MerchantIntegrationPage() {
           </CardContent>
         </Card>
 
+        {/* Sync Phase Indicator */}
+        {syncing && syncPhase !== 'idle' && (
+          <Card className="border-primary/50">
+            <CardContent className="py-4 px-4">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    {syncPhase === 'preparing' && 'Preparing payload…'}
+                    {syncPhase === 'sending' && 'Sending to Google Merchant Center…'}
+                    {syncPhase === 'awaiting' && 'Awaiting API response…'}
+                  </p>
+                  <div className="flex gap-4 mt-2">
+                    {(['preparing', 'sending', 'awaiting', 'completed'] as SyncPhase[]).map((phase, i) => {
+                      const phaseOrder = { idle: -1, preparing: 0, sending: 1, awaiting: 2, completed: 3 };
+                      const current = phaseOrder[syncPhase];
+                      const thisPhase = phaseOrder[phase];
+                      const isDone = thisPhase < current;
+                      const isActive = thisPhase === current;
+                      return (
+                        <div key={phase} className="flex items-center gap-1 text-xs">
+                          {isDone ? (
+                            <CheckCircle2 className="h-3 w-3 text-primary" />
+                          ) : isActive ? (
+                            <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                          ) : (
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                          )}
+                          <span className={isDone || isActive ? 'text-foreground' : 'text-muted-foreground'}>
+                            {['Prepare', 'Send', 'Await', 'Done'][i]}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Live Sync Result Panel */}
         {liveSyncResult && (
           <Card className={liveSyncResult.mode_effective === 'dryrun' ? 'border-amber-500/50' : liveSyncResult.errorCount > 0 ? 'border-destructive/50' : 'border-primary/50'}>
@@ -462,20 +527,40 @@ export default function MerchantIntegrationPage() {
                     <Badge variant="default" className="ml-2 text-sm">LIVE</Badge>
                   )}
                 </CardTitle>
-                <Button variant="ghost" size="sm" onClick={copyLiveResult}>
-                  <Copy className="h-4 w-4 mr-1" /> Copy
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={copyLiveResult}>
+                    <Copy className="h-4 w-4 mr-1" /> Copy
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => downloadJson(liveSyncResult, `merchant-sync-${liveSyncResult.mode_effective}-${liveSyncResult.runId.slice(0, 8)}.json`)}>
+                    <Database className="h-4 w-4 mr-1" /> Download JSON
+                  </Button>
+                </div>
               </div>
-              <CardDescription>Run ID: {liveSyncResult.runId}</CardDescription>
+              <CardDescription>
+                Run ID: {liveSyncResult.runId}
+                {liveSyncResult.timestamp && <> • {formatDate(liveSyncResult.timestamp)}</>}
+                {liveSyncResult.durationMs != null && <> • {(liveSyncResult.durationMs / 1000).toFixed(1)}s</>}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Status banner */}
+              {liveSyncResult.mode_effective === 'live' && liveSyncResult.ok && (
+                <div className={`p-3 rounded-md text-sm flex items-center gap-2 ${liveSyncResult.errorCount > 0 ? 'bg-amber-500/10' : 'bg-primary/10'}`}>
+                  {liveSyncResult.errorCount > 0 ? (
+                    <><AlertTriangle className="h-4 w-4 text-amber-600" /><span className="font-medium">LIVE sync completed with warnings</span></>
+                  ) : (
+                    <><CheckCircle2 className="h-4 w-4 text-primary" /><span className="font-medium">LIVE sync completed</span></>
+                  )}
+                </div>
+              )}
+
               {/* Funnel counters */}
               <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
                 {[
                   { label: 'Raw (DB)', value: liveSyncResult.rawCount },
                   { label: 'Eligible', value: liveSyncResult.eligibleCount },
                   { label: 'Payload Built', value: liveSyncResult.payloadBuiltCount },
-                  { label: 'Attempted', value: liveSyncResult.attemptedSendCount },
+                  { label: 'Sent', value: liveSyncResult.attemptedSendCount },
                   { label: 'Success', value: liveSyncResult.successCount, color: 'text-primary' },
                   { label: 'Errors', value: liveSyncResult.errorCount, color: liveSyncResult.errorCount > 0 ? 'text-destructive' : undefined },
                 ].map((s) => (
@@ -485,6 +570,24 @@ export default function MerchantIntegrationPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Google API Status Summary */}
+              {liveSyncResult.googleStatusSummary && (
+                <div className="p-3 bg-muted/50 rounded-md space-y-1">
+                  <p className="text-sm font-medium flex items-center gap-1"><Database className="h-4 w-4" /> Google Merchant Status</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><span className="text-muted-foreground">Total in Merchant:</span> <span className="font-mono font-bold">{liveSyncResult.googleStatusSummary.totalProducts}</span></div>
+                    <div><span className="text-muted-foreground">With issues:</span> <span className={`font-mono font-bold ${liveSyncResult.googleStatusSummary.productsWithIssues > 0 ? 'text-destructive' : ''}`}>{liveSyncResult.googleStatusSummary.productsWithIssues}</span></div>
+                  </div>
+                  {Object.keys(liveSyncResult.googleStatusSummary.issuesSummary).length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {Object.entries(liveSyncResult.googleStatusSummary.issuesSummary).slice(0, 8).map(([issue, count]) => (
+                        <Badge key={issue} variant="secondary" className="text-[10px]">{issue}: {count}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Compliance Summary */}
               {liveSyncResult.complianceSummary && (
@@ -510,7 +613,7 @@ export default function MerchantIntegrationPage() {
               )}
 
               {/* Skipped reasons */}
-              {Object.keys(liveSyncResult.skippedReasons).length > 0 && (
+              {liveSyncResult.skippedReasons && Object.keys(liveSyncResult.skippedReasons).length > 0 && (
                 <div>
                   <p className="text-sm font-medium mb-1">Skipped Reasons</p>
                   <div className="flex flex-wrap gap-2">
@@ -529,7 +632,7 @@ export default function MerchantIntegrationPage() {
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" size="sm" className="text-destructive text-xs">
                       {showLiveErrors ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
-                      View {liveSyncResult.topErrors.length} error(s)
+                      View {liveSyncResult.topErrors.length} error(s) • {liveSyncResult.failedProductIds?.length ?? liveSyncResult.errorCount} failed products
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -581,9 +684,14 @@ export default function MerchantIntegrationPage() {
                   <Bug className="h-5 w-5" />
                   Debug Summary — Dry Run
                 </CardTitle>
-                <Button variant="ghost" size="sm" onClick={copyReport}>
-                  <Copy className="h-4 w-4 mr-1" /> Copy report
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={copyReport}>
+                    <Copy className="h-4 w-4 mr-1" /> Copy
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => downloadJson(debugReport, `merchant-dryrun-${debugReport.runId.slice(0, 8)}.json`)}>
+                    <Database className="h-4 w-4 mr-1" /> Download JSON
+                  </Button>
+                </div>
               </div>
               <CardDescription>Run ID: {debugReport.runId} • {formatDate(debugReport.timestamp)}</CardDescription>
             </CardHeader>

@@ -338,6 +338,7 @@ Deno.serve(async (req: Request) => {
     const SEND_ADDITIONAL_IMAGES = body.send_additional_images !== false && Deno.env.get("SEND_ADDITIONAL_IMAGES") !== "false";
     // Batch size for Google API sends (NOT for DB scan)
     const SEND_BATCH_SIZE = body.send_batch_size || 100;
+    const syncStartTime = Date.now();
 
     console.log(`[merchant-sync] START runId=${runId} mode=${modeEffective} prune=${PRUNE_ENABLED} prune_dryrun=${PRUNE_DRYRUN} prune_max=${PRUNE_MAX_DELETES}`);
 
@@ -499,6 +500,8 @@ Deno.serve(async (req: Request) => {
 
     const payloads: Array<Record<string, unknown>> = [];
     const exportedOfferIds: Set<string> = new Set();
+    const successProductIds: string[] = [];
+    const failedProductIds: string[] = [];
 
     for (const p of allProducts) {
       // ── Hard exclusion checks (only truly broken items) ──
@@ -727,14 +730,17 @@ Deno.serve(async (req: Request) => {
         for (const payload of batch) {
           attemptedSendCount++;
           const result = await upsertGoogleProduct(accessToken, merchantId, payload);
+          const oid = (payload.offerId as string) || "unknown";
           if (result.ok) {
             successCount++;
             batchSuccess++;
+            successProductIds.push(oid);
           } else {
             errorCount++;
             batchError++;
+            failedProductIds.push(oid);
             errors.push({
-              offerId: (payload.offerId as string) || "unknown",
+              offerId: oid,
               status: result.status,
               reason: (result.error || "unknown").substring(0, 300),
             });
@@ -878,9 +884,13 @@ Deno.serve(async (req: Request) => {
       google_category_invalid_prevented_count: 0,
     };
 
+    const durationMs = Date.now() - syncStartTime;
+
     const report = {
       runId,
+      timestamp: new Date().toISOString(),
       mode_effective: modeEffective,
+      durationMs,
       merchantId_used: merchantIdMasked,
       merchantId_length: merchantId.length,
       merchantId_valid: merchantId.length >= 9 && /^\d+$/.test(merchantId),
@@ -913,6 +923,8 @@ Deno.serve(async (req: Request) => {
       sampleOfferIds: payloads.slice(0, 10).map(p => p.offerId),
       compliance_safe: errorCount === 0 && payloadBuiltCount > 0,
       site_readiness: siteReadiness,
+      successProductIds: successProductIds.slice(0, 50),
+      failedProductIds: failedProductIds.slice(0, 50),
       topErrors: errors.slice(0, 10),
       googleStatusSummary: modeEffective === "live" ? {
         totalProducts: googleTotalProducts,
