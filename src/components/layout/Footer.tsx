@@ -146,6 +146,15 @@ export const Footer = () => {
       { label: 'Cat Scratching Posts', href: '/collections/best-cat-scratching-posts' },
       { label: 'Cat Carriers', href: '/collections/best-cat-carriers' },
     ],
+    // Pet Care Guides — topical authority links
+    guideLinks: [
+      { label: 'Best Cat Litter Box 2026', href: '/guides/best-cat-litter-box-2026' },
+      { label: 'Best Dog Carriers for Travel', href: '/guides/best-dog-carriers-for-travel' },
+      { label: 'Best Interactive Dog Toys', href: '/guides/best-interactive-dog-toys' },
+      { label: 'Best Dog Beds for Large Dogs', href: '/guides/best-dog-beds-for-large-dogs' },
+      { label: 'Best Cat Trees for Indoor Cats', href: '/guides/best-cat-trees-for-indoor-cats' },
+      { label: 'All Guides', href: '/guides' },
+    ],
     support: [
       { label: 'Help Center', href: '/help' },
       { label: 'Contact', href: '/contact' },
@@ -286,6 +295,20 @@ export const Footer = () => {
             <FooterSection title="🐈 Cat Essentials">
               <ul className="space-y-3">
                 {footerLinks.catLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      <span>{link.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </FooterSection>
+
+            {/* Pet Care Guides */}
+            <FooterSection title="📚 Pet Care Guides">
+              <ul className="space-y-3">
+                {footerLinks.guideLinks.map((link) => (
                   <li key={link.href}>
                     <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
