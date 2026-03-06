@@ -178,7 +178,7 @@ serve(async (req) => {
     // Fetch active products
     const { data: products, error: fetchErr } = await supabase
       .from("products")
-      .select("id, name, slug, price, cost_price, category, subcategory, image_url, additional_images, weight, stock, description, product_type, google_product_category, custom_label_0, species")
+      .select("id, name, slug, price, cost_price, category, image_url, additional_images, weight, stock, description, product_type, google_product_category, custom_label_0, species")
       .eq("is_active", true)
       .limit(limit);
 
