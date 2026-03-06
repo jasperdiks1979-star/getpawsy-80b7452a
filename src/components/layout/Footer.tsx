@@ -227,7 +227,7 @@ export const Footer = () => {
       {/* Main Footer */}
       <div className="bg-foreground text-background w-full">
         <div className="container px-4 md:px-6 py-16 max-w-full">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-10">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-8 lg:gap-10">
             {/* Brand Column */}
             <div className="col-span-2 md:col-span-2 space-y-6">
               <Link to="/" className="inline-flex items-center gap-3 group">
