@@ -117,7 +117,6 @@ const Shipping = () => {
                   <strong>Carriers:</strong> Orders are delivered via trusted international carrier partners. Every order includes tracking information so you can follow your package from dispatch to delivery.
                 </p>
               </div>
-              </div>
             </section>
 
             {/* Fulfillment */}
