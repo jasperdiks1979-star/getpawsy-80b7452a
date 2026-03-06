@@ -680,6 +680,8 @@ const ProductDetail = () => {
           stock: product.stock,
           sku: product.sku,
           seo_tier: (product as any).seo_tier || null,
+          product_type: (product as any).product_type || null,
+          google_product_category: (product as any).google_product_category || null,
         }}
         reviews={reviews}
       />
@@ -750,6 +752,7 @@ const ProductDetail = () => {
               <MobileProductGallery
                 images={images}
                 productName={safeString(product.name)}
+                category={product.category || undefined}
                 discount={discount}
                 onImageClick={(index) => {
                   setSelectedImage(index);
@@ -760,6 +763,7 @@ const ProductDetail = () => {
               <DesktopProductGallery
                 images={images}
                 productName={safeString(product.name)}
+                category={product.category || undefined}
                 discount={discount}
                 onImageClick={(index) => {
                   setSelectedImage(index);

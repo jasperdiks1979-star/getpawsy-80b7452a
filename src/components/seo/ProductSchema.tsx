@@ -17,6 +17,8 @@ interface ProductSchemaProps {
     stock?: number | null;
     sku?: string | null;
     seo_tier?: string | null;
+    product_type?: string | null;
+    google_product_category?: string | null;
   };
   reviews?: Array<{
     rating: number;
@@ -113,7 +115,14 @@ export function ProductSchema({
       '@type': 'Brand',
       name: 'GetPawsy',
     },
-    category: product.category || 'Pet Supplies',
+    category: product.google_product_category || product.category || 'Pet Supplies',
+    ...(product.product_type ? {
+      additionalProperty: [{
+        '@type': 'PropertyValue',
+        propertyID: 'product_type',
+        value: product.product_type,
+      }],
+    } : {}),
     offers: {
       '@type': 'Offer',
       '@id': `${baseUrl}/product/${productPath}#offer`,
