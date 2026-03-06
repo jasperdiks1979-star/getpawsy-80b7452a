@@ -47,16 +47,16 @@ export const getNextTier = (subtotal: number) => {
 export const FLAT_SHIPPING_RATE = 5.99;
 
 /** Standard delivery time for US orders */
-export const DELIVERY_TIME_STANDARD = '3-7 business days';
+export const DELIVERY_TIME_STANDARD = '5–10 business days';
 
 /** Processing time before shipping */
-export const PROCESSING_TIME = '1-3 business days';
+export const PROCESSING_TIME = '1–2 business days';
 
 /** US fulfillment shipping note - Official wording for Google Merchant Center compliance */
 export const US_FULFILLMENT_NOTE = 'Orders ship from US fulfillment centers when available';
 
 /** Express shipping time (if available) */
-export const DELIVERY_TIME_EXPRESS = '2-5 business days';
+export const DELIVERY_TIME_EXPRESS = '3–7 business days';
 
 /** International delivery time */
 export const DELIVERY_TIME_INTERNATIONAL = '10-20 business days';
@@ -73,12 +73,12 @@ export const RETURNS_POLICY_SHORT = '30-day hassle-free returns';
 export const RETURNS_POLICY_DETAILED = 'Not satisfied? Return within 30 days for a full refund.';
 
 /** How to initiate returns */
-export const RETURNS_PROCESS = 'Contact support@getpawsy.pet with your order number and photos of any issues.';
+export const RETURNS_PROCESS = 'Contact info@getpawsy.pet with your order number and photos of any issues.';
 
 // ============= SUPPORT CONSTANTS =============
 
 /** Support email */
-export const SUPPORT_EMAIL = 'support@getpawsy.pet';
+export const SUPPORT_EMAIL = 'info@getpawsy.pet';
 
 /** Response time promise */
 export const RESPONSE_TIME = 'We respond within 24 business hours';
