@@ -1489,5 +1489,53 @@
     "featuredImage": "/images/guides/dog-training-tools-2026.jpg",
     "readingTime": 7,
     "relatedCategories": ["dog-training", "dog-training-accessories"]
+  },
+  {
+    "slug": "best-dog-carriers-for-travel",
+    "title": "Best Dog Carriers for Travel (2026) – Airline-Approved Picks Tested & Ranked",
+    "excerpt": "We tested 10 dog carriers for airline travel, road trips & everyday outings. Vet-approved picks with size guides, crash-test ratings & honest reviews. Updated 2026.",
+    "category": "Dog Travel",
+    "keywords": ["best dog carrier", "dog travel carrier", "airline approved dog carrier"],
+    "publishedAt": "2026-03-01",
+    "updatedAt": "2026-03-06",
+    "featuredImage": "/guides/default-guide.webp",
+    "readingTime": 16,
+    "relatedCategories": ["dog-car-seats", "dog-carriers"]
+  },
+  {
+    "slug": "best-interactive-dog-toys",
+    "title": "Best Interactive Dog Toys (2026) – Puzzle & Enrichment Picks Tested & Ranked",
+    "excerpt": "10 interactive dog toys tested for engagement, durability and enrichment value. Puzzle feeders, treat dispensers and chew toys that actually keep dogs busy. Updated 2026.",
+    "category": "Dog Toys",
+    "keywords": ["best interactive dog toys", "dog puzzle toys", "enrichment toys for dogs"],
+    "publishedAt": "2026-03-01",
+    "updatedAt": "2026-03-06",
+    "featuredImage": "/guides/default-guide.webp",
+    "readingTime": 14,
+    "relatedCategories": ["best-interactive-dog-toys", "dog-toys"]
+  },
+  {
+    "slug": "best-dog-beds-for-large-dogs",
+    "title": "Best Dog Beds for Large Dogs (2026) – Orthopedic & Durable Picks Tested",
+    "excerpt": "We tested 10 dog beds designed for large and giant breeds. Orthopedic, waterproof and chew-resistant picks for dogs 50 lbs and up. Find the right bed in 5 minutes.",
+    "category": "Dog Beds",
+    "keywords": ["best dog bed for large dogs", "large dog bed", "orthopedic dog bed large breed"],
+    "publishedAt": "2026-03-01",
+    "updatedAt": "2026-03-06",
+    "featuredImage": "/guides/default-guide.webp",
+    "readingTime": 15,
+    "relatedCategories": ["orthopedic-calming-dog-beds", "pet-beds"]
+  },
+  {
+    "slug": "best-cat-trees-for-indoor-cats",
+    "title": "Best Cat Trees for Indoor Cats (2026) – Safe, Stable & Stylish Picks Tested",
+    "excerpt": "We tested 10 cat trees for indoor cats across stability, sisal quality and cat engagement. Floor-standing, wall-mounted and compact options for every home. Updated 2026.",
+    "category": "Cat Furniture",
+    "keywords": ["best cat tree for indoor cats", "cat tree", "indoor cat tree"],
+    "publishedAt": "2026-03-01",
+    "updatedAt": "2026-03-06",
+    "featuredImage": "/guides/default-guide.webp",
+    "readingTime": 15,
+    "relatedCategories": ["cat-trees-and-condos"]
   }
 ]
