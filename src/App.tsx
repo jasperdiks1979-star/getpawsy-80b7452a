@@ -256,6 +256,8 @@ const MerchantHealthPage = lazyWithRetry(() => import("./pages/admin/MerchantHea
 const MerchantOAuthCallback = lazyWithRetry(() => import("./pages/MerchantOAuthCallback"));
 const ShoppingOptimizerPage = lazyWithRetry(() => import("./pages/admin/ShoppingOptimizerPage"));
 const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
+const RecentProducts = lazyWithRetry(() => import("./pages/RecentProducts"));
+const TrendingProducts = lazyWithRetry(() => import("./pages/TrendingProducts"));
 
 // Diagnostics pages (hidden, noindex)
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
@@ -573,6 +575,8 @@ const App = () => {
                       <Route path="/cats/automatic-feeders" element={<Navigate to="/products?category=automatic-cat-feeders" replace />} />
                       <Route path="/category/:slug" element={<Navigate to="/products" replace />} />
                       <Route path="/shop" element={<Suspense fallback={<RouteLoader />}><ShopHub /></Suspense>} />
+                      <Route path="/recent-products" element={<Suspense fallback={<RouteLoader />}><RecentProducts /></Suspense>} />
+                      <Route path="/trending-pet-products" element={<Suspense fallback={<RouteLoader />}><TrendingProducts /></Suspense>} />
                       {/* Admin sub-routes */}
                       {/* Admin nested routes with layout + sidebar */}
                       <Route path="/admin" element={<Suspense fallback={<RouteLoader />}><LazyAdminShell /></Suspense>}>

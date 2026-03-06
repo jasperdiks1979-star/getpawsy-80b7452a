@@ -150,10 +150,16 @@ export const Footer = () => {
     guideLinks: [
       { label: 'Best Cat Litter Box 2026', href: '/guides/best-cat-litter-box-2026' },
       { label: 'Best Dog Carriers for Travel', href: '/guides/best-dog-carriers-for-travel' },
-      { label: 'Best Interactive Dog Toys', href: '/guides/best-interactive-dog-toys' },
-      { label: 'Best Dog Beds for Large Dogs', href: '/guides/best-dog-beds-for-large-dogs' },
       { label: 'Best Cat Trees for Indoor Cats', href: '/guides/best-cat-trees-for-indoor-cats' },
+      { label: 'Best Automatic Cat Feeder', href: '/guides/best-automatic-cat-feeder' },
       { label: 'All Guides', href: '/guides' },
+    ],
+    discoverLinks: [
+      { label: 'Shop All', href: '/shop' },
+      { label: 'Trending Products', href: '/trending-pet-products' },
+      { label: 'Recent Products', href: '/recent-products' },
+      { label: 'Bestsellers', href: '/bestsellers' },
+      { label: 'All Products', href: '/products' },
     ],
     support: [
       { label: 'Help Center', href: '/help' },
