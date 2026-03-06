@@ -51,6 +51,10 @@ interface ProductCardProps {
   priority?: boolean;
   /** Show "Popular Choice" badge for top-performing products */
   popularChoice?: boolean;
+  /** Show "Best Seller" badge */
+  bestSeller?: boolean;
+  /** Show "Top Rated" badge */
+  topRated?: boolean;
   /** Show species badge (cat-only, dog-only, cats & dogs) */
   showSpeciesBadge?: boolean;
   /** Override species classification */
@@ -66,6 +70,8 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
   reviewCount,
   priority = false,
   popularChoice = false,
+  bestSeller = false,
+  topRated = false,
   showSpeciesBadge = false,
   species,
 }, ref) => {
@@ -189,9 +195,19 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
           
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
-            {popularChoice && !isOutOfStock && (
+            {bestSeller && !isOutOfStock && (
+              <Badge className="bg-amber-500 text-white shadow-soft text-[10px]">
+                🏆 Best Seller
+              </Badge>
+            )}
+            {topRated && !isOutOfStock && !bestSeller && (
+              <Badge className="bg-emerald-600 text-white shadow-soft text-[10px]">
+                ⭐ Top Rated
+              </Badge>
+            )}
+            {popularChoice && !isOutOfStock && !bestSeller && !topRated && (
               <Badge className="bg-primary text-primary-foreground shadow-soft text-[10px]">
-                ⭐ Popular Choice
+                🔥 Popular Choice
               </Badge>
             )}
             {discount && discount > 0 && (
