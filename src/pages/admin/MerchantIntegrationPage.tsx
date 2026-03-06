@@ -471,6 +471,47 @@ export default function MerchantIntegrationPage() {
           </CardContent>
         </Card>
 
+        {/* Sync Phase Indicator */}
+        {syncing && syncPhase !== 'idle' && (
+          <Card className="border-primary/50">
+            <CardContent className="py-4 px-4">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    {syncPhase === 'preparing' && 'Preparing payload…'}
+                    {syncPhase === 'sending' && 'Sending to Google Merchant Center…'}
+                    {syncPhase === 'awaiting' && 'Awaiting API response…'}
+                  </p>
+                  <div className="flex gap-4 mt-2">
+                    {(['preparing', 'sending', 'awaiting', 'completed'] as SyncPhase[]).map((phase, i) => {
+                      const phaseOrder = { idle: -1, preparing: 0, sending: 1, awaiting: 2, completed: 3 };
+                      const current = phaseOrder[syncPhase];
+                      const thisPhase = phaseOrder[phase];
+                      const isDone = thisPhase < current;
+                      const isActive = thisPhase === current;
+                      return (
+                        <div key={phase} className="flex items-center gap-1 text-xs">
+                          {isDone ? (
+                            <CheckCircle2 className="h-3 w-3 text-primary" />
+                          ) : isActive ? (
+                            <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                          ) : (
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                          )}
+                          <span className={isDone || isActive ? 'text-foreground' : 'text-muted-foreground'}>
+                            {['Prepare', 'Send', 'Await', 'Done'][i]}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Live Sync Result Panel */}
         {liveSyncResult && (
           <Card className={liveSyncResult.mode_effective === 'dryrun' ? 'border-amber-500/50' : liveSyncResult.errorCount > 0 ? 'border-destructive/50' : 'border-primary/50'}>
@@ -486,20 +527,40 @@ export default function MerchantIntegrationPage() {
                     <Badge variant="default" className="ml-2 text-sm">LIVE</Badge>
                   )}
                 </CardTitle>
-                <Button variant="ghost" size="sm" onClick={copyLiveResult}>
-                  <Copy className="h-4 w-4 mr-1" /> Copy
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={copyLiveResult}>
+                    <Copy className="h-4 w-4 mr-1" /> Copy
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => downloadJson(liveSyncResult, `merchant-sync-${liveSyncResult.mode_effective}-${liveSyncResult.runId.slice(0, 8)}.json`)}>
+                    <Database className="h-4 w-4 mr-1" /> Download JSON
+                  </Button>
+                </div>
               </div>
-              <CardDescription>Run ID: {liveSyncResult.runId}</CardDescription>
+              <CardDescription>
+                Run ID: {liveSyncResult.runId}
+                {liveSyncResult.timestamp && <> • {formatDate(liveSyncResult.timestamp)}</>}
+                {liveSyncResult.durationMs != null && <> • {(liveSyncResult.durationMs / 1000).toFixed(1)}s</>}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Status banner */}
+              {liveSyncResult.mode_effective === 'live' && liveSyncResult.ok && (
+                <div className={`p-3 rounded-md text-sm flex items-center gap-2 ${liveSyncResult.errorCount > 0 ? 'bg-amber-500/10' : 'bg-primary/10'}`}>
+                  {liveSyncResult.errorCount > 0 ? (
+                    <><AlertTriangle className="h-4 w-4 text-amber-600" /><span className="font-medium">LIVE sync completed with warnings</span></>
+                  ) : (
+                    <><CheckCircle2 className="h-4 w-4 text-primary" /><span className="font-medium">LIVE sync completed</span></>
+                  )}
+                </div>
+              )}
+
               {/* Funnel counters */}
               <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
                 {[
                   { label: 'Raw (DB)', value: liveSyncResult.rawCount },
                   { label: 'Eligible', value: liveSyncResult.eligibleCount },
                   { label: 'Payload Built', value: liveSyncResult.payloadBuiltCount },
-                  { label: 'Attempted', value: liveSyncResult.attemptedSendCount },
+                  { label: 'Sent', value: liveSyncResult.attemptedSendCount },
                   { label: 'Success', value: liveSyncResult.successCount, color: 'text-primary' },
                   { label: 'Errors', value: liveSyncResult.errorCount, color: liveSyncResult.errorCount > 0 ? 'text-destructive' : undefined },
                 ].map((s) => (
@@ -509,6 +570,24 @@ export default function MerchantIntegrationPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Google API Status Summary */}
+              {liveSyncResult.googleStatusSummary && (
+                <div className="p-3 bg-muted/50 rounded-md space-y-1">
+                  <p className="text-sm font-medium flex items-center gap-1"><Database className="h-4 w-4" /> Google Merchant Status</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><span className="text-muted-foreground">Total in Merchant:</span> <span className="font-mono font-bold">{liveSyncResult.googleStatusSummary.totalProducts}</span></div>
+                    <div><span className="text-muted-foreground">With issues:</span> <span className={`font-mono font-bold ${liveSyncResult.googleStatusSummary.productsWithIssues > 0 ? 'text-destructive' : ''}`}>{liveSyncResult.googleStatusSummary.productsWithIssues}</span></div>
+                  </div>
+                  {Object.keys(liveSyncResult.googleStatusSummary.issuesSummary).length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {Object.entries(liveSyncResult.googleStatusSummary.issuesSummary).slice(0, 8).map(([issue, count]) => (
+                        <Badge key={issue} variant="secondary" className="text-[10px]">{issue}: {count}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Compliance Summary */}
               {liveSyncResult.complianceSummary && (
@@ -534,7 +613,7 @@ export default function MerchantIntegrationPage() {
               )}
 
               {/* Skipped reasons */}
-              {Object.keys(liveSyncResult.skippedReasons).length > 0 && (
+              {liveSyncResult.skippedReasons && Object.keys(liveSyncResult.skippedReasons).length > 0 && (
                 <div>
                   <p className="text-sm font-medium mb-1">Skipped Reasons</p>
                   <div className="flex flex-wrap gap-2">
@@ -553,7 +632,7 @@ export default function MerchantIntegrationPage() {
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" size="sm" className="text-destructive text-xs">
                       {showLiveErrors ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
-                      View {liveSyncResult.topErrors.length} error(s)
+                      View {liveSyncResult.topErrors.length} error(s) • {liveSyncResult.failedProductIds?.length ?? liveSyncResult.errorCount} failed products
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
