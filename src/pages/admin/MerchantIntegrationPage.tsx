@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { SeoUrlChecker } from '@/components/admin/SeoUrlChecker';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -1315,6 +1316,9 @@ export default function MerchantIntegrationPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* SEO Crawl Status Checker */}
+        <SeoUrlChecker />
       </div>
     </>
   );
