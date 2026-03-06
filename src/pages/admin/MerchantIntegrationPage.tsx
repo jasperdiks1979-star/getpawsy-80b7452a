@@ -688,7 +688,34 @@ export default function MerchantIntegrationPage() {
             <CardDescription>AI-powered title optimization for better Shopping match rates</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={titleOptRunning}
+                onClick={async () => {
+                  setTitleOptReport(null);
+                  try {
+                    const { data, error } = await invokeFunction<any>(
+                      'optimize-product-titles',
+                      { silent: true, body: { dryRun: true, limit: 1 } }
+                    );
+                    if (error) {
+                      setTitleOptReport({ _testError: String(error) });
+                      toast.error(`Test failed: ${error}`);
+                    } else {
+                      setTitleOptReport({ _testSuccess: true, endpoint: `https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/optimize-product-titles`, ...data });
+                      toast.success('Function reachable ✓');
+                    }
+                  } catch (err: any) {
+                    setTitleOptReport({ _testError: err.message || 'Unknown error' });
+                    toast.error(`Test failed: ${err.message}`);
+                  }
+                }}
+              >
+                <Bug className="h-4 w-4 mr-1" />
+                Test Function
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -705,6 +732,7 @@ export default function MerchantIntegrationPage() {
                     setTitleOptReport(data);
                     toast.success(`Preview: ${data?.optimizedCount ?? 0} titles optimized`);
                   } catch (err: any) {
+                    setTitleOptReport({ _testError: err.message || 'Failed' });
                     toast.error(err.message || 'Failed');
                   } finally {
                     setTitleOptRunning(false);
@@ -731,6 +759,7 @@ export default function MerchantIntegrationPage() {
                     setTitleOptReport(data);
                     toast.success(`${data?.updatedCount ?? 0} titles updated!`);
                   } catch (err: any) {
+                    setTitleOptReport({ _testError: err.message || 'Failed' });
                     toast.error(err.message || 'Failed');
                   } finally {
                     setTitleOptRunning(false);
@@ -741,6 +770,20 @@ export default function MerchantIntegrationPage() {
                 Optimize All Titles
               </Button>
             </div>
+
+            {titleOptReport?._testError && (
+              <div className="p-3 bg-destructive/10 border border-destructive/30 rounded text-sm space-y-1">
+                <p className="font-medium text-destructive">❌ Error Details</p>
+                <p className="text-xs text-muted-foreground font-mono break-all">{titleOptReport._testError}</p>
+                <p className="text-xs text-muted-foreground">Endpoint: https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/optimize-product-titles</p>
+              </div>
+            )}
+            {titleOptReport?._testSuccess && (
+              <div className="p-3 bg-primary/10 border border-primary/30 rounded text-sm space-y-1">
+                <p className="font-medium text-primary">✅ Function Reachable</p>
+                <p className="text-xs text-muted-foreground font-mono break-all">{titleOptReport.endpoint}</p>
+              </div>
+            )}
 
             {titleOptReport && (
               <div className="space-y-3">
