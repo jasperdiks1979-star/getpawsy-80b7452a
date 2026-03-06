@@ -221,3 +221,6 @@ verify_jwt = false
 
 [functions.verify-oos-stock]
 verify_jwt = false
+
+[functions.optimize-product-titles]
+verify_jwt = false
