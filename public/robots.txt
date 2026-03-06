@@ -1,4 +1,17 @@
 User-agent: *
+Allow: /product/
+Allow: /products
+Allow: /collections/
+Allow: /guides/
+Allow: /blog/
+Allow: /bestseller/
+Allow: /dog/
+Allow: /cat/
+Allow: /shop
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /shipping
 Allow: /
 Disallow: /admin
 Disallow: /cart
