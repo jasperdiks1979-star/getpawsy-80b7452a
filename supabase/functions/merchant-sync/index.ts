@@ -720,27 +720,34 @@ Deno.serve(async (req: Request) => {
     // ══════════════════════════════════════════════════════════════
     if (modeEffective === "live" && payloadBuiltCount > 0) {
       console.log(`[merchant-sync] LIVE SEND START: ${payloadBuiltCount} payloads to send via Google Content API`);
-      const totalBatches = Math.ceil(payloads.length / SEND_BATCH_SIZE);
+      
+      // Send concurrently in chunks of 10 to avoid timeout (was sequential before)
+      const CONCURRENCY = 10;
+      const totalBatches = Math.ceil(payloads.length / CONCURRENCY);
       
       for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
-        const batchStart = batchIdx * SEND_BATCH_SIZE;
-        const batch = payloads.slice(batchStart, batchStart + SEND_BATCH_SIZE);
-        let batchSuccess = 0;
-        let batchError = 0;
+        const batchStart = batchIdx * CONCURRENCY;
+        const batch = payloads.slice(batchStart, batchStart + CONCURRENCY);
 
-        console.log(`[merchant-sync] SENDING BATCH ${batchIdx + 1}/${totalBatches}: ${batch.length} products to Google Merchant Center`);
+        if (batchIdx % 10 === 0) {
+          console.log(`[merchant-sync] SENDING chunk ${batchIdx + 1}/${totalBatches} (${attemptedSendCount}/${payloadBuiltCount} sent so far)`);
+        }
 
-        for (const payload of batch) {
+        const results = await Promise.all(
+          batch.map(async (payload) => {
+            const oid = (payload.offerId as string) || "unknown";
+            const result = await upsertGoogleProduct(accessToken, merchantId, payload);
+            return { oid, result };
+          })
+        );
+
+        for (const { oid, result } of results) {
           attemptedSendCount++;
-          const result = await upsertGoogleProduct(accessToken, merchantId, payload);
-          const oid = (payload.offerId as string) || "unknown";
           if (result.ok) {
             successCount++;
-            batchSuccess++;
             successProductIds.push(oid);
           } else {
             errorCount++;
-            batchError++;
             failedProductIds.push(oid);
             errors.push({
               offerId: oid,
@@ -749,8 +756,6 @@ Deno.serve(async (req: Request) => {
             });
           }
         }
-
-        console.log(`[merchant-sync] BATCH ${batchIdx + 1}/${totalBatches} DONE: success=${batchSuccess} errors=${batchError}`);
       }
 
       console.log(`[merchant-sync] LIVE SEND COMPLETE: attempted=${attemptedSendCount} success=${successCount} errors=${errorCount}`);
