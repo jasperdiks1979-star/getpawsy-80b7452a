@@ -1059,6 +1059,10 @@ export default function MerchantIntegrationPage() {
                 )}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Last Sync Summary */}
         {status?.lastSync && (
           <Card>
             <CardHeader className="pb-3">
