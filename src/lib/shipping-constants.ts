@@ -11,15 +11,15 @@
 // ============= SHIPPING CONSTANTS =============
 
 /** Free shipping threshold in USD */
-export const FREE_SHIPPING_THRESHOLD = 49;
+export const FREE_SHIPPING_THRESHOLD = 35;
 
 // ============= TIERED INCENTIVE THRESHOLDS =============
 
 /** Tiered discount configuration – applied automatically in cart */
 export const TIERED_INCENTIVES = [
-  { threshold: 49, label: 'Free Shipping', discountPercent: 0 },
-  { threshold: 79, label: '5% Off Your Order', discountPercent: 5 },
-  { threshold: 119, label: '10% Off Your Order', discountPercent: 10 },
+  { threshold: 35, label: 'Free Shipping', discountPercent: 0 },
+  { threshold: 65, label: '5% Off Your Order', discountPercent: 5 },
+  { threshold: 99, label: '10% Off Your Order', discountPercent: 10 },
 ] as const;
 
 /** Get the best applicable tier for a given subtotal */
@@ -47,7 +47,7 @@ export const getNextTier = (subtotal: number) => {
 export const FLAT_SHIPPING_RATE = 5.99;
 
 /** Standard delivery time for US orders */
-export const DELIVERY_TIME_STANDARD = '5–10 business days';
+export const DELIVERY_TIME_STANDARD = '3–7 business days';
 
 /** Processing time before shipping */
 export const PROCESSING_TIME = '1–2 business days';
@@ -56,7 +56,7 @@ export const PROCESSING_TIME = '1–2 business days';
 export const US_FULFILLMENT_NOTE = 'Orders ship from US fulfillment centers when available';
 
 /** Express shipping time (if available) */
-export const DELIVERY_TIME_EXPRESS = '3–7 business days';
+export const DELIVERY_TIME_EXPRESS = '2–4 business days';
 
 /** International delivery time */
 export const DELIVERY_TIME_INTERNATIONAL = '10-20 business days';
