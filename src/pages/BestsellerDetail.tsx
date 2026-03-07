@@ -163,7 +163,8 @@ const generateProductJsonLd = (
         returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
         merchantReturnDays: 30,
         returnMethod: 'https://schema.org/ReturnByMail',
-        returnFees: 'https://schema.org/FreeReturn'
+        returnFees: 'https://schema.org/ReturnShippingFees',
+        refundType: 'https://schema.org/FullRefund'
       },
       shippingDetails: [
         {

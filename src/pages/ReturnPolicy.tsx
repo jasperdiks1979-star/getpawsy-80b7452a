@@ -58,8 +58,8 @@ const ReturnPolicy = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Return & Refund Policy | GetPawsy</title>
-        <meta name="description" content="GetPawsy 30-day return and refund policy. Unused items eligible for full refund. Contact support@getpawsy.pet for return instructions." />
+        <title>Return & Refund Policy – GetPawsy</title>
+        <meta name="description" content="GetPawsy 30-day return policy. Returns by mail, customer pays return shipping. Refund to original payment method within 5–10 business days. Contact support@getpawsy.pet." />
         <link rel="canonical" href="https://getpawsy.pet/returns" />
       </Helmet>
       <div className="min-h-screen py-16 lg:py-24">
@@ -75,7 +75,7 @@ const ReturnPolicy = () => {
                 <RotateCcw className="w-8 h-8 text-primary" />
               </div>
               <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
-                Returns & Refunds Policy
+                Return & Refund Policy
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                 We want you and your pet to be happy with every purchase. If something is not right, we will make it right.

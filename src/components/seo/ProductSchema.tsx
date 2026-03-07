@@ -148,7 +148,8 @@ export function ProductSchema({
         returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
         merchantReturnDays: 30,
         returnMethod: 'https://schema.org/ReturnByMail',
-        returnFees: 'https://schema.org/FreeReturn',
+        returnFees: 'https://schema.org/ReturnShippingFees',
+        refundType: 'https://schema.org/FullRefund',
       },
       // NOTE: Shipping rate in schema is per-item estimate; actual shipping is order-threshold based
       // ($0 for orders >= $49, $5.99 for orders < $49) configured in Merchant Center settings.
