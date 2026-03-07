@@ -842,7 +842,7 @@ export default function MerchantIntegrationPage() {
               <Settings className="h-5 w-5" />
               Google Shopping Title Optimizer
             </CardTitle>
-            <CardDescription>AI-powered title optimization for better Shopping match rates</CardDescription>
+            <CardDescription>AI-powered title optimization: Primary Keyword + Product Type + Key Feature + Target Animal (70–120 chars)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex gap-2 flex-wrap">
@@ -922,11 +922,46 @@ export default function MerchantIntegrationPage() {
                 Preview (20 products)
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                disabled={titleOptRunning}
+                onClick={async () => {
+                  setTitleOptRunning(true);
+                  setTitleOptReport(null);
+                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`;
+                  try {
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const token = sessionData?.session?.access_token;
+                    if (!token) throw new Error('Not authenticated');
+                    const res = await fetch(endpoint, {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ dryRun: true, filterShort: true }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                    setTitleOptReport(json);
+                    toast.success(`Preview: ${json?.filteredCount ?? 0} short titles found, ${json?.optimizedCount ?? 0} optimized`);
+                  } catch (err: any) {
+                    setTitleOptReport({ _testError: err.message });
+                    toast.error(err.message);
+                  } finally {
+                    setTitleOptRunning(false);
+                  }
+                }}
+              >
+                {titleOptRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+                Preview Short Titles (&lt;70 chars)
+              </Button>
+              <Button
                 variant="default"
                 size="sm"
                 disabled={titleOptRunning}
                 onClick={async () => {
-                  if (!confirm('This will rewrite ALL active product titles in chunks of 50. Original names will be backed up. Continue?')) return;
+                  if (!confirm('This will rewrite ALL active product titles using AI. Original names will be backed up. Continue?')) return;
                   setTitleOptRunning(true);
                   setTitleOptReport(null);
                   const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`;
@@ -940,7 +975,7 @@ export default function MerchantIntegrationPage() {
                     let totalUpdated = 0;
                     let totalErrors = 0;
                     let totalProducts = 0;
-                    let allSamples: any[] = [];
+                    let allResults: any[] = [];
                     let chunkIndex = 0;
                     let hasMore = true;
 
@@ -960,21 +995,20 @@ export default function MerchantIntegrationPage() {
                       totalOptimized += json.optimizedCount || 0;
                       totalUpdated += json.updatedCount || 0;
                       totalErrors += json.errorCount || 0;
-                      totalProducts += json.totalProducts || 0;
-                      if (json.samples) allSamples.push(...json.samples);
+                      totalProducts += json.filteredCount || json.totalProducts || 0;
+                      if (json.results) allResults.push(...json.results);
                       
-                      // If we got fewer products than CHUNK, we're done
-                      hasMore = (json.totalProducts || 0) >= CHUNK;
+                      hasMore = (json.filteredCount || json.totalProducts || 0) >= CHUNK;
                       chunkIndex++;
                       
-                      // Update report progressively
                       setTitleOptReport({
-                        totalProducts: totalProducts,
+                        totalProducts,
                         optimizedCount: totalOptimized,
                         updatedCount: totalUpdated,
                         errorCount: totalErrors,
                         dryRun: false,
-                        samples: allSamples.slice(0, 10),
+                        charStats: json.charStats,
+                        results: allResults.slice(0, 20),
                         _chunksCompleted: chunkIndex,
                       });
                     }
@@ -1017,12 +1051,16 @@ export default function MerchantIntegrationPage() {
               </div>
             )}
 
-            {titleOptReport && (
+            {titleOptReport && !titleOptReport._testError && !titleOptReport._testSuccess && (
               <div className="space-y-3">
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   <div className="p-2 bg-muted rounded text-center">
                     <p className="text-xs text-muted-foreground">Total</p>
                     <p className="text-lg font-bold">{titleOptReport.totalProducts}</p>
+                  </div>
+                  <div className="p-2 bg-muted rounded text-center">
+                    <p className="text-xs text-muted-foreground">Filtered</p>
+                    <p className="text-lg font-bold">{titleOptReport.filteredCount ?? titleOptReport.totalProducts}</p>
                   </div>
                   <div className="p-2 bg-primary/10 rounded text-center">
                     <p className="text-xs text-muted-foreground">Optimized</p>
@@ -1037,20 +1075,32 @@ export default function MerchantIntegrationPage() {
                     <p className="text-lg font-bold">{titleOptReport.errorCount}</p>
                   </div>
                 </div>
+                {titleOptReport.charStats && (
+                  <div className="p-3 bg-muted/50 rounded text-xs space-y-1">
+                    <p className="font-medium text-sm">Character Length Stats</p>
+                    <div className="flex flex-wrap gap-3">
+                      <span>Avg: <strong>{titleOptReport.charStats.avgLength}</strong></span>
+                      <span>Min: <strong>{titleOptReport.charStats.minLength}</strong></span>
+                      <span>Max: <strong>{titleOptReport.charStats.maxLength}</strong></span>
+                      <span className="text-primary">In range (70–120): <strong>{titleOptReport.charStats.inRange}</strong></span>
+                      <span className="text-amber-600">Too short: <strong>{titleOptReport.charStats.tooShort}</strong></span>
+                      <span className="text-destructive">Too long: <strong>{titleOptReport.charStats.tooLong}</strong></span>
+                    </div>
+                  </div>
+                )}
                 {titleOptReport.dryRun && (
                   <Badge variant="outline" className="text-xs">🔍 Dry Run — no changes applied</Badge>
                 )}
-                {titleOptReport.samples?.length > 0 && (
+                {(titleOptReport.results?.length > 0 || titleOptReport.samples?.length > 0) && (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Sample Results</p>
-                    {titleOptReport.samples.map((s: any) => (
+                    <p className="text-sm font-medium">Results ({(titleOptReport.results || titleOptReport.samples || []).length})</p>
+                    {(titleOptReport.results || titleOptReport.samples || []).map((s: any) => (
                       <div key={s.id} className="p-2 border border-border/50 rounded text-xs space-y-1">
                         <div className="text-muted-foreground">
                           <span className="font-medium text-foreground">{s.category}</span>
                         </div>
-                        <div className="text-destructive/70 line-through">{s.original}</div>
-                        <div className="text-primary font-medium">{s.optimized}</div>
-                        <span className="text-muted-foreground">{s.charCount} chars</span>
+                        <div className="text-destructive/70 line-through">{s.original} <span className="no-underline text-muted-foreground">({s.original?.length} chars)</span></div>
+                        <div className="text-primary font-medium">{s.optimized} <span className="font-normal text-muted-foreground">({s.charCount} chars)</span></div>
                       </div>
                     ))}
                   </div>
