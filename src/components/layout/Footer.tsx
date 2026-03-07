@@ -269,10 +269,10 @@ export const Footer = () => {
                   <Clock className="w-4 h-4" />
                   <span>Mon–Fri 9:00–17:00 EST • Within 24h</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-background/70">
-                  <MapPin className="w-4 h-4" />
-                  <span>Ships from warehouses located in the United States</span>
-                </div>
+                 <div className="flex items-center gap-3 text-sm text-background/70">
+                   <MapPin className="w-4 h-4" />
+                   <span>Apeldoorn, Netherlands</span>
+                 </div>
               </div>
               
               {/* Trust highlights */}
@@ -386,7 +386,7 @@ export const Footer = () => {
                 <p className="text-background/80"><strong className="text-background">Response Time:</strong> Within 24 hours</p>
               </div>
               <div className="space-y-2 text-sm">
-                <p className="text-background/80"><strong className="text-background">Fulfillment:</strong> Orders ship from warehouses located in the United States</p>
+                <p className="text-background/80"><strong className="text-background">Fulfillment:</strong> Orders ship to customers across the United States</p>
                 <p className="text-background/80"><strong className="text-background">Serving:</strong> United States customers</p>
                 <p className="text-background/80"><strong className="text-background">Currency:</strong> USD ($)</p>
               </div>
@@ -446,7 +446,7 @@ export const Footer = () => {
           <div className="container px-4 md:px-6 py-4 border-b border-background/10">
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-background/60">
               <span>Processing time: 1–2 business days</span>
-              <span>Delivery time: 5–10 business days</span>
+              <span>Delivery time: 3–7 business days</span>
               <span>Tracking included with every order</span>
               <span>30-day returns</span>
               <span>Secure checkout</span>
@@ -459,7 +459,7 @@ export const Footer = () => {
               <div className="flex flex-col items-center gap-2 text-xs text-background/40 border-b border-background/10 pb-4">
                 <div className="flex flex-wrap justify-center gap-4 text-background/60 mb-2">
                   <span>📦 Free shipping to the United States</span>
-                  <span>🚚 5–10 business day delivery</span>
+                  <span>🚚 3–7 business day delivery</span>
                   <span>↩️ 30-day easy returns</span>
                   <span>🔒 Secure checkout</span>
                 </div>

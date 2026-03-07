@@ -35,7 +35,7 @@ const ReturnPolicy = () => {
     },
     {
       question: 'How long does it take to process a refund?',
-      answer: 'Once your return is approved, refunds are processed within 5–10 business days. The refund will be credited to your original payment method. Your bank or payment provider may take additional time to reflect the credit in your account.',
+      answer: 'Once your return is approved, refunds are processed within 5 business days. The refund will be credited to your original payment method. Your bank or payment provider may take additional time to reflect the credit in your account.',
     },
     {
       question: 'Who pays for return shipping?',
@@ -59,7 +59,7 @@ const ReturnPolicy = () => {
     <Layout>
       <Helmet>
         <title>Return & Refund Policy – GetPawsy</title>
-        <meta name="description" content="GetPawsy 30-day return policy. Returns by mail, customer pays return shipping. Refund to original payment method within 5–10 business days. Contact support@getpawsy.pet." />
+        <meta name="description" content="GetPawsy 30-day return policy. Returns by mail, customer pays return shipping. Refund to original payment method within 5 business days. Contact support@getpawsy.pet." />
         <link rel="canonical" href="https://getpawsy.pet/returns" />
       </Helmet>
       <div className="min-h-screen py-16 lg:py-24">
@@ -97,7 +97,7 @@ const ReturnPolicy = () => {
               </div>
               <div className="bg-muted/30 rounded-2xl p-6 text-center">
                 <ShieldCheck className="w-8 h-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold text-foreground mb-1">5–10 Day Refunds</h3>
+                <h3 className="font-semibold text-foreground mb-1">5-Day Refunds</h3>
                 <p className="text-sm text-muted-foreground">After return is approved</p>
               </div>
             </div>
@@ -219,7 +219,7 @@ const ReturnPolicy = () => {
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                   <p className="text-foreground">
-                    Refunds are processed within <strong>5–10 business days</strong> after your return is approved.
+                    Refunds are processed within <strong>5 business days</strong> after your return is approved.
                   </p>
                 </div>
                 <div className="flex items-start gap-3">

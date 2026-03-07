@@ -19,7 +19,7 @@ const Shipping = () => {
     <Layout>
       <Helmet>
         <title>Shipping Policy | GetPawsy</title>
-        <meta name="description" content="GetPawsy shipping policy. Orders processed in 1–2 business days, delivered in 5–10 business days to the US. Free shipping on orders over $49." />
+        <meta name="description" content="GetPawsy shipping policy. Orders processed in 1–2 business days, delivered in 3–7 business days to the US. Free shipping on orders over $35." />
         <link rel="canonical" href="https://getpawsy.pet/shipping" />
       </Helmet>
       <div className="min-h-screen py-16 lg:py-24">
@@ -114,7 +114,7 @@ const Shipping = () => {
                   Delivery typically takes <strong>{DELIVERY_TIME_STANDARD}</strong> to the United States after your order has been dispatched. Delivery estimates are also shown on each product page so you know what to expect before you order.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  <strong>Carriers:</strong> Orders are delivered via trusted international carrier partners. Every order includes tracking information so you can follow your package from dispatch to delivery.
+                  <strong>Carriers:</strong> Orders are delivered via trusted carrier partners. Every order includes tracking information so you can follow your package from dispatch to delivery.
                 </p>
               </div>
             </section>
@@ -131,7 +131,7 @@ const Shipping = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-4">
-                  Orders are fulfilled through trusted international logistics partners and shipped directly to customers across the United States. Every order includes tracking information so you can follow your package from dispatch to delivery.
+                  Orders are fulfilled through trusted logistics partners and shipped directly to customers across the United States. Every order includes tracking information so you can follow your package from dispatch to delivery.
                 </p>
                 <p className="text-muted-foreground mb-4">
                   Skidzo, the legal entity operating GetPawsy, coordinates all fulfillment logistics and is fully responsible for ensuring your order reaches you safely and on time.
@@ -186,7 +186,7 @@ const Shipping = () => {
                   <li>• <strong className="text-foreground">Processing time:</strong> Orders are processed within {PROCESSING_TIME}.</li>
                   <li>• <strong className="text-foreground">Delivery time:</strong> Estimated delivery: {DELIVERY_TIME_STANDARD} to the United States.</li>
                   <li>• <strong className="text-foreground">Tracking:</strong> All orders receive a tracking number.</li>
-                  <li>• <strong className="text-foreground">Carriers:</strong> Orders are delivered via trusted international carrier partners.</li>
+                  <li>• <strong className="text-foreground">Carriers:</strong> Orders are delivered via trusted carrier partners.</li>
                   <li>• <strong className="text-foreground">Free shipping</strong> on orders over ${FREE_SHIPPING_THRESHOLD}.</li>
                 </ul>
               </div>

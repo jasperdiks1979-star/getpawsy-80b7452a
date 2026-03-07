@@ -96,6 +96,13 @@ const Contact = () => {
       href: `mailto:${SUPPORT_EMAIL}`,
     },
     {
+      icon: Building2,
+      title: 'Location',
+      content: 'Apeldoorn, Netherlands',
+      description: 'Serving US customers',
+      href: null,
+    },
+    {
       icon: Clock,
       title: 'Business Hours',
       content: 'Monday – Friday',
