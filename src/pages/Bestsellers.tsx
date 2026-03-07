@@ -299,7 +299,7 @@ const Bestsellers = () => {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
       name: 'Best Pet Products 2026 – Top Rated by US Pet Owners',
-      description: 'Curated bestselling pet products ranked by verified reviews and sales. Shop top-rated dog beds, cat toys, feeders, and accessories with free US shipping over $49.',
+      description: 'Curated bestselling pet products ranked by verified reviews and sales. Shop top-rated dog beds, cat toys, feeders, and accessories with free US shipping over $35.',
       numberOfItems: bestsellers.length,
       itemListElement: bestsellers.map((item, index) => ({
         '@type': 'ListItem',
@@ -326,7 +326,7 @@ const Bestsellers = () => {
         <title>Best Pet Products 2026 – Top 20 Bestsellers Ranked | GetPawsy</title>
         <meta 
           name="description" 
-          content="Discover the 20 best-selling pet products in 2026, ranked by verified US pet owners. Dog beds, cat toys, slow feeders & more — free shipping over $49. Updated monthly." 
+          content="Discover the 20 best-selling pet products in 2026, ranked by verified US pet owners. Dog beds, cat toys, slow feeders & more — free shipping over $35. Updated monthly." 
         />
         <meta name="keywords" content="best pet products 2026, bestselling pet supplies, top rated dog toys, popular cat accessories, best pet beds, pet product reviews" />
         <link rel="canonical" href="https://getpawsy.pet/bestsellers" />
