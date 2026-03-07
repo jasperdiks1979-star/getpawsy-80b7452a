@@ -273,7 +273,6 @@ export const Footer = () => {
                    <MapPin className="w-4 h-4" />
                    <span>Apeldoorn, Netherlands</span>
                  </div>
-                </div>
               </div>
               
               {/* Trust highlights */}
