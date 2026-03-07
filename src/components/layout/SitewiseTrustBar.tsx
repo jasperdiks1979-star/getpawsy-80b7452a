@@ -27,7 +27,7 @@ export function SitewiseTrustBar() {
         </div>
         <div className="flex items-center gap-2">
           <Headphones className="w-4 h-4 text-primary flex-shrink-0" />
-          <span>Need help? <a href="mailto:info@getpawsy.pet" className="text-primary hover:underline">info@getpawsy.pet</a></span>
+          <span>Need help? <a href="mailto:support@getpawsy.pet" className="text-primary hover:underline">support@getpawsy.pet</a></span>
         </div>
       </div>
       <p className="text-center text-xs text-muted-foreground/60 mt-2">
