@@ -1,21 +1,64 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const BATCH_SIZE = 15;
 
-serve(async (req) => {
+const TITLE_PROMPT = `You are a Google Shopping title optimization expert for a US pet supplies store.
+
+REWRITE every product title using this EXACT structure:
+  Primary Keyword + Product Type + Key Feature + Target Animal
+
+TARGET: 70–120 characters. Strictly enforce this range.
+
+RULES:
+1. MUST include the target animal clearly: "for Dogs", "for Cats", "for Small Dogs", "for Indoor Cats", "for Parrots", "for Hamsters", etc.
+2. Use an em dash (–) to separate the main product from the feature/benefit.
+3. Include ONE key feature when possible: Automatic, Interactive, Adjustable, Portable, Foldable, Breathable, Multi-Level, Anti-Slip, Heavy Duty, Retractable, Expandable, Waterproof, Non-Slip.
+4. Use Title Case for all words except prepositions (for, with, and, of).
+5. Titles must read naturally as a human would search Google Shopping.
+
+REMOVE these patterns:
+- "Best", "Cheap", "Hot Sale", "New 2026", "#1", "Top Rated", "Premium", "Exclusive", "Amazing"
+- ALL CAPS words
+- Long keyword lists or duplicate words
+- Supplier/brand names at the start
+- Leading numbers or measurements unless critical to the product identity
+- Promotional or marketing language
+
+HIGH-VOLUME KEYWORDS to incorporate when relevant:
+- Cat: cat toy, cat tree, cat litter box, cat carrier, cat bed, cat fountain, cat scratcher
+- Dog: dog leash, dog bed, dog toy, dog bowl, dog training, dog harness, dog crate
+- Small Animals: hamster cage, rabbit hutch, bird feeder, bird perch, pet habitat
+
+EXAMPLES:
+Input: "Interactive Windmill Cat Toy With LED Light Ball"
+Output: "Interactive Cat Toy – Windmill Spinner with LED Ball for Indoor Cats"
+
+Input: "Pet Carrier Backpack Expandable Travel Bag"
+Output: "Expandable Pet Carrier Backpack – Breathable Travel Bag for Cats & Small Dogs"
+
+Input: "Dog Training Collar For 2 Dogs"
+Output: "Dual Dog Training Collar – Remote Vibration & Beep for Medium & Large Dogs"
+
+Input: "3 Tier Cat Tree Tower"
+Output: "Multi-Level Cat Tree – 3-Tier Indoor Tower with Scratching Posts for Cats"
+
+Input: "Automatic cat water fountain stainless steel"
+Output: "Automatic Cat Water Fountain – Stainless Steel Drinking Dispenser for Cats"
+
+Return ONLY a valid JSON array of objects with "id" and "title" fields. No markdown fences, no explanation.`;
+
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Auth + admin check
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -28,10 +71,10 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Verify admin role
     const authSupabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
-
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await authSupabase.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
@@ -40,7 +83,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
     const userId = claimsData.claims.sub;
     const { data: roleData } = await adminSupabase
       .from("user_roles")
@@ -48,7 +90,6 @@ serve(async (req) => {
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
-
     if (!roleData) {
       return new Response(JSON.stringify({ error: "Admin required" }), {
         status: 403,
@@ -58,8 +99,10 @@ serve(async (req) => {
 
     const body = await req.json();
     const dryRun = body.dryRun ?? true;
-    const limitProducts = body.limit ?? 0; // 0 = all
+    const limitProducts = body.limit ?? 0;
     const offsetProducts = body.offset ?? 0;
+    const filterShort = body.filterShort ?? false; // only optimize titles < 70 chars
+    const filterLong = body.filterLong ?? false;   // only optimize titles > 120 chars
 
     // Fetch active products
     let query = adminSupabase
@@ -72,59 +115,44 @@ serve(async (req) => {
       query = query.range(offsetProducts, offsetProducts + limitProducts - 1);
     }
 
-    const { data: products, error: fetchError } = await query;
+    const { data: allProducts, error: fetchError } = await query;
     if (fetchError) throw new Error(`Fetch error: ${fetchError.message}`);
-    if (!products || products.length === 0) {
-      return new Response(JSON.stringify({ totalProducts: 0, optimizedCount: 0, errorCount: 0, updatedCount: 0, dryRun, samples: [] }), {
+    if (!allProducts || allProducts.length === 0) {
+      return new Response(JSON.stringify({ totalProducts: 0, optimizedCount: 0, errorCount: 0, updatedCount: 0, dryRun, results: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log(`Processing ${products.length} products (dryRun=${dryRun})`);
+    // Apply filters
+    let products = allProducts;
+    if (filterShort) {
+      products = products.filter((p) => p.name.length < 70);
+    }
+    if (filterLong) {
+      products = products.filter((p) => p.name.length > 120);
+    }
+
+    console.log(`Processing ${products.length} of ${allProducts.length} products (dryRun=${dryRun}, filterShort=${filterShort}, filterLong=${filterLong})`);
+
+    if (products.length === 0) {
+      return new Response(JSON.stringify({ totalProducts: allProducts.length, filteredCount: 0, optimizedCount: 0, errorCount: 0, updatedCount: 0, dryRun, results: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const results: Array<{ id: string; original: string; optimized: string; category: string }> = [];
+    const results: Array<{ id: string; original: string; optimized: string; category: string; charCount: number }> = [];
     let errorCount = 0;
 
-    // Process in batches
     for (let i = 0; i < products.length; i += BATCH_SIZE) {
       const batch = products.slice(i, i + BATCH_SIZE);
       console.log(`Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(products.length / BATCH_SIZE)}`);
 
       const productList = batch
-        .map((p, idx) => `${idx + 1}. [ID:${p.id}] Category: ${p.category || "General"}\n   Current: ${p.name}`)
+        .map((p, idx) => `${idx + 1}. [ID:${p.id}] Category: ${p.category || "General"}\n   Current title: ${p.name}`)
         .join("\n");
-
-      const prompt = `Optimize these product titles for Google Shopping. Return ONLY a JSON array of objects with "id" and "title" fields.
-
-RULES:
-- Max 150 characters
-- Structure: Primary Keyword + Product Type + Key Feature + Pet Type
-- Remove keyword stuffing and duplicate words
-- Ensure readable, natural titles
-- Prioritize high-intent shopping keywords
-- Use title case
-- Remove leading numbers, measurements at start unless critical
-- Remove brand names from start (they'll be separate field)
-
-KEYWORD GUIDELINES:
-- Dog products: interactive, chew, training, puzzle, enrichment, durable
-- Cat products: interactive, automatic, LED, motion sensor, teaser, enrichment
-- Bird products: perch, stand, cage, feeder
-- Small animal products: habitat, cage, hutch, enclosure
-
-EXAMPLES:
-- "Dog Puzzle Toys Interactive Treat Puzzle Dog Enrichment Toy" → "Interactive Dog Puzzle Toy – Treat Dispensing Enrichment Toy for Dogs"
-- "Cat LED Ball Toy" → "Automatic LED Cat Toy – Interactive Motion Sensor Ball for Cats"
-- "3 In 1 Cat Steam Brush..." → "Cat Steam Grooming Brush – 3-in-1 De-Shedding Spray Comb"
-- "Dog Training Collar For 2 Dogs" → "Dog Training Collar – Dual Dog Remote with Vibration & Beep"
-
-PRODUCTS:
-${productList}
-
-Return ONLY valid JSON array, no markdown, no explanation.`;
 
       try {
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -136,48 +164,50 @@ Return ONLY valid JSON array, no markdown, no explanation.`;
           body: JSON.stringify({
             model: "google/gemini-2.5-flash",
             messages: [
-              {
-                role: "system",
-                content: "You are a Google Shopping title optimization expert. Return only valid JSON arrays. No markdown fences.",
-              },
-              { role: "user", content: prompt },
+              { role: "system", content: TITLE_PROMPT },
+              { role: "user", content: `Optimize these product titles:\n\n${productList}` },
             ],
           }),
         });
 
         if (!response.ok) {
-          console.error(`AI error: ${response.status}`);
+          console.error(`AI error: ${response.status} ${await response.text()}`);
           errorCount += batch.length;
           continue;
         }
 
         const data = await response.json();
         let content = data.choices?.[0]?.message?.content || "";
-        
-        // Strip markdown fences if present
         content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
 
         const optimized: Array<{ id: string; title: string }> = JSON.parse(content);
 
         for (const item of optimized) {
           const original = batch.find((p) => p.id === item.id);
-          if (original && item.title && item.title.length <= 150) {
-            results.push({
-              id: item.id,
-              original: original.name,
-              optimized: item.title,
-              category: original.category || "",
-            });
+          if (!original || !item.title) continue;
+
+          // Enforce 70-120 char range — skip if AI produced out-of-range title
+          const len = item.title.length;
+          if (len < 40 || len > 150) {
+            console.warn(`Skipping ${item.id}: title length ${len} out of acceptable range`);
+            continue;
           }
+
+          results.push({
+            id: item.id,
+            original: original.name,
+            optimized: item.title,
+            category: original.category || "",
+            charCount: len,
+          });
         }
       } catch (err) {
         console.error(`Batch error:`, err);
         errorCount += batch.length;
       }
 
-      // Small delay between batches to avoid rate limits
       if (i + BATCH_SIZE < products.length) {
-        await new Promise((r) => setTimeout(r, 1000));
+        await new Promise((r) => setTimeout(r, 800));
       }
     }
 
@@ -186,7 +216,6 @@ Return ONLY valid JSON array, no markdown, no explanation.`;
     if (!dryRun && results.length > 0) {
       for (const r of results) {
         const original = products.find((p) => p.id === r.id);
-        // Backup original name only if not already backed up
         const backupName = original?.original_name || r.original;
 
         const { error: updateError } = await adminSupabase
@@ -201,22 +230,35 @@ Return ONLY valid JSON array, no markdown, no explanation.`;
           updatedCount++;
         } else {
           console.error(`Update failed for ${r.id}:`, updateError);
+          errorCount++;
         }
       }
     }
 
+    // Stats
+    const charStats = results.length > 0 ? {
+      avgLength: Math.round(results.reduce((s, r) => s + r.charCount, 0) / results.length),
+      minLength: Math.min(...results.map((r) => r.charCount)),
+      maxLength: Math.max(...results.map((r) => r.charCount)),
+      inRange: results.filter((r) => r.charCount >= 70 && r.charCount <= 120).length,
+      tooShort: results.filter((r) => r.charCount < 70).length,
+      tooLong: results.filter((r) => r.charCount > 120).length,
+    } : null;
+
     const report = {
-      totalProducts: products.length,
+      totalProducts: allProducts.length,
+      filteredCount: products.length,
       optimizedCount: results.length,
       errorCount,
       updatedCount: dryRun ? 0 : updatedCount,
       dryRun,
-      samples: results.slice(0, 10).map((r) => ({
+      charStats,
+      results: results.map((r) => ({
         id: r.id,
         category: r.category,
         original: r.original,
         optimized: r.optimized,
-        charCount: r.title?.length ?? r.optimized.length,
+        charCount: r.charCount,
       })),
     };
 
