@@ -27,11 +27,11 @@ export function SitewiseTrustBar() {
         </div>
         <div className="flex items-center gap-2">
           <Headphones className="w-4 h-4 text-primary flex-shrink-0" />
-          <span>Customer Support via Email</span>
+          <span>Need help? <a href="mailto:info@getpawsy.pet" className="text-primary hover:underline">info@getpawsy.pet</a></span>
         </div>
       </div>
       <p className="text-center text-xs text-muted-foreground/60 mt-2">
-        We carefully select our pet products to ensure quality and comfort for your pets.
+        Secure checkout and customer support available for all orders. We carefully select products to ensure comfort and safety for your pets.
       </p>
     </section>
   );
