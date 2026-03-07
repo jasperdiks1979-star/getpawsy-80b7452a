@@ -32,7 +32,7 @@ const PILLARS = [
       </svg>
     ),
     title: 'US Fulfillment, Fast Delivery',
-    desc: 'All training tools ship from US warehouses. 3–7 day delivery. Free shipping on orders $49+. No overseas wait times.',
+    desc: 'All training tools ship directly to you. 3–7 day delivery. Free shipping on orders $35+. No overseas wait times.',
   },
 ];
 

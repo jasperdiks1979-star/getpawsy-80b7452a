@@ -35,8 +35,8 @@ const steps = [
     items: [
       'Land: United States',
       'Bezorgservice: Standard (3–7 business days)',
-      'Gratis verzending boven $49 (komt overeen met feed)',
-      'Flat rate $5.99 onder $49',
+      'Gratis verzending boven $35 (komt overeen met feed)',
+      'Flat rate $5.99 onder $35',
       'Processing time: 1–3 business days',
     ],
   },

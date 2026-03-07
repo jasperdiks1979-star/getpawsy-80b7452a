@@ -104,7 +104,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
     sniperScore: 96,
     optimization: {
       newTitle: '7 Best Orthopedic Dog Beds for Joint Relief (2026)',
-      newMetaDescription: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day guarantee. Free US shipping over $49.',
+      newMetaDescription: 'Dog waking up stiff? Vet-approved memory foam beds relieve joint pain in 7 days. Waterproof, washable, 30-day guarantee. Free US shipping over $35.',
       faqSchema: [
         { question: 'What is the best orthopedic dog bed for large breeds?', answer: 'Large breeds (70+ lbs) need 6+ inches of 3.0 lb/ft³ density foam with 44×34" minimum sleeping surfaces. Our top picks are load-tested with 110 lb dogs for 12+ months.' },
         { question: 'Are orthopedic dog beds worth the money?', answer: 'Yes. They cost $60–$200 but last 3–5 years vs 6–12 months for standard beds. For dogs over 40 lbs or with joint issues, the cost-per-year is actually lower.' },
@@ -128,7 +128,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'Cost-per-year is actually lower ($40/yr vs $60/yr)',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping on orders over $49 (3–7 business days)', guarantee: '30-day comfort guarantee — full refund if your dog doesn\'t love it', returnPolicy: 'No-hassle returns with prepaid label included' },
+      authorityBlock: { shipping: 'Free US shipping on orders over $35 (3–7 business days)', guarantee: '30-day comfort guarantee — full refund if your dog doesn\'t love it', returnPolicy: 'No-hassle returns with prepaid label included' },
     },
     revenue: {
       currentCtr: getCtr(8),
@@ -176,7 +176,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           '3–5 year lifespan vs 6 months for low-density',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping over $49', guarantee: '30-day comfort guarantee', returnPolicy: 'Hassle-free returns' },
+      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day comfort guarantee', returnPolicy: 'Hassle-free returns' },
     },
     revenue: {
       currentCtr: getCtr(12),
@@ -224,7 +224,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'XL sizing for full stretch-out comfort',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping over $49', guarantee: '30-day comfort guarantee', returnPolicy: 'Full refund, no questions asked' },
+      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day comfort guarantee', returnPolicy: 'Full refund, no questions asked' },
     },
     revenue: {
       currentCtr: getCtr(10),
@@ -272,7 +272,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'No crinkly feel — modern liners are thin and flexible',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping over $49', guarantee: '30-day guarantee', returnPolicy: 'Easy returns with prepaid label' },
+      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day guarantee', returnPolicy: 'Easy returns with prepaid label' },
     },
     revenue: {
       currentCtr: getCtr(14),
@@ -320,7 +320,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'Vet-recommended as part of arthritis care plans',
         ],
       },
-      authorityBlock: { shipping: 'Free US shipping over $49', guarantee: '30-day comfort guarantee', returnPolicy: 'No-hassle returns' },
+      authorityBlock: { shipping: 'Free US shipping over $35', guarantee: '30-day comfort guarantee', returnPolicy: 'No-hassle returns' },
     },
     revenue: {
       currentCtr: getCtr(11),

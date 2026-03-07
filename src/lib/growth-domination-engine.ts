@@ -207,7 +207,7 @@ function runBuyerIntentPush(queries: GscQueryRow[]): BuyerIntentResult {
         page,
         queries: allQueries,
         titleRewrite: `${capitalize(primaryKw)} – US Free Shipping & 30-Day Returns | GetPawsy`,
-        metaRewrite: `Find the ${primaryKw} your pet deserves. Independently tested, shipped from US warehouses in 3-7 days. Shop now with free shipping over $49.`,
+        metaRewrite: `Find the ${primaryKw} your pet deserves. Independently tested, delivered in 3-7 days. Shop now with free shipping over $35.`,
         faqEntries: allQueries.slice(0, 3).map(q => ({
           question: `What is the best ${q}?`,
           answer: `Our ${q} selection is tested by pet care experts. Each product ships from US warehouses with a 30-day satisfaction guarantee. View our curated picks above.`,
@@ -217,7 +217,7 @@ function runBuyerIntentPush(queries: GscQueryRow[]): BuyerIntentResult {
           { from: '/bestsellers', anchor: `top ${primaryKw}` },
           { from: '/blog/pet-bonding-activities', anchor: `${primaryKw} for bonding` },
         ],
-        trustBlocks: ['Free US Shipping Over $49', '30-Day Returns', 'Secure Checkout', 'US Warehouse Fulfillment'],
+        trustBlocks: ['Free US Shipping Over $35', '30-Day Returns', 'Secure Checkout', 'Fast Delivery'],
         comparisonTable: targets.some(t => t.modifiers.some(m => m.includes('vs') || m.includes('compare') || m.includes('best'))),
       };
     });

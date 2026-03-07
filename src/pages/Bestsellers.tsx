@@ -279,10 +279,10 @@ const Bestsellers = () => {
   // ─── 12 High-Intent FAQs (schema-ready) ──────────────────────────
   const bestsellerFaqs = [
     { question: 'How are GetPawsy bestsellers selected?', answer: 'Our bestsellers are ranked by a combination of verified customer reviews, repeat purchase rate, and overall sales volume. Every product on this page has been purchased and loved by real pet owners across the United States.' },
-    { question: 'Are bestseller prices guaranteed?', answer: 'Yes — the price you see is the price you pay. We never inflate prices before applying discounts. All bestseller prices include free US shipping on orders over $49.' },
+    { question: 'Are bestseller prices guaranteed?', answer: 'Yes — the price you see is the price you pay. We never inflate prices before applying discounts. All bestseller prices include free US shipping on orders over $35.' },
     { question: 'What is the return policy for bestseller products?', answer: 'All bestseller products are covered by our 30-day hassle-free return policy. If you or your pet are not satisfied, contact us for a full refund or exchange — no questions asked.' },
     { question: 'Do you offer bundles with bestseller items?', answer: 'Yes! Many bestseller product pages feature a "Frequently Bought Together" section where you can save by bundling complementary items. Bundle discounts are applied automatically at checkout.' },
-    { question: 'How fast is shipping on bestseller items?', answer: 'Bestseller items ship within 1–3 business days. Standard US delivery takes 7–15 business days depending on your location. Free shipping is available on orders over $49.' },
+    { question: 'How fast is shipping on bestseller items?', answer: 'Bestseller items ship within 1–3 business days. Standard US delivery takes 3–7 business days depending on your location. Free shipping is available on orders over $35.' },
     { question: 'Are these products safe for puppies and kittens?', answer: 'Product safety varies by item. Each product page includes age and size recommendations. For puppies under 6 months or kittens, always check the specific product details or contact our support team.' },
     { question: 'Can I see real customer reviews?', answer: 'Absolutely. Every bestseller product page features verified customer reviews with photos. We never filter or remove honest feedback — positive or negative.' },
     { question: 'Do you ship internationally?', answer: 'Currently we ship to the United States only. We are working on expanding to Canada and the UK. Sign up for our newsletter to be notified when international shipping becomes available.' },
@@ -299,7 +299,7 @@ const Bestsellers = () => {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
       name: 'Best Pet Products 2026 – Top Rated by US Pet Owners',
-      description: 'Curated bestselling pet products ranked by verified reviews and sales. Shop top-rated dog beds, cat toys, feeders, and accessories with free US shipping over $49.',
+      description: 'Curated bestselling pet products ranked by verified reviews and sales. Shop top-rated dog beds, cat toys, feeders, and accessories with free US shipping over $35.',
       numberOfItems: bestsellers.length,
       itemListElement: bestsellers.map((item, index) => ({
         '@type': 'ListItem',
@@ -326,7 +326,7 @@ const Bestsellers = () => {
         <title>Best Pet Products 2026 – Top 20 Bestsellers Ranked | GetPawsy</title>
         <meta 
           name="description" 
-          content="Discover the 20 best-selling pet products in 2026, ranked by verified US pet owners. Dog beds, cat toys, slow feeders & more — free shipping over $49. Updated monthly." 
+          content="Discover the 20 best-selling pet products in 2026, ranked by verified US pet owners. Dog beds, cat toys, slow feeders & more — free shipping over $35. Updated monthly." 
         />
         <meta name="keywords" content="best pet products 2026, bestselling pet supplies, top rated dog toys, popular cat accessories, best pet beds, pet product reviews" />
         <link rel="canonical" href="https://getpawsy.pet/bestsellers" />

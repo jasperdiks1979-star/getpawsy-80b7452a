@@ -95,7 +95,7 @@ export const RETARGETING_AUDIENCES: RetargetingAudience[] = [
     excludePurchasers: true,
     
     primaryMessage: 'Designed for everyday comfort and care',
-    secondaryMessage: 'Free shipping over $49 • 30-day hassle-free returns',
+    secondaryMessage: 'Free shipping over $35 • 30-day hassle-free returns',
     ctaText: 'View Details',
     destinationPath: '/products/{last_viewed}', // Dynamic
     
@@ -153,7 +153,7 @@ export const AD_COPY_TEMPLATES = {
     descriptions: [
       'Discover thoughtfully selected products for dogs and cats. Fast US shipping, easy returns.',
       'From feeding solutions to travel gear — practical essentials for everyday pet care.',
-      'Quality products designed for comfort and convenience. Free shipping over $49.',
+      'Quality products designed for comfort and convenience. Free shipping over $35.',
     ],
   },
   
@@ -167,7 +167,7 @@ export const AD_COPY_TEMPLATES = {
     descriptions: [
       'Continue discovering practical pet essentials. Fast shipping, hassle-free returns.',
       'Find the right products for your pet. Quality you can trust, delivered fast.',
-      'Designed for everyday comfort. Free US shipping on orders over $49.',
+      'Designed for everyday comfort. Free US shipping on orders over $35.',
     ],
   },
   
@@ -179,7 +179,7 @@ export const AD_COPY_TEMPLATES = {
       'Everyday Reliability',
     ],
     descriptions: [
-      'Quality products designed for everyday life. Free shipping over $49, 30-day returns.',
+      'Quality products designed for everyday life. Free shipping over $35, 30-day returns.',
       'Trusted by pet parents nationwide. Fast delivery, easy returns guaranteed.',
       'Practical solutions for your pet. Quality, comfort, and convenience.',
     ],
