@@ -128,7 +128,8 @@ export function WebsiteSchema({
       returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
       merchantReturnDays: RETURN_WINDOW_DAYS,
       returnMethod: 'https://schema.org/ReturnByMail',
-      returnFees: 'https://schema.org/FreeReturn',
+      returnFees: 'https://schema.org/ReturnShippingFees',
+      refundType: 'https://schema.org/FullRefund',
     },
     // US shipping details - matches shipping-constants.ts
     shippingDetails: [
