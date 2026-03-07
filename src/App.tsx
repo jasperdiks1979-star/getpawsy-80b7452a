@@ -415,6 +415,8 @@ const App = () => {
                       {/* Alternate policy URLs — redirect to canonical routes */}
                       <Route path="/shipping-policy" element={<Navigate to="/shipping" replace />} />
                       <Route path="/refund-policy" element={<Navigate to="/returns" replace />} />
+                      <Route path="/returns-policy" element={<Navigate to="/returns" replace />} />
+                      <Route path="/return-policy" element={<Navigate to="/returns" replace />} />
                       <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />
                       <Route path="/terms-of-service" element={<Navigate to="/terms" replace />} />
                       <Route path="/faq" element={<Suspense fallback={<RouteLoader />}><FAQ /></Suspense>} />
