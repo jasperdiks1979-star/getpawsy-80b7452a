@@ -57,7 +57,7 @@ export function ProductShippingReturns({ className = '' }: { className?: string 
             <li>Returns must be sent back <strong className="text-foreground">by mail</strong></li>
             <li>Items must be unused and in original packaging</li>
             <li>Customer is responsible for return shipping costs (unless item arrived damaged or incorrect)</li>
-            <li>Refund issued to <strong className="text-foreground">original payment method</strong> within 5–10 business days</li>
+            <li>Refund issued to <strong className="text-foreground">original payment method</strong> within 5 business days</li>
             <li>Contact <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a> with your order number to start a return</li>
           </ul>
           <Link to="/returns" className="inline-block mt-3 text-sm text-primary hover:underline font-medium">
