@@ -25,7 +25,7 @@ export const PMAX_SHORT_HEADLINES = [
   'Trusted Pet Products',
   
   // Shipping/Trust
-  'Free US Shipping $49+',
+  'Free US Shipping $35+',
   'Fast 3-7 Day Delivery',
   '30-Day Easy Returns',
   

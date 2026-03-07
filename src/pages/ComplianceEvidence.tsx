@@ -284,7 +284,7 @@ export default function ComplianceEvidence() {
                 <strong>Confirm business information</strong> — Ensure business name is "Skidzo" or "GetPawsy by Skidzo", and address matches: Apeldoorn, Gelderland, Netherlands.
               </li>
               <li>
-                <strong>Check shipping settings</strong> — Under Shipping and returns → Shipping services: US Standard (3–7 business days), free over $49, flat $5.99 below $49. Processing time: 1–2 business days.
+                <strong>Check shipping settings</strong> — Under Shipping and returns → Shipping services: US Standard (3–7 business days), free over $35, flat $5.99 below $35. Processing time: 1–2 business days.
               </li>
               <li>
                 <strong>Check return policy</strong> — Under Shipping and returns → Return policies: 30-day return window, return by mail, full refund within 5–10 business days.
