@@ -88,7 +88,7 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     secondary_keywords: ['cat supplies', 'cat essentials', 'best cat products', 'cat accessories'],
     seo_intro: 'Discover our curated collection of top-rated cat products — from interactive toys and cozy beds to modern furniture and litter solutions. Everything your feline friend needs for a happy, enriched indoor life.',
     meta_title: 'Cat Essentials — Best Cat Products 2026 | GetPawsy',
-    meta_description: 'Shop the best cat products: interactive toys, modern cat trees, litter furniture & more. Curated for happy indoor cats. Free shipping on orders $49+.',
+    meta_description: 'Shop the best cat products: interactive toys, modern cat trees, litter furniture & more. Curated for happy indoor cats. Free shipping on orders $35+.',
     faq: [
       { question: 'What are the best products for indoor cats?', answer: 'Indoor cats benefit most from interactive toys, vertical climbing furniture (cat trees, wall shelves), puzzle feeders, and window perches. These items combat boredom and promote natural behaviors like climbing, hunting, and scratching.' },
       { question: 'How do I keep my cat entertained while at work?', answer: 'Puzzle feeders, automated laser toys, and window bird feeders provide stimulation. Rotating toys every few days keeps things fresh. A cat tree near a window gives entertainment through bird-watching.' },
@@ -107,7 +107,7 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     secondary_keywords: ['dog supplies', 'dog essentials', 'best dog products', 'dog accessories'],
     seo_intro: 'Browse our curated collection of top-rated dog products — from orthopedic beds and no-pull harnesses to interactive toys and travel gear. Everything your pup needs for comfort, training, and adventure.',
     meta_title: 'Dog Essentials — Best Dog Products 2026 | GetPawsy',
-    meta_description: 'Shop the best dog products: orthopedic beds, training gear, interactive toys & travel essentials. Curated for happy, healthy dogs. Free shipping on $49+.',
+    meta_description: 'Shop the best dog products: orthopedic beds, training gear, interactive toys & travel essentials. Curated for happy, healthy dogs. Free shipping on $35+.',
     faq: [
       { question: 'What are the must-have products for a new dog?', answer: 'Every new dog needs a comfortable bed, food and water bowls, a properly-fitted collar or harness with leash, chew toys, and grooming basics. For puppies, add potty training pads and a crate for safe training.' },
       { question: 'How do I choose the right dog bed?', answer: 'Consider your dog\'s size, age, and sleeping style. Large breeds and seniors benefit from orthopedic memory foam beds. Dogs who curl up prefer bolstered beds. Chewers need chew-resistant covers. Measure your dog lying down to get the right size.' },
@@ -144,7 +144,7 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     secondary_keywords: ['no-pull harness', 'dog leash', 'training leash', 'slip lead', 'head collar', 'long line'],
     seo_intro: 'Find the best no-pull harnesses, training leashes, slip leads, and control tools for dogs that pull. Humane, positive-reinforcement gear trusted by professional trainers and US dog owners.',
     meta_title: 'Dog Leash & Control — No-Pull Training Tools 2026 | GetPawsy',
-    meta_description: 'Shop no-pull harnesses, training leashes & control tools for dogs. Humane solutions for pullers. Free US shipping $49+, 30-day returns.',
+    meta_description: 'Shop no-pull harnesses, training leashes & control tools for dogs. Humane solutions for pullers. Free US shipping $35+, 30-day returns.',
     faq: [
       { question: 'What is the best harness for a dog that pulls?', answer: 'A front-clip no-pull harness is the most effective and humane option. It redirects your dog\'s momentum toward you when they pull, making walks more manageable without causing discomfort.' },
       { question: 'Are slip leads good for training?', answer: 'Slip leads can be effective for trained dogs in specific situations (vet visits, emergency control), but for everyday leash training, a front-clip harness paired with positive reinforcement is more effective and safer.' },
@@ -163,7 +163,7 @@ const VIRTUAL_COLLECTIONS: Record<string, VirtualCollection> = {
     secondary_keywords: ['puppy potty pads', 'training pads', 'grass mat', 'housebreaking', 'potty training spray'],
     seo_intro: 'Everything you need for successful puppy and dog potty training. From absorbent training pads and grass mats to attractant sprays and potty bells — get your dog housetrained faster with proven tools.',
     meta_title: 'Dog Potty Training — Pads, Mats & Solutions 2026 | GetPawsy',
-    meta_description: 'Shop potty training pads, grass mats, sprays & tools for puppies and dogs. Housebreaking essentials. Free US shipping $49+.',
+    meta_description: 'Shop potty training pads, grass mats, sprays & tools for puppies and dogs. Housebreaking essentials. Free US shipping $35+.',
     faq: [
       { question: 'How long does potty training a puppy take?', answer: 'Most puppies can be reliably housetrained within 4-6 months, though some may take up to a year. Consistency, positive reinforcement, and a regular schedule are key to faster results.' },
       { question: 'Are grass pads better than regular potty pads?', answer: 'Grass pads (real or artificial) can make the transition to outdoor potty habits easier because they teach dogs to associate grass with bathroom time. Regular pads are more absorbent for indoor-only use.' },
