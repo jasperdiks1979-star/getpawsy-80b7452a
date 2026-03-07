@@ -53,7 +53,7 @@ export const DELIVERY_TIME_STANDARD = '3–7 business days';
 export const PROCESSING_TIME = '1–2 business days';
 
 /** US fulfillment shipping note - Official wording for Google Merchant Center compliance */
-export const US_FULFILLMENT_NOTE = 'Orders ship from US fulfillment centers when available';
+export const US_FULFILLMENT_NOTE = 'Orders ship directly to customers across the United States';
 
 /** Express shipping time (if available) */
 export const DELIVERY_TIME_EXPRESS = '2–4 business days';
