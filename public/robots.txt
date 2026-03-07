@@ -12,6 +12,8 @@ Allow: /about
 Allow: /contact
 Allow: /faq
 Allow: /shipping
+Allow: /returns
+Allow: /policies/
 Allow: /
 Disallow: /admin
 Disallow: /cart

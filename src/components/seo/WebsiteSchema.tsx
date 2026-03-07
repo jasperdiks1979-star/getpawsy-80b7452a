@@ -123,6 +123,7 @@ export function WebsiteSchema({
     hasMerchantReturnPolicy: {
       '@type': 'MerchantReturnPolicy',
       '@id': `${url}/#returnpolicy`,
+      url: `${url}/returns`,
       applicableCountry: 'US',
       returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
       merchantReturnDays: RETURN_WINDOW_DAYS,

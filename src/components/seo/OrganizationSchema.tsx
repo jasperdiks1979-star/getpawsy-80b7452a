@@ -37,6 +37,8 @@ export function OrganizationSchema() {
     },
     returnPolicy: {
       '@type': 'MerchantReturnPolicy',
+      '@id': `${SITE_URL}/#returnpolicy`,
+      url: `${SITE_URL}/returns`,
       applicableCountry: 'US',
       returnPolicyCategory:
         'https://schema.org/MerchantReturnFiniteReturnWindow',

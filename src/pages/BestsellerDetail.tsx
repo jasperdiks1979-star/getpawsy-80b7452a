@@ -157,6 +157,8 @@ const generateProductJsonLd = (
       },
       hasMerchantReturnPolicy: {
         '@type': 'MerchantReturnPolicy',
+        '@id': 'https://getpawsy.pet/#returnpolicy',
+        url: 'https://getpawsy.pet/returns',
         applicableCountry: 'US',
         returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
         merchantReturnDays: 30,

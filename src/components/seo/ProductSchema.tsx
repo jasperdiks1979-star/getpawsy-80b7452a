@@ -142,6 +142,8 @@ export function ProductSchema({
       },
       hasMerchantReturnPolicy: {
         '@type': 'MerchantReturnPolicy',
+        '@id': `${baseUrl}/#returnpolicy`,
+        url: `${baseUrl}/returns`,
         applicableCountry: 'US',
         returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
         merchantReturnDays: 30,
