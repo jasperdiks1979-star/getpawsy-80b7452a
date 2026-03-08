@@ -62,8 +62,8 @@ function rewriteCloudinarySize(url: string): { rewritten: boolean; url: string }
   // Match w_NNN where NNN < 800 in Cloudinary transforms
   const cloudinarySmall = /\/upload\/([^/]*?)w_(\d+)([^/]*?)\//;
   const match = url.match(cloudinarySmall);
-  if (match && parseInt(match[2]) < 800) {
-    const newUrl = url.replace(cloudinarySmall, `/upload/${match[1]}w_1000${match[3]}/`);
+  if (match && parseInt(match[2]) < 1200) {
+    const newUrl = url.replace(cloudinarySmall, `/upload/${match[1]}w_1200${match[3]}/`);
     return { rewritten: true, url: newUrl };
   }
   return { rewritten: false, url };

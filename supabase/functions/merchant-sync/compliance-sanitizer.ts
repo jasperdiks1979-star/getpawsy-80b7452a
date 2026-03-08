@@ -182,6 +182,111 @@ export interface ComplianceSummary {
   google_category_invalid_prevented_count: number;
 }
 
+// ── Feature keyword extraction for title restructuring ───────────
+const FEATURE_KEYWORDS: Array<[RegExp, string]> = [
+  [/\b(memory\s*foam)\b/i, "Memory Foam"],
+  [/\b(orthopedic)\b/i, "Orthopedic"],
+  [/\b(waterproof)\b/i, "Waterproof"],
+  [/\b(washable)\b/i, "Washable"],
+  [/\b(no[-\s]*pull)\b/i, "No Pull"],
+  [/\b(reflective)\b/i, "Reflective"],
+  [/\b(adjustable)\b/i, "Adjustable"],
+  [/\b(interactive)\b/i, "Interactive"],
+  [/\b(smart|motion\s*sensor)\b/i, "Smart Motion Sensor"],
+  [/\b(foldable|collapsible)\b/i, "Foldable"],
+  [/\b(portable)\b/i, "Portable"],
+  [/\b(self[-\s]*cleaning)\b/i, "Self Cleaning"],
+  [/\b(automatic)\b/i, "Automatic"],
+  [/\b(retractable)\b/i, "Retractable"],
+  [/\b(scratch[-\s]*resistant)\b/i, "Scratch Resistant"],
+  [/\b(anti[-\s]*slip|non[-\s]*slip)\b/i, "Anti Slip"],
+  [/\b(breathable)\b/i, "Breathable"],
+  [/\b(durable)\b/i, "Durable"],
+  [/\b(elevated|raised)\b/i, "Elevated"],
+  [/\b(stainless\s*steel)\b/i, "Stainless Steel"],
+  [/\b(slow\s*feeder)\b/i, "Slow Feeder"],
+  [/\b(heated)\b/i, "Heated"],
+  [/\b(cooling)\b/i, "Cooling"],
+  [/\b(squeaky)\b/i, "Squeaky"],
+  [/\b(plush)\b/i, "Plush"],
+  [/\b(led|light[-\s]*up)\b/i, "LED"],
+  [/\b(large|xl|extra\s*large)\b/i, "Large"],
+  [/\b(small|mini|compact)\b/i, "Compact"],
+];
+
+/**
+ * Restructure title into Google Shopping optimized format:
+ * [Primary keyword] for [Pet] – [Key Feature] | GetPawsy
+ * 
+ * Only restructures if the title doesn't already follow the pattern.
+ * Ensures primary keyword is in the first 40 characters.
+ */
+function restructureTitleForShopping(title: string): string {
+  // Skip if already has our brand suffix or follows the pattern
+  if (/\|\s*GetPawsy\s*$/i.test(title)) return title;
+  
+  const productType = guessProductType(title);
+  const animal = guessAnimal(title);
+
+  // Extract up to 2 features
+  const features: string[] = [];
+  for (const [re, label] of FEATURE_KEYWORDS) {
+    if (re.test(title) && !features.includes(label)) {
+      features.push(label);
+      if (features.length >= 2) break;
+    }
+  }
+
+  // Build animal label for title (capitalize)
+  const animalLabel = animal === "pets" ? "" : ` for ${animal.charAt(0).toUpperCase() + animal.slice(1)}`;
+  
+  // Build product keyword from type
+  const typeMap: Record<string, string> = {
+    "pet toy": "Pet Toy",
+    "pet bed": "Pet Bed",
+    "collar/harness": "Harness",
+    "leash": "Leash",
+    "feeding accessory": "Feeder",
+    "grooming tool": "Grooming Tool",
+    "pet carrier/crate": "Pet Carrier",
+    "pet apparel": "Pet Apparel",
+    "cat furniture": "Cat Tree",
+    "litter accessory": "Litter Box",
+    "training tool": "Training Tool",
+    "pet accessory": "Pet Accessory",
+  };
+  
+  // Use original title if it's already well-structured (starts with keyword, good length)
+  const startsWithKeyword = /^(dog|cat|pet|puppy|kitten)\s/i.test(title);
+  
+  if (startsWithKeyword && title.length >= 40 && title.length <= 120) {
+    // Just append brand
+    const featureSuffix = features.length > 0 ? ` – ${features.join(" ")}` : "";
+    const branded = `${title}${featureSuffix} | GetPawsy`;
+    return branded.length <= 150 ? branded : `${title} | GetPawsy`;
+  }
+  
+  // Restructure: [Primary keyword] for [Pet] – [Feature] | GetPawsy
+  const keyword = typeMap[productType] || "Pet Product";
+  const featureStr = features.length > 0 ? ` – ${features.join(" ")}` : "";
+  
+  // Try to keep original name context but restructured
+  const cleanTitle = title
+    .replace(/\b(dog|cat|pet|puppy|kitten)s?\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  
+  // If clean title is still meaningful, use it as the primary keyword
+  if (cleanTitle.length >= 10 && cleanTitle.length <= 60) {
+    const restructured = `${cleanTitle}${animalLabel}${featureStr} | GetPawsy`;
+    if (restructured.length <= 150) return restructured;
+  }
+  
+  // Fallback: use detected type
+  const fallback = `${keyword}${animalLabel}${featureStr} | GetPawsy`;
+  return fallback.length <= 150 ? fallback : `${title} | GetPawsy`.substring(0, 150);
+}
+
 // ── Dropship title cleanup patterns ───────────────────────────────
 const DROPSHIP_TITLE_PATTERNS: Array<[RegExp, (match: string, ...groups: string[]) => string]> = [
   // "Portable Pet Agility Pet Training Set Dog Obstacle Exercise" → "Dog Agility Training Set – Obstacle Course for Active Dogs"
@@ -236,10 +341,10 @@ export function sanitizeTitle(title: string): { sanitized: string; removed: stri
 // ── Cloudinary image URL rewriting ────────────────────────────────
 export function rewriteCloudinaryUrl(url: string): { url: string; rewritten: boolean } {
   if (!url) return { url, rewritten: false };
-  // Match Cloudinary transforms with small widths (w_100 to w_799)
-  const smallWidthRe = /\/(?:w_[1-7]\d{0,2}|w_800)\b/;
+  // Match Cloudinary transforms with small widths (w_100 to w_1199) → upgrade to w_1200
+  const smallWidthRe = /\/(?:w_(?:[1-9]\d{0,2}|1[01]\d{2}))\b/;
   if (smallWidthRe.test(url)) {
-    const newUrl = url.replace(/w_\d+/, "w_1000");
+    const newUrl = url.replace(/w_\d+/, "w_1200");
     return { url: newUrl, rewritten: true };
   }
   return { url, rewritten: false };
