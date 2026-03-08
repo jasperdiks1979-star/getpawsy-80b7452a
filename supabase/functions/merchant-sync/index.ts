@@ -650,6 +650,10 @@ Deno.serve(async (req: Request) => {
       // Stock already validated > 0 above, so availability is always "in stock"
       const availability = "in stock";
 
+      // Build product_type from category hierarchy
+      const productType = p.product_type
+        || (p.category ? `Pet Supplies > ${p.category}` : "Pet Supplies");
+
       const googleProduct: Record<string, unknown> = {
         offerId,
         title: compliance.sanitizedTitle,
@@ -663,7 +667,13 @@ Deno.serve(async (req: Request) => {
         condition: "new",
         price: { value: p.price.toFixed(2), currency: "USD" },
         brand: "GetPawsy",
+        identifierExists: false,
+        productTypes: [productType],
         shippingWeight: { value: weightKg.toString(), unit: "kg" },
+        // Custom labels for Shopping campaign segmentation
+        ...(p.custom_label_0 ? { customLabel0: p.custom_label_0 } : {}),
+        ...(p.custom_label_1 ? { customLabel1: p.custom_label_1 } : {}),
+        ...(p.custom_label_2 ? { customLabel2: p.custom_label_2 } : {}),
       };
 
       if (categoryId !== null && typeof categoryId === "number" && categoryId > 0) {

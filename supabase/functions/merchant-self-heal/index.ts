@@ -62,8 +62,8 @@ function rewriteCloudinarySize(url: string): { rewritten: boolean; url: string }
   // Match w_NNN where NNN < 800 in Cloudinary transforms
   const cloudinarySmall = /\/upload\/([^/]*?)w_(\d+)([^/]*?)\//;
   const match = url.match(cloudinarySmall);
-  if (match && parseInt(match[2]) < 800) {
-    const newUrl = url.replace(cloudinarySmall, `/upload/${match[1]}w_1000${match[3]}/`);
+  if (match && parseInt(match[2]) < 1200) {
+    const newUrl = url.replace(cloudinarySmall, `/upload/${match[1]}w_1200${match[3]}/`);
     return { rewritten: true, url: newUrl };
   }
   return { rewritten: false, url };
@@ -298,12 +298,12 @@ Deno.serve(async (req: Request) => {
         addFinding({
           severity: "medium",
           category: "image_rewrite",
-          title: `Cloudinary image upscaled from <800px transform`,
-          detail: `Product "${p.name}" — transform rewritten to w_1000 for export compliance.`,
+          title: `Cloudinary image upscaled from <1200px transform`,
+          detail: `Product "${p.name}" — transform rewritten to w_1200 for Google Shopping compliance (min 1200px).`,
           productId: p.id, productSlug: slug,
           autoFixable: true,
           fixed: true,
-          fixAction: "Cloudinary transform rewritten to w_1000",
+          fixAction: "Cloudinary transform rewritten to w_1200",
         });
       }
 
