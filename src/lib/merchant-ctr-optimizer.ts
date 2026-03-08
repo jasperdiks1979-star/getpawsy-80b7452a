@@ -142,7 +142,7 @@ export function generateOptimizedDescription(
 ): string {
   const bulletFeatures = features.slice(0, 3).join('. ');
   const desc = `${productName} – ${primaryBenefit}. ${bulletFeatures}. Free US shipping over $35. 30-day returns.`;
-  return desc.slice(0, 500); // Full desc, but first 160 chars are optimized
+  return desc.slice(0, 500);
 }
 
 /**

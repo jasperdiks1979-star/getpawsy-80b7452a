@@ -298,12 +298,12 @@ Deno.serve(async (req: Request) => {
         addFinding({
           severity: "medium",
           category: "image_rewrite",
-          title: `Cloudinary image upscaled from <800px transform`,
-          detail: `Product "${p.name}" — transform rewritten to w_1000 for export compliance.`,
+          title: `Cloudinary image upscaled from <1200px transform`,
+          detail: `Product "${p.name}" — transform rewritten to w_1200 for Google Shopping compliance (min 1200px).`,
           productId: p.id, productSlug: slug,
           autoFixable: true,
           fixed: true,
-          fixAction: "Cloudinary transform rewritten to w_1000",
+          fixAction: "Cloudinary transform rewritten to w_1200",
         });
       }
 
