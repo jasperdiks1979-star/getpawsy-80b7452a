@@ -223,7 +223,11 @@ export function sanitizeTitle(title: string): { sanitized: string; removed: stri
   result = result.replace(/\s{2,}/g, " ").trim();
   result = result.replace(/^[,.\-–—:;|]+\s*/, "").replace(/\s*[,.\-–—:;|]+$/, "");
 
-  // Enforce 150 char limit
+  // Restructure title into Google Shopping optimized format:
+  // [Primary keyword] for [Pet] – [Key Feature] | GetPawsy
+  result = restructureTitleForShopping(result);
+
+  // Enforce 70–120 char sweet spot (max 150)
   if (result.length > 150) result = result.substring(0, 147) + "...";
 
   return { sanitized: result, removed };
