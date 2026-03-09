@@ -956,10 +956,14 @@ Deno.serve(async (req: Request) => {
       merchantId_source: merchantIdSource,
       rawCount,
       scannedCount: totalScannedCount,
-      eligibleCount, // === payloadBuiltCount (same metric)
+      eligibleCountBeforeLimit,
+      maxExportProducts: MAX_EXPORT_PRODUCTS,
+      eligibleCount, // === payloadBuiltCount after cap
       payloadBuiltCount,
-      exportedCount: payloadBuiltCount, // alias for clarity
-      oosExcludedCount, // OOS items excluded from feed
+      payloadBuiltCountAfterLimit: payloadBuiltCount,
+      skippedDueToMerchantCap,
+      exportedCount: payloadBuiltCount,
+      oosExcludedCount,
       attemptedSendCount,
       successCount,
       errorCount,
@@ -979,8 +983,11 @@ Deno.serve(async (req: Request) => {
         send_additional_images: SEND_ADDITIONAL_IMAGES,
       },
       descriptions_fallback_count: descriptionsFallbackCount,
-      sampleOfferIds: payloads.slice(0, 10).map(p => p.offerId),
+      sampleOfferIds: cappedPayloads.slice(0, 10).map(p => p.offerId),
       compliance_safe: errorCount === 0 && payloadBuiltCount > 0,
+      merchantCapNote: skippedDueToMerchantCap > 0
+        ? `Merchant export capped at ${MAX_EXPORT_PRODUCTS} products. ${skippedDueToMerchantCap} eligible products skipped due to temporary Merchant cap.`
+        : null,
       site_readiness: siteReadiness,
       successProductIds: successProductIds.slice(0, 50),
       failedProductIds: failedProductIds.slice(0, 50),
