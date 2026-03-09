@@ -692,13 +692,43 @@ Deno.serve(async (req: Request) => {
       payloadBuiltCount++;
     }
 
-    // eligibleCount === payloadBuiltCount (same metric, kept for report compatibility)
+    // eligibleCount === payloadBuiltCount before cap (same metric, kept for report compatibility)
+    const eligibleCountBeforeLimit = payloadBuiltCount;
+
+    // ══════════════════════════════════════════════════════════════
+    // C) MERCHANT EXPORT CAP — stable sort + slice
+    // ══════════════════════════════════════════════════════════════
+    // Sort payloads deterministically: stock DESC (via price as proxy, all have stock>0),
+    // then by offerId ASC for full determinism.
+    // We store stock on each payload temporarily for sorting.
+    // Since all eligible products have stock > 0 and we don't have stock on the payload,
+    // we sort by offerId for full determinism (stable across runs).
+    payloads.sort((a, b) => {
+      const oidA = (a.offerId as string) || "";
+      const oidB = (b.offerId as string) || "";
+      return oidA.localeCompare(oidB);
+    });
+
+    const skippedDueToMerchantCap = Math.max(0, payloads.length - MAX_EXPORT_PRODUCTS);
+    const cappedPayloads = payloads.slice(0, MAX_EXPORT_PRODUCTS);
+
+    // Rebuild exportedOfferIds from capped set only (important for prune correctness)
+    for (const p of cappedPayloads) {
+      exportedOfferIds.add(p.offerId as string);
+    }
+
+    // Update counts to reflect capped set
+    payloadBuiltCount = cappedPayloads.length;
     const eligibleCount = payloadBuiltCount;
+
+    if (skippedDueToMerchantCap > 0) {
+      console.log(`[merchant-sync] MERCHANT CAP: eligible=${eligibleCountBeforeLimit} cap=${MAX_EXPORT_PRODUCTS} exported=${payloadBuiltCount} skipped=${skippedDueToMerchantCap}`);
+    }
 
     // ══════════════════════════════════════════════════════════════
     // FAILSAFE: abort if >10% validation failure rate
     // ══════════════════════════════════════════════════════════════
-    const totalExcluded = totalScannedCount - payloadBuiltCount;
+    const totalExcluded = totalScannedCount - eligibleCountBeforeLimit;
     const failureRate = totalScannedCount > 0 ? totalExcluded / totalScannedCount : 0;
 
     if (failureRate > 0.30 && totalScannedCount >= 10) {
@@ -708,7 +738,8 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({
           ok: false, error: failsafeMsg, runId, failsafe: true,
-          rawCount, scannedCount: totalScannedCount, eligibleCount, payloadBuiltCount,
+          rawCount, scannedCount: totalScannedCount, eligibleCountBeforeLimit, eligibleCount, payloadBuiltCount,
+          maxExportProducts: MAX_EXPORT_PRODUCTS, skippedDueToMerchantCap,
           excludedByReason: exclusionReport,
           image_failures_sample: imageFailuresSample.slice(0, 10),
         }),
@@ -727,7 +758,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`[merchant-sync] SCAN COMPLETE: raw=${rawCount} scanned=${totalScannedCount} eligible=${eligibleCount} payloads=${payloadBuiltCount} oos_excluded=${oosExcludedCount} descriptions_fallback=${descriptionsFallbackCount}`);
+    console.log(`[merchant-sync] SCAN COMPLETE: raw=${rawCount} scanned=${totalScannedCount} eligibleBeforeCap=${eligibleCountBeforeLimit} exported=${payloadBuiltCount} cap=${MAX_EXPORT_PRODUCTS} skipped=${skippedDueToMerchantCap} oos_excluded=${oosExcludedCount}`);
 
     // ══════════════════════════════════════════════════════════════
     // F) SEND IN SAFE BATCHES (live only)
