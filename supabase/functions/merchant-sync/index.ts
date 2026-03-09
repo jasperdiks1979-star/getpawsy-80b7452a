@@ -649,7 +649,7 @@ Deno.serve(async (req: Request) => {
 
       // Stable offer ID
       const offerId = buildStableOfferId(p);
-      exportedOfferIds.add(offerId);
+      // exportedOfferIds populated after merchant cap is applied
 
       // Stock already validated > 0 above, so availability is always "in stock"
       const availability = "in stock";
