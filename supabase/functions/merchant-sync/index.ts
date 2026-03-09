@@ -764,15 +764,15 @@ Deno.serve(async (req: Request) => {
     // F) SEND IN SAFE BATCHES (live only)
     // ══════════════════════════════════════════════════════════════
     if (modeEffective === "live" && payloadBuiltCount > 0) {
-      console.log(`[merchant-sync] LIVE SEND START: ${payloadBuiltCount} payloads to send via Google Content API`);
+      console.log(`[merchant-sync] LIVE SEND START: ${payloadBuiltCount} payloads (capped from ${eligibleCountBeforeLimit} eligible)`);
       
       // Send concurrently in chunks of 10 to avoid timeout (was sequential before)
       const CONCURRENCY = 10;
-      const totalBatches = Math.ceil(payloads.length / CONCURRENCY);
+      const totalBatches = Math.ceil(cappedPayloads.length / CONCURRENCY);
       
       for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
         const batchStart = batchIdx * CONCURRENCY;
-        const batch = payloads.slice(batchStart, batchStart + CONCURRENCY);
+        const batch = cappedPayloads.slice(batchStart, batchStart + CONCURRENCY);
 
         if (batchIdx % 10 === 0) {
           console.log(`[merchant-sync] SENDING chunk ${batchIdx + 1}/${totalBatches} (${attemptedSendCount}/${payloadBuiltCount} sent so far)`);
