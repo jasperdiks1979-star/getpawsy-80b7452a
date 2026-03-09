@@ -1018,7 +1018,7 @@ Deno.serve(async (req: Request) => {
         .eq("id", syncId);
     }
 
-    console.log(`[merchant-sync] DONE runId=${runId} raw=${rawCount} scanned=${totalScannedCount} eligible=${eligibleCount} payload=${payloadBuiltCount} sent=${successCount} errors=${errorCount} pruned=${pruneSummary.deletedCount}`);
+    console.log(`[merchant-sync] DONE runId=${runId} raw=${rawCount} eligibleBeforeCap=${eligibleCountBeforeLimit} cap=${MAX_EXPORT_PRODUCTS} exported=${payloadBuiltCount} skipped=${skippedDueToMerchantCap} sent=${successCount} errors=${errorCount} pruned=${pruneSummary.deletedCount}`);
 
     return new Response(
       JSON.stringify({ ok: true, ...report }),
