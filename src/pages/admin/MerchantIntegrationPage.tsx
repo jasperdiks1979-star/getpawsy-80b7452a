@@ -125,8 +125,12 @@ interface LiveSyncResult {
   durationMs?: number;
   compliance_safe?: boolean;
   rawCount: number;
+  eligibleCountBeforeLimit?: number;
+  maxExportProducts?: number;
   eligibleCount: number;
   payloadBuiltCount: number;
+  payloadBuiltCountAfterLimit?: number;
+  skippedDueToMerchantCap?: number;
   attemptedSendCount: number;
   successCount: number;
   errorCount: number;
@@ -135,6 +139,7 @@ interface LiveSyncResult {
   skippedReasons: Record<string, number>;
   topErrors: Array<{ offerId: string; status?: number; reason: string }>;
   sourceQuery: string;
+  merchantCapNote?: string | null;
   complianceSummary?: {
     total_products_processed: number;
     sanitized_titles_count: number;
@@ -597,12 +602,28 @@ export default function MerchantIntegrationPage() {
                 </div>
               )}
 
+              {/* Merchant cap notice */}
+              {liveSyncResult.merchantCapNote && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md text-sm flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-amber-700">{liveSyncResult.merchantCapNote}</p>
+                    <p className="text-muted-foreground text-xs mt-1">
+                      Eligible before cap: {liveSyncResult.eligibleCountBeforeLimit ?? '?'} · 
+                      Max export: {liveSyncResult.maxExportProducts ?? '?'} · 
+                      Skipped: {liveSyncResult.skippedDueToMerchantCap ?? 0}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Funnel counters */}
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
+              <div className="grid grid-cols-3 md:grid-cols-7 gap-2 text-center">
                 {[
                   { label: 'Raw (DB)', value: liveSyncResult.rawCount },
-                  { label: 'Eligible', value: liveSyncResult.eligibleCount },
-                  { label: 'Payload Built', value: liveSyncResult.payloadBuiltCount },
+                  { label: 'Eligible', value: liveSyncResult.eligibleCountBeforeLimit ?? liveSyncResult.eligibleCount },
+                  { label: 'Cap', value: liveSyncResult.maxExportProducts ?? '∞' },
+                  { label: 'Exported', value: liveSyncResult.payloadBuiltCount },
                   { label: 'Sent', value: liveSyncResult.attemptedSendCount },
                   { label: 'Success', value: liveSyncResult.successCount, color: 'text-primary' },
                   { label: 'Errors', value: liveSyncResult.errorCount, color: liveSyncResult.errorCount > 0 ? 'text-destructive' : undefined },
