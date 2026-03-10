@@ -99,6 +99,90 @@ const RELATED_CATEGORIES: Record<string, RelatedCategory[]> = {
     { slug: 'best-dog-grooming-kits', label: 'Dog Grooming Kits', description: 'At-home grooming essentials' },
     { slug: 'dog-enrichment-toys', label: 'Enrichment & Training Toys', description: 'Mental stimulation picks' },
   ],
+
+  // ── Slow Feeder Cluster ──
+  'best-slow-feeder-dog-bowls': [
+    { slug: 'best-interactive-dog-toys', label: 'Interactive Dog Toys', description: 'Puzzle toys for mental stimulation' },
+    { slug: 'dog-training-tools', label: 'Dog Training Tools', description: 'Clickers, treat pouches & aids' },
+    { slug: 'orthopedic-calming-dog-beds', label: 'Orthopedic Dog Beds', description: 'Comfort & recovery essentials' },
+  ],
+
+  // ── Cat Litter Box Cluster ──
+  'best-cat-litter-boxes': [
+    { slug: 'cat-trees-and-condos', label: 'Cat Trees & Condos', description: 'Climbing furniture for indoor cats' },
+    { slug: 'best-interactive-cat-toys', label: 'Interactive Cat Toys', description: 'Electronic & feather toys' },
+    { slug: 'best-cat-carriers', label: 'Cat Carriers', description: 'Airline-approved travel carriers' },
+  ],
+
+  // ── Cat Trees Cluster ──
+  'cat-trees-and-condos': [
+    { slug: 'best-cat-scratching-posts', label: 'Scratching Posts', description: 'Sisal & cardboard scratching posts' },
+    { slug: 'best-interactive-cat-toys', label: 'Cat Toys', description: 'Interactive enrichment toys' },
+    { slug: 'best-cat-litter-boxes', label: 'Litter Boxes', description: 'Self-cleaning & covered options' },
+  ],
+
+  // ── Dog Training Cluster ──
+  'dog-training-tools': [
+    { slug: 'best-dog-harnesses', label: 'Dog Harnesses', description: 'No-pull harnesses for training walks' },
+    { slug: 'best-interactive-dog-toys', label: 'Dog Toys', description: 'Puzzle & enrichment toys' },
+    { slug: 'best-slow-feeder-dog-bowls', label: 'Slow Feeder Bowls', description: 'Anti-gulp bowls for healthy eating' },
+  ],
+
+  // ── Dog Travel Cluster ──
+  'dog-travel-accessories': [
+    { slug: 'best-dog-car-seats', label: 'Dog Car Seats', description: 'Crash-tested car seats & boosters' },
+    { slug: 'best-pet-strollers', label: 'Pet Strollers', description: 'Heavy-duty strollers for dogs' },
+    { slug: 'best-dog-harnesses', label: 'Dog Harnesses', description: 'Travel-safe no-pull harnesses' },
+  ],
+
+  // ── Pet Stroller Cluster ──
+  'best-pet-strollers': [
+    { slug: 'dog-travel-accessories', label: 'Dog Travel Gear', description: 'Portable crates, water bottles & more' },
+    { slug: 'best-dog-car-seats', label: 'Dog Car Seats', description: 'Safety-tested car seat options' },
+    { slug: 'best-cat-carriers', label: 'Cat Carriers', description: 'Airline-approved cat travel carriers' },
+  ],
+
+  // ── Dog Toys Cluster ──
+  'best-interactive-dog-toys': [
+    { slug: 'dog-training-tools', label: 'Training Tools', description: 'Clickers, treat bags & correction aids' },
+    { slug: 'best-slow-feeder-dog-bowls', label: 'Slow Feeder Bowls', description: 'Puzzle feeders for mealtime enrichment' },
+    { slug: 'orthopedic-calming-dog-beds', label: 'Dog Beds', description: 'Comfort beds for post-play rest' },
+  ],
+
+  // ── Cat Toys Cluster ──
+  'best-interactive-cat-toys': [
+    { slug: 'cat-trees-and-condos', label: 'Cat Trees', description: 'Climbing furniture for active cats' },
+    { slug: 'best-cat-scratching-posts', label: 'Scratching Posts', description: 'Sisal posts for nail care' },
+    { slug: 'best-cat-litter-boxes', label: 'Litter Boxes', description: 'Self-cleaning & covered options' },
+  ],
+
+  // ── Dog Harnesses Cluster ──
+  'best-dog-harnesses': [
+    { slug: 'dog-training-tools', label: 'Training Accessories', description: 'Clickers, pouches & correction aids' },
+    { slug: 'dog-travel-accessories', label: 'Dog Travel Gear', description: 'Travel-safe harnesses & car seats' },
+    { slug: 'best-interactive-dog-toys', label: 'Dog Toys', description: 'Interactive enrichment toys' },
+  ],
+
+  // ── Dog Car Seats Cluster ──
+  'best-dog-car-seats': [
+    { slug: 'dog-travel-accessories', label: 'Dog Travel Accessories', description: 'Complete travel gear collection' },
+    { slug: 'best-pet-strollers', label: 'Pet Strollers', description: 'Outdoor mobility for pets' },
+    { slug: 'best-dog-harnesses', label: 'Dog Harnesses', description: 'Travel-rated no-pull harnesses' },
+  ],
+
+  // ── Cat Carriers Cluster ──
+  'best-cat-carriers': [
+    { slug: 'best-interactive-cat-toys', label: 'Cat Toys', description: 'In-carrier enrichment toys' },
+    { slug: 'cat-trees-and-condos', label: 'Cat Trees', description: 'Home base climbing furniture' },
+    { slug: 'best-cat-litter-boxes', label: 'Litter Boxes', description: 'Travel-friendly litter solutions' },
+  ],
+
+  // ── Cat Scratching Posts ──
+  'best-cat-scratching-posts': [
+    { slug: 'cat-trees-and-condos', label: 'Cat Trees & Condos', description: 'Climbing + scratching combos' },
+    { slug: 'best-interactive-cat-toys', label: 'Cat Toys', description: 'Enrichment toys for indoor cats' },
+    { slug: 'best-cat-beds', label: 'Cat Beds', description: 'Cozy post-play resting spots' },
+  ],
 };
 
 interface RelatedCategoriesBlockProps {
