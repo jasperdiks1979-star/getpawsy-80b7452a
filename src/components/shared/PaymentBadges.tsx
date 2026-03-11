@@ -53,6 +53,12 @@ const GooglePayIcon = ({ className = '' }: { className?: string }) => (
   </svg>
 );
 
+interface PaymentBadge {
+  name: string;
+  icon: React.FC<{ className?: string }>;
+  width: string;
+}
+
 const badges: PaymentBadge[] = [
   { name: 'Visa', icon: VisaIcon, width: 'w-10' },
   { name: 'Mastercard', icon: MastercardIcon, width: 'w-6' },
