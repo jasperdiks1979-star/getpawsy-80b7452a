@@ -157,14 +157,15 @@ const GuidePage = () => {
   // Cluster-aware related guides from SCALING_GUIDES (4-6 guides)
   const clusterRelated = getClusterRelatedGuides(guide.slug, guide.category);
   
-  // Collect slugs already linked in the guide content to avoid duplicates
+  // Collect slugs already linked in the guide sections to avoid duplicates
   const contentLinkedSlugs = useMemo(() => {
     const set = new Set<string>();
     const regex = /\/guides\/([a-z0-9-]+)/g;
+    const allText = (guide.sections || []).map(s => s.content).join(' ');
     let m;
-    while ((m = regex.exec(guide.content || '')) !== null) set.add(m[1]);
+    while ((m = regex.exec(allText)) !== null) set.add(m[1]);
     return set;
-  }, [guide.content]);
+  }, [guide.sections]);
   
   // Map cluster guides to full guide data, filtering out duplicates from content
   const relatedGuides = clusterRelated
