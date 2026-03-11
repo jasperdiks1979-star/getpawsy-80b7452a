@@ -244,13 +244,13 @@ function tokenSimilarity(a: string[], b: string[]): number {
  * - At least 1 hub  
  * - At least 1 sibling subguide
  * - Minimal cross-cluster noise
- * - Returns 4-6 guides
+ * - Returns 6-8 guides
  * - Falls back to keyword similarity for unclustered guides
  */
 export function getClusterRelatedGuides(currentSlug: string, category?: string): ClusterRelatedGuide[] {
   const guide = SCALING_GUIDES.find(g => g.slug === currentSlug);
   const results: ClusterRelatedGuide[] = [];
-  const TARGET_COUNT = 6;
+  const TARGET_COUNT = 8;
 
   if (guide) {
     // From same cluster
@@ -313,7 +313,13 @@ export function getClusterRelatedGuides(currentSlug: string, category?: string):
       'Dog Collars & Leashes': 'dog-training',
       'Cat Enrichment': 'cat-enrichment',
       'Cat Toys': 'cat-enrichment',
-      'Cat Trees & Condos': 'cat-enrichment',
+      'Cat Trees & Condos': 'cat-furniture',
+      'Dog Travel': 'dog-beds',
+      'Dog Grooming': 'micro-intent',
+      'Dog Car Seats': 'dog-beds',
+      'Cat Carriers': 'cat-furniture',
+      'Cat Beds': 'cat-furniture',
+      'Dog Toys': 'dog-training',
     };
     
     const cluster = category ? categoryClusterMap[category] : null;
@@ -331,7 +337,7 @@ export function getClusterRelatedGuides(currentSlug: string, category?: string):
       }
 
       const subguides = clusterGuides.filter(g => g.role === 'subguide' && !results.find(r => r.slug === g.slug));
-      for (const sg of subguides.slice(0, 4)) {
+      for (const sg of subguides.slice(0, 6)) {
         if (results.length >= TARGET_COUNT) break;
         results.push({ slug: sg.slug, title: sg.title, role: sg.role, cluster: sg.cluster });
       }

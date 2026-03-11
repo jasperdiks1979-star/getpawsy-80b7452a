@@ -300,6 +300,7 @@ const LargeCatCondo = lazyWithRetry(() => import("./pages/collections/sub-intent
 const DogCarSeatSmallDogs = lazyWithRetry(() => import("./pages/collections/sub-intent/DogCarSeatSmallDogs"));
 const DogBoosterSeat = lazyWithRetry(() => import("./pages/collections/sub-intent/DogBoosterSeat"));
 const DogCarHarness = lazyWithRetry(() => import("./pages/collections/sub-intent/DogCarHarness"));
+const PetCareGuides = lazyWithRetry(() => import("./pages/PetCareGuides"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
 const CatCondoVsCatTree2026 = lazyWithRetry(() => import("./pages/guides/CatCondoVsCatTree2026"));
@@ -441,6 +442,7 @@ const App = () => {
                       <Route path="/resources/indoor-cat-care" element={<Suspense fallback={<RouteLoader />}><IndoorCatCareResource /></Suspense>} />
                       
                       {/* Guide pages */}
+                      <Route path="/pet-care-guides" element={<Suspense fallback={<RouteLoader />}><PetCareGuides /></Suspense>} />
                       <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />
                       <Route path="/guides/cat-condo-vs-cat-tree-2026" element={<Suspense fallback={<RouteLoader />}><CatCondoVsCatTree2026 /></Suspense>} />
                       <Route path="/best-self-cleaning-litter-box-2026" element={<Suspense fallback={<RouteLoader />}><BestSelfCleaningLitterBox2026 /></Suspense>} />
