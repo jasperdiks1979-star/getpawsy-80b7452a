@@ -82,7 +82,7 @@ export default function GuideGeneratorPage() {
       if (result.success) {
         // Also save to published_guides
         if (result.guide) {
-          await supabase.from('published_guides').upsert({
+          await supabase.from('published_guides').upsert([{
             slug: result.guide.slug,
             title: result.guide.title,
             excerpt: result.guide.excerpt,
@@ -92,13 +92,13 @@ export default function GuideGeneratorPage() {
             featured_image: result.guide.featuredImage,
             reading_time: result.guide.readingTime,
             related_categories: result.guide.relatedCategories,
-            guide_data: result.guide,
+            guide_data: result.guide as any,
             cluster,
             is_published: true,
             internal_links_count: result.stats?.internalLinksAdded || 0,
             products_linked: result.stats?.productsConnected || 0,
             generation_source: 'manual',
-          }, { onConflict: 'slug' });
+          }], { onConflict: 'slug' });
         }
         toast.success(`Guide generated: ${result.guide?.title}`);
       } else {
