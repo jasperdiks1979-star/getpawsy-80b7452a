@@ -277,14 +277,14 @@ Remember: 2,000-2,500 words. Practical tone. No medical claims. US audience.`;
       triggered_by: body.triggered_by || "api",
     });
 
-    // Request indexing for new guides
+    // Request Google Indexing API + IndexNow for new guides
     if (guidesGenerated > 0) {
       for (const result of results) {
         try {
-          await fetch(`${supabaseUrl}/functions/v1/indexnow-ping`, {
+          await fetch(`${supabaseUrl}/functions/v1/request-indexing`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ guideSlug: result.slug }),
+            body: JSON.stringify({ slug: result.slug }),
           });
         } catch { /* best effort */ }
       }

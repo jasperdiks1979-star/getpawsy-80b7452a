@@ -50,6 +50,10 @@ const KNOWN_JOBS: Record<string, { displayName: string; schedule: string }> = {
     displayName: 'CJ → Google Merchant Sync',
     schedule: 'Elke 6 uur (00:00, 06:00, 12:00, 18:00 UTC)',
   },
+  'daily-auto-publish-guides': {
+    displayName: 'Auto Guide Publisher',
+    schedule: '03:00 UTC (05:00 CET)',
+  },
 };
 
 export const useCronJobLogs = (limit = 50) => {
