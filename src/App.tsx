@@ -625,6 +625,7 @@ const App = () => {
                         <Route path="growth-execution" element={<Suspense fallback={<RouteLoader />}><GrowthExecutionPage /></Suspense>} />
                         <Route path="growth-intelligence" element={<Suspense fallback={<RouteLoader />}><GrowthIntelligencePage /></Suspense>} />
                         <Route path="backlink-engine" element={<Suspense fallback={<RouteLoader />}><BacklinkEnginePage /></Suspense>} />
+                        <Route path="backlink-growth" element={<Suspense fallback={<RouteLoader />}><BacklinkGrowthPage /></Suspense>} />
                         <Route path="resources" element={<Suspense fallback={<RouteLoader />}><AdminResourcesPage /></Suspense>} />
                         <Route path="indexing-diagnostics" element={<Suspense fallback={<RouteLoader />}><IndexingDiagnosticsPage /></Suspense>} />
                         <Route path="perf-audit" element={<Suspense fallback={<RouteLoader />}><PerfAuditPage /></Suspense>} />
