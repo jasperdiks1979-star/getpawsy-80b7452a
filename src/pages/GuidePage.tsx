@@ -923,7 +923,7 @@ const GuidePage = () => {
                 <BookOpen className="w-4 h-4 text-primary" />
               </div>
               <h2 className="text-xl font-display font-bold text-foreground">
-                Related Buying Guides
+                Related Pet Guides
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

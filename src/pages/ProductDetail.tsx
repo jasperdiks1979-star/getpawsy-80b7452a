@@ -1650,7 +1650,7 @@ const ProductDetail = () => {
           <RelatedProductsCarousel 
             products={relatedProducts || []}
             isLoading={relatedLoading}
-            title="You May Also Like"
+            title="Related Products for Your Pet"
             subtitle="Products that complement your choice"
             listId="related-products"
             listName="Related Products"
