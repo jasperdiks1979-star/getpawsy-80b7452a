@@ -239,9 +239,22 @@ export const Footer = () => {
                 </span>
               </Link>
                <p className="text-background/70 leading-relaxed max-w-sm">
-                GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. 
-                Operated by Skidzo, based in Apeldoorn, Netherlands.
+                <strong className="text-background">GetPawsy Pet Supplies</strong><br />
+                Customer Support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>
                </p>
+
+               {/* Customer Service Hours */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Customer Service Hours</p>
+                 <p className="text-sm text-background/70">Monday – Friday</p>
+                 <p className="text-sm text-background/70">09:00 – 17:00 CET</p>
+               </div>
+
+               {/* Business Address */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Business Address</p>
+                 <p className="text-sm text-background/70">Rotterdam, Netherlands</p>
+               </div>
               
               {/* Social Links */}
               <div className="flex items-center gap-3">
@@ -259,22 +272,6 @@ export const Footer = () => {
                 ))}
               </div>
 
-              {/* Contact Info */}
-              <div className="space-y-3 pt-2">
-                <a href={`mailto:${SUPPORT_EMAIL}`} className="flex items-center gap-3 text-sm text-background/70 hover:text-primary transition-colors">
-                  <Mail className="w-4 h-4" />
-                  <span>{SUPPORT_EMAIL}</span>
-                </a>
-                <div className="flex items-center gap-3 text-sm text-background/70">
-                  <Clock className="w-4 h-4" />
-                  <span>Mon–Fri 9:00–17:00 EST • Within 24h</span>
-                </div>
-                 <div className="flex items-center gap-3 text-sm text-background/70">
-                   <MapPin className="w-4 h-4" />
-                   <span>Apeldoorn, Netherlands</span>
-                 </div>
-              </div>
-              
               {/* Trust highlights */}
               <div className="pt-4 space-y-2 text-sm text-background/60">
                 <p>✓ Free shipping on orders ${FREE_SHIPPING_THRESHOLD}+</p>
