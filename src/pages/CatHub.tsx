@@ -30,8 +30,8 @@ const CatHub = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Cat Training & Travel Gear – US 3–7 Day Shipping | GetPawsy</title>
-        <meta name="description" content="Shop cat trees, carriers, enrichment toys & scratching posts. US warehouse shipping 3–7 days. 30-day guarantee." />
+        <title>Cat Trees, Carriers & Essentials – Fast Shipping to the US | GetPawsy</title>
+        <meta name="description" content="Shop cat trees, carriers, enrichment toys & scratching posts. Fast shipping to the United States in 3–7 days. 30-day guarantee." />
         <link rel="canonical" href="https://getpawsy.pet/cat/" />
         <meta name="robots" content="index, follow" />
       </Helmet>
