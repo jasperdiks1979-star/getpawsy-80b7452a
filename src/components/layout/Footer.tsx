@@ -375,7 +375,7 @@ export const Footer = () => {
                <p className="text-background/80"><strong className="text-background">Business Name:</strong> GetPawsy</p>
                 <p className="text-background/80"><strong className="text-background">Operated by:</strong> Skidzo (Chamber of Commerce: 78156955)</p>
                 <p className="text-background/80"><strong className="text-background">VAT ID:</strong> NL003295015B69</p>
-                <p className="text-background/80"><strong className="text-background">Business Address:</strong> Apeldoorn, Gelderland, Netherlands</p>
+                <p className="text-background/80"><strong className="text-background">Business Address:</strong> Rotterdam, Netherlands</p>
               </div>
               <div className="space-y-2 text-sm">
                 <p className="text-background/80"><strong className="text-background">Support Email:</strong> <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
