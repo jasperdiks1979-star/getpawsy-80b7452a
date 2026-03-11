@@ -19,6 +19,7 @@ const WhyShopGetPawsy = lazy(() => import('@/components/home/WhyShopGetPawsy'));
 const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAuthoritySection'));
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
 const PopularRightNow = lazy(() => import('@/components/home/PopularRightNow'));
+const ExpertPetGuides = lazy(() => import('@/components/seo/PopularGuidesBlock').then(m => ({ default: m.PopularGuidesBlock })));
 
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
 const WebsiteSchema = lazy(() => import('@/components/seo/WebsiteSchema').then(m => ({ default: m.WebsiteSchema })));
@@ -297,7 +298,16 @@ const Index = () => {
       </SectionErrorBoundary>
 
       {/* ═══════════════════════════════════════════════════════════════
-          8. SEO AUTHORITY TEXT — category links + 200-word paragraph
+          8. EXPERT PET GUIDES — cornerstone guide links for SEO authority
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Expert Pet Guides">
+        <Suspense fallback={<div className="py-10" style={{ minHeight: 300 }} />}>
+          {hydrationReady ? <ExpertPetGuides /> : <div style={{ minHeight: 300 }} />}
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          9. SEO AUTHORITY TEXT — category links + 200-word paragraph
           ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Authority Section">
         <Suspense fallback={<div className="py-16" style={{ minHeight: 300 }} />}>
@@ -306,7 +316,7 @@ const Index = () => {
       </SectionErrorBoundary>
 
       {/* ═══════════════════════════════════════════════════════════════
-          9. EMAIL CAPTURE — 10% off, inline form, no popup
+          10. EMAIL CAPTURE — 10% off, inline form, no popup
           ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Newsletter">
         {hydrationReady ? (
