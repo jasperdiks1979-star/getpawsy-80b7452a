@@ -35,7 +35,7 @@ function generateFAQs(name: string, category?: string) {
       { q: `What materials are the scratching posts made from?`, a: `Our posts use natural sisal rope which lasts 3–5× longer than carpet-covered alternatives. The sisal satisfies scratching instincts and protects your furniture.` },
       { q: `Can multiple cats use this at the same time?`, a: `Absolutely. Multi-level designs allow several cats to perch, play, and rest simultaneously without competing for space.` },
       { q: `Will this damage my floors?`, a: `No. The base includes felt or rubber pads to protect hardwood and tile floors from scratches.` },
-      { q: `How long does shipping take?`, a: `We ship from US warehouses with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
+      { q: `How long does shipping take?`, a: `We offer fast shipping to the United States with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
       { q: `What is the return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day hassle-free return policy. If your cat doesn't love it, contact our support team for a full refund.` },
       { q: `How do I clean and maintain this cat tree?`, a: `Removable cushion covers are machine-washable. Wipe platforms with a damp cloth. Vacuum sisal posts periodically to remove loose fibers.` },
     ];
