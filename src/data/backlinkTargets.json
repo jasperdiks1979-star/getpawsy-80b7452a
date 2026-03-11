@@ -1,0 +1,42 @@
+{
+  "reddit": [
+    { "name": "r/cats", "url": "https://reddit.com/r/cats", "category": "cat" },
+    { "name": "r/dogs", "url": "https://reddit.com/r/dogs", "category": "dog" },
+    { "name": "r/pets", "url": "https://reddit.com/r/pets", "category": "general" },
+    { "name": "r/catcare", "url": "https://reddit.com/r/catcare", "category": "cat" },
+    { "name": "r/dogtraining", "url": "https://reddit.com/r/dogtraining", "category": "dog" },
+    { "name": "r/CatAdvice", "url": "https://reddit.com/r/CatAdvice", "category": "cat" },
+    { "name": "r/Dogtraining", "url": "https://reddit.com/r/Dogtraining", "category": "dog" },
+    { "name": "r/puppy101", "url": "https://reddit.com/r/puppy101", "category": "dog" },
+    { "name": "r/CatTree", "url": "https://reddit.com/r/CatTree", "category": "cat" },
+    { "name": "r/DogCare", "url": "https://reddit.com/r/DogCare", "category": "dog" },
+    { "name": "r/IndoorCats", "url": "https://reddit.com/r/IndoorCats", "category": "cat" },
+    { "name": "r/PetAdvice", "url": "https://reddit.com/r/PetAdvice", "category": "general" }
+  ],
+  "pinterest": [
+    { "board": "Cat Toys", "category": "cat" },
+    { "board": "Dog Training Tips", "category": "dog" },
+    { "board": "Pet Care Essentials", "category": "general" },
+    { "board": "Cat Furniture Ideas", "category": "cat" },
+    { "board": "Dog Travel Gear", "category": "dog" },
+    { "board": "Dog Grooming Tips", "category": "dog" },
+    { "board": "Cat Litter Solutions", "category": "cat" },
+    { "board": "Pet Product Reviews", "category": "general" },
+    { "board": "Indoor Cat Ideas", "category": "cat" },
+    { "board": "Puppy Essentials", "category": "dog" }
+  ],
+  "medium": [
+    { "publication": "The Pet Hub", "category": "general" },
+    { "publication": "Cat Lovers Magazine", "category": "cat" },
+    { "publication": "Dog Training Academy", "category": "dog" },
+    { "publication": "Happy Pets", "category": "general" },
+    { "publication": "Indoor Cat Life", "category": "cat" }
+  ],
+  "outreach": [
+    { "type": "pet-bloggers", "description": "Independent pet care bloggers with DA 20+" },
+    { "type": "veterinary-blogs", "description": "Vet clinic blogs accepting guest contributions" },
+    { "type": "pet-magazines", "description": "Online pet magazines and publications" },
+    { "type": "animal-shelters", "description": "Shelter and rescue organization blogs" },
+    { "type": "pet-forums", "description": "Active pet care discussion forums" }
+  ]
+}
