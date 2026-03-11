@@ -26,7 +26,7 @@ const BADGE_CONFIG: Record<string, { badges: { icon: 'shield' | 'truck' | 'award
     badges: [
       { icon: 'shield', label: 'Stability Tested' },
       { icon: 'award', label: 'Design Award' },
-      { icon: 'truck', label: 'US Warehouse' },
+      { icon: 'truck', label: 'Fast US Shipping' },
     ],
   },
   'best-cat-scratching-posts': {
