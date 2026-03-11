@@ -464,7 +464,7 @@ export const Footer = () => {
                   Customer support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-background/60 hover:text-primary transition-colors">{SUPPORT_EMAIL}</a> | <Link to="/returns" className="text-background/60 hover:text-primary transition-colors">Returns Policy</Link>
                 </p>
                 <p className="text-background/30 text-[10px]">
-                  GetPawsy is operated by Skidzo, a registered business in the Netherlands (KVK 78156955, VAT NL003295015B69). All orders, payments, and customer service handled in accordance with US consumer protection standards.
+                  GetPawsy is operated by Skidzo, a registered business in the Netherlands (KVK 78156955, VAT NL003295015B69). Rotterdam, Netherlands.
                 </p>
               </div>
               
