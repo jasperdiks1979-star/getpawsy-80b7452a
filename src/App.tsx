@@ -442,6 +442,7 @@ const App = () => {
                       <Route path="/resources/indoor-cat-care" element={<Suspense fallback={<RouteLoader />}><IndoorCatCareResource /></Suspense>} />
                       
                       {/* Guide pages */}
+                      <Route path="/pet-care-guides" element={<Suspense fallback={<RouteLoader />}><PetCareGuides /></Suspense>} />
                       <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />
                       <Route path="/guides/cat-condo-vs-cat-tree-2026" element={<Suspense fallback={<RouteLoader />}><CatCondoVsCatTree2026 /></Suspense>} />
                       <Route path="/best-self-cleaning-litter-box-2026" element={<Suspense fallback={<RouteLoader />}><BestSelfCleaningLitterBox2026 /></Suspense>} />
