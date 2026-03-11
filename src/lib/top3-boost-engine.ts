@@ -239,7 +239,7 @@ function getProjectedCtr(position: number): number {
 function getBehavioralBoosts(intent: string, position: number): string[] {
   const boosts = [
     'Add above-the-fold comparison table',
-    'Add US warehouse trust badge strip',
+    'Add trust badge strip with shipping info',
     'Add "Free Shipping" above CTA',
     'Add internal jump links (table of contents)',
   ];

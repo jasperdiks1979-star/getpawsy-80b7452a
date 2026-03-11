@@ -16,7 +16,7 @@ interface ShippingTransparencyProps {
  *
  * Contains the EXACT keywords Google crawlers look for:
  *   "Processing Time", "business days", "Delivery Time",
- *   "United States", "US warehouse"
+ *   "United States"
  *
  * Place on: product pages, /shipping, checkout sidebar.
  *

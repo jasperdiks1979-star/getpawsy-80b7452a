@@ -45,6 +45,14 @@ const StripeIcon = ({ className = '' }: { className?: string }) => (
   </svg>
 );
 
+const GooglePayIcon = ({ className = '' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 56 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="14" fontSize="11" fontWeight="600" fontFamily="system-ui, sans-serif">
+      <tspan fill="#4285F4">G</tspan><tspan fill="currentColor"> Pay</tspan>
+    </text>
+  </svg>
+);
+
 interface PaymentBadge {
   name: string;
   icon: React.FC<{ className?: string }>;
@@ -56,6 +64,7 @@ const badges: PaymentBadge[] = [
   { name: 'Mastercard', icon: MastercardIcon, width: 'w-6' },
   { name: 'Amex', icon: AmexIcon, width: 'w-10' },
   { name: 'Apple Pay', icon: ApplePayIcon, width: 'w-10' },
+  { name: 'Google Pay', icon: GooglePayIcon, width: 'w-11' },
   { name: 'PayPal', icon: PayPalIcon, width: 'w-12' },
   { name: 'Stripe', icon: StripeIcon, width: 'w-10' },
 ];

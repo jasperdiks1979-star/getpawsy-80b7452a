@@ -150,12 +150,12 @@ const Index = () => {
           <div className="max-w-2xl">
             <div className="space-y-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 mb-3">
-                DOG TRAINING ESSENTIALS — FAST SHIPPING FROM US WAREHOUSES
+                DOG TRAINING ESSENTIALS — FAST SHIPPING TO THE UNITED STATES
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.05] tracking-tight">
                 Dog Training Essentials
                 <br />
-                <span className="text-primary">Fast Shipping from US Warehouses</span>
+                <span className="text-primary">Fast Shipping to the United States</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
                 Potty training. Behavior correction. Safer walks. Smarter solutions.

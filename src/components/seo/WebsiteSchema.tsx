@@ -40,7 +40,7 @@ export function WebsiteSchema({
       height: 512,
     },
     image: `${url}${image}`,
-    description: 'Online pet products store offering dog training tools, cat essentials, and pet accessories. Operated from the Netherlands, serving US customers with US warehouse fulfillment.',
+    description: 'Online pet products store offering dog training tools, cat essentials, and pet accessories. Operated by Skidzo from the Netherlands, serving customers across the United States.',
     foundingDate: '2024',
     // sameAs intentionally empty — only real, verified brand profiles should be listed
     sameAs: [],

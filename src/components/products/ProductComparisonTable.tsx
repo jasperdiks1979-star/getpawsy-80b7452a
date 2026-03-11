@@ -5,7 +5,7 @@ interface ProductComparisonTableProps {
 }
 
 const COMPARISON_ROWS = [
-  { feature: 'US Warehouse Shipping', ours: 'yes', generic: 'varies' },
+  { feature: 'Fast US Shipping (3–7 Days)', ours: 'yes', generic: 'varies' },
   { feature: 'Premium Materials', ours: 'yes', generic: 'no' },
   { feature: 'Durability Rating', ours: 'High', generic: 'Medium' },
   { feature: '30-Day Return Guarantee', ours: 'yes', generic: 'varies' },

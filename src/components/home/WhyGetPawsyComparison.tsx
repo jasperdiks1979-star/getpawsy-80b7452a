@@ -31,7 +31,7 @@ const FEATURES = [
       </svg>
     ),
     title: 'Fast US Shipping',
-    desc: 'Orders ship from US warehouses with 3–7 day delivery. Free shipping on orders over $35.',
+    desc: 'Orders ship with 3–7 day delivery to the United States. Free shipping on orders over $35.',
   },
   {
     icon: (

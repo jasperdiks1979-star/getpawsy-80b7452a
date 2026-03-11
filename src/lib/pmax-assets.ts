@@ -57,7 +57,7 @@ export const PMAX_LONG_HEADLINES = [
   
   // Trust + Conversion
   'Quality Pet Gear with 30-Day Hassle-Free Returns',
-  'Shop with Confidence – Secure Checkout & US-Based Support',
+  'Shop with Confidence – Secure Checkout & Dedicated Support',
 ] as const;
 
 // ============= DESCRIPTIONS (≤90 characters) =============
@@ -66,7 +66,7 @@ export const PMAX_DESCRIPTIONS = [
   // Primary descriptions (benefit-first)
   'Shop quality pet products. Free US shipping on orders over $35. Fast 3-7 day delivery.',
   'Trusted pet supplies for dogs, cats & more. 30-day hassle-free returns on all orders.',
-  'Premium pet essentials designed for comfort. Ships from US warehouses.',
+  'Premium pet essentials designed for comfort. Fast shipping to the United States.',
   
   // Category descriptions
   'Cozy dog beds, interactive toys & travel gear. Free shipping on $35+ orders.',
@@ -74,7 +74,7 @@ export const PMAX_DESCRIPTIONS = [
   'Pet travel accessories for stress-free trips. Secure checkout, easy returns.',
   
   // Trust-focused
-  'Quality pet products you can trust. US-based support & 30-day return policy.',
+  'Quality pet products you can trust. Dedicated support & 30-day return policy.',
   'Shop GetPawsy for pet essentials. Free shipping, fast delivery, easy returns.',
   
   // Seasonal/Generic

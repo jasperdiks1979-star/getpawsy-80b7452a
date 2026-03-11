@@ -14,7 +14,7 @@ export function GuaranteeBlock() {
           </h2>
           <p className="text-base text-muted-foreground leading-relaxed max-w-lg mx-auto">
             If your pet doesn't love it, we'll refund you — no questions asked. 
-            Every order is backed by our hassle-free return policy and real US-based support.
+            Every order is backed by our hassle-free return policy and dedicated customer support.
           </p>
         </div>
       </div>

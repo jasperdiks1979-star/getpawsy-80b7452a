@@ -125,7 +125,7 @@ serve(async (req) => {
 5. Create clear, scannable text with short paragraphs
 6. End with a subtle call-to-action
 
-Write in American English. Use a friendly, professional tone suitable for a modern US-based online store. Consider American consumer preferences and shopping habits.
+Write in American English. Use a friendly, professional tone suitable for a modern online store serving US customers. Consider American consumer preferences and shopping habits.
 
 Keep the description between 150-250 words. Avoid unnecessary filler words or overly salesy marketing language.`;
 

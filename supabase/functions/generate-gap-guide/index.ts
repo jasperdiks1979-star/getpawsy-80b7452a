@@ -14,7 +14,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const systemPrompt = `You are a senior pet care content strategist writing for GetPawsy.pet, a US-based pet supply e-commerce store.
+    const systemPrompt = `You are a senior pet care content strategist writing for GetPawsy.pet, an online pet supply e-commerce store serving customers in the United States.
 
 STRICT RULES:
 - Write for US pet parents. Use American English.

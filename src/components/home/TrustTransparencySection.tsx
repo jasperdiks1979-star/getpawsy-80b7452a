@@ -11,7 +11,7 @@ const trustPoints = [
     icon: Truck,
     title: 'Fast US Shipping',
     lines: [
-      'Orders ship from our US warehouse partners.',
+      'Orders are shipped to customers across the United States.',
       `Typical delivery: ${DELIVERY_TIME_STANDARD}.`,
     ],
   },
@@ -110,7 +110,7 @@ export const TrustTransparencySection = () => (
           ))}
         </dl>
         <p className="text-sm text-muted-foreground mt-4">
-          Orders are fulfilled by trusted US warehouse partners to ensure fast delivery across the United States.
+          Orders are fulfilled by trusted logistics partners to ensure fast delivery across the United States.
         </p>
       </div>
     </div>

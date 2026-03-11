@@ -507,7 +507,7 @@ export default function SlowFeederDogBowls() {
               {[
                 { icon: RotateCcw, title: `${RETURN_WINDOW_DAYS}-Day Returns`, desc: 'Satisfaction guaranteed' },
                 { icon: Shield, title: 'Secure Checkout', desc: 'Encrypted payment' },
-                { icon: Headphones, title: 'US-Based Support', desc: 'We respond within 24h' },
+                { icon: Headphones, title: 'Dedicated Support', desc: 'We respond within 24h' },
                 { icon: Truck, title: 'Free Shipping', desc: `Orders over $${FREE_SHIPPING_THRESHOLD}` },
                 { icon: CheckCircle, title: 'Real Inventory', desc: 'Live stock tracking' },
               ].map((badge) => (

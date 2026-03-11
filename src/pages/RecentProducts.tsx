@@ -29,7 +29,7 @@ export default function RecentProducts() {
     <Layout>
       <Helmet>
         <title>Recently Added Pet Products | GetPawsy</title>
-        <meta name="description" content="Discover the latest pet products added to GetPawsy. New dog toys, cat trees, beds, carriers and more — updated daily. Free US shipping on qualifying orders." />
+        <meta name="description" content="Discover the latest pet products added to GetPawsy. New dog toys, cat trees, beds, carriers and more — updated daily. Free shipping on qualifying orders." />
         <link rel="canonical" href={canonicalUrl} />
         <meta name="robots" content="index, follow" />
       </Helmet>
@@ -47,7 +47,7 @@ export default function RecentProducts() {
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Recently Added Products</h1>
           </div>
           <p className="text-muted-foreground max-w-2xl text-base">
-            The newest arrivals in our pet supply catalog. Updated daily with fresh dog and cat products from US warehouses.
+            The newest arrivals in our pet supply catalog. Updated daily with fresh dog and cat products, shipped to customers across the United States.
           </p>
         </header>
 

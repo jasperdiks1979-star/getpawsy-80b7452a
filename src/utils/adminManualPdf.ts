@@ -538,7 +538,7 @@ export const generateAdminManualPdf = (): jsPDF => {
   addSpace(doc, 5);
 
   addSubtitle(doc, 'Fulfillment Model');
-  addParagraph(doc, `GetPawsy partners with US-based fulfillment centers. When a customer places an order, it is forwarded to the appropriate fulfillment partner for processing and shipping. Stock levels reflect availability at fulfillment partner warehouses.`);
+  addParagraph(doc, `GetPawsy partners with fulfillment centers to ship products to customers in the United States. When a customer places an order, it is forwarded to the appropriate fulfillment partner for processing and shipping. Stock levels reflect availability at fulfillment partner warehouses.`);
 
   addInfoBox(doc, 'What Stock Means', 'A stock number reflects availability at our fulfillment partners, not a physical warehouse owned by GetPawsy. When the "Add to Cart" button is visible and functional, the product is available for purchase.');
 
@@ -776,7 +776,7 @@ export const generateAdminManualPdf = (): jsPDF => {
   addParagraph(doc, `Standard delivery takes ${DELIVERY_TIME_STANDARD} after your order has been dispatched. Delivery times may vary depending on your location within the United States.`);
 
   addSubtitle(doc, 'Fulfillment');
-  addParagraph(doc, `Orders are fulfilled through our trusted US-based fulfillment partners. We work with established fulfillment centers to ensure reliable processing and delivery.`);
+  addParagraph(doc, `Orders are fulfilled through trusted fulfillment partners. We work with established fulfillment centers to ensure reliable processing and delivery to customers in the United States.`);
 
   addSubtitle(doc, 'Order Tracking');
   addParagraph(doc, `A tracking number is provided via email once your order has shipped. Please allow 24–48 hours for tracking information to become active in the carrier\'s system.`);

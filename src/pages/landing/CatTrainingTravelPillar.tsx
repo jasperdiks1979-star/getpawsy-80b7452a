@@ -13,7 +13,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
   headline: 'Best Cat Training & Travel Gear 2026 – Expert Buyer Guide',
-  description: 'Complete 2026 buyer guide for cat trees, carriers, enrichment toys, and scratching posts. US warehouse shipping.',
+  description: 'Complete 2026 buyer guide for cat trees, carriers, enrichment toys, and scratching posts. Fast shipping to the US.',
   author: { '@type': 'Organization', name: 'GetPawsy' },
   publisher: { '@type': 'Organization', name: 'GetPawsy', url: 'https://getpawsy.pet' },
   datePublished: '2026-02-01',
@@ -163,7 +163,7 @@ const CatTrainingTravelPillar = () => {
           <section className="mb-12">
             <h2 className="text-2xl font-display font-bold mb-4">Shipping & Returns</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              All cat products ship from US warehouses with 3–7 business day delivery. Free shipping on orders over $35. Every purchase includes our 30-day happiness guarantee — if your cat doesn't love it, we'll process a full refund.
+              All cat products ship with 3–7 business day delivery to the United States. Free shipping on orders over $35. Every purchase includes our 30-day happiness guarantee — if your cat doesn't love it, we'll process a full refund.
             </p>
           </section>
 

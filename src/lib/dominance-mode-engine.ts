@@ -130,10 +130,9 @@ const EMOTIONAL_META = [
 
 const TRUST_SIGNALS: TrustSignal[] = [
   { label: 'Free US Shipping', icon: '🚚' },
-  { label: 'US Warehouse', icon: '🏭' },
-  { label: 'Fast 2-5 Day Delivery', icon: '⚡' },
+  { label: 'Fast 3-7 Day Delivery', icon: '⚡' },
   { label: '30-Day Returns', icon: '↩️' },
-  { label: 'Vet Approved', icon: '🩺' },
+  { label: 'Secure Checkout', icon: '🔒' },
 ];
 
 // ============= HELPERS =============

@@ -46,7 +46,7 @@ export function ConversionTrustBlock({ categoryName }: ConversionTrustBlockProps
           { icon: <Truck className="w-5 h-5" />, label: `Free US Shipping Over $${FREE_SHIPPING_THRESHOLD}` },
           { icon: <RotateCcw className="w-5 h-5" />, label: '30-Day Money-Back Guarantee' },
           { icon: <Shield className="w-5 h-5" />, label: 'Secure Stripe Checkout' },
-          { icon: <CheckCircle className="w-5 h-5" />, label: 'US-Based Support' },
+          { icon: <CheckCircle className="w-5 h-5" />, label: 'Dedicated Customer Support' },
         ].map(badge => (
           <div key={badge.label} className="flex items-center gap-2 text-sm font-medium text-foreground/80">
             <span className="text-primary">{badge.icon}</span>

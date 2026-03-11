@@ -101,7 +101,7 @@ const FEATURES: Record<ProductType, Feature[]> = {
     { title: 'Premium Materials', description: 'Built to withstand daily pet life demands' },
     { title: 'Pet-Safe Design', description: 'Non-toxic materials safe for all pets' },
     { title: 'Easy Maintenance', description: 'Simple to clean and keep in great condition' },
-    { title: 'US Warehouse', description: 'Ships fast from domestic fulfillment centers' },
+    { title: 'Fast Shipping', description: 'Delivered to your door in 3–7 business days' },
   ],
 };
 

@@ -35,7 +35,7 @@ function generateFAQs(name: string, category?: string) {
       { q: `What materials are the scratching posts made from?`, a: `Our posts use natural sisal rope which lasts 3–5× longer than carpet-covered alternatives. The sisal satisfies scratching instincts and protects your furniture.` },
       { q: `Can multiple cats use this at the same time?`, a: `Absolutely. Multi-level designs allow several cats to perch, play, and rest simultaneously without competing for space.` },
       { q: `Will this damage my floors?`, a: `No. The base includes felt or rubber pads to protect hardwood and tile floors from scratches.` },
-      { q: `How long does shipping take?`, a: `We ship from US warehouses with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
+      { q: `How long does shipping take?`, a: `We offer fast shipping to the United States with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
       { q: `What is the return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day hassle-free return policy. If your cat doesn't love it, contact our support team for a full refund.` },
       { q: `How do I clean and maintain this cat tree?`, a: `Removable cushion covers are machine-washable. Wipe platforms with a damp cloth. Vacuum sisal posts periodically to remove loose fibers.` },
     ];
@@ -50,7 +50,7 @@ function generateFAQs(name: string, category?: string) {
       { q: `What type of litter should I use?`, a: `Clumping clay litter works best with most self-cleaning systems. Avoid crystal or non-clumping litter as it can jam the mechanism.` },
       { q: `How loud is the cleaning cycle?`, a: `Modern self-cleaning boxes operate at whisper-quiet levels (under 50 dB). Most cats are not disturbed by the cleaning cycle.` },
       { q: `Can multiple cats share this litter box?`, a: `Yes, but we recommend one box per 2 cats maximum. The automatic cleaning ensures it stays fresh between uses.` },
-      { q: `How long does shipping take?`, a: `We ship from US warehouses with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
+      { q: `How long does shipping take?`, a: `We offer fast shipping to the United States with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
       { q: `What is the return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day hassle-free return policy. If you're not satisfied, contact our support team for a full refund.` },
       { q: `What maintenance is required?`, a: `Empty the waste compartment weekly, replace carbon filters monthly, and wipe sensors with a dry cloth. Full deep-clean recommended every 3 months.` },
     ];
@@ -59,7 +59,7 @@ function generateFAQs(name: string, category?: string) {
   // Generic FAQs for non-cat-specific products
   return [
     { q: `What sizes does the ${name} come in?`, a: `The ${name} is available in multiple sizes to fit different pet breeds. Check the product specifications above for exact dimensions and weight recommendations.` },
-    { q: `How long does shipping take?`, a: `We ship from US warehouses with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
+    { q: `How long does shipping take?`, a: `We offer fast shipping to the United States with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
     { q: `What is your return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day hassle-free return policy. If you're not satisfied, contact our support team for a full refund or exchange.` },
     { q: `What materials is this made from?`, a: `The ${name} is made from premium, pet-safe materials designed for durability and comfort. See the product description for specific material details.` },
     { q: `Is this easy to clean?`, a: cat.includes('bed') ? `Most of our pet beds feature removable, machine-washable covers for easy maintenance.` : `Yes, this product is designed for easy cleaning. Refer to the care instructions in the product description.` },

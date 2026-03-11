@@ -43,10 +43,10 @@ const DogTravel = () => {
               Dog Travel Safety Gear
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed mb-6">
-              Crash-tested car seats, travel carriers, safety harnesses, and back seat hammocks — because your dog deserves safe travel too. US warehouse shipping 3–7 days.
+              Crash-tested car seats, travel carriers, safety harnesses, and back seat hammocks — because your dog deserves safe travel too. Fast shipping to the US in 3–7 days.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
-              <span>🇺🇸 US Shipping 3–7 Days</span>
+              <span>📦 Fast US Shipping 3–7 Days</span>
               <span>🛡️ 30-Day Guarantee</span>
             </div>
           </FadeInView>
