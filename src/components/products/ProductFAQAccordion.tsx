@@ -50,7 +50,7 @@ function generateFAQs(name: string, category?: string) {
       { q: `What type of litter should I use?`, a: `Clumping clay litter works best with most self-cleaning systems. Avoid crystal or non-clumping litter as it can jam the mechanism.` },
       { q: `How loud is the cleaning cycle?`, a: `Modern self-cleaning boxes operate at whisper-quiet levels (under 50 dB). Most cats are not disturbed by the cleaning cycle.` },
       { q: `Can multiple cats share this litter box?`, a: `Yes, but we recommend one box per 2 cats maximum. The automatic cleaning ensures it stays fresh between uses.` },
-      { q: `How long does shipping take?`, a: `We ship from US warehouses with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
+      { q: `How long does shipping take?`, a: `We offer fast shipping to the United States with standard delivery of ${DELIVERY_TIME_STANDARD}. Orders over $${FREE_SHIPPING_THRESHOLD} qualify for free shipping.` },
       { q: `What is the return policy?`, a: `We offer a ${RETURN_WINDOW_DAYS}-day hassle-free return policy. If you're not satisfied, contact our support team for a full refund.` },
       { q: `What maintenance is required?`, a: `Empty the waste compartment weekly, replace carbon filters monthly, and wipe sensors with a dry cloth. Full deep-clean recommended every 3 months.` },
     ];
