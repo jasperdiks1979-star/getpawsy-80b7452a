@@ -240,7 +240,7 @@ export const Footer = () => {
               </Link>
                <p className="text-background/70 leading-relaxed max-w-sm">
                 GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. 
-                Customer satisfaction is our priority.
+                Operated by Skidzo, based in Apeldoorn, Netherlands.
                </p>
               
               {/* Social Links */}
