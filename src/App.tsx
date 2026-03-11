@@ -605,6 +605,7 @@ const App = () => {
                         <Route path="cat-litter-cluster" element={<Suspense fallback={<RouteLoader />}><CatLitterClusterDashboard /></Suspense>} />
                         <Route path="analytics-hub" element={<Suspense fallback={<RouteLoader />}><AnalyticsHub /></Suspense>} />
                         <Route path="guides" element={<Suspense fallback={<RouteLoader />}><GuidesDashboard /></Suspense>} />
+                        <Route path="guide-generator" element={<Suspense fallback={<RouteLoader />}><GuideGeneratorPage /></Suspense>} />
                         <Route path="seo-intelligence" element={<Suspense fallback={<RouteLoader />}><SeoIntelligencePage /></Suspense>} />
                         <Route path="seo-monitor" element={<Suspense fallback={<RouteLoader />}><SeoMonitorPage /></Suspense>} />
                         <Route path="feed-gap-report" element={<Suspense fallback={<RouteLoader />}><FeedGapReportPage /></Suspense>} />
