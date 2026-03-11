@@ -98,7 +98,7 @@ const Contact = () => {
     {
       icon: Building2,
       title: 'Location',
-      content: 'Apeldoorn, Netherlands',
+      content: 'Rotterdam, Netherlands',
       description: 'Serving US customers',
       href: null,
     },
@@ -106,7 +106,7 @@ const Contact = () => {
       icon: Clock,
       title: 'Business Hours',
       content: 'Monday – Friday',
-      description: '9:00 AM – 5:00 PM EST',
+      description: '09:00 – 17:00 CET',
       href: null,
     },
   ];
@@ -329,11 +329,33 @@ const Contact = () => {
                 </div>
               </div>
 
+              {/* Customer Support Section */}
+              <div className="bg-card rounded-xl shadow-card p-6">
+                <h3 className="font-semibold text-foreground mb-4 text-lg">Customer Support</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start gap-2">
+                    <span className="text-muted-foreground min-w-[120px]">Email:</span>
+                    <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline font-medium">{SUPPORT_EMAIL}</a>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-muted-foreground min-w-[120px]">Response Time:</span>
+                    <span className="text-foreground font-medium">Within 24 hours</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-muted-foreground min-w-[120px]">Business Hours:</span>
+                    <span className="text-foreground font-medium">Monday – Friday, 09:00 – 17:00 CET</span>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mt-4">
+                  Our customer support team is always ready to assist you with product questions, shipping information, or returns.
+                </p>
+              </div>
+
               {/* Response Time */}
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-6">
                 <h3 className="font-semibold text-foreground mb-2">Response Time</h3>
                 <p className="text-sm text-muted-foreground">
-                  We typically respond to all inquiries within 24 business hours. 
+                  We typically respond to all inquiries within 24 hours. 
                   For urgent matters, please include your order number for faster assistance.
                 </p>
               </div>

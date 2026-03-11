@@ -34,6 +34,7 @@ export function ProductShippingReturns({ className = '' }: { className?: string 
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li><strong className="text-foreground">Processing Time:</strong> {PROCESSING_TIME}</li>
             <li><strong className="text-foreground">Delivery Time:</strong> {DELIVERY_TIME_STANDARD} to the United States</li>
+            <li><strong className="text-foreground">Shipping Carriers:</strong> USPS, UPS, FedEx</li>
             <li><strong className="text-foreground">Tracking:</strong> All orders receive a tracking number</li>
             <li><strong className="text-foreground">Carriers:</strong> Orders are delivered via trusted carrier partners</li>
             <li><strong className="text-foreground">Free shipping</strong> on orders over ${FREE_SHIPPING_THRESHOLD}</li>

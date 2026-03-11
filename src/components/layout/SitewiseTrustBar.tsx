@@ -15,7 +15,7 @@ export function SitewiseTrustBar() {
       <div className="container mx-auto flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <Truck className="w-4 h-4 text-primary flex-shrink-0" />
-          <span>Free Shipping on orders ${FREE_SHIPPING_THRESHOLD}+</span>
+          <span>Free Shipping on orders over ${FREE_SHIPPING_THRESHOLD}</span>
         </div>
         <div className="flex items-center gap-2">
           <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />
@@ -31,7 +31,7 @@ export function SitewiseTrustBar() {
         </div>
       </div>
       <p className="text-center text-xs text-muted-foreground/60 mt-2">
-        Secure checkout and customer support available for all orders. We carefully select products to ensure comfort and safety for your pets.
+        Secure checkout and customer support available for all orders. Shipping carriers: USPS, UPS, FedEx. Customer service hours: Monday – Friday, 09:00 – 17:00 CET.
       </p>
     </section>
   );

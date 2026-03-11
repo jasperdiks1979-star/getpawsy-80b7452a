@@ -70,13 +70,16 @@ const About = () => {
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
-                  GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. Customer satisfaction is our priority.
+                  GetPawsy was founded by pet lovers who wanted to create a simple place where pet owners can find reliable products for their dogs and cats.
+                </p>
+                <p className="text-muted-foreground mb-4">
+                  Our mission is to make everyday pet care easier by offering practical, affordable, and thoughtfully selected pet products.
                 </p>
                 <p className="text-muted-foreground mb-4">
                   We carefully select our pet products to ensure quality and comfort for your pets. Finding quality pet products online often means sifting through endless options, unclear sizing, and questionable quality. We set out to change that.
                 </p>
                 <p className="text-muted-foreground">
-                  Today, GetPawsy serves pet parents across the United States with a smooth, reliable shopping experience from browse to delivery.
+                  Today, GetPawsy serves pet parents across the United States with a smooth, reliable shopping experience from browse to delivery. We are based in Rotterdam, Netherlands, and are committed to quality customer service.
                 </p>
               </div>
             </motion.div>

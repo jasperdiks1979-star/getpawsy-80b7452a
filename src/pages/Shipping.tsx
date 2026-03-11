@@ -114,8 +114,16 @@ const Shipping = () => {
                   Delivery typically takes <strong>{DELIVERY_TIME_STANDARD}</strong> to the United States after your order has been dispatched. Delivery estimates are also shown on each product page so you know what to expect before you order.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  <strong>Carriers:</strong> Orders are delivered via trusted carrier partners. Every order includes tracking information so you can follow your package from dispatch to delivery.
+                  <strong>Shipping Carriers:</strong> We ship via USPS, UPS, and FedEx. The carrier is selected based on package size, weight, and destination to ensure the best delivery experience.
                 </p>
+                <p className="text-muted-foreground mb-4">
+                  <strong>Order Tracking:</strong> All orders include tracking numbers sent by email so you can follow your package from dispatch to delivery.
+                </p>
+                <div className="p-4 bg-muted/50 rounded-xl mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    GetPawsy partners with global pet suppliers and fulfillment centers to deliver products efficiently.
+                  </p>
+                </div>
               </div>
             </section>
 

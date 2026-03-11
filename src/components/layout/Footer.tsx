@@ -239,9 +239,22 @@ export const Footer = () => {
                 </span>
               </Link>
                <p className="text-background/70 leading-relaxed max-w-sm">
-                GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. 
-                Operated by Skidzo, based in Apeldoorn, Netherlands.
+                <strong className="text-background">GetPawsy Pet Supplies</strong><br />
+                Customer Support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>
                </p>
+
+               {/* Customer Service Hours */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Customer Service Hours</p>
+                 <p className="text-sm text-background/70">Monday – Friday</p>
+                 <p className="text-sm text-background/70">09:00 – 17:00 CET</p>
+               </div>
+
+               {/* Business Address */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Business Address</p>
+                 <p className="text-sm text-background/70">Rotterdam, Netherlands</p>
+               </div>
               
               {/* Social Links */}
               <div className="flex items-center gap-3">
@@ -259,22 +272,6 @@ export const Footer = () => {
                 ))}
               </div>
 
-              {/* Contact Info */}
-              <div className="space-y-3 pt-2">
-                <a href={`mailto:${SUPPORT_EMAIL}`} className="flex items-center gap-3 text-sm text-background/70 hover:text-primary transition-colors">
-                  <Mail className="w-4 h-4" />
-                  <span>{SUPPORT_EMAIL}</span>
-                </a>
-                <div className="flex items-center gap-3 text-sm text-background/70">
-                  <Clock className="w-4 h-4" />
-                  <span>Mon–Fri 9:00–17:00 EST • Within 24h</span>
-                </div>
-                 <div className="flex items-center gap-3 text-sm text-background/70">
-                   <MapPin className="w-4 h-4" />
-                   <span>Apeldoorn, Netherlands</span>
-                 </div>
-              </div>
-              
               {/* Trust highlights */}
               <div className="pt-4 space-y-2 text-sm text-background/60">
                 <p>✓ Free shipping on orders ${FREE_SHIPPING_THRESHOLD}+</p>
@@ -378,11 +375,11 @@ export const Footer = () => {
                <p className="text-background/80"><strong className="text-background">Business Name:</strong> GetPawsy</p>
                 <p className="text-background/80"><strong className="text-background">Operated by:</strong> Skidzo (Chamber of Commerce: 78156955)</p>
                 <p className="text-background/80"><strong className="text-background">VAT ID:</strong> NL003295015B69</p>
-                <p className="text-background/80"><strong className="text-background">Business Address:</strong> Apeldoorn, Gelderland, Netherlands</p>
+                <p className="text-background/80"><strong className="text-background">Business Address:</strong> Rotterdam, Netherlands</p>
               </div>
               <div className="space-y-2 text-sm">
                 <p className="text-background/80"><strong className="text-background">Support Email:</strong> <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
-                <p className="text-background/80"><strong className="text-background">Support Hours:</strong> Mon–Fri 9:00–17:00 (EST)</p>
+                <p className="text-background/80"><strong className="text-background">Support Hours:</strong> Mon–Fri 09:00–17:00 CET</p>
                 <p className="text-background/80"><strong className="text-background">Response Time:</strong> Within 24 hours</p>
               </div>
               <div className="space-y-2 text-sm">
@@ -402,7 +399,7 @@ export const Footer = () => {
               Customer support available via email.
             </p>
             <div className="mt-3 space-y-1 text-sm text-background/60">
-              <p>Operating location: Netherlands</p>
+              <p>Operating location: Rotterdam, Netherlands</p>
               <p>Shipping destination: United States</p>
               <p>KVK: 78156955 · VAT: NL003295015B69</p>
             </div>
@@ -467,13 +464,13 @@ export const Footer = () => {
                   Customer support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-background/60 hover:text-primary transition-colors">{SUPPORT_EMAIL}</a> | <Link to="/returns" className="text-background/60 hover:text-primary transition-colors">Returns Policy</Link>
                 </p>
                 <p className="text-background/30 text-[10px]">
-                  GetPawsy is operated by Skidzo, a registered business in the Netherlands (KVK 78156955, VAT NL003295015B69). All orders, payments, and customer service handled in accordance with US consumer protection standards.
+                  GetPawsy is operated by Skidzo, a registered business in the Netherlands (KVK 78156955, VAT NL003295015B69). Rotterdam, Netherlands.
                 </p>
               </div>
               
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <p className="text-sm text-background/50 flex items-center gap-1">
-                  © {currentYear} GetPawsy. Made with <Heart className="w-3.5 h-3.5 text-accent fill-accent" /> for pets.
+                  © {currentYear} GetPawsy. All rights reserved.
                 </p>
                 
                 <div className="flex flex-wrap justify-center gap-6 text-sm text-background/50">
