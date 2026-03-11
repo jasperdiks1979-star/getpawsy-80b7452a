@@ -31,7 +31,7 @@ export function SitewiseTrustBar() {
         </div>
       </div>
       <p className="text-center text-xs text-muted-foreground/60 mt-2">
-        Secure checkout and customer support available for all orders. We carefully select products to ensure comfort and safety for your pets.
+        Secure checkout and customer support available for all orders. Shipping carriers: USPS, UPS, FedEx. Customer service hours: Monday – Friday, 09:00 – 17:00 CET.
       </p>
     </section>
   );
