@@ -155,7 +155,7 @@ export default function GuideGeneratorPage() {
                 {lastResult.success ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-primary" />
                       <span className="font-semibold text-foreground">{lastResult.guide?.title}</span>
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs">
