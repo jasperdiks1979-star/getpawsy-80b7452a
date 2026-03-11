@@ -80,7 +80,7 @@
              <div>
                <span className="font-medium">Value Proposition:</span>
                <p className="text-muted-foreground">
-                 Trust, speed, and reliability — curated products, US-based fulfillment, real customer care.
+                 Trust, speed, and reliability — curated products, fast fulfillment to the US, real customer care.
                </p>
              </div>
            </CardContent>

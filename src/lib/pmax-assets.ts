@@ -74,7 +74,7 @@ export const PMAX_DESCRIPTIONS = [
   'Pet travel accessories for stress-free trips. Secure checkout, easy returns.',
   
   // Trust-focused
-  'Quality pet products you can trust. US-based support & 30-day return policy.',
+  'Quality pet products you can trust. Dedicated support & 30-day return policy.',
   'Shop GetPawsy for pet essentials. Free shipping, fast delivery, easy returns.',
   
   // Seasonal/Generic

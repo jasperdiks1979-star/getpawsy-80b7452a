@@ -816,7 +816,7 @@ export default function OrthopedicDogBeds() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { icon: '🔬', title: 'Foam Density Tested', desc: 'Every bed is rated for foam density (lb/ft³) so you know exactly what you\'re getting.' },
-              { icon: '🇺🇸', title: 'US-Based Support', desc: 'Real people, real answers. Our pet care team is based in the United States.' },
+              { icon: '💬', title: 'Dedicated Support', desc: 'Real people, real answers. Our customer care team responds within 24 hours.' },
               { icon: '🐕', title: 'Breed-Specific Guidance', desc: 'Size guides and breed recommendations so your dog gets the right fit.' },
               { icon: '💯', title: '30-Day Guarantee', desc: 'Not the right bed? Return it within 30 days for a full refund. No questions.' },
             ].map(item => (
