@@ -136,7 +136,36 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
 ];
 
 const PetCareGuides = () => {
-  const guidesConnected = TOPIC_CLUSTERS.reduce(
+  // Fetch auto-published guides from DB to merge into clusters
+  const { data: dbGuides } = useQuery({
+    queryKey: ['published-guides-hub'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('published_guides')
+        .select('slug,title,cluster')
+        .eq('is_published', true)
+        .order('published_at', { ascending: false });
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Merge DB guides into static clusters
+  const enrichedClusters = TOPIC_CLUSTERS.map(cluster => {
+    const existingSlugs = new Set([
+      cluster.cornerstoneGuide.slug,
+      ...cluster.clusterGuides.map(g => g.slug),
+    ]);
+    const newGuides = (dbGuides || [])
+      .filter(g => g.cluster === cluster.id && !existingSlugs.has(g.slug))
+      .map(g => ({ slug: g.slug, title: g.title }));
+    return {
+      ...cluster,
+      clusterGuides: [...cluster.clusterGuides, ...newGuides],
+    };
+  });
+
+  const guidesConnected = enrichedClusters.reduce(
     (sum, c) => sum + 1 + c.clusterGuides.length,
     0
   );
