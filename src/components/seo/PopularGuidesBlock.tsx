@@ -9,32 +9,46 @@ import { BookOpen, ArrowRight, Sparkles } from 'lucide-react';
 
 const CORNERSTONE_GUIDES = [
   {
-    slug: 'best-cat-trees-2026',
-    anchor: 'Best Cat Trees (2026) — Complete Buyer\'s Guide',
-    description: '9 cat trees tested for stability, enrichment & value. Large cats, budget picks & more.',
+    slug: 'best-cat-trees-for-indoor-cats',
+    anchor: 'Best Cat Trees for Indoor Cats',
+    description: 'Expert-tested cat trees for climbing, scratching & lounging. Sizes for every space.',
     category: 'Cat Furniture',
-    readTime: '14 min',
-  },
-  {
-    slug: 'best-cat-litter-box-2026',
-    anchor: 'Best Cat Litter Box 2026 – Complete Buying Guide',
-    description: 'Tested & reviewed picks for odor control, large cats, and multi-cat homes.',
-    category: 'Cat Litter',
-    readTime: '18 min',
-  },
-  {
-    slug: 'outdoor-dog-games-2026',
-    anchor: 'Outdoor Dog Games (2026) – 15 Vet-Approved Ideas',
-    description: '15 outdoor games ranked by energy burn. Vet-informed picks for all breeds & ages.',
-    category: 'Dog Activities',
     readTime: '12 min',
   },
   {
-    slug: 'best-cat-trees-small-apartments',
-    anchor: 'Best Cat Trees for Small Apartments 2026',
-    description: 'Space-saving cat trees tested in real homes under 600 sq ft.',
-    category: 'Cat Furniture',
+    slug: 'best-cat-litter-box-2026',
+    anchor: 'Best Cat Litter Boxes 2026',
+    description: 'Complete buying guide with odor control tips, size recommendations & multi-cat solutions.',
+    category: 'Cat Litter',
+    readTime: '15 min',
+  },
+  {
+    slug: 'dog-grooming-essentials-guide',
+    anchor: 'Dog Grooming Essentials Guide',
+    description: 'Brushes, nail trimmers, shampoos & techniques for a healthy, happy dog.',
+    category: 'Dog Grooming',
     readTime: '10 min',
+  },
+  {
+    slug: 'best-dog-car-seats-safe-travel',
+    anchor: 'Best Dog Car Seats for Safe Travel',
+    description: 'Safety-tested car seats & boosters to protect your dog on every journey.',
+    category: 'Dog Travel',
+    readTime: '11 min',
+  },
+  {
+    slug: 'interactive-cat-toys-guide',
+    anchor: 'Interactive Cat Toys Guide',
+    description: 'Mental stimulation toys that reduce boredom and encourage natural hunting instincts.',
+    category: 'Cat Toys',
+    readTime: '9 min',
+  },
+  {
+    slug: 'best-dog-training-equipment',
+    anchor: 'Best Dog Training Equipment',
+    description: 'Essential tools for obedience, leash training & behavior correction.',
+    category: 'Dog Training',
+    readTime: '13 min',
   },
 ];
 
