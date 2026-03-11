@@ -224,6 +224,7 @@ const CatLitterClusterDashboard = lazyWithRetry(() => import("./pages/admin/CatL
 const AnalyticsHub = lazyWithRetry(() => import("./pages/admin/AnalyticsHub"));
 const GuidesDashboard = lazyWithRetry(() => import("./pages/admin/GuidesDashboard"));
 const GuideGeneratorPage = lazyWithRetry(() => import("./pages/admin/GuideGeneratorPage"));
+const ComparisonGeneratorPage = lazyWithRetry(() => import("./pages/admin/ComparisonGeneratorPage"));
 const SeoIntelligencePage = lazyWithRetry(() => import("./pages/admin/SeoIntelligencePage"));
 const SeoMonitorPage = lazyWithRetry(() => import("./pages/admin/SeoMonitorPage"));
 const FeedGapReportPage = lazyWithRetry(() => import("./pages/admin/FeedGapReportPage"));
@@ -606,6 +607,7 @@ const App = () => {
                         <Route path="analytics-hub" element={<Suspense fallback={<RouteLoader />}><AnalyticsHub /></Suspense>} />
                         <Route path="guides" element={<Suspense fallback={<RouteLoader />}><GuidesDashboard /></Suspense>} />
                         <Route path="guide-generator" element={<Suspense fallback={<RouteLoader />}><GuideGeneratorPage /></Suspense>} />
+                        <Route path="comparison-generator" element={<Suspense fallback={<RouteLoader />}><ComparisonGeneratorPage /></Suspense>} />
                         <Route path="seo-intelligence" element={<Suspense fallback={<RouteLoader />}><SeoIntelligencePage /></Suspense>} />
                         <Route path="seo-monitor" element={<Suspense fallback={<RouteLoader />}><SeoMonitorPage /></Suspense>} />
                         <Route path="feed-gap-report" element={<Suspense fallback={<RouteLoader />}><FeedGapReportPage /></Suspense>} />
