@@ -393,7 +393,7 @@ export const Footer = () => {
               <div className="space-y-2 text-sm">
                 <p className="text-background/80"><strong className="text-background">Secure Checkout:</strong> Powered by Stripe</p>
                 <p className="text-background/80"><strong className="text-background">SSL Protected:</strong> 256-bit encryption</p>
-                <p className="text-background/80"><strong className="text-background">Payments:</strong> Visa, Mastercard, PayPal, Apple Pay</p>
+                <p className="text-background/80"><strong className="text-background">Payments:</strong> Visa, Mastercard, PayPal, Apple Pay, Google Pay</p>
               </div>
             </div>
             <p className="text-sm text-background/60 mt-4 max-w-3xl">
