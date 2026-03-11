@@ -11,7 +11,7 @@ const trustPoints = [
     icon: Truck,
     title: 'Fast US Shipping',
     lines: [
-      'Orders ship from our US warehouse partners.',
+      'Orders are shipped to customers across the United States.',
       `Typical delivery: ${DELIVERY_TIME_STANDARD}.`,
     ],
   },
