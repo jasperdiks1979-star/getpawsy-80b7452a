@@ -223,6 +223,7 @@ const DogBedsClusterDashboard = lazyWithRetry(() => import("./pages/admin/DogBed
 const CatLitterClusterDashboard = lazyWithRetry(() => import("./pages/admin/CatLitterClusterDashboard"));
 const AnalyticsHub = lazyWithRetry(() => import("./pages/admin/AnalyticsHub"));
 const GuidesDashboard = lazyWithRetry(() => import("./pages/admin/GuidesDashboard"));
+const GuideGeneratorPage = lazyWithRetry(() => import("./pages/admin/GuideGeneratorPage"));
 const SeoIntelligencePage = lazyWithRetry(() => import("./pages/admin/SeoIntelligencePage"));
 const SeoMonitorPage = lazyWithRetry(() => import("./pages/admin/SeoMonitorPage"));
 const FeedGapReportPage = lazyWithRetry(() => import("./pages/admin/FeedGapReportPage"));
