@@ -227,6 +227,7 @@ const GuideGeneratorPage = lazyWithRetry(() => import("./pages/admin/GuideGenera
 const ComparisonGeneratorPage = lazyWithRetry(() => import("./pages/admin/ComparisonGeneratorPage"));
 const BacklinkGrowthPage = lazyWithRetry(() => import("./pages/admin/BacklinkGrowthPage"));
 const InternalLinkAuthorityPage = lazyWithRetry(() => import("./pages/admin/InternalLinkAuthorityPage"));
+const ProductSeoPage = lazyWithRetry(() => import("./pages/admin/ProductSeoPage"));
 const SeoIntelligencePage = lazyWithRetry(() => import("./pages/admin/SeoIntelligencePage"));
 const SeoMonitorPage = lazyWithRetry(() => import("./pages/admin/SeoMonitorPage"));
 const FeedGapReportPage = lazyWithRetry(() => import("./pages/admin/FeedGapReportPage"));
