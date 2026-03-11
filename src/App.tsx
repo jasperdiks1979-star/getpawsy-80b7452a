@@ -389,6 +389,7 @@ const App = () => {
                   {/* LiveCheckoutWidget removed — admin-only widget, was leaking into storefront bundle */}
                   <ScrollToTop />
                   <HostnameGuard />
+                  <RobotsMetaPolicy />
                   <MarketingErrorBoundary>
                     <Suspense fallback={null}>
                       <SafePinterestTag />
