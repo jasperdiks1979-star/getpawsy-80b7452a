@@ -300,6 +300,7 @@ const LargeCatCondo = lazyWithRetry(() => import("./pages/collections/sub-intent
 const DogCarSeatSmallDogs = lazyWithRetry(() => import("./pages/collections/sub-intent/DogCarSeatSmallDogs"));
 const DogBoosterSeat = lazyWithRetry(() => import("./pages/collections/sub-intent/DogBoosterSeat"));
 const DogCarHarness = lazyWithRetry(() => import("./pages/collections/sub-intent/DogCarHarness"));
+const PetCareGuides = lazyWithRetry(() => import("./pages/PetCareGuides"));
 const GuidesIndex = lazyWithRetry(() => import("./pages/GuidesIndex"));
 const GuidePage = lazyWithRetry(() => import("./pages/GuidePage"));
 const CatCondoVsCatTree2026 = lazyWithRetry(() => import("./pages/guides/CatCondoVsCatTree2026"));
