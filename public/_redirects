@@ -86,6 +86,9 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
 /blog/              /blog       301
 /collections/       /products   301
 
+# ═══ Google Shopping Feed (public, no auth) ═══
+/google-shopping-feed.xml https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200
+
 # ═══ API PROXY → Edge Functions (MUST be before SPA fallback) ═══
 /api/health https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/api-health 200
 /api/merchant-audit https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-audit 200

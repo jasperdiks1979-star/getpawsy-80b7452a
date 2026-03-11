@@ -25,6 +25,10 @@
   Cache-Control: public, max-age=3600, stale-while-revalidate=86400
   Content-Type: application/xml; charset=utf-8
 
+/google-shopping-feed.xml
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+  Content-Type: application/xml; charset=utf-8
+
 # Health check
 /healthz.json
   Cache-Control: no-cache
