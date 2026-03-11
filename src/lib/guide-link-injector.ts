@@ -221,17 +221,36 @@ export function injectGuideLinks(content: string, currentSlug: string): string {
 // ============= CLUSTER-AWARE RELATED GUIDES =============
 
 /**
+ * Tokenize a string for keyword similarity matching.
+ */
+function tokenize(str: string): string[] {
+  return str.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/[\s-]+/).filter(w => w.length > 2);
+}
+
+/**
+ * Compute Jaccard-like similarity between two token arrays.
+ */
+function tokenSimilarity(a: string[], b: string[]): number {
+  if (!a.length || !b.length) return 0;
+  const setB = new Set(b);
+  const overlap = a.filter(t => setB.has(t)).length;
+  return overlap / Math.max(a.length, b.length);
+}
+
+/**
  * Get cluster-aware related guides for the bottom section.
  * Rules:
  * - At least 1 cornerstone
  * - At least 1 hub  
  * - At least 1 sibling subguide
  * - Minimal cross-cluster noise
- * - Returns 3-5 guides
+ * - Returns 4-6 guides
+ * - Falls back to keyword similarity for unclustered guides
  */
 export function getClusterRelatedGuides(currentSlug: string, category?: string): ClusterRelatedGuide[] {
   const guide = SCALING_GUIDES.find(g => g.slug === currentSlug);
   const results: ClusterRelatedGuide[] = [];
+  const TARGET_COUNT = 6;
 
   if (guide) {
     // From same cluster
@@ -251,21 +270,39 @@ export function getClusterRelatedGuides(currentSlug: string, category?: string):
 
     // Add sibling subguides from linksTo
     guide.linksTo.forEach(slug => {
-      if (results.length >= 5) return;
+      if (results.length >= TARGET_COUNT) return;
       const target = SCALING_GUIDES.find(g => g.slug === slug);
       if (target && !results.find(r => r.slug === target.slug)) {
         results.push({ slug: target.slug, title: target.title, role: target.role, cluster: target.cluster });
       }
     });
 
-    // Fill to minimum 3 from cluster subguides
+    // Fill from cluster subguides
     const remainingSubguides = clusterGuides.filter(g => g.role === 'subguide' && !results.find(r => r.slug === g.slug));
     for (const sg of remainingSubguides) {
-      if (results.length >= 5) break;
+      if (results.length >= TARGET_COUNT) break;
       results.push({ slug: sg.slug, title: sg.title, role: sg.role, cluster: sg.cluster });
     }
+
+    // If still under target, add keyword-similar guides from other clusters
+    if (results.length < 4) {
+      const currentTokens = tokenize(guide.title + ' ' + guide.primaryKW + ' ' + guide.secondaryKWs.join(' '));
+      const crossCluster = SCALING_GUIDES
+        .filter(g => g.slug !== currentSlug && g.cluster !== guide.cluster && !results.find(r => r.slug === g.slug))
+        .map(g => ({
+          guide: g,
+          score: tokenSimilarity(currentTokens, tokenize(g.title + ' ' + g.primaryKW + ' ' + g.secondaryKWs.join(' '))),
+        }))
+        .filter(s => s.score > 0.15)
+        .sort((a, b) => b.score - a.score);
+
+      for (const { guide: g } of crossCluster) {
+        if (results.length >= TARGET_COUNT) break;
+        results.push({ slug: g.slug, title: g.title, role: g.role, cluster: g.cluster });
+      }
+    }
   } else {
-    // Guide not in SCALING_GUIDES - use category matching
+    // Guide not in SCALING_GUIDES - use category mapping + keyword similarity
     const categoryClusterMap: Record<string, string> = {
       'Cat Litter': 'cat-litter',
       'Cat Furniture': 'cat-furniture',
@@ -283,28 +320,43 @@ export function getClusterRelatedGuides(currentSlug: string, category?: string):
     if (cluster) {
       const clusterGuides = SCALING_GUIDES.filter(g => g.cluster === cluster);
       
-      // Cornerstone first
       const cornerstone = clusterGuides.find(g => g.role === 'cornerstone');
       if (cornerstone) {
         results.push({ slug: cornerstone.slug, title: cornerstone.title, role: cornerstone.role, cluster: cornerstone.cluster });
       }
 
-      // Hub
       const hub = clusterGuides.find(g => g.role === 'hub');
       if (hub) {
         results.push({ slug: hub.slug, title: hub.title, role: hub.role, cluster: hub.cluster });
       }
 
-      // Subguides to fill
       const subguides = clusterGuides.filter(g => g.role === 'subguide' && !results.find(r => r.slug === g.slug));
-      for (const sg of subguides.slice(0, 3)) {
-        if (results.length >= 5) break;
+      for (const sg of subguides.slice(0, 4)) {
+        if (results.length >= TARGET_COUNT) break;
         results.push({ slug: sg.slug, title: sg.title, role: sg.role, cluster: sg.cluster });
+      }
+    }
+
+    // Keyword similarity fallback using slug tokens
+    if (results.length < 4) {
+      const slugTokens = tokenize(currentSlug);
+      const scored = SCALING_GUIDES
+        .filter(g => !results.find(r => r.slug === g.slug))
+        .map(g => ({
+          guide: g,
+          score: tokenSimilarity(slugTokens, tokenize(g.slug + ' ' + g.primaryKW)),
+        }))
+        .filter(s => s.score > 0.1)
+        .sort((a, b) => b.score - a.score);
+
+      for (const { guide: g } of scored) {
+        if (results.length >= TARGET_COUNT) break;
+        results.push({ slug: g.slug, title: g.title, role: g.role, cluster: g.cluster });
       }
     }
   }
 
-  return results.slice(0, 5);
+  return results.slice(0, TARGET_COUNT);
 }
 
 // ============= CLUSTER HEALTH DATA =============

@@ -154,20 +154,33 @@ const GuidePage = () => {
   // Canonical WITHOUT trailing slash (canonical standard)
   const guideUrl = `${BASE_URL}/guides/${guide.slug}`;
 
-  // Cluster-aware related guides from SCALING_GUIDES
+  // Cluster-aware related guides from SCALING_GUIDES (4-6 guides)
   const clusterRelated = getClusterRelatedGuides(guide.slug, guide.category);
   
-  // Map cluster guides to full guide data from allGuides
+  // Collect slugs already linked in the guide sections to avoid duplicates
+  const contentLinkedSlugs = useMemo(() => {
+    const set = new Set<string>();
+    const regex = /\/guides\/([a-z0-9-]+)/g;
+    const allText = (guide.sections || []).map(s => s.content).join(' ');
+    let m;
+    while ((m = regex.exec(allText)) !== null) set.add(m[1]);
+    return set;
+  }, [guide.sections]);
+  
+  // Map cluster guides to full guide data, filtering out duplicates from content
   const relatedGuides = clusterRelated
+    .filter(cr => cr.slug !== guide.slug && !contentLinkedSlugs.has(cr.slug))
     .map(cr => {
       const fullGuide = allGuides?.find(g => g.slug === cr.slug);
       return fullGuide || { slug: cr.slug, title: cr.title, excerpt: '', category: cr.cluster, keywords: [], publishedAt: '', updatedAt: '', featuredImage: '', readingTime: 0, relatedCategories: [] };
-    })
-    .filter(g => g.slug !== guide.slug);
+    });
   
-  // Fallback: if no cluster matches, use same-category guides
-  if (relatedGuides.length === 0 && allGuides) {
-    const sameCat = allGuides.filter(g => g.slug !== guide.slug && g.category === guide.category).slice(0, 5);
+  // Fallback: if insufficient cluster matches, add same-category guides
+  if (relatedGuides.length < 4 && allGuides) {
+    const existingSlugs = new Set(relatedGuides.map(g => g.slug));
+    const sameCat = allGuides
+      .filter(g => g.slug !== guide.slug && g.category === guide.category && !existingSlugs.has(g.slug) && !contentLinkedSlugs.has(g.slug))
+      .slice(0, 6 - relatedGuides.length);
     relatedGuides.push(...sameCat);
   }
 
