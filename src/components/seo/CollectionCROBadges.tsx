@@ -19,7 +19,7 @@ const BADGE_CONFIG: Record<string, { badges: { icon: 'shield' | 'truck' | 'award
     badges: [
       { icon: 'shield', label: 'Odor Control Tested' },
       { icon: 'award', label: 'Vet Recommended' },
-      { icon: 'truck', label: 'US Warehouse' },
+      { icon: 'truck', label: 'Fast US Shipping' },
     ],
   },
   'modern-cat-trees': {
