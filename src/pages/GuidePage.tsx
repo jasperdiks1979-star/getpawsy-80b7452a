@@ -16,6 +16,7 @@ import { ConversionBadges } from '@/components/guides/ConversionBadges';
 import { AUTHOR, getAuthorSchema, getPublisherSchema } from '@/lib/author-entity';
 import { getClusterRelatedGuides, injectGuideLinks } from '@/lib/guide-link-injector';
 import { getSeoTitle } from '@/lib/seo-title-ab';
+import { RecommendedProductsBlock } from '@/components/seo/RecommendedProductsBlock';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -879,6 +880,18 @@ const GuidePage = () => {
           </p>
         </section>
 
+        {/* Recommended Products for Your Pet — crawlable product cards */}
+        {guide.relatedCategories.length > 0 && (
+          <RecommendedProductsBlock
+            categories={guide.relatedCategories.map(cat =>
+              cat.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+            )}
+            title="Recommended Products for Your Pet"
+            limit={4}
+            className="mb-12"
+          />
+        )}
+
         {/* Shop Category CTA — Premium */}
         {guide.relatedCategories.length > 0 && (
           <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-card to-card p-6 mb-12 shadow-sm">
@@ -910,7 +923,7 @@ const GuidePage = () => {
                 <BookOpen className="w-4 h-4 text-primary" />
               </div>
               <h2 className="text-xl font-display font-bold text-foreground">
-                Related Buying Guides
+                Related Pet Guides
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
