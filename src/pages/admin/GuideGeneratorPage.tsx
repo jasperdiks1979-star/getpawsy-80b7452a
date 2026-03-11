@@ -151,7 +151,7 @@ export default function GuideGeneratorPage() {
             </div>
 
             {lastResult && (
-              <div className={`p-4 rounded-lg border ${lastResult.success ? 'border-green-500/30 bg-green-500/5' : 'border-destructive/30 bg-destructive/5'}`}>
+              <div className={`p-4 rounded-lg border ${lastResult.success ? 'border-primary/30 bg-primary/5' : 'border-destructive/30 bg-destructive/5'}`}>
                 {lastResult.success ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
