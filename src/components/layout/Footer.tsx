@@ -379,7 +379,7 @@ export const Footer = () => {
               </div>
               <div className="space-y-2 text-sm">
                 <p className="text-background/80"><strong className="text-background">Support Email:</strong> <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
-                <p className="text-background/80"><strong className="text-background">Support Hours:</strong> Mon–Fri 9:00–17:00 (EST)</p>
+                <p className="text-background/80"><strong className="text-background">Support Hours:</strong> Mon–Fri 09:00–17:00 CET</p>
                 <p className="text-background/80"><strong className="text-background">Response Time:</strong> Within 24 hours</p>
               </div>
               <div className="space-y-2 text-sm">
