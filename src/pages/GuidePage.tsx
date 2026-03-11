@@ -16,6 +16,7 @@ import { ConversionBadges } from '@/components/guides/ConversionBadges';
 import { AUTHOR, getAuthorSchema, getPublisherSchema } from '@/lib/author-entity';
 import { getClusterRelatedGuides, injectGuideLinks } from '@/lib/guide-link-injector';
 import { getSeoTitle } from '@/lib/seo-title-ab';
+import { RecommendedProductsBlock } from '@/components/seo/RecommendedProductsBlock';
 
 const BASE_URL = 'https://getpawsy.pet';
 
