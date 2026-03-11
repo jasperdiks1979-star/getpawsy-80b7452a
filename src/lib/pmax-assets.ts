@@ -57,7 +57,7 @@ export const PMAX_LONG_HEADLINES = [
   
   // Trust + Conversion
   'Quality Pet Gear with 30-Day Hassle-Free Returns',
-  'Shop with Confidence – Secure Checkout & US-Based Support',
+  'Shop with Confidence – Secure Checkout & Dedicated Support',
 ] as const;
 
 // ============= DESCRIPTIONS (≤90 characters) =============
