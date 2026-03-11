@@ -13,7 +13,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
   headline: 'Best Cat Training & Travel Gear 2026 – Expert Buyer Guide',
-  description: 'Complete 2026 buyer guide for cat trees, carriers, enrichment toys, and scratching posts. US warehouse shipping.',
+  description: 'Complete 2026 buyer guide for cat trees, carriers, enrichment toys, and scratching posts. Fast shipping to the US.',
   author: { '@type': 'Organization', name: 'GetPawsy' },
   publisher: { '@type': 'Organization', name: 'GetPawsy', url: 'https://getpawsy.pet' },
   datePublished: '2026-02-01',

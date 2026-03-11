@@ -65,7 +65,7 @@ export function HomepageAuthoritySection() {
               training accessories
             </Link>{' '}
             are tested by real dog owners and recommended by professional trainers.
-            We ship from US warehouses with 3–7 day delivery
+            We offer fast shipping to the United States with 3–7 day delivery
             and free shipping on orders over $35. Every order is backed by our 30-day hassle-free
             return policy. Explore our{' '}
             <Link to="/guides" className="text-primary hover:underline font-medium">

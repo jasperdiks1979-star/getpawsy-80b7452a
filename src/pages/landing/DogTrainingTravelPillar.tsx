@@ -13,7 +13,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
   headline: 'Best Dog Training & Travel Gear 2026 – Expert Buyer Guide',
-  description: 'Complete 2026 buyer guide for dog training harnesses, car travel safety, leashes, and enrichment gear. US warehouse shipping.',
+  description: 'Complete 2026 buyer guide for dog training harnesses, car travel safety, leashes, and enrichment gear. Fast shipping to the US.',
   author: { '@type': 'Organization', name: 'GetPawsy' },
   publisher: { '@type': 'Organization', name: 'GetPawsy', url: 'https://getpawsy.pet' },
   datePublished: '2026-02-01',
