@@ -227,6 +227,7 @@ const GuideGeneratorPage = lazyWithRetry(() => import("./pages/admin/GuideGenera
 const ComparisonGeneratorPage = lazyWithRetry(() => import("./pages/admin/ComparisonGeneratorPage"));
 const BacklinkGrowthPage = lazyWithRetry(() => import("./pages/admin/BacklinkGrowthPage"));
 const InternalLinkAuthorityPage = lazyWithRetry(() => import("./pages/admin/InternalLinkAuthorityPage"));
+const ProductSeoPage = lazyWithRetry(() => import("./pages/admin/ProductSeoPage"));
 const SeoIntelligencePage = lazyWithRetry(() => import("./pages/admin/SeoIntelligencePage"));
 const SeoMonitorPage = lazyWithRetry(() => import("./pages/admin/SeoMonitorPage"));
 const FeedGapReportPage = lazyWithRetry(() => import("./pages/admin/FeedGapReportPage"));
@@ -628,6 +629,7 @@ const App = () => {
                         <Route path="backlink-engine" element={<Suspense fallback={<RouteLoader />}><BacklinkEnginePage /></Suspense>} />
                         <Route path="backlink-growth" element={<Suspense fallback={<RouteLoader />}><BacklinkGrowthPage /></Suspense>} />
                         <Route path="internal-link-authority" element={<Suspense fallback={<RouteLoader />}><InternalLinkAuthorityPage /></Suspense>} />
+                        <Route path="product-seo" element={<Suspense fallback={<RouteLoader />}><ProductSeoPage /></Suspense>} />
                         <Route path="resources" element={<Suspense fallback={<RouteLoader />}><AdminResourcesPage /></Suspense>} />
                         <Route path="indexing-diagnostics" element={<Suspense fallback={<RouteLoader />}><IndexingDiagnosticsPage /></Suspense>} />
                         <Route path="perf-audit" element={<Suspense fallback={<RouteLoader />}><PerfAuditPage /></Suspense>} />
