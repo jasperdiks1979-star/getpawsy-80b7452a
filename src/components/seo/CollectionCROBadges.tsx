@@ -32,7 +32,7 @@ const BADGE_CONFIG: Record<string, { badges: { icon: 'shield' | 'truck' | 'award
   'best-cat-scratching-posts': {
     badges: [
       { icon: 'shield', label: 'Durability Tested' },
-      { icon: 'truck', label: 'US Warehouse' },
+      { icon: 'truck', label: 'Fast US Shipping' },
     ],
   },
 };
