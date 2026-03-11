@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { BookOpen, ArrowRight, Sparkles, PawPrint } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const BASE_URL = 'https://getpawsy.pet';
 
