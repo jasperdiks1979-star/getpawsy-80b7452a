@@ -58,7 +58,7 @@ interface PopularGuidesBlockProps {
 }
 
 export function PopularGuidesBlock({
-  title = 'Popular Buying Guides',
+  title = 'Expert Pet Guides',
   compact = false,
 }: PopularGuidesBlockProps) {
   return (
