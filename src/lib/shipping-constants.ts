@@ -81,7 +81,13 @@ export const RETURNS_PROCESS = 'Contact support@getpawsy.pet with your order num
 export const SUPPORT_EMAIL = 'support@getpawsy.pet';
 
 /** Response time promise */
-export const RESPONSE_TIME = 'We respond within 24 business hours';
+export const RESPONSE_TIME = 'We respond within 24 hours';
+
+/** Business hours */
+export const BUSINESS_HOURS = 'Monday – Friday, 09:00 – 17:00 CET';
+
+/** Business location */
+export const BUSINESS_LOCATION = 'Rotterdam, Netherlands';
 
 /** Business name */
 export const BUSINESS_NAME = 'GetPawsy';
