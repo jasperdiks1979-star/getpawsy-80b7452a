@@ -470,7 +470,7 @@ export const Footer = () => {
               
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <p className="text-sm text-background/50 flex items-center gap-1">
-                  © {currentYear} GetPawsy. Made with <Heart className="w-3.5 h-3.5 text-accent fill-accent" /> for pets.
+                  © {currentYear} GetPawsy. All rights reserved.
                 </p>
                 
                 <div className="flex flex-wrap justify-center gap-6 text-sm text-background/50">
