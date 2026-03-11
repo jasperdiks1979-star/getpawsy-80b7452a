@@ -1,0 +1,96 @@
+{
+  "cat-toys": [
+    "apartments",
+    "kittens",
+    "senior cats",
+    "bored cats",
+    "lazy cats",
+    "indoor cats",
+    "night play",
+    "small spaces",
+    "active cats",
+    "anxious cats",
+    "solo play",
+    "mental stimulation",
+    "exercise",
+    "multiple cats"
+  ],
+  "cat-litter": [
+    "small apartments",
+    "multiple cats",
+    "odor control",
+    "kittens",
+    "sensitive cats",
+    "big cats",
+    "low maintenance",
+    "eco friendly homes",
+    "small spaces",
+    "allergies"
+  ],
+  "cat-trees": [
+    "large cats",
+    "small apartments",
+    "multiple cats",
+    "kittens",
+    "maine coons",
+    "heavy cats",
+    "modern homes",
+    "senior cats",
+    "small rooms",
+    "playful cats"
+  ],
+  "dog-training-toys": [
+    "puppies",
+    "smart dogs",
+    "high energy dogs",
+    "beginners",
+    "bored dogs",
+    "anxious dogs",
+    "large breeds",
+    "small breeds",
+    "aggressive chewers",
+    "mental stimulation"
+  ],
+  "dog-car-seats": [
+    "small dogs",
+    "large dogs",
+    "puppies",
+    "suv travel",
+    "long trips",
+    "anxious dogs",
+    "multiple dogs",
+    "truck cabs",
+    "backseat safety",
+    "front seat use"
+  ],
+  "dog-grooming-tools": [
+    "shedding dogs",
+    "long hair dogs",
+    "short hair dogs",
+    "home grooming",
+    "puppies",
+    "sensitive skin",
+    "double coat breeds",
+    "beginners",
+    "professional results",
+    "doodle breeds"
+  ],
+  "dog-travel": [
+    "car trips",
+    "airplane travel",
+    "road trips",
+    "camping",
+    "small dogs",
+    "large dogs",
+    "anxious dogs",
+    "puppies"
+  ],
+  "cat-scratching-posts": [
+    "large cats",
+    "small spaces",
+    "multiple cats",
+    "kittens",
+    "furniture protection",
+    "modern homes"
+  ]
+}
