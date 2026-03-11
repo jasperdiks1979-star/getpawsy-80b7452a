@@ -32,6 +32,7 @@ export const ShippingTransparency = ({
       <div style={{ padding: '16px', fontSize: '14px', color: '#555' }}>
         <p>Processing Time: {PROCESSING_TIME}</p>
         <p>Delivery Time: {DELIVERY_TIME_STANDARD} to the United States</p>
+        <p>Carriers: USPS, UPS, FedEx</p>
         <p>Fulfillment: Orders are delivered via trusted carrier partners</p>
       </div>
     </noscript>

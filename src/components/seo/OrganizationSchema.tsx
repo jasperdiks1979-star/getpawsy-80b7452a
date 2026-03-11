@@ -25,8 +25,8 @@ export function OrganizationSchema() {
       'GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. Orders are shipped directly to customers across the United States.',
     address: {
       '@type': 'PostalAddress',
-      addressRegion: 'Gelderland',
-      addressLocality: 'Apeldoorn',
+      addressRegion: 'South Holland',
+      addressLocality: 'Rotterdam',
       addressCountry: 'NL',
     },
     contactPoint: {
