@@ -244,7 +244,7 @@ function tokenSimilarity(a: string[], b: string[]): number {
  * - At least 1 hub  
  * - At least 1 sibling subguide
  * - Minimal cross-cluster noise
- * - Returns 4-6 guides
+ * - Returns 6-8 guides
  * - Falls back to keyword similarity for unclustered guides
  */
 export function getClusterRelatedGuides(currentSlug: string, category?: string): ClusterRelatedGuide[] {
