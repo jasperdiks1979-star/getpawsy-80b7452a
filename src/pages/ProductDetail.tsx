@@ -1434,7 +1434,7 @@ const ProductDetail = () => {
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
                 <div className="grid md:grid-cols-2 gap-6">
                 {[
-                    { emoji: '🇺🇸', text: US_FULFILLMENT_NOTE },
+                    { emoji: '🚚', text: US_FULFILLMENT_NOTE },
                     { emoji: '📦', text: `Standard delivery: ${DELIVERY_TIME_STANDARD}` },
                     { emoji: '✨', text: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}` },
                     { emoji: '💰', text: `$${FLAT_SHIPPING_RATE.toFixed(2)} flat rate under $${FREE_SHIPPING_THRESHOLD}` },
