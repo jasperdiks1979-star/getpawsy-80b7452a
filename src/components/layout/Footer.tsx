@@ -399,7 +399,7 @@ export const Footer = () => {
               Customer support available via email.
             </p>
             <div className="mt-3 space-y-1 text-sm text-background/60">
-              <p>Operating location: Netherlands</p>
+              <p>Operating location: Rotterdam, Netherlands</p>
               <p>Shipping destination: United States</p>
               <p>KVK: 78156955 · VAT: NL003295015B69</p>
             </div>
