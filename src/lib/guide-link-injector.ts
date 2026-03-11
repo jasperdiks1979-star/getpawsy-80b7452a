@@ -337,7 +337,7 @@ export function getClusterRelatedGuides(currentSlug: string, category?: string):
       }
 
       const subguides = clusterGuides.filter(g => g.role === 'subguide' && !results.find(r => r.slug === g.slug));
-      for (const sg of subguides.slice(0, 4)) {
+      for (const sg of subguides.slice(0, 6)) {
         if (results.length >= TARGET_COUNT) break;
         results.push({ slug: sg.slug, title: sg.title, role: sg.role, cluster: sg.cluster });
       }
