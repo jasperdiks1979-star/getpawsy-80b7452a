@@ -250,7 +250,7 @@ function tokenSimilarity(a: string[], b: string[]): number {
 export function getClusterRelatedGuides(currentSlug: string, category?: string): ClusterRelatedGuide[] {
   const guide = SCALING_GUIDES.find(g => g.slug === currentSlug);
   const results: ClusterRelatedGuide[] = [];
-  const TARGET_COUNT = 6;
+  const TARGET_COUNT = 8;
 
   if (guide) {
     // From same cluster
