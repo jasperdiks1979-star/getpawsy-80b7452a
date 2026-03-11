@@ -484,7 +484,7 @@ export default function OrthopedicDogBeds() {
                   <th className="text-left p-3 font-semibold">Thickness</th>
                   <th className="text-left p-3 font-semibold">Waterproof</th>
                   <th className="text-left p-3 font-semibold">Cover Washable</th>
-                  <th className="text-left p-3 font-semibold">US Warehouse</th>
+                  <th className="text-left p-3 font-semibold">Fast Shipping</th>
                   <th className="text-left p-3 font-semibold">Price</th>
                   <th className="p-3 font-semibold"></th>
                 </tr>
