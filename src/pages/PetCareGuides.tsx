@@ -224,7 +224,7 @@ const PetCareGuides = () => {
 
         {/* Topic Cluster Sections */}
         <div className="space-y-16">
-          {TOPIC_CLUSTERS.map((cluster) => (
+          {enrichedClusters.map((cluster) => (
             <section key={cluster.id} id={cluster.id}>
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-2xl">{cluster.icon}</span>
