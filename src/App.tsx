@@ -11,6 +11,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { HostnameGuard } from "@/components/seo/HostnameGuard";
+import { RobotsMetaPolicy } from "@/components/seo/RobotsMetaPolicy";
 // Marketing/tracking components — lazy-loaded, not needed for first paint
 // LiveCheckoutWidget removed from global render — admin-only, was causing bundle leakage
 const SafePinterestTag = lazy(() => import("@/components/tracking/SafePinterestTag").then(m => ({ default: m.SafePinterestTag })));
@@ -388,6 +389,7 @@ const App = () => {
                   {/* LiveCheckoutWidget removed — admin-only widget, was leaking into storefront bundle */}
                   <ScrollToTop />
                   <HostnameGuard />
+                  <RobotsMetaPolicy />
                   <MarketingErrorBoundary>
                     <Suspense fallback={null}>
                       <SafePinterestTag />

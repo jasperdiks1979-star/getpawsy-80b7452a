@@ -680,13 +680,11 @@ const ProductDetail = () => {
 
   return (
     <Layout>
-      {/* Tier C products: noindex, follow — remain purchasable but hidden from search */}
-      {((product as any).seo_tier === 'C') && (
-        <Helmet>
-          <meta name="robots" content="noindex, follow" />
-          <meta name="googlebot" content="noindex, follow" />
-        </Helmet>
-      )}
+      {/* Explicit robots policy: Tier C = noindex,follow; all others = index,follow */}
+      <Helmet>
+        <meta name="robots" content={((product as any).seo_tier === 'C') ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'} />
+        <meta name="googlebot" content={((product as any).seo_tier === 'C') ? 'noindex, follow' : 'index, follow'} />
+      </Helmet>
       <ProductSchema 
         product={{
           id: product.id,
