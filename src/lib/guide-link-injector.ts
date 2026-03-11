@@ -313,7 +313,13 @@ export function getClusterRelatedGuides(currentSlug: string, category?: string):
       'Dog Collars & Leashes': 'dog-training',
       'Cat Enrichment': 'cat-enrichment',
       'Cat Toys': 'cat-enrichment',
-      'Cat Trees & Condos': 'cat-enrichment',
+      'Cat Trees & Condos': 'cat-furniture',
+      'Dog Travel': 'dog-beds',
+      'Dog Grooming': 'micro-intent',
+      'Dog Car Seats': 'dog-beds',
+      'Cat Carriers': 'cat-furniture',
+      'Cat Beds': 'cat-furniture',
+      'Dog Toys': 'dog-training',
     };
     
     const cluster = category ? categoryClusterMap[category] : null;
