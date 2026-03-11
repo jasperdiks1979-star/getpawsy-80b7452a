@@ -210,7 +210,7 @@ const PetCareGuides = () => {
 
         {/* Quick-nav pills */}
         <nav className="flex flex-wrap gap-2 mb-12" aria-label="Guide categories">
-          {TOPIC_CLUSTERS.map((cluster) => (
+          {enrichedClusters.map((cluster) => (
             <a
               key={cluster.id}
               href={`#${cluster.id}`}
