@@ -6,7 +6,24 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SCALING_GUIDES } from './guide-scaling-150';
 import type { GuideData } from '@/types/guide';
-import seoKeywords from '@/data/seo-guide-keywords.json';
+import seoKeywordsLegacy from '@/data/seo-guide-keywords.json';
+import seoKeywordsDatabase from '@/data/seoGuideKeywordDatabase.json';
+
+// Merge both keyword sources, deduplicating
+function mergeKeywords(): Record<string, string[]> {
+  const merged: Record<string, string[]> = {};
+  for (const source of [seoKeywordsLegacy, seoKeywordsDatabase] as Record<string, string[]>[]) {
+    for (const [cluster, keywords] of Object.entries(source)) {
+      if (!merged[cluster]) merged[cluster] = [];
+      for (const kw of keywords) {
+        if (!merged[cluster].includes(kw)) merged[cluster].push(kw);
+      }
+    }
+  }
+  return merged;
+}
+
+const seoKeywords = mergeKeywords();
 
 // ============= TYPES =============
 
