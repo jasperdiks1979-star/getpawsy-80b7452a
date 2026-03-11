@@ -41,7 +41,7 @@ const sections = [
     icon: Truck,
     title: 'Shipping Information',
     items: [
-      { heading: 'US Warehouse Fulfillment', text: 'Orders ship from trusted US warehouse partners.' },
+      { heading: 'Order Fulfillment', text: 'Orders are shipped to customers across the United States via trusted carrier partners.' },
       { heading: 'Processing Time', text: PROCESSING_TIME + '.' },
       { heading: 'Delivery Time', text: `${DELIVERY_TIME_STANDARD} depending on location.` },
     ],

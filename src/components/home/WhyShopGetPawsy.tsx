@@ -8,7 +8,7 @@ const pillars = [
   {
     icon: Truck,
     title: 'Fast US Shipping',
-    description: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Orders ship from US warehouses with 3–7 business day delivery.`,
+    description: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Orders ship with 3–7 business day delivery to the United States.`,
   },
   {
     icon: RotateCcw,

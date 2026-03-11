@@ -47,7 +47,7 @@ export default function RecentProducts() {
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Recently Added Products</h1>
           </div>
           <p className="text-muted-foreground max-w-2xl text-base">
-            The newest arrivals in our pet supply catalog. Updated daily with fresh dog and cat products from US warehouses.
+            The newest arrivals in our pet supply catalog. Updated daily with fresh dog and cat products, shipped to customers across the United States.
           </p>
         </header>
 

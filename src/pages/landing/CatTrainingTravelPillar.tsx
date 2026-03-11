@@ -163,7 +163,7 @@ const CatTrainingTravelPillar = () => {
           <section className="mb-12">
             <h2 className="text-2xl font-display font-bold mb-4">Shipping & Returns</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              All cat products ship from US warehouses with 3–7 business day delivery. Free shipping on orders over $35. Every purchase includes our 30-day happiness guarantee — if your cat doesn't love it, we'll process a full refund.
+              All cat products ship with 3–7 business day delivery to the United States. Free shipping on orders over $35. Every purchase includes our 30-day happiness guarantee — if your cat doesn't love it, we'll process a full refund.
             </p>
           </section>
 

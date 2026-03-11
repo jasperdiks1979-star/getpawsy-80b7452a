@@ -43,7 +43,7 @@ const CatTraining = () => {
               Cat Enrichment & Training
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed mb-6">
-              Cat trees, scratching posts, puzzle feeders, and interactive toys — everything indoor cats need to stay active, healthy, and happy. US warehouse shipping 3–7 days.
+              Cat trees, scratching posts, puzzle feeders, and interactive toys — everything indoor cats need to stay active, healthy, and happy. Fast shipping to the US in 3–7 days.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
               <span>🇺🇸 US Shipping 3–7 Days</span>

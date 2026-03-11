@@ -1032,7 +1032,7 @@ const ProductDetail = () => {
                     bullets.push(
                       'Premium materials built for daily pet life',
                       'Designed for comfort and ease of use',
-                      'Ships fast from US warehouses',
+                      'Fast shipping to the United States',
                       'Backed by 30-day satisfaction guarantee',
                     );
                   }
