@@ -230,3 +230,12 @@ verify_jwt = false
 
 [functions.shopping-traffic-engine]
 verify_jwt = false
+
+[functions.auto-publish-guides]
+verify_jwt = false
+
+[functions.request-indexing]
+verify_jwt = false
+
+[functions.sitemap-guides]
+verify_jwt = false

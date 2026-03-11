@@ -2205,6 +2205,39 @@ export type Database = {
         }
         Relationships: []
       }
+      guide_generation_log: {
+        Row: {
+          duration_ms: number | null
+          errors: Json | null
+          guides_failed: number | null
+          guides_generated: number | null
+          id: string
+          keywords_processed: string[] | null
+          run_at: string
+          triggered_by: string | null
+        }
+        Insert: {
+          duration_ms?: number | null
+          errors?: Json | null
+          guides_failed?: number | null
+          guides_generated?: number | null
+          id?: string
+          keywords_processed?: string[] | null
+          run_at?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          duration_ms?: number | null
+          errors?: Json | null
+          guides_failed?: number | null
+          guides_generated?: number | null
+          id?: string
+          keywords_processed?: string[] | null
+          run_at?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       indexing_submissions: {
         Row: {
           created_at: string
@@ -4757,6 +4790,75 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      published_guides: {
+        Row: {
+          category: string
+          cluster: string
+          created_at: string
+          excerpt: string
+          featured_image: string | null
+          generation_source: string | null
+          guide_data: Json
+          id: string
+          indexed_at: string | null
+          internal_links_count: number | null
+          is_indexed: boolean
+          is_published: boolean
+          keywords: string[] | null
+          products_linked: number | null
+          published_at: string
+          reading_time: number | null
+          related_categories: string[] | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          cluster?: string
+          created_at?: string
+          excerpt?: string
+          featured_image?: string | null
+          generation_source?: string | null
+          guide_data?: Json
+          id?: string
+          indexed_at?: string | null
+          internal_links_count?: number | null
+          is_indexed?: boolean
+          is_published?: boolean
+          keywords?: string[] | null
+          products_linked?: number | null
+          published_at?: string
+          reading_time?: number | null
+          related_categories?: string[] | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          cluster?: string
+          created_at?: string
+          excerpt?: string
+          featured_image?: string | null
+          generation_source?: string | null
+          guide_data?: Json
+          id?: string
+          indexed_at?: string | null
+          internal_links_count?: number | null
+          is_indexed?: boolean
+          is_published?: boolean
+          keywords?: string[] | null
+          products_linked?: number | null
+          published_at?: string
+          reading_time?: number | null
+          related_categories?: string[] | null
+          slug?: string
+          title?: string
           updated_at?: string
         }
         Relationships: []

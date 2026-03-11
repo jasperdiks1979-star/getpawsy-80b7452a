@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { BookOpen, ArrowRight, Sparkles, PawPrint } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -134,7 +136,36 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
 ];
 
 const PetCareGuides = () => {
-  const guidesConnected = TOPIC_CLUSTERS.reduce(
+  // Fetch auto-published guides from DB to merge into clusters
+  const { data: dbGuides } = useQuery({
+    queryKey: ['published-guides-hub'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('published_guides')
+        .select('slug,title,cluster')
+        .eq('is_published', true)
+        .order('published_at', { ascending: false });
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Merge DB guides into static clusters
+  const enrichedClusters = TOPIC_CLUSTERS.map(cluster => {
+    const existingSlugs = new Set([
+      cluster.cornerstoneGuide.slug,
+      ...cluster.clusterGuides.map(g => g.slug),
+    ]);
+    const newGuides = (dbGuides || [])
+      .filter(g => g.cluster === cluster.id && !existingSlugs.has(g.slug))
+      .map(g => ({ slug: g.slug, title: g.title }));
+    return {
+      ...cluster,
+      clusterGuides: [...cluster.clusterGuides, ...newGuides],
+    };
+  });
+
+  const guidesConnected = enrichedClusters.reduce(
     (sum, c) => sum + 1 + c.clusterGuides.length,
     0
   );
@@ -179,7 +210,7 @@ const PetCareGuides = () => {
 
         {/* Quick-nav pills */}
         <nav className="flex flex-wrap gap-2 mb-12" aria-label="Guide categories">
-          {TOPIC_CLUSTERS.map((cluster) => (
+          {enrichedClusters.map((cluster) => (
             <a
               key={cluster.id}
               href={`#${cluster.id}`}
@@ -193,7 +224,7 @@ const PetCareGuides = () => {
 
         {/* Topic Cluster Sections */}
         <div className="space-y-16">
-          {TOPIC_CLUSTERS.map((cluster) => (
+          {enrichedClusters.map((cluster) => (
             <section key={cluster.id} id={cluster.id}>
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-2xl">{cluster.icon}</span>
