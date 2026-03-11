@@ -93,7 +93,7 @@ export const BUSINESS_LOCATION = 'Rotterdam, Netherlands';
 export const BUSINESS_NAME = 'GetPawsy';
 
 /** Operating country display */
-export const OPERATING_COUNTRY = 'Netherlands (serving US customers)';
+export const OPERATING_COUNTRY = 'Rotterdam, Netherlands (serving US customers)';
 
 // ============= TRUST BADGE MESSAGES =============
 
