@@ -98,7 +98,7 @@ const Contact = () => {
     {
       icon: Building2,
       title: 'Location',
-      content: 'Apeldoorn, Netherlands',
+      content: 'Rotterdam, Netherlands',
       description: 'Serving US customers',
       href: null,
     },
@@ -106,7 +106,7 @@ const Contact = () => {
       icon: Clock,
       title: 'Business Hours',
       content: 'Monday – Friday',
-      description: '9:00 AM – 5:00 PM EST',
+      description: '09:00 – 17:00 CET',
       href: null,
     },
   ];
