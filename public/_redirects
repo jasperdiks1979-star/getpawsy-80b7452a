@@ -4,9 +4,11 @@
 # Applied by Lovable Cloud / Cloudflare Pages at the edge.
 # =============================================================
 
-# ═══ XML feeds → Edge Function redirect (MUST be first) ═══
-/google-shopping-feed.xml  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 302
-/merchant-feed.xml         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 302
+# ═══ XML feeds → Edge Function rewrite (MUST be first) ═══
+/google-shopping-feed.xml    https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
+/google-shopping-feed.xml?*  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
+/merchant-feed.xml           https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
+/merchant-feed.xml?*         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
 
 # www -> apex (301 permanent, preserves path + query)
 https://www.getpawsy.pet/* https://getpawsy.pet/:splat 301
