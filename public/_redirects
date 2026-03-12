@@ -4,6 +4,10 @@
 # Applied by Lovable Cloud / Cloudflare Pages at the edge.
 # =============================================================
 
+# ═══ XML feeds → Edge Function proxy (MUST be first) ═══
+/google-shopping-feed.xml  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
+/merchant-feed.xml         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
+
 # www -> apex (301 permanent, preserves path + query)
 https://www.getpawsy.pet/* https://getpawsy.pet/:splat 301!
 
@@ -85,10 +89,6 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
 /products/          /products   301
 /blog/              /blog       301
 /collections/       /products   301
-
-# ═══ XML feeds → Edge Function proxy ═══
-/google-shopping-feed.xml  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
-/merchant-feed.xml         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
 
 # ═══ Static XML feeds — MUST match before SPA fallback ═══
 /merchant-diagnostics.xml  /merchant-diagnostics.xml  200
