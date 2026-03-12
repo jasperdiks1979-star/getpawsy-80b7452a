@@ -701,53 +701,36 @@ export default function merchantFeedPlugin(): Plugin {
       console.log('[sitemaps] ═══════════════════════════════════════════\n');
     },
 
-    // ── PHASE 2: Generate merchant feed into /dist AFTER build ──
+    // ── PHASE 2: Enforce proxy-only feed source in /dist ──
     async closeBundle() {
       const outDir = resolvedOutDir;
       mkdirSync(outDir, { recursive: true });
-      console.log('[xml-plugin] Generating merchant feed XML files...');
 
-      // Write fallback files FIRST
-      const fallbackNames = ['merchant-feed.xml', 'google-shopping-feed.xml', 'merchant-diagnostics.xml'];
-      for (const name of fallbackNames) {
-        let fallback: string;
-        if (name.includes('merchant-feed') || name.includes('google-shopping-feed')) {
-          fallback = FALLBACK_FEED;
-        } else {
-          fallback = `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`;
+      const staticFeedFiles = ['merchant-feed.xml', 'google-shopping-feed.xml'];
+      for (const name of staticFeedFiles) {
+        const filePath = join(outDir, name);
+        if (existsSync(filePath)) {
+          unlinkSync(filePath);
+          console.log(`[xml-plugin] removed stale /dist/${name}`);
         }
-        writeFileSync(join(outDir, name), fallback, 'utf-8');
       }
-      console.log('[xml-plugin] ✓ Fallback merchant files written');
 
       try {
-        await Promise.race([
-          (async () => {
-            const [merchantFeed, googleShoppingFeed, diagnostics] = await Promise.all([
-              buildMerchantFeed().catch(() => FALLBACK_FEED),
-              buildMerchantFeed(290).catch(() => FALLBACK_FEED),
-              buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
-            ]);
-
-            const files: [string, string][] = [
-              ['merchant-feed.xml', merchantFeed],
-              ['google-shopping-feed.xml', googleShoppingFeed],
-              ['merchant-diagnostics.xml', diagnostics],
-            ];
-
-            for (const [name, xml] of files) {
-              writeFileSync(join(outDir, name), xml, 'utf-8');
-              console.log(`[xml-plugin] ✓ ${name} (${xml.length} bytes)`);
-            }
-
-            console.log('[xml-plugin] Done — merchant feed files generated.');
-          })(),
-          new Promise<void>((_, reject) =>
-            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
+        const diagnostics = await Promise.race([
+          buildMerchantDiagnostics(),
+          new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error('Merchant diagnostics generation timed out')), 30000)
           ),
         ]);
+        writeFileSync(join(outDir, 'merchant-diagnostics.xml'), diagnostics, 'utf-8');
+        console.log(`[xml-plugin] ✓ merchant-diagnostics.xml (${diagnostics.length} bytes)`);
       } catch (err) {
-        console.warn('[xml-plugin] ⚠️ Merchant feed generation failed/timed out, fallbacks in place:', err);
+        console.warn('[xml-plugin] ⚠️ Merchant diagnostics generation failed/timed out, fallback in place:', err);
+        writeFileSync(
+          join(outDir, 'merchant-diagnostics.xml'),
+          `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`,
+          'utf-8'
+        );
       }
 
       // ── PHASE 3: Post-build dist verification for sitemaps ──
