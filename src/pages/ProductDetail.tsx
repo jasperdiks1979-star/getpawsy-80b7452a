@@ -56,6 +56,7 @@ import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
 import { HeroProductBoost } from '@/components/products/HeroProductBoost';
 import { ProductBundleUpsell } from '@/components/products/ProductBundleUpsell';
 import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
+import { ProductPageCrossLinks } from '@/components/seo/ProductPageCrossLinks';
 import { ProductUseCases } from '@/components/products/ProductUseCases';
 import { CatTreeAuthorityBadges } from '@/components/products/CatTreeAuthorityBadges';
 import { PriceAnchoringSection } from '@/components/products/PriceAnchoringSection';
