@@ -4,11 +4,11 @@
 # Applied by Lovable Cloud / Cloudflare Pages at the edge.
 # =============================================================
 
-# ═══ XML feeds → internal API proxy (serve backend XML on same URL) ═══
-/google-shopping-feed.xml    /api/google-shopping-feed 200
-/google-shopping-feed.xml?*  /api/google-shopping-feed 200
-/merchant-feed.xml           /api/google-shopping-feed 200
-/merchant-feed.xml?*         /api/google-shopping-feed 200
+# ═══ Static XML feeds served directly (bypass SPA fallback) ═══
+/google-shopping-feed.xml    /google-shopping-feed.xml 200
+/google-shopping-feed.xml?*  /google-shopping-feed.xml 200
+/merchant-feed.xml           /merchant-feed.xml 200
+/merchant-feed.xml?*         /merchant-feed.xml 200
 
 # www -> apex (301 permanent, preserves path + query)
 https://www.getpawsy.pet/* https://getpawsy.pet/:splat 301

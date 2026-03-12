@@ -710,18 +710,27 @@ export default function merchantFeedPlugin(): Plugin {
       console.log('[sitemaps] ═══════════════════════════════════════════\n');
     },
 
-    // ── PHASE 2: Enforce proxy-only feed source in /dist ──
+    // ── PHASE 2: Ensure feed files exist in /dist ──
     async closeBundle() {
       const outDir = resolvedOutDir;
       mkdirSync(outDir, { recursive: true });
 
-      const staticFeedFiles = ['merchant-feed.xml', 'google-shopping-feed.xml'];
-      for (const name of staticFeedFiles) {
-        const filePath = join(outDir, name);
-        if (existsSync(filePath)) {
-          unlinkSync(filePath);
-          console.log(`[xml-plugin] removed stale /dist/${name}`);
-        }
+      try {
+        const merchantFeed = await Promise.race([
+          buildMerchantFeed(),
+          new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
+          ),
+        ]);
+
+        writeFileSync(join(outDir, 'merchant-feed.xml'), merchantFeed, 'utf-8');
+        writeFileSync(join(outDir, 'google-shopping-feed.xml'), merchantFeed, 'utf-8');
+        console.log(`[xml-plugin] ✓ /dist/merchant-feed.xml (${merchantFeed.length} bytes)`);
+        console.log(`[xml-plugin] ✓ /dist/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
+      } catch (err) {
+        console.warn('[xml-plugin] ⚠️ Merchant feed generation failed in closeBundle, writing fallback feeds:', err);
+        writeFileSync(join(outDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
+        writeFileSync(join(outDir, 'google-shopping-feed.xml'), FALLBACK_FEED, 'utf-8');
       }
 
       try {
