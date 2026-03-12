@@ -1,0 +1,114 @@
+# =============================================================
+# 301 Redirects for GetPawsy (getpawsy.pet)
+# Enforces apex canonical host with permanent redirects.
+# Applied by Lovable Cloud / Cloudflare Pages at the edge.
+# =============================================================
+
+# www -> apex (301 permanent, preserves path + query)
+https://www.getpawsy.pet/* https://getpawsy.pet/:splat 301!
+
+# lovable.app preview -> apex (301 permanent)
+https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
+
+# ═══ POLICY PATH ALIASES (Merchant Center compliance) ═══
+/policies/shipping  /shipping   301
+/policies/returns   /returns    301
+/policies/privacy   /privacy    301
+/policies/terms     /terms      301
+
+# ═══ LEGACY PAGE REDIRECTS (Shopify/WooCommerce patterns) ═══
+/pages/contact      /contact    301
+/pages/about        /about      301
+/pages/faq          /faq        301
+/pages/shipping     /shipping   301
+/pages/returns      /returns    301
+/pages/privacy      /privacy    301
+/pages/terms        /terms      301
+
+# ═══ LEGACY SHOP REDIRECTS ═══
+/shop               /products   301
+/shop/all           /products   301
+/shop/*             /products   301
+
+# ═══ LEGACY COLLECTION HANDLE REDIRECTS ═══
+/collections/dogs               /collections/dog    301
+/collections/cats               /collections/cat    301
+/collections/all                /products           301
+/collections/frontpage          /                   301
+
+# ═══ DOG TRAINING COLLECTION ALIASES ═══
+/collections/leash-control      /collections/dog-leash-control          301
+/collections/potty-training     /collections/dog-potty-training         301
+/collections/dog-leash          /collections/dog-leash-control          301
+/collections/dog-potty          /collections/dog-potty-training         301
+/collections/puppy-essentials   /collections/puppy-training-essentials  301
+/collections/puppy-training     /collections/puppy-training-essentials  301
+/collections/puppy-starter-kit  /collections/puppy-training-essentials  301
+/collections/dog-training       /collections/dog-leash-control          301
+/collections/anti-bark          /collections/dog-anti-bark              301
+/collections/bark-control       /collections/dog-anti-bark              301
+/collections/stop-barking       /collections/dog-anti-bark              301
+/collections/training-accessories /collections/dog-training-accessories 301
+/collections/training           /collections/dog-leash-control          301
+
+# ═══ LEGACY CATEGORY REDIRECTS (GSC 4xx patterns) ═══
+/category/dogs      /collections/dog    301
+/category/cats      /collections/cat    301
+/category/*         /products           301
+
+# ═══ OLD GUIDE SLUG REDIRECTS ═══
+/guides/dog-leash-training              /guides/leash-training-dog-step-by-step  301!
+/guides/dog-potty-training-tips         /guides/dog-potty-training-complete-guide 301!
+/guides/puppy-leash-training            /guides/leash-training-dog-step-by-step  301!
+/guides/potty-training-guide            /guides/dog-potty-training-complete-guide 301!
+/guides/no-pull-harness-guide           /guides/leash-training-dog-step-by-step  301!
+/guides/puppy-training-tips             /guides/puppy-training-first-30-days     301!
+/guides/dog-training-basics             /guides/best-dog-training-tools          301!
+/guides/how-to-stop-barking             /guides/how-to-stop-dog-barking          301!
+/guides/stop-barking-guide              /guides/how-to-stop-dog-barking          301!
+/guides/leash-training-guide            /guides/leash-training-dog-step-by-step  301!
+/guides/potty-training-tips             /guides/dog-potty-training-complete-guide 301!
+/guides/crate-training                  /guides/best-dog-training-tools          301!
+/guides/dog-collar-guide                /guides/leash-training-dog-step-by-step  301!
+/guides/dog-collar-sizing-guide         /guides/leash-training-dog-step-by-step  301!
+/guides/best-dog-collars                /guides/leash-training-dog-step-by-step  301!
+/guides/collar-vs-harness               /guides/leash-training-dog-step-by-step  301!
+/guides/harness-training-guide          /guides/leash-training-dog-step-by-step  301!
+/guides/dog-harness-guide               /guides/leash-training-dog-step-by-step  301!
+/guides/dog-training-guide              /guides/best-dog-training-tools          301!
+/guides/puppy-training-guide            /guides/puppy-training-first-30-days     301!
+/guides/barking-solutions               /guides/how-to-stop-dog-barking          301!
+/guides/crate-training-tips             /guides/puppy-training-first-30-days     301!
+/guides/crate-training-guide            /guides/puppy-training-first-30-days     301!
+
+# ═══ MISC LEGACY PATTERNS ═══
+/products/          /products   301
+/blog/              /blog       301
+/collections/       /products   301
+
+# ═══ XML feeds → Edge Function proxy ═══
+/google-shopping-feed.xml  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
+/merchant-feed.xml         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
+
+# ═══ Static XML feeds — MUST match before SPA fallback ═══
+/merchant-diagnostics.xml  /merchant-diagnostics.xml  200
+/sitemap.xml               /sitemap.xml               200
+/sitemap-*.xml             /sitemap-*.xml             200
+/robots.txt                /robots.txt                200
+
+# ═══ API PROXY → Edge Functions (MUST be before SPA fallback) ═══
+/api/health https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/api-health 200
+/api/merchant-audit https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-audit 200
+/api/merchant-audit?* https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-audit 200
+/api/merchant-status https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-status 200
+/api/merchant-sync https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-sync 200
+/api/merchant-health https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-health 200
+/api/shopping-performance https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/shopping-optimizer?action=performance 200
+/api/shopping-winners https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/shopping-optimizer?action=winners 200
+/api/cj-us-products https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/cj-us-hunter?action=list 200
+/api/product-opportunities https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/revenue-accelerator?action=opportunities 200
+/api/revenue-insights https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/revenue-accelerator?action=insights 200
+/api/merchant-compliance-check https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-health 200
+
+# ═══ SPA FALLBACK ═══
+/* /index.html 200
