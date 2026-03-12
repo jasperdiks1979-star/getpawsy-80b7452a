@@ -322,6 +322,20 @@ export const Footer = () => {
               </ul>
             </FooterSection>
 
+            {/* Dog Travel, Grooming & More */}
+            <FooterSection title="🐕 Dog Travel & More">
+              <ul className="space-y-3">
+                {footerLinks.dogMoreLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      <span>{link.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </FooterSection>
+
             {/* Cat — secondary, deprioritized */}
             <FooterSection title="🐈 Cat Essentials">
               <ul className="space-y-3">
