@@ -288,6 +288,8 @@ export function getScalingSummary() {
     'micro-intent': SCALING_GUIDES.filter(g => g.cluster === 'micro-intent').length,
     'dog-training': SCALING_GUIDES.filter(g => g.cluster === 'dog-training').length,
     'cat-enrichment': SCALING_GUIDES.filter(g => g.cluster === 'cat-enrichment').length,
+    'dog-travel': SCALING_GUIDES.filter(g => g.cluster === 'dog-travel').length,
+    'dog-grooming': SCALING_GUIDES.filter(g => g.cluster === 'dog-grooming').length,
   };
   const byRole = {
     cornerstone: SCALING_GUIDES.filter(g => g.role === 'cornerstone').length,
