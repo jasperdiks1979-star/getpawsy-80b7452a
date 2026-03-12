@@ -99,6 +99,8 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301
 /robots.txt                /robots.txt                200
 
 # ═══ API PROXY → Edge Functions (MUST be before SPA fallback) ═══
+/api/google-shopping-feed https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200
+/api/google-shopping-feed?* https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200
 /api/health https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/api-health 200
 /api/merchant-audit https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-audit 200
 /api/merchant-audit?* https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-audit 200
