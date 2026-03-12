@@ -98,8 +98,8 @@ const Contact = () => {
     {
       icon: Building2,
       title: 'Location',
-      content: 'Rotterdam, Netherlands',
-      description: 'Serving US customers',
+      content: 'Apeldoorn, Netherlands',
+      description: 'Serving customers across the United States and internationally',
       href: null,
     },
     {
