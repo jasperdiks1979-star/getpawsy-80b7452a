@@ -1655,8 +1655,8 @@ const ProductDetail = () => {
           <RelatedProductsCarousel 
             products={relatedProducts || []}
             isLoading={relatedLoading}
-            title="Related Products for Your Pet"
-            subtitle="Products that complement your choice"
+            title="Customers Also Viewed"
+            subtitle="Popular products from the same category"
             listId="related-products"
             listName="Related Products"
             sourceProductId={product.id}
