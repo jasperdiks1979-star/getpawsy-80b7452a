@@ -1584,6 +1584,12 @@ const ProductDetail = () => {
         {/* Popular Buying Guides — cornerstone authority block */}
         <PopularGuidesBlock compact />
 
+        {/* Product → Collection cross-links */}
+        <ProductPageCrossLinks
+          productCategory={product.category}
+          productName={product.name}
+        />
+
         {/* Explore More in Category — silo closure */}
         {product?.category && (
           <ExploreMoreCategory 
