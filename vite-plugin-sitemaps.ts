@@ -394,73 +394,50 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): string
   const url = `${BASE_URL}/product/${p.slug || p.id}`;
   const img = sanitizeImageUrl(p.image_url || (p.images && p.images[0]) || null);
   const title = buildOptimizedTitle(p);
-  const desc = buildOptimizedDescription(p);
+  const descSource = cleanDescription(p.description);
+  const desc = truncate(descSource || cleanProductName(p.name), 5000);
 
   const priceStr = (v: number) => `${v.toFixed(2)} USD`;
-  let priceXml: string;
-  if (p.compare_at_price && p.compare_at_price > p.price) {
-    priceXml = `      <g:price>${priceStr(p.compare_at_price)}</g:price>\n      <g:sale_price>${priceStr(p.price)}</g:sale_price>`;
-  } else {
-    priceXml = `      <g:price>${priceStr(p.price)}</g:price>`;
-  }
-
-  // Build extra fields
-  let extra = '';
-  // GTIN / identifier handling (Phase 3)
-  if (p.sku) {
-    extra += `      <g:mpn>${esc(p.sku)}</g:mpn>\n`;
-  } else {
-    extra += `      <g:identifier_exists>no</g:identifier_exists>\n`;
-    extra += `      <g:mpn>${esc(p.id)}</g:mpn>\n`;
-  }
-
-  // Additional images — only valid https URLs (Phase 7)
-  if (p.images && p.images.length > 1) {
-    for (const ai of p.images.slice(1, 11)) {
-      const sanitized = sanitizeImageUrl(ai);
-      if (sanitized !== PLACEHOLDER_IMAGE && sanitized !== img) {
-        extra += `      <g:additional_image_link>${esc(sanitized)}</g:additional_image_link>\n`;
-      }
-    }
-  }
-
-  // ALWAYS include normalized shipping_weight
-  const shippingWeight = normalizeShippingWeight(p.weight, p.name);
-  extra += `      <g:shipping_weight>${shippingWeight}</g:shipping_weight>\n`;
-
   const avail = getAvailability(p.stock, p.is_active);
+  const shippingWeight = normalizeShippingWeight(p.weight, p.name);
   const season = getCurrentSeason();
   const margin = p.compare_at_price && p.compare_at_price > 0
     ? ((p.compare_at_price - p.price) / p.compare_at_price * 100)
     : 0;
   const marginTier = margin >= 40 ? 'High-Margin' : margin >= 20 ? 'Mid-Margin' : 'Low-Margin';
   const isBestseller = bestsellersSet.has(p.id);
-  const shippingCost = p.price >= FREE_SHIPPING_THRESHOLD ? '0.00' : '5.99';
 
-  return `    <item>
-      <g:id>${esc(p.id)}</g:id>
-      <g:title>${esc(title)}</g:title>
-      <g:description>${esc(desc)}</g:description>
-      <g:link>${esc(url)}</g:link>
-      <g:image_link>${esc(img)}</g:image_link>
-      <g:availability>${avail}</g:availability>
-${priceXml}
-      <g:condition>new</g:condition>
-      <g:brand>GetPawsy</g:brand>
-      <g:adult>no</g:adult>
-      <g:age_group>adult</g:age_group>
-${extra}      <g:product_type>${esc(getProductType(p.category))}</g:product_type>
-      <g:google_product_category>${esc(getGoogleProductCategory(p.category))}</g:google_product_category>
-      <g:shipping>
-        <g:country>US</g:country>
-        <g:service>Standard</g:service>
-        <g:price>${shippingCost} USD</g:price>
-      </g:shipping>
-      <g:custom_label_0>${marginTier}</g:custom_label_0>
-      <g:custom_label_1>${isBestseller ? 'Bestseller' : 'Standard'}</g:custom_label_1>
-      <g:custom_label_2>${season}</g:custom_label_2>
-      <g:custom_label_3>${p.price >= FREE_SHIPPING_THRESHOLD ? 'Free-Shipping' : 'Paid-Shipping'}</g:custom_label_3>
-    </item>`;
+  const tags: string[] = [
+    `      <g:id>${esc(p.id)}</g:id>`,
+    `      <g:title>${esc(title)}</g:title>`,
+    `      <g:description>${esc(desc)}</g:description>`,
+    `      <g:link>${esc(url)}</g:link>`,
+    `      <g:price>${priceStr(p.price)}</g:price>`,
+    `      <g:availability>${esc(avail)}</g:availability>`,
+    `      <g:image_link>${esc(img)}</g:image_link>`,
+    `      <g:brand>GetPawsy</g:brand>`,
+    `      <g:condition>new</g:condition>`,
+    `      <g:google_product_category>${esc(getGoogleProductCategory(p.category))}</g:google_product_category>`,
+    `      <g:shipping_weight>${esc(shippingWeight)}</g:shipping_weight>`,
+  ];
+
+  if (p.compare_at_price && p.compare_at_price > p.price) {
+    tags.push(`      <g:sale_price>${priceStr(p.price)}</g:sale_price>`);
+  }
+
+  if (p.sku) {
+    tags.push(`      <g:mpn>${esc(p.sku)}</g:mpn>`);
+  } else {
+    tags.push(`      <g:identifier_exists>no</g:identifier_exists>`);
+    tags.push(`      <g:mpn>${esc(p.id)}</g:mpn>`);
+  }
+
+  tags.push(`      <g:product_type>${esc(getProductType(p.category))}</g:product_type>`);
+  tags.push(`      <g:custom_label_0>${esc(marginTier)}</g:custom_label_0>`);
+  tags.push(`      <g:custom_label_1>${isBestseller ? 'Bestseller' : 'Standard'}</g:custom_label_1>`);
+  tags.push(`      <g:custom_label_2>${esc(season)}</g:custom_label_2>`);
+
+  return `    <item>\n${tags.join('\n')}\n    </item>`;
 }
 
 async function buildMerchantFeed(maxItems?: number): Promise<string> {
