@@ -674,82 +674,63 @@ export default function merchantFeedPlugin(): Plugin {
 
       console.log(`[sitemaps] ✅ All sitemaps validated (${sitemapCount} index entries, ${allRefs.length} child files verified)`);
 
-      // ── Generate merchant feed XMLs into /public so Vite copies them to /dist ──
-      console.log('[xml-plugin] Generating merchant feed XML into /public...');
-      try {
-        const [merchantFeed, googleShoppingFeed, diagnostics] = await Promise.all([
-          buildMerchantFeed().catch(() => FALLBACK_FEED),
-          buildMerchantFeed(290).catch(() => FALLBACK_FEED),
-          buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
-        ]);
-
-        const feedFiles: [string, string][] = [
-          ['merchant-feed.xml', merchantFeed],
-          ['google-shopping-feed.xml', googleShoppingFeed],
-          ['merchant-diagnostics.xml', diagnostics],
-        ];
-
-        for (const [name, xml] of feedFiles) {
-          writeFileSync(join(publicDir, name), xml, 'utf-8');
-          console.log(`[xml-plugin] ✓ /public/${name} (${xml.length} bytes)`);
+      // ── Feed source of truth: edge proxy only (no static feed artifacts) ──
+      const staticFeedFiles = ['merchant-feed.xml', 'google-shopping-feed.xml'];
+      for (const name of staticFeedFiles) {
+        const filePath = join(publicDir, name);
+        if (existsSync(filePath)) {
+          unlinkSync(filePath);
+          console.log(`[xml-plugin] removed stale /public/${name}`);
         }
+      }
+
+      // Keep diagnostics static file only
+      try {
+        const diagnostics = await buildMerchantDiagnostics();
+        writeFileSync(join(publicDir, 'merchant-diagnostics.xml'), diagnostics, 'utf-8');
+        console.log(`[xml-plugin] ✓ /public/merchant-diagnostics.xml (${diagnostics.length} bytes)`);
       } catch (err) {
-        console.warn('[xml-plugin] ⚠️ Merchant feed pre-generation failed, writing fallbacks:', err);
-        writeFileSync(join(publicDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
-        writeFileSync(join(publicDir, 'google-shopping-feed.xml'), FALLBACK_FEED, 'utf-8');
-        writeFileSync(join(publicDir, 'merchant-diagnostics.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`, 'utf-8');
+        console.warn('[xml-plugin] ⚠️ merchant diagnostics generation failed, writing fallback:', err);
+        writeFileSync(
+          join(publicDir, 'merchant-diagnostics.xml'),
+          `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`,
+          'utf-8'
+        );
       }
 
       console.log('[sitemaps] ═══════════════════════════════════════════\n');
     },
 
-    // ── PHASE 2: Generate merchant feed into /dist AFTER build ──
+    // ── PHASE 2: Enforce proxy-only feed source in /dist ──
     async closeBundle() {
       const outDir = resolvedOutDir;
       mkdirSync(outDir, { recursive: true });
-      console.log('[xml-plugin] Generating merchant feed XML files...');
 
-      // Write fallback files FIRST
-      const fallbackNames = ['merchant-feed.xml', 'google-shopping-feed.xml', 'merchant-diagnostics.xml'];
-      for (const name of fallbackNames) {
-        let fallback: string;
-        if (name.includes('merchant-feed') || name.includes('google-shopping-feed')) {
-          fallback = FALLBACK_FEED;
-        } else {
-          fallback = `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`;
+      const staticFeedFiles = ['merchant-feed.xml', 'google-shopping-feed.xml'];
+      for (const name of staticFeedFiles) {
+        const filePath = join(outDir, name);
+        if (existsSync(filePath)) {
+          unlinkSync(filePath);
+          console.log(`[xml-plugin] removed stale /dist/${name}`);
         }
-        writeFileSync(join(outDir, name), fallback, 'utf-8');
       }
-      console.log('[xml-plugin] ✓ Fallback merchant files written');
 
       try {
-        await Promise.race([
-          (async () => {
-            const [merchantFeed, googleShoppingFeed, diagnostics] = await Promise.all([
-              buildMerchantFeed().catch(() => FALLBACK_FEED),
-              buildMerchantFeed(290).catch(() => FALLBACK_FEED),
-              buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
-            ]);
-
-            const files: [string, string][] = [
-              ['merchant-feed.xml', merchantFeed],
-              ['google-shopping-feed.xml', googleShoppingFeed],
-              ['merchant-diagnostics.xml', diagnostics],
-            ];
-
-            for (const [name, xml] of files) {
-              writeFileSync(join(outDir, name), xml, 'utf-8');
-              console.log(`[xml-plugin] ✓ ${name} (${xml.length} bytes)`);
-            }
-
-            console.log('[xml-plugin] Done — merchant feed files generated.');
-          })(),
-          new Promise<void>((_, reject) =>
-            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
+        const diagnostics = await Promise.race([
+          buildMerchantDiagnostics(),
+          new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error('Merchant diagnostics generation timed out')), 30000)
           ),
         ]);
+        writeFileSync(join(outDir, 'merchant-diagnostics.xml'), diagnostics, 'utf-8');
+        console.log(`[xml-plugin] ✓ merchant-diagnostics.xml (${diagnostics.length} bytes)`);
       } catch (err) {
-        console.warn('[xml-plugin] ⚠️ Merchant feed generation failed/timed out, fallbacks in place:', err);
+        console.warn('[xml-plugin] ⚠️ Merchant diagnostics generation failed/timed out, fallback in place:', err);
+        writeFileSync(
+          join(outDir, 'merchant-diagnostics.xml'),
+          `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`,
+          'utf-8'
+        );
       }
 
       // ── PHASE 3: Post-build dist verification for sitemaps ──
