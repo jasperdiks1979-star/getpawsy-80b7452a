@@ -56,6 +56,7 @@ import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
 import { HeroProductBoost } from '@/components/products/HeroProductBoost';
 import { ProductBundleUpsell } from '@/components/products/ProductBundleUpsell';
 import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
+import { ProductPageCrossLinks } from '@/components/seo/ProductPageCrossLinks';
 import { ProductUseCases } from '@/components/products/ProductUseCases';
 import { CatTreeAuthorityBadges } from '@/components/products/CatTreeAuthorityBadges';
 import { PriceAnchoringSection } from '@/components/products/PriceAnchoringSection';
@@ -1583,6 +1584,12 @@ const ProductDetail = () => {
         {/* Popular Buying Guides — cornerstone authority block */}
         <PopularGuidesBlock compact />
 
+        {/* Product → Collection cross-links */}
+        <ProductPageCrossLinks
+          productCategory={product.category}
+          productName={product.name}
+        />
+
         {/* Explore More in Category — silo closure */}
         {product?.category && (
           <ExploreMoreCategory 
@@ -1648,8 +1655,8 @@ const ProductDetail = () => {
           <RelatedProductsCarousel 
             products={relatedProducts || []}
             isLoading={relatedLoading}
-            title="Related Products for Your Pet"
-            subtitle="Products that complement your choice"
+            title="Customers Also Viewed"
+            subtitle="Popular products from the same category"
             listId="related-products"
             listName="Related Products"
             sourceProductId={product.id}

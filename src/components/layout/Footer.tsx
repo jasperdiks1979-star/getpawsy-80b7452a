@@ -139,12 +139,23 @@ export const Footer = () => {
       { label: 'Dog Training Guide Hub', href: '/dog/best-dog-training-and-travel-gear-2026' },
       { label: 'Training Tips Blog', href: '/blog?category=dogs' },
     ],
+    // Dog Travel & Grooming — secondary authority silos
+    dogMoreLinks: [
+      { label: 'Dog Travel Accessories', href: '/collections/dog-travel-accessories' },
+      { label: 'Dog Car Seats', href: '/collections/best-dog-car-seats' },
+      { label: 'Pet Strollers', href: '/collections/best-pet-strollers' },
+      { label: 'Dog Grooming Kits', href: '/collections/best-dog-grooming-kits' },
+      { label: 'Dog Beds & Orthopedic', href: '/collections/orthopedic-calming-dog-beds' },
+      { label: 'Dog Harnesses', href: '/collections/best-dog-harnesses' },
+      { label: 'Dog Leashes', href: '/collections/dog-leash-control' },
+    ],
     // Cat — deprioritized, secondary
     catLinks: [
       { label: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos' },
       { label: 'Cat Litter Boxes', href: '/collections/best-cat-litter-boxes' },
       { label: 'Cat Scratching Posts', href: '/collections/best-cat-scratching-posts' },
       { label: 'Cat Carriers', href: '/collections/best-cat-carriers' },
+      { label: 'Cat Toys', href: '/collections/best-interactive-cat-toys' },
     ],
     // Pet Care Guides — topical authority links
     guideLinks: [
@@ -301,6 +312,20 @@ export const Footer = () => {
             <FooterSection title="🐕 Dog Training">
               <ul className="space-y-3">
                 {footerLinks.dogTrainingLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
+                      <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      <span>{link.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </FooterSection>
+
+            {/* Dog Travel, Grooming & More */}
+            <FooterSection title="🐕 Dog Travel & More">
+              <ul className="space-y-3">
+                {footerLinks.dogMoreLinks.map((link) => (
                   <li key={link.href}>
                     <Link to={link.href} className="text-sm text-background/70 hover:text-primary transition-colors inline-flex items-center gap-1 group">
                       <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />

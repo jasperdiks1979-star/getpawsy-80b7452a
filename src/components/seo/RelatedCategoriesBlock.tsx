@@ -183,6 +183,76 @@ const RELATED_CATEGORIES: Record<string, RelatedCategory[]> = {
     { slug: 'best-interactive-cat-toys', label: 'Cat Toys', description: 'Enrichment toys for indoor cats' },
     { slug: 'best-cat-beds', label: 'Cat Beds', description: 'Cozy post-play resting spots' },
   ],
+
+  // ── Dog Grooming Cluster ──
+  'best-dog-grooming-kits': [
+    { slug: 'best-dog-brushes', label: 'Dog Brushes', description: 'Deshedding & grooming brushes' },
+    { slug: 'best-dog-shampoo', label: 'Dog Shampoo', description: 'Natural & medicated shampoos' },
+    { slug: 'dog-nail-clippers', label: 'Dog Nail Clippers', description: 'Safe trimming tools for all breeds' },
+    { slug: 'dogs', label: 'All Dog Products', description: 'Browse the full dog collection' },
+  ],
+  'best-dog-brushes': [
+    { slug: 'best-dog-grooming-kits', label: 'Dog Grooming Kits', description: 'Complete grooming tool sets' },
+    { slug: 'best-dog-shampoo', label: 'Dog Shampoo', description: 'Coat care shampoos' },
+    { slug: 'dogs', label: 'All Dog Products', description: 'Browse the full range' },
+  ],
+
+  // ── Dog Training Sub-Clusters ──
+  'dog-potty-training': [
+    { slug: 'puppy-essentials', label: 'Puppy Essentials', description: 'Complete starter kits for new puppies' },
+    { slug: 'dog-training-accessories', label: 'Training Accessories', description: 'Clickers, treat pouches & aids' },
+    { slug: 'dog-leash-control', label: 'Leash & Control', description: 'No-pull harnesses & leashes' },
+    { slug: 'dog-training-tools', label: 'All Training Tools', description: 'Browse the full training collection' },
+  ],
+  'dog-leash-control': [
+    { slug: 'best-dog-harnesses', label: 'Dog Harnesses', description: 'No-pull walking gear' },
+    { slug: 'dog-training-tools', label: 'Training Tools', description: 'Clickers & correction aids' },
+    { slug: 'dog-potty-training', label: 'Potty Training', description: 'Pads, mats & housebreaking aids' },
+    { slug: 'dog-anti-bark', label: 'Anti-Bark Solutions', description: 'Humane bark control' },
+  ],
+  'dog-anti-bark': [
+    { slug: 'dog-training-tools', label: 'Training Tools', description: 'Full training accessories range' },
+    { slug: 'dog-leash-control', label: 'Leash Control', description: 'No-pull harnesses & leashes' },
+    { slug: 'puppy-essentials', label: 'Puppy Essentials', description: 'Starter kits for puppies' },
+  ],
+  'puppy-essentials': [
+    { slug: 'dog-potty-training', label: 'Potty Training', description: 'Pads & housebreaking solutions' },
+    { slug: 'dog-training-accessories', label: 'Training Accessories', description: 'Clickers & treat pouches' },
+    { slug: 'best-interactive-dog-toys', label: 'Puppy Toys', description: 'Interactive enrichment toys' },
+    { slug: 'dogs', label: 'All Dog Products', description: 'Browse the full range' },
+  ],
+  'dog-training-accessories': [
+    { slug: 'dog-training-tools', label: 'All Training Tools', description: 'Full training collection' },
+    { slug: 'dog-leash-control', label: 'Leash & Control', description: 'No-pull walking gear' },
+    { slug: 'best-interactive-dog-toys', label: 'Dog Toys', description: 'Puzzle & enrichment toys' },
+  ],
+
+  // ── Dog Beds Sub-Clusters ──
+  'best-dog-beds-for-large-dogs': [
+    { slug: 'orthopedic-calming-dog-beds', label: 'Orthopedic Dog Beds', description: 'Joint-support beds' },
+    { slug: 'memory-foam-dog-beds', label: 'Memory Foam Beds', description: 'Pressure-relieving comfort' },
+    { slug: 'waterproof-dog-beds', label: 'Waterproof Beds', description: 'Easy-clean options for large breeds' },
+    { slug: 'dogs', label: 'All Dog Products', description: 'Browse the full range' },
+  ],
+  'dog-beds-for-senior-dogs': [
+    { slug: 'orthopedic-calming-dog-beds', label: 'Orthopedic Dog Beds', description: 'Joint & hip support' },
+    { slug: 'memory-foam-dog-beds', label: 'Memory Foam Beds', description: 'Premium pressure relief' },
+    { slug: 'best-dog-beds-for-large-dogs', label: 'Large Dog Beds', description: 'Extra-large options' },
+  ],
+
+  // ── Cat Beds ──
+  'best-cat-beds': [
+    { slug: 'cat-trees-and-condos', label: 'Cat Trees & Condos', description: 'Climbing + resting combos' },
+    { slug: 'best-interactive-cat-toys', label: 'Cat Toys', description: 'Enrichment toys for indoor cats' },
+    { slug: 'cats', label: 'All Cat Products', description: 'Browse the full cat range' },
+  ],
+
+  // ── Automatic Cat Feeders ──
+  'automatic-cat-feeders': [
+    { slug: 'best-cat-litter-boxes', label: 'Litter Boxes', description: 'Automated litter solutions' },
+    { slug: 'best-interactive-cat-toys', label: 'Cat Toys', description: 'Interactive enrichment toys' },
+    { slug: 'cats', label: 'All Cat Products', description: 'Browse the full cat range' },
+  ],
 };
 
 interface RelatedCategoriesBlockProps {
