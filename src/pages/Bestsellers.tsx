@@ -618,7 +618,7 @@ const Bestsellers = () => {
                 <Truck className="w-7 h-7 text-primary" />
               </div>
               <h3 className="font-semibold mb-2">Free US Shipping</h3>
-              <p className="text-sm text-muted-foreground">Free shipping on all orders over $35. Standard delivery 7–15 business days from US fulfillment centers.</p>
+              <p className="text-sm text-muted-foreground">Free shipping on all orders over $35. Standard delivery 7–15 business days.</p>
             </div>
             <div className="text-center">
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
