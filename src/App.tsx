@@ -657,6 +657,7 @@ const App = () => {
                         <Route path="integrations/merchant/readiness" element={<Suspense fallback={<RouteLoader />}><MerchantReadinessPage /></Suspense>} />
                         <Route path="integrations/merchant/health" element={<Suspense fallback={<RouteLoader />}><MerchantHealthPage /></Suspense>} />
                         <Route path="shopping-optimizer" element={<Suspense fallback={<RouteLoader />}><ShoppingOptimizerPage /></Suspense>} />
+                        <Route path="image-compliance" element={<Suspense fallback={<RouteLoader />}><ImageCompliancePage /></Suspense>} />
                       </Route>
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />
