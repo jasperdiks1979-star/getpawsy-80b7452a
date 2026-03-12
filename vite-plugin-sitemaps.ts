@@ -470,9 +470,8 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
     <title>GetPawsy Product Feed</title>
-    <link>${BASE_URL}/</link>
-    <description>Google Merchant Center US Shopping feed – GetPawsy pet supplies.</description>
-    <language>en-US</language>
+    <link>${BASE_URL}</link>
+    <description>GetPawsy Google Merchant Center Feed</description>
     <lastBuildDate>${now}</lastBuildDate>
 ${items}
   </channel>
