@@ -36,10 +36,10 @@ export function SalesAccelerationBanner() {
       <div className="container">
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-2">
-            Top Rated by Pet Parents
+            Popular Categories
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Expert-vetted products trusted by thousands of US pet owners. Free shipping on orders over $35.
+            Carefully selected pet products with free shipping on orders over $35.
           </p>
         </div>
 
