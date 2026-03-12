@@ -263,6 +263,7 @@ const MerchantOAuthCallback = lazyWithRetry(() => import("./pages/MerchantOAuthC
 const ShoppingOptimizerPage = lazyWithRetry(() => import("./pages/admin/ShoppingOptimizerPage"));
 const ImageCompliancePage = lazyWithRetry(() => import("./pages/admin/ImageCompliancePage"));
 const CornerstoneEnginePage = lazyWithRetry(() => import("./pages/admin/CornerstoneEnginePage"));
+const MerchantComplianceReport = lazyWithRetry(() => import("./pages/admin/MerchantComplianceReport"));
 const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
 const RecentProducts = lazyWithRetry(() => import("./pages/RecentProducts"));
 const TrendingProducts = lazyWithRetry(() => import("./pages/TrendingProducts"));
