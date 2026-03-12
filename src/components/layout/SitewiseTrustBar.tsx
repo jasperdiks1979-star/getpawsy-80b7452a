@@ -31,7 +31,7 @@ export function SitewiseTrustBar() {
         </div>
       </div>
       <p className="text-center text-xs text-muted-foreground/60 mt-2">
-        Secure checkout and customer support available for all orders. Fast shipping to customers in the United States. Customer service hours: Monday – Friday, 09:00 – 17:00 CET.
+        Secure checkout and customer support available for all orders. Estimated delivery: 5–10 business days to the United States. Customer service hours: Monday – Friday, 09:00 – 17:00 CET.
       </p>
     </section>
   );
