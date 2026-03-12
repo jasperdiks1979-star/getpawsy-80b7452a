@@ -239,21 +239,38 @@ export const Footer = () => {
                 </span>
               </Link>
                <p className="text-background/70 leading-relaxed max-w-sm">
-                <strong className="text-background">GetPawsy Pet Supplies</strong><br />
-                Customer Support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>
+                <strong className="text-background">GetPawsy</strong><br />
+                Operated by Skidzo
                </p>
+
+               {/* Business Location */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Business Location</p>
+                 <p className="text-sm text-background/70">Apeldoorn, Netherlands</p>
+               </div>
+
+               {/* Customer Support */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Customer Support</p>
+                 <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sm text-primary hover:underline">{SUPPORT_EMAIL}</a>
+               </div>
+
+               {/* Service Area */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Service Area</p>
+                 <p className="text-sm text-background/70">Serving customers across the United States and internationally</p>
+               </div>
+
+               {/* Payments */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Payments</p>
+                 <p className="text-sm text-background/70">Visa, Mastercard, Apple Pay, Google Pay</p>
+               </div>
 
                {/* Customer Service Hours */}
                <div className="space-y-1 pt-2">
                  <p className="text-sm font-semibold text-background">Customer Service Hours</p>
-                 <p className="text-sm text-background/70">Monday – Friday</p>
-                 <p className="text-sm text-background/70">09:00 – 17:00 CET</p>
-               </div>
-
-               {/* Business Address */}
-               <div className="space-y-1 pt-2">
-                 <p className="text-sm font-semibold text-background">Business Address</p>
-                 <p className="text-sm text-background/70">Rotterdam, Netherlands</p>
+                 <p className="text-sm text-background/70">Monday – Friday, 09:00 – 17:00 CET</p>
                </div>
               
               {/* Social Links */}
