@@ -5,14 +5,14 @@
 # =============================================================
 
 # ═══ XML feeds → Edge Function proxy (MUST be first) ═══
-/google-shopping-feed.xml  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
-/merchant-feed.xml         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
+/google-shopping-feed.xml  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200
+/merchant-feed.xml         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200
 
 # www -> apex (301 permanent, preserves path + query)
-https://www.getpawsy.pet/* https://getpawsy.pet/:splat 301!
+https://www.getpawsy.pet/* https://getpawsy.pet/:splat 301
 
 # lovable.app preview -> apex (301 permanent)
-https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
+https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301
 
 # ═══ POLICY PATH ALIASES (Merchant Center compliance) ═══
 /policies/shipping  /shipping   301
@@ -61,29 +61,29 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
 /category/*         /products           301
 
 # ═══ OLD GUIDE SLUG REDIRECTS ═══
-/guides/dog-leash-training              /guides/leash-training-dog-step-by-step  301!
-/guides/dog-potty-training-tips         /guides/dog-potty-training-complete-guide 301!
-/guides/puppy-leash-training            /guides/leash-training-dog-step-by-step  301!
-/guides/potty-training-guide            /guides/dog-potty-training-complete-guide 301!
-/guides/no-pull-harness-guide           /guides/leash-training-dog-step-by-step  301!
-/guides/puppy-training-tips             /guides/puppy-training-first-30-days     301!
-/guides/dog-training-basics             /guides/best-dog-training-tools          301!
-/guides/how-to-stop-barking             /guides/how-to-stop-dog-barking          301!
-/guides/stop-barking-guide              /guides/how-to-stop-dog-barking          301!
-/guides/leash-training-guide            /guides/leash-training-dog-step-by-step  301!
-/guides/potty-training-tips             /guides/dog-potty-training-complete-guide 301!
-/guides/crate-training                  /guides/best-dog-training-tools          301!
-/guides/dog-collar-guide                /guides/leash-training-dog-step-by-step  301!
-/guides/dog-collar-sizing-guide         /guides/leash-training-dog-step-by-step  301!
-/guides/best-dog-collars                /guides/leash-training-dog-step-by-step  301!
-/guides/collar-vs-harness               /guides/leash-training-dog-step-by-step  301!
-/guides/harness-training-guide          /guides/leash-training-dog-step-by-step  301!
-/guides/dog-harness-guide               /guides/leash-training-dog-step-by-step  301!
-/guides/dog-training-guide              /guides/best-dog-training-tools          301!
-/guides/puppy-training-guide            /guides/puppy-training-first-30-days     301!
-/guides/barking-solutions               /guides/how-to-stop-dog-barking          301!
-/guides/crate-training-tips             /guides/puppy-training-first-30-days     301!
-/guides/crate-training-guide            /guides/puppy-training-first-30-days     301!
+/guides/dog-leash-training              /guides/leash-training-dog-step-by-step  301
+/guides/dog-potty-training-tips         /guides/dog-potty-training-complete-guide 301
+/guides/puppy-leash-training            /guides/leash-training-dog-step-by-step  301
+/guides/potty-training-guide            /guides/dog-potty-training-complete-guide 301
+/guides/no-pull-harness-guide           /guides/leash-training-dog-step-by-step  301
+/guides/puppy-training-tips             /guides/puppy-training-first-30-days     301
+/guides/dog-training-basics             /guides/best-dog-training-tools          301
+/guides/how-to-stop-barking             /guides/how-to-stop-dog-barking          301
+/guides/stop-barking-guide              /guides/how-to-stop-dog-barking          301
+/guides/leash-training-guide            /guides/leash-training-dog-step-by-step  301
+/guides/potty-training-tips             /guides/dog-potty-training-complete-guide 301
+/guides/crate-training                  /guides/best-dog-training-tools          301
+/guides/dog-collar-guide                /guides/leash-training-dog-step-by-step  301
+/guides/dog-collar-sizing-guide         /guides/leash-training-dog-step-by-step  301
+/guides/best-dog-collars                /guides/leash-training-dog-step-by-step  301
+/guides/collar-vs-harness               /guides/leash-training-dog-step-by-step  301
+/guides/harness-training-guide          /guides/leash-training-dog-step-by-step  301
+/guides/dog-harness-guide               /guides/leash-training-dog-step-by-step  301
+/guides/dog-training-guide              /guides/best-dog-training-tools          301
+/guides/puppy-training-guide            /guides/puppy-training-first-30-days     301
+/guides/barking-solutions               /guides/how-to-stop-dog-barking          301
+/guides/crate-training-tips             /guides/puppy-training-first-30-days     301
+/guides/crate-training-guide            /guides/puppy-training-first-30-days     301
 
 # ═══ MISC LEGACY PATTERNS ═══
 /products/          /products   301
