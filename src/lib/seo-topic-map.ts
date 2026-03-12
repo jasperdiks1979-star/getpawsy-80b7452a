@@ -158,6 +158,9 @@ export const TOPIC_CLUSTERS: TopicCluster[] = [
     primaryKeyword: 'best dog training tools',
     guidesSlugs: [
       'best-dog-training-tools',
+      'best-dog-training-collar',
+      'dog-leash-control-guide',
+      'dog-behavior-training-guide',
       'puppy-training-first-30-days',
       'leash-training-dog-step-by-step',
       'how-to-stop-dog-barking',
