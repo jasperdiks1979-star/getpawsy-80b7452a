@@ -12,8 +12,14 @@ const FREE_SHIPPING_THRESHOLD = 49;
 
 // ── XML helpers ──────────────────────────────────────────────────────
 
-function esc(text: string): string {
+function stripInvalidXmlChars(text: string): string {
   return text
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .replace(/[\uD800-\uDFFF]/g, "");
+}
+
+function esc(text: string): string {
+  return stripInvalidXmlChars(text)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
