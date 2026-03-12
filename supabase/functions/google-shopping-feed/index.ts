@@ -95,17 +95,37 @@ function buildCleanDescription(p: Product): string {
 function getGoogleProductCategory(cat: string | null): string {
   if (!cat) return "Animals & Pet Supplies > Pet Supplies";
   const c = cat.toLowerCase();
+  // Dog categories
   if (c.includes("dog") && c.includes("bed")) return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Beds";
   if (c.includes("dog") && c.includes("toy")) return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Toys";
   if (c.includes("dog") && (c.includes("collar") || c.includes("leash"))) return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Collars & Leads";
   if (c.includes("dog") && c.includes("bowl")) return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Bowls & Feeders";
+  if (c.includes("dog") && c.includes("house")) return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Houses";
+  if (c.includes("dog") && c.includes("carrier")) return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Carriers & Travel";
+  if (c.includes("dog") && c.includes("groom")) return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Grooming Supplies";
+  if (c.includes("dog") && c.includes("cloth")) return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Apparel";
+  if (c.includes("dog") && c.includes("train")) return "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Training Aids";
   if (c.includes("dog")) return "Animals & Pet Supplies > Pet Supplies > Dog Supplies";
-  if (c.includes("cat") && (c.includes("tree") || c.includes("tower"))) return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture";
+  // Cat categories
+  if (c.includes("cat") && (c.includes("tree") || c.includes("tower") || c.includes("condo"))) return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture";
   if (c.includes("cat") && c.includes("litter")) return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Litter Box Supplies";
   if (c.includes("cat") && c.includes("toy")) return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Toys";
   if (c.includes("cat") && c.includes("scratch")) return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture";
+  if (c.includes("cat") && c.includes("bed")) return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Beds";
+  if (c.includes("cat") && c.includes("carrier")) return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Carriers";
+  if (c.includes("cat") && (c.includes("bowl") || c.includes("feeder") || c.includes("fountain"))) return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Bowls & Feeders";
+  if (c.includes("cat") && (c.includes("furniture") || c.includes("perch") || c.includes("hammock"))) return "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture";
   if (c.includes("cat")) return "Animals & Pet Supplies > Pet Supplies > Cat Supplies";
+  // Small pets
+  if (c.includes("hamster") && c.includes("cage")) return "Animals & Pet Supplies > Pet Supplies > Small Animal Supplies > Small Animal Habitats & Cages";
+  if (c.includes("rabbit") || c.includes("hutch")) return "Animals & Pet Supplies > Pet Supplies > Small Animal Supplies > Small Animal Habitats & Cages";
+  if (c.includes("small pet") || c.includes("guinea")) return "Animals & Pet Supplies > Pet Supplies > Small Animal Supplies";
+  // Bird categories
+  if (c.includes("bird") && (c.includes("feeder") || c.includes("bowl"))) return "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Food & Treats";
+  if (c.includes("bird") && (c.includes("house") || c.includes("nest") || c.includes("coop") || c.includes("chicken"))) return "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cages & Stands";
   if (c.includes("bird")) return "Animals & Pet Supplies > Pet Supplies > Bird Supplies";
+  // Reptile
+  if (c.includes("reptile") || c.includes("tortoise")) return "Animals & Pet Supplies > Pet Supplies > Reptile & Amphibian Supplies";
   return "Animals & Pet Supplies > Pet Supplies";
 }
 
