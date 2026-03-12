@@ -4357,6 +4357,51 @@ export type Database = {
           },
         ]
       }
+      product_image_compliance: {
+        Row: {
+          created_at: string
+          id: string
+          image_position: number
+          image_url: string
+          is_compliant: boolean | null
+          product_id: string
+          quality_score: string
+          scan_model: string | null
+          scan_result: Json | null
+          scanned_at: string | null
+          updated_at: string
+          violations: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_position?: number
+          image_url: string
+          is_compliant?: boolean | null
+          product_id: string
+          quality_score?: string
+          scan_model?: string | null
+          scan_result?: Json | null
+          scanned_at?: string | null
+          updated_at?: string
+          violations?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_position?: number
+          image_url?: string
+          is_compliant?: boolean | null
+          product_id?: string
+          quality_score?: string
+          scan_model?: string | null
+          scan_result?: Json | null
+          scanned_at?: string | null
+          updated_at?: string
+          violations?: Json | null
+        }
+        Relationships: []
+      }
       product_matches: {
         Row: {
           competitor_product_id: string

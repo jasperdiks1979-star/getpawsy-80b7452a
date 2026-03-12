@@ -261,6 +261,7 @@ const MerchantReadinessPage = lazyWithRetry(() => import("./pages/admin/Merchant
 const MerchantHealthPage = lazyWithRetry(() => import("./pages/admin/MerchantHealthPage"));
 const MerchantOAuthCallback = lazyWithRetry(() => import("./pages/MerchantOAuthCallback"));
 const ShoppingOptimizerPage = lazyWithRetry(() => import("./pages/admin/ShoppingOptimizerPage"));
+const ImageCompliancePage = lazyWithRetry(() => import("./pages/admin/ImageCompliancePage"));
 const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
 const RecentProducts = lazyWithRetry(() => import("./pages/RecentProducts"));
 const TrendingProducts = lazyWithRetry(() => import("./pages/TrendingProducts"));
@@ -656,6 +657,7 @@ const App = () => {
                         <Route path="integrations/merchant/readiness" element={<Suspense fallback={<RouteLoader />}><MerchantReadinessPage /></Suspense>} />
                         <Route path="integrations/merchant/health" element={<Suspense fallback={<RouteLoader />}><MerchantHealthPage /></Suspense>} />
                         <Route path="shopping-optimizer" element={<Suspense fallback={<RouteLoader />}><ShoppingOptimizerPage /></Suspense>} />
+                        <Route path="image-compliance" element={<Suspense fallback={<RouteLoader />}><ImageCompliancePage /></Suspense>} />
                       </Route>
                       
                       <Route path="*" element={<Suspense fallback={<RouteLoader />}><NotFound /></Suspense>} />

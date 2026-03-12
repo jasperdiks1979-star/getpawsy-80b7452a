@@ -612,7 +612,31 @@ Deno.serve(async (req: Request) => {
       }
 
       // Additional images — validate each, drop invalid
+      // Also check image compliance scores when available
       const additionalImages: string[] = [];
+      
+      // Pre-fetch compliance data for this product (if available)
+      const { data: complianceRecords } = await supabase
+        .from("product_image_compliance")
+        .select("image_url, quality_score, is_compliant")
+        .eq("product_id", p.id);
+      const complianceMap = new Map<string, { score: string; compliant: boolean }>();
+      if (complianceRecords) {
+        for (const cr of complianceRecords) {
+          complianceMap.set(cr.image_url, { score: cr.quality_score, compliant: cr.is_compliant });
+        }
+      }
+
+      // Check primary image compliance — skip product if primary scored "low"
+      const primaryCompliance = complianceMap.get(imageUrl) || complianceMap.get(p.image_url || "");
+      if (primaryCompliance && primaryCompliance.score === "low") {
+        exclusionReport["image_compliance_low"] = (exclusionReport["image_compliance_low"] || 0) + 1;
+        if (imageFailuresSample.length < 10) {
+          imageFailuresSample.push({ url: (p.image_url || "").substring(0, 100), reason: "compliance:low_quality_primary" });
+        }
+        continue;
+      }
+
       if (SEND_ADDITIONAL_IMAGES && p.images && Array.isArray(p.images)) {
         for (const img of (p.images as string[]).slice(0, 10)) {
           if (!img || typeof img !== "string") { additionalImagesRemovedCount++; continue; }
@@ -624,6 +648,17 @@ Deno.serve(async (req: Request) => {
             }
             continue;
           }
+
+          // Check compliance score — skip "low" rated additional images
+          const imgCompliance = complianceMap.get(img);
+          if (imgCompliance && imgCompliance.score === "low") {
+            additionalImagesRemovedCount++;
+            if (imageFailuresSample.length < 10) {
+              imageFailuresSample.push({ url: img.substring(0, 100), reason: "additional:compliance_low" });
+            }
+            continue;
+          }
+
           const cldResult = rewriteCloudinaryUrl(img);
           const imgToValidate = cldResult.rewritten ? cldResult.url : img;
           if (cldResult.rewritten) cloudinaryRewriteCount++;
@@ -646,6 +681,9 @@ Deno.serve(async (req: Request) => {
           }
         }
       }
+
+      // Cap additional images at 4 (Google Shopping best practice)
+      const cappedAdditionalImages = additionalImages.slice(0, 4);
 
       // Stable offer ID
       const offerId = buildStableOfferId(p);
@@ -684,8 +722,8 @@ Deno.serve(async (req: Request) => {
         googleProduct.googleProductCategory = categoryId;
       }
 
-      if (additionalImages.length > 0) {
-        googleProduct.additionalImageLinks = additionalImages;
+      if (cappedAdditionalImages.length > 0) {
+        googleProduct.additionalImageLinks = cappedAdditionalImages;
       }
 
       payloads.push(googleProduct);
