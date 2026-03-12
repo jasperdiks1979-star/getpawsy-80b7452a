@@ -45,8 +45,15 @@ async function supaRest<T>(table: string, params: string): Promise<T[]> {
 
 // ── XML helpers ───────────────────────────────────────────────────────
 
-function esc(text: string): string {
+function stripInvalidXmlChars(text: string): string {
   return text
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .replace(/[\uD800-\uDFFF]/g, '');
+}
+
+function esc(text: string): string {
+  const safe = stripInvalidXmlChars(text);
+  return safe
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
