@@ -113,7 +113,7 @@ export function CatTreeAuthorityBadges({ productName, category, price, weight }:
         {/* Authority cue for multi-cat */}
         {(price >= 120 || /multi/i.test(name)) && (
           <p className="text-xs text-primary/80 font-medium mt-1">
-            ⭐ Top Choice for Multi-Cat Homes • Most Stable Design in Category
+            Suitable for multi-cat households
           </p>
         )}
       </div>

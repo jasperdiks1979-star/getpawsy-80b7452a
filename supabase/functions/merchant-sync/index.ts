@@ -627,14 +627,37 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // Check primary image compliance — skip product if primary scored "low"
+      // Check primary image compliance — try to swap to a clean alternate before blocking
       const primaryCompliance = complianceMap.get(imageUrl) || complianceMap.get(p.image_url || "");
       if (primaryCompliance && primaryCompliance.score === "low") {
-        exclusionReport["image_compliance_low"] = (exclusionReport["image_compliance_low"] || 0) + 1;
-        if (imageFailuresSample.length < 10) {
-          imageFailuresSample.push({ url: (p.image_url || "").substring(0, 100), reason: "compliance:low_quality_primary" });
+        // Try to find a compliant alternate image from the product's image set
+        let swapped = false;
+        if (p.images && Array.isArray(p.images)) {
+          for (const altImg of (p.images as string[])) {
+            if (!altImg || typeof altImg !== "string" || !altImg.startsWith("http")) continue;
+            if (altImg === p.image_url || altImg === imageUrl) continue;
+            const altCompliance = complianceMap.get(altImg);
+            // Accept if not scored, or scored medium/high
+            if (!altCompliance || altCompliance.score !== "low") {
+              const altResult = await validateImageLive(altImg);
+              if (altResult.valid) {
+                imageUrl = altResult.finalUrl;
+                swapped = true;
+                exclusionReport["image_compliance_swapped"] = (exclusionReport["image_compliance_swapped"] || 0) + 1;
+                break;
+              }
+            }
+          }
         }
-        continue;
+        if (!swapped) {
+          exclusionReport["image_compliance_low"] = (exclusionReport["image_compliance_low"] || 0) + 1;
+          if (imageFailuresSample.length < 10) {
+            imageFailuresSample.push({ url: (p.image_url || "").substring(0, 100), reason: "compliance:low_quality_primary_no_alt" });
+          }
+          continue;
+        }
+        // Update finalImageLink after swap
+        imageLinkValidCount++;
       }
 
       if (SEND_ADDITIONAL_IMAGES && p.images && Array.isArray(p.images)) {
@@ -734,14 +757,37 @@ Deno.serve(async (req: Request) => {
     const eligibleCountBeforeLimit = payloadBuiltCount;
 
     // ══════════════════════════════════════════════════════════════
-    // C) MERCHANT EXPORT CAP — stable sort + slice
+    // C) MERCHANT EXPORT CAP — quality-based prioritization + stable sort
     // ══════════════════════════════════════════════════════════════
-    // Sort payloads deterministically: stock DESC (via price as proxy, all have stock>0),
-    // then by offerId ASC for full determinism.
-    // We store stock on each payload temporarily for sorting.
-    // Since all eligible products have stock > 0 and we don't have stock on the payload,
-    // we sort by offerId for full determinism (stable across runs).
+    // Priority scoring: products with stronger signals export first.
+    // Criteria: has additional images, has description length, strategic category, title quality.
+    const PRIORITY_CATEGORIES = /dog bed|cat tree|litter box|pet travel|training|carrier|stroller|harness|leash|grooming/i;
+    
     payloads.sort((a, b) => {
+      let scoreA = 0, scoreB = 0;
+      
+      // Prefer products with additional images (cleaner listings)
+      if ((a.additionalImageLinks as string[] | undefined)?.length) scoreA += 3;
+      if ((b.additionalImageLinks as string[] | undefined)?.length) scoreB += 3;
+      
+      // Prefer longer descriptions (more complete product info)
+      const descA = ((a.description as string) || "").length;
+      const descB = ((b.description as string) || "").length;
+      if (descA > 200) scoreA += 2;
+      else if (descA > 100) scoreA += 1;
+      if (descB > 200) scoreB += 2;
+      else if (descB > 100) scoreB += 1;
+      
+      // Prefer strategic high-intent categories
+      if (PRIORITY_CATEGORIES.test((a.title as string) || "")) scoreA += 2;
+      if (PRIORITY_CATEGORIES.test((b.title as string) || "")) scoreB += 2;
+      
+      // Prefer products with google product category set
+      if (a.googleProductCategory) scoreA += 1;
+      if (b.googleProductCategory) scoreB += 1;
+      
+      // Higher score = export first (descending), then stable by offerId
+      if (scoreB !== scoreA) return scoreB - scoreA;
       const oidA = (a.offerId as string) || "";
       const oidB = (b.offerId as string) || "";
       return oidA.localeCompare(oidB);

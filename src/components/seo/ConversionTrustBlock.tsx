@@ -21,22 +21,22 @@ export function ConversionTrustBlock({ categoryName }: ConversionTrustBlockProps
           <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
             <Shield className="w-6 h-6 text-primary" />
           </div>
-          <h3 className="font-semibold text-sm mb-1">Expert Vetted</h3>
-          <p className="text-xs text-muted-foreground">Every product reviewed by pet care specialists for safety and quality</p>
+          <h3 className="font-semibold text-sm mb-1">Carefully Selected</h3>
+          <p className="text-xs text-muted-foreground">Every product reviewed for quality, safety, and pet comfort before listing</p>
         </div>
         <div className="bg-card border rounded-2xl p-5 text-center">
           <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
             <Star className="w-6 h-6 text-primary fill-primary" />
           </div>
-          <h3 className="font-semibold text-sm mb-1">4.8/5 Average Rating</h3>
-          <p className="text-xs text-muted-foreground">Trusted by thousands of US pet parents with verified reviews</p>
+          <h3 className="font-semibold text-sm mb-1">Customer Favorites</h3>
+          <p className="text-xs text-muted-foreground">Popular products chosen by pet parents across the United States</p>
         </div>
         <div className="bg-card border rounded-2xl p-5 text-center">
           <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
             <Zap className="w-6 h-6 text-primary" />
           </div>
-          <h3 className="font-semibold text-sm mb-1">Real Testing, Not Marketing</h3>
-          <p className="text-xs text-muted-foreground">Products tested under real conditions — not just manufacturer claims</p>
+          <h3 className="font-semibold text-sm mb-1">Practical & Reliable</h3>
+          <p className="text-xs text-muted-foreground">Products evaluated for durability and everyday use — not just packaging claims</p>
         </div>
       </div>
 

@@ -9,7 +9,7 @@ import {
 const trustPoints = [
   {
     icon: Truck,
-    title: 'Fast US Shipping',
+    title: 'US Delivery Available',
     lines: [
       'Orders are shipped to customers across the United States.',
       `Typical delivery: ${DELIVERY_TIME_STANDARD}.`,

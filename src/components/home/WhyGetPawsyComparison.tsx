@@ -30,8 +30,8 @@ const FEATURES = [
         <circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
       </svg>
     ),
-    title: 'Fast US Shipping',
-    desc: 'Orders ship with 3–7 day delivery to the United States. Free shipping on orders over $35.',
+    title: 'US Delivery',
+    desc: 'Estimated delivery: 5–10 business days to the United States. Free shipping on orders over $35.',
   },
   {
     icon: (
