@@ -131,13 +131,33 @@ async function main() {
   // ══════════════════════════════════════════════════════════════════════
   // COLLECTIONS — ALL active collections (no niche filter)
   // ══════════════════════════════════════════════════════════════════════
-  let collectionsRaw = await fetchAllPages("seo_collections", "select=slug,updated_at&is_active=eq.true&order=updated_at.desc");
+  // Fetch collections with keyword/category filters for validation
+  let collectionsRaw = await fetchAllPages(
+    "seo_collections",
+    "select=slug,updated_at,product_keyword_filter,product_category_filter&is_active=eq.true&order=updated_at.desc"
+  );
+
+  // Fetch product names/categories/slugs for collection validation
+  let productCatalog = await fetchAllPages(
+    "products_public",
+    "select=name,slug,category&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null"
+  );
+  if (!productCatalog) productCatalog = [];
+
   let collections;
   if (collectionsRaw && collectionsRaw.length > 0) {
-    collections = collectionsRaw
-      .filter((c) => c.slug && !isExcluded(`/collections/${c.slug}`))
-      .map((c) => ({ path: `/collections/${c.slug}`, lastmod: c.updated_at }));
-    console.log(`[sitemaps] Collections from REST API: ${collections.length}`);
+    const candidates = collectionsRaw.filter((c) => c.slug && !isExcluded(`/collections/${c.slug}`));
+    const { validCollections, excludedCollections } = filterValidCollectionCandidates(
+      candidates, productCatalog, { minProducts: COLLECTION_MIN_PRODUCTS }
+    );
+    collections = validCollections.map((c) => ({
+      path: c.path,
+      lastmod: c.updated_at,
+    }));
+    console.log(`[sitemaps] Collections from REST API: ${collections.length} valid, ${excludedCollections.length} excluded`);
+    if (excludedCollections.length > 0) {
+      console.log(`[sitemaps] Excluded collections: ${excludedCollections.map(e => `${e.slug}(${e.reason}:${e.matchCount})`).join(', ')}`);
+    }
   } else {
     collections = safeRead(joinRoot("data", "collections.json"), []).filter(e => e && e.path);
     console.log(`[sitemaps] Collections from JSON fallback: ${collections.length}`);
