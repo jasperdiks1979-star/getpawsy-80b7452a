@@ -193,6 +193,7 @@ const GuidePage = () => {
     '@type': 'Article',
     headline: guide.title,
     description: guide.excerpt,
+    image: guide.featuredImage ? `${BASE_URL}${guide.featuredImage}` : `${BASE_URL}/og-image.png`,
     datePublished: guide.publishedAt,
     dateModified: guide.updatedAt,
     author: getAuthorSchema(),
