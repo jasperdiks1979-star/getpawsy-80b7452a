@@ -9,24 +9,24 @@ import { Button } from '@/components/ui/button';
 const PRIORITY_SPOTLIGHTS = [
   {
     title: 'Orthopedic Dog Beds',
-    subtitle: 'Vet-approved memory foam for joint pain relief',
+    subtitle: 'Memory foam support for dogs with joint discomfort',
     href: '/dog/orthopedic-dog-beds',
-    badge: '⭐ #1 Seller',
-    trust: 'Ships from US · 30-Day Guarantee',
+    badge: '⭐ Popular Choice',
+    trust: '30-Day Returns · Free Shipping $35+',
   },
   {
     title: 'Cat Trees for Large Cats',
-    subtitle: 'Heavy-duty, anti-tip tested for 25+ lb cats',
+    subtitle: 'Heavy-duty designs built for cats 25+ lbs',
     href: '/cat/cat-trees-for-large-cats',
-    badge: '🏆 Top Rated',
-    trust: 'Stability Tested · Free Shipping',
+    badge: '🏆 Customer Favorite',
+    trust: 'Sturdy Build · Free Shipping $35+',
   },
   {
     title: 'Dog Car Safety Gear',
-    subtitle: 'Crash-tested car seats, harnesses & boosters',
+    subtitle: 'Car seats, harnesses & boosters for safer travel',
     href: '/dog/dog-car-travel-safety',
-    badge: '🛡️ Safety Certified',
-    trust: 'CPS-Tested · 30-Day Returns',
+    badge: '🛡️ Travel Essentials',
+    trust: 'Selected for Safety · 30-Day Returns',
   },
 ];
 
