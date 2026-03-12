@@ -22,6 +22,8 @@ export type RobotsDirective = 'index' | 'noindex' | 'noindex-follow';
  */
 const NOINDEX_PREFIXES: string[] = [
   '/admin',
+  '/api',
+  '/private',
   '/dashboard',
   '/diagnostics',
   '/cart',

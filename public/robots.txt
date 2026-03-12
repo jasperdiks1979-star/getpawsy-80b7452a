@@ -17,6 +17,7 @@ Allow: /policies/
 Allow: /
 Disallow: /admin
 Disallow: /api
+Disallow: /private
 Disallow: /cart
 Disallow: /checkout
 Disallow: /account
