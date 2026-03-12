@@ -16,6 +16,7 @@ Allow: /returns
 Allow: /policies/
 Allow: /
 Disallow: /admin
+Disallow: /api
 Disallow: /cart
 Disallow: /checkout
 Disallow: /account
