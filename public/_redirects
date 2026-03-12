@@ -4,11 +4,13 @@
 # Applied by Lovable Cloud / Cloudflare Pages at the edge.
 # =============================================================
 
-# ═══ Static XML feeds served directly (bypass SPA fallback) ═══
-/google-shopping-feed.xml    /google-shopping-feed.xml 200
-/google-shopping-feed.xml?*  /google-shopping-feed.xml 200
-/merchant-feed.xml           /merchant-feed.xml 200
-/merchant-feed.xml?*         /merchant-feed.xml 200
+# ═══ XML Feeds → Edge Function (301! forced, bypasses SPA) ═══
+# Browsers may show XML as collapsed text — this is NORMAL browser behavior.
+# Google's crawler receives the full raw XML with all <g:*> tags intact.
+/google-shopping-feed.xml    https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 301!
+/google-shopping-feed.xml?*  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 301!
+/merchant-feed.xml           https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 301!
+/merchant-feed.xml?*         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 301!
 
 # www -> apex (301 permanent, preserves path + query)
 https://www.getpawsy.pet/* https://getpawsy.pet/:splat 301
