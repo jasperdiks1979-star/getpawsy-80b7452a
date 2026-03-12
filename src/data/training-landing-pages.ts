@@ -95,7 +95,7 @@ export const NO_PULL_HARNESS_LANDING: LandingPageData = {
     { q: 'Will it hurt my dog?', a: 'No. Unlike choke chains and prong collars, this harness distributes all force across the chest — completely bypassing the neck. It\'s the method recommended by veterinary behaviorists.' },
     { q: 'How fast will I see results?', a: 'Most dogs show 40-60% pulling reduction on the first walk. Combined with consistent positive reinforcement, reliable loose-leash walking develops within 2-4 weeks.' },
     { q: 'What sizes are available?', a: 'XS through XXL, fitting chest girths from 12" to 48". Fully adjustable at 4+ points for a secure, custom fit.' },
-    { q: 'What if it doesn\'t work?', a: '30-day money-back guarantee. If you\'re not satisfied, return it for a full refund. No questions asked.' },
+    { q: 'What if it doesn\'t work?', a: '30-day return policy. If you\'re not satisfied, return it for a full refund per our return policy.' },
   ],
   primaryProduct: {
     id: 'c2a8d28b-d564-40d0-8f6a-c8f0ca72f1fc',
