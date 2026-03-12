@@ -13,7 +13,7 @@
 /merchant-feed.xml?*         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 301!
 
 # www -> apex (301 permanent, preserves path + query)
-https://www.getpawsy.pet/* https://getpawsy.pet/:splat 301
+https://www.getpawsy.pet/* https://getpawsy.pet/:splat 301!
 
 # lovable.app preview -> apex (301 permanent)
 https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301
