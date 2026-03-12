@@ -1648,8 +1648,8 @@ const BestsellerDetail = () => {
                 Ready to Make Your Pet Happy?
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
-                Join thousands of happy pet owners. Order now and give your loyal companion the care they deserve.
-                <span className="block mt-2 text-primary font-medium">Free US shipping on orders over $35!</span>
+                Find the right products for your pet. Browse our selection and enjoy free US shipping on orders over $35.
+                <span className="block mt-2 text-primary font-medium">Estimated delivery: 5–10 business days.</span>
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
