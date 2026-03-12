@@ -84,6 +84,62 @@ export const COLLECTION_MAP: Record<string, CollectionMapEntry> = {
     minProducts: 8,
     criticalMin: 4,
   },
+  'dog-toys': {
+    categoryPatterns: ['Dog Toys'],
+    keywords: ['dog toy', 'chew toy', 'tug toy', 'rope toy', 'squeaky toy', 'fetch toy'],
+    fallbackKeywords: ['interactive dog', 'puzzle toy', 'plush dog', 'ball toy', 'dog play'],
+    minProducts: 12,
+    criticalMin: 4,
+  },
+  'dog-beds': {
+    categoryPatterns: ['Dog Beds'],
+    keywords: ['dog bed', 'orthopedic dog bed', 'memory foam dog bed', 'calming dog bed'],
+    fallbackKeywords: ['elevated dog bed', 'waterproof dog bed', 'bolster bed', 'donut bed'],
+    minProducts: 12,
+    criticalMin: 4,
+  },
+  'dog-harness': {
+    categoryPatterns: ['Dog Harnesses', 'Dog Collars & Leashes'],
+    keywords: ['dog harness', 'no-pull harness', 'no pull harness', 'front clip harness'],
+    fallbackKeywords: ['padded harness', 'reflective harness', 'step-in harness', 'vest harness', 'adventure harness'],
+    minProducts: 6,
+    criticalMin: 3,
+  },
+  'cat-toys': {
+    categoryPatterns: ['Cat Toys'],
+    keywords: ['cat toy', 'interactive cat', 'wand toy', 'catnip toy', 'feather toy'],
+    fallbackKeywords: ['cat puzzle', 'cat enrichment', 'mouse toy', 'laser toy', 'cat ball'],
+    minProducts: 8,
+    criticalMin: 4,
+  },
+  'cat-litter-boxes': {
+    categoryPatterns: ['Cat Litter Boxes', 'Litter Boxes'],
+    keywords: ['litter box', 'self cleaning litter', 'automatic litter', 'litter pan'],
+    fallbackKeywords: ['covered litter box', 'top entry litter', 'odor control litter', 'litter enclosure'],
+    minProducts: 8,
+    criticalMin: 4,
+  },
+  'cat-scratching-posts': {
+    categoryPatterns: ['Cat Scratching Posts'],
+    keywords: ['scratching post', 'cat scratcher', 'sisal post', 'scratch pad'],
+    fallbackKeywords: ['cardboard scratcher', 'wall scratcher', 'scratching board', 'scratch lounge'],
+    minProducts: 8,
+    criticalMin: 4,
+  },
+  'automatic-cat-feeders': {
+    categoryPatterns: ['Cat Feeders', 'Pet Feeders'],
+    keywords: ['automatic feeder', 'cat feeder', 'timed feeder', 'smart feeder'],
+    fallbackKeywords: ['food dispenser', 'wifi feeder', 'portion control', 'programmable feeder', 'auto feeder'],
+    minProducts: 4,
+    criticalMin: 2,
+  },
+  'pet-grooming-tools': {
+    categoryPatterns: ['Pet Grooming', 'Dog Grooming', 'Cat Grooming'],
+    keywords: ['grooming', 'deshedding', 'nail clipper', 'grooming glove'],
+    fallbackKeywords: ['brush', 'comb', 'trimmer', 'grooming kit', 'fur remover', 'undercoat rake'],
+    minProducts: 6,
+    criticalMin: 3,
+  },
 };
 
 /**
