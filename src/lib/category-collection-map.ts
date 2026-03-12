@@ -43,14 +43,27 @@ const CATEGORY_TO_COLLECTION: Record<string, string> = {
   'cat-hammocks': '/collections/best-cat-window-perches',
   'cat-exercise-wheels': '/collections/indoor-cat-enrichment',
 
-  // Small pets — route to /products (no dedicated collection; never route to /collections/dog)
-  'guinea-pig-cages': '/products?category=guinea-pig-cages',
-  'guinea-pig-toys': '/products?category=guinea-pig-toys',
-  'hamster-cages': '/products?category=hamster-cages',
-  'hamster-wheels': '/products?category=hamster-wheels',
-  'rabbit-cages': '/products?category=rabbit-cages',
-  'rabbits': '/products?category=rabbits',
-  'small-pets': '/products?category=small-pets',
+  // Small pets
+  'guinea-pig-cages': '/collections/small-pet-accessories',
+  'guinea-pig-toys': '/collections/small-pet-accessories',
+  'hamster-cages': '/collections/hamster-cages',
+  'hamster-wheels': '/collections/small-pet-accessories',
+  'rabbit-cages': '/collections/rabbit-hutches',
+  'rabbit-hutches': '/collections/rabbit-hutches',
+  'rabbits': '/collections/rabbit-hutches',
+  'small-pets': '/collections/small-pet-accessories',
+  'small-pet-accessories': '/collections/small-pet-accessories',
+
+  // Bird supplies
+  'birds': '/collections/bird-houses',
+  'bird-cages': '/collections/bird-houses',
+  'bird-feeders': '/collections/bird-accessories',
+  'bird-bowls-feeders': '/collections/bird-accessories',
+  'bird-houses': '/collections/bird-houses',
+  'bird-nests': '/collections/bird-houses',
+  'bird-accessories': '/collections/bird-accessories',
+  'bird-perches': '/collections/bird-accessories',
+  'bird-toys': '/collections/bird-accessories',
 
   // Pet generic
   'pet-beds': '/collections/orthopedic-calming-dog-beds',
