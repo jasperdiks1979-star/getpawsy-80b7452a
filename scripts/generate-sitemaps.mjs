@@ -11,10 +11,12 @@ import {
   readJson,
   joinRoot,
 } from "./sitemap-utils.mjs";
+import { filterValidCollectionCandidates } from "./sitemap-collection-validator.mjs";
 
 const BASE = "https://getpawsy.pet";
 const OUT_DIR = joinRoot("public");
 const PRODUCTS_CHUNK_SIZE = 45000;
+const COLLECTION_MIN_PRODUCTS = Number(process.env.SITEMAP_COLLECTION_MIN_PRODUCTS || 4);
 const HISTORY_PATH = joinRoot("data", "sitemap-history.json");
 
 const SUPABASE_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co";
