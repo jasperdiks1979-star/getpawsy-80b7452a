@@ -15,7 +15,7 @@ export interface ScalingGuide {
   secondaryKWs: string[];
   intent: 'commercial' | 'informational' | 'comparison';
   priority: number;
-  cluster: 'cat-litter' | 'cat-furniture' | 'dog-beds' | 'micro-intent' | 'dog-training' | 'cat-enrichment';
+  cluster: 'cat-litter' | 'cat-furniture' | 'dog-beds' | 'micro-intent' | 'dog-training' | 'cat-enrichment' | 'dog-travel' | 'dog-grooming';
   week: number;
   role: 'cornerstone' | 'hub' | 'subguide';
   internalLinksTarget: number;
