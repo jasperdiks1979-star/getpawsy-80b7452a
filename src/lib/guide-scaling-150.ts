@@ -15,7 +15,7 @@ export interface ScalingGuide {
   secondaryKWs: string[];
   intent: 'commercial' | 'informational' | 'comparison';
   priority: number;
-  cluster: 'cat-litter' | 'cat-furniture' | 'dog-beds' | 'micro-intent' | 'dog-training' | 'cat-enrichment';
+  cluster: 'cat-litter' | 'cat-furniture' | 'dog-beds' | 'micro-intent' | 'dog-training' | 'cat-enrichment' | 'dog-travel' | 'dog-grooming';
   week: number;
   role: 'cornerstone' | 'hub' | 'subguide';
   internalLinksTarget: number;
@@ -219,6 +219,21 @@ export const SCALING_GUIDES: ScalingGuide[] = [
   { slug: 'best-interactive-cat-toys-that-work', title: 'Best Interactive Cat Toys That Actually Work (2026) – Tested & Ranked', primaryKW: 'best interactive cat toys', secondaryKWs: ['interactive cat toys for indoor cats', 'cat toys that work', 'best cat toys 2026'], intent: 'commercial', priority: 88, cluster: 'cat-enrichment', week: 1, role: 'hub', internalLinksTarget: 8, linksTo: ['best-cat-enrichment-ideas-indoor-cats-2026', 'best-cat-litter-box-furniture-small-apartments', 'modern-cat-furniture-matches-your-home'], difficulty: 'medium' },
   { slug: 'best-cat-litter-box-furniture-small-apartments', title: 'Best Cat Litter Box Furniture for Small Apartments (2026)', primaryKW: 'cat litter box furniture small apartment', secondaryKWs: ['hidden litter box', 'litter box enclosure', 'cat litter box furniture'], intent: 'commercial', priority: 86, cluster: 'cat-enrichment', week: 2, role: 'subguide', internalLinksTarget: 7, linksTo: ['best-cat-enrichment-ideas-indoor-cats-2026', 'best-interactive-cat-toys-that-work', 'modern-cat-furniture-matches-your-home'], difficulty: 'medium' },
   { slug: 'modern-cat-furniture-matches-your-home', title: 'Modern Cat Furniture That Matches Your Home (2026)', primaryKW: 'modern cat furniture', secondaryKWs: ['stylish cat tree', 'modern cat tree for small space', 'cat furniture that matches home'], intent: 'commercial', priority: 82, cluster: 'cat-enrichment', week: 2, role: 'subguide', internalLinksTarget: 7, linksTo: ['best-cat-enrichment-ideas-indoor-cats-2026', 'best-interactive-cat-toys-that-work', 'best-cat-litter-box-furniture-small-apartments'], difficulty: 'medium' },
+
+  // ========== CLUSTER 7: DOG TRAVEL (6 guides) ==========
+  { slug: 'dog-travel-safety-guide', title: 'Dog Travel Safety Guide (2026) – Car Seats, Harnesses & Travel Tips', primaryKW: 'dog travel safety', secondaryKWs: ['dog car seat', 'dog travel harness', 'traveling with a dog', 'pet travel tips'], intent: 'informational', priority: 96, cluster: 'dog-travel', week: 1, role: 'cornerstone', internalLinksTarget: 15, linksTo: ['best-dog-car-seat', 'crash-tested-dog-car-seat-guide', 'dog-travel-safety-laws-by-state', 'safest-dog-car-seat-for-travel'], difficulty: 'high' },
+  { slug: 'best-dog-car-seat', title: 'Best Dog Car Seats (2026) – Crash-Tested & Booster Picks', primaryKW: 'best dog car seat', secondaryKWs: ['dog car seat', 'crash tested dog car seat', 'dog booster seat'], intent: 'commercial', priority: 90, cluster: 'dog-travel', week: 1, role: 'hub', internalLinksTarget: 10, linksTo: ['dog-travel-safety-guide', 'crash-tested-dog-car-seat-guide', 'dog-booster-seat-vs-car-hammock'], difficulty: 'high' },
+  { slug: 'crash-tested-dog-car-seat-guide', title: 'Crash-Tested Dog Car Seats – What to Look For (2026)', primaryKW: 'crash tested dog car seat', secondaryKWs: ['safest dog car seat', 'CPS tested dog seat'], intent: 'informational', priority: 85, cluster: 'dog-travel', week: 2, role: 'subguide', internalLinksTarget: 7, linksTo: ['dog-travel-safety-guide', 'best-dog-car-seat'], difficulty: 'medium' },
+  { slug: 'dog-travel-safety-laws-by-state', title: 'Dog Travel Laws by State – Where Pet Restraint Is Required', primaryKW: 'dog travel laws by state', secondaryKWs: ['pet restraint laws', 'state pet car laws'], intent: 'informational', priority: 78, cluster: 'dog-travel', week: 2, role: 'subguide', internalLinksTarget: 6, linksTo: ['dog-travel-safety-guide', 'best-dog-car-seat'], difficulty: 'low' },
+  { slug: 'dog-booster-seat-vs-car-hammock', title: 'Dog Booster Seat vs Car Hammock – Which Is Safer?', primaryKW: 'dog booster seat vs hammock', secondaryKWs: ['dog car hammock', 'dog seat cover vs car seat'], intent: 'comparison', priority: 72, cluster: 'dog-travel', week: 3, role: 'subguide', internalLinksTarget: 5, linksTo: ['dog-travel-safety-guide', 'best-dog-car-seat'], difficulty: 'low' },
+  { slug: 'safest-dog-car-seat-for-travel', title: 'Safest Dog Car Seat for Long Road Trips (2026)', primaryKW: 'safest dog car seat for travel', secondaryKWs: ['dog car seat road trip', 'best dog car seat long drive'], intent: 'commercial', priority: 75, cluster: 'dog-travel', week: 3, role: 'subguide', internalLinksTarget: 5, linksTo: ['dog-travel-safety-guide', 'best-dog-car-seat', 'crash-tested-dog-car-seat-guide'], difficulty: 'low' },
+
+  // ========== CLUSTER 8: DOG GROOMING (5 guides) ==========
+  { slug: 'dog-grooming-tools-guide', title: 'Dog Grooming Tools Guide (2026) – Brushes, Clippers & Grooming Kits', primaryKW: 'dog grooming tools', secondaryKWs: ['best dog brush', 'dog grooming kit', 'dog nail clippers', 'deshedding tool'], intent: 'informational', priority: 94, cluster: 'dog-grooming', week: 1, role: 'cornerstone', internalLinksTarget: 15, linksTo: ['best-dog-brushes-by-coat-type', 'how-often-groom-dog', 'dog-nail-trimming-guide'], difficulty: 'high' },
+  { slug: 'best-dog-brushes-by-coat-type', title: 'Best Dog Brushes by Coat Type (2026) – Slicker, Bristle & Deshedding', primaryKW: 'best dog brush by coat type', secondaryKWs: ['deshedding brush', 'slicker brush for dogs', 'dog brush for shedding'], intent: 'commercial', priority: 88, cluster: 'dog-grooming', week: 1, role: 'hub', internalLinksTarget: 8, linksTo: ['dog-grooming-tools-guide', 'how-often-groom-dog'], difficulty: 'medium' },
+  { slug: 'how-often-groom-dog', title: 'How Often Should You Groom Your Dog? – Breed-by-Breed Guide', primaryKW: 'how often to groom a dog', secondaryKWs: ['dog grooming schedule', 'how often to bathe a dog'], intent: 'informational', priority: 80, cluster: 'dog-grooming', week: 2, role: 'subguide', internalLinksTarget: 6, linksTo: ['dog-grooming-tools-guide', 'best-dog-brushes-by-coat-type'], difficulty: 'low' },
+  { slug: 'dog-nail-trimming-guide', title: 'How to Trim Dog Nails Safely – Step-by-Step Guide (2026)', primaryKW: 'how to trim dog nails', secondaryKWs: ['dog nail clipping guide', 'cut dog nails at home'], intent: 'informational', priority: 76, cluster: 'dog-grooming', week: 2, role: 'subguide', internalLinksTarget: 5, linksTo: ['dog-grooming-tools-guide'], difficulty: 'low' },
+  { slug: 'best-dog-shampoo-guide', title: 'Best Dog Shampoo (2026) – Sensitive, Oatmeal & Medicated Picks', primaryKW: 'best dog shampoo', secondaryKWs: ['dog shampoo for itchy skin', 'oatmeal dog shampoo'], intent: 'commercial', priority: 74, cluster: 'dog-grooming', week: 3, role: 'subguide', internalLinksTarget: 5, linksTo: ['dog-grooming-tools-guide', 'how-often-groom-dog'], difficulty: 'low' },
 ];
 
 // ============= WEEKLY SCHEDULE =============
@@ -273,6 +288,8 @@ export function getScalingSummary() {
     'micro-intent': SCALING_GUIDES.filter(g => g.cluster === 'micro-intent').length,
     'dog-training': SCALING_GUIDES.filter(g => g.cluster === 'dog-training').length,
     'cat-enrichment': SCALING_GUIDES.filter(g => g.cluster === 'cat-enrichment').length,
+    'dog-travel': SCALING_GUIDES.filter(g => g.cluster === 'dog-travel').length,
+    'dog-grooming': SCALING_GUIDES.filter(g => g.cluster === 'dog-grooming').length,
   };
   const byRole = {
     cornerstone: SCALING_GUIDES.filter(g => g.role === 'cornerstone').length,

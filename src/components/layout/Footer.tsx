@@ -159,10 +159,12 @@ export const Footer = () => {
     ],
     // Pet Care Guides — topical authority links
     guideLinks: [
+      { label: 'Dog Training Guide', href: '/guides/complete-dog-training-guide-2026' },
+      { label: 'Dog Travel Safety Guide', href: '/guides/dog-travel-safety-guide' },
+      { label: 'Dog Grooming Tools Guide', href: '/guides/dog-grooming-tools-guide' },
+      { label: 'Cat Litter Solutions Guide', href: '/guides/cat-litter-solutions-guide' },
       { label: 'Best Cat Litter Box 2026', href: '/guides/best-cat-litter-box-2026' },
-      { label: 'Best Dog Carriers for Travel', href: '/guides/best-dog-carriers-for-travel' },
       { label: 'Best Cat Trees for Indoor Cats', href: '/guides/best-cat-trees-for-indoor-cats' },
-      { label: 'Best Automatic Cat Feeder', href: '/guides/best-automatic-cat-feeder' },
       { label: 'All Guides', href: '/guides' },
     ],
     discoverLinks: [
