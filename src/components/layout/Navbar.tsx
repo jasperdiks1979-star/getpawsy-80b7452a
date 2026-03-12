@@ -43,12 +43,14 @@ import logoIcon from '@/assets/logo-getpawsy.png';
 
 const navLinks = [
   { href: '/', label: 'Home' },
+  { href: '/collections/dog', label: 'Dogs' },
   { href: '/collections/dog-toys', label: 'Dog Toys' },
   { href: '/collections/dog-beds', label: 'Dog Beds' },
-  { href: '/collections/dog-harness', label: 'Dog Harness' },
+  { href: '/collections/dog-harness', label: 'Harnesses' },
+  { href: '/collections/cat', label: 'Cats' },
   { href: '/collections/cat-toys', label: 'Cat Toys' },
   { href: '/collections/cat-litter-boxes', label: 'Litter Boxes' },
-  { href: '/collections/cat-scratching-posts', label: 'Scratching Posts' },
+  { href: '/collections/cat-scratching-posts', label: 'Scratching' },
   { href: '/guides', label: 'Guides' },
 ];
 
