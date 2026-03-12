@@ -627,14 +627,37 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // Check primary image compliance — skip product if primary scored "low"
+      // Check primary image compliance — try to swap to a clean alternate before blocking
       const primaryCompliance = complianceMap.get(imageUrl) || complianceMap.get(p.image_url || "");
       if (primaryCompliance && primaryCompliance.score === "low") {
-        exclusionReport["image_compliance_low"] = (exclusionReport["image_compliance_low"] || 0) + 1;
-        if (imageFailuresSample.length < 10) {
-          imageFailuresSample.push({ url: (p.image_url || "").substring(0, 100), reason: "compliance:low_quality_primary" });
+        // Try to find a compliant alternate image from the product's image set
+        let swapped = false;
+        if (p.images && Array.isArray(p.images)) {
+          for (const altImg of (p.images as string[])) {
+            if (!altImg || typeof altImg !== "string" || !altImg.startsWith("http")) continue;
+            if (altImg === p.image_url || altImg === imageUrl) continue;
+            const altCompliance = complianceMap.get(altImg);
+            // Accept if not scored, or scored medium/high
+            if (!altCompliance || altCompliance.score !== "low") {
+              const altResult = await validateImageLive(altImg);
+              if (altResult.valid) {
+                imageUrl = altResult.finalUrl;
+                swapped = true;
+                exclusionReport["image_compliance_swapped"] = (exclusionReport["image_compliance_swapped"] || 0) + 1;
+                break;
+              }
+            }
+          }
         }
-        continue;
+        if (!swapped) {
+          exclusionReport["image_compliance_low"] = (exclusionReport["image_compliance_low"] || 0) + 1;
+          if (imageFailuresSample.length < 10) {
+            imageFailuresSample.push({ url: (p.image_url || "").substring(0, 100), reason: "compliance:low_quality_primary_no_alt" });
+          }
+          continue;
+        }
+        // Update finalImageLink after swap
+        imageLinkValidCount++;
       }
 
       if (SEND_ADDITIONAL_IMAGES && p.images && Array.isArray(p.images)) {
