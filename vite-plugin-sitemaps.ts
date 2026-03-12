@@ -682,10 +682,10 @@ export default function merchantFeedPlugin(): Plugin {
       console.log('[xml-plugin] Generating merchant feed XML files...');
 
       // Write fallback files FIRST
-      const fallbackNames = ['merchant-feed.xml', 'merchant-diagnostics.xml'];
+      const fallbackNames = ['merchant-feed.xml', 'google-shopping-feed.xml', 'merchant-diagnostics.xml'];
       for (const name of fallbackNames) {
         let fallback: string;
-        if (name.includes('merchant-feed')) {
+        if (name.includes('merchant-feed') || name.includes('google-shopping-feed')) {
           fallback = FALLBACK_FEED;
         } else {
           fallback = `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`;
@@ -697,13 +697,15 @@ export default function merchantFeedPlugin(): Plugin {
       try {
         await Promise.race([
           (async () => {
-            const [feed, diagnostics] = await Promise.all([
+            const [merchantFeed, googleShoppingFeed, diagnostics] = await Promise.all([
               buildMerchantFeed().catch(() => FALLBACK_FEED),
+              buildMerchantFeed(290).catch(() => FALLBACK_FEED),
               buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
             ]);
 
             const files: [string, string][] = [
-              ['merchant-feed.xml', feed],
+              ['merchant-feed.xml', merchantFeed],
+              ['google-shopping-feed.xml', googleShoppingFeed],
               ['merchant-diagnostics.xml', diagnostics],
             ];
 
