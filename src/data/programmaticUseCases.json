@@ -92,5 +92,94 @@
     "kittens",
     "furniture protection",
     "modern homes"
+  ],
+  "dog-beds": [
+    "large dogs",
+    "small dogs",
+    "senior dogs",
+    "puppies",
+    "hip dysplasia",
+    "arthritis",
+    "anxiety",
+    "chewers",
+    "outdoor use",
+    "crate training",
+    "hot weather",
+    "cold weather",
+    "joint pain",
+    "heavy dogs"
+  ],
+  "dog-harnesses": [
+    "large dogs",
+    "small dogs",
+    "puppies",
+    "pullers",
+    "escape artists",
+    "car travel",
+    "hiking",
+    "senior dogs",
+    "french bulldogs",
+    "dachshunds"
+  ],
+  "dog-collars": [
+    "large dogs",
+    "small dogs",
+    "puppies",
+    "training",
+    "sensitive skin",
+    "strong pullers",
+    "flat faced breeds",
+    "nighttime walks",
+    "water activities"
+  ],
+  "cat-carriers": [
+    "large cats",
+    "nervous cats",
+    "airplane travel",
+    "vet visits",
+    "road trips",
+    "multiple cats",
+    "kittens",
+    "senior cats"
+  ],
+  "cat-beds": [
+    "senior cats",
+    "large cats",
+    "anxious cats",
+    "kittens",
+    "window sleeping",
+    "cold weather",
+    "multiple cats",
+    "small spaces"
+  ],
+  "pet-strollers": [
+    "small dogs",
+    "large dogs",
+    "senior dogs",
+    "multiple pets",
+    "jogging",
+    "beach walks",
+    "disabled dogs",
+    "cat owners"
+  ],
+  "slow-feeders": [
+    "large dogs",
+    "small dogs",
+    "puppies",
+    "fast eaters",
+    "bloat prevention",
+    "senior dogs",
+    "wet food",
+    "aggressive eaters"
+  ],
+  "dog-leashes": [
+    "large dogs",
+    "small dogs",
+    "pullers",
+    "training",
+    "hiking",
+    "running",
+    "multiple dogs",
+    "retractable use"
   ]
 }

@@ -3,6 +3,8 @@
  * 
  * Generates "Best {productType} for {useCase}" SEO pages by combining
  * the use-case database with the existing AI guide generator.
+ * 
+ * Covers 16 product types × 8-14 use cases = 180+ long-tail landing pages.
  */
 
 import { generateGuide, type GuideGenerationResult, type BatchGenerationResult } from '@/lib/ai-guide-generator';
@@ -31,10 +33,18 @@ const PRODUCT_TYPE_TO_CLUSTER: Record<string, string> = {
   'cat-litter': 'cat-litter',
   'cat-trees': 'cat-trees',
   'cat-scratching-posts': 'cat-trees',
+  'cat-carriers': 'cat-trees',
+  'cat-beds': 'cat-furniture',
   'dog-training-toys': 'dog-training',
   'dog-car-seats': 'dog-travel',
   'dog-grooming-tools': 'dog-grooming',
   'dog-travel': 'dog-travel',
+  'dog-beds': 'dog-beds',
+  'dog-harnesses': 'dog-training',
+  'dog-collars': 'dog-training',
+  'dog-leashes': 'dog-training',
+  'pet-strollers': 'dog-travel',
+  'slow-feeders': 'dog-training',
 };
 
 const PRODUCT_TYPE_LABELS: Record<string, string> = {
@@ -42,10 +52,18 @@ const PRODUCT_TYPE_LABELS: Record<string, string> = {
   'cat-litter': 'cat litter',
   'cat-trees': 'cat trees',
   'cat-scratching-posts': 'cat scratching posts',
+  'cat-carriers': 'cat carriers',
+  'cat-beds': 'cat beds',
   'dog-training-toys': 'dog training toys',
   'dog-car-seats': 'dog car seats',
   'dog-grooming-tools': 'dog grooming tools',
   'dog-travel': 'dog travel gear',
+  'dog-beds': 'dog beds',
+  'dog-harnesses': 'dog harnesses',
+  'dog-collars': 'dog collars',
+  'dog-leashes': 'dog leashes',
+  'pet-strollers': 'pet strollers',
+  'slow-feeders': 'slow feeder bowls',
 };
 
 // ============= SLUG & KEYWORD GENERATION =============
