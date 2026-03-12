@@ -1582,6 +1582,9 @@ const ProductDetail = () => {
           <RelatedGuides guides={relatedGuides} />
         )}
 
+        {/* Learn More About This Topic — pillar guide links */}
+        <TopicGuideLinks productCategory={product.category} />
+
         {/* Popular Buying Guides — cornerstone authority block */}
         <PopularGuidesBlock compact />
 
