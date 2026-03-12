@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>GetPawsy Product Feed</title>
+    <link>https://getpawsy.pet/</link>
+    <description>Google Merchant Center US Shopping feed – GetPawsy pet supplies.</description>
+    <language>en-US</language>
+    <item>
+      <g:id>placeholder-001</g:id>
+      <g:title>GetPawsy Pet Supplies</g:title>
+      <g:description>Premium pet supplies for dogs, cats, and small animals. Shop GetPawsy for quality products with free US shipping.</g:description>
+      <g:link>https://getpawsy.pet/products</g:link>
+      <g:image_link>https://getpawsy.pet/og-image.png</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>9.99 USD</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>GetPawsy</g:brand>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies</g:google_product_category>
+    </item>
+  </channel>
+</rss>
