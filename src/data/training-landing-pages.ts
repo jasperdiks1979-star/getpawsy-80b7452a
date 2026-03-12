@@ -81,9 +81,9 @@ export const NO_PULL_HARNESS_LANDING: LandingPageData = {
     'Reflective stitching for dawn/dusk visibility',
   ],
   socialProof: [
-    { stat: '40-60%', label: 'Pulling reduction on first walk' },
-    { stat: '4.8/5', label: 'Customer satisfaction rating' },
-    { stat: '10,000+', label: 'Dogs walking better' },
+    { stat: 'Front-clip', label: 'Redirect-based design' },
+    { stat: '30-Day', label: 'Return policy included' },
+    { stat: 'XS–XXL', label: 'Size range available' },
   ],
   reviews: [
     { name: 'Sarah M.', location: 'Austin, TX', stars: 5, text: 'My 70-lb Lab used to drag me everywhere. First walk with this harness — total transformation. No more choking, no more arm pain.', verified: true },
