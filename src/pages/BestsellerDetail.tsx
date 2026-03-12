@@ -946,7 +946,7 @@ const BestsellerDetail = () => {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Truck className="w-4 h-4 text-primary" />
-                    <span>Ships from US fulfillment centers</span>
+                    <span>Fast shipping to the United States</span>
                   </span>
                   <span className="flex items-center gap-1.5">
                     <RotateCcw className="w-4 h-4 text-primary" />

@@ -61,7 +61,7 @@ export const TrustTransparencySection = () => (
           Trusted Pet Supply Store
         </h2>
         <p className="mt-2 text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
-          Reliable pet essentials with fast US fulfillment and customer-first policies.
+          Reliable pet essentials with fast shipping to the United States and customer-first policies.
         </p>
       </div>
 

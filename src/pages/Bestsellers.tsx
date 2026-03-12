@@ -650,7 +650,7 @@ const Bestsellers = () => {
                   ['Average Bestseller Rating', reviewStats.totalReviews > 0 ? `${reviewStats.averageRating.toFixed(1)} / 5.0` : 'Collecting reviews'],
                   ['Free Shipping Threshold', '$35+'],
                   ['Return Window', '30 days, hassle-free'],
-                  ['Shipping Origin', 'US fulfillment centers'],
+                  ['Shipping', 'Fast shipping to the United States'],
                   ['Standard Delivery', '7–15 business days'],
                   ['Payment Security', 'Stripe-powered checkout'],
                   ['Target Market', 'United States'],
