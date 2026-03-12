@@ -339,7 +339,7 @@ const Contact = () => {
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-muted-foreground min-w-[120px]">Response Time:</span>
-                    <span className="text-foreground font-medium">Within 24 hours</span>
+                    <span className="text-foreground font-medium">Usually within 24–48 hours</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-muted-foreground min-w-[120px]">Business Hours:</span>
