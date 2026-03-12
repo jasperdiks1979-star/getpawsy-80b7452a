@@ -46,7 +46,12 @@ function getPetType(category: string | null): string {
   const c = category.toLowerCase();
   if (c.includes("dog")) return "Dogs";
   if (c.includes("cat")) return "Cats";
-  if (c.includes("bird")) return "Birds";
+  if (c.includes("bird") || c.includes("chicken")) return "Birds";
+  if (c.includes("hamster")) return "Hamsters";
+  if (c.includes("rabbit") || c.includes("hutch") || c.includes("bunny")) return "Rabbits";
+  if (c.includes("guinea")) return "Guinea Pigs";
+  if (c.includes("small pet")) return "Small Pets";
+  if (c.includes("reptile") || c.includes("tortoise")) return "Reptiles";
   return "Pets";
 }
 
