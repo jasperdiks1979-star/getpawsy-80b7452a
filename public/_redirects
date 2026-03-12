@@ -87,8 +87,8 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301!
 /collections/       /products   301
 
 # ═══ XML feeds → Edge Function proxy ═══
-/google-shopping-feed.xml  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200
-/merchant-feed.xml         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200
+/google-shopping-feed.xml  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
+/merchant-feed.xml         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200!
 
 # ═══ Static XML feeds — MUST match before SPA fallback ═══
 /merchant-diagnostics.xml  /merchant-diagnostics.xml  200
