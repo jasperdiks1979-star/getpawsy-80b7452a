@@ -674,30 +674,28 @@ export default function merchantFeedPlugin(): Plugin {
 
       console.log(`[sitemaps] ✅ All sitemaps validated (${sitemapCount} index entries, ${allRefs.length} child files verified)`);
 
-      // ── Generate merchant feed XMLs into /public so Vite copies them to /dist ──
-      console.log('[xml-plugin] Generating merchant feed XML into /public...');
-      try {
-        const [merchantFeed, googleShoppingFeed, diagnostics] = await Promise.all([
-          buildMerchantFeed().catch(() => FALLBACK_FEED),
-          buildMerchantFeed(290).catch(() => FALLBACK_FEED),
-          buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
-        ]);
-
-        const feedFiles: [string, string][] = [
-          ['merchant-feed.xml', merchantFeed],
-          ['google-shopping-feed.xml', googleShoppingFeed],
-          ['merchant-diagnostics.xml', diagnostics],
-        ];
-
-        for (const [name, xml] of feedFiles) {
-          writeFileSync(join(publicDir, name), xml, 'utf-8');
-          console.log(`[xml-plugin] ✓ /public/${name} (${xml.length} bytes)`);
+      // ── Feed source of truth: edge proxy only (no static feed artifacts) ──
+      const staticFeedFiles = ['merchant-feed.xml', 'google-shopping-feed.xml'];
+      for (const name of staticFeedFiles) {
+        const filePath = join(publicDir, name);
+        if (existsSync(filePath)) {
+          unlinkSync(filePath);
+          console.log(`[xml-plugin] removed stale /public/${name}`);
         }
+      }
+
+      // Keep diagnostics static file only
+      try {
+        const diagnostics = await buildMerchantDiagnostics();
+        writeFileSync(join(publicDir, 'merchant-diagnostics.xml'), diagnostics, 'utf-8');
+        console.log(`[xml-plugin] ✓ /public/merchant-diagnostics.xml (${diagnostics.length} bytes)`);
       } catch (err) {
-        console.warn('[xml-plugin] ⚠️ Merchant feed pre-generation failed, writing fallbacks:', err);
-        writeFileSync(join(publicDir, 'merchant-feed.xml'), FALLBACK_FEED, 'utf-8');
-        writeFileSync(join(publicDir, 'google-shopping-feed.xml'), FALLBACK_FEED, 'utf-8');
-        writeFileSync(join(publicDir, 'merchant-diagnostics.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`, 'utf-8');
+        console.warn('[xml-plugin] ⚠️ merchant diagnostics generation failed, writing fallback:', err);
+        writeFileSync(
+          join(publicDir, 'merchant-diagnostics.xml'),
+          `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`,
+          'utf-8'
+        );
       }
 
       console.log('[sitemaps] ═══════════════════════════════════════════\n');
