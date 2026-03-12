@@ -456,7 +456,7 @@ ${extra}      <g:product_type>${esc(getProductType(p.category))}</g:product_type
     </item>`;
 }
 
-async function buildMerchantFeed(): Promise<string> {
+async function buildMerchantFeed(maxItems?: number): Promise<string> {
   const [rawProducts, bestsellers] = await Promise.all([
     supaRest<MerchantProduct>(
       'products_public',
@@ -466,7 +466,7 @@ async function buildMerchantFeed(): Promise<string> {
   ]);
 
   // Safety post-filter: exclude any product missing required fields or with stock <= 0
-  const products = rawProducts.filter(p =>
+  const eligibleProducts = rawProducts.filter(p =>
     p.price > 0 &&
     p.stock !== null && p.stock > 0 &&
     p.image_url && p.image_url.trim() !== '' &&
@@ -474,8 +474,11 @@ async function buildMerchantFeed(): Promise<string> {
     p.description && p.description.trim() !== ''
   );
 
+  const products = typeof maxItems === 'number' ? eligibleProducts.slice(0, maxItems) : eligibleProducts;
   const bestsellersSet = new Set(bestsellers.map(b => b.product_id));
-  console.log(`[xml-plugin] Merchant feed: ${products.length} in-stock products (${rawProducts.length} raw, ${rawProducts.length - products.length} excluded), ${bestsellersSet.size} bestsellers`);
+  console.log(
+    `[xml-plugin] Merchant feed: ${products.length} exported (${eligibleProducts.length} eligible, ${rawProducts.length} raw, ${rawProducts.length - eligibleProducts.length} excluded)`
+  );
 
   const now = new Date().toISOString();
   const items = products.map(p => productItemXml(p, bestsellersSet)).join('\n');
@@ -600,7 +603,7 @@ function assertSitemapFileValid(filePath: string, requiredToken: string, label: 
 
 // ── Vite Plugin ───────────────────────────────────────────────────────
 
-const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel><title>GetPawsy Product Feed</title><link>https://getpawsy.pet/</link><description>Google Merchant Center feed for GetPawsy.</description></channel></rss>`;
+const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel><title>GetPawsy Product Feed</title><link>https://getpawsy.pet/</link><description>Google Merchant Center feed for GetPawsy.</description><item><g:id>fallback-feed-item</g:id><g:title>GetPawsy Feed Placeholder Product</g:title><g:link>https://getpawsy.pet/products</g:link><g:price>1.00 USD</g:price><g:availability>in stock</g:availability><g:image_link>https://getpawsy.pet/images/merchant-placeholder.jpg</g:image_link><g:brand>GetPawsy</g:brand><g:condition>new</g:condition><g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies</g:google_product_category></item></channel></rss>`;
 
 export default function merchantFeedPlugin(): Plugin {
   let resolvedOutDir = 'dist';
@@ -679,10 +682,10 @@ export default function merchantFeedPlugin(): Plugin {
       console.log('[xml-plugin] Generating merchant feed XML files...');
 
       // Write fallback files FIRST
-      const fallbackNames = ['merchant-feed.xml', 'merchant-diagnostics.xml'];
+      const fallbackNames = ['merchant-feed.xml', 'google-shopping-feed.xml', 'merchant-diagnostics.xml'];
       for (const name of fallbackNames) {
         let fallback: string;
-        if (name.includes('merchant-feed')) {
+        if (name.includes('merchant-feed') || name.includes('google-shopping-feed')) {
           fallback = FALLBACK_FEED;
         } else {
           fallback = `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics status="fallback" />`;
@@ -694,13 +697,15 @@ export default function merchantFeedPlugin(): Plugin {
       try {
         await Promise.race([
           (async () => {
-            const [feed, diagnostics] = await Promise.all([
+            const [merchantFeed, googleShoppingFeed, diagnostics] = await Promise.all([
               buildMerchantFeed().catch(() => FALLBACK_FEED),
+              buildMerchantFeed(290).catch(() => FALLBACK_FEED),
               buildMerchantDiagnostics().catch(() => `<?xml version="1.0" encoding="UTF-8"?>\n<merchant_diagnostics error="build_failed" />`),
             ]);
 
             const files: [string, string][] = [
-              ['merchant-feed.xml', feed],
+              ['merchant-feed.xml', merchantFeed],
+              ['google-shopping-feed.xml', googleShoppingFeed],
               ['merchant-diagnostics.xml', diagnostics],
             ];
 
