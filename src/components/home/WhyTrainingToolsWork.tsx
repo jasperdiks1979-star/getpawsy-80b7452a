@@ -31,8 +31,8 @@ const PILLARS = [
         <circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
       </svg>
     ),
-    title: 'Fast Delivery',
-    desc: 'All training tools ship directly to you. 3–7 day delivery. Free shipping on orders $35+.',
+    title: 'Delivery to the US',
+    desc: 'Training tools shipped to you. Estimated delivery: 5–10 business days. Free shipping on orders $35+.',
   },
 ];
 

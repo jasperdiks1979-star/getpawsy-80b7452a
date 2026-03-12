@@ -53,11 +53,11 @@ export function StickyCTA({ categorySlug, categoryLabel }: Props) {
         <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Truck className="w-3 h-3 text-primary" />
-            Free US Shipping
+            Free Shipping $35+
           </span>
           <span className="flex items-center gap-1">
             <Star className="w-3 h-3 text-primary" />
-            4.8/5 Customer Rating
+            30-Day Returns
           </span>
         </div>
       </div>

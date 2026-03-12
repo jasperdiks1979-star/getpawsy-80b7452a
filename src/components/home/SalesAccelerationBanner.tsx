@@ -61,13 +61,10 @@ export function SalesAccelerationBanner() {
               </p>
               <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
                 <span className="flex items-center gap-1">
-                  <Star className="w-3 h-3 text-primary fill-primary" /> 4.8/5
+                  <Shield className="w-3 h-3 text-primary" /> 30-Day Returns
                 </span>
                 <span className="flex items-center gap-1">
-                  <Shield className="w-3 h-3 text-primary" /> Verified
-                </span>
-                <span className="flex items-center gap-1">
-                  <Truck className="w-3 h-3 text-primary" /> Fast Ship
+                  <Truck className="w-3 h-3 text-primary" /> US Delivery
                 </span>
               </div>
               <span className="text-xs text-muted-foreground/70">{spot.trust}</span>
