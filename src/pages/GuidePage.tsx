@@ -455,9 +455,6 @@ const GuidePage = () => {
         {faqSchema && (
           <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         )}
-        {productSchemas.length > 0 && productSchemas.map((schema, i) => (
-          <script key={`product-${i}`} type="application/ld+json">{JSON.stringify(schema)}</script>
-        ))}
         {guide.howTo && (
           <script type="application/ld+json">{JSON.stringify({
             '@context': 'https://schema.org',
