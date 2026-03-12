@@ -618,7 +618,7 @@ const Bestsellers = () => {
                 <Truck className="w-7 h-7 text-primary" />
               </div>
               <h3 className="font-semibold mb-2">Free US Shipping</h3>
-              <p className="text-sm text-muted-foreground">Free shipping on all orders over $35. Standard delivery 7–15 business days from US fulfillment centers.</p>
+              <p className="text-sm text-muted-foreground">Free shipping on all orders over $35. Standard delivery 7–15 business days.</p>
             </div>
             <div className="text-center">
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
@@ -650,7 +650,7 @@ const Bestsellers = () => {
                   ['Average Bestseller Rating', reviewStats.totalReviews > 0 ? `${reviewStats.averageRating.toFixed(1)} / 5.0` : 'Collecting reviews'],
                   ['Free Shipping Threshold', '$35+'],
                   ['Return Window', '30 days, hassle-free'],
-                  ['Shipping Origin', 'US fulfillment centers'],
+                  ['Shipping', 'Fast shipping to the United States'],
                   ['Standard Delivery', '7–15 business days'],
                   ['Payment Security', 'Stripe-powered checkout'],
                   ['Target Market', 'United States'],

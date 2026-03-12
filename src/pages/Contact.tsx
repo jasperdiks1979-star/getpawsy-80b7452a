@@ -92,14 +92,14 @@ const Contact = () => {
       icon: Mail,
       title: 'Email Us',
       content: SUPPORT_EMAIL,
-      description: 'We reply within 24 hours',
+      description: 'We usually reply within 24–48 hours',
       href: `mailto:${SUPPORT_EMAIL}`,
     },
     {
       icon: Building2,
       title: 'Location',
-      content: 'Rotterdam, Netherlands',
-      description: 'Serving US customers',
+      content: 'Apeldoorn, Netherlands',
+      description: 'Serving customers across the United States and internationally',
       href: null,
     },
     {
@@ -339,7 +339,7 @@ const Contact = () => {
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-muted-foreground min-w-[120px]">Response Time:</span>
-                    <span className="text-foreground font-medium">Within 24 hours</span>
+                    <span className="text-foreground font-medium">Usually within 24–48 hours</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-muted-foreground min-w-[120px]">Business Hours:</span>
@@ -355,8 +355,8 @@ const Contact = () => {
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-6">
                 <h3 className="font-semibold text-foreground mb-2">Response Time</h3>
                 <p className="text-sm text-muted-foreground">
-                  We typically respond to all inquiries within 24 hours. 
-                  For urgent matters, please include your order number for faster assistance.
+                   We typically respond to all inquiries within 24–48 hours. 
+                   For urgent matters, please include your order number for faster assistance.
                 </p>
               </div>
             </motion.div>

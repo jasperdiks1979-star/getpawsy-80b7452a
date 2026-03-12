@@ -43,6 +43,7 @@ const trustPoints = [
 const transparencyDetails = [
   { label: 'Business name', value: 'GetPawsy' },
   { label: 'Operator', value: 'Skidzo' },
+  { label: 'Location', value: 'Apeldoorn, Netherlands' },
   { label: 'Registration', value: 'KVK 78156955' },
   { label: 'VAT ID', value: 'NL003295015B69' },
   { label: 'Support email', value: SUPPORT_EMAIL },
@@ -60,7 +61,7 @@ export const TrustTransparencySection = () => (
           Trusted Pet Supply Store
         </h2>
         <p className="mt-2 text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
-          Reliable pet essentials with fast US fulfillment and customer-first policies.
+          Reliable pet essentials with fast shipping to the United States and customer-first policies.
         </p>
       </div>
 

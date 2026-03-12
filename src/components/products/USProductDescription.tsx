@@ -100,9 +100,9 @@ const USProductDescription: React.FC<USProductDescriptionProps> = ({
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="flex items-start gap-3">
             <Truck className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-foreground text-sm">US Fulfillment</p>
-              <p className="text-xs text-muted-foreground">Orders ship from US centers when available</p>
+             <div>
+              <p className="font-medium text-foreground text-sm">Fast Shipping</p>
+              <p className="text-xs text-muted-foreground">Fast shipping to customers in the United States</p>
             </div>
           </div>
           <div className="flex items-start gap-3">

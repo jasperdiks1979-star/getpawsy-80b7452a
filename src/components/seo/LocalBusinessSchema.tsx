@@ -32,8 +32,8 @@ export function LocalBusinessSchema({
     taxID: 'NL003295015B69',
     address: {
       '@type': 'PostalAddress',
-      addressRegion: 'South Holland',
-      addressLocality: 'Rotterdam',
+      addressRegion: 'Gelderland',
+      addressLocality: 'Apeldoorn',
       addressCountry: 'NL',
     },
     contactPoint: {

@@ -239,21 +239,38 @@ export const Footer = () => {
                 </span>
               </Link>
                <p className="text-background/70 leading-relaxed max-w-sm">
-                <strong className="text-background">GetPawsy Pet Supplies</strong><br />
-                Customer Support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>
+                <strong className="text-background">GetPawsy</strong><br />
+                Operated by Skidzo
                </p>
+
+               {/* Business Location */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Business Location</p>
+                 <p className="text-sm text-background/70">Apeldoorn, Netherlands</p>
+               </div>
+
+               {/* Customer Support */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Customer Support</p>
+                 <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sm text-primary hover:underline">{SUPPORT_EMAIL}</a>
+               </div>
+
+               {/* Service Area */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Service Area</p>
+                 <p className="text-sm text-background/70">Serving customers across the United States and internationally</p>
+               </div>
+
+               {/* Payments */}
+               <div className="space-y-1 pt-2">
+                 <p className="text-sm font-semibold text-background">Payments</p>
+                 <p className="text-sm text-background/70">Visa, Mastercard, Apple Pay, Google Pay</p>
+               </div>
 
                {/* Customer Service Hours */}
                <div className="space-y-1 pt-2">
                  <p className="text-sm font-semibold text-background">Customer Service Hours</p>
-                 <p className="text-sm text-background/70">Monday – Friday</p>
-                 <p className="text-sm text-background/70">09:00 – 17:00 CET</p>
-               </div>
-
-               {/* Business Address */}
-               <div className="space-y-1 pt-2">
-                 <p className="text-sm font-semibold text-background">Business Address</p>
-                 <p className="text-sm text-background/70">Rotterdam, Netherlands</p>
+                 <p className="text-sm text-background/70">Monday – Friday, 09:00 – 17:00 CET</p>
                </div>
               
               {/* Social Links */}
@@ -367,7 +384,7 @@ export const Footer = () => {
             </FooterSection>
           </div>
 
-          {/* Company Information — Business Transparency */}
+          {/* Company Information — Merchant Trust Block */}
           <div className="mt-12 pt-8 border-t border-background/10">
             <h4 className="font-display font-semibold text-lg mb-4">Company Information</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -375,33 +392,36 @@ export const Footer = () => {
                <p className="text-background/80"><strong className="text-background">Business Name:</strong> GetPawsy</p>
                 <p className="text-background/80"><strong className="text-background">Operated by:</strong> Skidzo (Chamber of Commerce: 78156955)</p>
                 <p className="text-background/80"><strong className="text-background">VAT ID:</strong> NL003295015B69</p>
-                <p className="text-background/80"><strong className="text-background">Business Address:</strong> Rotterdam, Netherlands</p>
+                <p className="text-background/80"><strong className="text-background">Business Location:</strong> Apeldoorn, Netherlands</p>
               </div>
               <div className="space-y-2 text-sm">
                 <p className="text-background/80"><strong className="text-background">Support Email:</strong> <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
                 <p className="text-background/80"><strong className="text-background">Support Hours:</strong> Mon–Fri 09:00–17:00 CET</p>
-                <p className="text-background/80"><strong className="text-background">Response Time:</strong> Within 24 hours</p>
+                <p className="text-background/80"><strong className="text-background">Response Time:</strong> Within 24–48 hours</p>
               </div>
               <div className="space-y-2 text-sm">
-                <p className="text-background/80"><strong className="text-background">Fulfillment:</strong> Orders ship to customers across the United States</p>
-                <p className="text-background/80"><strong className="text-background">Serving:</strong> United States customers</p>
+                <p className="text-background/80"><strong className="text-background">Service Area:</strong> Serving customers across the United States and internationally</p>
                 <p className="text-background/80"><strong className="text-background">Currency:</strong> USD ($)</p>
               </div>
               <div className="space-y-2 text-sm">
                 <p className="text-background/80"><strong className="text-background">Secure Checkout:</strong> Powered by Stripe</p>
                 <p className="text-background/80"><strong className="text-background">SSL Protected:</strong> 256-bit encryption</p>
-                <p className="text-background/80"><strong className="text-background">Payments:</strong> Visa, Mastercard, PayPal, Apple Pay, Google Pay</p>
+                <p className="text-background/80"><strong className="text-background">Payments:</strong> Visa, Mastercard, Apple Pay, Google Pay</p>
               </div>
             </div>
-            <p className="text-sm text-background/60 mt-4 max-w-3xl">
-              GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals.
-              We carefully select our pet products to ensure quality and comfort for your pets.
-              Customer support available via email.
+            {/* Support question line */}
+            <p className="text-sm text-background/70 mt-4 mb-4">
+              Questions about your order or our products? Contact us at{' '}
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>
             </p>
             <div className="mt-3 space-y-1 text-sm text-background/60">
-              <p>Operating location: Rotterdam, Netherlands</p>
-              <p>Shipping destination: United States</p>
+              <p>Operating location: Apeldoorn, Netherlands</p>
+              <p>Serving customers across the United States and internationally</p>
               <p>KVK: 78156955 · VAT: NL003295015B69</p>
+            </div>
+            {/* Payment Badges */}
+            <div className="mt-4">
+              <PaymentBadges variant="light" methods={['Visa', 'Mastercard', 'Apple Pay', 'Google Pay']} />
             </div>
           </div>
 
@@ -464,7 +484,7 @@ export const Footer = () => {
                   Customer support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-background/60 hover:text-primary transition-colors">{SUPPORT_EMAIL}</a> | <Link to="/returns" className="text-background/60 hover:text-primary transition-colors">Returns Policy</Link>
                 </p>
                 <p className="text-background/30 text-[10px]">
-                  GetPawsy is operated by Skidzo, a registered business in the Netherlands (KVK 78156955, VAT NL003295015B69). Rotterdam, Netherlands.
+                  GetPawsy is operated by Skidzo, a registered business in the Netherlands (KVK 78156955, VAT NL003295015B69). Apeldoorn, Netherlands.
                 </p>
               </div>
               
