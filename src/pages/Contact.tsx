@@ -355,8 +355,8 @@ const Contact = () => {
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-6">
                 <h3 className="font-semibold text-foreground mb-2">Response Time</h3>
                 <p className="text-sm text-muted-foreground">
-                  We typically respond to all inquiries within 24 hours. 
-                  For urgent matters, please include your order number for faster assistance.
+                   We typically respond to all inquiries within 24–48 hours. 
+                   For urgent matters, please include your order number for faster assistance.
                 </p>
               </div>
             </motion.div>

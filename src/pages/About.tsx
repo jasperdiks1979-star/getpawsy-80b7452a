@@ -282,7 +282,7 @@ const About = () => {
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
                     <p className="text-foreground">
-                      <strong>Shipping destination:</strong> United States
+                      <strong>Shipping:</strong> Serving customers across the United States and internationally
                     </p>
                   </div>
                   <div className="flex items-start gap-3">

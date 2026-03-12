@@ -43,6 +43,7 @@ const trustPoints = [
 const transparencyDetails = [
   { label: 'Business name', value: 'GetPawsy' },
   { label: 'Operator', value: 'Skidzo' },
+  { label: 'Location', value: 'Apeldoorn, Netherlands' },
   { label: 'Registration', value: 'KVK 78156955' },
   { label: 'VAT ID', value: 'NL003295015B69' },
   { label: 'Support email', value: SUPPORT_EMAIL },

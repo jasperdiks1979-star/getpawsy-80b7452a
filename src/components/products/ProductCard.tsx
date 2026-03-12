@@ -288,9 +288,9 @@ export const ProductCard = memo(forwardRef<HTMLAnchorElement, ProductCardProps>(
             )}
           </div>
 
-          {/* Micro Trust Text - Ships from US fulfillment centers */}
+          {/* Micro Trust Text */}
           <p className="text-xs text-muted-foreground">
-            Ships from US fulfillment centers
+            Fast shipping to customers in the United States
           </p>
 
           {/* Mobile Actions */}
