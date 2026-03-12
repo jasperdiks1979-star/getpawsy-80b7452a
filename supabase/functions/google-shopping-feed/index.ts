@@ -135,14 +135,25 @@ function getProductType(cat: string | null): string {
   let t = "Pet Supplies";
   if (c.includes("dog")) t += " > Dogs";
   else if (c.includes("cat")) t += " > Cats";
-  else if (c.includes("bird")) t += " > Birds";
+  else if (c.includes("bird") || c.includes("chicken")) t += " > Birds";
+  else if (c.includes("hamster")) t += " > Small Pets > Hamsters";
+  else if (c.includes("rabbit") || c.includes("hutch")) t += " > Small Pets > Rabbits";
+  else if (c.includes("guinea")) t += " > Small Pets > Guinea Pigs";
+  else if (c.includes("small pet")) t += " > Small Pets";
+  else if (c.includes("reptile") || c.includes("tortoise")) t += " > Reptiles";
   else t += " > Accessories";
   if (c.includes("bed")) t += " > Beds";
   else if (c.includes("toy")) t += " > Toys";
   else if (c.includes("collar") || c.includes("leash")) t += " > Collars & Leashes";
-  else if (c.includes("tree") || c.includes("furniture")) t += " > Furniture";
+  else if (c.includes("tree") || c.includes("furniture") || c.includes("condo")) t += " > Furniture";
   else if (c.includes("litter")) t += " > Litter & Accessories";
-  else if (c.includes("bowl") || c.includes("feed")) t += " > Bowls & Feeders";
+  else if (c.includes("bowl") || c.includes("feed") || c.includes("fountain")) t += " > Bowls & Feeders";
+  else if (c.includes("house") || c.includes("cage") || c.includes("hutch") || c.includes("coop")) t += " > Habitats & Cages";
+  else if (c.includes("groom") || c.includes("balm")) t += " > Grooming";
+  else if (c.includes("train")) t += " > Training";
+  else if (c.includes("carrier")) t += " > Carriers & Travel";
+  else if (c.includes("cloth") || c.includes("shoe")) t += " > Apparel";
+  else if (c.includes("perch") || c.includes("accessori")) t += " > Accessories";
   return t;
 }
 
