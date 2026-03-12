@@ -586,7 +586,25 @@ function assertSitemapFileValid(filePath: string, requiredToken: string, label: 
 
 // ── Vite Plugin ───────────────────────────────────────────────────────
 
-const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel><title>GetPawsy Product Feed</title><link>https://getpawsy.pet/</link><description>Google Merchant Center feed for GetPawsy.</description><item><g:id>fallback-feed-item</g:id><g:title>GetPawsy Feed Placeholder Product</g:title><g:link>https://getpawsy.pet/products</g:link><g:price>1.00 USD</g:price><g:availability>in stock</g:availability><g:image_link>https://getpawsy.pet/images/merchant-placeholder.jpg</g:image_link><g:brand>GetPawsy</g:brand><g:condition>new</g:condition><g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies</g:google_product_category></item></channel></rss>`;
+const FALLBACK_FEED = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>GetPawsy Product Feed</title>
+    <link>https://getpawsy.pet</link>
+    <description>GetPawsy Google Merchant Center Feed</description>
+    <item>
+      <g:id>fallback-feed-item</g:id>
+      <g:title>GetPawsy Feed Placeholder Product</g:title>
+      <g:link>https://getpawsy.pet/products</g:link>
+      <g:price>1.00 USD</g:price>
+      <g:availability>in stock</g:availability>
+      <g:image_link>https://getpawsy.pet/images/merchant-placeholder.jpg</g:image_link>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies</g:google_product_category>
+    </item>
+  </channel>
+</rss>`;
 
 export default function merchantFeedPlugin(): Plugin {
   let resolvedOutDir = 'dist';
