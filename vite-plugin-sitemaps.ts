@@ -456,7 +456,7 @@ ${extra}      <g:product_type>${esc(getProductType(p.category))}</g:product_type
     </item>`;
 }
 
-async function buildMerchantFeed(): Promise<string> {
+async function buildMerchantFeed(maxItems?: number): Promise<string> {
   const [rawProducts, bestsellers] = await Promise.all([
     supaRest<MerchantProduct>(
       'products_public',
@@ -466,7 +466,7 @@ async function buildMerchantFeed(): Promise<string> {
   ]);
 
   // Safety post-filter: exclude any product missing required fields or with stock <= 0
-  const products = rawProducts.filter(p =>
+  const eligibleProducts = rawProducts.filter(p =>
     p.price > 0 &&
     p.stock !== null && p.stock > 0 &&
     p.image_url && p.image_url.trim() !== '' &&
@@ -474,8 +474,11 @@ async function buildMerchantFeed(): Promise<string> {
     p.description && p.description.trim() !== ''
   );
 
+  const products = typeof maxItems === 'number' ? eligibleProducts.slice(0, maxItems) : eligibleProducts;
   const bestsellersSet = new Set(bestsellers.map(b => b.product_id));
-  console.log(`[xml-plugin] Merchant feed: ${products.length} in-stock products (${rawProducts.length} raw, ${rawProducts.length - products.length} excluded), ${bestsellersSet.size} bestsellers`);
+  console.log(
+    `[xml-plugin] Merchant feed: ${products.length} exported (${eligibleProducts.length} eligible, ${rawProducts.length} raw, ${rawProducts.length - eligibleProducts.length} excluded)`
+  );
 
   const now = new Date().toISOString();
   const items = products.map(p => productItemXml(p, bestsellersSet)).join('\n');
