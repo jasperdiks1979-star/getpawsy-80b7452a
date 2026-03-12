@@ -16,24 +16,30 @@ const CATEGORY_PILLAR_MAP: Record<string, PillarGuide[]> = {
   // Dog Training
   'dog training': [
     { slug: 'complete-dog-training-guide-2026', title: 'Dog Training Guide', description: 'Stop pulling, barking & bad habits with our expert 7-day plan' },
-    { slug: 'best-no-pull-dog-harness-2026', title: 'Best No-Pull Harness', description: 'Tested & ranked for pullers — front-clip picks' },
+    { slug: 'best-dog-training-collar', title: 'Best Dog Training Collar', description: 'Vet-reviewed collar picks ranked by safety & effectiveness' },
+    { slug: 'dog-behavior-training-guide', title: 'Dog Behavior Training Guide', description: 'Fix common behavior problems with positive reinforcement' },
   ],
   'dog collars & leashes': [
-    { slug: 'complete-dog-training-guide-2026', title: 'Dog Training Guide', description: 'Leash training techniques and positive reinforcement methods' },
+    { slug: 'dog-leash-control-guide', title: 'Dog Leash Control Guide', description: 'Stop pulling & walk calmly with proven techniques' },
+    { slug: 'best-dog-training-collar', title: 'Best Dog Training Collar', description: 'Vet-reviewed collar picks for obedience & recall' },
     { slug: 'best-dog-training-leash-for-pullers', title: 'Best Training Leash', description: 'Anti-pull leashes tested for all dog sizes' },
   ],
   // Dog Travel
   'dog travel': [
     { slug: 'dog-travel-safety-guide', title: 'Dog Travel Safety Guide', description: 'Car seats, harnesses & travel tips for every trip' },
-    { slug: 'crash-tested-dog-car-seat-guide', title: 'Crash-Tested Car Seats', description: 'What to look for in a genuinely safe dog car seat' },
+    { slug: 'traveling-with-dogs-tips', title: 'Traveling With Dogs Tips', description: 'Essential tips for safe & stress-free trips' },
+    { slug: 'dog-travel-safety-equipment-guide', title: 'Dog Travel Safety Equipment', description: 'Car seats, harnesses & crates ranked by crash safety' },
   ],
   'dog car seats': [
     { slug: 'dog-travel-safety-guide', title: 'Dog Travel Safety Guide', description: 'Complete guide to safe dog travel by car and plane' },
+    { slug: 'dog-car-harness-guide', title: 'Dog Car Harness Guide', description: 'Crash-tested harness picks for every dog size' },
     { slug: 'dog-booster-seat-vs-car-hammock', title: 'Booster Seat vs Hammock', description: 'Which option is safer for your dog?' },
   ],
   // Dog Grooming
   'dog grooming': [
     { slug: 'dog-grooming-tools-guide', title: 'Dog Grooming Tools Guide', description: 'Brushes, clippers & kits for every coat type' },
+    { slug: 'dog-grooming-essentials', title: 'Dog Grooming Essentials', description: 'Everything you need to groom at home' },
+    { slug: 'dog-shedding-control-guide', title: 'Dog Shedding Control Guide', description: 'Reduce shedding by up to 80% with proven methods' },
   ],
   // Dog Beds
   'dog beds': [
@@ -69,6 +75,11 @@ const CATEGORY_PILLAR_MAP: Record<string, PillarGuide[]> = {
   'dog toys': [
     { slug: 'best-interactive-dog-toys', title: 'Best Interactive Dog Toys', description: 'Puzzle & enrichment toys tested and ranked' },
     { slug: 'how-to-train-dog-with-toys', title: 'Train Your Dog With Toys', description: 'Reward-based toy training techniques' },
+  ],
+  // Dog Harnesses
+  'dog harnesses': [
+    { slug: 'best-no-pull-dog-harness-2026', title: 'Best No-Pull Harness', description: 'Tested & ranked for pullers — front-clip picks' },
+    { slug: 'dog-car-harness-guide', title: 'Dog Car Harness Guide', description: 'Crash-tested harness picks for safe car travel' },
   ],
 };
 

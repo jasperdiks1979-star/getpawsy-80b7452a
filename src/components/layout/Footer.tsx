@@ -161,10 +161,12 @@ export const Footer = () => {
     guideLinks: [
       { label: 'Dog Training Guide', href: '/guides/complete-dog-training-guide-2026' },
       { label: 'Dog Travel Safety Guide', href: '/guides/dog-travel-safety-guide' },
-      { label: 'Dog Grooming Tools Guide', href: '/guides/dog-grooming-tools-guide' },
-      { label: 'Cat Litter Solutions Guide', href: '/guides/cat-litter-solutions-guide' },
-      { label: 'Best Cat Litter Box 2026', href: '/guides/best-cat-litter-box-2026' },
-      { label: 'Best Cat Trees for Indoor Cats', href: '/guides/best-cat-trees-for-indoor-cats' },
+      { label: 'Dog Grooming Guide', href: '/guides/dog-grooming-tools-guide' },
+      { label: 'Cat Litter Guide', href: '/guides/cat-litter-solutions-guide' },
+      { label: 'Dog Training Collar Guide', href: '/guides/best-dog-training-collar' },
+      { label: 'Dog Leash Control Guide', href: '/guides/dog-leash-control-guide' },
+      { label: 'Dog Shedding Control', href: '/guides/dog-shedding-control-guide' },
+      { label: 'Traveling With Dogs', href: '/guides/traveling-with-dogs-tips' },
       { label: 'All Guides', href: '/guides' },
     ],
     discoverLinks: [
