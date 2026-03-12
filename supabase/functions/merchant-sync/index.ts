@@ -722,8 +722,8 @@ Deno.serve(async (req: Request) => {
         googleProduct.googleProductCategory = categoryId;
       }
 
-      if (additionalImages.length > 0) {
-        googleProduct.additionalImageLinks = additionalImages;
+      if (cappedAdditionalImages.length > 0) {
+        googleProduct.additionalImageLinks = cappedAdditionalImages;
       }
 
       payloads.push(googleProduct);
