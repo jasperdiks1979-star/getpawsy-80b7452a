@@ -242,29 +242,8 @@ const GuidePage = () => {
     })),
   } : null;
 
-  // Product schema for comparison products
-  const productSchemas = guide.comparisonProducts?.map((product) => ({
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: product.name,
-    image: product.image,
-    description: product.description || product.advantages.join('. '),
-    brand: { '@type': 'Brand', name: 'GetPawsy' },
-    ...(product.sku ? { sku: product.sku } : {}),
-    offers: {
-      '@type': 'Offer',
-      price: parseFloat(product.price.replace(/[^0-9.]/g, '')),
-      priceCurrency: 'USD',
-      availability: `https://schema.org/${product.availability || 'InStock'}`,
-      url: `${BASE_URL}${product.link}`,
-      seller: { '@type': 'Organization', name: 'GetPawsy' },
-    },
-    review: {
-      '@type': 'Review',
-      author: { '@type': 'Organization', name: 'GetPawsy' },
-      reviewRating: { '@type': 'Rating', ratingValue: '4.5', bestRating: '5' },
-    },
-  })) || [];
+  // Product schemas removed from guide pages — Google Shopping policy requires
+  // Product schema only on product pages (/product/*), not editorial guides.
 
   // Parse a markdown table block into header + rows
   const parseMarkdownTable = (lines: string[]): { headers: string[]; rows: string[][] } | null => {
