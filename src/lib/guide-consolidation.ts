@@ -135,6 +135,18 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'best-pet-water-fountain': 'best-cat-water-fountain',
   'best-dog-grooming-tools': 'dog-grooming-essentials',
   'best-cat-grooming-tools': 'best-cat-grooming-brush',
+
+  // ── Pillar page short slug redirects ──────────────────────────
+  'cat-litter-guide': 'cat-litter-box-guide',
+  'cat-tree-guide': 'cat-tree-buying-guide',
+  'cat-toy-guide': 'cat-toy-buying-guide',
+  'dog-bed-guide': 'dog-bed-buying-guide',
+  'pet-carrier-buying-guide': 'pet-carrier-guide',
+  'pet-grooming-buying-guide': 'pet-grooming-guide',
+  'pet-feeding-buying-guide': 'pet-feeding-guide',
+  'pet-home-guide': 'pet-home-products-guide',
+  'dog-leash-buying-guide': 'dog-leash-guide',
+  'pet-travel-buying-guide': 'pet-travel-guide',
 };
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */
