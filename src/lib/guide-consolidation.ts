@@ -218,9 +218,6 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'cat-travel-carrier': 'best-cat-travel-carrier',
   'best-cat-carrier-for-travel': 'best-cat-travel-carrier',
   'airline-cat-carrier': 'best-cat-travel-carrier',
-  'best-cat-products': 'best-cat-products',
-  'best-dog-products': 'best-dog-products',
-  'best-pet-accessories': 'best-pet-accessories',
 };
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */
