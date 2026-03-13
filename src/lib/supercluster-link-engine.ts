@@ -438,16 +438,23 @@ export function getGuideLinks(guideSlug: string): SuperclusterLinkRecommendation
 
 /**
  * Generate link recommendations for a collection page.
- * Returns: 1 pillar + 3-8 guides + featured products
+ * Returns: 1 pillar + 3-8 guides (money pages prioritized) + related collections
  */
 export function getCollectionLinks(collectionSlug: string): SuperclusterLinkRecommendation[] {
   const cluster = getClusterForCollection(collectionSlug);
   if (!cluster) return [];
 
   const recs: SuperclusterLinkRecommendation[] = [];
+  const added = new Set<string>();
+  const addRec = (rec: SuperclusterLinkRecommendation) => {
+    if (!added.has(rec.targetPath)) {
+      added.add(rec.targetPath);
+      recs.push(rec);
+    }
+  };
 
   // 1. Pillar link
-  recs.push({
+  addRec({
     targetPath: `/guides/${cluster.pillarSlug}`,
     targetType: 'pillar',
     anchor: cluster.anchors.exact[0] || `${cluster.label} buying guide`,
@@ -455,14 +462,30 @@ export function getCollectionLinks(collectionSlug: string): SuperclusterLinkReco
     priority: 10,
   });
 
-  // 2. Cluster guides (3-8)
+  // 1b. Money page guides first (boosted priority)
+  const moneyGuides = cluster.priorityPages
+    .filter(pp => pp.type === 'guide' && `/collections/${collectionSlug}` !== `/collections/${pp.slug}`)
+    .slice(0, 4);
+
+  moneyGuides.forEach((pp, i) => {
+    const anchorPool: ('exact' | 'partial' | 'semantic')[] = ['exact', 'partial', 'semantic'];
+    addRec({
+      targetPath: `/guides/${pp.slug}`,
+      targetType: 'guide',
+      anchor: pp.slug.replace(/-/g, ' '),
+      anchorType: anchorPool[i % 3],
+      priority: 9 + pp.boost,
+    });
+  });
+
+  // 2. Remaining cluster guides (3-8)
   cluster.guideSlugs.slice(0, 8).forEach((slug, i) => {
-    const anchorPool = i % 3 === 0 ? 'exact' : i % 3 === 1 ? 'partial' : 'semantic';
-    recs.push({
+    const anchorPool: ('exact' | 'partial' | 'semantic')[] = ['exact', 'partial', 'semantic'];
+    addRec({
       targetPath: `/guides/${slug}`,
       targetType: 'guide',
       anchor: slug.replace(/-/g, ' '),
-      anchorType: anchorPool,
+      anchorType: anchorPool[i % 3],
       priority: 8 - Math.floor(i / 3),
     });
   });
@@ -473,7 +496,7 @@ export function getCollectionLinks(collectionSlug: string): SuperclusterLinkReco
     .slice(0, 3);
 
   otherCollections.forEach(coll => {
-    recs.push({
+    addRec({
       targetPath: `/collections/${coll}`,
       targetType: 'collection',
       anchor: coll.replace(/-/g, ' '),
