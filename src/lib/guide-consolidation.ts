@@ -81,12 +81,26 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'best-dog-collars': 'leash-training-dog-step-by-step',
   'collar-vs-harness': 'leash-training-dog-step-by-step',
 
+  // ── Short slug → canonical year-tagged redirects ─────────────────
+  'best-cat-litter-box': 'best-cat-litter-box-2026',
+  'best-dog-bed': 'best-dog-bed-2026',
+  'best-cat-tree': 'best-cat-trees-2026',
+  'best-cat-trees': 'best-cat-trees-2026',
+  'best-cat-trees-large-cats': 'best-cat-trees-large-cats-2026',
+  'best-orthopedic-dog-bed-large-dogs': 'best-orthopedic-dog-bed-large-dogs-2026',
+  'best-dog-beds-large-breeds': 'best-dog-beds-large-breeds-2026',
+  'best-litter-boxes-apartments': 'best-litter-boxes-apartments-2026',
+  'best-self-cleaning-litter-box': 'best-self-cleaning-litter-box-2026',
+  'best-cat-litter-box-furniture': 'best-cat-litter-box-furniture-enclosures-2026',
+  'best-cat-litter-box-furniture-enclosures': 'best-cat-litter-box-furniture-enclosures-2026',
+  'best-no-pull-dog-harness': 'best-no-pull-dog-harness-2026',
+
   // ── SEO Guide System Redirects (requested slug → existing canonical) ──
   'best-cat-litter-box-for-odor-control': 'best-odor-control-litter-box',
   'best-low-tracking-cat-litter-box': 'best-low-tracking-litter-box',
   'best-cat-litter-box-small-apartment': 'best-litter-boxes-apartments-2026',
   'best-automatic-cat-litter-box': 'best-self-cleaning-litter-box-2026',
-  'best-cat-litter-box-furniture': 'best-cat-litter-box-furniture-enclosures-2026',
+  // 'best-cat-litter-box-furniture' already mapped above (line 94)
   'best-cat-litter-box-multiple-cats': 'best-litter-boxes-multi-cat',
   'best-cat-tree-for-large-cats': 'best-cat-trees-large-cats-2026',
   'modern-cat-tree-furniture': 'modern-cat-trees-home-design',
