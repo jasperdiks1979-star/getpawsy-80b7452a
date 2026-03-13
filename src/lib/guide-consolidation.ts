@@ -114,6 +114,27 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'best-airline-approved-dog-carrier': 'best-dog-carriers-for-travel',
   'best-interactive-cat-toys': 'best-interactive-cat-toys-that-work',
   'best-pet-carrier-for-travel': 'best-cat-carrier',
+
+  // ── SEO Domination Map — short slug redirects ─────────────────
+  'best-cat-litter-odor-control': 'best-cat-litter-for-odor-control',
+  'best-cat-tree-large-cats': 'best-cat-trees-large-cats-2026',
+  'best-cat-tree-small-apartment': 'best-cat-trees-small-apartments',
+  'best-cat-toys-indoor-cats': 'best-toys-for-bored-indoor-cats',
+  'best-automatic-cat-toys': 'best-automatic-cat-toy',
+  'best-dog-bed-large-dogs': 'best-dog-beds-large-breeds-2026',
+  'best-dog-bed-senior-dogs': 'orthopedic-dog-beds-for-senior-dogs',
+  'best-dog-toys-aggressive-chewers': 'best-toys-for-aggressive-chewers',
+  'best-dog-toys-boredom': 'best-toys-for-bored-dogs',
+  'best-dog-training-leash': 'best-dog-training-leash-for-pullers',
+  'best-dog-harness': 'best-no-pull-dog-harness-2026',
+  'best-dog-carrier': 'best-dog-carriers-for-travel',
+  'best-airline-approved-pet-carrier': 'best-dog-carriers-for-travel',
+  'best-pet-car-seat': 'best-dog-car-seat',
+  'best-cat-backpack-carrier': 'best-cat-carrier-backpack',
+  'best-automatic-pet-feeder': 'best-automatic-cat-feeder',
+  'best-pet-water-fountain': 'best-cat-water-fountain',
+  'best-dog-grooming-tools': 'dog-grooming-essentials',
+  'best-cat-grooming-tools': 'best-cat-grooming-brush',
 };
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */
