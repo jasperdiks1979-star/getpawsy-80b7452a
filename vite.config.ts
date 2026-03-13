@@ -102,6 +102,7 @@ export default defineConfig(({ mode }) => ({
     buildIdPlugin(),
     sitemapsPlugin(),
     clsBuildGuard(),
+    prerenderGuidesPlugin(),
     mode === "production" && visualizer({
       filename: 'audits/bundle-report.html',
       gzipSize: true,
