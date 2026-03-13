@@ -5,7 +5,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, BookOpen } from 'lucide-react';
 
-/** Pillar → cluster slug mapping (12 pillars × 15 clusters each) */
+/** Pillar → cluster slug mapping (13 pillars × 20+ clusters each) */
 const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
   'cat-litter-box-guide': {
     label: 'Cat Litter Box Guides',
@@ -25,6 +25,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'best-litter-box-under-100',
       'best-cat-litter-box-furniture-enclosures-2026',
       'best-odor-control-litter-box',
+      'best-cat-litter-box-for-large-cats',
+      'covered-vs-open-litter-box',
+      'litter-box-placement-guide',
+      'how-to-stop-cat-litter-smell',
+      'best-litter-box-small-apartments',
     ],
   },
   'cat-tree-buying-guide': {
@@ -45,6 +50,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'how-tall-should-cat-tree-be',
       'sisal-vs-carpet-scratching-posts',
       'cat-tree-stability-guide',
+      'best-cat-tree-for-two-cats',
+      'best-cat-tree-for-bengal-cats',
+      'best-cat-condo-for-multiple-cats',
+      'are-cat-condos-worth-it',
+      'best-cat-scratcher',
     ],
   },
   'cat-toy-buying-guide': {
@@ -65,6 +75,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'best-cat-scratching-post',
       'sisal-vs-carpet-scratching-posts',
       'best-cat-tunnel',
+      'best-cat-scratcher',
+      'best-cat-water-fountain',
+      'best-cat-grooming-brush',
+      'best-cat-bed',
+      'best-cat-carrier',
     ],
   },
   'cat-bed-guide': {
@@ -85,6 +100,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'best-toys-for-bored-indoor-cats',
       'best-interactive-cat-toys-that-work',
       'best-cat-toys',
+      'best-cat-tree-for-two-cats',
+      'best-cat-tree-for-kittens',
+      'best-cat-scratching-post',
+      'best-luxury-cat-tree',
+      'choosing-safe-cat-tree-indoor',
     ],
   },
   'dog-bed-buying-guide': {
@@ -105,6 +125,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'how-to-wash-a-dog-bed-properly',
       'best-outdoor-dog-bed',
       'best-dog-bed-for-small-dogs',
+      'best-dog-bed-for-crate',
+      'best-dog-bed-for-golden-retrievers',
+      'best-dog-beds-for-arthritis',
+      'signs-dog-needs-joint-support',
+      'machine-washable-dog-bed-guide',
     ],
   },
   'dog-toy-guide': {
@@ -125,6 +150,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'best-dog-training-equipment',
       'reward-based-training-tools',
       'puppy-chewing-solutions',
+      'best-dog-toys-mental-stimulation',
+      'best-dog-toy-for-puppies',
+      'best-dog-cooling-mat',
+      'best-anti-bark-solutions',
+      'how-to-stop-dog-barking-guide',
     ],
   },
   'dog-leash-guide': {
@@ -145,6 +175,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'best-dog-training-equipment',
       'puppy-training-first-30-days',
       'complete-dog-training-guide-2026',
+      'puppy-chewing-solutions',
+      'puppy-socialization-guide',
+      'puppy-training-checklist',
+      'best-dog-training-accessories',
+      'reward-based-training-tools',
     ],
   },
   'dog-harness-guide': {
@@ -165,6 +200,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'complete-dog-training-guide-2026',
       'best-dog-training-accessories',
       'best-dog-training-equipment',
+      'dog-car-harness-guide',
+      'puppy-training-first-30-days',
+      'puppy-socialization-guide',
+      'reward-based-training-tools',
+      'best-dog-car-seat',
     ],
   },
   'pet-carrier-guide': {
@@ -185,6 +225,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'how-to-train-dog-to-use-car-seat',
       'how-to-travel-with-cat',
       'pet-travel-checklist',
+      'best-dog-stroller-for-large-dogs',
+      'best-portable-pet-water-bottle',
+      'dog-travel-safety-guide',
+      'traveling-with-dogs-tips',
+      'dog-car-harness-guide',
     ],
   },
   'pet-travel-guide': {
@@ -205,6 +250,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'best-dog-ramp-for-car',
       'are-dog-car-seats-safe',
       'how-to-train-dog-to-use-car-seat',
+      'best-dog-stroller-for-large-dogs',
+      'best-dog-carriers-for-travel',
+      'best-cat-carrier',
+      'best-cat-carrier-backpack',
+      'dog-travel-safety-equipment-guide',
     ],
   },
   'pet-grooming-guide': {
@@ -225,6 +275,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'best-pet-camera',
       'best-automatic-cat-feeder',
       'are-automatic-cat-feeders-safe',
+      'best-cat-grooming-brush',
+      'best-dog-bed-2026',
+      'best-elevated-dog-bed',
+      'how-to-wash-a-dog-bed-properly',
+      'best-outdoor-dog-bed',
     ],
   },
   'pet-feeding-guide': {
@@ -245,6 +300,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'how-to-wash-a-dog-bed-properly',
       'best-outdoor-dog-bed',
       'best-dog-bed-for-small-dogs',
+      'best-dog-bed-for-crate',
+      'best-dog-bed-for-golden-retrievers',
+      'machine-washable-dog-bed-guide',
+      'best-dog-puzzle-toys',
+      'best-interactive-dog-toys',
     ],
   },
   'pet-home-products-guide': {
@@ -265,6 +325,11 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'best-elevated-dog-bed',
       'how-to-wash-a-dog-bed-properly',
       'best-outdoor-dog-bed',
+      'best-dog-bed-for-small-dogs',
+      'best-dog-bed-for-crate',
+      'best-dog-puzzle-toys',
+      'best-interactive-dog-toys',
+      'best-dog-toys-mental-stimulation',
     ],
   },
 };
