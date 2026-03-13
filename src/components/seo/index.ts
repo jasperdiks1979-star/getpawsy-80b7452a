@@ -10,3 +10,4 @@ export { WebsiteSchema } from './WebsiteSchema';
 export { AggregateRatingSchema, calculateAggregateRating } from './AggregateRatingSchema';
 export { LocalBusinessSchema } from './LocalBusinessSchema';
 export { CollectionPillarLinks } from './CollectionPillarLinks';
+export { SuperclusterRelatedContent } from './SuperclusterRelatedContent';
