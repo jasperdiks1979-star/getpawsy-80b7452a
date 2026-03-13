@@ -100,7 +100,7 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'best-low-tracking-cat-litter-box': 'best-low-tracking-litter-box',
   'best-cat-litter-box-small-apartment': 'best-litter-boxes-apartments-2026',
   'best-automatic-cat-litter-box': 'best-self-cleaning-litter-box-2026',
-  'best-cat-litter-box-furniture': 'best-cat-litter-box-furniture-enclosures-2026',
+  // 'best-cat-litter-box-furniture' already mapped above (line 94)
   'best-cat-litter-box-multiple-cats': 'best-litter-boxes-multi-cat',
   'best-cat-tree-for-large-cats': 'best-cat-trees-large-cats-2026',
   'modern-cat-tree-furniture': 'modern-cat-trees-home-design',
