@@ -32,9 +32,14 @@ Deno.serve(async (req: Request) => {
       console.error("[sitemap-guides] DB error:", error);
     }
 
-    // Also include known static guide slugs from the data directory
-    // These are loaded from the guides index at build time
-    const staticGuideUrls: string[] = [];
+    // Also include programmatic comparison page URLs
+    // These are generated at build time from the use cases database
+    const PRODUCT_TYPES = [
+      'cat-toys','cat-litter','cat-trees','cat-scratching-posts','cat-carriers','cat-beds',
+      'cat-water-fountains','automatic-cat-feeders','dog-training-toys','dog-car-seats',
+      'dog-grooming-tools','dog-travel','dog-beds','dog-harnesses','dog-collars','dog-leashes',
+      'dog-toys','dog-puzzle-toys','pet-strollers','pet-cameras','slow-feeders',
+    ];
 
     // Combine DB + static guides, deduplicating by slug
     const slugSet = new Set<string>();
