@@ -32,19 +32,19 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
     slugs: [
       'best-cat-trees-large-cats-2026',
       'best-cat-trees-small-apartments',
+      'best-cat-tree-for-kittens',
+      'best-cat-tree-maine-coon',
+      'best-luxury-cat-tree',
+      'modern-cat-trees-home-design',
       'best-cat-scratching-post',
       'cat-condo-vs-cat-tree-2026',
       'choosing-safe-cat-tree-indoor',
       'how-to-stop-cat-scratching-furniture',
       'best-cat-trees-2026',
       'best-cat-trees-for-indoor-cats',
-      'modern-cat-trees-home-design',
       'how-tall-should-cat-tree-be',
       'sisal-vs-carpet-scratching-posts',
       'cat-tree-stability-guide',
-      'best-cat-scratcher',
-      'best-cat-tunnel',
-      'best-cat-condo-small-apartments',
     ],
   },
   'cat-toy-buying-guide': {
@@ -170,6 +170,7 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
   'pet-carrier-guide': {
     label: 'Pet Carrier Guides',
     slugs: [
+      'best-pet-carrier-airline-approved',
       'best-cat-carrier',
       'best-cat-carrier-backpack',
       'best-dog-carriers-for-travel',
@@ -184,12 +185,13 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'how-to-train-dog-to-use-car-seat',
       'how-to-travel-with-cat',
       'pet-travel-checklist',
-      'dog-travel-safety-guide',
     ],
   },
   'pet-travel-guide': {
     label: 'Pet Travel Guides',
     slugs: [
+      'best-pet-carrier-airline-approved',
+      'best-portable-pet-water-bottle',
       'best-dog-car-seat',
       'best-dog-stroller',
       'dog-travel-safety-guide',
@@ -203,8 +205,6 @@ const PILLAR_CLUSTERS: Record<string, { label: string; slugs: string[] }> = {
       'best-dog-ramp-for-car',
       'are-dog-car-seats-safe',
       'how-to-train-dog-to-use-car-seat',
-      'dog-travel-safety-equipment-guide',
-      'dog-travel-safety-laws-by-state',
     ],
   },
   'pet-grooming-guide': {
