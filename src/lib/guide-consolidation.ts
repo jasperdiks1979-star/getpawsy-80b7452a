@@ -165,8 +165,29 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'best-dog-bed-anxiety': 'calming-dog-bed-anxiety',
   'waterproof-dog-bed': 'waterproof-orthopedic-dog-beds-guide',
   'memory-foam-dog-bed': 'memory-foam-vs-egg-crate-dog-beds',
-  'best-mental-stimulation-dog-toys': 'best-dog-puzzle-toys',
+  'best-mental-stimulation-dog-toys': 'best-dog-toys-mental-stimulation',
   'best-pet-travel-carrier': 'best-dog-carriers-for-travel',
+
+  // ── SEO Monopoly System — breed & intent slug redirects ─────────
+  'best-cat-tree-multiple-cats': 'best-cat-tree-for-two-cats',
+  'best-cat-tree-2-cats': 'best-cat-tree-for-two-cats',
+  'best-cat-tree-bengals': 'best-cat-tree-for-bengal-cats',
+  'bengal-cat-tree': 'best-cat-tree-for-bengal-cats',
+  'best-litter-box-large-cats': 'best-cat-litter-box-for-large-cats',
+  'best-litter-box-maine-coon': 'best-cat-litter-box-for-large-cats',
+  'jumbo-litter-box': 'best-cat-litter-box-for-large-cats',
+  'best-crate-bed-for-dogs': 'best-dog-bed-for-crate',
+  'crate-dog-bed': 'best-dog-bed-for-crate',
+  'best-dog-stroller-large': 'best-dog-stroller-for-large-dogs',
+  'heavy-duty-dog-stroller': 'best-dog-stroller-for-large-dogs',
+  'best-puppy-toys': 'best-dog-toy-for-puppies',
+  'puppy-teething-toys': 'best-dog-toy-for-puppies',
+  'best-dog-bed-golden-retriever': 'best-dog-bed-for-golden-retrievers',
+  'golden-retriever-dog-bed': 'best-dog-bed-for-golden-retrievers',
+  'brain-games-for-dogs': 'best-dog-toys-mental-stimulation',
+  'dog-brain-toys': 'best-dog-toys-mental-stimulation',
+  'best-dog-stroller': 'best-dog-stroller-for-large-dogs',
+  'best-pet-stroller': 'best-dog-stroller-for-large-dogs',
 };
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */
