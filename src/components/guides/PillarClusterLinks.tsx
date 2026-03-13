@@ -395,7 +395,7 @@ export function PillarClusterLinks({ currentSlug, guidesIndex }: PillarClusterLi
           Explore our expert cluster guides for specific topics in this category.
         </p>
         <div className="grid sm:grid-cols-2 gap-3 mb-8">
-          {pillarConfig.slugs.filter(s => s !== currentSlug).slice(0, 15).map(slug => (
+          {pillarConfig.slugs.filter(s => s !== currentSlug).slice(0, 20).map(slug => (
             <Link
               key={slug}
               to={`/guides/${slug}`}
