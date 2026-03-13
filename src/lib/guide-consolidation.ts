@@ -155,7 +155,6 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
 
   // ── Traffic Explosion alternate slug redirects ─────────────────
   'best-modern-cat-tree': 'modern-cat-trees-home-design',
-  'best-cat-tree-small-apartment': 'best-cat-trees-small-apartments',
   'tall-cat-tree-guide': 'how-tall-should-cat-tree-be',
   'cat-tree-vs-cat-condo': 'cat-condo-vs-cat-tree-2026',
   'best-automatic-litter-box': 'best-self-cleaning-litter-box-2026',
@@ -164,16 +163,10 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'low-tracking-litter-box': 'best-low-tracking-litter-box',
   'best-dog-beds-large-dogs': 'best-dog-beds-for-large-dogs',
   'best-dog-bed-anxiety': 'calming-dog-bed-anxiety',
-  'best-dog-bed-senior-dogs': 'orthopedic-dog-beds-for-senior-dogs',
   'waterproof-dog-bed': 'waterproof-orthopedic-dog-beds-guide',
   'memory-foam-dog-bed': 'memory-foam-vs-egg-crate-dog-beds',
-  'best-dog-toys-aggressive-chewers': 'best-toys-for-aggressive-chewers',
-  'best-dog-toys-boredom': 'best-toys-for-bored-dogs',
-  'best-interactive-dog-toys': 'best-interactive-dog-toys',
   'best-mental-stimulation-dog-toys': 'best-dog-puzzle-toys',
-  'best-pet-carrier-airline-approved': 'best-pet-carrier-airline-approved',
   'best-pet-travel-carrier': 'best-dog-carriers-for-travel',
-  'best-portable-pet-water-bottle': 'best-portable-pet-water-bottle',
 };
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */
