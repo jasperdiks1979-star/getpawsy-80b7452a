@@ -31,6 +31,12 @@ const MONEY_PAGE_SLUGS = new Set([
   // Pillar pages
   'cat-tree-buying-guide', 'cat-litter-box-guide', 'dog-bed-buying-guide',
   'dog-toy-guide', 'pet-travel-guide', 'cat-toy-buying-guide',
+  // Hub pillar pages
+  'best-cat-products', 'best-dog-products', 'best-pet-accessories',
+  // New money pages
+  'best-cat-condo-2026', 'best-cat-window-perch', 'best-cat-food-bowls',
+  'best-dog-travel-bowl', 'best-cat-litter-mat', 'best-dog-blanket',
+  'best-dog-water-fountain', 'best-dog-slow-feeder', 'best-cat-travel-carrier',
 ]);
 
 Deno.serve(async (req: Request) => {
