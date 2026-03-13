@@ -100,8 +100,15 @@ https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301
 # ═══ Static XML feeds — MUST match before SPA fallback ═══
 /merchant-diagnostics.xml  /merchant-diagnostics.xml  200
 /sitemap.xml               /sitemap.xml               200
+/sitemap-static.xml        /sitemap-static.xml        200
 /sitemap-*.xml             /sitemap-*.xml             200
 /robots.txt                /robots.txt                200
+
+# ═══ Dynamic sitemaps → Edge Functions ═══
+/sitemap-guides.xml   https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/sitemap-guides  200
+/sitemap-blog-1.xml   https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/sitemap-blog    200
+/sitemap-products-1.xml https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/sitemap-products?page=1 200
+/sitemap-products-2.xml https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/sitemap-products?page=2 200
 
 # ═══ API PROXY → Edge Functions (MUST be before SPA fallback) ═══
 /api/google-shopping-feed https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 200
