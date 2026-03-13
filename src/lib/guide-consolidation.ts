@@ -80,6 +80,26 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'dog-collar-sizing-guide': 'leash-training-dog-step-by-step',
   'best-dog-collars': 'leash-training-dog-step-by-step',
   'collar-vs-harness': 'leash-training-dog-step-by-step',
+
+  // ── SEO Guide System Redirects (requested slug → existing canonical) ──
+  'best-cat-litter-box-for-odor-control': 'best-odor-control-litter-box',
+  'best-low-tracking-cat-litter-box': 'best-low-tracking-litter-box',
+  'best-cat-litter-box-small-apartment': 'best-litter-boxes-apartments-2026',
+  'best-automatic-cat-litter-box': 'best-self-cleaning-litter-box-2026',
+  'best-cat-litter-box-furniture': 'best-cat-litter-box-furniture-enclosures-2026',
+  'best-cat-litter-box-multiple-cats': 'best-litter-boxes-multi-cat',
+  'best-cat-tree-for-large-cats': 'best-cat-trees-large-cats-2026',
+  'modern-cat-tree-furniture': 'modern-cat-trees-home-design',
+  'best-memory-foam-dog-bed': 'memory-foam-vs-egg-crate-dog-beds',
+  'best-dog-bed-for-senior-dogs': 'orthopedic-dog-beds-for-senior-dogs',
+  'best-waterproof-dog-bed': 'waterproof-orthopedic-dog-beds-guide',
+  'dog-bed-size-guide': 'how-to-choose-the-right-dog-bed-size',
+  'best-dog-leash-for-training': 'best-dog-training-leash-for-pullers',
+  'best-anti-pull-dog-leash': 'best-no-pull-dog-harness-2026',
+  'dog-harness-vs-collar': 'front-clip-vs-back-clip-harness',
+  'best-airline-approved-dog-carrier': 'best-dog-carriers-for-travel',
+  'best-interactive-cat-toys': 'best-interactive-cat-toys-that-work',
+  'best-pet-carrier-for-travel': 'best-cat-carrier',
 };
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */
