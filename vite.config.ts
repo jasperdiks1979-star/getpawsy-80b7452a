@@ -5,6 +5,7 @@ import { componentTagger } from "lovable-tagger";
 import buildIdPlugin from "./vite-plugin-build-id";
 import sitemapsPlugin from "./vite-plugin-sitemaps";
 import clsBuildGuard from "./vite-plugin-cls-build-guard";
+import prerenderGuidesPlugin from "./vite-plugin-prerender-guides";
 import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig(({ mode }) => ({
