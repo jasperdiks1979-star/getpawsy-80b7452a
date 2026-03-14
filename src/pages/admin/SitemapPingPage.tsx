@@ -39,7 +39,18 @@ interface PingLogEntry {
 const SITEMAP_OPTIONS = [
   { value: 'https://getpawsy.pet/sitemap.xml', label: '/sitemap.xml (index)' },
   { value: 'https://getpawsy.pet/sitemap-pages.xml', label: '/sitemap-pages.xml' },
-  { value: 'https://getpawsy.pet/sitemap-static.xml', label: '/sitemap-static.xml' },
+  { value: 'https://getpawsy.pet/sitemap-products-1.xml', label: '/sitemap-products-1.xml' },
+  { value: 'https://getpawsy.pet/sitemap-collections.xml', label: '/sitemap-collections.xml' },
+  { value: 'https://getpawsy.pet/sitemap-guides.xml', label: '/sitemap-guides.xml' },
+  { value: 'https://getpawsy.pet/sitemap-blog.xml', label: '/sitemap-blog.xml' },
+];
+
+const CHILD_SITEMAPS = [
+  'sitemap-pages.xml',
+  'sitemap-products-1.xml',
+  'sitemap-collections.xml',
+  'sitemap-guides.xml',
+  'sitemap-blog.xml',
 ];
 
 export default function SitemapPingPage() {
