@@ -153,6 +153,53 @@ export default function SitemapPingPage() {
           </div>
         )}
 
+        {/* Sitemap Status Card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">Sitemap Status</CardTitle>
+            </div>
+            <CardDescription>Current sitemap index and child sitemaps.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs text-muted-foreground">Index URL</span>
+                <p className="text-sm font-mono">https://getpawsy.pet/sitemap.xml</p>
+              </div>
+              <div className="flex gap-1">
+                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" asChild>
+                  <a href="https://getpawsy.pet/sitemap.xml" target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3 w-3" /> Open
+                  </a>
+                </Button>
+              </div>
+            </div>
+            <div className="border-t pt-2">
+              <span className="text-xs text-muted-foreground block mb-1.5">Child Sitemaps ({CHILD_SITEMAPS.length})</span>
+              <div className="grid gap-1">
+                {CHILD_SITEMAPS.map(name => (
+                  <div key={name} className="flex items-center justify-between px-2 py-1 rounded bg-muted/30 text-xs font-mono">
+                    <span>/{name}</span>
+                    <a
+                      href={`https://getpawsy.pet/${name}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-0.5"
+                    >
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="border-t pt-2 text-[10px] text-muted-foreground">
+              Sitemaps are generated at build time by <code>generate-sitemaps.mjs</code> and served as static XML files with <code>Content-Type: application/xml</code>.
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Controls */}
         <Card>
           <CardHeader className="pb-3">
