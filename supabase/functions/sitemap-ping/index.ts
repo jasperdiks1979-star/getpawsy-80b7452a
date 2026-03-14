@@ -41,11 +41,11 @@ Deno.serve(async (req) => {
   }
 
   const token = authHeader.replace('Bearer ', '');
-  const { data: claims, error: claimsErr } = await supabase.auth.getClaims(token);
-  if (claimsErr || !claims?.claims?.sub) {
+  const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
+  if (userErr || !user) {
     return jsonResponse({ ok: false, reason: 'Invalid session' }, 200);
   }
-  const userId = claims.claims.sub as string;
+  const userId = user.id;
 
   // Admin check
   const { data: roleData } = await supabase
