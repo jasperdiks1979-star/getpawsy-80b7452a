@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Loader2, CheckCircle, XCircle, AlertTriangle, Copy, RefreshCw,
-  Wifi, WifiOff, Clock, Shield, Zap,
+  Wifi, WifiOff, Clock, Shield, Zap, ExternalLink, FileText,
 } from 'lucide-react';
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch';
 import { cn } from '@/lib/utils';
