@@ -334,7 +334,7 @@ ${priceXml}
       <g:condition>new</g:condition>
       <g:brand>GetPawsy</g:brand>
 ${extra}      <g:product_type>${esc(getProductType(p.category))}</g:product_type>
-      <g:google_product_category>${esc(getGoogleProductCategory(p.category))}</g:google_product_category>
+      <g:google_product_category>${esc(getGoogleProductCategory(p.name, p.category))}</g:google_product_category>
       <g:shipping>
         <g:country>US</g:country>
         <g:service>Standard</g:service>
