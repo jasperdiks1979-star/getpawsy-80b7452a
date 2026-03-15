@@ -378,6 +378,11 @@ Deno.serve(async (req) => {
     // Build XML items, skip any that fail image validation
     const items = capped.map(p => buildItemXml(p)).filter(Boolean);
 
+    // Logging metrics
+    const categoryCoverage = capped.filter(p => getGoogleProductCategory(p.name, p.category) !== "Animals & Pet Supplies > Pet Supplies").length;
+    const defaultCategory = capped.length - categoryCoverage;
+    console.log(`[google-shopping-feed] Feed built: ${items.length} items exported, ${categoryCoverage} with specific category (${defaultCategory} fallback), ${capped.length} total eligible`);
+
     const now = new Date().toISOString();
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
@@ -398,6 +403,7 @@ ${items.join("\n")}
         "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
         "X-Feed-Products": String(items.length),
         "X-Feed-Generated": now,
+        "X-Category-Coverage": `${categoryCoverage}/${capped.length}`,
       },
     });
   } catch (err) {
