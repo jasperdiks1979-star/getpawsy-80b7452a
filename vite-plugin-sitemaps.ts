@@ -449,7 +449,7 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): string
     `      <g:image_link>${esc(img)}</g:image_link>`,
     `      <g:brand>GetPawsy</g:brand>`,
     `      <g:condition>new</g:condition>`,
-    `      <g:google_product_category>${esc(getGoogleProductCategory(p.category))}</g:google_product_category>`,
+    `      <g:google_product_category>${esc(getGoogleProductCategory(p.name, p.category))}</g:google_product_category>`,
     `      <g:shipping_weight>${esc(shippingWeight)}</g:shipping_weight>`,
   ];
 
