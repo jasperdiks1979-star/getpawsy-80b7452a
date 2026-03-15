@@ -47,40 +47,91 @@ function cleanProductName(name: string): string {
     .trim();
 }
 
-function getPetType(category: string | null): string {
-  if (!category) return "Pets";
-  const c = category.toLowerCase();
+function getPetType(name: string, category: string | null): string {
+  const c = `${name} ${category || ""}`.toLowerCase();
   if (c.includes("dog")) return "Dogs";
-  if (c.includes("cat")) return "Cats";
-  if (c.includes("bird") || c.includes("chicken")) return "Birds";
+  if (c.includes("cat") && !c.includes("catch")) return "Cats";
+  if (c.includes("bird") || c.includes("chicken") || c.includes("parrot")) return "Birds";
   if (c.includes("hamster")) return "Hamsters";
   if (c.includes("rabbit") || c.includes("hutch") || c.includes("bunny")) return "Rabbits";
   if (c.includes("guinea")) return "Guinea Pigs";
-  if (c.includes("small pet")) return "Small Pets";
-  if (c.includes("reptile") || c.includes("tortoise")) return "Reptiles";
+  if (c.includes("small pet") || c.includes("small animal")) return "Small Pets";
+  if (c.includes("reptile") || c.includes("tortoise") || c.includes("terrarium")) return "Reptiles";
   return "Pets";
 }
 
-function extractBenefit(name: string, desc: string | null): string {
-  const n = name.toLowerCase();
-  const d = (desc || "").toLowerCase();
-  if (n.includes("orthopedic") || d.includes("joint")) return "Joint & Hip Support";
-  if (n.includes("calming") || d.includes("anxiety")) return "Anxiety Relief";
-  if (n.includes("interactive")) return "Interactive Enrichment";
-  if (n.includes("waterproof")) return "Waterproof Protection";
-  if (n.includes("scratch") || d.includes("scratch")) return "Natural Scratching";
-  if (n.includes("grooming")) return "Easy Grooming";
-  if (n.includes("training")) return "Effective Training";
-  if (n.includes("adjustable")) return "Adjustable Fit";
-  if (n.includes("durable") || d.includes("durable")) return "Built to Last";
-  return "Everyday Comfort";
+function extractMaterial(name: string, desc: string | null): string | null {
+  const t = `${name} ${desc || ""}`.toLowerCase();
+  if (t.includes("memory foam")) return "Memory Foam";
+  if (t.includes("stainless steel")) return "Stainless Steel";
+  if (t.includes("bamboo")) return "Bamboo";
+  if (t.includes("wood") || t.includes("wooden")) return "Wood";
+  if (t.includes("ceramic")) return "Ceramic";
+  if (t.includes("plush")) return "Plush";
+  if (t.includes("cotton")) return "Cotton";
+  if (t.includes("nylon")) return "Nylon";
+  if (t.includes("silicone")) return "Silicone";
+  return null;
+}
+
+function extractSize(name: string): string | null {
+  const m = name.match(/\b(Extra\s*Large|X{0,2}Large|X{0,2}L|Medium|Small|XS|XXL|Giant|\d+\s*(?:cm|inch|in|ft|"|'))\b/i);
+  return m ? m[0] : null;
+}
+
+function extractFeature(name: string, desc: string | null): string {
+  const t = `${name} ${desc || ""}`.toLowerCase();
+  if (t.includes("orthopedic") || t.includes("joint")) return "Joint & Hip Support";
+  if (t.includes("washable") || t.includes("removable cover")) return "Washable Cover";
+  if (t.includes("waterproof")) return "Waterproof";
+  if (t.includes("foldable") || t.includes("collapsible")) return "Foldable";
+  if (t.includes("self-clean") || t.includes("self clean")) return "Self-Cleaning";
+  if (t.includes("automatic")) return "Automatic";
+  if (t.includes("interactive")) return "Interactive";
+  if (t.includes("adjustable")) return "Adjustable";
+  if (t.includes("elevated")) return "Elevated Design";
+  if (t.includes("slow feed")) return "Slow Feeder";
+  if (t.includes("no spill") || t.includes("no-spill")) return "No-Spill";
+  if (t.includes("scratching") || t.includes("scratch")) return "Scratch-Friendly";
+  if (t.includes("training")) return "Training Aid";
+  if (t.includes("travel") || t.includes("portable")) return "Travel-Ready";
+  if (t.includes("led") || t.includes("light")) return "LED Safety";
+  if (t.includes("calming") || t.includes("anxiety")) return "Calming";
+  if (t.includes("durable") || t.includes("chew-proof")) return "Heavy-Duty";
+  if (t.includes("multi-level") || t.includes("multi level")) return "Multi-Level";
+  return "Premium Quality";
 }
 
 function buildOptimizedTitle(p: Product): string {
   const clean = cleanProductName(p.name);
-  const pet = getPetType(p.category);
-  const benefit = extractBenefit(p.name, p.description);
-  return truncate(`${clean} for ${pet} – ${benefit} | GetPawsy`, 150);
+  const pet = getPetType(p.name, p.category);
+  const feature = extractFeature(p.name, p.description);
+  const material = extractMaterial(p.name, p.description);
+  const size = extractSize(p.name);
+
+  // Build keyword-first title: Main Keyword + Key Feature + Pet Type + Size/Material
+  let parts = [clean];
+
+  // Add pet type if not already in the name
+  if (!clean.toLowerCase().includes(pet.toLowerCase().replace(/s$/, ""))) {
+    parts[0] = `${clean} for ${pet}`;
+  }
+
+  // Add feature as dash-separated qualifier
+  if (!clean.toLowerCase().includes(feature.toLowerCase().split(" ")[0].toLowerCase())) {
+    parts.push(feature);
+  }
+
+  // Add material or size
+  if (material && !clean.toLowerCase().includes(material.toLowerCase())) {
+    parts.push(material);
+  }
+  if (size && !clean.includes(size)) {
+    parts.push(size);
+  }
+
+  const title = parts.join(" – ");
+  return truncate(title, 150);
 }
 
 function cleanDescription(html: string | null): string {
