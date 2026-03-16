@@ -127,12 +127,12 @@ export default function SitemapPingPage() {
       <Helmet><title>Sitemap Ping | GetPawsy Admin</title></Helmet>
       <div className="container py-8 space-y-6 max-w-4xl">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+         <h1 className="text-2xl font-bold flex items-center gap-2">
             <Wifi className="h-6 w-6 text-primary" />
-            Sitemap Ping
+            Indexing Accelerator
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Notify Google &amp; Bing about sitemap updates. Safe, rate-limited, with circuit breaker protection.
+            Notify search engines via IndexNow API. Google/Bing sitemap ping endpoints are deprecated — discovery happens via IndexNow + Search Console.
           </p>
         </div>
 
