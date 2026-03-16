@@ -643,6 +643,7 @@ const App = () => {
                         <Route path="perf-audit" element={<Suspense fallback={<RouteLoader />}><PerfAuditPage /></Suspense>} />
                         <Route path="edge-diagnostics" element={<Suspense fallback={<RouteLoader />}><EdgeDiagnosticsPage /></Suspense>} />
                         <Route path="sitemap-ping" element={<Suspense fallback={<RouteLoader />}><SitemapPingPage /></Suspense>} />
+                        <Route path="gsc-url-helper" element={<Suspense fallback={<RouteLoader />}><GscUrlInspectionHelper /></Suspense>} />
                         <Route path="domain-health" element={<Suspense fallback={<RouteLoader />}><DomainHealthPage /></Suspense>} />
                         <Route path="gsc-4xx" element={<Suspense fallback={<RouteLoader />}><Gsc4xxTriagePage /></Suspense>} />
                         <Route path="structured-data" element={<Suspense fallback={<RouteLoader />}><StructuredDataPage /></Suspense>} />
