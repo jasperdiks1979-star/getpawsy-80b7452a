@@ -113,12 +113,11 @@ export default function SitemapPingPage() {
   };
 
   const copyPingUrl = (engine: string) => {
-    const encoded = encodeURIComponent(sitemapUrl);
-    const url = engine === 'google'
-      ? `https://www.google.com/ping?sitemap=${encoded}`
-      : `https://www.bing.com/ping?sitemap=${encoded}`;
+    const url = engine === 'indexnow'
+      ? 'https://api.indexnow.org/indexnow'
+      : 'https://www.bing.com/indexnow';
     navigator.clipboard.writeText(url);
-    toast.success(`${engine} ping URL copied`);
+    toast.success(`${engine} IndexNow URL copied`);
   };
 
   const overallBadge = lastResult?.overallStatus;
