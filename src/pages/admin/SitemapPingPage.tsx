@@ -113,12 +113,11 @@ export default function SitemapPingPage() {
   };
 
   const copyPingUrl = (engine: string) => {
-    const encoded = encodeURIComponent(sitemapUrl);
-    const url = engine === 'google'
-      ? `https://www.google.com/ping?sitemap=${encoded}`
-      : `https://www.bing.com/ping?sitemap=${encoded}`;
+    const url = engine === 'indexnow'
+      ? 'https://api.indexnow.org/indexnow'
+      : 'https://www.bing.com/indexnow';
     navigator.clipboard.writeText(url);
-    toast.success(`${engine} ping URL copied`);
+    toast.success(`${engine} IndexNow URL copied`);
   };
 
   const overallBadge = lastResult?.overallStatus;
@@ -128,12 +127,12 @@ export default function SitemapPingPage() {
       <Helmet><title>Sitemap Ping | GetPawsy Admin</title></Helmet>
       <div className="container py-8 space-y-6 max-w-4xl">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+         <h1 className="text-2xl font-bold flex items-center gap-2">
             <Wifi className="h-6 w-6 text-primary" />
-            Sitemap Ping
+            Indexing Accelerator
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Notify Google &amp; Bing about sitemap updates. Safe, rate-limited, with circuit breaker protection.
+            Notify search engines via IndexNow API. Google/Bing sitemap ping endpoints are deprecated — discovery happens via IndexNow + Search Console.
           </p>
         </div>
 
@@ -235,11 +234,11 @@ export default function SitemapPingPage() {
 
             {/* Copy URL helpers */}
             <div className="flex gap-2 text-[10px]">
-              <button onClick={() => copyPingUrl('google')} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                <Copy className="h-3 w-3" /> Copy Google ping URL
+              <button onClick={() => copyPingUrl('indexnow')} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                <Copy className="h-3 w-3" /> Copy IndexNow API URL
               </button>
               <button onClick={() => copyPingUrl('bing')} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                <Copy className="h-3 w-3" /> Copy Bing ping URL
+                <Copy className="h-3 w-3" /> Copy Bing IndexNow URL
               </button>
             </div>
 

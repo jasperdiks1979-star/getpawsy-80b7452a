@@ -14,8 +14,6 @@ interface AcceleratorResult {
   url: string;
   indexnow: boolean;
   google: boolean;
-  sitemapPingGoogle: boolean;
-  sitemapPingBing: boolean;
   validations: {
     hasCanonical: boolean;
     noNoindex: boolean;
@@ -114,19 +112,8 @@ async function pingGoogleIndexing(url: string): Promise<boolean> {
   }
 }
 
-/** Ping sitemap endpoints */
-async function pingSitemap(engine: "google" | "bing"): Promise<boolean> {
-  const sitemapUrl = `${SITE}/sitemap.xml`;
-  const pingUrl = engine === "google"
-    ? `https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`
-    : `https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`;
-  try {
-    const res = await fetchTimeout(pingUrl, { method: "GET" });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
+// NOTE: Google/Bing sitemap ping endpoints are DEPRECATED (return 404/410).
+// Discovery happens via IndexNow + Google Indexing API + robots.txt Sitemap directive.
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -226,11 +213,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, message: "No URLs to accelerate — all guides indexed." }), { headers: corsHeaders });
     }
 
-    // Execute all acceleration steps in parallel
-    const [indexNowOk, sitemapGoogle, sitemapBing, ...googleResults] = await Promise.allSettled([
+    // Execute all acceleration steps in parallel (no deprecated sitemap pings)
+    const [indexNowOk, ...googleResults] = await Promise.allSettled([
       pingIndexNow(urls),
-      pingSitemap("google"),
-      pingSitemap("bing"),
       ...urls.slice(0, 5).map(url => pingGoogleIndexing(url)),
     ]);
 
@@ -243,8 +228,6 @@ Deno.serve(async (req) => {
       url,
       indexnow: indexNowOk.status === "fulfilled" ? indexNowOk.value : false,
       google: i < googleResults.length && googleResults[i].status === "fulfilled" ? googleResults[i].value : false,
-      sitemapPingGoogle: sitemapGoogle.status === "fulfilled" ? sitemapGoogle.value : false,
-      sitemapPingBing: sitemapBing.status === "fulfilled" ? sitemapBing.value : false,
       validations: validationResults[i]?.status === "fulfilled"
         ? validationResults[i].value
         : { httpStatus: null, hasCanonical: false, noNoindex: true, hasContent: false },
@@ -277,8 +260,6 @@ Deno.serve(async (req) => {
       details: {
         urls: urls.slice(0, 20),
         indexnow: indexNowOk.status === "fulfilled" ? indexNowOk.value : false,
-        sitemapPingGoogle: sitemapGoogle.status === "fulfilled" ? sitemapGoogle.value : false,
-        sitemapPingBing: sitemapBing.status === "fulfilled" ? sitemapBing.value : false,
         issues: results.filter(r => r.validations.httpStatus !== 200).map(r => r.url),
       },
     }).catch(() => {});
@@ -290,8 +271,6 @@ Deno.serve(async (req) => {
       summary: {
         indexNowPinged: indexNowOk.status === "fulfilled" ? indexNowOk.value : false,
         googleIndexingPinged: googleResults.filter(r => r.status === "fulfilled" && r.value).length,
-        sitemapPingGoogle: sitemapGoogle.status === "fulfilled" ? sitemapGoogle.value : false,
-        sitemapPingBing: sitemapBing.status === "fulfilled" ? sitemapBing.value : false,
         validationIssues: issueCount,
         totalUrls: urls.length,
       },

@@ -195,6 +195,7 @@ const DogTraining = lazyWithRetry(() => import("./pages/silo/DogTraining"));
 const DogTravel = lazyWithRetry(() => import("./pages/silo/DogTravel"));
 const CatTraining = lazyWithRetry(() => import("./pages/silo/CatTraining"));
 const CatTravel = lazyWithRetry(() => import("./pages/silo/CatTravel"));
+const HtmlSitemap = lazyWithRetry(() => import("./pages/HtmlSitemap"));
 
 /** Redirect legacy /collection/:slug to /collections/:slug with 301-equivalent */
 function CollectionRedirect() {
@@ -254,6 +255,7 @@ const PerfDebugPage = lazyWithRetry(() => import("./pages/admin/PerfDebugPage"))
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
 const SitemapPingPage = lazyWithRetry(() => import("./pages/admin/SitemapPingPage"));
+const GscUrlInspectionHelper = lazyWithRetry(() => import("./pages/admin/GscUrlInspectionHelper"));
 const MerchantFixChecklist = lazyWithRetry(() => import("./pages/MerchantFixChecklist"));
 const MerchantIntegrationPage = lazyWithRetry(() => import("./pages/admin/MerchantIntegrationPage"));
 const MerchantSettingsPage = lazyWithRetry(() => import("./pages/admin/MerchantSettingsPage"));
@@ -590,6 +592,7 @@ const App = () => {
                       <Route path="/cats/automatic-feeders" element={<Navigate to="/products?category=automatic-cat-feeders" replace />} />
                       <Route path="/category/:slug" element={<Navigate to="/products" replace />} />
                       <Route path="/shop" element={<Suspense fallback={<RouteLoader />}><ShopHub /></Suspense>} />
+                      <Route path="/site-map" element={<Suspense fallback={<RouteLoader />}><HtmlSitemap /></Suspense>} />
                       <Route path="/recent-products" element={<Suspense fallback={<RouteLoader />}><RecentProducts /></Suspense>} />
                       <Route path="/trending-pet-products" element={<Suspense fallback={<RouteLoader />}><TrendingProducts /></Suspense>} />
                       {/* Admin sub-routes */}
@@ -640,6 +643,7 @@ const App = () => {
                         <Route path="perf-audit" element={<Suspense fallback={<RouteLoader />}><PerfAuditPage /></Suspense>} />
                         <Route path="edge-diagnostics" element={<Suspense fallback={<RouteLoader />}><EdgeDiagnosticsPage /></Suspense>} />
                         <Route path="sitemap-ping" element={<Suspense fallback={<RouteLoader />}><SitemapPingPage /></Suspense>} />
+                        <Route path="gsc-url-helper" element={<Suspense fallback={<RouteLoader />}><GscUrlInspectionHelper /></Suspense>} />
                         <Route path="domain-health" element={<Suspense fallback={<RouteLoader />}><DomainHealthPage /></Suspense>} />
                         <Route path="gsc-4xx" element={<Suspense fallback={<RouteLoader />}><Gsc4xxTriagePage /></Suspense>} />
                         <Route path="structured-data" element={<Suspense fallback={<RouteLoader />}><StructuredDataPage /></Suspense>} />
