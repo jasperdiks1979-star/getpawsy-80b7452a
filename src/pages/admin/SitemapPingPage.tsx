@@ -234,11 +234,11 @@ export default function SitemapPingPage() {
 
             {/* Copy URL helpers */}
             <div className="flex gap-2 text-[10px]">
-              <button onClick={() => copyPingUrl('google')} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                <Copy className="h-3 w-3" /> Copy Google ping URL
+              <button onClick={() => copyPingUrl('indexnow')} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                <Copy className="h-3 w-3" /> Copy IndexNow API URL
               </button>
               <button onClick={() => copyPingUrl('bing')} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                <Copy className="h-3 w-3" /> Copy Bing ping URL
+                <Copy className="h-3 w-3" /> Copy Bing IndexNow URL
               </button>
             </div>
 
