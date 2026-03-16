@@ -112,19 +112,8 @@ async function pingGoogleIndexing(url: string): Promise<boolean> {
   }
 }
 
-/** Ping sitemap endpoints */
-async function pingSitemap(engine: "google" | "bing"): Promise<boolean> {
-  const sitemapUrl = `${SITE}/sitemap.xml`;
-  const pingUrl = engine === "google"
-    ? `https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`
-    : `https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`;
-  try {
-    const res = await fetchTimeout(pingUrl, { method: "GET" });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
+// NOTE: Google/Bing sitemap ping endpoints are DEPRECATED (return 404/410).
+// Discovery happens via IndexNow + Google Indexing API + robots.txt Sitemap directive.
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
