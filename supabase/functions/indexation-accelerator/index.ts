@@ -228,8 +228,6 @@ Deno.serve(async (req) => {
       url,
       indexnow: indexNowOk.status === "fulfilled" ? indexNowOk.value : false,
       google: i < googleResults.length && googleResults[i].status === "fulfilled" ? googleResults[i].value : false,
-      sitemapPingGoogle: sitemapGoogle.status === "fulfilled" ? sitemapGoogle.value : false,
-      sitemapPingBing: sitemapBing.status === "fulfilled" ? sitemapBing.value : false,
       validations: validationResults[i]?.status === "fulfilled"
         ? validationResults[i].value
         : { httpStatus: null, hasCanonical: false, noNoindex: true, hasContent: false },
