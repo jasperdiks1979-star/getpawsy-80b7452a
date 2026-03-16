@@ -190,6 +190,7 @@ export const Footer = () => {
       { label: 'Blog', href: '/blog' },
       { label: 'Privacy Policy', href: '/privacy' },
       { label: 'Terms of Service', href: '/terms' },
+      { label: 'Site Map', href: '/site-map' },
     ],
   };
 

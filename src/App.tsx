@@ -591,6 +591,7 @@ const App = () => {
                       <Route path="/cats/automatic-feeders" element={<Navigate to="/products?category=automatic-cat-feeders" replace />} />
                       <Route path="/category/:slug" element={<Navigate to="/products" replace />} />
                       <Route path="/shop" element={<Suspense fallback={<RouteLoader />}><ShopHub /></Suspense>} />
+                      <Route path="/site-map" element={<Suspense fallback={<RouteLoader />}><HtmlSitemap /></Suspense>} />
                       <Route path="/recent-products" element={<Suspense fallback={<RouteLoader />}><RecentProducts /></Suspense>} />
                       <Route path="/trending-pet-products" element={<Suspense fallback={<RouteLoader />}><TrendingProducts /></Suspense>} />
                       {/* Admin sub-routes */}
