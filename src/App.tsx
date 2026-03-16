@@ -255,6 +255,7 @@ const PerfDebugPage = lazyWithRetry(() => import("./pages/admin/PerfDebugPage"))
 const EdgeDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/EdgeDiagnosticsPage"));
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
 const SitemapPingPage = lazyWithRetry(() => import("./pages/admin/SitemapPingPage"));
+const GscUrlInspectionHelper = lazyWithRetry(() => import("./pages/admin/GscUrlInspectionHelper"));
 const MerchantFixChecklist = lazyWithRetry(() => import("./pages/MerchantFixChecklist"));
 const MerchantIntegrationPage = lazyWithRetry(() => import("./pages/admin/MerchantIntegrationPage"));
 const MerchantSettingsPage = lazyWithRetry(() => import("./pages/admin/MerchantSettingsPage"));
