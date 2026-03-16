@@ -14,8 +14,6 @@ interface AcceleratorResult {
   url: string;
   indexnow: boolean;
   google: boolean;
-  sitemapPingGoogle: boolean;
-  sitemapPingBing: boolean;
   validations: {
     hasCanonical: boolean;
     noNoindex: boolean;
