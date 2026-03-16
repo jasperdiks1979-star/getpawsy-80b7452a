@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "cache:audit": "node tools/cf-cache-audit.js"
+    "cache:audit": "node tools/cf-cache-audit.js",
+    "ping:sitemap": "node scripts/pingSitemap.js",
+    "postdeploy": "node scripts/pingSitemap.js"
   },
   "dependencies": {
     "@axe-core/playwright": "^4.11.0",
