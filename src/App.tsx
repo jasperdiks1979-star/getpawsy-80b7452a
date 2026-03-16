@@ -195,6 +195,7 @@ const DogTraining = lazyWithRetry(() => import("./pages/silo/DogTraining"));
 const DogTravel = lazyWithRetry(() => import("./pages/silo/DogTravel"));
 const CatTraining = lazyWithRetry(() => import("./pages/silo/CatTraining"));
 const CatTravel = lazyWithRetry(() => import("./pages/silo/CatTravel"));
+const HtmlSitemap = lazyWithRetry(() => import("./pages/HtmlSitemap"));
 
 /** Redirect legacy /collection/:slug to /collections/:slug with 301-equivalent */
 function CollectionRedirect() {
