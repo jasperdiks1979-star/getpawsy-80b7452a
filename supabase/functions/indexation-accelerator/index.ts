@@ -213,11 +213,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, message: "No URLs to accelerate — all guides indexed." }), { headers: corsHeaders });
     }
 
-    // Execute all acceleration steps in parallel
-    const [indexNowOk, sitemapGoogle, sitemapBing, ...googleResults] = await Promise.allSettled([
+    // Execute all acceleration steps in parallel (no deprecated sitemap pings)
+    const [indexNowOk, ...googleResults] = await Promise.allSettled([
       pingIndexNow(urls),
-      pingSitemap("google"),
-      pingSitemap("bing"),
       ...urls.slice(0, 5).map(url => pingGoogleIndexing(url)),
     ]);
 
