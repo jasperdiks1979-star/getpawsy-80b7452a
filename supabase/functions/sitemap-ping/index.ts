@@ -6,15 +6,14 @@ const corsHeaders = {
 };
 
 const CANONICAL_HOST = 'https://getpawsy.pet';
+const INDEXNOW_KEY = 'e8f4a2b1c9d7e6f5a3b2c1d0e9f8a7b6';
 const PING_TIMEOUT_MS = 10_000;
 const RATE_LIMIT_MAX_PER_HOUR = 6;
 const IDEMPOTENCY_WINDOW_MS = 10 * 60 * 1000;
-const CIRCUIT_BREAKER_THRESHOLD = 3;
-const CIRCUIT_BREAKER_COOLDOWN_MS = 30 * 60 * 1000;
 
-const ENGINES = [
-  { name: 'google', template: (s: string) => `https://www.google.com/ping?sitemap=${encodeURIComponent(s)}` },
-  { name: 'bing', template: (s: string) => `https://www.bing.com/ping?sitemap=${encodeURIComponent(s)}` },
+const INDEXNOW_ENDPOINTS = [
+  { name: 'indexnow', url: 'https://api.indexnow.org/indexnow' },
+  { name: 'bing', url: 'https://www.bing.com/indexnow' },
 ];
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
@@ -45,13 +44,11 @@ Deno.serve(async (req) => {
   if (userErr || !user) {
     return jsonResponse({ ok: false, reason: 'Invalid session' }, 200);
   }
-  const userId = user.id;
 
-  // Admin check
   const { data: roleData } = await supabase
     .from('user_roles')
     .select('role')
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .eq('role', 'admin')
     .maybeSingle();
 
@@ -61,13 +58,12 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const action = body.action || 'ping'; // 'ping' | 'history' | 'status'
+    const action = body.action || 'ping';
     const forceRun = body.force === true;
     const sitemapUrl = body.sitemapUrl || `${CANONICAL_HOST}/sitemap.xml`;
 
-    // Validate sitemap URL
     if (!sitemapUrl.startsWith('https://getpawsy.pet/') || !sitemapUrl.endsWith('.xml')) {
-      return jsonResponse({ ok: false, reason: 'Invalid sitemap URL. Must be https://getpawsy.pet/*.xml' });
+      return jsonResponse({ ok: false, reason: 'Invalid sitemap URL' });
     }
 
     if (action === 'history') {
@@ -80,7 +76,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'status') {
-      // Return circuit breaker + rate limit status
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const { count: hourlyCount } = await supabase
         .from('sitemap_ping_log')
@@ -93,37 +88,24 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      const circuitStatus: Record<string, { open: boolean; consecutiveFailures: number }> = {};
-      for (const engine of ENGINES) {
-        const hist = (recent || []).filter(r => r.engine === engine.name).slice(0, CIRCUIT_BREAKER_THRESHOLD);
-        const allFailed = hist.length >= CIRCUIT_BREAKER_THRESHOLD && hist.every(h => h.status !== 'success');
-        const lastFailTime = hist[0] ? new Date(hist[0].created_at).getTime() : 0;
-        circuitStatus[engine.name] = {
-          open: allFailed && (Date.now() - lastFailTime < CIRCUIT_BREAKER_COOLDOWN_MS),
-          consecutiveFailures: hist.findIndex(h => h.status === 'success'),
-        };
-      }
-
       return jsonResponse({
         ok: true,
         hourlyPingCount: hourlyCount || 0,
-        maxPerHour: RATE_LIMIT_MAX_PER_HOUR * ENGINES.length,
-        circuitStatus,
+        maxPerHour: RATE_LIMIT_MAX_PER_HOUR * INDEXNOW_ENDPOINTS.length,
         recentPings: recent || [],
       });
     }
 
-    // === PING ACTION ===
+    // === PING ACTION — uses IndexNow only (Google/Bing sitemap pings are deprecated) ===
 
-    // Rate limit check
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count: recentCount } = await supabase
       .from('sitemap_ping_log')
       .select('id', { count: 'exact', head: true })
       .gte('created_at', oneHourAgo);
 
-    if ((recentCount || 0) >= RATE_LIMIT_MAX_PER_HOUR * ENGINES.length && !forceRun) {
-      return jsonResponse({ ok: false, reason: `Rate limit: ${recentCount} pings in last hour (max ${RATE_LIMIT_MAX_PER_HOUR * ENGINES.length})` });
+    if ((recentCount || 0) >= RATE_LIMIT_MAX_PER_HOUR * INDEXNOW_ENDPOINTS.length && !forceRun) {
+      return jsonResponse({ ok: false, reason: `Rate limit: ${recentCount} pings in last hour` });
     }
 
     // Idempotency check
@@ -138,101 +120,85 @@ Deno.serve(async (req) => {
         .limit(1);
 
       if (cached?.length) {
-        return jsonResponse({ ok: true, cached: true, reason: 'Successful ping within last 10 min', lastPingAt: cached[0].created_at });
+        return jsonResponse({ ok: true, cached: true, reason: 'Already pinged within 10 min', lastPingAt: cached[0].created_at });
       }
     }
 
-    // Circuit breaker check
-    const { data: cbRecent } = await supabase
-      .from('sitemap_ping_log')
-      .select('engine, status, created_at')
-      .order('created_at', { ascending: false })
-      .limit(CIRCUIT_BREAKER_THRESHOLD * 2);
+    // Extract sitemap URLs for IndexNow submission
+    const urlsToNotify = [
+      `${CANONICAL_HOST}/`,
+      sitemapUrl.replace('.xml', '').replace('sitemap-', '/').replace('sitemap', '/'),
+    ].filter(u => u.startsWith('https://'));
 
-    const circuitOpen: Record<string, boolean> = {};
-    for (const engine of ENGINES) {
-      const hist = (cbRecent || []).filter(r => r.engine === engine.name).slice(0, CIRCUIT_BREAKER_THRESHOLD);
-      if (hist.length >= CIRCUIT_BREAKER_THRESHOLD && hist.every(h => h.status !== 'success')) {
-        const lastTime = new Date(hist[0].created_at).getTime();
-        if (Date.now() - lastTime < CIRCUIT_BREAKER_COOLDOWN_MS && !forceRun) {
-          circuitOpen[engine.name] = true;
-        }
-      }
-    }
-
-    // Execute pings with retries
     interface PingResult {
       engine: string;
       sitemapUrl: string;
-      status: 'success' | 'timeout' | 'http_error' | 'circuit_open';
+      status: 'success' | 'timeout' | 'http_error';
       httpStatus?: number;
       duration_ms: number;
       error?: string;
-      attempt: number;
     }
 
     const results: PingResult[] = [];
-    const MAX_RETRIES = 3;
-    const BACKOFF = [500, 1500, 4000];
 
-    for (const engine of ENGINES) {
-      if (circuitOpen[engine.name]) {
-        results.push({ engine: engine.name, sitemapUrl, status: 'circuit_open', duration_ms: 0, error: 'Circuit breaker open (3 consecutive failures)', attempt: 0 });
-        await supabase.from('sitemap_ping_log').insert({
-          engine: engine.name, sitemap_url: sitemapUrl, status: 'circuit_open',
-          duration_ms: 0, error_message: 'Circuit breaker open', reason: 'manual',
+    for (const endpoint of INDEXNOW_ENDPOINTS) {
+      const start = Date.now();
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
+        const res = await fetch(endpoint.url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            host: 'getpawsy.pet',
+            key: INDEXNOW_KEY,
+            keyLocation: `${CANONICAL_HOST}/${INDEXNOW_KEY}.txt`,
+            urlList: [sitemapUrl, `${CANONICAL_HOST}/`],
+          }),
+          signal: controller.signal,
         });
-        continue;
-      }
+        clearTimeout(timer);
+        const dur = Date.now() - start;
+        const ok = res.status >= 200 && res.status < 300;
+        const result: PingResult = {
+          engine: endpoint.name,
+          sitemapUrl,
+          status: ok ? 'success' : 'http_error',
+          httpStatus: res.status,
+          duration_ms: dur,
+        };
+        results.push(result);
 
-      let lastResult: PingResult | null = null;
-      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        if (attempt > 1) {
-          const jitter = Math.random() * 0.3 * BACKOFF[attempt - 2];
-          await new Promise(r => setTimeout(r, BACKOFF[attempt - 2] + jitter));
-        }
-
-        const pingUrl = engine.template(sitemapUrl);
-        const start = Date.now();
-        try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
-          const res = await fetch(pingUrl, { method: 'GET', signal: controller.signal });
-          clearTimeout(timer);
-          const dur = Date.now() - start;
-          if (res.ok) {
-            lastResult = { engine: engine.name, sitemapUrl, status: 'success', httpStatus: res.status, duration_ms: dur, attempt };
-            break;
-          }
-          lastResult = { engine: engine.name, sitemapUrl, status: 'http_error', httpStatus: res.status, duration_ms: dur, attempt };
-        } catch (e) {
-          const dur = Date.now() - start;
-          const msg = e instanceof Error ? e.message : String(e);
-          const isTimeout = msg.includes('abort') || msg.includes('signal');
-          lastResult = { engine: engine.name, sitemapUrl, status: isTimeout ? 'timeout' : 'http_error', duration_ms: dur, error: msg, attempt };
-        }
-      }
-
-      if (lastResult) {
-        results.push(lastResult);
         await supabase.from('sitemap_ping_log').insert({
-          engine: engine.name, sitemap_url: sitemapUrl, status: lastResult.status,
-          http_status: lastResult.httpStatus || null, duration_ms: lastResult.duration_ms,
-          error_message: lastResult.error || null, reason: 'manual',
+          engine: endpoint.name, sitemap_url: sitemapUrl, status: result.status,
+          http_status: res.status, duration_ms: dur, reason: 'manual',
+        });
+      } catch (e) {
+        const dur = Date.now() - start;
+        const msg = e instanceof Error ? e.message : String(e);
+        const isTimeout = msg.includes('abort');
+        const result: PingResult = {
+          engine: endpoint.name, sitemapUrl,
+          status: isTimeout ? 'timeout' : 'http_error',
+          duration_ms: dur, error: msg,
+        };
+        results.push(result);
+
+        await supabase.from('sitemap_ping_log').insert({
+          engine: endpoint.name, sitemap_url: sitemapUrl, status: result.status,
+          duration_ms: dur, error_message: msg, reason: 'manual',
         });
       }
     }
 
     const succeeded = results.filter(r => r.status === 'success').length;
-    const failed = results.filter(r => r.status !== 'success' && r.status !== 'circuit_open').length;
-    const blocked = results.filter(r => r.status === 'circuit_open').length;
     const overallStatus = succeeded === results.length ? 'ok' : succeeded > 0 ? 'warning' : 'error';
 
     return jsonResponse({
       ok: true,
       overallStatus,
       results,
-      summary: { succeeded, failed, circuitBlocked: blocked, total: results.length },
+      summary: { succeeded, failed: results.length - succeeded, total: results.length },
     });
   } catch (err) {
     return jsonResponse({ ok: false, reason: err instanceof Error ? err.message : 'Internal error' });

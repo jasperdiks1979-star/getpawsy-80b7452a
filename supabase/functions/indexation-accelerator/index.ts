@@ -260,8 +260,6 @@ Deno.serve(async (req) => {
       details: {
         urls: urls.slice(0, 20),
         indexnow: indexNowOk.status === "fulfilled" ? indexNowOk.value : false,
-        sitemapPingGoogle: sitemapGoogle.status === "fulfilled" ? sitemapGoogle.value : false,
-        sitemapPingBing: sitemapBing.status === "fulfilled" ? sitemapBing.value : false,
         issues: results.filter(r => r.validations.httpStatus !== 200).map(r => r.url),
       },
     }).catch(() => {});
@@ -273,8 +271,6 @@ Deno.serve(async (req) => {
       summary: {
         indexNowPinged: indexNowOk.status === "fulfilled" ? indexNowOk.value : false,
         googleIndexingPinged: googleResults.filter(r => r.status === "fulfilled" && r.value).length,
-        sitemapPingGoogle: sitemapGoogle.status === "fulfilled" ? sitemapGoogle.value : false,
-        sitemapPingBing: sitemapBing.status === "fulfilled" ? sitemapBing.value : false,
         validationIssues: issueCount,
         totalUrls: urls.length,
       },
