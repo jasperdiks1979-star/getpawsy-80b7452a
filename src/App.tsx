@@ -263,6 +263,7 @@ const MerchantReadinessPage = lazyWithRetry(() => import("./pages/admin/Merchant
 const MerchantHealthPage = lazyWithRetry(() => import("./pages/admin/MerchantHealthPage"));
 const MerchantOAuthCallback = lazyWithRetry(() => import("./pages/MerchantOAuthCallback"));
 const ShoppingOptimizerPage = lazyWithRetry(() => import("./pages/admin/ShoppingOptimizerPage"));
+const ProductOptimizerPage = lazyWithRetry(() => import("./pages/admin/ProductOptimizerPage"));
 const ImageCompliancePage = lazyWithRetry(() => import("./pages/admin/ImageCompliancePage"));
 const CornerstoneEnginePage = lazyWithRetry(() => import("./pages/admin/CornerstoneEnginePage"));
 const MerchantComplianceReport = lazyWithRetry(() => import("./pages/admin/MerchantComplianceReport"));
