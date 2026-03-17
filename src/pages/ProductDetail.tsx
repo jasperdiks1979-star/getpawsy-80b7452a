@@ -1054,12 +1054,7 @@ const ProductDetail = () => {
               </p>
             </div>
 
-            {/* Price Anchoring & Investment Reframe — luxury positioning */}
-            <PriceAnchoringSection
-              productName={safeString(product.name)}
-              category={product.category}
-              price={Number(product.price)}
-            />
+            {/* PriceAnchoringSection REMOVED — fabricated price comparisons flagged by Google Merchant Center */}
 
             {/* Why Pet Parents Choose This - Benefit-driven scannable section */}
             <WhyPetParentsLoveThis 
