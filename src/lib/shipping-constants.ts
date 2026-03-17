@@ -87,13 +87,13 @@ export const RESPONSE_TIME = 'We respond within 24 hours';
 export const BUSINESS_HOURS = 'Monday – Friday, 09:00 – 17:00 CET';
 
 /** Business location */
-export const BUSINESS_LOCATION = 'Rotterdam, Netherlands';
+export const BUSINESS_LOCATION = 'Apeldoorn, Netherlands';
 
 /** Business name */
 export const BUSINESS_NAME = 'GetPawsy';
 
 /** Operating country display */
-export const OPERATING_COUNTRY = 'Rotterdam, Netherlands (serving US customers)';
+export const OPERATING_COUNTRY = 'Apeldoorn, Netherlands (serving US customers)';
 
 // ============= TRUST BADGE MESSAGES =============
 
