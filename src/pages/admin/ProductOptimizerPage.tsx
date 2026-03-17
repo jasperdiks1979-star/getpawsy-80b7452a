@@ -270,6 +270,40 @@ export default function ProductOptimizerPage() {
   const toggleSelect = (id: string) => setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const selectAll = () => setSelected(new Set(optItems.filter(i => i.ok).map(i => i.id)));
 
+  // ── Merchant Recovery ──
+  const runRecovery = useCallback(async (ids?: string[]) => {
+    setRecoveryLoading(true); setRecoveryItems([]); setRecoverySummary(null);
+    try {
+      const body: any = { dryRun: recoveryDryRun, limit: 20 };
+      if (ids?.length) body.ids = ids;
+      const data = await callPipeline('merchant-recovery', body);
+      setRecoveryItems(data.items || []);
+      setRecoverySummary(data.summary || null);
+      toast.success(recoveryDryRun
+        ? `Recovery preview: ${data.summary?.processed || 0} analyzed`
+        : `Recovery applied: ${data.summary?.updated || 0} updated`
+      );
+    } catch (err: any) { toast.error(err.message); }
+    finally { setRecoveryLoading(false); }
+  }, [recoveryDryRun]);
+
+  const applyRecoverySelected = useCallback(async () => {
+    if (recoverySelected.size === 0) { toast.error('No products selected'); return; }
+    if (!confirm(`Apply merchant recovery to ${recoverySelected.size} products? This rewrites titles, descriptions, and metadata.`)) return;
+    setRecoveryApplyLoading(true);
+    try {
+      const ids = Array.from(recoverySelected);
+      const data = await callPipeline('merchant-recovery', { ids, dryRun: false });
+      toast.success(`Recovery applied: ${data.summary?.updated || 0} updated`);
+      setRecoverySelected(new Set());
+      setRecoveryItems(prev => prev.map(i => ids.includes(i.id) ? { ...i, applied: true } : i));
+    } catch (err: any) { toast.error(err.message); }
+    finally { setRecoveryApplyLoading(false); }
+  }, [recoverySelected]);
+
+  const toggleRecoverySelect = (id: string) => setRecoverySelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const selectAllRecovery = () => setRecoverySelected(new Set(recoveryItems.filter(i => i.ok).map(i => i.id)));
+
   return (
     <div className="space-y-4 p-4 md:p-6 max-w-7xl mx-auto">
       <Helmet><title>AI Product Optimizer PRO | GetPawsy Admin</title></Helmet>
