@@ -4020,6 +4020,107 @@ export type Database = {
         }
         Relationships: []
       }
+      optimizer_run_items: {
+        Row: {
+          after_snapshot: Json | null
+          before_snapshot: Json | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          product_id: string
+          run_id: string
+          scores: Json | null
+          status: string | null
+          used_ai: boolean | null
+          used_fallback: boolean | null
+        }
+        Insert: {
+          after_snapshot?: Json | null
+          before_snapshot?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          product_id: string
+          run_id: string
+          scores?: Json | null
+          status?: string | null
+          used_ai?: boolean | null
+          used_fallback?: boolean | null
+        }
+        Update: {
+          after_snapshot?: Json | null
+          before_snapshot?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          product_id?: string
+          run_id?: string
+          scores?: Json | null
+          status?: string | null
+          used_ai?: boolean | null
+          used_fallback?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "optimizer_run_items_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "optimizer_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      optimizer_runs: {
+        Row: {
+          completed_at: string | null
+          config: Json | null
+          created_at: string | null
+          error_count: number | null
+          fallback_count: number | null
+          id: string
+          initiated_by: string | null
+          mode: string
+          notes: string | null
+          started_at: string | null
+          success_count: number | null
+          total_products: number | null
+          trigger_source: string | null
+          version: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          config?: Json | null
+          created_at?: string | null
+          error_count?: number | null
+          fallback_count?: number | null
+          id?: string
+          initiated_by?: string | null
+          mode?: string
+          notes?: string | null
+          started_at?: string | null
+          success_count?: number | null
+          total_products?: number | null
+          trigger_source?: string | null
+          version?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          config?: Json | null
+          created_at?: string | null
+          error_count?: number | null
+          fallback_count?: number | null
+          id?: string
+          initiated_by?: string | null
+          mode?: string
+          notes?: string | null
+          started_at?: string | null
+          success_count?: number | null
+          total_products?: number | null
+          trigger_source?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           cj_order_created_at: string | null
@@ -4658,7 +4759,15 @@ export type Database = {
       }
       products: {
         Row: {
+          ai_last_optimized_at: string | null
+          ai_last_preview_at: string | null
+          ai_locked: boolean | null
+          ai_manual_override: boolean | null
+          ai_optimizer_error: string | null
+          ai_optimizer_status: string | null
+          ai_optimizer_version: string | null
           animal_type: string | null
+          benefit_angle: string | null
           brand: string | null
           canonical_product_id: string | null
           category: string | null
@@ -4666,6 +4775,8 @@ export type Database = {
           cluster_primary: string | null
           cluster_secondary: string | null
           compare_at_price: number | null
+          content_readiness_score: number | null
+          conversion_angle: string | null
           cost_price: number | null
           created_at: string
           custom_label_0: string | null
@@ -4680,6 +4791,7 @@ export type Database = {
           description: string | null
           description_bullets: string[] | null
           description_optimized_at: string | null
+          feed_readiness_score: number | null
           google_product_category: string | null
           id: string
           image_url: string | null
@@ -4687,6 +4799,7 @@ export type Database = {
           is_active: boolean | null
           is_duplicate: boolean
           key_feature: string | null
+          keyword_cluster: string | null
           last_stock_sync_at: string | null
           meta_description: string | null
           meta_title: string | null
@@ -4702,12 +4815,16 @@ export type Database = {
           quality_flags: string[] | null
           quality_score: number | null
           seo_keywords: string[] | null
+          seo_meta_description: string | null
           seo_tier: string
+          seo_title: string | null
           shipping_time: string | null
+          shopping_priority_score: number | null
           shopping_title: string | null
           short_title: string | null
           sku: string | null
           slug: string | null
+          slug_suggestion: string | null
           stock: number | null
           stock_source: string | null
           stock_sync_error: string | null
@@ -4720,7 +4837,15 @@ export type Database = {
           weight: number | null
         }
         Insert: {
+          ai_last_optimized_at?: string | null
+          ai_last_preview_at?: string | null
+          ai_locked?: boolean | null
+          ai_manual_override?: boolean | null
+          ai_optimizer_error?: string | null
+          ai_optimizer_status?: string | null
+          ai_optimizer_version?: string | null
           animal_type?: string | null
+          benefit_angle?: string | null
           brand?: string | null
           canonical_product_id?: string | null
           category?: string | null
@@ -4728,6 +4853,8 @@ export type Database = {
           cluster_primary?: string | null
           cluster_secondary?: string | null
           compare_at_price?: number | null
+          content_readiness_score?: number | null
+          conversion_angle?: string | null
           cost_price?: number | null
           created_at?: string
           custom_label_0?: string | null
@@ -4742,6 +4869,7 @@ export type Database = {
           description?: string | null
           description_bullets?: string[] | null
           description_optimized_at?: string | null
+          feed_readiness_score?: number | null
           google_product_category?: string | null
           id?: string
           image_url?: string | null
@@ -4749,6 +4877,7 @@ export type Database = {
           is_active?: boolean | null
           is_duplicate?: boolean
           key_feature?: string | null
+          keyword_cluster?: string | null
           last_stock_sync_at?: string | null
           meta_description?: string | null
           meta_title?: string | null
@@ -4764,12 +4893,16 @@ export type Database = {
           quality_flags?: string[] | null
           quality_score?: number | null
           seo_keywords?: string[] | null
+          seo_meta_description?: string | null
           seo_tier?: string
+          seo_title?: string | null
           shipping_time?: string | null
+          shopping_priority_score?: number | null
           shopping_title?: string | null
           short_title?: string | null
           sku?: string | null
           slug?: string | null
+          slug_suggestion?: string | null
           stock?: number | null
           stock_source?: string | null
           stock_sync_error?: string | null
@@ -4782,7 +4915,15 @@ export type Database = {
           weight?: number | null
         }
         Update: {
+          ai_last_optimized_at?: string | null
+          ai_last_preview_at?: string | null
+          ai_locked?: boolean | null
+          ai_manual_override?: boolean | null
+          ai_optimizer_error?: string | null
+          ai_optimizer_status?: string | null
+          ai_optimizer_version?: string | null
           animal_type?: string | null
+          benefit_angle?: string | null
           brand?: string | null
           canonical_product_id?: string | null
           category?: string | null
@@ -4790,6 +4931,8 @@ export type Database = {
           cluster_primary?: string | null
           cluster_secondary?: string | null
           compare_at_price?: number | null
+          content_readiness_score?: number | null
+          conversion_angle?: string | null
           cost_price?: number | null
           created_at?: string
           custom_label_0?: string | null
@@ -4804,6 +4947,7 @@ export type Database = {
           description?: string | null
           description_bullets?: string[] | null
           description_optimized_at?: string | null
+          feed_readiness_score?: number | null
           google_product_category?: string | null
           id?: string
           image_url?: string | null
@@ -4811,6 +4955,7 @@ export type Database = {
           is_active?: boolean | null
           is_duplicate?: boolean
           key_feature?: string | null
+          keyword_cluster?: string | null
           last_stock_sync_at?: string | null
           meta_description?: string | null
           meta_title?: string | null
@@ -4826,12 +4971,16 @@ export type Database = {
           quality_flags?: string[] | null
           quality_score?: number | null
           seo_keywords?: string[] | null
+          seo_meta_description?: string | null
           seo_tier?: string
+          seo_title?: string | null
           shipping_time?: string | null
+          shopping_priority_score?: number | null
           shopping_title?: string | null
           short_title?: string | null
           sku?: string | null
           slug?: string | null
+          slug_suggestion?: string | null
           stock?: number | null
           stock_source?: string | null
           stock_sync_error?: string | null
