@@ -102,7 +102,7 @@ const HERO_DATA: Record<string, {
         a: 'This elevated dog bed supports up to 150 lbs with its reinforced steel frame. The legs lock securely to prevent wobbling, even with larger, more active dogs.',
       },
     ],
-    urgencyLine: 'High-demand summer item — limited stock available',
+    urgencyLine: '', // Removed — no unverifiable urgency claims
   },
 };
 
