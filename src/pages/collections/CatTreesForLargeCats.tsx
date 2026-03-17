@@ -360,7 +360,7 @@ export default function CatTreesForLargeCats() {
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Why Choose GetPawsy for Cat Trees?</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { icon: '🚚', title: 'US Delivery', desc: 'Estimated delivery: 5–10 business days. Free shipping on orders over $35.' },
+              { icon: '🚚', title: 'US Delivery', desc: 'Estimated delivery: 3–7 business days. Free shipping on orders over $35.' },
               { icon: '🔄', title: '30-Day Returns', desc: 'Not the right fit? Return within 30 days per our return policy.' },
               { icon: '🐾', title: 'Selected for Stability', desc: 'We prioritize sturdy, well-built cat trees suitable for larger cats.' },
               { icon: '⭐', title: 'Quality Reviewed', desc: 'Products selected based on materials, build quality, and customer feedback.' },
