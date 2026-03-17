@@ -143,6 +143,15 @@ export default function ProductOptimizerPage() {
   // Rollback
   const [rollbackLoading, setRollbackLoading] = useState(false);
 
+  // Recovery
+  const [recoveryItems, setRecoveryItems] = useState<RecoveryItem[]>([]);
+  const [recoverySummary, setRecoverySummary] = useState<any>(null);
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryDryRun, setRecoveryDryRun] = useState(true);
+  const [recoverySelected, setRecoverySelected] = useState<Set<string>>(new Set());
+  const [recoveryApplyLoading, setRecoveryApplyLoading] = useState(false);
+  const [recoveryExpandedId, setRecoveryExpandedId] = useState<string | null>(null);
+
   // ── Audit ──
   const runAudit = useCallback(async () => {
     setAuditLoading(true);
