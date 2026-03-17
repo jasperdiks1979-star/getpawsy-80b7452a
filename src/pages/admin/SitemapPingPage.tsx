@@ -264,8 +264,7 @@ export default function SitemapPingPage() {
                   <div className="space-y-1 text-xs font-mono">
                     {lastResult.results.map((r, i) => (
                       <div key={i} className="flex items-center gap-2 px-2 py-1 rounded bg-muted/30">
-                        {r.status === 'success' ? <CheckCircle className="h-3 w-3 text-green-500 shrink-0" /> :
-                         r.status === 'circuit_open' ? <WifiOff className="h-3 w-3 text-destructive shrink-0" /> :
+                       {r.status === 'success' ? <CheckCircle className="h-3 w-3 text-green-500 shrink-0" /> :
                          <XCircle className="h-3 w-3 text-destructive shrink-0" />}
                         <span className="font-medium w-12">{r.engine}</span>
                         <span className="text-muted-foreground">{r.status}</span>
