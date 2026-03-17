@@ -43,6 +43,7 @@ const navItems = [
   { to: '/admin/integrations/merchant', label: 'Merchant Center', icon: Globe },
   { to: '/admin/integrations/merchant/readiness', label: 'Merchant Readiness', icon: ShieldAlert },
   { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert },
+  { to: '/admin/product-optimizer', label: 'AI Product Optimizer', icon: Zap },
 ];
 
 /**
