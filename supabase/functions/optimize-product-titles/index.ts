@@ -1,15 +1,25 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1?target=deno";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 
-const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json; charset=utf-8",
-};
+const ALLOWED_ORIGINS = [
+  "https://getpawsy.pet",
+  "https://www.getpawsy.pet",
+  "https://getpawsy.lovable.app",
+];
 
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data, null, 2), { status, headers: corsHeaders });
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("Origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.find((o) => origin === o) || ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, cache-control",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Content-Type": "application/json; charset=utf-8",
+  };
+}
+
+function json(data: unknown, status: number, headers: Record<string, string>): Response {
+  return new Response(JSON.stringify(data, null, 2), { status, headers });
 }
 
 // ── Types ──
@@ -17,7 +27,6 @@ type ProductRow = {
   id: string;
   slug?: string | null;
   name?: string | null;
-  title?: string | null;
   product_type?: string | null;
   animal_type?: string | null;
   primary_keyword?: string | null;
@@ -25,6 +34,7 @@ type ProductRow = {
   brand?: string | null;
   category_name?: string | null;
   shopping_title?: string | null;
+  short_title?: string | null;
   is_active?: boolean | null;
 };
 
@@ -44,12 +54,12 @@ function sanitize(v: string | null | undefined): string {
 }
 
 function titleCase(s: string): string {
-  return s.split(" ").filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  return s.split(" ").filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
 function dedupe(s: string): string {
   const seen = new Set<string>();
-  return s.split(" ").filter(w => { const k = w.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }).join(" ");
+  return s.split(" ").filter((w) => { const k = w.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }).join(" ");
 }
 
 function clamp(s: string, max = 120): string {
@@ -65,7 +75,7 @@ function buildFallbackTitle(p: ProductRow, short = false): string {
   let t = titleCase(dedupe(parts.join(" ")));
   const max = short ? 70 : 120;
   t = clamp(t, max);
-  if (!t) t = clamp(titleCase(dedupe(sanitize(p.name || p.title || "Pet Product"))), max);
+  if (!t) t = clamp(titleCase(dedupe(sanitize(p.name || "Pet Product"))), max);
   return t;
 }
 
@@ -78,7 +88,7 @@ function isValid(t: string, short = false): boolean {
 async function generateAITitle(p: ProductRow, apiKey: string, short = false): Promise<string | null> {
   if (!apiKey) return null;
   const maxC = short ? 70 : 120;
-  const prompt = `Create one Google Shopping product title.\nRules:\n- ${short ? "Maximum 70 characters." : "Between 70 and 120 characters, never exceed 120."}\n- English only\n- No promotional claims\n- Structure: Primary Keyword + Product Type + Key Feature + Target Animal\n- Return only the title, no quotes\n\nProduct:\nName: ${p.name || p.title || ""}\nPrimary keyword: ${p.primary_keyword || ""}\nProduct type: ${p.product_type || ""}\nKey feature: ${p.key_feature || ""}\nTarget animal: ${p.animal_type || ""}\nBrand: ${p.brand || ""}`;
+  const prompt = `Create one Google Shopping product title.\nRules:\n- ${short ? "Maximum 70 characters." : "Between 70 and 120 characters, never exceed 120."}\n- English only\n- No promotional claims\n- Structure: Primary Keyword + Product Type + Key Feature + Target Animal\n- Return only the title, no quotes\n\nProduct:\nName: ${p.name || ""}\nPrimary keyword: ${p.primary_keyword || ""}\nProduct type: ${p.product_type || ""}\nKey feature: ${p.key_feature || ""}\nTarget animal: ${p.animal_type || ""}\nBrand: ${p.brand || ""}`;
 
   try {
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -96,41 +106,41 @@ async function generateAITitle(p: ProductRow, apiKey: string, short = false): Pr
 
 // ── Main handler ──
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ success: false, error: "Method not allowed" }, 405);
+  const cors = getCorsHeaders(req);
+
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  if (req.method !== "POST") return json({ success: false, error: "Method not allowed" }, 405, cors);
 
   console.log("[optimize-product-titles] START");
 
-  // Env validation
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
 
   if (!SUPABASE_URL || !SERVICE_KEY) {
-    console.error("[optimize-product-titles] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-    return json({ success: false, error: "Server configuration error: missing database credentials" }, 500);
+    console.error("[optimize-product-titles] Missing env vars");
+    return json({ success: false, error: "Server configuration error" }, 500, cors);
   }
 
-  // Auth: verify caller is authenticated (basic bearer check)
+  // Auth
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    return json({ success: false, error: "Authentication required. Please log in." }, 401);
+    return json({ success: false, error: "Authentication required" }, 401, cors);
   }
 
-  // Verify token via anon client
   const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
   if (ANON_KEY) {
     try {
-      const authClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
-      const { data: { user }, error } = await authClient.auth.getUser();
+      const authClient = createClient(SUPABASE_URL, ANON_KEY);
+      const { data: { user }, error } = await authClient.auth.getUser(authHeader.replace("Bearer ", ""));
       if (error || !user) {
         console.error("[optimize-product-titles] Auth failed:", error?.message);
-        return json({ success: false, error: "Unauthorized. Please log in again." }, 401);
+        return json({ success: false, error: "Unauthorized" }, 401, cors);
       }
       console.log("[optimize-product-titles] Authenticated user:", user.id);
     } catch (e) {
-      console.error("[optimize-product-titles] Auth check error:", e);
-      return json({ success: false, error: "Authentication verification failed" }, 401);
+      console.error("[optimize-product-titles] Auth error:", e);
+      return json({ success: false, error: "Auth verification failed" }, 401, cors);
     }
   }
 
@@ -144,11 +154,10 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[optimize-product-titles] action=${dryRun ? "preview" : "optimize"} limit=${limit} offset=${offset} short=${shortTitlesOnly}`);
 
-    // Use service role for DB access
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // Fetch products
-    const selectFields = "id, slug, name, title, product_type, animal_type, primary_keyword, key_feature, brand, shopping_title, is_active";
+    // Select only columns that exist in products table
+    const selectFields = "id, slug, name, product_type, animal_type, primary_keyword, key_feature, brand, shopping_title, short_title, is_active";
     let query = admin.from("products").select(selectFields).eq("is_active", true).order("updated_at", { ascending: false });
 
     if (ids.length > 0) {
@@ -161,7 +170,7 @@ Deno.serve(async (req: Request) => {
 
     if (loadError) {
       console.error("[optimize-product-titles] DB error:", loadError.message);
-      return json({ success: false, error: "Database query failed", details: loadError.message, debug: { table: "products", offset, limit } }, 500);
+      return json({ success: false, error: `Database query failed: ${loadError.message}`, debug: { table: "products", offset, limit } }, 500, cors);
     }
 
     const rows = (products ?? []) as ProductRow[];
@@ -169,41 +178,26 @@ Deno.serve(async (req: Request) => {
 
     if (rows.length === 0) {
       return json({
-        success: true,
-        action: dryRun ? "preview" : "optimize",
-        totalProducts: 0,
-        optimizedCount: 0,
-        updatedCount: 0,
-        errorCount: 0,
-        fallbackCount: 0,
-        dryRun,
-        shortTitlesOnly,
-        results: [],
-        charStats: null,
+        success: true, action: dryRun ? "preview" : "optimize",
+        totalProducts: 0, optimizedCount: 0, updatedCount: 0, errorCount: 0, fallbackCount: 0,
+        dryRun, shortTitlesOnly, results: [], charStats: null,
         debug: { table: "products", offset, limit, fetchedCount: 0 },
-      });
+      }, 200, cors);
     }
 
-    // Process products
     const results: any[] = [];
-    let optimizedCount = 0;
-    let updatedCount = 0;
-    let errorCount = 0;
-    let fallbackCount = 0;
+    let optimizedCount = 0, updatedCount = 0, errorCount = 0, fallbackCount = 0;
     const lengths: number[] = [];
 
     for (const product of rows) {
       try {
-        const originalTitle = product.shopping_title || product.name || product.title || "";
-        let usedAI = false;
-        let usedFallback = false;
+        const originalTitle = product.shopping_title || product.name || "";
+        let usedAI = false, usedFallback = false;
 
-        // Try AI first
         let optimized = await generateAITitle(product, LOVABLE_KEY, shortTitlesOnly);
         if (optimized && isValid(optimized, shortTitlesOnly)) {
           usedAI = true;
         } else {
-          // Fallback
           optimized = buildFallbackTitle(product, shortTitlesOnly);
           usedFallback = true;
           fallbackCount++;
@@ -218,9 +212,16 @@ Deno.serve(async (req: Request) => {
         lengths.push(optimized.length);
         optimizedCount++;
 
-        // Write if not dry run
         if (!dryRun) {
-          const { error: updateErr } = await admin.from("products").update({ shopping_title: optimized, title_optimized_at: new Date().toISOString() }).eq("id", product.id);
+          const updatePayload: Record<string, any> = {
+            shopping_title: optimized,
+            title_optimized_at: new Date().toISOString(),
+          };
+          if (shortTitlesOnly) {
+            updatePayload.short_title = optimized;
+          }
+
+          const { error: updateErr } = await admin.from("products").update(updatePayload).eq("id", product.id);
           if (updateErr) {
             errorCount++;
             results.push({ id: product.id, slug: product.slug, ok: false, category: product.product_type || "Unknown", original: originalTitle, optimized, charCount: optimized.length, reason: updateErr.message, usedAI, usedFallback });
@@ -236,41 +237,26 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Compute char stats
     const charStats = lengths.length > 0 ? {
       avgLength: Math.round(lengths.reduce((a, b) => a + b, 0) / lengths.length),
       minLength: Math.min(...lengths),
       maxLength: Math.max(...lengths),
-      inRange: lengths.filter(l => l >= 70 && l <= 120).length,
-      tooShort: lengths.filter(l => l < 70).length,
-      tooLong: lengths.filter(l => l > 120).length,
+      inRange: lengths.filter((l) => l >= 70 && l <= 120).length,
+      tooShort: lengths.filter((l) => l < 70).length,
+      tooLong: lengths.filter((l) => l > 120).length,
     } : null;
 
     console.log(`[optimize-product-titles] DONE: ${optimizedCount} optimized, ${updatedCount} updated, ${errorCount} errors, ${fallbackCount} fallback`);
 
     return json({
-      success: true,
-      action: dryRun ? "preview" : "optimize",
-      totalProducts: rows.length,
-      filteredCount: rows.length,
-      optimizedCount,
-      updatedCount,
-      errorCount,
-      fallbackCount,
-      dryRun,
-      shortTitlesOnly,
-      charStats,
-      results,
-      debug: {
-        table: "products",
-        fetchedCount: rows.length,
-        sampleIds: rows.slice(0, 3).map(r => r.id),
-        aiAvailable: !!LOVABLE_KEY,
-        missingFieldsRate: rows.filter(r => !r.primary_keyword && !r.product_type).length,
-      },
-    });
+      success: true, action: dryRun ? "preview" : "optimize",
+      totalProducts: rows.length, filteredCount: rows.length,
+      optimizedCount, updatedCount, errorCount, fallbackCount,
+      dryRun, shortTitlesOnly, charStats, results,
+      debug: { table: "products", fetchedCount: rows.length, sampleIds: rows.slice(0, 3).map((r) => r.id), aiAvailable: !!LOVABLE_KEY },
+    }, 200, cors);
   } catch (err) {
     console.error("[optimize-product-titles] CRASH:", err);
-    return json({ success: false, error: "Unexpected server error", details: err instanceof Error ? err.message : "Unknown" }, 500);
+    return json({ success: false, error: "Unexpected server error", details: err instanceof Error ? err.message : "Unknown" }, 500, cors);
   }
 });
