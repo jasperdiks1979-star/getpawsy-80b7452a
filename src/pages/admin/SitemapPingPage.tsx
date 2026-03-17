@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Loader2, CheckCircle, XCircle, AlertTriangle, Copy, RefreshCw,
-  Wifi, WifiOff, Clock, Shield, Zap, ExternalLink, FileText,
+  Wifi, Clock, Zap, ExternalLink, FileText,
 } from 'lucide-react';
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch';
 import { cn } from '@/lib/utils';
@@ -17,11 +17,10 @@ import { toast } from 'sonner';
 interface PingResult {
   engine: string;
   sitemapUrl: string;
-  status: 'success' | 'timeout' | 'http_error' | 'circuit_open';
+  status: 'success' | 'timeout' | 'http_error';
   httpStatus?: number;
   duration_ms: number;
   error?: string;
-  attempt: number;
 }
 
 interface PingLogEntry {
@@ -143,12 +142,6 @@ export default function SitemapPingPage() {
               <Clock className="h-3 w-3" />
               {(status as any).hourlyPingCount || 0}/{(status as any).maxPerHour || 12} pings/hr
             </Badge>
-            {Object.entries((status as any).circuitStatus || {}).map(([engine, cs]: [string, any]) => (
-              <Badge key={engine} variant={cs.open ? 'destructive' : 'outline'} className="gap-1">
-                {cs.open ? <WifiOff className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
-                {engine}: {cs.open ? 'CIRCUIT OPEN' : 'OK'}
-              </Badge>
-            ))}
           </div>
         )}
 
@@ -271,15 +264,13 @@ export default function SitemapPingPage() {
                   <div className="space-y-1 text-xs font-mono">
                     {lastResult.results.map((r, i) => (
                       <div key={i} className="flex items-center gap-2 px-2 py-1 rounded bg-muted/30">
-                        {r.status === 'success' ? <CheckCircle className="h-3 w-3 text-green-500 shrink-0" /> :
-                         r.status === 'circuit_open' ? <WifiOff className="h-3 w-3 text-destructive shrink-0" /> :
+                       {r.status === 'success' ? <CheckCircle className="h-3 w-3 text-green-500 shrink-0" /> :
                          <XCircle className="h-3 w-3 text-destructive shrink-0" />}
                         <span className="font-medium w-12">{r.engine}</span>
                         <span className="text-muted-foreground">{r.status}</span>
                         {r.httpStatus && <Badge variant="outline" className="text-[8px] h-3.5 px-1">{r.httpStatus}</Badge>}
-                        <span className="text-muted-foreground">{r.duration_ms}ms</span>
-                        {r.attempt > 1 && <span className="text-yellow-500">retry #{r.attempt}</span>}
-                        {r.error && <span className="text-destructive truncate max-w-[200px]" title={r.error}>{r.error}</span>}
+                         <span className="text-muted-foreground">{r.duration_ms}ms</span>
+                         {r.error && <span className="text-destructive truncate max-w-[200px]" title={r.error}>{r.error}</span>}
                       </div>
                     ))}
                   </div>
@@ -312,9 +303,8 @@ export default function SitemapPingPage() {
                 <div className="space-y-0.5 font-mono text-[11px]">
                   {history.slice(0, 20).map(entry => (
                     <div key={entry.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted/50">
-                      {entry.status === 'success' ? <CheckCircle className="h-3 w-3 text-green-500 shrink-0" /> :
-                       entry.status === 'circuit_open' ? <WifiOff className="h-3 w-3 text-muted-foreground shrink-0" /> :
-                       <XCircle className="h-3 w-3 text-destructive shrink-0" />}
+                       {entry.status === 'success' ? <CheckCircle className="h-3 w-3 text-green-500 shrink-0" /> :
+                        <XCircle className="h-3 w-3 text-destructive shrink-0" />}
                       <span className="text-muted-foreground/60 w-24 shrink-0">
                         {new Date(entry.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>

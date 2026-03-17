@@ -276,12 +276,11 @@ export function RunAllControls() {
             <AlertDialogDescription asChild>
               <div className="space-y-2">
                 <p className="text-sm">This will run the full pipeline <strong>AND</strong> ping sitemaps to search engines:</p>
-                <ul className="list-disc pl-4 text-xs space-y-0.5 text-muted-foreground">
-                  <li>Pings Google &amp; Bing with sitemap URLs (safe, non-aggressive)</li>
-                  <li>Rate-limited: max 6 pings/hour per engine</li>
-                  <li>Circuit breaker: auto-disables after 3 consecutive failures</li>
-                  <li>All other changes saved as drafts</li>
-                </ul>
+                 <ul className="list-disc pl-4 text-xs space-y-0.5 text-muted-foreground">
+                   <li>Notifies IndexNow API (Bing, Yandex) with priority URLs</li>
+                   <li>Rate-limited: max 6 pings/hour per engine</li>
+                   <li>All other changes saved as drafts</li>
+                 </ul>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
