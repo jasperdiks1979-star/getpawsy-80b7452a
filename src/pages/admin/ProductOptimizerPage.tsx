@@ -318,6 +318,7 @@ export default function ProductOptimizerPage() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="recovery" className="gap-1 text-destructive"><Shield className="h-3.5 w-3.5" />Merchant Recovery</TabsTrigger>
           <TabsTrigger value="audit" className="gap-1"><BarChart3 className="h-3.5 w-3.5" />Audit</TabsTrigger>
           <TabsTrigger value="optimize" className="gap-1"><Zap className="h-3.5 w-3.5" />Optimizer</TabsTrigger>
           <TabsTrigger value="feed" className="gap-1"><ShoppingCart className="h-3.5 w-3.5" />Feed Enrichment</TabsTrigger>
