@@ -326,6 +326,160 @@ export default function ProductOptimizerPage() {
           <TabsTrigger value="history" className="gap-1"><History className="h-3.5 w-3.5" />History</TabsTrigger>
         </TabsList>
 
+        {/* ════════ MERCHANT RECOVERY TAB ════════ */}
+        <TabsContent value="recovery">
+          <Card className="border-destructive/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2 text-destructive">
+                <Shield className="h-5 w-5" /> Merchant Center Recovery Engine
+              </CardTitle>
+              <CardDescription>
+                Full catalog transformation to remove misrepresentation signals, dropshipping patterns, and rebuild trust for Google Merchant Center re-review.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 text-sm space-y-1">
+                <p className="font-semibold text-destructive">⚠️ Merchant Center Suspension Recovery</p>
+                <p className="text-muted-foreground">This engine rewrites ALL product titles, descriptions, and metadata using compliance-focused AI prompts. It also detects and flags dropshipping signals (supplier language, spam patterns, promotional titles).</p>
+              </div>
+
+              <div className="flex flex-wrap gap-2 items-end">
+                <div className="flex items-center gap-2 h-9">
+                  <Checkbox id="recoveryDryRun" checked={recoveryDryRun} onCheckedChange={(v) => setRecoveryDryRun(!!v)} />
+                  <label htmlFor="recoveryDryRun" className="text-sm cursor-pointer flex items-center gap-1">
+                    <Eye className="h-3.5 w-3.5" /> Preview Only
+                  </label>
+                </div>
+                <Button onClick={() => runRecovery()} disabled={recoveryLoading} size="sm" className="h-9">
+                  {recoveryLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Shield className="h-4 w-4 mr-1" />}
+                  {recoveryDryRun ? 'Preview Recovery' : 'Apply Recovery'} (20)
+                </Button>
+              </div>
+
+              {recoverySummary && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                  <SummaryCard label="Processed" value={recoverySummary.processed} variant="info" />
+                  <SummaryCard label="AI Success" value={recoverySummary.aiSuccess} variant="success" />
+                  <SummaryCard label="Fallback" value={recoverySummary.fallbackCount} variant="warning" />
+                  <SummaryCard label="Failed" value={recoverySummary.failed} variant="danger" />
+                  <SummaryCard label="Updated" value={recoverySummary.updated} variant="success" />
+                  <SummaryCard label="High Risk" value={recoverySummary.highRisk} variant="danger" />
+                  <SummaryCard label="Medium Risk" value={recoverySummary.mediumRisk} variant="warning" />
+                </div>
+              )}
+
+              {recoveryItems.length > 0 && recoveryDryRun && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button variant="outline" size="sm" onClick={selectAllRecovery}><CheckCircle className="h-3.5 w-3.5 mr-1" />Select All</Button>
+                  <Button variant="outline" size="sm" onClick={() => setRecoverySelected(new Set())}><XCircle className="h-3.5 w-3.5 mr-1" />Deselect</Button>
+                  {recoverySelected.size > 0 && (
+                    <Button size="sm" variant="destructive" onClick={applyRecoverySelected} disabled={recoveryApplyLoading}>
+                      {recoveryApplyLoading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5 mr-1" />}
+                      Apply Recovery to {recoverySelected.size}
+                    </Button>
+                  )}
+                  <span className="text-xs text-muted-foreground">{recoverySelected.size} selected</span>
+                </div>
+              )}
+
+              {recoveryItems.length > 0 && (
+                <ScrollArea className="max-h-[600px]">
+                  <div className="space-y-2">
+                    {recoveryItems.map(item => {
+                      const ri = item as RecoveryItem;
+                      const isExpanded = recoveryExpandedId === item.id;
+                      const riskColor = ri.dropshipLevel === 'high' ? 'border-destructive/50 bg-destructive/5'
+                        : ri.dropshipLevel === 'medium' ? 'border-amber-400/50 bg-amber-50/50' : 'border-border/50';
+                      return (
+                        <div key={item.id} className={`border rounded p-3 transition-colors ${riskColor} ${recoverySelected.has(item.id) ? 'ring-2 ring-primary/30' : ''}`}>
+                          <div className="flex items-start gap-2">
+                            {recoveryDryRun && <Checkbox checked={recoverySelected.has(item.id)} onCheckedChange={() => toggleRecoverySelect(item.id)} className="mt-1" disabled={!item.ok} />}
+                            <div className="w-10 h-10 rounded bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {item.image_url ? <img src={item.image_url} alt="" className="w-full h-full object-cover" /> : <Tag className="h-4 w-4 text-muted-foreground" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <span className="text-sm font-medium truncate max-w-[250px]">{item.name}</span>
+                                <ScoreBadge score={item.quality_score || 0} />
+                                {ri.dropshipLevel && ri.dropshipLevel !== 'low' && (
+                                  <Badge variant={ri.dropshipLevel === 'high' ? 'destructive' : 'outline'} className="text-[10px] px-1.5">
+                                    {ri.dropshipLevel === 'high' ? '🚨' : '⚠️'} {ri.dropshipRisk}% dropship risk
+                                  </Badge>
+                                )}
+                                {item.applied && <Badge className="text-[10px] px-1.5 bg-green-600">Applied</Badge>}
+                                {item.usedAI && <Badge variant="secondary" className="text-[10px] px-1.5">AI</Badge>}
+                              </div>
+                              {item.optimizedTitle && (
+                                <div className="space-y-0.5 text-xs">
+                                  <div className="text-muted-foreground line-through">{item.originalTitle} <span className="no-underline">({item.originalTitle?.length || 0}c)</span></div>
+                                  <div className="text-primary font-medium">{item.optimizedTitle} <span className="font-normal text-muted-foreground">({item.titleChars}c)</span></div>
+                                </div>
+                              )}
+                              {ri.dropshipSignals && ri.dropshipSignals.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {ri.dropshipSignals.slice(0, 5).map((s, i) => (
+                                    <Badge key={i} variant="outline" className="text-[9px] px-1 text-destructive border-destructive/20">{s}</Badge>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="flex gap-3 mt-1 text-[10px] text-muted-foreground">
+                                {item.shopping_priority !== undefined && <span>Shop: {item.shopping_priority}</span>}
+                                {item.feed_readiness !== undefined && <span>Feed: {item.feed_readiness}</span>}
+                                {item.confidence_tier && <span>{item.confidence_tier}</span>}
+                              </div>
+                            </div>
+                            <Collapsible open={isExpanded} onOpenChange={() => setRecoveryExpandedId(isExpanded ? null : item.id)}>
+                              <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                </Button>
+                              </CollapsibleTrigger>
+                            </Collapsible>
+                          </div>
+                          {isExpanded && (
+                            <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                              <div className="space-y-2">
+                                {item.shortTitle && <DetailRow label="Short Title" value={item.shortTitle} />}
+                                {item.optimizedDescription && <DetailRow label="Description (preview)" value={item.optimizedDescription.slice(0, 500)} />}
+                                {item.bullets?.length && (
+                                  <div><span className="font-medium text-muted-foreground">Bullets:</span>
+                                    <ul className="mt-1 list-disc list-inside">{item.bullets.map((b, i) => <li key={i}>{b}</li>)}</ul>
+                                  </div>
+                                )}
+                                {item.seoTitle && <DetailRow label="SEO Title" value={item.seoTitle} />}
+                                {item.seoMetaDescription && <DetailRow label="Meta Description" value={item.seoMetaDescription} />}
+                              </div>
+                              <div className="space-y-2">
+                                {item.suggestedProductType && <DetailRow label="Product Type" value={item.suggestedProductType} />}
+                                {item.googleCategory && <DetailRow label="Google Category" value={item.googleCategory} />}
+                                {item.animal && <DetailRow label="Target Animal" value={item.animal} />}
+                                {item.keyFeature && <DetailRow label="Key Feature" value={item.keyFeature} />}
+                                {item.benefitAngle && <DetailRow label="Benefit Angle" value={item.benefitAngle} />}
+                                {item.conversionAngle && <DetailRow label="Conversion Angle" value={item.conversionAngle} />}
+                                {item.customLabels && (
+                                  <div><span className="font-medium text-muted-foreground">Labels:</span>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {Object.entries(item.customLabels).map(([k, v]) => <Badge key={k} variant="outline" className="text-[10px]">{k}: {v as string}</Badge>)}
+                                    </div>
+                                  </div>
+                                )}
+                                {item.flags && item.flags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">{item.flags.map(f => <FlagBadge key={f} flag={f} />)}</div>
+                                )}
+                              </div>
+                              <div className="col-span-full text-muted-foreground">ID: {item.id} · ${item.price} · Slug: {item.slug}</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* ════════ AUDIT TAB ════════ */}
         <TabsContent value="audit">
           <Card>
