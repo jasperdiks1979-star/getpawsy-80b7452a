@@ -70,6 +70,32 @@ const FEATURE_KEYWORDS: Record<string, string[]> = {
   Automatic: ["automatic","auto","self-cleaning","timer"],
 };
 
+// ── Dropshipping signal patterns ──
+const DROPSHIP_TITLE_PATTERNS = [
+  /\b(2024|2025|2026)\b/i, // year stuffing
+  /\b(hot sale|best seller|top rated|viral|trending|popular)\b/i,
+  /\b(free shipping|fast delivery|limited time|sale|discount)\b/i,
+  /\b(high quality|premium quality|best quality|top quality)\b/i,
+  /\b(new arrival|latest|brand new)\b/i,
+  /\d+\s*(pcs|pieces|pack|set)\s*$/i, // "5pcs" at end
+  /[A-Z]{5,}/, // excessive caps
+  /(.)\1{3,}/, // repeated chars
+  /\b(wholesale|dropship|supplier|factory)\b/i,
+  /\b(amazon|aliexpress|wish|temu|shein)\b/i,
+];
+
+const DROPSHIP_DESC_PATTERNS = [
+  /\b(dear (customer|friend|buyer))\b/i,
+  /\b(please (note|allow|check))\b/i,
+  /\b(due to (manual|light|screen|monitor))\b/i,
+  /\b(slight (difference|color|deviation))\b/i,
+  /\b(real color|actual color|monitor settings)\b/i,
+  /\b(1-3\s*(cm|mm)\s*(error|difference))\b/i,
+  /\b(package (includes|contains|include))\b/i,
+  /\b(specification|material|feature)s?:\s*$/im,
+  /\b(we (will|are|offer)|our (store|shop))\b/i,
+];
+
 const GOOGLE_CATEGORY_MAP: Record<string, string> = {
   "cat tree": "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture",
   "cat bed": "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Beds",
