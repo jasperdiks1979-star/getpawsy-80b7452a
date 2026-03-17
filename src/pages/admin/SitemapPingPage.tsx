@@ -17,11 +17,10 @@ import { toast } from 'sonner';
 interface PingResult {
   engine: string;
   sitemapUrl: string;
-  status: 'success' | 'timeout' | 'http_error' | 'circuit_open';
+  status: 'success' | 'timeout' | 'http_error';
   httpStatus?: number;
   duration_ms: number;
   error?: string;
-  attempt: number;
 }
 
 interface PingLogEntry {
