@@ -24,7 +24,7 @@ export const LowStockBadge: React.FC<LowStockBadgeProps> = ({
     <div className={`flex items-center gap-1.5 text-amber-600 dark:text-amber-400 ${className}`}>
       <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
       <span className="text-sm font-medium">
-        Low stock — selling fast
+        Low stock — only a few left
       </span>
     </div>
   );

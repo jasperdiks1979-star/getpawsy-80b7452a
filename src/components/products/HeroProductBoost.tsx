@@ -65,7 +65,7 @@ const HERO_DATA: Record<string, {
         a: 'This bed is designed for small dogs (up to ~30 lbs) and cats. Your pet should be able to curl up or stretch out comfortably. Measure your pet nose-to-tail and compare — most small breeds and all cats fit perfectly.',
       },
     ],
-    urgencyLine: 'Introductory pricing — first batch at this price point',
+    urgencyLine: '', // Removed — no unverifiable urgency claims
   },
   'dog-cot-cooling-pet-bed-3': {
     whoFor: [
@@ -102,7 +102,7 @@ const HERO_DATA: Record<string, {
         a: 'This elevated dog bed supports up to 150 lbs with its reinforced steel frame. The legs lock securely to prevent wobbling, even with larger, more active dogs.',
       },
     ],
-    urgencyLine: 'High-demand summer item — limited stock available',
+    urgencyLine: '', // Removed — no unverifiable urgency claims
   },
 };
 
@@ -112,13 +112,7 @@ export const HeroProductBoost = ({ productSlug }: HeroProductBoostProps) => {
 
   return (
     <div className="space-y-6">
-      {/* First batch pricing — factual, no fake scarcity */}
-      <div className="flex items-center gap-2">
-        <Badge variant="outline" className="gap-1.5 text-xs font-medium border-primary/30 text-primary bg-primary/5 py-1 px-3">
-          <Sparkles className="w-3 h-3" />
-          {data.urgencyLine}
-        </Badge>
-      </div>
+      {/* Urgency badge removed for Merchant Center compliance — no unverifiable scarcity claims */}
 
       {/* Who is this for */}
       <div className="bg-muted/30 rounded-2xl p-5 space-y-3 border border-border/50">

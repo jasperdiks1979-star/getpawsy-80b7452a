@@ -47,8 +47,8 @@ const Shipping = () => {
             <div className="grid sm:grid-cols-3 gap-4 mb-12">
               <div className="bg-muted/30 rounded-2xl p-6 text-center">
                 <MapPin className="w-8 h-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold text-foreground mb-1">United States Only</h3>
-                <p className="text-sm text-muted-foreground">We ship exclusively within the U.S.</p>
+                <h3 className="font-semibold text-foreground mb-1">United States</h3>
+                <p className="text-sm text-muted-foreground">We primarily serve US customers</p>
               </div>
               <div className="bg-muted/30 rounded-2xl p-6 text-center">
                 <Clock className="w-8 h-8 text-primary mx-auto mb-3" />
@@ -74,10 +74,10 @@ const Shipping = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-4">
-                  GetPawsy ships to all 50 U.S. states, including Alaska, Hawaii, and U.S. territories. We do not currently offer international shipping.
+                  GetPawsy primarily serves customers across the United States. We ship to all 50 U.S. states, including Alaska, Hawaii, and U.S. territories. International shipping may be available for select destinations — please contact us for details.
                 </p>
                 <p className="text-muted-foreground">
-                  All shipping rates, delivery estimates, and policies on this page apply to domestic U.S. orders only.
+                  All shipping rates, delivery estimates, and policies on this page apply to domestic U.S. orders.
                 </p>
               </div>
             </section>

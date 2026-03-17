@@ -27,7 +27,7 @@ export function LocalBusinessSchema({
     url: baseUrl,
     logo: `${baseUrl}/favicon.png`,
     image: `${baseUrl}/og-image.png`,
-    email: 'support@getpawsy.pet',
+    email: 'info@getpawsy.pet',
     vatID: 'NL003295015B69',
     taxID: 'NL003295015B69',
     address: {
@@ -38,7 +38,7 @@ export function LocalBusinessSchema({
     },
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'support@getpawsy.pet',
+      email: 'info@getpawsy.pet',
       contactType: 'customer service',
       availableLanguage: 'English',
       hoursAvailable: {
