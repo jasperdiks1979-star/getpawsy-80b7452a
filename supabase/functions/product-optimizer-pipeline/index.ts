@@ -211,12 +211,43 @@ function generateCustomLabels(p: any, animal: string, scores: any): {l0: string;
   return { l0, l1, l2, l3, l4 };
 }
 
+// ── Dropshipping Signal Detection ──
+function detectDropshippingSignals(p: any): { titleSignals: string[]; descSignals: string[]; riskScore: number; riskLevel: string } {
+  const titleSignals: string[] = [];
+  const descSignals: string[] = [];
+  const name = p.name || "";
+  const desc = p.description || "";
+
+  for (const pat of DROPSHIP_TITLE_PATTERNS) {
+    const m = name.match(pat);
+    if (m) titleSignals.push(`title: "${m[0]}"`);
+  }
+  for (const pat of DROPSHIP_DESC_PATTERNS) {
+    const m = desc.match(pat);
+    if (m) descSignals.push(`desc: "${m[0]}"`);
+  }
+
+  // Additional heuristics
+  if (name.length > 150) titleSignals.push("title_extremely_long");
+  if ((name.match(/,/g) || []).length > 3) titleSignals.push("title_comma_stuffed");
+  if (/^\d/.test(name)) titleSignals.push("title_starts_with_number");
+  if (desc && desc.length < 30) descSignals.push("desc_too_short");
+  if (desc && /[\u4e00-\u9fff]/.test(desc)) descSignals.push("desc_contains_chinese");
+
+  const totalSignals = titleSignals.length + descSignals.length;
+  const riskScore = Math.min(100, totalSignals * 15);
+  const riskLevel = riskScore >= 60 ? "high" : riskScore >= 30 ? "medium" : "low";
+
+  return { titleSignals, descSignals, riskScore, riskLevel };
+}
+
 // ── Scoring Engine ──
 function scoreProduct(p: any): {
   titleScore: number; descriptionScore: number; seoScore: number;
   shoppingScore: number; completenessScore: number; conversionScore: number;
   overallScore: number; shoppingPriority: number; contentReadiness: number;
   feedReadiness: number; confidenceTier: string; label: string; flags: string[];
+  dropshipRisk: number; dropshipLevel: string;
 } {
   const flags: string[] = [];
   let titleScore = 50, descriptionScore = 50, seoScore = 50, shoppingScore = 50, completenessScore = 50, conversionScore = 50;
@@ -263,7 +294,17 @@ function scoreProduct(p: any): {
   if (desc && desc.length > 100) conversionScore += 15;
   if (p.compare_at_price && p.compare_at_price > p.price) conversionScore += 10;
 
-  const cl = (n: number) => Math.max(0, Math.min(100, n));
+  // Dropshipping signal penalties
+  const dropship = detectDropshippingSignals(p);
+  if (dropship.riskScore >= 30) {
+    titleScore -= Math.min(20, dropship.riskScore * 0.3);
+    descriptionScore -= Math.min(15, dropship.riskScore * 0.2);
+    shoppingScore -= Math.min(15, dropship.riskScore * 0.2);
+    flags.push(`dropship_risk_${dropship.riskLevel}`);
+    dropship.titleSignals.forEach(s => flags.push(s));
+  }
+
+  const cl = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
   titleScore = cl(titleScore); descriptionScore = cl(descriptionScore); seoScore = cl(seoScore);
   shoppingScore = cl(shoppingScore); completenessScore = cl(completenessScore); conversionScore = cl(conversionScore);
 
@@ -298,7 +339,7 @@ function scoreProduct(p: any): {
   const confidenceTier = overallScore >= 75 ? "High" : overallScore >= 50 ? "Medium" : "Low";
   const label = overallScore >= 80 ? "Excellent" : overallScore >= 60 ? "Good" : overallScore >= 40 ? "Needs Work" : "Critical";
 
-  return { titleScore, descriptionScore, seoScore, shoppingScore, completenessScore, conversionScore, overallScore, shoppingPriority, contentReadiness, feedReadiness, confidenceTier, label, flags };
+  return { titleScore, descriptionScore, seoScore, shoppingScore, completenessScore, conversionScore, overallScore, shoppingPriority, contentReadiness, feedReadiness, confidenceTier, label, flags, dropshipRisk: dropship.riskScore, dropshipLevel: dropship.riskLevel };
 }
 
 // ── Fallback title builder ──
