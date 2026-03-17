@@ -32,7 +32,7 @@ const PILLARS = [
       </svg>
     ),
     title: 'Delivery to the US',
-    desc: 'Training tools shipped to you. Estimated delivery: 5–10 business days. Free shipping on orders $35+.',
+    desc: 'Training tools shipped to you. Estimated delivery: 3–7 business days. Free shipping on orders $35+.',
   },
 ];
 
