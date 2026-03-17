@@ -92,7 +92,7 @@ const Contact = () => {
       icon: Mail,
       title: 'Email Us',
       content: SUPPORT_EMAIL,
-      description: 'We usually reply within 24–48 hours',
+      description: 'We respond within 24 hours',
       href: `mailto:${SUPPORT_EMAIL}`,
     },
     {

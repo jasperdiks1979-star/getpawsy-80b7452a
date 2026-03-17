@@ -86,7 +86,7 @@ const Index = () => {
           throw error;
         }
       } else {
-        showToast('success', 'Thanks for signing up! Check your inbox for 10% off.');
+        showToast('success', 'Thanks for signing up! You\'ll receive pet care tips and new arrivals.');
         trackNewsletterSignup(newsletterEmail);
       }
       setNewsletterEmail('');

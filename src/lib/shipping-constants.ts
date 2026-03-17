@@ -115,8 +115,8 @@ export const TRUST_BADGES = {
     subtitle: 'Powered by Stripe',
   },
   quality: {
-    title: 'Quality Guarantee',
-    subtitle: '100% satisfaction',
+    title: 'Customer Support',
+    subtitle: 'We respond within 24 hours',
   },
 } as const;
 
