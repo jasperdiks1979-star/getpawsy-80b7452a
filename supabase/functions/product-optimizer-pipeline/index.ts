@@ -828,6 +828,258 @@ Deno.serve(async (req: Request) => {
       return json({ success: true, action, updated: ids.length }, 200, cors);
     }
 
+    // ════════════════════════════════════════
+    // ACTION: merchant-recovery
+    // ════════════════════════════════════════
+    if (action === "merchant-recovery") {
+      const dryRun = body.dryRun !== false;
+      const limit = Math.min(body.limit || 20, 50);
+      const offset = body.offset || 0;
+      const ids = Array.isArray(body.ids) ? body.ids.filter(Boolean) : [];
+
+      let query = admin.from("products").select(SELECT_FIELDS).eq("is_active", true);
+      if (ids.length > 0) query = admin.from("products").select(SELECT_FIELDS).in("id", ids);
+      else query = query.order("updated_at", { ascending: false }).range(offset, offset + limit - 1);
+
+      const { data: products, error: loadErr } = await query;
+      if (loadErr) return json({ success: false, error: `DB error: ${loadErr.message}` }, 500, cors);
+      if (!products?.length) return json({ success: true, action: "merchant-recovery", totalProducts: 0, items: [] }, 200, cors);
+
+      const { data: runData } = await admin.from("optimizer_runs").insert({
+        mode: dryRun ? "recovery-preview" : "recovery-apply",
+        trigger_source: "admin",
+        total_products: products.length,
+        initiated_by: userId,
+        version: "v3-recovery",
+        config: { dryRun, limit, offset },
+      }).select("id").single();
+      const runId = runData?.id;
+
+      const results: any[] = [];
+      let processed = 0, aiSuccess = 0, fallbackCount = 0, failed = 0, updated = 0;
+
+      for (const p of products) {
+        try {
+          const dropship = detectDropshippingSignals(p);
+          const animal = p.animal_type || detectAnimal(p);
+          const feature = p.key_feature || detectFeature(p);
+          const productType = p.product_type || detectProductType(p);
+          const googleCat = detectGoogleCategory({ ...p, product_type: productType });
+          const primaryKw = inferPrimaryKeyword(p);
+          const benefitAngle = inferBenefitAngle(p);
+          const conversionAngle = inferConversionAngle(p);
+
+          const beforeSnapshot: any = {
+            shopping_title: p.shopping_title, short_title: p.short_title,
+            optimized_description: p.optimized_description, meta_title: p.meta_title,
+            meta_description: p.meta_description, product_type: p.product_type,
+            google_product_category: p.google_product_category, animal_type: p.animal_type,
+            key_feature: p.key_feature, primary_keyword: p.primary_keyword,
+          };
+
+          const item: any = {
+            id: p.id, name: p.name, slug: p.slug, price: p.price,
+            image_url: p.image_url, category: p.category,
+            dropshipRisk: dropship.riskScore, dropshipLevel: dropship.riskLevel,
+            dropshipSignals: [...dropship.titleSignals, ...dropship.descSignals],
+            ok: true,
+          };
+
+          // Enhanced recovery prompts
+          const recoveryTitlePrompt = `You are a Google Merchant Center compliance specialist for GetPawsy.pet, a US pet supply store.
+
+CRITICAL RULES:
+- NO promotional language (best, ultimate, amazing, miracle, top-rated, viral, hot sale)
+- NO year stuffing (2025, 2026)
+- NO all caps words
+- NO medical/health claims
+- NO shipping or pricing info in titles
+- NO supplier/wholesale language
+- Title must be factual, clear, and professional
+
+Create ONE clean Shopping title (70-120 characters).
+Structure: Primary Keyword + Product Type + Key Feature + Target Animal
+Example: "Orthopedic Dog Bed with Memory Foam for Large Dogs"
+
+Product: ${p.name}
+Category: ${p.category || ""}
+Type: ${productType}
+Species: ${animal}
+Feature: ${feature}
+Description: ${(p.description || "").slice(0, 200)}`;
+
+          const recoveryDescPrompt = `You are a product copywriter for GetPawsy.pet, a trusted US pet supply store.
+
+Write a professional, honest product description that would pass Google Merchant Center review.
+
+STRUCTURE:
+[What it is] - One clear sentence explaining the product (20-30 words)
+[Why it helps] - One sentence about realistic benefits
+[Key features] - 3-4 bullet points starting with •
+[Best for] - One sentence about ideal use cases
+[Care tip] - One practical sentence if applicable
+
+RULES:
+- NO exaggerated claims or superlatives
+- NO medical/health promises
+- NO fake urgency or scarcity
+- NO supplier language ("dear customer", "please note", "due to monitor settings")
+- NO fabricated specifications or materials
+- Write in clear, professional American English
+- Focus on practical value for pet owners
+- Be specific but honest
+
+Product: ${p.name}
+Category: ${p.category || ""}
+Price: $${p.price}
+Target: ${animal} owners
+Current Description: ${(p.description || "").slice(0, 500)}
+
+Return ONLY the description text. No markdown headers or formatting.`;
+
+          // Generate title
+          const aiTitle = await aiGenerate(LOVABLE_KEY,
+            "You are a Google Merchant Center compliance title specialist. Return ONLY the title text, no quotes.",
+            recoveryTitlePrompt
+          );
+          let finalTitle: string;
+          let usedAI = false;
+          if (aiTitle) {
+            finalTitle = clamp(titleCase(dedupe(sanitize(aiTitle.replace(/^["']|["']$/g, "")))), 120);
+            if (finalTitle.length >= 15) usedAI = true;
+            else { finalTitle = buildFallbackTitle(p, false); fallbackCount++; }
+          } else { finalTitle = buildFallbackTitle(p, false); fallbackCount++; }
+
+          const shortTitle = buildFallbackTitle(p, true);
+          item.originalTitle = p.shopping_title || p.name;
+          item.optimizedTitle = finalTitle;
+          item.shortTitle = shortTitle;
+          item.titleChars = finalTitle.length;
+          item.usedAI = usedAI;
+
+          // Generate description
+          const aiDesc = await aiGenerate(LOVABLE_KEY,
+            "You write honest, professional product descriptions. Return only the text.",
+            recoveryDescPrompt
+          );
+          if (aiDesc && aiDesc.length > 50) {
+            item.optimizedDescription = aiDesc.trim();
+            const bullets = aiDesc.match(/[•\-\*]\s*.+/g)?.map((b: string) => b.replace(/^[•\-\*]\s*/, "").trim()) || [];
+            item.bullets = bullets;
+          }
+
+          // Generate SEO metadata
+          const aiMeta = await aiGenerate(LOVABLE_KEY,
+            "You are an SEO specialist. Be factual, no exaggeration.",
+            `Generate SEO metadata for a pet product:\nName: ${p.name}\nType: ${productType}\nSpecies: ${animal}\n\nReturn:\nSEO_TITLE: (50-60 chars, factual, no superlatives)\nMETA_DESC: (150-160 chars, benefit-driven, professional)\nKEYWORDS: kw1, kw2, kw3, kw4, kw5`
+          );
+          if (aiMeta) {
+            item.seoTitle = aiMeta.match(/SEO_TITLE:\s*(.+)/i)?.[1]?.trim();
+            item.seoMetaDescription = aiMeta.match(/META_DESC:\s*(.+)/i)?.[1]?.trim();
+            item.seoKeywords = aiMeta.match(/KEYWORDS:\s*(.+)/i)?.[1]?.split(",").map((k: string) => k.trim()).filter(Boolean);
+          }
+
+          // Enrichment
+          item.suggestedProductType = productType;
+          item.googleCategory = googleCat;
+          item.animal = animal;
+          item.keyFeature = feature;
+          item.primaryKeyword = primaryKw;
+          item.benefitAngle = benefitAngle;
+          item.conversionAngle = conversionAngle;
+
+          // Scores
+          const updatePayload: any = {
+            shopping_title: finalTitle,
+            short_title: shortTitle,
+            product_type: productType || p.product_type,
+            google_product_category: googleCat,
+            animal_type: animal,
+            key_feature: feature || p.key_feature,
+            primary_keyword: primaryKw,
+            benefit_angle: benefitAngle,
+            conversion_angle: conversionAngle,
+            slug_suggestion: slugify(p.name || ""),
+          };
+          if (item.optimizedDescription) {
+            updatePayload.optimized_description = item.optimizedDescription;
+            if (item.bullets?.length) updatePayload.description_bullets = item.bullets;
+          }
+          if (item.seoTitle) { updatePayload.seo_title = item.seoTitle; updatePayload.meta_title = item.seoTitle; }
+          if (item.seoMetaDescription) { updatePayload.seo_meta_description = item.seoMetaDescription; updatePayload.meta_description = item.seoMetaDescription; }
+          if (item.seoKeywords?.length) updatePayload.seo_keywords = item.seoKeywords;
+
+          const mergedProduct = { ...p, ...updatePayload };
+          const scores = scoreProduct(mergedProduct);
+          const labels = generateCustomLabels(mergedProduct, animal, scores);
+          updatePayload.custom_label_0 = labels.l0;
+          updatePayload.custom_label_1 = labels.l1;
+          updatePayload.custom_label_2 = labels.l2;
+          updatePayload.custom_label_3 = labels.l3;
+          updatePayload.custom_label_4 = labels.l4;
+          updatePayload.quality_score = scores.overallScore;
+          updatePayload.quality_flags = scores.flags;
+          updatePayload.shopping_priority_score = scores.shoppingPriority;
+          updatePayload.content_readiness_score = scores.contentReadiness;
+          updatePayload.feed_readiness_score = scores.feedReadiness;
+
+          item.quality_score = scores.overallScore;
+          item.quality_label = scores.label;
+          item.shopping_priority = scores.shoppingPriority;
+          item.content_readiness = scores.contentReadiness;
+          item.feed_readiness = scores.feedReadiness;
+          item.confidence_tier = scores.confidenceTier;
+          item.flags = scores.flags;
+          item.customLabels = labels;
+
+          if (!dryRun) {
+            updatePayload.ai_optimizer_status = "recovery-optimized";
+            updatePayload.ai_optimizer_version = "v3-recovery";
+            updatePayload.ai_last_optimized_at = new Date().toISOString();
+            const { error: updateErr } = await admin.from("products").update(updatePayload).eq("id", p.id);
+            if (updateErr) { item.ok = false; item.error = updateErr.message; failed++; }
+            else { updated++; item.applied = true; }
+
+            if (runId) {
+              await admin.from("optimizer_run_items").insert({
+                run_id: runId, product_id: p.id,
+                status: item.ok ? "success" : "error",
+                before_snapshot: beforeSnapshot, after_snapshot: updatePayload,
+                error_message: item.error || null,
+                used_ai: usedAI, used_fallback: !usedAI,
+                scores: { overall: scores.overallScore, shopping: scores.shoppingPriority, feed: scores.feedReadiness },
+              });
+            }
+          }
+
+          if (usedAI) aiSuccess++;
+          processed++;
+          results.push(item);
+        } catch (err) {
+          failed++;
+          results.push({ id: p.id, name: p.name, ok: false, error: err instanceof Error ? err.message : "Unknown" });
+        }
+      }
+
+      if (runId) {
+        await admin.from("optimizer_runs").update({
+          success_count: processed, error_count: failed, fallback_count: fallbackCount,
+          completed_at: new Date().toISOString(),
+        }).eq("id", runId);
+      }
+
+      // Risk summary
+      const highRisk = results.filter((r: any) => r.dropshipLevel === "high").length;
+      const mediumRisk = results.filter((r: any) => r.dropshipLevel === "medium").length;
+
+      return json({
+        success: true, action: "merchant-recovery", dryRun, runId,
+        totalProducts: products.length,
+        summary: { processed, aiSuccess, fallbackCount, failed, updated, highRisk, mediumRisk },
+        items: results,
+      }, 200, cors);
+    }
+
     return json({ success: false, error: `Unknown action: ${action}` }, 400, cors);
   } catch (err) {
     console.error("[optimizer-pro] CRASH:", err);
