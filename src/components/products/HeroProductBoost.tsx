@@ -65,7 +65,7 @@ const HERO_DATA: Record<string, {
         a: 'This bed is designed for small dogs (up to ~30 lbs) and cats. Your pet should be able to curl up or stretch out comfortably. Measure your pet nose-to-tail and compare — most small breeds and all cats fit perfectly.',
       },
     ],
-    urgencyLine: 'Introductory pricing — first batch at this price point',
+    urgencyLine: '', // Removed — no unverifiable urgency claims
   },
   'dog-cot-cooling-pet-bed-3': {
     whoFor: [
