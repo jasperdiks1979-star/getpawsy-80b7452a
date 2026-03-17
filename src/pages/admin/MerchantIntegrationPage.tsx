@@ -873,35 +873,26 @@ export default function MerchantIntegrationPage() {
                 disabled={titleOptRunning}
                 onClick={async () => {
                   setTitleOptReport(null);
-                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`;
                   try {
                     const { data: sessionData } = await supabase.auth.getSession();
                     const token = sessionData?.session?.access_token;
-                    if (!token) {
-                      setTitleOptReport({ _testError: 'Not authenticated. Please log in as admin first.', _httpStatus: 0 });
-                      toast.error('Not authenticated. Please log in first.');
-                      return;
-                    }
-                    const res = await fetch(endpoint, {
+                    if (!token) { setTitleOptReport({ _testError: 'Not authenticated. Please log in first.' }); toast.error('Not authenticated'); return; }
+                    const res = await fetch(`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`, {
                       method: 'POST',
-                      headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                      },
+                      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                       body: JSON.stringify({ dryRun: true, limit: 1 }),
                     });
-                    const json = await res.json().catch(() => ({}));
-                    if (!res.ok) {
-                      setTitleOptReport({ _testError: json.error || `HTTP ${res.status}`, _httpStatus: res.status, _responseBody: JSON.stringify(json) });
-                      toast.error(`Test failed: HTTP ${res.status} – ${json.error || 'Unknown'}`);
+                    const text = await res.text();
+                    let data: any;
+                    try { data = JSON.parse(text); } catch { setTitleOptReport({ _testError: `Non-JSON response (HTTP ${res.status}): ${text.slice(0, 200)}` }); toast.error('Unexpected response from function'); return; }
+                    if (!res.ok || !data.success) {
+                      setTitleOptReport({ _testError: data.error || `HTTP ${res.status}`, _httpStatus: res.status, _responseBody: text.slice(0, 500) });
+                      toast.error(`Test failed: ${data.error || `HTTP ${res.status}`}`);
                     } else {
-                      setTitleOptReport({ _testSuccess: true, _httpStatus: res.status, endpoint, ...json });
+                      setTitleOptReport({ _testSuccess: true, _httpStatus: res.status, ...data });
                       toast.success('Function reachable ✓');
                     }
-                  } catch (err: any) {
-                    setTitleOptReport({ _testError: err.message || 'Network error', _httpStatus: 0 });
-                    toast.error(`Test failed: ${err.message}`);
-                  }
+                  } catch (err: any) { setTitleOptReport({ _testError: err.message || 'Network error' }); toast.error(`Test failed: ${err.message}`); }
                 }}
               >
                 <Bug className="h-4 w-4 mr-1" />
@@ -912,31 +903,21 @@ export default function MerchantIntegrationPage() {
                 size="sm"
                 disabled={titleOptRunning}
                 onClick={async () => {
-                  setTitleOptRunning(true);
-                  setTitleOptReport(null);
-                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`;
+                  setTitleOptRunning(true); setTitleOptReport(null);
                   try {
                     const { data: sessionData } = await supabase.auth.getSession();
                     const token = sessionData?.session?.access_token;
-                    if (!token) throw new Error('Not authenticated. Please log in as admin first.');
-                    const res = await fetch(endpoint, {
+                    if (!token) throw new Error('Not authenticated');
+                    const res = await fetch(`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`, {
                       method: 'POST',
-                      headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                      },
+                      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                       body: JSON.stringify({ dryRun: true, limit: 20 }),
                     });
-                    const json = await res.json().catch(() => ({}));
-                    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-                    setTitleOptReport(json);
-                    toast.success(`Preview: ${json?.optimizedCount ?? 0} titles optimized`);
-                  } catch (err: any) {
-                    setTitleOptReport({ _testError: err.message || 'Failed' });
-                    toast.error(err.message || 'Failed');
-                  } finally {
-                    setTitleOptRunning(false);
-                  }
+                    const data = await res.json().catch(() => ({ success: false, error: 'Invalid response' }));
+                    if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+                    setTitleOptReport(data);
+                    toast.success(`Preview: ${data.optimizedCount ?? 0} titles generated`);
+                  } catch (err: any) { setTitleOptReport({ _testError: err.message }); toast.error(err.message); } finally { setTitleOptRunning(false); }
                 }}
               >
                 {titleOptRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Bug className="h-4 w-4 mr-1" />}
@@ -947,31 +928,21 @@ export default function MerchantIntegrationPage() {
                 size="sm"
                 disabled={titleOptRunning}
                 onClick={async () => {
-                  setTitleOptRunning(true);
-                  setTitleOptReport(null);
-                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`;
+                  setTitleOptRunning(true); setTitleOptReport(null);
                   try {
                     const { data: sessionData } = await supabase.auth.getSession();
                     const token = sessionData?.session?.access_token;
                     if (!token) throw new Error('Not authenticated');
-                    const res = await fetch(endpoint, {
+                    const res = await fetch(`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`, {
                       method: 'POST',
-                      headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({ dryRun: true, filterShort: true }),
+                      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ dryRun: true, limit: 20, shortTitlesOnly: true }),
                     });
-                    const json = await res.json().catch(() => ({}));
-                    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-                    setTitleOptReport(json);
-                    toast.success(`Preview: ${json?.filteredCount ?? 0} short titles found, ${json?.optimizedCount ?? 0} optimized`);
-                  } catch (err: any) {
-                    setTitleOptReport({ _testError: err.message });
-                    toast.error(err.message);
-                  } finally {
-                    setTitleOptRunning(false);
-                  }
+                    const data = await res.json().catch(() => ({ success: false, error: 'Invalid response' }));
+                    if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+                    setTitleOptReport(data);
+                    toast.success(`Preview: ${data.optimizedCount ?? 0} short titles generated`);
+                  } catch (err: any) { setTitleOptReport({ _testError: err.message }); toast.error(err.message); } finally { setTitleOptRunning(false); }
                 }}
               >
                 {titleOptRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
@@ -982,65 +953,40 @@ export default function MerchantIntegrationPage() {
                 size="sm"
                 disabled={titleOptRunning}
                 onClick={async () => {
-                  if (!confirm('This will rewrite ALL active product titles using AI. Original names will be backed up. Continue?')) return;
-                  setTitleOptRunning(true);
-                  setTitleOptReport(null);
-                  const endpoint = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`;
+                  if (!confirm('This will rewrite ALL active product titles using AI. Continue?')) return;
+                  setTitleOptRunning(true); setTitleOptReport(null);
                   try {
                     const { data: sessionData } = await supabase.auth.getSession();
                     const token = sessionData?.session?.access_token;
-                    if (!token) throw new Error('Not authenticated. Please log in as admin first.');
-                    
+                    if (!token) throw new Error('Not authenticated');
                     const CHUNK = 50;
-                    let totalOptimized = 0;
-                    let totalUpdated = 0;
-                    let totalErrors = 0;
-                    let totalProducts = 0;
+                    let totalOpt = 0, totalUpd = 0, totalErr = 0, totalFb = 0, totalProducts = 0;
                     let allResults: any[] = [];
-                    let chunkIndex = 0;
+                    let chunk = 0;
                     let hasMore = true;
-
+                    let lastCharStats: any = null;
                     while (hasMore) {
-                      toast.info(`Processing chunk ${chunkIndex + 1}...`);
-                      const res = await fetch(endpoint, {
+                      toast.info(`Processing batch ${chunk + 1}...`);
+                      const res = await fetch(`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles`, {
                         method: 'POST',
-                        headers: {
-                          'Authorization': `Bearer ${token}`,
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ dryRun: false, limit: CHUNK, offset: chunkIndex * CHUNK }),
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dryRun: false, limit: CHUNK, offset: chunk * CHUNK }),
                       });
-                      const json = await res.json().catch(() => ({}));
-                      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-                      
-                      totalOptimized += json.optimizedCount || 0;
-                      totalUpdated += json.updatedCount || 0;
-                      totalErrors += json.errorCount || 0;
-                      totalProducts += json.filteredCount || json.totalProducts || 0;
-                      if (json.results) allResults.push(...json.results);
-                      
-                      hasMore = (json.filteredCount || json.totalProducts || 0) >= CHUNK;
-                      chunkIndex++;
-                      
-                      setTitleOptReport({
-                        totalProducts,
-                        optimizedCount: totalOptimized,
-                        updatedCount: totalUpdated,
-                        errorCount: totalErrors,
-                        dryRun: false,
-                        charStats: json.charStats,
-                        results: allResults.slice(0, 20),
-                        _chunksCompleted: chunkIndex,
-                      });
+                      const data = await res.json().catch(() => ({ success: false, error: 'Invalid response' }));
+                      if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+                      totalOpt += data.optimizedCount || 0;
+                      totalUpd += data.updatedCount || 0;
+                      totalErr += data.errorCount || 0;
+                      totalFb += data.fallbackCount || 0;
+                      totalProducts += data.totalProducts || 0;
+                      if (data.results) allResults.push(...data.results);
+                      if (data.charStats) lastCharStats = data.charStats;
+                      hasMore = (data.totalProducts || 0) >= CHUNK;
+                      chunk++;
+                      setTitleOptReport({ totalProducts, optimizedCount: totalOpt, updatedCount: totalUpd, errorCount: totalErr, fallbackCount: totalFb, dryRun: false, charStats: lastCharStats, results: allResults.slice(0, 20), _chunksCompleted: chunk });
                     }
-                    
-                    toast.success(`Done! ${totalUpdated} titles updated across ${chunkIndex} chunks.`);
-                  } catch (err: any) {
-                    setTitleOptReport((prev: any) => ({ ...prev, _testError: err.message || 'Failed' }));
-                    toast.error(err.message || 'Failed');
-                  } finally {
-                    setTitleOptRunning(false);
-                  }
+                    toast.success(`Done! ${totalUpd} titles updated across ${chunk} batches.`);
+                  } catch (err: any) { setTitleOptReport((prev: any) => ({ ...prev, _testError: err.message })); toast.error(err.message); } finally { setTitleOptRunning(false); }
                 }}
               >
                 {titleOptRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
@@ -1050,25 +996,21 @@ export default function MerchantIntegrationPage() {
 
             {titleOptReport?._testError && (
               <div className="p-3 bg-destructive/10 border border-destructive/30 rounded text-sm space-y-1">
-                <p className="font-medium text-destructive">❌ Error Details</p>
+                <p className="font-medium text-destructive">❌ Error</p>
                 <p className="text-xs text-muted-foreground font-mono break-all">{titleOptReport._testError}</p>
-                {titleOptReport._httpStatus !== undefined && (
-                  <p className="text-xs text-muted-foreground">HTTP Status: {titleOptReport._httpStatus}</p>
-                )}
-                {titleOptReport._responseBody && (
-                  <p className="text-xs text-muted-foreground font-mono break-all">Response: {titleOptReport._responseBody}</p>
-                )}
-                <p className="text-xs text-muted-foreground">Endpoint: https://{import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/optimize-product-titles</p>
-                {titleOptReport._httpStatus === 401 && (
-                  <p className="text-xs text-destructive font-medium">⚠️ Authorization failed. Make sure you are logged in as an admin user.</p>
-                )}
+                {titleOptReport._httpStatus !== undefined && <p className="text-xs text-muted-foreground">HTTP Status: {titleOptReport._httpStatus}</p>}
+                {titleOptReport._responseBody && <p className="text-xs text-muted-foreground font-mono break-all">Response: {titleOptReport._responseBody}</p>}
+                {titleOptReport._httpStatus === 401 && <p className="text-xs text-destructive font-medium">⚠️ Authorization failed. Make sure you are logged in as an admin.</p>}
+                <Button variant="outline" size="sm" className="mt-2" onClick={() => setTitleOptReport(null)}>
+                  <RefreshCw className="h-3 w-3 mr-1" /> Dismiss & Retry
+                </Button>
               </div>
             )}
             {titleOptReport?._testSuccess && (
               <div className="p-3 bg-primary/10 border border-primary/30 rounded text-sm space-y-1">
                 <p className="font-medium text-primary">✅ Function Reachable (HTTP {titleOptReport._httpStatus})</p>
-                <p className="text-xs text-muted-foreground font-mono break-all">{titleOptReport.endpoint}</p>
-                <p className="text-xs text-muted-foreground">Auth: Bearer token sent ✓</p>
+                <p className="text-xs text-muted-foreground">Products found: {titleOptReport.totalProducts ?? 0}</p>
+                <p className="text-xs text-muted-foreground">AI available: {titleOptReport.debug?.aiAvailable ? '✓' : '✗ (fallback mode)'}</p>
               </div>
             )}
 
@@ -1077,25 +1019,28 @@ export default function MerchantIntegrationPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   <div className="p-2 bg-muted rounded text-center">
                     <p className="text-xs text-muted-foreground">Total</p>
-                    <p className="text-lg font-bold">{titleOptReport.totalProducts}</p>
+                    <p className="text-lg font-bold">{titleOptReport.totalProducts ?? 0}</p>
                   </div>
                   <div className="p-2 bg-muted rounded text-center">
-                    <p className="text-xs text-muted-foreground">Filtered</p>
-                    <p className="text-lg font-bold">{titleOptReport.filteredCount ?? titleOptReport.totalProducts}</p>
+                    <p className="text-xs text-muted-foreground">Fetched</p>
+                    <p className="text-lg font-bold">{titleOptReport.filteredCount ?? titleOptReport.totalProducts ?? 0}</p>
                   </div>
                   <div className="p-2 bg-primary/10 rounded text-center">
                     <p className="text-xs text-muted-foreground">Optimized</p>
-                    <p className="text-lg font-bold">{titleOptReport.optimizedCount}</p>
+                    <p className="text-lg font-bold">{titleOptReport.optimizedCount ?? 0}</p>
                   </div>
                   <div className="p-2 bg-muted rounded text-center">
                     <p className="text-xs text-muted-foreground">Updated</p>
-                    <p className="text-lg font-bold">{titleOptReport.updatedCount}</p>
+                    <p className="text-lg font-bold">{titleOptReport.updatedCount ?? 0}</p>
                   </div>
                   <div className="p-2 bg-destructive/10 rounded text-center">
                     <p className="text-xs text-muted-foreground">Errors</p>
-                    <p className="text-lg font-bold">{titleOptReport.errorCount}</p>
+                    <p className="text-lg font-bold">{titleOptReport.errorCount ?? 0}</p>
                   </div>
                 </div>
+                {titleOptReport.fallbackCount > 0 && (
+                  <Badge variant="outline" className="text-xs">⚠️ {titleOptReport.fallbackCount} titles used fallback (no AI)</Badge>
+                )}
                 {titleOptReport.charStats && (
                   <div className="p-3 bg-muted/50 rounded text-xs space-y-1">
                     <p className="font-medium text-sm">Character Length Stats</p>
@@ -1112,18 +1057,30 @@ export default function MerchantIntegrationPage() {
                 {titleOptReport.dryRun && (
                   <Badge variant="outline" className="text-xs">🔍 Dry Run — no changes applied</Badge>
                 )}
-                {(titleOptReport.results?.length > 0 || titleOptReport.samples?.length > 0) && (
+                {titleOptReport.results?.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Results ({(titleOptReport.results || titleOptReport.samples || []).length})</p>
-                    {(titleOptReport.results || titleOptReport.samples || []).map((s: any) => (
+                    <p className="text-sm font-medium">Results ({titleOptReport.results.length})</p>
+                    {titleOptReport.results.map((s: any) => (
                       <div key={s.id} className="p-2 border border-border/50 rounded text-xs space-y-1">
-                        <div className="text-muted-foreground">
-                          <span className="font-medium text-foreground">{s.category}</span>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span className="font-medium text-foreground">{s.category || 'Unknown'}</span>
+                          {s.usedAI && <Badge variant="secondary" className="text-[10px] px-1">AI</Badge>}
+                          {s.usedFallback && <Badge variant="outline" className="text-[10px] px-1">Fallback</Badge>}
+                          {!s.ok && <Badge variant="destructive" className="text-[10px] px-1">Failed</Badge>}
                         </div>
-                        <div className="text-destructive/70 line-through">{s.original} <span className="no-underline text-muted-foreground">({s.original?.length} chars)</span></div>
-                        <div className="text-primary font-medium">{s.optimized} <span className="font-normal text-muted-foreground">({s.charCount} chars)</span></div>
+                        <div className="text-destructive/70 line-through">{s.original || '(empty)'} <span className="no-underline text-muted-foreground">({s.original?.length || 0} chars)</span></div>
+                        {s.optimized ? (
+                          <div className="text-primary font-medium">{s.optimized} <span className="font-normal text-muted-foreground">({s.charCount} chars)</span></div>
+                        ) : (
+                          <div className="text-destructive text-xs">{s.reason}</div>
+                        )}
                       </div>
                     ))}
+                  </div>
+                )}
+                {titleOptReport.debug && (
+                  <div className="p-2 bg-muted/30 rounded text-xs text-muted-foreground">
+                    <span>Debug: {titleOptReport.debug.fetchedCount} fetched | AI: {titleOptReport.debug.aiAvailable ? '✓' : '✗'} | Missing fields: {titleOptReport.debug.missingFieldsRate}</span>
                   </div>
                 )}
               </div>
