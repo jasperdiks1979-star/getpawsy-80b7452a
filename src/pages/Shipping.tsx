@@ -74,10 +74,10 @@ const Shipping = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-4">
-                  GetPawsy ships to all 50 U.S. states, including Alaska, Hawaii, and U.S. territories. We do not currently offer international shipping.
+                  GetPawsy primarily serves customers across the United States. We ship to all 50 U.S. states, including Alaska, Hawaii, and U.S. territories. International shipping may be available for select destinations — please contact us for details.
                 </p>
                 <p className="text-muted-foreground">
-                  All shipping rates, delivery estimates, and policies on this page apply to domestic U.S. orders only.
+                  All shipping rates, delivery estimates, and policies on this page apply to domestic U.S. orders.
                 </p>
               </div>
             </section>
