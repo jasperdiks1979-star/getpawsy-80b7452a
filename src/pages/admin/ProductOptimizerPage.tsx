@@ -54,6 +54,13 @@ interface RunRecord {
 type OptMode = 'titles' | 'short_titles' | 'descriptions' | 'metadata' | 'feed' | 'all';
 type Filter = 'all' | 'active' | 'draft' | 'in_stock' | 'out_of_stock' | 'missing_product_type' | 'missing_google_category' | 'low_quality' | 'locked' | 'manual_override';
 
+// Recovery-specific types
+interface RecoveryItem extends ProductItem {
+  dropshipRisk?: number;
+  dropshipLevel?: string;
+  dropshipSignals?: string[];
+}
+
 // ── API Helper ──
 async function callPipeline(action: string, body: any = {}): Promise<any> {
   const { data: sessionData } = await supabase.auth.getSession();
