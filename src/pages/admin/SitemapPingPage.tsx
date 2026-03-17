@@ -142,12 +142,6 @@ export default function SitemapPingPage() {
               <Clock className="h-3 w-3" />
               {(status as any).hourlyPingCount || 0}/{(status as any).maxPerHour || 12} pings/hr
             </Badge>
-            {Object.entries((status as any).circuitStatus || {}).map(([engine, cs]: [string, any]) => (
-              <Badge key={engine} variant={cs.open ? 'destructive' : 'outline'} className="gap-1">
-                {cs.open ? <WifiOff className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
-                {engine}: {cs.open ? 'CIRCUIT OPEN' : 'OK'}
-              </Badge>
-            ))}
           </div>
         )}
 
