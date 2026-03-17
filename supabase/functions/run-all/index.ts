@@ -689,26 +689,16 @@ async function executeStep(
     }
 
     case 'indexing_submit': {
-      // === SITEMAP PING (Google + Bing) v6 — guarded mode, 3 retries w/ exponential backoff ===
-      const PING_TIMEOUT_MS = 5_000;
-      const RATE_LIMIT_MAX_PER_HOUR = 6;
-      const IDEMPOTENCY_WINDOW_MS = 10 * 60 * 1000;
-      const CIRCUIT_BREAKER_THRESHOLD = 3;
-      const CIRCUIT_BREAKER_COOLDOWN_MS = 30 * 60 * 1000;
-      const MAX_RETRIES = 3;
-      const BACKOFF_MS = [1000, 3000, 9000]; // exponential backoff
+      // === IndexNow-only indexing (Google/Bing sitemap pings are DEPRECATED) ===
       const pingStepStart = Date.now();
-
-      // === GUARDED MODE: verify canonical host + sitemap reachability ===
       const sitemapUrl = `${CANONICAL_HOST}/sitemap.xml`;
-      const isCanonicalHost = CANONICAL_HOST === 'https://getpawsy.pet';
-      
-      if (!isCanonicalHost) {
-        await log(supabase, runId, 'indexing_submit', 'warn', `SKIPPED: canonical host "${CANONICAL_HOST}" is not getpawsy.pet`);
-        return { status: 'skipped', reason: 'invalid_canonical', canonicalHost: CANONICAL_HOST };
-      }
+      const INDEXNOW_KEY = 'e8f4a2b1c9d7e6f5a3b2c1d0e9f8a7b6';
+      const INDEXNOW_ENDPOINTS = [
+        { name: 'indexnow', url: 'https://api.indexnow.org/indexnow' },
+        { name: 'bing', url: 'https://www.bing.com/indexnow' },
+      ];
 
-      // Verify sitemap is reachable before pinging
+      // Verify sitemap is reachable
       try {
         const sitemapCheck = await fetch(sitemapUrl, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
         if (!sitemapCheck.ok) {
@@ -721,49 +711,20 @@ async function executeStep(
         return { status: 'skipped', reason: 'sitemap_unreachable', error: msg };
       }
 
-      const ENGINES: Array<{ name: string; template: (s: string) => string }> = [
-        { name: 'google', template: (s) => `https://www.google.com/ping?sitemap=${encodeURIComponent(s)}` },
-        { name: 'bing', template: (s) => `https://www.bing.com/ping?sitemap=${encodeURIComponent(s)}` },
-      ];
-
-      // --- Circuit breaker check ---
-      const { data: cbRow } = await supabase
-        .from('sitemap_ping_log')
-        .select('id, engine, status, created_at')
-        .order('created_at', { ascending: false })
-        .limit(CIRCUIT_BREAKER_THRESHOLD * 2);
-
-      const recentByEngine: Record<string, Array<{ status: string; created_at: string }>> = {};
-      for (const row of cbRow || []) {
-        if (!recentByEngine[row.engine]) recentByEngine[row.engine] = [];
-        recentByEngine[row.engine].push(row);
-      }
-
-      const circuitOpen: Record<string, boolean> = {};
-      for (const engine of ENGINES) {
-        const history = (recentByEngine[engine.name] || []).slice(0, CIRCUIT_BREAKER_THRESHOLD);
-        if (history.length >= CIRCUIT_BREAKER_THRESHOLD && history.every(h => h.status !== 'success')) {
-          const lastFailTime = new Date(history[0].created_at).getTime();
-          if (Date.now() - lastFailTime < CIRCUIT_BREAKER_COOLDOWN_MS) {
-            circuitOpen[engine.name] = true;
-          }
-        }
-      }
-
-      // --- Rate limiting check ---
+      // Rate limit: max 6 pings/hour
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const { count: recentPingCount } = await supabase
         .from('sitemap_ping_log')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', oneHourAgo);
 
-      if ((recentPingCount || 0) >= RATE_LIMIT_MAX_PER_HOUR * ENGINES.length) {
+      if ((recentPingCount || 0) >= 6 * INDEXNOW_ENDPOINTS.length) {
         await log(supabase, runId, 'indexing_submit', 'warn', `Rate limit reached (${recentPingCount} pings in last hour). Skipping.`);
         return { status: 'skipped', reason: 'rate_limited', recentPingCount };
       }
 
-      // --- Idempotency check ---
-      const idempotencyThreshold = new Date(Date.now() - IDEMPOTENCY_WINDOW_MS).toISOString();
+      // Idempotency: skip if successful ping within last 10 min
+      const idempotencyThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
       const { data: recentSuccess } = await supabase
         .from('sitemap_ping_log')
         .select('id')
@@ -772,97 +733,70 @@ async function executeStep(
         .limit(1);
 
       if ((recentSuccess?.length || 0) > 0) {
-        await log(supabase, runId, 'indexing_submit', 'info', `Idempotency: successful ping within last 10 min. Skipping.`);
+        await log(supabase, runId, 'indexing_submit', 'info', 'Idempotency: successful ping within last 10 min. Skipping.');
         return { status: 'skipped', reason: 'idempotent_cache_hit' };
       }
 
-      interface PingResult {
-        targetEngine: string;
-        sitemapUrl: string;
-        status: 'success' | 'timeout' | 'http_error' | 'circuit_open';
-        httpStatus?: number;
-        duration_ms: number;
-        error?: string;
-        attempts: number;
-      }
+      // Submit via IndexNow
+      const priorityUrls = [
+        `${CANONICAL_HOST}/`,
+        `${CANONICAL_HOST}/products`,
+        `${CANONICAL_HOST}/guides`,
+        `${CANONICAL_HOST}/bestsellers`,
+        sitemapUrl,
+      ];
 
+      interface PingResult { engine: string; status: 'success' | 'timeout' | 'http_error'; httpStatus?: number; duration_ms: number; error?: string; }
       const pingResults: PingResult[] = [];
 
-      for (const engine of ENGINES) {
-        if (circuitOpen[engine.name]) {
-          pingResults.push({ targetEngine: engine.name, sitemapUrl, status: 'circuit_open', duration_ms: 0, error: 'Circuit breaker open', attempts: 0 });
-          continue;
-        }
-
-        let lastResult: PingResult | null = null;
-        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-          if (attempt > 1) {
-            const jitter = Math.random() * 0.3 * BACKOFF_MS[attempt - 2];
-            await new Promise(r => setTimeout(r, BACKOFF_MS[attempt - 2] + jitter));
-          }
-
-          const pingUrl = engine.template(sitemapUrl);
-          const start = Date.now();
-          try {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
-            const res = await fetch(pingUrl, { method: 'GET', signal: controller.signal });
-            clearTimeout(timer);
-            const duration_ms = Date.now() - start;
-            if (res.ok) {
-              lastResult = { targetEngine: engine.name, sitemapUrl, status: 'success', httpStatus: res.status, duration_ms, attempts: attempt };
-              break; // Success — stop retrying
-            }
-            lastResult = { targetEngine: engine.name, sitemapUrl, status: 'http_error', httpStatus: res.status, duration_ms, attempts: attempt };
-          } catch (e) {
-            const duration_ms = Date.now() - start;
-            const errMsg = e instanceof Error ? e.message : String(e);
-            const isTimeout = errMsg.includes('abort') || errMsg.includes('signal');
-            lastResult = { targetEngine: engine.name, sitemapUrl, status: isTimeout ? 'timeout' : 'http_error', duration_ms, error: errMsg, attempts: attempt };
-          }
-        }
-
-        if (lastResult) {
-          pingResults.push(lastResult);
+      for (const endpoint of INDEXNOW_ENDPOINTS) {
+        const start = Date.now();
+        try {
+          const res = await fetch(endpoint.url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              host: 'getpawsy.pet',
+              key: INDEXNOW_KEY,
+              keyLocation: `${CANONICAL_HOST}/${INDEXNOW_KEY}.txt`,
+              urlList: priorityUrls,
+            }),
+            signal: AbortSignal.timeout(10_000),
+          });
+          const dur = Date.now() - start;
+          const ok = res.status >= 200 && res.status < 300;
+          pingResults.push({ engine: endpoint.name, status: ok ? 'success' : 'http_error', httpStatus: res.status, duration_ms: dur });
           await supabase.from('sitemap_ping_log').insert({
-            engine: engine.name,
-            sitemap_url: sitemapUrl,
-            status: lastResult.status,
-            http_status: lastResult.httpStatus || null,
-            duration_ms: lastResult.duration_ms,
-            error_message: lastResult.error || null,
-            run_id: runId,
+            engine: endpoint.name, sitemap_url: sitemapUrl, status: ok ? 'success' : 'http_error',
+            http_status: res.status, duration_ms: dur, run_id: runId,
+          });
+        } catch (e) {
+          const dur = Date.now() - start;
+          const msg = e instanceof Error ? e.message : String(e);
+          const isTimeout = msg.includes('abort');
+          pingResults.push({ engine: endpoint.name, status: isTimeout ? 'timeout' : 'http_error', duration_ms: dur, error: msg });
+          await supabase.from('sitemap_ping_log').insert({
+            engine: endpoint.name, sitemap_url: sitemapUrl, status: isTimeout ? 'timeout' : 'http_error',
+            duration_ms: dur, error_message: msg, run_id: runId,
           });
         }
       }
 
       const succeeded = pingResults.filter(r => r.status === 'success').length;
-      const failed = pingResults.filter(r => r.status === 'http_error').length;
-      const timeouts = pingResults.filter(r => r.status === 'timeout').length;
-      const circuitBlocked = pingResults.filter(r => r.status === 'circuit_open').length;
       const stepDurationMs = Date.now() - pingStepStart;
-      const hasFailures = failed > 0 || timeouts > 0;
 
       const pingReport = {
-        status: circuitBlocked === pingResults.length ? 'circuit_open' : hasFailures ? 'warning' : 'completed',
+        status: succeeded === pingResults.length ? 'completed' : succeeded > 0 ? 'warning' : 'error',
         attempted: pingResults.length,
         succeeded,
-        failed,
-        timeouts,
-        circuitBlocked,
+        failed: pingResults.length - succeeded,
         stepDurationMs,
-        note: 'Sitemap Ping v6: 3 retries w/ backoff (1s,3s,9s). Rate: max 6/hr/engine. Circuit breaker: 3 consecutive failures → 30 min cooldown.',
+        note: 'IndexNow-only indexing. Google/Bing sitemap ping endpoints are deprecated.',
         pings: pingResults,
       };
 
-      for (const r of pingResults) {
-        const lvl = r.status === 'success' ? 'info' : 'warn';
-        await log(supabase, runId, 'indexing_submit', lvl,
-          `Ping ${r.targetEngine} ${r.sitemapUrl}: ${r.status} (${r.duration_ms}ms, ${r.attempts} attempt${r.attempts > 1 ? 's' : ''})${r.httpStatus ? ` HTTP ${r.httpStatus}` : ''}${r.error ? ` — ${r.error}` : ''}`);
-      }
-
-      await log(supabase, runId, 'indexing_submit', hasFailures ? 'warn' : 'info',
-        `Sitemap Ping v6: ${succeeded}/${pingResults.length} ok, ${failed} err, ${timeouts} timeout, ${circuitBlocked} circuit-blocked. ${stepDurationMs}ms.`);
+      await log(supabase, runId, 'indexing_submit', succeeded > 0 ? 'info' : 'warn',
+        `IndexNow: ${succeeded}/${pingResults.length} succeeded. ${stepDurationMs}ms.`);
 
       return pingReport;
     }

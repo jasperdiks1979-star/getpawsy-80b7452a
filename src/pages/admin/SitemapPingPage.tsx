@@ -303,9 +303,8 @@ export default function SitemapPingPage() {
                 <div className="space-y-0.5 font-mono text-[11px]">
                   {history.slice(0, 20).map(entry => (
                     <div key={entry.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted/50">
-                      {entry.status === 'success' ? <CheckCircle className="h-3 w-3 text-green-500 shrink-0" /> :
-                       entry.status === 'circuit_open' ? <WifiOff className="h-3 w-3 text-muted-foreground shrink-0" /> :
-                       <XCircle className="h-3 w-3 text-destructive shrink-0" />}
+                       {entry.status === 'success' ? <CheckCircle className="h-3 w-3 text-green-500 shrink-0" /> :
+                        <XCircle className="h-3 w-3 text-destructive shrink-0" />}
                       <span className="text-muted-foreground/60 w-24 shrink-0">
                         {new Date(entry.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>

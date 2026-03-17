@@ -29,13 +29,13 @@ const PRIORITY_URLS = [
   `${SITE}/site-map`,
 ];
 
-async function pingIndexNow() {
-  console.log(`\n🔔 Notifying search engines via IndexNow...\n`);
+async function run() {
+  console.log(`\n🔔 Post-deploy indexing via IndexNow...\n`);
   console.log(`   Sitemap: ${SITE}/sitemap.xml`);
   console.log(`   URLs to notify: ${PRIORITY_URLS.length}\n`);
-  
-  let allOk = true;
 
+  // 1. Notify via IndexNow
+  let allOk = true;
   for (const endpoint of INDEXNOW_ENDPOINTS) {
     try {
       const res = await fetch(endpoint.url, {
@@ -58,23 +58,38 @@ async function pingIndexNow() {
     }
   }
 
-  // Verify sitemap is accessible
+  // 2. Verify sitemap is accessible
   try {
     const sitemapRes = await fetch(`${SITE}/sitemap.xml`, {
       method: "HEAD",
       signal: AbortSignal.timeout(10_000),
     });
     console.log(`\n  ${sitemapRes.ok ? "✔" : "✘"} Sitemap accessible: HTTP ${sitemapRes.status}`);
-    console.log(`    Content-Type: ${sitemapRes.headers.get("content-type") || "unknown"}`);
   } catch (err) {
     console.error(`  ✘ Sitemap check failed: ${err.message}`);
     allOk = false;
   }
 
-  console.log(allOk ? "\n✅ Post-deploy indexing notification complete\n" : "\n⚠️  Some notifications failed (non-blocking)\n");
-  
-  // Don't fail the deploy on notification errors
+  // 3. Output priority URLs for GSC manual submission
+  const report = {
+    timestamp: new Date().toISOString(),
+    newUrls: [],
+    updatedUrls: PRIORITY_URLS,
+    priorityUrls: PRIORITY_URLS.slice(0, 5),
+    notes: [
+      "Submit these URLs to Google Search Console > URL Inspection > Request Indexing",
+      "IndexNow handles Bing/Yandex automatically",
+    ],
+  };
+
+  console.log(`\n📋 Priority URLs for Search Console submission:`);
+  for (const url of report.priorityUrls) {
+    console.log(`   → ${url}`);
+  }
+  console.log(`\n${JSON.stringify(report, null, 2)}\n`);
+
+  console.log(allOk ? "✅ Post-deploy indexing complete\n" : "⚠️  Some notifications failed (non-blocking)\n");
   process.exit(0);
 }
 
-pingIndexNow();
+run();
