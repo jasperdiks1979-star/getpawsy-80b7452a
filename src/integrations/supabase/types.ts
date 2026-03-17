@@ -4658,6 +4658,8 @@ export type Database = {
       }
       products: {
         Row: {
+          animal_type: string | null
+          brand: string | null
           canonical_product_id: string | null
           category: string | null
           cj_product_id: string | null
@@ -4676,21 +4678,34 @@ export type Database = {
           custom_label_7: string | null
           dedupe_key: string | null
           description: string | null
+          description_bullets: string[] | null
+          description_optimized_at: string | null
           google_product_category: string | null
           id: string
           image_url: string | null
           images: string[] | null
           is_active: boolean | null
           is_duplicate: boolean
+          key_feature: string | null
           last_stock_sync_at: string | null
+          meta_description: string | null
+          meta_title: string | null
+          metadata_optimized_at: string | null
           name: string
+          optimized_description: string | null
           original_name: string | null
           price: number
           primary_intent: string | null
+          primary_keyword: string | null
           primary_species: string | null
           product_type: string | null
+          quality_flags: string[] | null
+          quality_score: number | null
+          seo_keywords: string[] | null
           seo_tier: string
           shipping_time: string | null
+          shopping_title: string | null
+          short_title: string | null
           sku: string | null
           slug: string | null
           stock: number | null
@@ -4699,11 +4714,14 @@ export type Database = {
           stock_sync_status: string | null
           supplier_name: string | null
           supplier_warehouse: string | null
+          title_optimized_at: string | null
           updated_at: string
           variants: Json | null
           weight: number | null
         }
         Insert: {
+          animal_type?: string | null
+          brand?: string | null
           canonical_product_id?: string | null
           category?: string | null
           cj_product_id?: string | null
@@ -4722,21 +4740,34 @@ export type Database = {
           custom_label_7?: string | null
           dedupe_key?: string | null
           description?: string | null
+          description_bullets?: string[] | null
+          description_optimized_at?: string | null
           google_product_category?: string | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
           is_duplicate?: boolean
+          key_feature?: string | null
           last_stock_sync_at?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          metadata_optimized_at?: string | null
           name: string
+          optimized_description?: string | null
           original_name?: string | null
           price: number
           primary_intent?: string | null
+          primary_keyword?: string | null
           primary_species?: string | null
           product_type?: string | null
+          quality_flags?: string[] | null
+          quality_score?: number | null
+          seo_keywords?: string[] | null
           seo_tier?: string
           shipping_time?: string | null
+          shopping_title?: string | null
+          short_title?: string | null
           sku?: string | null
           slug?: string | null
           stock?: number | null
@@ -4745,11 +4776,14 @@ export type Database = {
           stock_sync_status?: string | null
           supplier_name?: string | null
           supplier_warehouse?: string | null
+          title_optimized_at?: string | null
           updated_at?: string
           variants?: Json | null
           weight?: number | null
         }
         Update: {
+          animal_type?: string | null
+          brand?: string | null
           canonical_product_id?: string | null
           category?: string | null
           cj_product_id?: string | null
@@ -4768,21 +4802,34 @@ export type Database = {
           custom_label_7?: string | null
           dedupe_key?: string | null
           description?: string | null
+          description_bullets?: string[] | null
+          description_optimized_at?: string | null
           google_product_category?: string | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
           is_duplicate?: boolean
+          key_feature?: string | null
           last_stock_sync_at?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          metadata_optimized_at?: string | null
           name?: string
+          optimized_description?: string | null
           original_name?: string | null
           price?: number
           primary_intent?: string | null
+          primary_keyword?: string | null
           primary_species?: string | null
           product_type?: string | null
+          quality_flags?: string[] | null
+          quality_score?: number | null
+          seo_keywords?: string[] | null
           seo_tier?: string
           shipping_time?: string | null
+          shopping_title?: string | null
+          short_title?: string | null
           sku?: string | null
           slug?: string | null
           stock?: number | null
@@ -4791,6 +4838,7 @@ export type Database = {
           stock_sync_status?: string | null
           supplier_name?: string | null
           supplier_warehouse?: string | null
+          title_optimized_at?: string | null
           updated_at?: string
           variants?: Json | null
           weight?: number | null
