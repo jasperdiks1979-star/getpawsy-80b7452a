@@ -31,7 +31,7 @@ export function OrganizationSchema() {
     },
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'support@getpawsy.pet',
+      email: 'info@getpawsy.pet',
       contactType: 'customer service',
       availableLanguage: 'English',
     },
