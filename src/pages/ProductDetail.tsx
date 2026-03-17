@@ -60,7 +60,7 @@ import { ProductPageCrossLinks } from '@/components/seo/ProductPageCrossLinks';
 import { TopicGuideLinks } from '@/components/seo/TopicGuideLinks';
 import { ProductUseCases } from '@/components/products/ProductUseCases';
 import { CatTreeAuthorityBadges } from '@/components/products/CatTreeAuthorityBadges';
-import { PriceAnchoringSection } from '@/components/products/PriceAnchoringSection';
+// PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
 import { FreeShippingBar } from '@/components/products/FreeShippingBar';
 import { ProductComparisonTable } from '@/components/products/ProductComparisonTable';
 import { ProductFAQAccordion } from '@/components/products/ProductFAQAccordion';
