@@ -47,8 +47,8 @@ const Shipping = () => {
             <div className="grid sm:grid-cols-3 gap-4 mb-12">
               <div className="bg-muted/30 rounded-2xl p-6 text-center">
                 <MapPin className="w-8 h-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold text-foreground mb-1">United States Only</h3>
-                <p className="text-sm text-muted-foreground">We ship exclusively within the U.S.</p>
+                <h3 className="font-semibold text-foreground mb-1">United States</h3>
+                <p className="text-sm text-muted-foreground">We primarily serve US customers</p>
               </div>
               <div className="bg-muted/30 rounded-2xl p-6 text-center">
                 <Clock className="w-8 h-8 text-primary mx-auto mb-3" />
