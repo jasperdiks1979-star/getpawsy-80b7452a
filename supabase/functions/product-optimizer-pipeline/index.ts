@@ -170,20 +170,19 @@ Deno.serve(async (req: Request) => {
     return json({ success: false, error: "Server configuration error" }, 500);
   }
 
-  // Auth check using getClaims
+  // Auth check - validate user via getUser
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return json({ success: false, error: "Authentication required" }, 401);
   }
   try {
     const ac = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
-    const token = authHeader.replace("Bearer ", "");
-    const { data, error } = await ac.auth.getClaims(token);
-    if (error || !data?.claims) {
+    const { data: { user }, error } = await ac.auth.getUser();
+    if (error || !user) {
       console.error("[product-optimizer] Auth failed:", error?.message);
       return json({ success: false, error: "Unauthorized" }, 401);
     }
-    console.log("[product-optimizer] Authenticated user:", data.claims.sub);
+    console.log("[product-optimizer] Authenticated user:", user.id);
   } catch (e) {
     console.error("[product-optimizer] Auth crash:", e);
     return json({ success: false, error: "Auth verification failed" }, 401);
