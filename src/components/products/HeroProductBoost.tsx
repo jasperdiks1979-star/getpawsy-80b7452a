@@ -112,13 +112,7 @@ export const HeroProductBoost = ({ productSlug }: HeroProductBoostProps) => {
 
   return (
     <div className="space-y-6">
-      {/* First batch pricing — factual, no fake scarcity */}
-      <div className="flex items-center gap-2">
-        <Badge variant="outline" className="gap-1.5 text-xs font-medium border-primary/30 text-primary bg-primary/5 py-1 px-3">
-          <Sparkles className="w-3 h-3" />
-          {data.urgencyLine}
-        </Badge>
-      </div>
+      {/* Urgency badge removed for Merchant Center compliance — no unverifiable scarcity claims */}
 
       {/* Who is this for */}
       <div className="bg-muted/30 rounded-2xl p-5 space-y-3 border border-border/50">
