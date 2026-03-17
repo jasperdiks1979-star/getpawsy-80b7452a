@@ -269,9 +269,8 @@ export default function SitemapPingPage() {
                         <span className="font-medium w-12">{r.engine}</span>
                         <span className="text-muted-foreground">{r.status}</span>
                         {r.httpStatus && <Badge variant="outline" className="text-[8px] h-3.5 px-1">{r.httpStatus}</Badge>}
-                        <span className="text-muted-foreground">{r.duration_ms}ms</span>
-                        {r.attempt > 1 && <span className="text-yellow-500">retry #{r.attempt}</span>}
-                        {r.error && <span className="text-destructive truncate max-w-[200px]" title={r.error}>{r.error}</span>}
+                         <span className="text-muted-foreground">{r.duration_ms}ms</span>
+                         {r.error && <span className="text-destructive truncate max-w-[200px]" title={r.error}>{r.error}</span>}
                       </div>
                     ))}
                   </div>
