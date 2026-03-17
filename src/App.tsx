@@ -664,6 +664,7 @@ const App = () => {
                         <Route path="integrations/merchant/readiness" element={<Suspense fallback={<RouteLoader />}><MerchantReadinessPage /></Suspense>} />
                         <Route path="integrations/merchant/health" element={<Suspense fallback={<RouteLoader />}><MerchantHealthPage /></Suspense>} />
                         <Route path="shopping-optimizer" element={<Suspense fallback={<RouteLoader />}><ShoppingOptimizerPage /></Suspense>} />
+                        <Route path="product-optimizer" element={<Suspense fallback={<RouteLoader />}><ProductOptimizerPage /></Suspense>} />
                         <Route path="image-compliance" element={<Suspense fallback={<RouteLoader />}><ImageCompliancePage /></Suspense>} />
                         <Route path="cornerstone-engine" element={<Suspense fallback={<RouteLoader />}><CornerstoneEnginePage /></Suspense>} />
                         <Route path="merchant-compliance" element={<Suspense fallback={<RouteLoader />}><MerchantComplianceReport /></Suspense>} />
