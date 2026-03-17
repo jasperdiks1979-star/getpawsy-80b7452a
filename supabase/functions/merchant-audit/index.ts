@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1?target=deno";
 
 // Inline minimal sanitizer for feed-sample (avoids cross-function import)
 function sanitizeTextBasic(text: string): string {
