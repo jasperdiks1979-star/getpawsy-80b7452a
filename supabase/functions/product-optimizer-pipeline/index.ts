@@ -205,6 +205,8 @@ Deno.serve(async (req: Request) => {
       const offset = body.offset || 0;
       const search = body.search || "";
 
+      console.log(`[product-optimizer] Audit: filter=${filter} limit=${limit} offset=${offset} search="${search}"`);
+
       let query = admin.from("products").select(SELECT_FIELDS, { count: "exact" });
 
       if (filter === "active") query = query.eq("is_active", true);
@@ -220,7 +222,11 @@ Deno.serve(async (req: Request) => {
       }
 
       const { data: products, error: loadErr, count } = await query.order("updated_at", { ascending: false }).range(offset, offset + limit - 1);
+      
+      console.log(`[product-optimizer] Audit query result: error=${loadErr?.message || "none"} count=${count} returned=${products?.length || 0}`);
+      
       if (loadErr) return json({ success: false, error: "Database query failed", details: loadErr.message }, 500);
+      if (!products || products.length === 0) return json({ success: true, action: "audit", totalCount: 0, returnedCount: 0, items: [], summary: { avgScore: 0, needsWork: 0, critical: 0, excellent: 0, good: 0 }, debug: { filter, search, message: "No products found matching filter" } });
 
       const items = (products || []).map((p: any) => {
         const scores = scoreProduct(p);
