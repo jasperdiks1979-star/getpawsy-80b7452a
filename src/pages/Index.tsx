@@ -220,6 +220,15 @@ const Index = () => {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
+          2a. MOST POPULAR GUIDES — above fold authority strip
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Trending Guides">
+        <Suspense fallback={<div className="py-8" style={{ minHeight: 200 }} />}>
+          <TrendingGuidesStrip />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
           2b. TRUST & TRANSPARENCY — business legitimacy signals
           ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Trust Transparency">
