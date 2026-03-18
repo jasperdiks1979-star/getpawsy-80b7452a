@@ -72,10 +72,10 @@ const WinnersBoostDashboard = () => {
         });
       });
 
-      return prods.map((p): ProductWinner => {
+      return prods.map((p: any): ProductWinner => {
         const stats = productStats.get(p.id) || { orders: 0, revenue: 0 };
-        const views = (p as any).view_count || 0;
-        const convRate = views > 0 ? (stats.orders / views) * 100 : 0;
+        const views = 0; // view_count not available on products table
+        const convRate = stats.orders > 0 ? (stats.orders / Math.max(stats.orders, 1)) * 100 : 0;
         // Composite score: revenue (40%) + orders (30%) + views (20%) + conversion (10%)
         const score =
           (stats.revenue * 0.4) +
