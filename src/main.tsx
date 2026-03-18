@@ -28,18 +28,11 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// === STEP 0b: Hostname guard — redirect non-canonical hosts to apex ===
-// Handles: www.getpawsy.pet → apex, getpawsy.lovable.app → apex + noindex
-// The hostname guard now includes full URL normalization (lowercase, trailing slash,
-// param stripping) in a single hop, so url-normalizer only runs on canonical host.
-import { enforceCanonicalHost, isCanonicalHost } from "./lib/hostname-guard";
-if (typeof window !== 'undefined') {
-  enforceCanonicalHost();
-}
-
-// === STEP 0c: URL normalizer — only on canonical host (hostname guard handles non-canonical) ===
+// === STEP 0b: URL normalizer — clean path (lowercase, trailing slash, tracking params) ===
+// Hostname redirects (www → apex) are handled exclusively by Cloudflare 301 rules.
+// The app must NOT redirect on its own to avoid 302 responses from origin.
 import { normalizeUrl } from "./lib/url-normalizer";
-if (typeof window !== 'undefined' && isCanonicalHost()) {
+if (typeof window !== 'undefined') {
   normalizeUrl();
 }
 
