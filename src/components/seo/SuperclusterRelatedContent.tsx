@@ -49,7 +49,7 @@ function LinkCard({ rec, title }: { rec: SuperclusterLinkRecommendation; title?:
         {title || humanize(rec.targetPath.split('/').pop() || '')}
       </span>
       <span className="inline-flex items-center gap-1 text-xs text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {rec.targetType === 'collection' ? 'Shop now' : 'Read guide'}
+        {rec.targetType === 'collection' ? 'Shop this collection' : 'Read the full guide'}
         <ArrowRight className="w-3 h-3" />
       </span>
     </Link>
