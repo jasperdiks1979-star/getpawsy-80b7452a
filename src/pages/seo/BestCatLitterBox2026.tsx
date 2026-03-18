@@ -67,6 +67,7 @@ export default function BestCatLitterBox2026() {
         },
         {
           rank: 2,
+          badge: "Editor's Pick",
           name: 'Modkat XL Top-Entry Litter Box',
           bestFor: 'Reducing litter tracking and scatter',
           highlights: ['Top-entry design keeps litter inside', 'Sleek modern look fits any room', 'Reusable liner system', 'Fits large cats comfortably'],
