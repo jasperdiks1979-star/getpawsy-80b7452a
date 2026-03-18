@@ -8,7 +8,7 @@ export default function BestLitterBoxLargeCats() {
       metaDescription="Top litter boxes for large cats and Maine Coons. Extra-wide, high-sided options tested for big breeds. Expert picks for 2026."
       h1="Best Litter Box for Large Cats — XL Picks for Maine Coons & Big Breeds"
       subtitle="Standard litter boxes are too small for Maine Coons, Ragdolls, and Norwegian Forest Cats. We tested XL options with cats weighing 15–25 lbs."
-      introText="Large cats need litter boxes that are at least 1.5× their body length with 10\"+ side walls to prevent overshoot. Most 'large' litter boxes on Amazon are actually standard size with misleading marketing. We measured interior dimensions, tested with real large-breed cats, and evaluated comfort, spray protection, and ease of cleaning for boxes that genuinely fit big cats."
+      introText={'Large cats need litter boxes that are at least 1.5× their body length with 10"+ side walls to prevent overshoot. Most "large" litter boxes on Amazon are actually standard size with misleading marketing. We measured interior dimensions, tested with real large-breed cats, and evaluated comfort, spray protection, and ease of cleaning for boxes that genuinely fit big cats.'}
       parentPage={{ title: 'Best Cat Litter Box 2026', href: '/best-cat-litter-box-2026' }}
       lastUpdated="2026-03-18"
       picks={[
