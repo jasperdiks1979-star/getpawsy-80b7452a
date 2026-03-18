@@ -1212,6 +1212,7 @@ const ProductDetail = () => {
             >
               {[
                 { icon: Shield, title: 'Secure Checkout', subtitle: 'Powered by Stripe' },
+                { icon: Truck, title: 'Tracked Shipping', subtitle: 'US delivery with tracking number' },
                 { icon: Award, title: TRUST_BADGES.quality.title, subtitle: TRUST_BADGES.quality.subtitle },
               ].map((feature, idx) => (
                 <motion.div 
