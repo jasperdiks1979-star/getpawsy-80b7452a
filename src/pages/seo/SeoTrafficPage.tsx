@@ -269,8 +269,26 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           </div>
         </section>
 
+        {/* ── Quick Summary ToC ── */}
+        <nav className="mb-10 border rounded-xl bg-card p-5 max-w-md" aria-label="Table of contents">
+          <div className="flex items-center gap-2 mb-3">
+            <List className="w-4 h-4 text-primary" />
+            <span className="font-semibold text-sm text-foreground">In This Guide</span>
+          </div>
+          <ol className="space-y-1.5">
+            {jumpNavItems.map((item, i) => (
+              <li key={item.id}>
+                <a href={`#${item.id}`} className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
+                  <span className="text-xs text-primary/60 font-mono w-4">{i + 1}.</span>
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
         {/* ── Comparison Table ── */}
-        <section className="mb-14">
+        <section id="comparison" className="mb-14 scroll-mt-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6 text-foreground">
             Top {props.comparisonProducts.length} Picks Compared
           </h2>
