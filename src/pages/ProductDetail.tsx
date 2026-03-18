@@ -1208,7 +1208,7 @@ const ProductDetail = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="grid grid-cols-2 gap-3 pt-4"
+              className="grid grid-cols-3 gap-3 pt-4"
             >
               {[
                 { icon: Shield, title: 'Secure Checkout', subtitle: 'Powered by Stripe' },
