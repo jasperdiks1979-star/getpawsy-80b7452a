@@ -230,6 +230,32 @@ export const MONEY_PAGES: MoneyPage[] = [
     targetKeyword: 'best automatic cat toy',
     anchors: { exact: 'automatic cat toys', partial: 'self-playing cat toy picks', semantic: 'hands-free entertainment for cats' },
   },
+
+  // ── SEO TRAFFIC MACHINE PAGES ──
+  {
+    path: '/best-cat-litter-box-2026',
+    type: 'guide', cluster: 'cat-litter', species: 'cat', boost: 1.5, minInbound: 20,
+    targetKeyword: 'best cat litter box 2026',
+    anchors: { exact: 'best cat litter box 2026', partial: 'top litter box picks this year', semantic: 'expert-reviewed litter box recommendations' },
+  },
+  {
+    path: '/best-dog-car-seat-safety',
+    type: 'guide', cluster: 'dog-travel', species: 'dog', boost: 1.5, minInbound: 20,
+    targetKeyword: 'best dog car seat',
+    anchors: { exact: 'best dog car seats', partial: 'crash-tested dog car seats', semantic: 'keep your dog safe during car travel' },
+  },
+  {
+    path: '/best-interactive-cat-toys',
+    type: 'guide', cluster: 'cat-toys', species: 'cat', boost: 1.4, minInbound: 15,
+    targetKeyword: 'best interactive cat toys',
+    anchors: { exact: 'best interactive cat toys', partial: 'top toys for bored cats', semantic: 'keep indoor cats active and entertained' },
+  },
+  {
+    path: '/best-dog-anxiety-solutions',
+    type: 'guide', cluster: 'dog-beds', species: 'dog', boost: 1.4, minInbound: 15,
+    targetKeyword: 'best dog anxiety solutions',
+    anchors: { exact: 'best dog anxiety solutions', partial: 'calming products for anxious dogs', semantic: 'help your stressed dog feel safe' },
+  },
 ];
 
 // ============= LOOKUP UTILITIES =============
