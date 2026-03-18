@@ -473,6 +473,10 @@ const App = () => {
                       <Route path="/best-dog-car-seat-safety" element={<Suspense fallback={<RouteLoader />}><BestDogCarSeatSafety /></Suspense>} />
                       <Route path="/best-interactive-cat-toys" element={<Suspense fallback={<RouteLoader />}><BestInteractiveCatToys /></Suspense>} />
                       <Route path="/best-dog-anxiety-solutions" element={<Suspense fallback={<RouteLoader />}><BestDogAnxietySolutions /></Suspense>} />
+                      {/* Cluster sub-pages */}
+                      <Route path="/best-cat-litter-box-reddit" element={<Suspense fallback={<RouteLoader />}><BestCatLitterBoxReddit /></Suspense>} />
+                      <Route path="/best-litter-box-for-smell" element={<Suspense fallback={<RouteLoader />}><BestLitterBoxForSmell /></Suspense>} />
+                      <Route path="/best-litter-box-large-cats" element={<Suspense fallback={<RouteLoader />}><BestLitterBoxLargeCats /></Suspense>} />
                       <Route path="/indoor-cat-furniture" element={<Suspense fallback={<RouteLoader />}><IndoorCatFurnitureGuide /></Suspense>} />
                       <Route path="/guides/:slug" element={<Suspense fallback={<RouteLoader />}><GuidePage /></Suspense>} />
                       {/* Lockdown cluster articles — generic JSON-driven renderer */}
