@@ -320,6 +320,15 @@ const Index = () => {
       </SectionErrorBoundary>
 
       {/* ═══════════════════════════════════════════════════════════════
+          7a. TRENDING WINNERS — dynamic top 4 boosted products
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Trending Winners">
+        <Suspense fallback={<div className="py-10" style={{ minHeight: 300 }} />}>
+          {hydrationReady ? <TrendingWinnersBlock /> : <div style={{ minHeight: 300 }} />}
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
           7b. POPULAR RIGHT NOW — 3 boost-target money collections
           ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Popular Right Now">
