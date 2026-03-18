@@ -290,6 +290,38 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           </div>
         </section>
 
+        {/* ── Quick Answer — Top 3 Picks ── */}
+        {props.quickAnswer && (
+          <section id="quick-answer" className="mb-10 scroll-mt-16">
+            <div className="bg-primary/5 border-2 border-primary/30 rounded-2xl p-6 md:p-8">
+              <h2 className="text-xl md:text-2xl font-display font-bold mb-1 text-foreground flex items-center gap-2">
+                🏆 Top 3 Picks (Quick Answer)
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">In a rush? Here are our top recommendations at a glance.</p>
+              <div className="grid gap-3">
+                {props.quickAnswer.picks.map((pick, i) => (
+                  <div key={i} className="flex items-center gap-4 bg-background rounded-xl border border-border p-4">
+                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                      #{i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-foreground">{pick.name}</p>
+                      <p className="text-xs text-muted-foreground">Best for: {pick.bestFor}</p>
+                    </div>
+                    {pick.productSlug && (
+                      <Link to={`/product/${pick.productSlug}`}>
+                        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">
+                          <ShoppingCart className="w-3 h-3" /> View
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ── Quick Summary ToC ── */}
         <nav className="mb-10 border rounded-xl bg-card p-5 max-w-md" aria-label="Table of contents">
           <div className="flex items-center gap-2 mb-3">
