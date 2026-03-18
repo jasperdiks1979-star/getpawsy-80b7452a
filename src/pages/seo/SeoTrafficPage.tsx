@@ -282,26 +282,26 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
 
                 {/* Pros / Cons */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3">
-                    <p className="flex items-center gap-1.5 text-xs font-semibold text-green-700 dark:text-green-400 mb-2">
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-2">
                       <ThumbsUp className="w-3.5 h-3.5" /> Pros
                     </p>
-                    <ul className="text-xs text-green-800 dark:text-green-300 space-y-1">
+                    <ul className="text-xs text-foreground/80 space-y-1">
                       {p.pros.map((pro, i) => (
                         <li key={i} className="flex items-start gap-1.5">
-                          <CheckCircle className="w-3 h-3 mt-0.5 flex-shrink-0" /> {pro}
+                          <CheckCircle className="w-3 h-3 mt-0.5 flex-shrink-0 text-primary" /> {pro}
                         </li>
                       ))}
                     </ul>
                   </div>
-                  <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
-                    <p className="flex items-center gap-1.5 text-xs font-semibold text-red-700 dark:text-red-400 mb-2">
+                  <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-destructive mb-2">
                       <ThumbsDown className="w-3.5 h-3.5" /> Cons
                     </p>
-                    <ul className="text-xs text-red-800 dark:text-red-300 space-y-1">
+                    <ul className="text-xs text-foreground/80 space-y-1">
                       {p.cons.map((con, i) => (
                         <li key={i} className="flex items-start gap-1.5">
-                          <span className="w-3 h-3 mt-0.5 flex-shrink-0 text-center">−</span> {con}
+                          <span className="w-3 h-3 mt-0.5 flex-shrink-0 text-center text-destructive">−</span> {con}
                         </li>
                       ))}
                     </ul>
