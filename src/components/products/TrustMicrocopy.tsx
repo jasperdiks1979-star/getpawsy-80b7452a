@@ -24,28 +24,28 @@ export const TrustMicrocopy: React.FC<TrustMicrocopyProps> = ({ className = '' }
     <div className={`space-y-1.5 ${className}`}>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <Lock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Secure Checkout</span>
+        <span>Secure, encrypted checkout</span>
       </div>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <CreditCard className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Visa, Mastercard, Apple Pay, Google Pay</span>
+        <span>Visa, Mastercard, Apple Pay, Google Pay accepted</span>
       </div>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <Truck className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Shipping: {DELIVERY_TIME_STANDARD}</span>
+        <span>Tracked US shipping · {DELIVERY_TIME_STANDARD}</span>
       </div>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <RotateCcw className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Returns: {RETURNS_POLICY_SHORT}</span>
+        <span>{RETURNS_POLICY_SHORT} · no questions asked</span>
       </div>
       <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <Mail className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        <span>Support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></span>
+        <span>Need help? <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></span>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground pt-1">
         <Link to="/returns" className="text-primary hover:underline">Return Policy</Link>
         <span>·</span>
-        <Link to="/shipping" className="text-primary hover:underline">Shipping Policy</Link>
+        <Link to="/shipping" className="text-primary hover:underline">Shipping Info</Link>
       </div>
     </div>
   );
