@@ -64,6 +64,12 @@ export interface RelatedGuideLink {
   badge?: string;
 }
 
+export interface LockdownSection {
+  heading: string;
+  body: string;
+  listItems?: string[];
+}
+
 export interface SeoTrafficPageProps {
   slug: string;
   title: string;
@@ -84,6 +90,11 @@ export interface SeoTrafficPageProps {
   species: 'cat' | 'dog';
   breadcrumbs: { label: string; href?: string }[];
   lastUpdated?: string;
+  // Lockdown sections
+  quickAnswer?: { picks: { name: string; bestFor: string; productSlug?: string }[] };
+  whoShouldNotBuy?: LockdownSection;
+  bestAlternatives?: LockdownSection;
+  expertVerdict?: LockdownSection;
 }
 
 export default function SeoTrafficPage(props: SeoTrafficPageProps) {
