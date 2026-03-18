@@ -78,6 +78,7 @@ export default function BestCatLitterBox2026() {
         },
         {
           rank: 3,
+          badge: 'Best Budget',
           name: "Nature's Miracle High-Sided Box",
           bestFor: 'High-spraying cats on a budget',
           highlights: ['Extra-high walls prevent spray escape', 'Antimicrobial coating fights odor', 'Non-stick surface for easy cleaning', 'Budget-friendly price'],

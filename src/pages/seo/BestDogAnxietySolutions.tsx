@@ -78,6 +78,7 @@ export default function BestDogAnxietySolutions() {
         },
         {
           rank: 3,
+          badge: "Editor's Pick",
           name: 'Adaptil Calm Pheromone Diffuser',
           bestFor: 'General anxiety and new-home adjustment',
           highlights: ['Releases dog-appeasing pheromone (DAP)', 'Clinically proven to reduce stress signs', 'Covers 700 sq ft', '30-day refill system'],

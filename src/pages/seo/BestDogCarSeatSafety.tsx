@@ -78,6 +78,7 @@ export default function BestDogCarSeatSafety() {
         },
         {
           rank: 3,
+          badge: 'Best Budget',
           name: 'Kurgo Skybox Booster Seat',
           bestFor: 'Budget-friendly elevation for small-medium dogs',
           highlights: ['Waterproof base', 'Folds flat for storage', 'Works in front and back seats', 'Includes adjustable tether'],

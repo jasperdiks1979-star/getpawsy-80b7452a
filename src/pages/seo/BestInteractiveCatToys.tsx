@@ -78,6 +78,7 @@ export default function BestInteractiveCatToys() {
         },
         {
           rank: 3,
+          badge: 'Best Budget',
           name: 'SmartyKat Hot Pursuit Electronic Toy',
           bestFor: 'Mimicking real prey movement',
           highlights: ['Concealed wand moves under fabric', 'Erratic movement pattern keeps cats guessing', '2 speed settings', 'Battery powered — no cords'],
