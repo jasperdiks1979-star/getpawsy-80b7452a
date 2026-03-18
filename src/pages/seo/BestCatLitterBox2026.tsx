@@ -56,6 +56,7 @@ export default function BestCatLitterBox2026() {
       comparisonProducts={[
         {
           rank: 1,
+          badge: 'Best Overall',
           name: 'PetSafe ScoopFree Ultra Self-Cleaning Box',
           bestFor: 'Busy cat owners who want hands-free cleaning',
           highlights: ['Automatic rake system', 'Crystal litter traps odor 5× better than clay', 'Health counter tracks usage', 'Covered design reduces tracking'],
