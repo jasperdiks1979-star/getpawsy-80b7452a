@@ -133,7 +133,7 @@ export function ExploreMoreCategory({ category, currentProductId }: ExploreMoreC
               {collectionMatch.label}
             </span>
             <span className="inline-flex items-center gap-1 text-primary text-xs mt-1">
-              Browse Collection <ArrowRight className="w-3 h-3" />
+              Shop {collectionMatch.label} <ArrowRight className="w-3 h-3" />
             </span>
           </Link>
         )}
