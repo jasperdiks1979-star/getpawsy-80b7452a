@@ -147,7 +147,7 @@ export function MoneyPageBooster({
           <div className="flex items-center gap-2 mb-3">
             <Lightbulb className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Learn More About This Topic
+              In-Depth Buying Advice
             </h3>
           </div>
           {sameCluster.filter(mp => mp.type === 'guide').slice(0, 2).map(mp => (

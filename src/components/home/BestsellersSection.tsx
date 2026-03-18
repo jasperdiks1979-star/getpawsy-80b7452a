@@ -271,7 +271,7 @@ const BestsellersCarousel = ({ bestsellers, ratingsMap }: BestsellersCarouselPro
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                               <div className="absolute inset-0 flex items-end justify-center pb-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
                                 <span className="bg-card/95 backdrop-blur-sm text-foreground px-6 py-2.5 rounded-full text-sm font-semibold shadow-xl flex items-center gap-2 ring-1 ring-border/20 hover:scale-105 transition-transform duration-150">
-                                  View Product
+                                  See Details & Price
                                   <ArrowRight className="w-4 h-4" />
                                 </span>
                               </div>

@@ -51,7 +51,7 @@ export const ClusterAuthorityBlock = memo(function ClusterAuthorityBlock({
         </div>
         <div>
           <h3 className="text-lg font-display font-bold text-foreground">
-            Learn More About {cluster.shortLabel}
+            Expert {cluster.shortLabel} Tips & Advice
           </h3>
           <p className="text-xs text-muted-foreground">{cluster.description}</p>
         </div>
@@ -82,7 +82,7 @@ export const ClusterAuthorityBlock = memo(function ClusterAuthorityBlock({
                 {post.excerpt}
               </p>
               <span className="inline-flex items-center gap-1 text-xs text-primary font-medium mt-1.5">
-                Read More <ArrowRight className="w-3 h-3" />
+                Read the full article <ArrowRight className="w-3 h-3" />
               </span>
             </div>
           </Link>
