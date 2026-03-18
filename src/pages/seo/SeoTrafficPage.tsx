@@ -443,7 +443,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
         </section>
 
         {/* ── Buying Guide ── */}
-        <section className="mb-14">
+        <section id="buying-guide" className="mb-14 scroll-mt-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6 text-foreground">
             How to Choose the Best Option
           </h2>
