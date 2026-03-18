@@ -1,0 +1,102 @@
+{
+  "campaigns": [
+    {
+      "name": "Cat Litter Box — US Search",
+      "objective": "Website traffic",
+      "targeting": "US only",
+      "dailyBudget": "$5–$10",
+      "bidStrategy": "Manual CPC $0.40–$0.80",
+      "adGroup": {
+        "name": "Cat Litter Boxes",
+        "keywords": [
+          "[best cat litter box 2026]",
+          "[best litter box for smell]",
+          "[best litter box for multiple cats]",
+          "\"best cat litter box\"",
+          "\"litter box for odor control\"",
+          "[best self cleaning litter box]",
+          "[best litter box for large cats]",
+          "[best litter box apartment]"
+        ],
+        "negativeKeywords": [
+          "free", "DIY", "homemade", "dog", "rabbit", "used"
+        ],
+        "landingPage": "/best-cat-litter-box-2026",
+        "ads": [
+          {
+            "headlines": [
+              "Best Cat Litter Box 2026",
+              "Top Picks Tested & Reviewed",
+              "No Smell • Multi-Cat Safe"
+            ],
+            "descriptions": [
+              "Compare top-rated litter boxes for odor control, large cats & multi-cat homes. Updated for 2026.",
+              "Expert-reviewed self-cleaning & manual litter boxes. Free shipping over $35. 30-day returns."
+            ]
+          },
+          {
+            "headlines": [
+              "Best Litter Box for Odor Control",
+              "Expert-Tested Picks 2026",
+              "Better Than Litter-Robot?"
+            ],
+            "descriptions": [
+              "Crystal litter, carbon filters & antimicrobial coatings tested. Find the right box for your cat.",
+              "5 top-rated litter boxes compared side by side. Real testing data. Ships from US warehouses."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Dog Car Seat Safety — US Search",
+      "objective": "Website traffic",
+      "targeting": "US only",
+      "dailyBudget": "$5–$10",
+      "bidStrategy": "Manual CPC $0.40–$0.80",
+      "adGroup": {
+        "name": "Dog Car Seats",
+        "keywords": [
+          "[best dog car seat]",
+          "[dog car seat safety]",
+          "[dog booster seat safety]",
+          "\"crash tested dog car seat\"",
+          "[best dog car seat for small dogs]",
+          "[safest dog car seat 2026]"
+        ],
+        "negativeKeywords": [
+          "free", "DIY", "cat", "used", "cheap"
+        ],
+        "landingPage": "/best-dog-car-seat-safety",
+        "ads": [
+          {
+            "headlines": [
+              "Best Dog Car Seat Safety",
+              "Crash-Tested Picks 2026",
+              "Safe Travel for Dogs"
+            ],
+            "descriptions": [
+              "Find the safest dog car seats for small & medium dogs. Expert-reviewed & crash-tested.",
+              "Top 5 CPS-certified dog car seats compared. Booster seats, harnesses & carriers. Free shipping $35+."
+            ]
+          },
+          {
+            "headlines": [
+              "Dog Car Seat — Crash Tested",
+              "Top 5 Safest Picks Ranked",
+              "Protect Your Dog in the Car"
+            ],
+            "descriptions": [
+              "An unrestrained 40-lb dog = 1,200 lbs of force at 30 mph. Protect them with a tested car seat.",
+              "CPS-certified harnesses & booster seats for every dog size. Expert-reviewed. Ships in 3–7 days."
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "conversionTracking": {
+    "events": ["view_item", "add_to_cart", "begin_checkout", "purchase"],
+    "note": "Conversion tracking already integrated via existing Google Ads gtag setup."
+  }
+}

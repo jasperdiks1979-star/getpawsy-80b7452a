@@ -29,6 +29,7 @@ export default function BestLitterBoxForSmell() {
         { title: 'Best Cat Litter Box 2026 — Full Expert Guide', href: '/best-cat-litter-box-2026' },
         { title: 'Best Cat Litter Box Reddit Recommends', href: '/best-cat-litter-box-reddit' },
         { title: 'Best Litter Box for Large Cats', href: '/best-litter-box-large-cats' },
+        { title: 'Best Litter Boxes for Apartments 2026', href: '/best-litter-boxes-apartments-2026' },
         { title: 'Best Interactive Cat Toys 2026', href: '/best-interactive-cat-toys' },
       ]}
     />
