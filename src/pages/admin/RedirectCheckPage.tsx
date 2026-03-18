@@ -251,8 +251,8 @@ export default function RedirectCheckPage() {
                   <Badge variant={canonicalAudit.wwwRedirectStatus === 301 ? "default" : "secondary"}>
                     {String(canonicalAudit.wwwRedirectStatus)}
                   </Badge>
-                  {canonicalAudit.wwwRedirectStatus === 302 && (
-                    <span className="text-xs text-muted-foreground ml-2">(platform constraint, mitigated)</span>
+                  {canonicalAudit.wwwRedirectStatus !== 301 && (
+                    <span className="ml-2 text-xs text-destructive">(blocking issue — must be 301)</span>
                   )}
                 </div>
                 <div className="border rounded-lg p-3">
