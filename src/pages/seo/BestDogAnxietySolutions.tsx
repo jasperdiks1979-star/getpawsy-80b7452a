@@ -56,6 +56,7 @@ export default function BestDogAnxietySolutions() {
       comparisonProducts={[
         {
           rank: 1,
+          badge: 'Best Overall',
           name: 'Thundershirt Classic Anxiety Vest',
           bestFor: 'Noise phobias (thunder, fireworks, vacuum)',
           highlights: ['Gentle, constant pressure reduces anxiety 80%+', 'Drug-free calming effect', 'Machine washable', 'Patented design backed by clinical studies'],
