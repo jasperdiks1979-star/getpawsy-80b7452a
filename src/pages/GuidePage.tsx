@@ -20,6 +20,44 @@ import { RecommendedProductsBlock } from '@/components/seo/RecommendedProductsBl
 
 const BASE_URL = 'https://getpawsy.pet';
 
+/** Map guide relatedCategories to collection slugs for proper internal linking */
+const CATEGORY_TO_COLLECTION: Record<string, string> = {
+  'cat-trees': 'cat-condos',
+  'cat-litter': 'cat-litter-boxes',
+  'cat-litter-boxes': 'cat-litter-boxes',
+  'cat-toys': 'best-cat-toys-for-indoor-cats',
+  'cat-beds': 'best-cat-beds',
+  'cat-carriers': 'best-cat-carriers',
+  'cat-scratching': 'best-cat-scratching-posts',
+  'cat-feeders': 'automatic-cat-feeders',
+  'dog-beds': 'dog-beds',
+  'dog-toys': 'best-interactive-dog-toys',
+  'dog-harness': 'best-dog-harnesses',
+  'dog-harnesses': 'best-dog-harnesses',
+  'dog-car': 'dog-car-travel-safety-seats',
+  'dog-car-seats': 'dog-car-travel-safety-seats',
+  'dog-grooming': 'best-dog-grooming-kits',
+  'dog-bowls': 'best-slow-feeder-dog-bowls',
+  'dog-travel': 'dog-travel-accessories',
+  'dog-training': 'dog-training-accessories',
+  'dog-potty': 'dog-potty-training',
+  'dog-leash': 'dog-leash-control',
+  'dog-anti-bark': 'dog-anti-bark',
+};
+
+function categoryToCollectionSlug(cat: string): string | null {
+  const catLower = cat.toLowerCase();
+  if (CATEGORY_TO_COLLECTION[catLower]) return CATEGORY_TO_COLLECTION[catLower];
+  // Fuzzy match
+  for (const [key, slug] of Object.entries(CATEGORY_TO_COLLECTION)) {
+    if (catLower.includes(key) || key.includes(catLower)) return slug;
+  }
+  // Species fallback
+  if (catLower.includes('cat')) return 'cats';
+  if (catLower.includes('dog')) return 'dogs';
+  return null;
+}
+
 const GuidePage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: guide, isLoading, error } = useGuide(slug);
