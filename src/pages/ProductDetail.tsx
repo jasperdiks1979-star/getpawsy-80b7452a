@@ -1068,12 +1068,19 @@ const ProductDetail = () => {
             {/* Free Shipping Progress Bar */}
             <FreeShippingBar previewAmount={Number(product.price)} />
 
-            {/* Stock Status - Simple, no quantity pressure */}
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${inStock ? 'bg-success' : 'bg-destructive'}`} />
-              <span className="font-medium text-foreground">
-                {inStock ? 'In Stock — Ready to ship' : 'Out of Stock'}
-              </span>
+            {/* Stock Status & Subtle Social Proof */}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${inStock ? 'bg-success' : 'bg-destructive'}`} />
+                <span className="font-medium text-foreground">
+                  {inStock ? 'In Stock — Ready to ship' : 'Out of Stock'}
+                </span>
+              </div>
+              {inStock && (
+                <p className="text-xs text-muted-foreground pl-6">
+                  Popular choice among US pet owners · Ships within 24 hours
+                </p>
+              )}
             </div>
 
             {/* Low Stock Badge — real inventory driven */}
@@ -1145,7 +1152,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
                >
                 <ShoppingCart className="w-5 h-5" />
-                Get This for My Pet
+                Add to Cart – Secure Checkout
               </Button>
 
               {/* Wishlist */}
@@ -1201,10 +1208,11 @@ const ProductDetail = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="grid grid-cols-2 gap-3 pt-4"
+              className="grid grid-cols-3 gap-3 pt-4"
             >
               {[
                 { icon: Shield, title: 'Secure Checkout', subtitle: 'Powered by Stripe' },
+                { icon: Truck, title: 'Tracked Shipping', subtitle: 'US delivery with tracking number' },
                 { icon: Award, title: TRUST_BADGES.quality.title, subtitle: TRUST_BADGES.quality.subtitle },
               ].map((feature, idx) => (
                 <motion.div 
@@ -1780,7 +1788,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
                >
                 <ShoppingCart className="w-4 h-4" />
-                Get This for My Pet
+                Add to Cart – Secure Checkout
               </Button>
 
               {/* Wishlist Button */}
