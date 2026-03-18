@@ -548,6 +548,34 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           </section>
         )}
 
+        {/* ── Related Expert Guides ── */}
+        {props.relatedGuides && props.relatedGuides.length > 0 && (
+          <section id="related-guides" className="mb-14 bg-muted/30 rounded-2xl p-6 md:p-10 scroll-mt-16">
+            <h2 className="text-2xl font-display font-bold mb-1 text-foreground">Related Expert Guides</h2>
+            <p className="text-muted-foreground text-sm mb-6">In-depth research and buying advice from our pet product team.</p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {props.relatedGuides.map(g => (
+                <Link
+                  key={g.href}
+                  to={g.href}
+                  className="group bg-background border rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition-all"
+                >
+                  {g.badge && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-primary/10 text-primary rounded-full px-2 py-0.5 mb-2">
+                      {g.badge}
+                    </span>
+                  )}
+                  <h3 className="font-semibold text-sm mb-1 text-foreground group-hover:text-primary transition-colors">{g.title}</h3>
+                  <p className="text-xs text-muted-foreground">{g.description}</p>
+                  <span className="inline-flex items-center gap-1 text-xs text-primary mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Read expert guide <ArrowRight className="w-3 h-3" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* ── Internal Links ── */}
         <section className="mb-14">
           <h2 className="text-xl font-display font-bold mb-4 text-foreground">Related Guides & Collections</h2>
