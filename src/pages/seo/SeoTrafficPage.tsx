@@ -430,7 +430,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
         </section>
 
         {/* ── Budget Picks ── */}
-        <section className="mb-14 bg-muted/30 border border-border rounded-xl p-6 md:p-8">
+        <section id="budget" className="mb-14 bg-muted/30 border border-border rounded-xl p-6 md:p-8 scroll-mt-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-4 text-foreground">
             {props.budgetPicks.heading}
           </h2>
