@@ -19,6 +19,7 @@ const WhyShopGetPawsy = lazy(() => import('@/components/home/WhyShopGetPawsy'));
 const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAuthoritySection'));
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
 const PopularRightNow = lazy(() => import('@/components/home/PopularRightNow'));
+const FeaturedCollectionsGuides = lazy(() => import('@/components/home/FeaturedCollectionsGuides'));
 const ExpertPetGuides = lazy(() => import('@/components/seo/PopularGuidesBlock').then(m => ({ default: m.PopularGuidesBlock })));
 
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
@@ -231,6 +232,15 @@ const Index = () => {
       <SectionErrorBoundary sectionName="Trending Products">
         <Suspense fallback={<div className="py-14" style={{ minHeight: 400 }} />}>
           <TrendingProducts />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          3b. FEATURED COLLECTIONS & GUIDES — high-priority internal links
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Featured Collections">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
+          <FeaturedCollectionsGuides />
         </Suspense>
       </SectionErrorBoundary>
 

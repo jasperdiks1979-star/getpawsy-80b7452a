@@ -42,7 +42,7 @@ export function HomepageAuthoritySection() {
           </div>
         </FadeInView>
 
-        {/* SEO authority paragraph — dog training focused */}
+        {/* SEO authority paragraph — expanded with key collection + guide links */}
         <FadeInView className="mt-12 max-w-3xl mx-auto text-center">
           <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
             GetPawsy is the go-to destination for{' '}
@@ -56,26 +56,45 @@ export function HomepageAuthoritySection() {
             <Link to="/collections/dog-anti-bark" className="text-primary hover:underline font-medium">
               humane anti-bark devices
             </Link>{' '}
-            — all shipped fast within the United States. Whether you're raising a{' '}
+            — all shipped fast within the United States. Planning a road trip? Browse our{' '}
+            <Link to="/collections/dog-car-travel-safety-seats" className="text-primary hover:underline font-medium">
+              dog car seats & travel safety collection
+            </Link>{' '}
+            or read the{' '}
+            <Link to="/guides/best-dog-car-seats-safe-travel" className="text-primary hover:underline font-medium">
+              best dog car seat guide
+            </Link>.
+          </p>
+          <p className="text-sm md:text-base text-muted-foreground leading-relaxed mt-4">
+            Cat owners love our{' '}
+            <Link to="/collections/cat-litter-boxes" className="text-primary hover:underline font-medium">
+              cat litter boxes
+            </Link>{' '}
+            — see which one fits your home in our{' '}
+            <Link to="/guides/best-cat-litter-box-2026" className="text-primary hover:underline font-medium">
+              best cat litter box 2026 guide
+            </Link>.
+            Need a cozy spot for your pup? Our{' '}
+            <Link to="/collections/dog-beds" className="text-primary hover:underline font-medium">
+              orthopedic & calming dog beds
+            </Link>{' '}
+            are built for comfort at every life stage. Whether you're raising a{' '}
             <Link to="/collections/puppy-training-essentials" className="text-primary hover:underline font-medium">
               new puppy
             </Link>{' '}
-            or correcting behavior in an adult dog, our curated{' '}
+            or shopping for curated{' '}
             <Link to="/collections/dog-training-accessories" className="text-primary hover:underline font-medium">
               training accessories
-            </Link>{' '}
-            are tested by real dog owners and recommended by professional trainers.
-            We offer fast shipping to the United States with 3–7 day delivery
-            and free shipping on orders over $35. Every order is backed by our 30-day hassle-free
-            return policy. Explore our{' '}
+            </Link>,
+            we offer free US shipping on orders over $35 with 3–7 day delivery and a 30-day hassle-free return policy.
+            Explore our{' '}
             <Link to="/guides" className="text-primary hover:underline font-medium">
-              expert training guides
+              expert pet guides
             </Link>{' '}
-            or browse our{' '}
+            or browse the{' '}
             <Link to="/blog?category=dogs" className="text-primary hover:underline font-medium">
               training tips blog
-            </Link>{' '}
-            to build a well-behaved, confident dog.
+            </Link>.
           </p>
         </FadeInView>
       </div>
