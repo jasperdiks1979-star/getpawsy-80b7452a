@@ -126,7 +126,7 @@ export default function RedirectCheckPage() {
         const diag = await diagRes.json();
         wwwRedirectStatus = diag.crawlConfig?.wwwRedirectStatus ?? "unknown";
         if (wwwRedirectStatus !== 301) {
-          warnings.push(`www redirect returns ${wwwRedirectStatus} instead of 301 (platform constraint — mitigated via canonical signals)`);
+          warnings.push(`CRITICAL: www redirect returns ${wwwRedirectStatus} instead of required 301 — fix Cloudflare redirect rules before submission.`);
         }
       }
 
