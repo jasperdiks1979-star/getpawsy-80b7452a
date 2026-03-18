@@ -237,7 +237,16 @@ const Index = () => {
       </SectionErrorBoundary>
 
       {/* ═══════════════════════════════════════════════════════════════
-          3b. FEATURED COLLECTIONS & GUIDES — high-priority internal links
+          3b. BEST BUYING GUIDES 2026 — money page link hub
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Best Buying Guides">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
+          <BestBuyingGuides2026 />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          3c. FEATURED COLLECTIONS & GUIDES — high-priority internal links
           ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Featured Collections">
         <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>

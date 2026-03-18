@@ -84,6 +84,16 @@ export function FeaturedCollectionsGuides() {
                       <ShoppingBag className="w-3 h-3" />
                       Shop {col.label} <ArrowRight className="w-3 h-3" />
                     </span>
+                    {col.guidePath && (
+                      <Link
+                        to={col.guidePath}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors mt-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <BookOpen className="w-3 h-3" />
+                        Read our {col.guideLabel} →
+                      </Link>
+                    )}
                   </div>
                 </div>
               </Link>
