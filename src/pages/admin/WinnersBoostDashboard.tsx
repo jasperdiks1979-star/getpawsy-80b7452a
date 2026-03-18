@@ -42,9 +42,9 @@ const WinnersBoostDashboard = () => {
       const [productsRes, ordersRes] = await Promise.all([
         supabase
           .from('products')
-          .select('id, name, slug, price, image_url, stock, is_active, category, view_count')
+          .select('id, name, slug, price, image_url, stock, is_active, category')
           .eq('is_active', true)
-          .order('view_count', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(200),
         supabase
           .from('orders')
