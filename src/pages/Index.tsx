@@ -236,6 +236,15 @@ const Index = () => {
       </SectionErrorBoundary>
 
       {/* ═══════════════════════════════════════════════════════════════
+          3b. FEATURED COLLECTIONS & GUIDES — high-priority internal links
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Featured Collections">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
+          <FeaturedCollectionsGuides />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
           4. SHOP BY PROBLEM — 4 grid blocks
           ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Problem Solution">
