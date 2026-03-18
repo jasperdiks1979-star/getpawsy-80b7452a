@@ -892,15 +892,19 @@ const GuidePage = () => {
               <h3 className="font-display font-bold text-foreground">Shop Related Products</h3>
             </div>
             <div className="flex flex-wrap gap-2.5">
-              {guide.relatedCategories.map((cat) => (
-                <Link
-                  key={cat}
-                  to={`/products?category=${cat}`}
-                  className="text-sm bg-card border border-border rounded-full px-5 py-2 hover:border-primary/40 hover:text-primary hover:shadow-sm transition-all font-medium"
-                >
-                  Shop all {cat.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                </Link>
-              ))}
+              {guide.relatedCategories.map((cat) => {
+                const collectionSlug = categoryToCollectionSlug(cat);
+                const displayName = cat.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                return (
+                  <Link
+                    key={cat}
+                    to={collectionSlug ? `/collections/${collectionSlug}` : `/products?category=${cat}`}
+                    className="text-sm bg-card border border-border rounded-full px-5 py-2 hover:border-primary/40 hover:text-primary hover:shadow-sm transition-all font-medium"
+                  >
+                    View all {displayName} products →
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
