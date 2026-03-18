@@ -507,7 +507,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
         )}
 
         {/* ── FAQ Section ── */}
-        <section className="mb-14">
+        <section id="faq" className="mb-14 scroll-mt-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6 text-foreground">
             Frequently Asked Questions
           </h2>
