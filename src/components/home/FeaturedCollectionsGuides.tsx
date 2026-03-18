@@ -76,7 +76,7 @@ export function FeaturedCollectionsGuides() {
                     </p>
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
                       <ShoppingBag className="w-3 h-3" />
-                      Browse Collection <ArrowRight className="w-3 h-3" />
+                      Shop {col.label} <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
                 </div>
