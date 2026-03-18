@@ -103,15 +103,25 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
 
   // ── Jump Nav sections ──
   const jumpNavItems = [
+    { id: 'quick-answer', label: 'Top 3 Picks' },
     { id: 'comparison', label: 'Comparison' },
     { id: 'benefits', label: 'Benefits' },
     { id: 'budget', label: 'Budget Picks' },
     { id: 'buying-guide', label: 'Buying Guide' },
     { id: 'mistakes', label: 'Common Mistakes' },
+    { id: 'who-should-not', label: 'Who Should NOT Buy' },
+    { id: 'alternatives', label: 'Alternatives' },
+    { id: 'verdict', label: 'Expert Verdict' },
     { id: 'products', label: 'Shop Products' },
     { id: 'faq', label: 'FAQ' },
     { id: 'related-guides', label: 'Related Guides' },
-  ];
+  ].filter(item => {
+    if (item.id === 'quick-answer') return !!props.quickAnswer;
+    if (item.id === 'who-should-not') return !!props.whoShouldNotBuy;
+    if (item.id === 'alternatives') return !!props.bestAlternatives;
+    if (item.id === 'verdict') return !!props.expertVerdict;
+    return true;
+  });
 
   const [activeSection, setActiveSection] = useState('');
   const [showJumpNav, setShowJumpNav] = useState(false);
