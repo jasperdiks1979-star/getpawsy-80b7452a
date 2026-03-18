@@ -1,7 +1,12 @@
 # =============================================================
-# Cache-Control headers for GetPawsy (getpawsy.pet)
+# Cache-Control + security headers for GetPawsy (getpawsy.pet)
 # Applied by Lovable Cloud / Cloudflare Pages at the edge.
 # =============================================================
+
+# Global security headers
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
 
 # HTML documents: never cache stale HTML (SPA shell must be fresh)
 /

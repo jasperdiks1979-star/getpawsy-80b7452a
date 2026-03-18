@@ -126,7 +126,7 @@ export default function RedirectCheckPage() {
         const diag = await diagRes.json();
         wwwRedirectStatus = diag.crawlConfig?.wwwRedirectStatus ?? "unknown";
         if (wwwRedirectStatus !== 301) {
-          warnings.push(`www redirect returns ${wwwRedirectStatus} instead of 301 (platform constraint — mitigated via canonical signals)`);
+          warnings.push(`CRITICAL: www redirect returns ${wwwRedirectStatus} instead of required 301 — fix Cloudflare redirect rules before submission.`);
         }
       }
 
@@ -210,9 +210,9 @@ export default function RedirectCheckPage() {
 4. Coverage: Check "Duplicate without user-selected canonical"
    → Should be 0 or decreasing
 
-5. www redirect: Platform returns 302 (not 301)
-   → This is mitigated: all canonicals, sitemaps, internal links use apex
-   → Google treats consistent 302 = 301 when canonical signals align`;
+5. www redirect: must return 301 (not 302)
+   → If it returns 302, fix the Cloudflare redirect rule and remove conflicting edge rules
+   → Re-test with curl until the response is permanent`;
 
   return (
     <div className="min-h-screen bg-background p-6 max-w-5xl mx-auto">
@@ -251,8 +251,8 @@ export default function RedirectCheckPage() {
                   <Badge variant={canonicalAudit.wwwRedirectStatus === 301 ? "default" : "secondary"}>
                     {String(canonicalAudit.wwwRedirectStatus)}
                   </Badge>
-                  {canonicalAudit.wwwRedirectStatus === 302 && (
-                    <span className="text-xs text-muted-foreground ml-2">(platform constraint, mitigated)</span>
+                  {canonicalAudit.wwwRedirectStatus !== 301 && (
+                    <span className="ml-2 text-xs text-destructive">(blocking issue — must be 301)</span>
                   )}
                 </div>
                 <div className="border rounded-lg p-3">
@@ -334,17 +334,16 @@ export default function RedirectCheckPage() {
                   <XCircle className="h-5 w-5 text-destructive" />
                 )}
                 <span className="font-medium">
-                  {redirectResult.is301 ? "✅ 301 Redirect Active" : `⚠️ Returns ${redirectResult.status ?? 'error'} (platform constraint)`}
+                  {redirectResult.is301 ? "✅ 301 Redirect Active" : `⚠️ Returns ${redirectResult.status ?? 'error'} (needs Cloudflare fix)`}
                 </span>
               </div>
               {redirectResult.error && <p className="text-xs text-destructive">Error: {redirectResult.error}</p>}
-              {!redirectResult.is301 && redirectResult.status === 302 && (
+              {!redirectResult.is301 && (
                 <div className="bg-muted rounded-lg p-3 mt-2">
-                  <p className="text-sm font-medium">Platform-level constraint</p>
+                  <p className="text-sm font-medium">Blocking issue</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    The Lovable hosting edge returns 302 for www→apex. This cannot be changed per-project.
-                    Mitigation is in place: all canonical tags, sitemaps, OG URLs, structured data, and internal links
-                    consistently point to <code>{SITE_URL}</code>. Google treats consistent 302 as 301 when canonical signals align.
+                    The www → apex redirect must be a permanent 301 before submission. Update the Cloudflare redirect rule,
+                    remove conflicting edge rules, purge cache, and re-test until the response is permanent.
                   </p>
                 </div>
               )}

@@ -191,35 +191,30 @@ export default function RedirectChainDiagnostics() {
               </div>
             </div>
 
-            {/* ── Platform Constraint Explanation (always show) ── */}
+            {/* ── Canonical redirect alert ── */}
             {!wwwIs301 && (
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 space-y-3">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
                   <div>
-                    <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                      Platform-level 302 constraint (verified)
+                    <p className="text-sm font-medium text-destructive">
+                      www → apex redirect is not permanent yet
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      The Lovable hosting edge (Cloudflare) returns 302 for www → apex redirects. 
-                      This is NOT configurable per-project. Server-side header checks confirmed: 
-                      <code className="bg-muted px-1 rounded">server: cloudflare</code>, 
-                      <code className="bg-muted px-1 rounded">Domain=lovable.app</code> cookies.
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Expected behavior is a single-hop <code className="bg-muted px-1 rounded">301</code> redirect from
+                      <code className="bg-muted px-1 rounded ml-1">https://www.getpawsy.pet/*</code> to
+                      <code className="bg-muted px-1 rounded ml-1">https://getpawsy.pet/:path</code>.
                     </p>
                   </div>
                 </div>
 
-                <div className="text-xs space-y-2">
-                  <p className="font-medium">Why this is SEO-safe:</p>
-                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                    <li>Google treats 302 = 301 when canonical signals are consistent</li>
-                    <li>All canonical tags, sitemaps, merchant feed, OG tags → apex only ✅</li>
-                    <li>Path + querystring preserved in Location header ✅</li>
-                    <li>No indexable www URLs exist (canonical always points to apex) ✅</li>
+                <div className="text-xs space-y-2 text-muted-foreground">
+                  <p className="font-medium text-foreground">Required Cloudflare cleanup:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Keep exactly one Redirect Rule for <code className="bg-muted px-1 rounded">www.getpawsy.pet</code> → apex with status <code className="bg-muted px-1 rounded">301</code></li>
+                    <li>Remove conflicting Page Rules, Bulk Redirects, Transform Rules, and Workers</li>
+                    <li>Purge cache after the rule is updated to eliminate stale 302 responses</li>
                   </ul>
-                  <p className="text-muted-foreground mt-2 italic">
-                    The nginx.conf 301 rule is kept as fallback but never fires — the edge intercepts first.
-                  </p>
                 </div>
               </div>
             )}
