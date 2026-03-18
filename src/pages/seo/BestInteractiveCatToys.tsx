@@ -56,6 +56,7 @@ export default function BestInteractiveCatToys() {
       comparisonProducts={[
         {
           rank: 1,
+          badge: 'Best Overall',
           name: 'PetSafe Bolt Laser Toy',
           bestFor: 'Hands-free play for busy owners',
           highlights: ['Automatic random laser pattern', 'Adjustable mirror speed', '15-minute auto-shutoff', 'Wall or floor mounting'],
