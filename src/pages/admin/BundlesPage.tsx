@@ -121,6 +121,24 @@ const BundlesPage = () => {
   const bundleTotal = selectedProducts.reduce((s, p) => s + (p.price || 0), 0);
   const bundleSavings = bundleTotal * (newDiscount / 100);
 
+  const BUNDLE_TEMPLATES = [
+    { name: 'Cat Care Bundle', keywords: ['litter', 'cat toy', 'scratching', 'cat tree'], discount: 12, icon: '🐱' },
+    { name: 'Dog Travel Safety Kit', keywords: ['car seat', 'harness', 'travel', 'safety'], discount: 15, icon: '🐕' },
+    { name: 'Puppy Starter Pack', keywords: ['training', 'potty', 'leash', 'puppy'], discount: 10, icon: '🐶' },
+    { name: 'Cat Comfort Bundle', keywords: ['bed', 'blanket', 'calming', 'anxiety'], discount: 12, icon: '😺' },
+  ];
+
+  const applyTemplate = (tpl: typeof BUNDLE_TEMPLATES[number]) => {
+    setNewName(tpl.name);
+    setNewDiscount(tpl.discount);
+    setCreating(true);
+    // Filter products matching template keywords
+    const matches = products.filter(p =>
+      tpl.keywords.some(kw => p.name.toLowerCase().includes(kw))
+    ).slice(0, 3);
+    setSelectedProducts(matches);
+  };
+
   return (
     <>
       <div className="container px-4 md:px-6 py-8 max-w-4xl">
@@ -133,6 +151,28 @@ const BundlesPage = () => {
             <Plus className="w-4 h-4" /> New Bundle
           </Button>
         </div>
+
+        {/* Quick Templates */}
+        {!creating && bundles.length < 4 && (
+          <div className="mb-6">
+            <p className="text-sm font-medium mb-2">Quick Start Templates</p>
+            <div className="grid grid-cols-2 gap-2">
+              {BUNDLE_TEMPLATES.map((tpl) => (
+                <button
+                  key={tpl.name}
+                  onClick={() => applyTemplate(tpl)}
+                  className="text-left p-3 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg">{tpl.icon}</span>
+                    <span className="font-medium text-sm">{tpl.name}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{tpl.discount}% off · {tpl.keywords.slice(0, 3).join(', ')}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {creating && (
           <Card className="mb-6 border-primary/30">
