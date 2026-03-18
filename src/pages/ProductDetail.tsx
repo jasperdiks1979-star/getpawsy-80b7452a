@@ -1145,7 +1145,7 @@ const ProductDetail = () => {
                 disabled={!inStock}
                >
                 <ShoppingCart className="w-5 h-5" />
-                Get This for My Pet
+                Add to Cart – Secure Checkout
               </Button>
 
               {/* Wishlist */}
