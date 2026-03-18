@@ -21,6 +21,7 @@ const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
 const PopularRightNow = lazy(() => import('@/components/home/PopularRightNow'));
 const FeaturedCollectionsGuides = lazy(() => import('@/components/home/FeaturedCollectionsGuides'));
 const BestBuyingGuides2026 = lazy(() => import('@/components/home/BestBuyingGuides2026'));
+const TrendingGuidesStrip = lazy(() => import('@/components/home/TrendingGuidesStrip'));
 const ExpertPetGuides = lazy(() => import('@/components/seo/PopularGuidesBlock').then(m => ({ default: m.PopularGuidesBlock })));
 
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────

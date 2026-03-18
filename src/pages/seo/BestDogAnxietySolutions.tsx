@@ -157,6 +157,11 @@ export default function BestDogAnxietySolutions() {
         { question: 'How can I calm my dog during fireworks?', answer: 'Put on the Thundershirt 30 min before, give calming chews, close curtains, play white noise, and stay calm yourself. Create a safe space with their calming bed and a frozen KONG for distraction.' },
         { question: 'Does CBD oil work for dog anxiety?', answer: 'Some studies show promise, but FDA has not approved CBD for pets. If you want to try, use only products with third-party lab testing and consult your vet first. Hemp-based calming chews with L-theanine are a safer regulated alternative.' },
       ]}
+      relatedGuides={[
+        { title: 'Best Dog Car Seat Safety 2026', description: 'Crash-tested car seats — essential for dogs with travel anxiety.', href: '/best-dog-car-seat-safety', badge: '🔥 Trending' },
+        { title: 'Best Cat Litter Box 2026', description: 'Top-rated litter boxes for odor control, large cats, and multi-cat homes.', href: '/best-cat-litter-box-2026', badge: '⭐ Expert Pick' },
+        { title: 'Best Interactive Cat Toys 2026', description: 'Expert-tested toys that keep indoor cats mentally stimulated.', href: '/best-interactive-cat-toys' },
+      ]}
       crossLinks={[
         { title: 'Best Dog Car Seat Safety 2026', description: 'Crash-tested car seats and harnesses — essential for dogs with travel anxiety.', href: '/best-dog-car-seat-safety' },
         { title: 'Best Interactive Cat Toys 2026', description: 'Expert-tested toys to keep indoor cats mentally stimulated and happy.', href: '/best-interactive-cat-toys' },
