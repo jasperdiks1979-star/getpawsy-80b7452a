@@ -184,6 +184,33 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
         <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
       </Helmet>
 
+      {/* ── Sticky Jump Nav ── */}
+      {showJumpNav && (
+        <nav className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-b shadow-sm" aria-label="Page sections">
+          <div className="container overflow-x-auto">
+            <div className="flex gap-1 py-2">
+              {jumpNavItems.map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  className={`whitespace-nowrap text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    activeSection === item.id
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted border-transparent'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        </nav>
+      )}
+
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Breadcrumb */}
         <nav className="text-sm text-muted-foreground mb-6 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
