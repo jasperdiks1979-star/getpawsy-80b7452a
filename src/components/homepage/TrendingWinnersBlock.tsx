@@ -8,26 +8,24 @@ import { Flame, Star, TrendingUp } from 'lucide-react';
 
 /**
  * Dynamic homepage block — auto-populated with boosted "homepage_winner" products.
- * Falls back to top-viewed products if no winners are boosted.
+ * Falls back to top-priced active products if no winners are boosted.
  */
 async function fetchWinners() {
-  // First try boosted winners
   const { data: boosted } = await supabase
     .from('products')
-    .select('id, name, slug, price, compare_at_price, image_url, view_count, average_rating')
+    .select('id, name, slug, price, compare_at_price, image_url')
     .eq('is_active', true)
     .eq('custom_label_5', 'homepage_winner')
-    .order('view_count', { ascending: false })
+    .order('price', { ascending: false })
     .limit(4);
 
   if (boosted && boosted.length >= 4) return boosted;
 
-  // Fallback: top viewed products
   const { data: fallback } = await supabase
     .from('products')
-    .select('id, name, slug, price, compare_at_price, image_url, view_count, average_rating')
+    .select('id, name, slug, price, compare_at_price, image_url')
     .eq('is_active', true)
-    .order('view_count', { ascending: false })
+    .order('price', { ascending: false })
     .limit(4);
 
   return fallback ?? [];
@@ -53,7 +51,7 @@ export const TrendingWinnersBlock = memo(() => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {winners.map((p: any, i: number) => (
+          {winners.map((p, i) => (
             <Link
               key={p.id}
               to={`/product/${p.slug}`}
@@ -82,14 +80,6 @@ export const TrendingWinnersBlock = memo(() => {
 
               {/* Info */}
               <h3 className="text-sm font-medium line-clamp-2 mb-1">{p.name}</h3>
-
-              {/* Rating */}
-              {(p.average_rating ?? 0) > 0 && (
-                <div className="flex items-center gap-1 mb-2">
-                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                  <span className="text-xs text-muted-foreground">{Number(p.average_rating).toFixed(1)}</span>
-                </div>
-              )}
 
               {/* Price */}
               <div className="flex items-center gap-2 mt-auto mb-2">

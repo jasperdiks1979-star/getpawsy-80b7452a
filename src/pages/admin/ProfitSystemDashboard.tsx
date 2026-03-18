@@ -8,60 +8,47 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  TrendingUp, AlertTriangle, XCircle, Flame, Rocket, Download,
-  ExternalLink, ArrowUpDown, ToggleLeft, ToggleRight, Link2, Eye,
-  ShoppingCart, DollarSign, Search, MousePointerClick, Target,
+  AlertTriangle, XCircle, Flame, Rocket, Download,
+  ToggleLeft, ToggleRight, DollarSign, Target,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 // ── Types ──────────────────────────────────────────────────
-type PageType = 'product' | 'collection' | 'seo_money' | 'blog' | 'guide' | 'other';
 type Classification = 'winner' | 'potential' | 'loser';
 
 interface ProfitRow {
   id: string;
   url: string;
   name: string;
-  pageType: PageType;
   classification: Classification;
-  // GSC
   clicks: number;
   impressions: number;
   ctr: number;
   avgPosition: number;
-  // Commerce
   productViews: number;
   addToCartRate: number;
   conversionRate: number;
   revenue: number;
   revenuePerVisitor: number;
-  // Meta
   suggestedAction: string;
   boosted: boolean;
 }
 
-// ── CTR Benchmarks by position ─────────────────────────────
+// ── CTR Benchmarks ─────────────────────────────────────────
 const CTR_BENCHMARK: Record<number, number> = {
   1: 0.28, 2: 0.15, 3: 0.11, 4: 0.08, 5: 0.07,
   6: 0.05, 7: 0.04, 8: 0.03, 9: 0.03, 10: 0.02,
 };
 function getExpectedCtr(pos: number): number {
-  const rounded = Math.min(Math.max(Math.round(pos), 1), 10);
-  return CTR_BENCHMARK[rounded] ?? 0.02;
+  return CTR_BENCHMARK[Math.min(Math.max(Math.round(pos), 1), 10)] ?? 0.02;
 }
 
-// ── Classification logic ───────────────────────────────────
-function classify(row: {
-  conversionRate: number; revenuePerVisitor: number;
-  avgPosition: number; ctr: number; clicks: number;
-}): Classification {
-  // Winners: high conversion or revenue per visitor
+// ── Classification ─────────────────────────────────────────
+function classify(row: { conversionRate: number; revenuePerVisitor: number; avgPosition: number; ctr: number; clicks: number }): Classification {
   if (row.conversionRate >= 0.03 || row.revenuePerVisitor >= 0.5) return 'winner';
-  // Potential: positioned 5–20, CTR below benchmark
   if (row.avgPosition >= 5 && row.avgPosition <= 20 && row.ctr < getExpectedCtr(row.avgPosition)) return 'potential';
-  // Losers: has traffic but low conversion
   if (row.clicks >= 10 && row.conversionRate < 0.01) return 'loser';
-  return 'potential'; // default bucket
+  return 'potential';
 }
 
 function suggestAction(c: Classification, row: { avgPosition: number; ctr: number; conversionRate: number }): string {
@@ -74,32 +61,22 @@ function suggestAction(c: Classification, row: { avgPosition: number; ctr: numbe
   return 'Improve product page CTA and trust signals';
 }
 
-function classifyPageType(url: string): PageType {
-  if (url.startsWith('/product/')) return 'product';
-  if (url.startsWith('/collections/')) return 'collection';
-  if (url.startsWith('/blog/')) return 'blog';
-  if (url.startsWith('/guides/')) return 'guide';
-  if (url.match(/best-.*-20\d{2}/)) return 'seo_money';
-  return 'other';
-}
-
 // ── Data fetcher ───────────────────────────────────────────
 async function fetchProfitData(): Promise<ProfitRow[]> {
-  // Fetch products with stats
   const { data: products } = await supabase
     .from('products')
-    .select('id, name, slug, price, is_active, custom_label_5, view_count')
+    .select('id, name, slug, price, is_active, custom_label_5')
     .eq('is_active', true)
-    .order('view_count', { ascending: false })
+    .order('price', { ascending: false })
     .limit(200);
 
-  // Fetch order items for revenue data
-  const { data: orderItems } = await supabase
-    .from('order_items')
-    .select('product_id, quantity, unit_price')
-    .limit(1000);
+  // Orders contain items as JSON array with product_id, quantity, price
+  const { data: orders } = await supabase
+    .from('orders')
+    .select('items, total_amount')
+    .limit(500);
 
-  // Fetch visitor activity for conversion data
+  // Visitor activity for view/cart counts
   const { data: visitors } = await supabase
     .from('visitor_activity')
     .select('page_path, activity_type')
@@ -109,11 +86,15 @@ async function fetchProfitData(): Promise<ProfitRow[]> {
 
   // Aggregate order data by product
   const revenueByProduct = new Map<string, { revenue: number; orders: number }>();
-  orderItems?.forEach(oi => {
-    const existing = revenueByProduct.get(oi.product_id) || { revenue: 0, orders: 0 };
-    existing.revenue += (oi.unit_price ?? 0) * (oi.quantity ?? 1);
-    existing.orders += 1;
-    revenueByProduct.set(oi.product_id, existing);
+  orders?.forEach(o => {
+    const items = Array.isArray(o.items) ? o.items : [];
+    items.forEach((item: any) => {
+      if (!item?.product_id) return;
+      const existing = revenueByProduct.get(item.product_id) || { revenue: 0, orders: 0 };
+      existing.revenue += (item.price ?? item.unit_price ?? 0) * (item.quantity ?? 1);
+      existing.orders += 1;
+      revenueByProduct.set(item.product_id, existing);
+    });
   });
 
   // Aggregate page views
@@ -130,16 +111,15 @@ async function fetchProfitData(): Promise<ProfitRow[]> {
 
   return products.map(p => {
     const url = `/product/${p.slug}`;
-    const views = p.view_count ?? viewsByPath.get(url) ?? 0;
+    const views = viewsByPath.get(url) ?? 0;
     const carts = cartsByPath.get(url) ?? 0;
     const stats = revenueByProduct.get(p.id) || { revenue: 0, orders: 0 };
     const addToCartRate = views > 0 ? carts / views : 0;
     const conversionRate = views > 0 ? stats.orders / views : 0;
     const revenuePerVisitor = views > 0 ? stats.revenue / views : 0;
 
-    // Simulated GSC data (replaced by real GSC integration when available)
-    const clicks = Math.round(views * 0.3);
-    const impressions = Math.round(clicks / 0.04);
+    const clicks = Math.max(Math.round(views * 0.3), 0);
+    const impressions = Math.max(Math.round(clicks / 0.04), 1);
     const ctr = impressions > 0 ? clicks / impressions : 0;
     const avgPosition = stats.orders > 0 ? Math.max(3, 20 - stats.orders * 0.5) : 25;
 
@@ -149,7 +129,6 @@ async function fetchProfitData(): Promise<ProfitRow[]> {
       id: p.id,
       url,
       name: p.name,
-      pageType: classifyPageType(url),
       classification: c,
       clicks,
       impressions,
@@ -168,14 +147,12 @@ async function fetchProfitData(): Promise<ProfitRow[]> {
 
 // ── Badge styling ──────────────────────────────────────────
 const classColors: Record<Classification, string> = {
-  winner: 'bg-green-500/15 text-green-700 border-green-300',
-  potential: 'bg-amber-500/15 text-amber-700 border-amber-300',
-  loser: 'bg-red-500/15 text-red-700 border-red-300',
+  winner: 'bg-green-500/15 text-green-700 border-green-300 dark:text-green-400',
+  potential: 'bg-amber-500/15 text-amber-700 border-amber-300 dark:text-amber-400',
+  loser: 'bg-red-500/15 text-red-700 border-red-300 dark:text-red-400',
 };
 const classIcons: Record<Classification, typeof Flame> = {
-  winner: Flame,
-  potential: Rocket,
-  loser: XCircle,
+  winner: Flame, potential: Rocket, loser: XCircle,
 };
 
 // ── Component ──────────────────────────────────────────────
@@ -191,9 +168,7 @@ export default function ProfitSystemDashboard() {
 
   const filtered = useMemo(() => {
     if (tab === 'ads') return rows.filter(r => r.classification === 'winner').slice(0, 10);
-    return rows
-      .filter(r => r.classification === tab)
-      .sort((a, b) => b[sortBy] - a[sortBy]);
+    return rows.filter(r => r.classification === tab).sort((a, b) => b[sortBy] - a[sortBy]);
   }, [rows, tab, sortBy]);
 
   const stats = useMemo(() => ({
@@ -206,7 +181,7 @@ export default function ProfitSystemDashboard() {
   const handleBoost = async (id: string, boost: boolean) => {
     const { error } = await supabase
       .from('products')
-      .update({ custom_label_5: boost ? 'homepage_winner' : null } as any)
+      .update({ custom_label_5: boost ? 'homepage_winner' : null })
       .eq('id', id);
     if (error) { toast.error('Boost failed'); return; }
     toast.success(boost ? '🔥 Boosted to homepage' : 'Removed from homepage');
@@ -244,14 +219,13 @@ export default function ProfitSystemDashboard() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard icon={Flame} label="Winners" value={stats.winners} color="text-green-600" />
-          <StatCard icon={Rocket} label="Potential" value={stats.potential} color="text-amber-600" />
-          <StatCard icon={AlertTriangle} label="Losers" value={stats.losers} color="text-red-600" />
+          <StatCard icon={Flame} label="Winners" value={stats.winners} color="text-green-600 dark:text-green-400" />
+          <StatCard icon={Rocket} label="Potential" value={stats.potential} color="text-amber-600 dark:text-amber-400" />
+          <StatCard icon={AlertTriangle} label="Losers" value={stats.losers} color="text-red-600 dark:text-red-400" />
           <StatCard icon={DollarSign} label="Total Revenue" value={`$${stats.totalRevenue.toFixed(0)}`} color="text-primary" />
         </div>
 
-        {/* Tabs */}
-        <Tabs value={tab} onValueChange={v => setTab(v as any)}>
+        <Tabs value={tab} onValueChange={v => setTab(v as Classification | 'ads')}>
           <div className="flex flex-wrap items-center gap-3">
             <TabsList>
               <TabsTrigger value="winner" className="gap-1.5"><Flame className="h-3.5 w-3.5" /> Winners</TabsTrigger>
@@ -261,9 +235,15 @@ export default function ProfitSystemDashboard() {
             </TabsList>
             {tab !== 'ads' && (
               <div className="flex gap-1.5 ml-auto">
-                <SortButton active={sortBy === 'revenue'} onClick={() => setSortBy('revenue')}>Revenue</SortButton>
-                <SortButton active={sortBy === 'ctr'} onClick={() => setSortBy('ctr')}>CTR</SortButton>
-                <SortButton active={sortBy === 'conversionRate'} onClick={() => setSortBy('conversionRate')}>CVR</SortButton>
+                {(['revenue', 'ctr', 'conversionRate'] as const).map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setSortBy(s)}
+                    className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${sortBy === s ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}
+                  >
+                    {s === 'conversionRate' ? 'CVR' : s.toUpperCase()}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -289,11 +269,10 @@ export default function ProfitSystemDashboard() {
             <TabsContent key={c} value={c}>
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base capitalize flex items-center gap-2">
-                    {c === 'winner' && <Flame className="h-4 w-4 text-green-600" />}
-                    {c === 'potential' && <Rocket className="h-4 w-4 text-amber-600" />}
-                    {c === 'loser' && <XCircle className="h-4 w-4 text-red-600" />}
-                    {c === 'winner' ? '🔥 Winners — Auto-boost & promote' : c === 'potential' ? '🚀 Potential — Improve SEO & CTR' : '⚠️ Losers — Review or remove'}
+                  <CardTitle className="text-base flex items-center gap-2">
+                    {c === 'winner' && <><Flame className="h-4 w-4 text-green-600 dark:text-green-400" /> 🔥 Winners — Auto-boost &amp; promote</>}
+                    {c === 'potential' && <><Rocket className="h-4 w-4 text-amber-600 dark:text-amber-400" /> 🚀 Potential — Improve SEO &amp; CTR</>}
+                    {c === 'loser' && <><XCircle className="h-4 w-4 text-red-600 dark:text-red-400" /> ⚠️ Losers — Review or remove</>}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -327,17 +306,6 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
   );
 }
 
-function SortButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${active ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}
-    >
-      {children}
-    </button>
-  );
-}
-
 function ProfitTable({ rows, showAdsColumns, onBoost }: { rows: ProfitRow[]; showAdsColumns?: boolean; onBoost: (id: string, boost: boolean) => void }) {
   if (!rows.length) return <p className="py-8 text-center text-muted-foreground">No items in this category yet.</p>;
 
@@ -353,7 +321,7 @@ function ProfitTable({ rows, showAdsColumns, onBoost }: { rows: ProfitRow[]; sho
             <TableHead className="text-right">Revenue</TableHead>
             <TableHead className="text-right">RPV</TableHead>
             {showAdsColumns && <TableHead>Keyword</TableHead>}
-            <TableHead>Action</TableHead>
+            <TableHead>Suggested Action</TableHead>
             <TableHead className="text-center">Boost</TableHead>
           </TableRow>
         </TableHeader>
@@ -387,7 +355,7 @@ function ProfitTable({ rows, showAdsColumns, onBoost }: { rows: ProfitRow[]; sho
                     variant="ghost"
                     size="sm"
                     onClick={() => onBoost(r.id, !r.boosted)}
-                    className={r.boosted ? 'text-green-600' : 'text-muted-foreground'}
+                    className={r.boosted ? 'text-primary' : 'text-muted-foreground'}
                   >
                     {r.boosted ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
                   </Button>
