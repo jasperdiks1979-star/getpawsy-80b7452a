@@ -67,6 +67,7 @@ export default function BestInteractiveCatToys() {
         },
         {
           rank: 2,
+          badge: "Editor's Pick",
           name: 'Trixie 5-in-1 Activity Board',
           bestFor: 'Mental stimulation and slow feeding',
           highlights: ['5 different puzzle modules', 'Dishwasher safe', 'Adjustable difficulty levels', 'Reduces eating speed by 60%'],
