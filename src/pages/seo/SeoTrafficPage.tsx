@@ -57,6 +57,13 @@ export interface CrossLink {
   href: string;
 }
 
+export interface RelatedGuideLink {
+  title: string;
+  description: string;
+  href: string;
+  badge?: string;
+}
+
 export interface SeoTrafficPageProps {
   slug: string;
   title: string;
@@ -73,6 +80,7 @@ export interface SeoTrafficPageProps {
   productCategories: string[];
   internalLinks: InternalLink[];
   crossLinks: CrossLink[];
+  relatedGuides?: RelatedGuideLink[];
   species: 'cat' | 'dog';
   breadcrumbs: { label: string; href?: string }[];
   lastUpdated?: string;
