@@ -90,6 +90,35 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
   const canonical = `${SITE_URL}/${props.slug}`;
   const lastUpdated = props.lastUpdated || '2026-03-18';
 
+  // ── Jump Nav sections ──
+  const jumpNavItems = [
+    { id: 'comparison', label: 'Comparison' },
+    { id: 'benefits', label: 'Benefits' },
+    { id: 'budget', label: 'Budget Picks' },
+    { id: 'buying-guide', label: 'Buying Guide' },
+    { id: 'mistakes', label: 'Common Mistakes' },
+    { id: 'products', label: 'Shop Products' },
+    { id: 'faq', label: 'FAQ' },
+    { id: 'related-guides', label: 'Related Guides' },
+  ];
+
+  const [activeSection, setActiveSection] = useState('');
+  const [showJumpNav, setShowJumpNav] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowJumpNav(window.scrollY > 350);
+      let current = '';
+      for (const item of jumpNavItems) {
+        const el = document.getElementById(item.id);
+        if (el && el.getBoundingClientRect().top <= 120) current = item.id;
+      }
+      setActiveSection(current);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const { data: products } = useQuery({
     queryKey: ['seo-traffic-products', props.slug],
     queryFn: async () => {
