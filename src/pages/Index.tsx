@@ -19,6 +19,7 @@ const WhyShopGetPawsy = lazy(() => import('@/components/home/WhyShopGetPawsy'));
 const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAuthoritySection'));
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
 const PopularRightNow = lazy(() => import('@/components/home/PopularRightNow'));
+const FeaturedCollectionsGuides = lazy(() => import('@/components/home/FeaturedCollectionsGuides'));
 const ExpertPetGuides = lazy(() => import('@/components/seo/PopularGuidesBlock').then(m => ({ default: m.PopularGuidesBlock })));
 
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
