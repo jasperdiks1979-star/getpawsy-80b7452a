@@ -210,9 +210,9 @@ export default function RedirectCheckPage() {
 4. Coverage: Check "Duplicate without user-selected canonical"
    → Should be 0 or decreasing
 
-5. www redirect: Platform returns 302 (not 301)
-   → This is mitigated: all canonicals, sitemaps, internal links use apex
-   → Google treats consistent 302 = 301 when canonical signals align`;
+5. www redirect: must return 301 (not 302)
+   → If it returns 302, fix the Cloudflare redirect rule and remove conflicting edge rules
+   → Re-test with curl until the response is permanent`;
 
   return (
     <div className="min-h-screen bg-background p-6 max-w-5xl mx-auto">

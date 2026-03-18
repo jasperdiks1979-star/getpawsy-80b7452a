@@ -401,20 +401,19 @@ export default function DiagnosticsPage() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p className="text-muted-foreground">
-            The <code className="text-xs bg-muted px-1 rounded">www.getpawsy.pet → getpawsy.pet</code> redirect returns <strong>302</strong> instead of 301.
-            This is a <strong>platform-level</strong> behavior from the hosting edge and <strong>cannot be changed</strong> per-project.
+            The <code className="text-xs bg-muted px-1 rounded">www.getpawsy.pet → getpawsy.pet</code> redirect must return a single-hop <strong>301</strong>.
+            Any <strong>302</strong> response is a blocking issue for final Merchant Center submission.
           </p>
           <div className="bg-muted rounded-lg p-3 space-y-1">
-            <p className="font-medium">Why this is acceptable:</p>
+            <p className="font-medium">Required state:</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-1">
-              <li>Google treats 302 = 301 when canonical signals are consistent</li>
-              <li>All canonical tags → <code className="text-xs">https://getpawsy.pet</code> ✅</li>
-              <li>All sitemap URLs use apex domain only ✅</li>
-              <li>All internal links use apex domain ✅</li>
+              <li>Exactly one Cloudflare Redirect Rule for www → apex using 301</li>
+              <li>No conflicting Page Rules, Bulk Redirects, Transform Rules, or Workers</li>
+              <li>All canonical tags, sitemap URLs, and internal links remain apex-only</li>
             </ul>
           </div>
           <p className="text-xs text-muted-foreground">
-            No action required. GSC "Page with redirect" for www URLs is expected and benign.
+            Re-test with curl after cache purge and do not submit until the response is 301.
           </p>
         </CardContent>
       </Card>

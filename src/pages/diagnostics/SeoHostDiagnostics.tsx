@@ -86,7 +86,7 @@ curl -I https://getpawsy.pet/robots.txt
 # Check lovable.app robots.txt (should show Disallow: /)
 curl -sL https://getpawsy.lovable.app/robots.txt
 
-# Check lovable.app redirect (should 301/302 to apex)
+# Check lovable.app redirect (should 301 to apex)
 curl -I https://getpawsy.lovable.app/products
 
 # Verify canonical on apex
