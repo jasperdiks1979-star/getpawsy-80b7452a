@@ -271,6 +271,12 @@ const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
 const RecentProducts = lazyWithRetry(() => import("./pages/RecentProducts"));
 const TrendingProducts = lazyWithRetry(() => import("./pages/TrendingProducts"));
 
+// SEO Traffic Machine pages
+const BestCatLitterBox2026 = lazyWithRetry(() => import("./pages/seo/BestCatLitterBox2026"));
+const BestDogCarSeatSafety = lazyWithRetry(() => import("./pages/seo/BestDogCarSeatSafety"));
+const BestInteractiveCatToys = lazyWithRetry(() => import("./pages/seo/BestInteractiveCatToys"));
+const BestDogAnxietySolutions = lazyWithRetry(() => import("./pages/seo/BestDogAnxietySolutions"));
+
 // Diagnostics pages (hidden, noindex)
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
 const PerformanceDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/PerformanceDiagnostics"));
