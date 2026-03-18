@@ -9,9 +9,9 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import {
   CheckCircle, Truck, Shield, Star, ArrowRight, ShoppingCart, Clock,
-  ThumbsUp, ThumbsDown, BadgeCheck, CalendarCheck, Award,
+  ThumbsUp, ThumbsDown, BadgeCheck, CalendarCheck, Award, List,
 } from 'lucide-react';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { safeProduct, SafeProduct } from '@/lib/safe-render';
