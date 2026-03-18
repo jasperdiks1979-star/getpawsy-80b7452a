@@ -14,9 +14,9 @@ export default function BestCatLitterBox2026() {
       productCategories={['cat-litter-boxes', 'cat-litter', 'cat-supplies']}
       quickAnswer={{
         picks: [
-          { name: 'PetSafe ScoopFree Ultra', bestFor: 'Hands-free automatic cleaning' },
-          { name: 'Modkat XL Top-Entry', bestFor: 'Small apartments & litter tracking' },
-          { name: 'Petmate Giant Litter Pan', bestFor: 'Large cats & multi-cat homes' },
+          { name: 'PetSafe ScoopFree Ultra', bestFor: 'Hands-free automatic cleaning', badge: '#1 Best Overall', cta: 'Check Price' },
+          { name: 'Modkat XL Top-Entry', bestFor: 'Small apartments & litter tracking', badge: 'Best for Apartments', cta: 'Check Price' },
+          { name: 'Petmate Giant Litter Pan', bestFor: 'Large cats & multi-cat homes', badge: 'Best Budget', cta: 'Check Price' },
         ],
       }}
       whoShouldNotBuy={{
@@ -56,6 +56,7 @@ export default function BestCatLitterBox2026() {
       comparisonProducts={[
         {
           rank: 1,
+          badge: 'Best Overall',
           name: 'PetSafe ScoopFree Ultra Self-Cleaning Box',
           bestFor: 'Busy cat owners who want hands-free cleaning',
           highlights: ['Automatic rake system', 'Crystal litter traps odor 5× better than clay', 'Health counter tracks usage', 'Covered design reduces tracking'],
@@ -66,6 +67,7 @@ export default function BestCatLitterBox2026() {
         },
         {
           rank: 2,
+          badge: "Editor's Pick",
           name: 'Modkat XL Top-Entry Litter Box',
           bestFor: 'Reducing litter tracking and scatter',
           highlights: ['Top-entry design keeps litter inside', 'Sleek modern look fits any room', 'Reusable liner system', 'Fits large cats comfortably'],
@@ -76,6 +78,7 @@ export default function BestCatLitterBox2026() {
         },
         {
           rank: 3,
+          badge: 'Best Budget',
           name: "Nature's Miracle High-Sided Box",
           bestFor: 'High-spraying cats on a budget',
           highlights: ['Extra-high walls prevent spray escape', 'Antimicrobial coating fights odor', 'Non-stick surface for easy cleaning', 'Budget-friendly price'],

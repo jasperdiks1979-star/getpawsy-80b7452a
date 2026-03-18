@@ -14,9 +14,9 @@ export default function BestDogCarSeatSafety() {
       productCategories={['dog-carriers', 'dog-travel', 'dog-car-seats']}
       quickAnswer={{
         picks: [
-          { name: 'Sleepypod Clickit Sport', bestFor: 'Crash-tested safety for medium-large dogs' },
-          { name: 'PupSaver Crash-Tested Seat', bestFor: 'Small dogs under 30 lbs' },
-          { name: 'Kurgo Skybox Booster', bestFor: 'Window-viewing comfort on short trips' },
+          { name: 'Sleepypod Clickit Sport', bestFor: 'Crash-tested safety for medium-large dogs', badge: '#1 Best Overall', cta: 'Check Price' },
+          { name: 'PupSaver Crash-Tested Seat', bestFor: 'Small dogs under 30 lbs', badge: 'Best for Small Dogs', cta: 'Check Price' },
+          { name: 'Kurgo Skybox Booster', bestFor: 'Window-viewing comfort on short trips', badge: 'Best Budget', cta: 'Check Price' },
         ],
       }}
       whoShouldNotBuy={{
@@ -56,6 +56,7 @@ export default function BestDogCarSeatSafety() {
       comparisonProducts={[
         {
           rank: 1,
+          badge: 'Best Overall',
           name: 'Sleepypod Clickit Sport Harness',
           bestFor: 'Maximum crash-test safety for medium-large dogs',
           highlights: ['3-point crash-tested (CPS certified)', 'Doubles as walking harness', 'Padded vest distributes force evenly', 'Fits dogs 18–90 lbs'],
@@ -66,6 +67,7 @@ export default function BestDogCarSeatSafety() {
         },
         {
           rank: 2,
+          badge: "Editor's Pick",
           name: 'PupSaver Crash-Tested Car Seat',
           bestFor: 'Small dogs who like to see out the window',
           highlights: ['Crash-tested to 30 mph', 'Elevated booster design', 'Machine-washable cover', 'Built-in tether system'],
@@ -76,6 +78,7 @@ export default function BestDogCarSeatSafety() {
         },
         {
           rank: 3,
+          badge: 'Best Budget',
           name: 'Kurgo Skybox Booster Seat',
           bestFor: 'Budget-friendly elevation for small-medium dogs',
           highlights: ['Waterproof base', 'Folds flat for storage', 'Works in front and back seats', 'Includes adjustable tether'],

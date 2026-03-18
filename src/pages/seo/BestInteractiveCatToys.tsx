@@ -14,9 +14,9 @@ export default function BestInteractiveCatToys() {
       productCategories={['cat-toys', 'interactive-cat-toys', 'cat-supplies']}
       quickAnswer={{
         picks: [
-          { name: 'SmartyKat Hot Pursuit', bestFor: 'Solo play — keeps cats busy for hours' },
-          { name: 'PetSafe Bolt Laser', bestFor: 'Automatic hands-free play sessions' },
-          { name: 'Trixie Activity Fun Board', bestFor: 'Mental stimulation & slow feeding' },
+          { name: 'SmartyKat Hot Pursuit', bestFor: 'Solo play — keeps cats busy for hours', badge: '#1 Best Overall', cta: 'Check Price' },
+          { name: 'PetSafe Bolt Laser', bestFor: 'Automatic hands-free play sessions', badge: 'Most Popular', cta: 'Check Price' },
+          { name: 'Trixie Activity Fun Board', bestFor: 'Mental stimulation & slow feeding', badge: "Editor's Pick", cta: 'Check Price' },
         ],
       }}
       whoShouldNotBuy={{
@@ -56,6 +56,7 @@ export default function BestInteractiveCatToys() {
       comparisonProducts={[
         {
           rank: 1,
+          badge: 'Best Overall',
           name: 'PetSafe Bolt Laser Toy',
           bestFor: 'Hands-free play for busy owners',
           highlights: ['Automatic random laser pattern', 'Adjustable mirror speed', '15-minute auto-shutoff', 'Wall or floor mounting'],
@@ -66,6 +67,7 @@ export default function BestInteractiveCatToys() {
         },
         {
           rank: 2,
+          badge: "Editor's Pick",
           name: 'Trixie 5-in-1 Activity Board',
           bestFor: 'Mental stimulation and slow feeding',
           highlights: ['5 different puzzle modules', 'Dishwasher safe', 'Adjustable difficulty levels', 'Reduces eating speed by 60%'],
@@ -76,6 +78,7 @@ export default function BestInteractiveCatToys() {
         },
         {
           rank: 3,
+          badge: 'Best Budget',
           name: 'SmartyKat Hot Pursuit Electronic Toy',
           bestFor: 'Mimicking real prey movement',
           highlights: ['Concealed wand moves under fabric', 'Erratic movement pattern keeps cats guessing', '2 speed settings', 'Battery powered — no cords'],

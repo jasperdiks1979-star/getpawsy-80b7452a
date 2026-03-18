@@ -14,9 +14,9 @@ export default function BestDogAnxietySolutions() {
       productCategories={['dog-beds', 'dog-calming', 'dog-training', 'dog-supplies']}
       quickAnswer={{
         picks: [
-          { name: 'Thundershirt Classic', bestFor: 'Noise phobia and storm anxiety' },
-          { name: 'Best Friends by Sheri Calming Bed', bestFor: 'General anxiety and sleep comfort' },
-          { name: 'Adaptil Calm Pheromone Diffuser', bestFor: 'Separation anxiety and new environments' },
+          { name: 'Thundershirt Classic', bestFor: 'Noise phobia and storm anxiety', badge: '#1 Best Overall', cta: 'Check Price' },
+          { name: 'Best Friends by Sheri Calming Bed', bestFor: 'General anxiety and sleep comfort', badge: 'Most Popular', cta: 'Check Price' },
+          { name: 'Adaptil Calm Pheromone Diffuser', bestFor: 'Separation anxiety and new environments', badge: 'Best Budget', cta: 'Check Price' },
         ],
       }}
       whoShouldNotBuy={{
@@ -56,6 +56,7 @@ export default function BestDogAnxietySolutions() {
       comparisonProducts={[
         {
           rank: 1,
+          badge: 'Best Overall',
           name: 'Thundershirt Classic Anxiety Vest',
           bestFor: 'Noise phobias (thunder, fireworks, vacuum)',
           highlights: ['Gentle, constant pressure reduces anxiety 80%+', 'Drug-free calming effect', 'Machine washable', 'Patented design backed by clinical studies'],
@@ -66,6 +67,7 @@ export default function BestDogAnxietySolutions() {
         },
         {
           rank: 2,
+          badge: 'Most Popular',
           name: 'Calming Donut Bed with Bolstered Edges',
           bestFor: 'Dogs who need a safe, nest-like space',
           highlights: ['360° bolstered rim mimics being held', 'Ultra-soft faux fur for comfort', 'Machine washable', 'Multiple sizes up to 45"'],
@@ -76,6 +78,7 @@ export default function BestDogAnxietySolutions() {
         },
         {
           rank: 3,
+          badge: "Editor's Pick",
           name: 'Adaptil Calm Pheromone Diffuser',
           bestFor: 'General anxiety and new-home adjustment',
           highlights: ['Releases dog-appeasing pheromone (DAP)', 'Clinically proven to reduce stress signs', 'Covers 700 sq ft', '30-day refill system'],
