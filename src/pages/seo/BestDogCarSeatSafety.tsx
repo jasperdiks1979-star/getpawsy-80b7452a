@@ -67,6 +67,7 @@ export default function BestDogCarSeatSafety() {
         },
         {
           rank: 2,
+          badge: "Editor's Pick",
           name: 'PupSaver Crash-Tested Car Seat',
           bestFor: 'Small dogs who like to see out the window',
           highlights: ['Crash-tested to 30 mph', 'Elevated booster design', 'Machine-washable cover', 'Built-in tether system'],
