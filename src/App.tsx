@@ -465,6 +465,10 @@ const App = () => {
                       <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />
                       <Route path="/guides/cat-condo-vs-cat-tree-2026" element={<Suspense fallback={<RouteLoader />}><CatCondoVsCatTree2026 /></Suspense>} />
                       <Route path="/best-self-cleaning-litter-box-2026" element={<Suspense fallback={<RouteLoader />}><BestSelfCleaningLitterBox2026 /></Suspense>} />
+                      <Route path="/best-cat-litter-box-2026" element={<Suspense fallback={<RouteLoader />}><BestCatLitterBox2026 /></Suspense>} />
+                      <Route path="/best-dog-car-seat-safety" element={<Suspense fallback={<RouteLoader />}><BestDogCarSeatSafety /></Suspense>} />
+                      <Route path="/best-interactive-cat-toys" element={<Suspense fallback={<RouteLoader />}><BestInteractiveCatToys /></Suspense>} />
+                      <Route path="/best-dog-anxiety-solutions" element={<Suspense fallback={<RouteLoader />}><BestDogAnxietySolutions /></Suspense>} />
                       <Route path="/indoor-cat-furniture" element={<Suspense fallback={<RouteLoader />}><IndoorCatFurnitureGuide /></Suspense>} />
                       <Route path="/guides/:slug" element={<Suspense fallback={<RouteLoader />}><GuidePage /></Suspense>} />
                       {/* Lockdown cluster articles — generic JSON-driven renderer */}
