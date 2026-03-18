@@ -20,7 +20,7 @@ export interface MoneyPage {
   /** SEO target keyword */
   targetKeyword: string;
   /** Cluster this page belongs to */
-  cluster: 'cat-trees' | 'cat-litter' | 'dog-beds' | 'dog-toys' | 'pet-travel' | 'cat-toys';
+  cluster: 'cat-trees' | 'cat-litter' | 'dog-beds' | 'dog-toys' | 'pet-travel' | 'cat-toys' | 'dog-travel';
   /** Species silo */
   species: 'cat' | 'dog' | 'multi';
   /** Boost multiplier (1.0 = baseline, higher = more links) */
