@@ -20,6 +20,7 @@ const HomepageAuthoritySection = lazy(() => import('@/components/home/HomepageAu
 const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
 const PopularRightNow = lazy(() => import('@/components/home/PopularRightNow'));
 const FeaturedCollectionsGuides = lazy(() => import('@/components/home/FeaturedCollectionsGuides'));
+const BestBuyingGuides2026 = lazy(() => import('@/components/home/BestBuyingGuides2026'));
 const ExpertPetGuides = lazy(() => import('@/components/seo/PopularGuidesBlock').then(m => ({ default: m.PopularGuidesBlock })));
 
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
@@ -236,7 +237,16 @@ const Index = () => {
       </SectionErrorBoundary>
 
       {/* ═══════════════════════════════════════════════════════════════
-          3b. FEATURED COLLECTIONS & GUIDES — high-priority internal links
+          3b. BEST BUYING GUIDES 2026 — money page link hub
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Best Buying Guides">
+        <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
+          <BestBuyingGuides2026 />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          3c. FEATURED COLLECTIONS & GUIDES — high-priority internal links
           ═══════════════════════════════════════════════════════════════ */}
       <SectionErrorBoundary sectionName="Featured Collections">
         <Suspense fallback={<div className="py-14" style={{ minHeight: 300 }} />}>
