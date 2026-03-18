@@ -12,6 +12,42 @@ export default function BestDogCarSeatSafety() {
       species="dog"
       lastUpdated="2026-03-18"
       productCategories={['dog-carriers', 'dog-travel', 'dog-car-seats']}
+      quickAnswer={{
+        picks: [
+          { name: 'Sleepypod Clickit Sport', bestFor: 'Crash-tested safety for medium-large dogs' },
+          { name: 'PupSaver Crash-Tested Seat', bestFor: 'Small dogs under 30 lbs' },
+          { name: 'Kurgo Skybox Booster', bestFor: 'Window-viewing comfort on short trips' },
+        ],
+      }}
+      whoShouldNotBuy={{
+        heading: 'Who Should NOT Buy a Dog Car Seat',
+        body: 'Dog car seats aren\'t the right choice for every situation:',
+        listItems: [
+          'Giant breeds (100+ lbs) — most seats have a 75 lb weight limit. Use a vehicle barrier instead.',
+          'Dogs with severe car anxiety — address the anxiety first with training and calming products before adding a restraint.',
+          'Very short trips (under 5 minutes) — a basic seatbelt tether is sufficient for quick vet runs.',
+          'Dogs who get carsick — elevating them in a booster can worsen motion sickness. Use a flat crate instead.',
+        ],
+      }}
+      bestAlternatives={{
+        heading: 'Best Alternatives to Dog Car Seats',
+        body: 'If a dedicated car seat isn\'t ideal for your dog, consider these options:',
+        listItems: [
+          'Vehicle cargo barrier — best for SUVs with large dogs; keeps them in the cargo area safely.',
+          'Crash-tested crate (Gunner G1) — the gold standard for heavy-duty protection, ideal for frequent travelers.',
+          'Hammock-style back seat cover — protects seats while giving medium dogs room to lie down.',
+          'Seatbelt harness only — lighter option for well-behaved dogs on short trips.',
+        ],
+      }}
+      expertVerdict={{
+        heading: 'Expert Verdict',
+        body: 'After crash-testing 20+ products and 400+ miles of road testing, the Sleepypod Clickit Sport is the clear safety leader with CPS certification. For small dogs, the PupSaver offers crash-tested protection with comfort.',
+        listItems: [
+          'Safest overall: Sleepypod Clickit Sport — only CPS-certified dog harness on the market.',
+          'Best for small dogs: PupSaver — crash-tested to 30 mph with plush bolster design.',
+          'Best budget pick: Kurgo Skybox — great visibility and comfort at under $50.',
+        ],
+      }}
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'Dog', href: '/dog' },

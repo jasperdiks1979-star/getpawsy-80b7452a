@@ -64,6 +64,12 @@ export interface RelatedGuideLink {
   badge?: string;
 }
 
+export interface LockdownSection {
+  heading: string;
+  body: string;
+  listItems?: string[];
+}
+
 export interface SeoTrafficPageProps {
   slug: string;
   title: string;
@@ -84,6 +90,11 @@ export interface SeoTrafficPageProps {
   species: 'cat' | 'dog';
   breadcrumbs: { label: string; href?: string }[];
   lastUpdated?: string;
+  // Lockdown sections
+  quickAnswer?: { picks: { name: string; bestFor: string; productSlug?: string }[] };
+  whoShouldNotBuy?: LockdownSection;
+  bestAlternatives?: LockdownSection;
+  expertVerdict?: LockdownSection;
 }
 
 export default function SeoTrafficPage(props: SeoTrafficPageProps) {
@@ -92,15 +103,25 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
 
   // ── Jump Nav sections ──
   const jumpNavItems = [
+    { id: 'quick-answer', label: 'Top 3 Picks' },
     { id: 'comparison', label: 'Comparison' },
     { id: 'benefits', label: 'Benefits' },
     { id: 'budget', label: 'Budget Picks' },
     { id: 'buying-guide', label: 'Buying Guide' },
     { id: 'mistakes', label: 'Common Mistakes' },
+    { id: 'who-should-not', label: 'Who Should NOT Buy' },
+    { id: 'alternatives', label: 'Alternatives' },
+    { id: 'verdict', label: 'Expert Verdict' },
     { id: 'products', label: 'Shop Products' },
     { id: 'faq', label: 'FAQ' },
     { id: 'related-guides', label: 'Related Guides' },
-  ];
+  ].filter(item => {
+    if (item.id === 'quick-answer') return !!props.quickAnswer;
+    if (item.id === 'who-should-not') return !!props.whoShouldNotBuy;
+    if (item.id === 'alternatives') return !!props.bestAlternatives;
+    if (item.id === 'verdict') return !!props.expertVerdict;
+    return true;
+  });
 
   const [activeSection, setActiveSection] = useState('');
   const [showJumpNav, setShowJumpNav] = useState(false);
@@ -268,6 +289,38 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
             {props.introText}
           </div>
         </section>
+
+        {/* ── Quick Answer — Top 3 Picks ── */}
+        {props.quickAnswer && (
+          <section id="quick-answer" className="mb-10 scroll-mt-16">
+            <div className="bg-primary/5 border-2 border-primary/30 rounded-2xl p-6 md:p-8">
+              <h2 className="text-xl md:text-2xl font-display font-bold mb-1 text-foreground flex items-center gap-2">
+                🏆 Top 3 Picks (Quick Answer)
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">In a rush? Here are our top recommendations at a glance.</p>
+              <div className="grid gap-3">
+                {props.quickAnswer.picks.map((pick, i) => (
+                  <div key={i} className="flex items-center gap-4 bg-background rounded-xl border border-border p-4">
+                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                      #{i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-foreground">{pick.name}</p>
+                      <p className="text-xs text-muted-foreground">Best for: {pick.bestFor}</p>
+                    </div>
+                    {pick.productSlug && (
+                      <Link to={`/product/${pick.productSlug}`}>
+                        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">
+                          <ShoppingCart className="w-3 h-3" /> View
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ── Quick Summary ToC ── */}
         <nav className="mb-10 border rounded-xl bg-card p-5 max-w-md" aria-label="Table of contents">
@@ -476,6 +529,59 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
             </ul>
           )}
         </section>
+
+        {/* ── Who Should NOT Buy ── */}
+        {props.whoShouldNotBuy && (
+          <section id="who-should-not" className="mb-14 bg-muted/40 border border-border rounded-xl p-6 md:p-8 scroll-mt-16">
+            <h2 className="text-2xl md:text-3xl font-display font-bold mb-4 text-foreground">
+              {props.whoShouldNotBuy.heading}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">{props.whoShouldNotBuy.body}</p>
+            {props.whoShouldNotBuy.listItems && (
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                {props.whoShouldNotBuy.listItems.map((item, j) => (
+                  <li key={j} className="flex items-start gap-2">
+                    <span className="text-primary font-bold mt-0.5">→</span> {item}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {/* ── Best Alternatives ── */}
+        {props.bestAlternatives && (
+          <section id="alternatives" className="mb-14 border border-border rounded-xl p-6 md:p-8 scroll-mt-16">
+            <h2 className="text-2xl md:text-3xl font-display font-bold mb-4 text-foreground">
+              {props.bestAlternatives.heading}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">{props.bestAlternatives.body}</p>
+            {props.bestAlternatives.listItems && (
+              <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                {props.bestAlternatives.listItems.map((item, j) => <li key={j}>{item}</li>)}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {/* ── Expert Verdict ── */}
+        {props.expertVerdict && (
+          <section id="verdict" className="mb-14 bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 md:p-8 scroll-mt-16">
+            <h2 className="text-2xl md:text-3xl font-display font-bold mb-4 text-foreground flex items-center gap-2">
+              <Award className="w-6 h-6 text-primary" /> {props.expertVerdict.heading}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">{props.expertVerdict.body}</p>
+            {props.expertVerdict.listItems && (
+              <ul className="space-y-2 text-sm text-foreground/80">
+                {props.expertVerdict.listItems.map((item, j) => (
+                  <li key={j} className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" /> {item}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
 
         {/* ── CTA Banner ── */}
         <section className="mb-14 bg-primary/10 border border-primary/30 rounded-xl p-8 text-center">

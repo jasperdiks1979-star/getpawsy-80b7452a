@@ -276,6 +276,10 @@ const BestCatLitterBox2026 = lazyWithRetry(() => import("./pages/seo/BestCatLitt
 const BestDogCarSeatSafety = lazyWithRetry(() => import("./pages/seo/BestDogCarSeatSafety"));
 const BestInteractiveCatToys = lazyWithRetry(() => import("./pages/seo/BestInteractiveCatToys"));
 const BestDogAnxietySolutions = lazyWithRetry(() => import("./pages/seo/BestDogAnxietySolutions"));
+// SEO Cluster sub-pages
+const BestCatLitterBoxReddit = lazyWithRetry(() => import("./pages/seo/BestCatLitterBoxReddit"));
+const BestLitterBoxForSmell = lazyWithRetry(() => import("./pages/seo/BestLitterBoxForSmell"));
+const BestLitterBoxLargeCats = lazyWithRetry(() => import("./pages/seo/BestLitterBoxLargeCats"));
 
 // Diagnostics pages (hidden, noindex)
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
@@ -469,6 +473,10 @@ const App = () => {
                       <Route path="/best-dog-car-seat-safety" element={<Suspense fallback={<RouteLoader />}><BestDogCarSeatSafety /></Suspense>} />
                       <Route path="/best-interactive-cat-toys" element={<Suspense fallback={<RouteLoader />}><BestInteractiveCatToys /></Suspense>} />
                       <Route path="/best-dog-anxiety-solutions" element={<Suspense fallback={<RouteLoader />}><BestDogAnxietySolutions /></Suspense>} />
+                      {/* Cluster sub-pages */}
+                      <Route path="/best-cat-litter-box-reddit" element={<Suspense fallback={<RouteLoader />}><BestCatLitterBoxReddit /></Suspense>} />
+                      <Route path="/best-litter-box-for-smell" element={<Suspense fallback={<RouteLoader />}><BestLitterBoxForSmell /></Suspense>} />
+                      <Route path="/best-litter-box-large-cats" element={<Suspense fallback={<RouteLoader />}><BestLitterBoxLargeCats /></Suspense>} />
                       <Route path="/indoor-cat-furniture" element={<Suspense fallback={<RouteLoader />}><IndoorCatFurnitureGuide /></Suspense>} />
                       <Route path="/guides/:slug" element={<Suspense fallback={<RouteLoader />}><GuidePage /></Suspense>} />
                       {/* Lockdown cluster articles — generic JSON-driven renderer */}
