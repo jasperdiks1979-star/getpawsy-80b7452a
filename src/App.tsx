@@ -240,6 +240,7 @@ const ScalingEnginePage = lazyWithRetry(() => import("./pages/admin/ScalingEngin
 const ContentOpportunitiesPage = lazyWithRetry(() => import("./pages/admin/ContentOpportunitiesPage"));
 const MomentumAccelerationDashboard = lazyWithRetry(() => import("./pages/admin/MomentumAccelerationDashboard"));
 const BundlesPage = lazyWithRetry(() => import("./pages/admin/BundlesPage"));
+const WinnersBoostDashboard = lazyWithRetry(() => import("./pages/admin/WinnersBoostDashboard"));
 const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDominance"));
 const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/AnalyticsTrafficDocs"));
 const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsPage"));
