@@ -157,6 +157,11 @@ export default function BestInteractiveCatToys() {
         { question: 'What is the best toy for a cat who destroys everything?', answer: 'The SmartyKat Hot Pursuit with replaceable wands, or sturdy puzzle feeders like the Trixie Activity Board. Avoid fabric-covered toys with aggressive destroyers.' },
         { question: 'Are automatic cat toys safe to leave on while away?', answer: 'Most are safe for short periods (1–2 hours). Look for auto-shutoff features and avoid toys with strings or detachable parts when unsupervised.' },
       ]}
+      relatedGuides={[
+        { title: 'Best Cat Litter Box 2026', description: 'Top-rated litter boxes for odor control, large cats, and multi-cat homes.', href: '/best-cat-litter-box-2026', badge: '🔥 Trending' },
+        { title: 'Best Dog Anxiety Solutions 2026', description: 'Vet-approved calming products that actually reduce stress and barking.', href: '/best-dog-anxiety-solutions', badge: '⭐ Expert Pick' },
+        { title: 'Best Dog Car Seat Safety 2026', description: 'Crash-tested seats and harnesses for safe dog travel.', href: '/best-dog-car-seat-safety' },
+      ]}
       crossLinks={[
         { title: 'Best Cat Litter Box 2026', description: 'Top-rated litter boxes for odor control, large cats, and multi-cat homes.', href: '/best-cat-litter-box-2026' },
         { title: 'Best Dog Car Seat Safety 2026', description: 'Crash-tested car seats and harnesses for safe dog travel.', href: '/best-dog-car-seat-safety' },

@@ -156,6 +156,11 @@ export default function BestDogCarSeatSafety() {
         { question: 'What is the best dog car seat for long road trips?', answer: 'For long trips, prioritize comfort + safety: the PupSaver (small dogs) or Sleepypod Clickit (medium-large dogs) with a familiar blanket. Stop every 2 hours for breaks.' },
         { question: 'Is a dog seatbelt enough protection?', answer: 'Basic seatbelt tethers prevent dogs from roaming but offer minimal crash protection. For true safety, use a crash-tested harness that distributes impact force across the chest.' },
       ]}
+      relatedGuides={[
+        { title: 'Best Dog Anxiety Solutions 2026', description: 'Calming vests, beds, and supplements — including travel anxiety solutions.', href: '/best-dog-anxiety-solutions', badge: '🔥 Trending' },
+        { title: 'Best Cat Litter Box 2026', description: 'Top-rated litter boxes for odor control, large cats, and multi-cat homes.', href: '/best-cat-litter-box-2026', badge: '⭐ Expert Pick' },
+        { title: 'Best Interactive Cat Toys 2026', description: 'Expert-tested toys that keep indoor cats engaged and happy.', href: '/best-interactive-cat-toys' },
+      ]}
       crossLinks={[
         { title: 'Best Dog Anxiety Solutions 2026', description: 'Calming vests, beds, and supplements for anxious dogs — including travel anxiety.', href: '/best-dog-anxiety-solutions' },
         { title: 'Best Cat Litter Box 2026', description: 'Top-rated litter boxes for odor control, large cats, and multi-cat homes.', href: '/best-cat-litter-box-2026' },

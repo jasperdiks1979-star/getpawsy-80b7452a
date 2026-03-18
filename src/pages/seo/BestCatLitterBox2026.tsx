@@ -159,6 +159,11 @@ export default function BestCatLitterBox2026() {
         { question: 'What is the best cat litter box for large cats?', answer: 'The Petmate Giant Litter Pan (34" × 19") and Modkat XL are top choices for large breeds like Maine Coons. Look for boxes at least 22" long with 12"+ high sides.' },
         { question: 'Can I use a dog crate as a litter box enclosure?', answer: 'Yes, some owners repurpose large dog crates as litter box furniture. Use a standard open pan inside and ensure ventilation. This keeps the box hidden while allowing easy access.' },
       ]}
+      relatedGuides={[
+        { title: 'Best Interactive Cat Toys 2026', description: 'Expert-tested toys to keep indoor cats mentally stimulated and active.', href: '/best-interactive-cat-toys', badge: '🔥 Trending' },
+        { title: 'Best Dog Car Seat Safety 2026', description: 'Crash-tested car seats and harnesses for safe dog travel.', href: '/best-dog-car-seat-safety', badge: '⭐ Expert Pick' },
+        { title: 'Best Dog Anxiety Solutions 2026', description: 'Vet-approved calming products that reduce stress and barking.', href: '/best-dog-anxiety-solutions' },
+      ]}
       crossLinks={[
         { title: 'Best Interactive Cat Toys 2026', description: 'Keep indoor cats active and mentally stimulated with expert-tested interactive toys.', href: '/best-interactive-cat-toys' },
         { title: 'Best Dog Anxiety Solutions 2026', description: 'Vet-approved calming products for stressed and anxious dogs.', href: '/best-dog-anxiety-solutions' },

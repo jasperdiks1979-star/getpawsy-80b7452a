@@ -21,6 +21,7 @@ const StickyMobileCta = lazy(() => import('@/components/home/StickyMobileCta'));
 const PopularRightNow = lazy(() => import('@/components/home/PopularRightNow'));
 const FeaturedCollectionsGuides = lazy(() => import('@/components/home/FeaturedCollectionsGuides'));
 const BestBuyingGuides2026 = lazy(() => import('@/components/home/BestBuyingGuides2026'));
+const TrendingGuidesStrip = lazy(() => import('@/components/home/TrendingGuidesStrip'));
 const ExpertPetGuides = lazy(() => import('@/components/seo/PopularGuidesBlock').then(m => ({ default: m.PopularGuidesBlock })));
 
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
@@ -217,6 +218,15 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          2a. MOST POPULAR GUIDES — above fold authority strip
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Trending Guides">
+        <Suspense fallback={<div className="py-8" style={{ minHeight: 200 }} />}>
+          <TrendingGuidesStrip />
+        </Suspense>
+      </SectionErrorBoundary>
 
       {/* ═══════════════════════════════════════════════════════════════
           2b. TRUST & TRANSPARENCY — business legitimacy signals

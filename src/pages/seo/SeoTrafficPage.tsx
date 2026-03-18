@@ -9,9 +9,9 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import {
   CheckCircle, Truck, Shield, Star, ArrowRight, ShoppingCart, Clock,
-  ThumbsUp, ThumbsDown, BadgeCheck, CalendarCheck, Award,
+  ThumbsUp, ThumbsDown, BadgeCheck, CalendarCheck, Award, List,
 } from 'lucide-react';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { safeProduct, SafeProduct } from '@/lib/safe-render';
@@ -57,6 +57,13 @@ export interface CrossLink {
   href: string;
 }
 
+export interface RelatedGuideLink {
+  title: string;
+  description: string;
+  href: string;
+  badge?: string;
+}
+
 export interface SeoTrafficPageProps {
   slug: string;
   title: string;
@@ -73,6 +80,7 @@ export interface SeoTrafficPageProps {
   productCategories: string[];
   internalLinks: InternalLink[];
   crossLinks: CrossLink[];
+  relatedGuides?: RelatedGuideLink[];
   species: 'cat' | 'dog';
   breadcrumbs: { label: string; href?: string }[];
   lastUpdated?: string;
@@ -81,6 +89,35 @@ export interface SeoTrafficPageProps {
 export default function SeoTrafficPage(props: SeoTrafficPageProps) {
   const canonical = `${SITE_URL}/${props.slug}`;
   const lastUpdated = props.lastUpdated || '2026-03-18';
+
+  // ── Jump Nav sections ──
+  const jumpNavItems = [
+    { id: 'comparison', label: 'Comparison' },
+    { id: 'benefits', label: 'Benefits' },
+    { id: 'budget', label: 'Budget Picks' },
+    { id: 'buying-guide', label: 'Buying Guide' },
+    { id: 'mistakes', label: 'Common Mistakes' },
+    { id: 'products', label: 'Shop Products' },
+    { id: 'faq', label: 'FAQ' },
+    { id: 'related-guides', label: 'Related Guides' },
+  ];
+
+  const [activeSection, setActiveSection] = useState('');
+  const [showJumpNav, setShowJumpNav] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowJumpNav(window.scrollY > 350);
+      let current = '';
+      for (const item of jumpNavItems) {
+        const el = document.getElementById(item.id);
+        if (el && el.getBoundingClientRect().top <= 120) current = item.id;
+      }
+      setActiveSection(current);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const { data: products } = useQuery({
     queryKey: ['seo-traffic-products', props.slug],
@@ -147,6 +184,33 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
         <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
       </Helmet>
 
+      {/* ── Sticky Jump Nav ── */}
+      {showJumpNav && (
+        <nav className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-b shadow-sm" aria-label="Page sections">
+          <div className="container overflow-x-auto">
+            <div className="flex gap-1 py-2">
+              {jumpNavItems.map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  className={`whitespace-nowrap text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    activeSection === item.id
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted border-transparent'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        </nav>
+      )}
+
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Breadcrumb */}
         <nav className="text-sm text-muted-foreground mb-6 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
@@ -205,8 +269,26 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           </div>
         </section>
 
+        {/* ── Quick Summary ToC ── */}
+        <nav className="mb-10 border rounded-xl bg-card p-5 max-w-md" aria-label="Table of contents">
+          <div className="flex items-center gap-2 mb-3">
+            <List className="w-4 h-4 text-primary" />
+            <span className="font-semibold text-sm text-foreground">In This Guide</span>
+          </div>
+          <ol className="space-y-1.5">
+            {jumpNavItems.map((item, i) => (
+              <li key={item.id}>
+                <a href={`#${item.id}`} className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
+                  <span className="text-xs text-primary/60 font-mono w-4">{i + 1}.</span>
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
         {/* ── Comparison Table ── */}
-        <section className="mb-14">
+        <section id="comparison" className="mb-14 scroll-mt-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6 text-foreground">
             Top {props.comparisonProducts.length} Picks Compared
           </h2>
@@ -320,8 +402,17 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           </div>
         </section>
 
+        {/* ── Mid-Content CTA 1 ── */}
+        <div className="mb-14 bg-primary/5 border border-primary/20 rounded-2xl p-6 md:p-8 text-center">
+          <h3 className="text-lg md:text-xl font-semibold mb-2 text-foreground">Found Your Perfect Pick?</h3>
+          <p className="text-muted-foreground text-sm mb-4 max-w-xl mx-auto">Browse our expert-tested selection with free shipping on orders over $35.</p>
+          <Link to={`/collections/${props.productCategories[0] || (props.species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
+            <Button className="gap-2"><ShoppingCart className="w-4 h-4" /> Shop Now <ArrowRight className="w-4 h-4" /></Button>
+          </Link>
+        </div>
+
         {/* ── Benefits & Use Cases ── */}
-        <section className="mb-14">
+        <section id="benefits" className="mb-14 scroll-mt-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6 text-foreground">
             Benefits & Use Cases
           </h2>
@@ -339,7 +430,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
         </section>
 
         {/* ── Budget Picks ── */}
-        <section className="mb-14 bg-muted/30 border border-border rounded-xl p-6 md:p-8">
+        <section id="budget" className="mb-14 bg-muted/30 border border-border rounded-xl p-6 md:p-8 scroll-mt-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-4 text-foreground">
             {props.budgetPicks.heading}
           </h2>
@@ -352,7 +443,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
         </section>
 
         {/* ── Buying Guide ── */}
-        <section className="mb-14">
+        <section id="buying-guide" className="mb-14 scroll-mt-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6 text-foreground">
             How to Choose the Best Option
           </h2>
@@ -370,7 +461,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
         </section>
 
         {/* ── Common Mistakes ── */}
-        <section className="mb-14 bg-destructive/5 border border-destructive/20 rounded-xl p-6 md:p-8">
+        <section id="mistakes" className="mb-14 bg-destructive/5 border border-destructive/20 rounded-xl p-6 md:p-8 scroll-mt-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-4 text-foreground">
             {props.commonMistakes.heading}
           </h2>
@@ -403,7 +494,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
 
         {/* ── Real Products Grid ── */}
         {products && products.length > 0 && (
-          <section className="mb-14">
+          <section id="products" className="mb-14 scroll-mt-16">
             <h2 className="text-2xl font-display font-bold mb-6 text-foreground">Shop Our Top Picks</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Suspense fallback={null}>
@@ -416,7 +507,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
         )}
 
         {/* ── FAQ Section ── */}
-        <section className="mb-14">
+        <section id="faq" className="mb-14 scroll-mt-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6 text-foreground">
             Frequently Asked Questions
           </h2>
@@ -450,6 +541,34 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                   <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{cl.description}</p>
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
                     Read guide <ArrowRight className="w-3 h-3" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Related Expert Guides ── */}
+        {props.relatedGuides && props.relatedGuides.length > 0 && (
+          <section id="related-guides" className="mb-14 bg-muted/30 rounded-2xl p-6 md:p-10 scroll-mt-16">
+            <h2 className="text-2xl font-display font-bold mb-1 text-foreground">Related Expert Guides</h2>
+            <p className="text-muted-foreground text-sm mb-6">In-depth research and buying advice from our pet product team.</p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {props.relatedGuides.map(g => (
+                <Link
+                  key={g.href}
+                  to={g.href}
+                  className="group bg-background border rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition-all"
+                >
+                  {g.badge && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-primary/10 text-primary rounded-full px-2 py-0.5 mb-2">
+                      {g.badge}
+                    </span>
+                  )}
+                  <h3 className="font-semibold text-sm mb-1 text-foreground group-hover:text-primary transition-colors">{g.title}</h3>
+                  <p className="text-xs text-muted-foreground">{g.description}</p>
+                  <span className="inline-flex items-center gap-1 text-xs text-primary mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Read expert guide <ArrowRight className="w-3 h-3" />
                   </span>
                 </Link>
               ))}
