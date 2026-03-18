@@ -34,7 +34,7 @@ export function RelatedClusterArticles({
             <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors">{a.title}</h3>
             <p className="text-xs text-muted-foreground">{a.desc}</p>
             <span className="inline-flex items-center gap-1 text-xs text-primary mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              Read guide <ArrowRight className="w-3 h-3" />
+              Read the full buying guide <ArrowRight className="w-3 h-3" />
             </span>
           </Link>
         ))}

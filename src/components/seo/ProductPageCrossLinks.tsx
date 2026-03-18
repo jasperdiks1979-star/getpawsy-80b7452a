@@ -64,7 +64,7 @@ export function ProductPageCrossLinks({ productCategory, productName }: ProductP
         className="inline-flex items-center gap-2 text-sm text-primary hover:underline font-medium"
       >
         <ArrowRight className="w-3.5 h-3.5" />
-        Browse all {parent.name}
+        Shop all {parent.name} products
       </Link>
       
       {/* Cross-collection contextual link */}

@@ -108,7 +108,7 @@ export function FeaturedCollectionsGuides() {
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] text-muted-foreground">{guide.readTime} read</span>
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
-                        Read Guide <ArrowRight className="w-3 h-3" />
+                        Read the {guide.label} Guide <ArrowRight className="w-3 h-3" />
                       </span>
                     </div>
                   </div>

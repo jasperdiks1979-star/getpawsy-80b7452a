@@ -50,7 +50,7 @@ export function TrainingCollectionCrossLinks({ currentSlug }: Props) {
   return (
     <div className="mt-8 mb-4 p-5 bg-muted/30 rounded-xl border border-border">
       <h3 className="text-sm font-semibold text-foreground mb-3">
-        Related Training Collections
+        Shop More Dog Training Solutions
       </h3>
       <div className="flex flex-wrap gap-3">
         {siblings.map((c) => (

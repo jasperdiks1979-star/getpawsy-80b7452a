@@ -86,7 +86,7 @@ export function CategoryPopularProducts({ categoryName, products }: CategoryPopu
                 )}
               </div>
               <span className="inline-flex items-center gap-1 text-primary text-xs mt-2">
-                View Product <ArrowRight className="w-3 h-3" />
+                See details & pricing <ArrowRight className="w-3 h-3" />
               </span>
             </div>
           </Link>

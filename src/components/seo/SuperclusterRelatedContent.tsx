@@ -163,7 +163,7 @@ export function SuperclusterRelatedContent({
           <div className="flex items-center gap-2 mb-3">
             <BookOpen className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Learn More
+              Expert Buying Guides
             </h3>
           </div>
           {pillarLinks.map(rec => (
