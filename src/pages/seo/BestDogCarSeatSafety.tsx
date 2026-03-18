@@ -56,6 +56,7 @@ export default function BestDogCarSeatSafety() {
       comparisonProducts={[
         {
           rank: 1,
+          badge: 'Best Overall',
           name: 'Sleepypod Clickit Sport Harness',
           bestFor: 'Maximum crash-test safety for medium-large dogs',
           highlights: ['3-point crash-tested (CPS certified)', 'Doubles as walking harness', 'Padded vest distributes force evenly', 'Fits dogs 18–90 lbs'],
