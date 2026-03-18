@@ -23,6 +23,7 @@ const FeaturedCollectionsGuides = lazy(() => import('@/components/home/FeaturedC
 const BestBuyingGuides2026 = lazy(() => import('@/components/home/BestBuyingGuides2026'));
 const TrendingGuidesStrip = lazy(() => import('@/components/home/TrendingGuidesStrip'));
 const ExpertPetGuides = lazy(() => import('@/components/seo/PopularGuidesBlock').then(m => ({ default: m.PopularGuidesBlock })));
+const TrendingWinnersBlock = lazy(() => import('@/components/homepage/TrendingWinnersBlock').then(m => ({ default: m.TrendingWinnersBlock })));
 
 // ── SEO schemas — tiny, sync ─────────────────────────────────────────────
 const WebsiteSchema = lazy(() => import('@/components/seo/WebsiteSchema').then(m => ({ default: m.WebsiteSchema })));
@@ -315,6 +316,15 @@ const Index = () => {
       <SectionErrorBoundary sectionName="Top Picks">
         <Suspense fallback={<div className="py-16" style={{ minHeight: 500 }} />}>
           <TopPicksSection />
+        </Suspense>
+      </SectionErrorBoundary>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          7a. TRENDING WINNERS — dynamic top 4 boosted products
+          ═══════════════════════════════════════════════════════════════ */}
+      <SectionErrorBoundary sectionName="Trending Winners">
+        <Suspense fallback={<div className="py-10" style={{ minHeight: 300 }} />}>
+          {hydrationReady ? <TrendingWinnersBlock /> : <div style={{ minHeight: 300 }} />}
         </Suspense>
       </SectionErrorBoundary>
 
