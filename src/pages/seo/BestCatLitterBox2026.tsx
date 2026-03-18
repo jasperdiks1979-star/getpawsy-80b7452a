@@ -12,7 +12,6 @@ export default function BestCatLitterBox2026() {
       species="cat"
       lastUpdated="2026-03-18"
       productCategories={['cat-litter-boxes', 'cat-litter', 'cat-supplies']}
-      lastUpdated="2026-03-18"
       quickAnswer={{
         picks: [
           { name: 'PetSafe ScoopFree Ultra', bestFor: 'Hands-free automatic cleaning' },
