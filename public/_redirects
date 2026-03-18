@@ -12,11 +12,9 @@
 /merchant-feed.xml           https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 301!
 /merchant-feed.xml?*         https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/google-shopping-feed 301!
 
-# www -> apex (301 permanent, preserves path + query)
-https://www.getpawsy.pet/* https://getpawsy.pet/:splat 301!
-
-# lovable.app preview -> apex (301 permanent)
-https://getpawsy.lovable.app/* https://getpawsy.pet/:splat 301
+# www -> apex: NOT handled here — Cloudflare Pages ignores full-URL _redirects rules.
+# Use Cloudflare Dashboard → Rules → Redirect Rules to create a 301 for www → apex.
+# lovable.app -> apex: Same — must be a Cloudflare Redirect Rule, not a _redirects entry.
 
 # ═══ POLICY PATH ALIASES (Merchant Center compliance) ═══
 /policies/shipping  /shipping   301
