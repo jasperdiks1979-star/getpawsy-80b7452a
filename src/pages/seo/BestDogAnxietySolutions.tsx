@@ -67,6 +67,7 @@ export default function BestDogAnxietySolutions() {
         },
         {
           rank: 2,
+          badge: 'Most Popular',
           name: 'Calming Donut Bed with Bolstered Edges',
           bestFor: 'Dogs who need a safe, nest-like space',
           highlights: ['360° bolstered rim mimics being held', 'Ultra-soft faux fur for comfort', 'Machine washable', 'Multiple sizes up to 45"'],
