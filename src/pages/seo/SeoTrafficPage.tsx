@@ -1,7 +1,6 @@
 /**
- * SeoTrafficPage — Top-3 ranking level money page template.
- * Expanded: trust badges, pros/cons, enhanced comparison table, budget picks,
- * common mistakes, cross-links, "Updated for 2026" signals.
+ * SeoTrafficPage — Maximum-conversion money page template.
+ * Badges, CTAs every 2-3 sections, enhanced quick picks, trust strips.
  */
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
@@ -9,7 +8,8 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import {
   CheckCircle, Truck, Shield, Star, ArrowRight, ShoppingCart, Clock,
-  ThumbsUp, ThumbsDown, BadgeCheck, CalendarCheck, Award, List,
+  ThumbsUp, ThumbsDown, BadgeCheck, CalendarCheck, Award, List, Heart,
+  ExternalLink, Zap,
 } from 'lucide-react';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -33,6 +33,7 @@ export interface ComparisonProduct {
   priceRange: string;
   rating: number;
   productSlug?: string;
+  badge?: string;          // e.g. "Best Overall", "Best Budget", "Editor's Pick"
 }
 
 export interface FAQItem {
@@ -70,6 +71,14 @@ export interface LockdownSection {
   listItems?: string[];
 }
 
+export interface QuickPick {
+  name: string;
+  bestFor: string;
+  productSlug?: string;
+  badge?: string;         // e.g. "#1 Best Overall", "Best Budget", "Most Popular"
+  cta?: string;           // e.g. "Check Price", "View Deal"
+}
+
 export interface SeoTrafficPageProps {
   slug: string;
   title: string;
@@ -90,11 +99,64 @@ export interface SeoTrafficPageProps {
   species: 'cat' | 'dog';
   breadcrumbs: { label: string; href?: string }[];
   lastUpdated?: string;
-  // Lockdown sections
-  quickAnswer?: { picks: { name: string; bestFor: string; productSlug?: string }[] };
+  quickAnswer?: { picks: QuickPick[] };
   whoShouldNotBuy?: LockdownSection;
   bestAlternatives?: LockdownSection;
   expertVerdict?: LockdownSection;
+}
+
+// ── Badge color helper ──
+function badgeClasses(badge: string): string {
+  const b = badge.toLowerCase();
+  if (b.includes('best overall') || b.includes('#1'))
+    return 'bg-primary text-primary-foreground';
+  if (b.includes('budget'))
+    return 'bg-accent text-accent-foreground';
+  if (b.includes('editor'))
+    return 'bg-secondary text-secondary-foreground';
+  if (b.includes('popular') || b.includes('trending'))
+    return 'bg-primary/10 text-primary border border-primary/30';
+  return 'bg-muted text-foreground';
+}
+
+// ── Inline CTA block (used between sections) ──
+function MidCTA({ slug, categories, species }: { slug: string; categories: string[]; species: string }) {
+  return (
+    <div className="mb-14 bg-primary/5 border border-primary/20 rounded-2xl p-6 md:p-8 text-center">
+      <h3 className="text-lg md:text-xl font-semibold mb-2 text-foreground">Found Your Perfect Pick?</h3>
+      <p className="text-muted-foreground text-sm mb-4 max-w-xl mx-auto">
+        Browse our expert-tested selection with free shipping on orders over $35 and a 30-day happiness guarantee.
+      </p>
+      <div className="flex flex-wrap gap-3 justify-center">
+        <Link to={`/collections/${categories[0] || (species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
+          <Button className="gap-2"><ShoppingCart className="w-4 h-4" /> Shop Now <ArrowRight className="w-4 h-4" /></Button>
+        </Link>
+        <a href="#comparison">
+          <Button variant="outline" className="gap-2"><Star className="w-4 h-4" /> View Best Pick</Button>
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ── Mini trust strip ──
+function TrustStrip() {
+  return (
+    <div className="flex flex-wrap gap-4 text-sm mb-6">
+      <span className="flex items-center gap-1.5 text-primary">
+        <Truck className="w-4 h-4" /> Free shipping over $35
+      </span>
+      <span className="flex items-center gap-1.5 text-primary">
+        <Shield className="w-4 h-4" /> 30-day happiness guarantee
+      </span>
+      <span className="flex items-center gap-1.5 text-primary">
+        <CheckCircle className="w-4 h-4" /> Expert-reviewed picks
+      </span>
+      <span className="flex items-center gap-1.5 text-primary">
+        <Heart className="w-4 h-4" /> Trusted by US pet owners
+      </span>
+    </div>
+  );
 }
 
 export default function SeoTrafficPage(props: SeoTrafficPageProps) {
@@ -248,7 +310,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
         </nav>
 
         {/* ── Hero ── */}
-        <section className="mb-12">
+        <section className="mb-10">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold leading-tight mb-4 text-foreground">
             {props.h1}
           </h1>
@@ -257,7 +319,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           </p>
 
           {/* Authority Badges */}
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex flex-wrap gap-2 mb-5">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
               <BadgeCheck className="w-3.5 h-3.5" /> Tested & Reviewed
             </span>
@@ -270,50 +332,49 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           </div>
 
           {/* Trust Strip */}
-          <div className="flex flex-wrap gap-4 text-sm mb-6">
-            <span className="flex items-center gap-1.5 text-primary">
-              <Truck className="w-4 h-4" /> Free shipping over $35
-            </span>
-            <span className="flex items-center gap-1.5 text-primary">
-              <Shield className="w-4 h-4" /> 30-day money-back guarantee
-            </span>
-            <span className="flex items-center gap-1.5 text-primary">
-              <CheckCircle className="w-4 h-4" /> Expert-reviewed picks
-            </span>
-            <span className="flex items-center gap-1.5 text-primary">
-              <Clock className="w-4 h-4" /> Ships in 3–7 business days
-            </span>
-          </div>
+          <TrustStrip />
 
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 text-sm text-muted-foreground leading-relaxed">
             {props.introText}
           </div>
         </section>
 
-        {/* ── Quick Answer — Top 3 Picks ── */}
+        {/* ── Quick Answer — Top 3 Picks (Conversion-Optimized) ── */}
         {props.quickAnswer && (
           <section id="quick-answer" className="mb-10 scroll-mt-16">
             <div className="bg-primary/5 border-2 border-primary/30 rounded-2xl p-6 md:p-8">
               <h2 className="text-xl md:text-2xl font-display font-bold mb-1 text-foreground flex items-center gap-2">
                 🏆 Top 3 Picks (Quick Answer)
               </h2>
-              <p className="text-sm text-muted-foreground mb-4">In a rush? Here are our top recommendations at a glance.</p>
-              <div className="grid gap-3">
+              <p className="text-sm text-muted-foreground mb-5">In a rush? Here are our top recommendations at a glance.</p>
+              <div className="grid gap-4 sm:grid-cols-3">
                 {props.quickAnswer.picks.map((pick, i) => (
-                  <div key={i} className="flex items-center gap-4 bg-background rounded-xl border border-border p-4">
-                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                      #{i + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-foreground">{pick.name}</p>
-                      <p className="text-xs text-muted-foreground">Best for: {pick.bestFor}</p>
+                  <div key={i} className="relative bg-background rounded-xl border-2 border-border hover:border-primary/40 transition-all p-5 flex flex-col">
+                    {/* Badge */}
+                    {pick.badge && (
+                      <span className={`absolute -top-3 left-4 text-[11px] font-bold px-3 py-0.5 rounded-full ${badgeClasses(pick.badge)}`}>
+                        {pick.badge}
+                      </span>
+                    )}
+                    <div className="flex items-center gap-2 mb-2 mt-1">
+                      <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                        #{i + 1}
+                      </span>
+                      <p className="font-semibold text-sm text-foreground leading-tight">{pick.name}</p>
                     </div>
-                    {pick.productSlug && (
+                    <p className="text-xs text-muted-foreground mb-4 flex-1">{pick.bestFor}</p>
+                    {pick.productSlug ? (
                       <Link to={`/product/${pick.productSlug}`}>
-                        <Button size="sm" variant="outline" className="text-xs gap-1 shrink-0">
-                          <ShoppingCart className="w-3 h-3" /> View
+                        <Button size="sm" className="w-full gap-1.5 text-xs">
+                          <ExternalLink className="w-3 h-3" /> {pick.cta || 'Check Price'}
                         </Button>
                       </Link>
+                    ) : (
+                      <a href="#comparison">
+                        <Button size="sm" variant="outline" className="w-full gap-1.5 text-xs">
+                          <ArrowRight className="w-3 h-3" /> {pick.cta || 'View Details'}
+                        </Button>
+                      </a>
                     )}
                   </div>
                 ))}
@@ -346,7 +407,8 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
             Top {props.comparisonProducts.length} Picks Compared
           </h2>
 
-          <div className="overflow-x-auto mb-8 rounded-xl border border-border">
+          {/* Desktop table */}
+          <div className="overflow-x-auto mb-8 rounded-xl border border-border hidden md:block">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-muted/60">
@@ -362,10 +424,19 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                 {props.comparisonProducts.map(p => (
                   <tr key={p.rank} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="p-3 font-bold text-primary">#{p.rank}</td>
-                    <td className="p-3 font-medium text-foreground">
-                      {p.productSlug ? (
-                        <Link to={`/product/${p.productSlug}`} className="hover:text-primary transition-colors">{p.name}</Link>
-                      ) : p.name}
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        {p.badge && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${badgeClasses(p.badge)}`}>
+                            {p.badge}
+                          </span>
+                        )}
+                        <span className="font-medium text-foreground">
+                          {p.productSlug ? (
+                            <Link to={`/product/${p.productSlug}`} className="hover:text-primary transition-colors">{p.name}</Link>
+                          ) : p.name}
+                        </span>
+                      </div>
                     </td>
                     <td className="p-3">
                       <span className="flex items-center gap-1">
@@ -378,12 +449,16 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                     <td className="p-3">
                       {p.productSlug ? (
                         <Link to={`/product/${p.productSlug}`}>
-                          <Button size="sm" variant="outline" className="gap-1 text-xs">
-                            <ShoppingCart className="w-3 h-3" /> Shop Now
+                          <Button size="sm" className="gap-1 text-xs">
+                            <ShoppingCart className="w-3 h-3" /> Check Price
                           </Button>
                         </Link>
                       ) : (
-                        <span className="text-xs text-muted-foreground">Coming soon</span>
+                        <a href={`#product-${p.rank}`}>
+                          <Button size="sm" variant="outline" className="gap-1 text-xs">
+                            See Details
+                          </Button>
+                        </a>
                       )}
                     </td>
                   </tr>
@@ -392,11 +467,56 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
             </table>
           </div>
 
-          {/* Detailed cards with Pros/Cons */}
+          {/* Mobile cards for comparison */}
+          <div className="md:hidden space-y-3 mb-8">
+            {props.comparisonProducts.map(p => (
+              <div key={p.rank} className="relative bg-card border border-border rounded-xl p-4">
+                {p.badge && (
+                  <span className={`absolute -top-2.5 left-3 text-[10px] font-bold px-2.5 py-0.5 rounded-full ${badgeClasses(p.badge)}`}>
+                    {p.badge}
+                  </span>
+                )}
+                <div className="flex items-start justify-between gap-3 mt-1">
+                  <div>
+                    <p className="font-bold text-sm text-foreground">#{p.rank}. {p.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{p.bestFor}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-sm font-bold text-primary block">{p.priceRange}</span>
+                    <span className="flex items-center gap-0.5 text-xs text-amber-500 justify-end">
+                      <Star className="w-3 h-3 fill-amber-400" /> {p.rating}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  {p.productSlug ? (
+                    <Link to={`/product/${p.productSlug}`}>
+                      <Button size="sm" className="w-full gap-1.5 text-xs">
+                        <ShoppingCart className="w-3 h-3" /> Check Price
+                      </Button>
+                    </Link>
+                  ) : (
+                    <a href={`#product-${p.rank}`}>
+                      <Button size="sm" variant="outline" className="w-full text-xs">See Details</Button>
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Detailed cards with Pros/Cons + Badges */}
           <div className="space-y-6">
             {props.comparisonProducts.map(p => (
-              <div key={p.rank} className="bg-card border border-border rounded-xl p-6">
-                <div className="flex items-start justify-between gap-4 mb-3">
+              <div key={p.rank} id={`product-${p.rank}`} className="relative bg-card border border-border rounded-xl p-6 scroll-mt-16">
+                {/* Badge ribbon */}
+                {p.badge && (
+                  <span className={`absolute -top-3 left-5 text-[11px] font-bold px-3 py-1 rounded-full shadow-sm ${badgeClasses(p.badge)}`}>
+                    {p.badge}
+                  </span>
+                )}
+
+                <div className="flex items-start justify-between gap-4 mb-3 mt-1">
                   <div>
                     <h3 className="text-lg font-display font-bold text-foreground">
                       #{p.rank}. {p.name}
@@ -411,6 +531,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                   </div>
                 </div>
 
+                {/* Key highlights as bullet points */}
                 <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 mb-4">
                   {p.highlights.map((h, i) => <li key={i}>{h}</li>)}
                 </ul>
@@ -443,26 +564,32 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                   </div>
                 </div>
 
-                {p.productSlug && (
-                  <Link to={`/product/${p.productSlug}`}>
-                    <Button size="sm" className="gap-2">
-                      <ShoppingCart className="w-4 h-4" /> View Product
-                    </Button>
-                  </Link>
-                )}
+                {/* CTA for each product */}
+                <div className="flex flex-wrap gap-3 items-center">
+                  {p.productSlug ? (
+                    <Link to={`/product/${p.productSlug}`}>
+                      <Button size="sm" className="gap-2">
+                        <ShoppingCart className="w-4 h-4" /> Check Price
+                      </Button>
+                    </Link>
+                  ) : (
+                    <a href={`/collections/${props.productCategories[0] || (props.species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
+                      <Button size="sm" variant="outline" className="gap-2">
+                        <ShoppingCart className="w-4 h-4" /> Shop Similar
+                      </Button>
+                    </a>
+                  )}
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Truck className="w-3 h-3" /> Free shipping over $35
+                  </span>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── Mid-Content CTA 1 ── */}
-        <div className="mb-14 bg-primary/5 border border-primary/20 rounded-2xl p-6 md:p-8 text-center">
-          <h3 className="text-lg md:text-xl font-semibold mb-2 text-foreground">Found Your Perfect Pick?</h3>
-          <p className="text-muted-foreground text-sm mb-4 max-w-xl mx-auto">Browse our expert-tested selection with free shipping on orders over $35.</p>
-          <Link to={`/collections/${props.productCategories[0] || (props.species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
-            <Button className="gap-2"><ShoppingCart className="w-4 h-4" /> Shop Now <ArrowRight className="w-4 h-4" /></Button>
-          </Link>
-        </div>
+        {/* ── CTA after comparison ── */}
+        <MidCTA slug={props.slug} categories={props.productCategories} species={props.species} />
 
         {/* ── Benefits & Use Cases ── */}
         <section id="benefits" className="mb-14 scroll-mt-16">
@@ -494,6 +621,22 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
             </ul>
           )}
         </section>
+
+        {/* ── CTA after budget ── */}
+        <div className="mb-14 flex flex-col sm:flex-row items-center gap-4 bg-primary/5 border border-primary/20 rounded-xl p-5">
+          <div className="flex-1">
+            <p className="font-semibold text-foreground text-sm">💡 Want to see all options side by side?</p>
+            <p className="text-xs text-muted-foreground">Jump to our full comparison table above.</p>
+          </div>
+          <div className="flex gap-2">
+            <a href="#comparison">
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs"><Star className="w-3 h-3" /> View Comparison</Button>
+            </a>
+            <a href="#faq">
+              <Button size="sm" variant="ghost" className="gap-1.5 text-xs">See Reviews →</Button>
+            </a>
+          </div>
+        </div>
 
         {/* ── Buying Guide ── */}
         <section id="buying-guide" className="mb-14 scroll-mt-16">
@@ -529,6 +672,9 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
             </ul>
           )}
         </section>
+
+        {/* ── CTA after mistakes ── */}
+        <MidCTA slug={props.slug} categories={props.productCategories} species={props.species} />
 
         {/* ── Who Should NOT Buy ── */}
         {props.whoShouldNotBuy && (
@@ -580,6 +726,15 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                 ))}
               </ul>
             )}
+            {/* CTA after verdict */}
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a href="#quick-answer">
+                <Button size="sm" className="gap-1.5"><Zap className="w-3.5 h-3.5" /> View Best Pick</Button>
+              </a>
+              <Link to={`/collections/${props.productCategories[0] || (props.species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
+                <Button size="sm" variant="outline" className="gap-1.5"><ShoppingCart className="w-3.5 h-3.5" /> Shop All</Button>
+              </Link>
+            </div>
           </section>
         )}
 
@@ -588,9 +743,15 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           <h2 className="text-xl md:text-2xl font-display font-bold mb-3 text-foreground">
             Ready to Shop?
           </h2>
-          <p className="text-muted-foreground mb-5 max-w-xl mx-auto">
-            Browse our hand-picked selection with free shipping on orders over $35 and a 30-day money-back guarantee.
+          <p className="text-muted-foreground mb-3 max-w-xl mx-auto">
+            Browse our hand-picked selection with free shipping on orders over $35 and a 30-day happiness guarantee.
           </p>
+          {/* Inline trust signals */}
+          <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground mb-5">
+            <span className="flex items-center gap-1"><Truck className="w-3 h-3" /> Free Shipping $35+</span>
+            <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> 30-Day Guarantee</span>
+            <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Secure Checkout</span>
+          </div>
           <Link to={`/collections/${props.productCategories[0] || (props.species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
             <Button size="lg" className="gap-2">
               Shop Now <ArrowRight className="w-4 h-4" />
@@ -710,7 +871,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           <div>
             <Shield className="w-6 h-6 mx-auto mb-2 text-primary" />
             <p className="font-semibold text-foreground">30-Day Returns</p>
-            <p className="text-muted-foreground text-xs">No hassle guarantee</p>
+            <p className="text-muted-foreground text-xs">Happiness guarantee</p>
           </div>
           <div>
             <CheckCircle className="w-6 h-6 mx-auto mb-2 text-primary" />
@@ -718,9 +879,9 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
             <p className="text-muted-foreground text-xs">Trusted recommendations</p>
           </div>
           <div>
-            <Clock className="w-6 h-6 mx-auto mb-2 text-primary" />
-            <p className="font-semibold text-foreground">Fast Delivery</p>
-            <p className="text-muted-foreground text-xs">3–7 business days</p>
+            <Heart className="w-6 h-6 mx-auto mb-2 text-primary" />
+            <p className="font-semibold text-foreground">Pet Owners Love Us</p>
+            <p className="text-muted-foreground text-xs">Trusted across the US</p>
           </div>
         </section>
       </div>
