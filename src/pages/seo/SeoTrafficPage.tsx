@@ -530,6 +530,59 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           )}
         </section>
 
+        {/* ── Who Should NOT Buy ── */}
+        {props.whoShouldNotBuy && (
+          <section id="who-should-not" className="mb-14 bg-muted/40 border border-border rounded-xl p-6 md:p-8 scroll-mt-16">
+            <h2 className="text-2xl md:text-3xl font-display font-bold mb-4 text-foreground">
+              {props.whoShouldNotBuy.heading}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">{props.whoShouldNotBuy.body}</p>
+            {props.whoShouldNotBuy.listItems && (
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                {props.whoShouldNotBuy.listItems.map((item, j) => (
+                  <li key={j} className="flex items-start gap-2">
+                    <span className="text-primary font-bold mt-0.5">→</span> {item}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {/* ── Best Alternatives ── */}
+        {props.bestAlternatives && (
+          <section id="alternatives" className="mb-14 border border-border rounded-xl p-6 md:p-8 scroll-mt-16">
+            <h2 className="text-2xl md:text-3xl font-display font-bold mb-4 text-foreground">
+              {props.bestAlternatives.heading}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">{props.bestAlternatives.body}</p>
+            {props.bestAlternatives.listItems && (
+              <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                {props.bestAlternatives.listItems.map((item, j) => <li key={j}>{item}</li>)}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {/* ── Expert Verdict ── */}
+        {props.expertVerdict && (
+          <section id="verdict" className="mb-14 bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 md:p-8 scroll-mt-16">
+            <h2 className="text-2xl md:text-3xl font-display font-bold mb-4 text-foreground flex items-center gap-2">
+              <Award className="w-6 h-6 text-primary" /> {props.expertVerdict.heading}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">{props.expertVerdict.body}</p>
+            {props.expertVerdict.listItems && (
+              <ul className="space-y-2 text-sm text-foreground/80">
+                {props.expertVerdict.listItems.map((item, j) => (
+                  <li key={j} className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" /> {item}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
         {/* ── CTA Banner ── */}
         <section className="mb-14 bg-primary/10 border border-primary/30 rounded-xl p-8 text-center">
           <h2 className="text-xl md:text-2xl font-display font-bold mb-3 text-foreground">
