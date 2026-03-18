@@ -37,6 +37,7 @@ const sections = [
   {
     title: 'Commerce & Analytics',
     items: [
+      { to: '/admin/profit-system', label: 'Profit System', icon: Target, desc: 'Winners / Potential / Losers + Ads export' },
       { to: '/admin/commerce-intelligence', label: 'Commerce Intelligence', icon: BarChart3, desc: 'Demand, pricing & ads' },
       { to: '/admin/analytics-hub', label: 'Analytics Hub', icon: Gauge, desc: 'Traffic & conversion data' },
       { to: '/admin/revenue-scaling', label: 'Revenue Scaling', icon: TrendingUp, desc: '12-month blueprint' },

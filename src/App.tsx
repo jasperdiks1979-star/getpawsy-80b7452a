@@ -653,6 +653,7 @@ const App = () => {
                         <Route path="momentum" element={<Suspense fallback={<RouteLoader />}><MomentumAccelerationDashboard /></Suspense>} />
                         <Route path="bundles" element={<Suspense fallback={<RouteLoader />}><BundlesPage /></Suspense>} />
                         <Route path="winners-boost" element={<Suspense fallback={<RouteLoader />}><WinnersBoostDashboard /></Suspense>} />
+                        <Route path="profit-system" element={<Suspense fallback={<RouteLoader />}><ProfitSystemDashboard /></Suspense>} />
                         <Route path="cluster-dominance" element={<Suspense fallback={<RouteLoader />}><ClusterDominance /></Suspense>} />
                         <Route path="analytics-traffic" element={<Suspense fallback={<RouteLoader />}><AnalyticsTrafficDocs /></Suspense>} />
                         <Route path="reports" element={<Suspense fallback={<RouteLoader />}><AdminReportsPage /></Suspense>} />
