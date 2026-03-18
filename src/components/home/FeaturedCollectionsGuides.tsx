@@ -13,18 +13,24 @@ const FEATURED_COLLECTIONS = [
     label: 'Dog Car Seats & Travel Safety',
     description: 'Crash-tested dog car seats, booster seats & travel harnesses for safe road trips.',
     icon: '🚗',
+    guidePath: '/best-dog-car-seat-safety',
+    guideLabel: 'best dog car seat safety guide',
   },
   {
     slug: 'cat-litter-boxes',
     label: 'Cat Litter Boxes',
     description: 'Top-rated litter boxes for odor control, large cats & multi-cat households.',
     icon: '🐱',
+    guidePath: '/best-cat-litter-box-2026',
+    guideLabel: 'best cat litter box 2026 guide',
   },
   {
     slug: 'dog-beds',
     label: 'Orthopedic & Calming Dog Beds',
     description: 'Memory foam, bolster & calming beds for puppies, seniors & anxious dogs.',
     icon: '🛏️',
+    guidePath: '/best-dog-anxiety-solutions',
+    guideLabel: 'best dog anxiety solutions guide',
   },
 ];
 
