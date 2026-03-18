@@ -271,6 +271,12 @@ const ShopHub = lazyWithRetry(() => import("./pages/ShopHub"));
 const RecentProducts = lazyWithRetry(() => import("./pages/RecentProducts"));
 const TrendingProducts = lazyWithRetry(() => import("./pages/TrendingProducts"));
 
+// SEO Traffic Machine pages
+const BestCatLitterBox2026 = lazyWithRetry(() => import("./pages/seo/BestCatLitterBox2026"));
+const BestDogCarSeatSafety = lazyWithRetry(() => import("./pages/seo/BestDogCarSeatSafety"));
+const BestInteractiveCatToys = lazyWithRetry(() => import("./pages/seo/BestInteractiveCatToys"));
+const BestDogAnxietySolutions = lazyWithRetry(() => import("./pages/seo/BestDogAnxietySolutions"));
+
 // Diagnostics pages (hidden, noindex)
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
 const PerformanceDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/PerformanceDiagnostics"));
@@ -459,6 +465,10 @@ const App = () => {
                       <Route path="/guides" element={<Suspense fallback={<RouteLoader />}><GuidesIndex /></Suspense>} />
                       <Route path="/guides/cat-condo-vs-cat-tree-2026" element={<Suspense fallback={<RouteLoader />}><CatCondoVsCatTree2026 /></Suspense>} />
                       <Route path="/best-self-cleaning-litter-box-2026" element={<Suspense fallback={<RouteLoader />}><BestSelfCleaningLitterBox2026 /></Suspense>} />
+                      <Route path="/best-cat-litter-box-2026" element={<Suspense fallback={<RouteLoader />}><BestCatLitterBox2026 /></Suspense>} />
+                      <Route path="/best-dog-car-seat-safety" element={<Suspense fallback={<RouteLoader />}><BestDogCarSeatSafety /></Suspense>} />
+                      <Route path="/best-interactive-cat-toys" element={<Suspense fallback={<RouteLoader />}><BestInteractiveCatToys /></Suspense>} />
+                      <Route path="/best-dog-anxiety-solutions" element={<Suspense fallback={<RouteLoader />}><BestDogAnxietySolutions /></Suspense>} />
                       <Route path="/indoor-cat-furniture" element={<Suspense fallback={<RouteLoader />}><IndoorCatFurnitureGuide /></Suspense>} />
                       <Route path="/guides/:slug" element={<Suspense fallback={<RouteLoader />}><GuidePage /></Suspense>} />
                       {/* Lockdown cluster articles — generic JSON-driven renderer */}
