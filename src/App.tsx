@@ -240,6 +240,7 @@ const ScalingEnginePage = lazyWithRetry(() => import("./pages/admin/ScalingEngin
 const ContentOpportunitiesPage = lazyWithRetry(() => import("./pages/admin/ContentOpportunitiesPage"));
 const MomentumAccelerationDashboard = lazyWithRetry(() => import("./pages/admin/MomentumAccelerationDashboard"));
 const BundlesPage = lazyWithRetry(() => import("./pages/admin/BundlesPage"));
+const WinnersBoostDashboard = lazyWithRetry(() => import("./pages/admin/WinnersBoostDashboard"));
 const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDominance"));
 const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/AnalyticsTrafficDocs"));
 const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsPage"));
@@ -650,6 +651,7 @@ const App = () => {
                         <Route path="content-opportunities" element={<Suspense fallback={<RouteLoader />}><ContentOpportunitiesPage /></Suspense>} />
                         <Route path="momentum" element={<Suspense fallback={<RouteLoader />}><MomentumAccelerationDashboard /></Suspense>} />
                         <Route path="bundles" element={<Suspense fallback={<RouteLoader />}><BundlesPage /></Suspense>} />
+                        <Route path="winners-boost" element={<Suspense fallback={<RouteLoader />}><WinnersBoostDashboard /></Suspense>} />
                         <Route path="cluster-dominance" element={<Suspense fallback={<RouteLoader />}><ClusterDominance /></Suspense>} />
                         <Route path="analytics-traffic" element={<Suspense fallback={<RouteLoader />}><AnalyticsTrafficDocs /></Suspense>} />
                         <Route path="reports" element={<Suspense fallback={<RouteLoader />}><AdminReportsPage /></Suspense>} />
