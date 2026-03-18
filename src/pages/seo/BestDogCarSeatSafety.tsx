@@ -14,9 +14,9 @@ export default function BestDogCarSeatSafety() {
       productCategories={['dog-carriers', 'dog-travel', 'dog-car-seats']}
       quickAnswer={{
         picks: [
-          { name: 'Sleepypod Clickit Sport', bestFor: 'Crash-tested safety for medium-large dogs' },
-          { name: 'PupSaver Crash-Tested Seat', bestFor: 'Small dogs under 30 lbs' },
-          { name: 'Kurgo Skybox Booster', bestFor: 'Window-viewing comfort on short trips' },
+          { name: 'Sleepypod Clickit Sport', bestFor: 'Crash-tested safety for medium-large dogs', badge: '#1 Best Overall', cta: 'Check Price' },
+          { name: 'PupSaver Crash-Tested Seat', bestFor: 'Small dogs under 30 lbs', badge: 'Best for Small Dogs', cta: 'Check Price' },
+          { name: 'Kurgo Skybox Booster', bestFor: 'Window-viewing comfort on short trips', badge: 'Best Budget', cta: 'Check Price' },
         ],
       }}
       whoShouldNotBuy={{

@@ -14,9 +14,9 @@ export default function BestInteractiveCatToys() {
       productCategories={['cat-toys', 'interactive-cat-toys', 'cat-supplies']}
       quickAnswer={{
         picks: [
-          { name: 'SmartyKat Hot Pursuit', bestFor: 'Solo play — keeps cats busy for hours' },
-          { name: 'PetSafe Bolt Laser', bestFor: 'Automatic hands-free play sessions' },
-          { name: 'Trixie Activity Fun Board', bestFor: 'Mental stimulation & slow feeding' },
+          { name: 'SmartyKat Hot Pursuit', bestFor: 'Solo play — keeps cats busy for hours', badge: '#1 Best Overall', cta: 'Check Price' },
+          { name: 'PetSafe Bolt Laser', bestFor: 'Automatic hands-free play sessions', badge: 'Most Popular', cta: 'Check Price' },
+          { name: 'Trixie Activity Fun Board', bestFor: 'Mental stimulation & slow feeding', badge: "Editor's Pick", cta: 'Check Price' },
         ],
       }}
       whoShouldNotBuy={{

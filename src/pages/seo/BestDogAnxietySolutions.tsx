@@ -14,9 +14,9 @@ export default function BestDogAnxietySolutions() {
       productCategories={['dog-beds', 'dog-calming', 'dog-training', 'dog-supplies']}
       quickAnswer={{
         picks: [
-          { name: 'Thundershirt Classic', bestFor: 'Noise phobia and storm anxiety' },
-          { name: 'Best Friends by Sheri Calming Bed', bestFor: 'General anxiety and sleep comfort' },
-          { name: 'Adaptil Calm Pheromone Diffuser', bestFor: 'Separation anxiety and new environments' },
+          { name: 'Thundershirt Classic', bestFor: 'Noise phobia and storm anxiety', badge: '#1 Best Overall', cta: 'Check Price' },
+          { name: 'Best Friends by Sheri Calming Bed', bestFor: 'General anxiety and sleep comfort', badge: 'Most Popular', cta: 'Check Price' },
+          { name: 'Adaptil Calm Pheromone Diffuser', bestFor: 'Separation anxiety and new environments', badge: 'Best Budget', cta: 'Check Price' },
         ],
       }}
       whoShouldNotBuy={{

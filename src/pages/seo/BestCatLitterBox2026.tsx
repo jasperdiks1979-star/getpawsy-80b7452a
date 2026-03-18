@@ -14,9 +14,9 @@ export default function BestCatLitterBox2026() {
       productCategories={['cat-litter-boxes', 'cat-litter', 'cat-supplies']}
       quickAnswer={{
         picks: [
-          { name: 'PetSafe ScoopFree Ultra', bestFor: 'Hands-free automatic cleaning' },
-          { name: 'Modkat XL Top-Entry', bestFor: 'Small apartments & litter tracking' },
-          { name: 'Petmate Giant Litter Pan', bestFor: 'Large cats & multi-cat homes' },
+          { name: 'PetSafe ScoopFree Ultra', bestFor: 'Hands-free automatic cleaning', badge: '#1 Best Overall', cta: 'Check Price' },
+          { name: 'Modkat XL Top-Entry', bestFor: 'Small apartments & litter tracking', badge: 'Best for Apartments', cta: 'Check Price' },
+          { name: 'Petmate Giant Litter Pan', bestFor: 'Large cats & multi-cat homes', badge: 'Best Budget', cta: 'Check Price' },
         ],
       }}
       whoShouldNotBuy={{
