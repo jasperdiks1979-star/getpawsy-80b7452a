@@ -494,7 +494,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
 
         {/* ── Real Products Grid ── */}
         {products && products.length > 0 && (
-          <section className="mb-14">
+          <section id="products" className="mb-14 scroll-mt-16">
             <h2 className="text-2xl font-display font-bold mb-6 text-foreground">Shop Our Top Picks</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Suspense fallback={null}>
