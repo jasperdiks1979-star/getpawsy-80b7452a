@@ -402,8 +402,17 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           </div>
         </section>
 
+        {/* ── Mid-Content CTA 1 ── */}
+        <div className="mb-14 bg-primary/5 border border-primary/20 rounded-2xl p-6 md:p-8 text-center">
+          <h3 className="text-lg md:text-xl font-semibold mb-2 text-foreground">Found Your Perfect Pick?</h3>
+          <p className="text-muted-foreground text-sm mb-4 max-w-xl mx-auto">Browse our expert-tested selection with free shipping on orders over $35.</p>
+          <Link to={`/collections/${props.productCategories[0] || (props.species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
+            <Button className="gap-2"><ShoppingCart className="w-4 h-4" /> Shop Now <ArrowRight className="w-4 h-4" /></Button>
+          </Link>
+        </div>
+
         {/* ── Benefits & Use Cases ── */}
-        <section className="mb-14">
+        <section id="benefits" className="mb-14 scroll-mt-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6 text-foreground">
             Benefits & Use Cases
           </h2>
