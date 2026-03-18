@@ -280,6 +280,7 @@ const BestDogAnxietySolutions = lazyWithRetry(() => import("./pages/seo/BestDogA
 const BestCatLitterBoxReddit = lazyWithRetry(() => import("./pages/seo/BestCatLitterBoxReddit"));
 const BestLitterBoxForSmell = lazyWithRetry(() => import("./pages/seo/BestLitterBoxForSmell"));
 const BestLitterBoxLargeCats = lazyWithRetry(() => import("./pages/seo/BestLitterBoxLargeCats"));
+const BestLitterBoxesApartments = lazyWithRetry(() => import("./pages/seo/BestLitterBoxesApartments"));
 
 // Diagnostics pages (hidden, noindex)
 const HeadersDiagnostics = lazyWithRetry(() => import("./pages/diagnostics/HeadersDiagnostics"));
