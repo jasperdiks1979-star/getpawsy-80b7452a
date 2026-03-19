@@ -350,7 +350,7 @@ function getBehavioralBoosts(intent: string): string[] {
   if (intent === 'buy') {
     base.push('Product cards with "Add to Cart" inline');
     base.push('"Customers Also Bought" cross-sell block');
-    base.push('Urgency signal (limited stock / fast shipping countdown)');
+    base.push('Clear shipping and returns info near CTA');
   }
   if (intent === 'info') {
     base.push('Step-by-step numbered protocol');

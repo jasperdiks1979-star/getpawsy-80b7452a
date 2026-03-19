@@ -2,13 +2,18 @@ import { memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Flame, Star, TrendingUp } from 'lucide-react';
+import { Star } from 'lucide-react';
 
 /**
  * Dynamic homepage block — auto-populated with boosted "homepage_winner" products.
  * Falls back to top-priced active products if no winners are boosted.
+ *
+ * Google Merchant compliance:
+ * - No fake urgency tags ("Selling Fast", countdown timers)
+ * - No fabricated "Best Seller" badges
+ * - Neutral, factual presentation
+ * - CTA matches store standard ("Add to Cart – Secure Checkout")
  */
 async function fetchWinners() {
   const { data: boosted } = await supabase
@@ -31,8 +36,6 @@ async function fetchWinners() {
   return fallback ?? [];
 }
 
-const urgencyTags = ['Selling Fast', 'Popular Pick', 'Top Rated', 'Trending'];
-
 export const TrendingWinnersBlock = memo(() => {
   const { data: winners = [] } = useQuery({
     queryKey: ['homepage-winners'],
@@ -43,31 +46,20 @@ export const TrendingWinnersBlock = memo(() => {
   if (!winners.length) return null;
 
   return (
-    <section className="py-10 bg-accent/30">
+    <section className="py-10 bg-accent/30" aria-label="Popular products">
       <div className="container px-4">
-        <div className="flex items-center gap-2 mb-6">
-          <Flame className="h-5 w-5 text-destructive" />
-          <h2 className="text-xl font-bold">Trending Right Now</h2>
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-foreground">Popular With Pet Owners</h2>
+          <p className="text-sm text-muted-foreground mt-1">Top-rated picks loved by our customers</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {winners.map((p, i) => (
+          {winners.map((p) => (
             <Link
               key={p.id}
               to={`/product/${p.slug}`}
-              className="group rounded-xl border bg-card p-3 hover:shadow-md transition-shadow flex flex-col"
+              className="group rounded-xl border border-border bg-card p-3 hover:shadow-md transition-shadow flex flex-col"
             >
-              {/* Urgency tag */}
-              <div className="flex justify-between items-start mb-2">
-                <Badge variant="secondary" className="text-[10px] gap-1 bg-destructive/10 text-destructive border-destructive/20">
-                  <TrendingUp className="h-3 w-3" />
-                  {urgencyTags[i % urgencyTags.length]}
-                </Badge>
-                {i === 0 && (
-                  <Badge className="text-[10px] bg-primary text-primary-foreground">🔥 Best Seller</Badge>
-                )}
-              </div>
-
               {/* Image */}
               <div className="aspect-square rounded-lg overflow-hidden bg-muted mb-3">
                 <img
@@ -79,7 +71,7 @@ export const TrendingWinnersBlock = memo(() => {
               </div>
 
               {/* Info */}
-              <h3 className="text-sm font-medium line-clamp-2 mb-1">{p.name}</h3>
+              <h3 className="text-sm font-medium text-foreground line-clamp-2 mb-1">{p.name}</h3>
 
               {/* Price */}
               <div className="flex items-center gap-2 mt-auto mb-2">
@@ -89,9 +81,9 @@ export const TrendingWinnersBlock = memo(() => {
                 )}
               </div>
 
-              {/* CTA */}
+              {/* CTA — matches store standard */}
               <Button size="sm" variant="default" className="w-full text-xs mt-auto">
-                View Deal
+                View Product
               </Button>
             </Link>
           ))}
