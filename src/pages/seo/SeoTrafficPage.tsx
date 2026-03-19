@@ -103,6 +103,7 @@ export interface SeoTrafficPageProps {
   whoShouldNotBuy?: LockdownSection;
   bestAlternatives?: LockdownSection;
   expertVerdict?: LockdownSection;
+  ctrHook?: string;
 }
 
 // ── Badge color helper ──
