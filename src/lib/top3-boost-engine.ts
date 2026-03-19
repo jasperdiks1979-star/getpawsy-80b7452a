@@ -246,7 +246,7 @@ function getBehavioralBoosts(intent: string, position: number): string[] {
   if (intent === 'buy') {
     boosts.push('Add embedded product cards with star ratings');
     boosts.push('Add "Customers Also Bought" cross-sell block');
-    boosts.push('Add urgency signal (limited stock / fast shipping)');
+    boosts.push('Add clear shipping and returns info near CTA');
   }
   if (intent === 'compare') {
     boosts.push('Add side-by-side comparison chart');
