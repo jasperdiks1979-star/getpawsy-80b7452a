@@ -4,13 +4,14 @@ export default function BestCatLitterBox2026() {
   return (
     <SeoTrafficPage
       slug="best-cat-litter-box-2026"
-      title="Best Cat Litter Box 2026 (Top Picks Tested & Reviewed)"
-      metaDescription="Expert-reviewed top 5 cat litter boxes for 2026. Self-cleaning, odor-control & large-cat options compared. Better than Litter-Robot? Free US shipping over $35."
+      title="Best Cat Litter Box 2026 (What Actually Works)"
+      metaDescription="Still fighting litter box odor every day? We tested 30+ options and found the 5 that actually control smell, tracking, and mess."
       h1="Best Cat Litter Box 2026 — Expert-Tested Picks for Every Home"
       subtitle="We compared 30+ litter boxes to find the cleanest, most odor-resistant options for single and multi-cat households in the US."
+      ctrHook="We tested 30+ litter boxes over 4 weeks — avoid these common mistakes (2026 update)"
       introText="Choosing the right litter box can transform your daily routine and keep your home smelling fresh. Whether you have one cat or five, live in a studio apartment or a house, the right litter box reduces tracking, controls odor, and makes scooping faster (or eliminates it entirely). Our team tested each option with real cats over 4 weeks, evaluating odor control, ease of cleaning, litter tracking, and cat acceptance rates."
       species="cat"
-      lastUpdated="2026-03-18"
+      lastUpdated="2026-03-19"
       productCategories={['cat-litter-boxes', 'cat-litter', 'cat-supplies']}
       quickAnswer={{
         picks: [
@@ -231,7 +232,6 @@ export default function BestCatLitterBox2026() {
         { title: 'Best Cat Litter Box Reddit Recommends (2026)', description: 'What real cat owners on Reddit actually recommend — 500+ threads analyzed.', href: '/best-cat-litter-box-reddit' },
         { title: 'Best Litter Boxes for Apartments — Compact & Odor-Free', description: 'Space-saving litter boxes designed for apartments and studios.', href: '/best-litter-boxes-apartments-2026' },
         { title: 'Best Interactive Cat Toys 2026', description: 'Keep indoor cats active and mentally stimulated with expert-tested interactive toys.', href: '/best-interactive-cat-toys' },
-        { title: 'Best Dog Anxiety Solutions 2026', description: 'Vet-approved calming products for stressed and anxious dogs.', href: '/best-dog-anxiety-solutions' },
       ]}
       internalLinks={[
         { text: 'Shop cat litter boxes collection', href: '/collections/cat-litter-boxes' },
@@ -240,10 +240,9 @@ export default function BestCatLitterBox2026() {
         { text: 'Cat care guides hub', href: '/cat' },
         { text: 'Reddit\'s top litter box picks for 2026', href: '/best-cat-litter-box-reddit' },
         { text: 'Best litter boxes for small apartments', href: '/best-litter-boxes-apartments-2026' },
-        { text: 'Litter boxes that eliminate odor (tested)', href: '/best-litter-box-for-smell' },
-        { text: 'Oversized litter boxes for large cat breeds', href: '/best-litter-box-large-cats' },
-        { text: 'Why cats hate their litter box (blog)', href: '/blog/why-cats-hate-litter-box' },
-        { text: 'Best toys for bored cats (blog)', href: '/blog/best-toys-for-bored-cats' },
+        { text: 'Best litter box for odor control', href: '/best-litter-box-for-smell' },
+        { text: 'Best interactive cat toys guide', href: '/best-interactive-cat-toys' },
+        { text: 'Pet care guides', href: '/pet-care-guides' },
       ]}
     />
   );
