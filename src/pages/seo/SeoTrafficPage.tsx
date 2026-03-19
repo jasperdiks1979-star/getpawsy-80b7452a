@@ -312,6 +312,13 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
 
         {/* ── Hero ── */}
         <section className="mb-10">
+          {/* CTR Hook — above the fold credibility trigger */}
+          {props.ctrHook && (
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-2 text-sm font-medium text-primary">
+              <Zap className="w-4 h-4" />
+              {props.ctrHook}
+            </div>
+          )}
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold leading-tight mb-4 text-foreground">
             {props.h1}
           </h1>
