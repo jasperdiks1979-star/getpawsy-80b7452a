@@ -75,6 +75,19 @@ export function BestBuyingGuides2026() {
               </Link>
             ))}
           </div>
+
+          {/* Cluster sub-pages — eliminate orphans */}
+          <div className="flex flex-wrap justify-center gap-2 mt-6 max-w-4xl mx-auto">
+            {CLUSTER_PAGES.map((page) => (
+              <Link
+                key={page.path}
+                to={page.path}
+                className="text-xs font-medium text-muted-foreground hover:text-primary border border-border/40 rounded-full px-3 py-1.5 hover:border-primary/30 transition-colors"
+              >
+                {page.title} →
+              </Link>
+            ))}
+          </div>
         </FadeInView>
       </div>
     </section>
