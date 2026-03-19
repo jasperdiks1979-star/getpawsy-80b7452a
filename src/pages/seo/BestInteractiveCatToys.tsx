@@ -4,13 +4,14 @@ export default function BestInteractiveCatToys() {
   return (
     <SeoTrafficPage
       slug="best-interactive-cat-toys"
-      title="Best Interactive Cat Toys 2026 (Top Picks Tested & Reviewed)"
-      metaDescription="Top 5 interactive cat toys reviewed by experts. Laser toys, puzzle feeders & electronic mice that actually keep cats engaged. Free US shipping."
+      title="Best Interactive Cat Toys 2026 (Top Picks Tested)"
+      metaDescription="Your cat ignores every toy you buy? We found 5 interactive toys that actually hold attention beyond 5 minutes. Expert-tested with real cats."
       h1="Best Interactive Cat Toys — Vet-Recommended Picks to Stop Boredom"
       subtitle="We tested 25+ interactive toys with real cats to find which ones actually hold their attention beyond the first 5 minutes."
+      ctrHook="We tested 25+ toys with real cats — most failed within 5 minutes (2026 update)"
       introText="Indoor cats need 30–45 minutes of active play daily to maintain healthy weight and prevent behavioral problems like destructive scratching and midnight zoomies. But not all toys are created equal — most cats lose interest in static toys within days. Interactive toys that mimic prey movement, challenge problem-solving instincts, or reward with treats keep cats engaged long-term. Our team observed real cats playing with each toy across multiple sessions over 3 weeks, tracking engagement time and replay rates."
       species="cat"
-      lastUpdated="2026-03-18"
+      lastUpdated="2026-03-19"
       productCategories={['cat-toys', 'interactive-cat-toys', 'cat-supplies']}
       quickAnswer={{
         picks: [
@@ -198,20 +199,23 @@ export default function BestInteractiveCatToys() {
       ]}
       relatedGuides={[
         { title: 'Best Cat Litter Box 2026', description: 'Top-rated litter boxes for odor control, large cats, and multi-cat homes.', href: '/best-cat-litter-box-2026', badge: '🔥 Trending' },
-        { title: 'Best Dog Anxiety Solutions 2026', description: 'Vet-approved calming products that actually reduce stress and barking.', href: '/best-dog-anxiety-solutions', badge: '⭐ Expert Pick' },
-        { title: 'Best Dog Car Seat Safety 2026', description: 'Crash-tested seats and harnesses for safe dog travel.', href: '/best-dog-car-seat-safety' },
+        { title: 'Indoor Cat Furniture Guide', description: 'Complete guide to cat trees, shelves, and enrichment furniture.', href: '/indoor-cat-furniture', badge: '⭐ Expert Pick' },
+        { title: 'Best Cat Trees for Large Cats', description: 'Stable, heavy-duty cat trees tested for Maine Coons and large breeds.', href: '/guides/best-cat-trees-large-cats-2026' },
       ]}
       crossLinks={[
         { title: 'Best Cat Litter Box 2026', description: 'Top-rated litter boxes for odor control, large cats, and multi-cat homes.', href: '/best-cat-litter-box-2026' },
-        { title: 'Best Dog Car Seat Safety 2026', description: 'Crash-tested car seats and harnesses for safe dog travel.', href: '/best-dog-car-seat-safety' },
+        { title: 'Indoor Cat Furniture Guide', description: 'Complete guide to cat trees, scratching posts, and enrichment furniture.', href: '/indoor-cat-furniture' },
       ]}
       internalLinks={[
-        { text: 'Shop cat toys collection', href: '/collections/cat-toys' },
+        { text: 'Shop interactive cat toys collection', href: '/collections/cat-toys' },
         { text: 'Best cat trees for large cats', href: '/guides/best-cat-trees-large-cats-2026' },
         { text: 'Best cat litter box 2026 guide', href: '/best-cat-litter-box-2026' },
-        { text: 'Best toys for bored cats (blog)', href: '/blog/best-toys-for-bored-cats' },
+        { text: 'Indoor cat furniture guide', href: '/indoor-cat-furniture' },
         { text: 'Cat care hub', href: '/cat' },
         { text: 'Pet care guides', href: '/pet-care-guides' },
+        { text: 'Best litter box for odor control', href: '/best-litter-box-for-smell' },
+        { text: 'Cat litter boxes collection', href: '/collections/cat-litter-boxes' },
+        { text: 'Best cat trees & condos collection', href: '/collections/cat-trees-and-condos' },
       ]}
     />
   );

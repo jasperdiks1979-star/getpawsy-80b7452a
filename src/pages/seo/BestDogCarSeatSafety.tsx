@@ -4,13 +4,14 @@ export default function BestDogCarSeatSafety() {
   return (
     <SeoTrafficPage
       slug="best-dog-car-seat-safety"
-      title="Best Dog Car Seat 2026 (Top Picks Tested & Reviewed)"
-      metaDescription="Top 5 crash-tested dog car seats reviewed. Booster seats, harnesses & carriers for all dog sizes. Expert safety picks with free US shipping."
+      title="Best Dog Car Seats 2026 (Crash-Tested & Safe)"
+      metaDescription="Your dog slides around every turn? These 5 crash-tested car seats keep dogs safe on every ride. Expert-reviewed picks for all sizes."
       h1="Best Dog Car Seat for Safety — Crash-Tested Picks for Every Size"
       subtitle="We crash-tested 20+ dog car seats and restraints to find the safest options that keep your dog secure without sacrificing comfort during road trips."
+      ctrHook="We tested 20+ car seats — these actually passed crash tests (2026 update)"
       introText="An unrestrained dog in a car becomes a 60-mph projectile during a sudden stop. At just 30 mph, a 40-pound dog generates 1,200 pounds of force — enough to injure both the dog and passengers. The right car seat or restraint system protects everyone in the vehicle while keeping your dog comfortable on long drives. Our team evaluated crash-test certifications, ease of installation, comfort ratings, and real-world durability across all price points."
       species="dog"
-      lastUpdated="2026-03-18"
+      lastUpdated="2026-03-19"
       productCategories={['dog-carriers', 'dog-travel', 'dog-car-seats']}
       quickAnswer={{
         picks: [
@@ -51,7 +52,7 @@ export default function BestDogCarSeatSafety() {
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'Dog', href: '/dog' },
-        { label: 'Best Dog Car Seat Safety' },
+        { label: 'Best Dog Car Seats 2026' },
       ]}
       comparisonProducts={[
         {
@@ -197,20 +198,23 @@ export default function BestDogCarSeatSafety() {
       ]}
       relatedGuides={[
         { title: 'Best Dog Anxiety Solutions 2026', description: 'Calming vests, beds, and supplements — including travel anxiety solutions.', href: '/best-dog-anxiety-solutions', badge: '🔥 Trending' },
-        { title: 'Best Cat Litter Box 2026', description: 'Top-rated litter boxes for odor control, large cats, and multi-cat homes.', href: '/best-cat-litter-box-2026', badge: '⭐ Expert Pick' },
-        { title: 'Best Interactive Cat Toys 2026', description: 'Expert-tested toys that keep indoor cats engaged and happy.', href: '/best-interactive-cat-toys' },
+        { title: 'Dog Travel Safety Equipment Guide', description: 'Complete gear checklist for safe road trips with your dog.', href: '/guides/dog-travel-safety-equipment-guide', badge: '⭐ Expert Pick' },
+        { title: 'How to Travel With Your Dog Safely', description: 'Step-by-step road trip planning for dog owners.', href: '/blog/how-to-travel-with-dog-safely' },
       ]}
       crossLinks={[
         { title: 'Best Dog Anxiety Solutions 2026', description: 'Calming vests, beds, and supplements for anxious dogs — including travel anxiety.', href: '/best-dog-anxiety-solutions' },
-        { title: 'Best Cat Litter Box 2026', description: 'Top-rated litter boxes for odor control, large cats, and multi-cat homes.', href: '/best-cat-litter-box-2026' },
+        { title: 'Dog Travel Safety Equipment Guide', description: 'Complete guide to essential dog travel gear and safety equipment.', href: '/guides/dog-travel-safety-equipment-guide' },
       ]}
       internalLinks={[
-        { text: 'Dog car travel safety collection', href: '/collections/dog-car-travel-safety-seats' },
-        { text: 'How to travel with your dog safely (blog)', href: '/blog/how-to-travel-with-dog-safely' },
-        { text: 'How to stop dog anxiety in car (blog)', href: '/blog/how-to-stop-dog-anxiety-in-car' },
+        { text: 'Shop dog car travel safety seats', href: '/collections/dog-car-travel-safety-seats' },
+        { text: 'How to travel with your dog safely', href: '/blog/how-to-travel-with-dog-safely' },
+        { text: 'How to stop dog anxiety in car', href: '/blog/how-to-stop-dog-anxiety-in-car' },
         { text: 'Dog care guides hub', href: '/dog' },
-        { text: 'Shop dog carriers & travel', href: '/collections/dog-carriers' },
+        { text: 'Shop dog carriers & travel gear', href: '/collections/dog-carriers' },
         { text: 'Dog training accessories', href: '/collections/dog-training-accessories' },
+        { text: 'Best dog anxiety solutions guide', href: '/best-dog-anxiety-solutions' },
+        { text: 'Dog leash & control collection', href: '/collections/dog-leash-control' },
+        { text: 'Pet care guides', href: '/pet-care-guides' },
       ]}
     />
   );

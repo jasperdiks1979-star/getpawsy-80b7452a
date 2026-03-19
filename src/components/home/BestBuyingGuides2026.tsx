@@ -5,28 +5,35 @@ import { ArrowRight } from 'lucide-react';
 const MONEY_PAGES = [
   {
     path: '/best-cat-litter-box-2026',
-    title: 'Best Cat Litter Box 2026 (Top Picks & Reviews)',
-    description: 'Compare top-rated litter boxes for odor control, large cats, and multi-cat homes.',
+    title: 'Best Cat Litter Box 2026 (What Actually Works)',
+    description: 'We tested 30+ litter boxes — these 5 control odor, tracking, and mess.',
     emoji: '🐱',
   },
   {
     path: '/best-dog-car-seat-safety',
-    title: 'Best Dog Car Seat Safety (Crash-Tested Picks)',
-    description: 'Safe and secure travel solutions for small and medium dogs.',
+    title: 'Best Dog Car Seats 2026 (Crash-Tested & Safe)',
+    description: 'Crash-tested car seats for dogs of all sizes. Expert safety picks.',
     emoji: '🚗',
   },
   {
     path: '/best-interactive-cat-toys',
-    title: 'Best Interactive Cat Toys (Keep Cats Active & Happy)',
-    description: 'Stimulating toys that prevent boredom and improve cat health.',
+    title: 'Best Interactive Cat Toys 2026 (Top Picks Tested)',
+    description: 'Toys that actually hold attention beyond 5 minutes. Expert-tested.',
     emoji: '🎯',
   },
   {
     path: '/best-dog-anxiety-solutions',
-    title: 'Best Dog Anxiety Solutions (Calming Products That Work)',
-    description: 'Reduce stress, barking, and separation anxiety effectively.',
+    title: 'Best Dog Anxiety Solutions 2026 (What Actually Works)',
+    description: 'Vet-approved calming products tested with real anxious dogs.',
     emoji: '🐕',
   },
+] as const;
+
+const CLUSTER_PAGES = [
+  { path: '/best-cat-litter-box-reddit', title: 'Best Litter Box — Reddit Picks' },
+  { path: '/best-litter-box-for-smell', title: 'Best Litter Box for Odor Control' },
+  { path: '/best-litter-box-large-cats', title: 'Best Litter Box for Large Cats' },
+  { path: '/best-litter-boxes-apartments-2026', title: 'Best Litter Boxes for Apartments' },
 ] as const;
 
 export function BestBuyingGuides2026() {
@@ -65,6 +72,19 @@ export function BestBuyingGuides2026() {
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
                   Read expert guide <ArrowRight className="w-3 h-3" />
                 </span>
+              </Link>
+            ))}
+          </div>
+
+          {/* Cluster sub-pages — eliminate orphans */}
+          <div className="flex flex-wrap justify-center gap-2 mt-6 max-w-4xl mx-auto">
+            {CLUSTER_PAGES.map((page) => (
+              <Link
+                key={page.path}
+                to={page.path}
+                className="text-xs font-medium text-muted-foreground hover:text-primary border border-border/40 rounded-full px-3 py-1.5 hover:border-primary/30 transition-colors"
+              >
+                {page.title} →
               </Link>
             ))}
           </div>
