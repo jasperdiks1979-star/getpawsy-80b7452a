@@ -25,9 +25,8 @@ const CATEGORIES = [
 ] as const;
 
 const GUIDES = [
-  { path: '/guides/complete-dog-training-guide-2026', title: 'Complete Dog Training Guide 2026', desc: 'Expert-tested methods for any breed or age.' },
   { path: '/best-dog-car-seat-safety', title: 'Best Dog Car Seats (Crash-Tested)', desc: 'Safety-rated picks for travel with your dog.' },
-  { path: '/best-cat-litter-box-2026', title: 'Best Cat Litter Box 2026', desc: 'Top odor-control picks, reviewed & ranked.' },
+  { path: '/guides/complete-dog-training-guide-2026', title: 'Dog Training Toys Guide', desc: 'Expert-tested methods for any breed or age.' },
 ] as const;
 
 const Index = () => {
@@ -99,14 +98,14 @@ const Index = () => {
 
         <div className="container relative z-10 px-4 md:px-6 py-12 md:py-20">
           <div className="max-w-xl space-y-5">
-            <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
-              Stop Bad Habits.
-              <br />
-              <span className="text-primary">Start Real Training.</span>
-            </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-md">
-              Effective, humane tools for potty training, leash control & behavior correction — delivered fast across the US.
-            </p>
+             <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.1] tracking-tight">
+               Stop Pulling, Barking & Bad Habits
+               <br />
+               <span className="text-primary">— Starting Today</span>
+             </h1>
+             <p className="text-base md:text-lg text-muted-foreground max-w-md">
+               Smart training tools & comfort solutions for real results — fast US shipping.
+             </p>
             <div className="flex flex-wrap gap-3">
               <a
                 href="/collections/dog-potty-training"
@@ -174,7 +173,7 @@ const Index = () => {
       <section className="py-10 md:py-12 bg-muted/20">
         <div className="container px-4 md:px-6">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-6">
-            Shop by Category
+            Shop by Training Need
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {CATEGORIES.map((cat) => (
@@ -201,19 +200,19 @@ const Index = () => {
           </h2>
           <div className="grid sm:grid-cols-3 gap-5">
             <div className="space-y-2">
-              <p className="text-2xl">📦</p>
-              <h3 className="font-semibold text-foreground text-sm">Fast US Delivery</h3>
+              <p className="text-2xl">✅</p>
+              <h3 className="font-semibold text-foreground text-sm">Tested for Real Results</h3>
+              <p className="text-xs text-muted-foreground">No gimmicks — tools that actually work</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-2xl">🚚</p>
+              <h3 className="font-semibold text-foreground text-sm">Fast US Shipping</h3>
               <p className="text-xs text-muted-foreground">3–7 business days, tracking included</p>
             </div>
             <div className="space-y-2">
               <p className="text-2xl">↩️</p>
-              <h3 className="font-semibold text-foreground text-sm">Hassle-Free Returns</h3>
-              <p className="text-xs text-muted-foreground">30-day return window, no runaround</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-2xl">💬</p>
-              <h3 className="font-semibold text-foreground text-sm">Real Support</h3>
-              <p className="text-xs text-muted-foreground">We respond within 24 hours</p>
+              <h3 className="font-semibold text-foreground text-sm">30-Day Risk-Free Returns</h3>
+              <p className="text-xs text-muted-foreground">Not happy? Full refund, no hassle</p>
             </div>
           </div>
         </div>
@@ -225,7 +224,7 @@ const Index = () => {
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground text-center mb-6">
             Expert Pet Guides
           </h2>
-          <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
             {GUIDES.map((g) => (
               <Link
                 key={g.path}
@@ -252,10 +251,10 @@ const Index = () => {
         <div className="container px-4 md:px-6">
           <div className="max-w-md mx-auto text-center">
             <h2 className="text-lg font-display font-semibold text-foreground mb-2">
-              Get Pet Care Tips & Deals
+              Get 10% Off Your First Order
             </h2>
             <p className="text-sm text-muted-foreground mb-4">
-              No spam — just helpful content and new arrivals.
+              Join thousands of pet parents. Get exclusive deals & tips.
             </p>
             <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
               <input
@@ -271,7 +270,7 @@ const Index = () => {
                 className="rounded-full px-6 py-2.5 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 disabled={isSubscribing}
               >
-                {isSubscribing ? '...' : 'Subscribe'}
+                {isSubscribing ? '...' : 'Get 10% Off'}
               </button>
             </form>
           </div>
