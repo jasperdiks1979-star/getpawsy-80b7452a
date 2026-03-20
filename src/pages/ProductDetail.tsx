@@ -1432,28 +1432,8 @@ const ProductDetail = () => {
         {/* Feature Grid — 4 feature cards */}
         <ProductFeatureGrid productName={product.name} category={product.category || ''} />
 
-        {/* Specifications Table — semantic, real product data */}
-        <ProductSpecsTable product={{
-          name: product.name,
-          category: product.category,
-          weight: product.weight ? Number(product.weight) : null,
-          sku: product.sku,
-        }} />
-
-        {/* Use Case Segmentation — "Best For" */}
-        <ProductUseCases productName={product.name} category={product.category || ''} />
-
-        {/* Comparison Table — GetPawsy vs Generic */}
-        <ProductComparisonTable productName={product.name} />
-
-        {/* Visible FAQ Accordion — 10 Questions */}
+        {/* Visible FAQ Accordion */}
         <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
-
-        {/* Cluster Authority Block — "Learn More About [Topic]" */}
-        <ClusterAuthorityBlock
-          clusterId={inferClusterFromCategory(product.category || '')}
-          productName={product.name}
-        />
 
         {/* Final CTA Block — conversion closer */}
         <FinalCtaBlock
