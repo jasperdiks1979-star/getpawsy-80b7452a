@@ -114,8 +114,8 @@ const Index = () => {
                 Shop Bestsellers
               </a>
               <a
-                href="#how-it-works"
-                className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold border border-border bg-card/80 text-foreground hover:bg-accent active:scale-[0.97] transition-all duration-200"
+                href="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
+                className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold border border-border bg-card/80 text-foreground hover:bg-accent active:scale-[0.97] transition-all duration-200 relative z-10"
               >
                 See How It Works
               </a>
