@@ -92,7 +92,7 @@ export function AffiliateProductCard({ product, position }: AffiliateProductCard
             target="_blank"
             rel="nofollow sponsored noopener"
           >
-            Check Price on Amazon <ExternalLink className="w-3.5 h-3.5" />
+            View Details <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </Button>
       </div>

@@ -212,7 +212,7 @@ export function SlowFeederLeadMagnet({
 
   const goToSlowFeeders = () => {
     handleClose();
-    navigate('/products?category=Dogs&search=slow+feeder');
+    navigate('/collections/best-slow-feeder-dog-bowls');
   };
 
   const benefits = [

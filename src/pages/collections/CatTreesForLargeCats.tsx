@@ -171,7 +171,7 @@ export default function CatTreesForLargeCats() {
             Purpose-built cat trees engineered for Maine Coons, Ragdolls, and multi-cat households. Reinforced platforms, thick sisal posts, and anti-tip stability systems.
           </p>
           <div className="flex flex-wrap gap-4 mb-6">
-            <Link to="/products?category=cat-trees-and-condos">
+            <Link to="/collections/cat-trees-and-condos">
               <Button size="lg" className="gap-2">
                 Shop Heavy Duty Cat Trees <ArrowRight className="w-4 h-4" />
               </Button>

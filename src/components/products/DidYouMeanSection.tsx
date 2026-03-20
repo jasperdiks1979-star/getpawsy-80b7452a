@@ -240,7 +240,7 @@ export const DidYouMeanSection = ({
             {suggestedCategories.map((cat, index) => (
               <Link 
                 key={cat.id} 
-                to={`/products?category=${cat.slug}`}
+                to={`/collections/${cat.slug}`}
                 onClick={() => handleCategoryClick(cat, index)}
               >
                 <Badge 

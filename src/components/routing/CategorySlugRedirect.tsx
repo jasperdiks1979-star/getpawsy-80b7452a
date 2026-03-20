@@ -1,13 +1,13 @@
 import { useParams, Navigate } from 'react-router-dom';
 
 /**
- * Maps clean category slugs to the internal ?category= parameter.
- * E.g. /cat-trees-condos → /products?category=cat-trees-and-condos
+ * Maps clean category slugs to their canonical /collections/ URL.
+ * E.g. /cat-trees-condos → /collections/cat-trees-and-condos
  */
 const CATEGORY_SLUG_MAP: Record<string, string> = {
   'cat-trees-condos': 'cat-trees-and-condos',
   'dog-beds': 'dog-beds',
-  'cat-litter-boxes': 'cat-litter-boxes',
+  'cat-litter-boxes': 'best-cat-litter-boxes',
   'dog-toys': 'dog-toys',
   'cat-toys': 'cat-toys',
   'dog-collars-leashes': 'dog-collars-leashes',
@@ -26,7 +26,7 @@ const CategorySlugRedirect = () => {
   const mapped = slug ? CATEGORY_SLUG_MAP[slug] : undefined;
 
   if (mapped) {
-    return <Navigate to={`/products?category=${mapped}`} replace />;
+    return <Navigate to={`/collections/${mapped}`} replace />;
   }
 
   return null;

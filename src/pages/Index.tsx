@@ -17,10 +17,10 @@ const showToast = (type: 'success' | 'error' | 'info', msg: string) =>
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 
 const CATEGORIES = [
-  { name: 'Cat Litter Solutions', href: '/collections/self-cleaning-litter-boxes', emoji: '🐱' },
+  { name: 'Cat Litter Boxes', href: '/collections/best-cat-litter-boxes', emoji: '🐱' },
   { name: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos', emoji: '🏠' },
-  { name: 'Dog Beds & Comfort', href: '/collections/orthopedic-dog-beds', emoji: '🛏️' },
-  { name: 'Dog Travel & Safety', href: '/collections/dog-car-seats', emoji: '🚗' },
+  { name: 'Dog Beds', href: '/collections/orthopedic-calming-dog-beds', emoji: '🛏️' },
+  { name: 'Dog Car Seats', href: '/collections/best-dog-car-seats', emoji: '🚗' },
   { name: 'Training Essentials', href: '/collections/dog-training-accessories', emoji: '🎯' },
 ] as const;
 

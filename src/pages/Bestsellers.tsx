@@ -536,15 +536,15 @@ const Bestsellers = () => {
           </p>
           <div className="grid sm:grid-cols-2 gap-4">
             {[
-              { name: 'Dog Beds & Furniture', desc: 'Orthopedic and calming beds rated for comfort and durability.', link: '/products?category=dog-beds' },
-              { name: 'Cat Trees & Condos', desc: 'Multi-level play structures built for active indoor cats.', link: '/cat-trees-condos' },
+              { name: 'Dog Beds & Furniture', desc: 'Orthopedic and calming beds rated for comfort and durability.', link: '/collections/orthopedic-calming-dog-beds' },
+              { name: 'Cat Trees & Condos', desc: 'Multi-level play structures built for active indoor cats.', link: '/collections/cat-trees-and-condos' },
               { name: 'Interactive Dog Toys', desc: 'Puzzle feeders and enrichment toys for mental stimulation.', link: '/collections/best-interactive-dog-toys' },
               { name: 'Slow Feeder Bowls', desc: 'Anti-bloat bowls that slow eating by 5–10x for healthier digestion.', link: '/collections/best-slow-feeder-dog-bowls' },
               { name: 'Cat Litter Boxes', desc: 'Self-cleaning and odor-control litter solutions for indoor cats.', link: '/collections/best-cat-litter-boxes' },
               { name: 'Cat Toys for Indoor Cats', desc: 'Interactive and solo-play toys to keep indoor cats active.', link: '/collections/best-cat-toys-for-indoor-cats' },
               { name: 'Dog Enrichment Toys', desc: 'Treat-dispensing and puzzle toys to reduce boredom and anxiety.', link: '/collections/dog-enrichment-toys' },
-              { name: 'Pet Grooming Essentials', desc: 'Brushes, nail trimmers, and grooming kits for dogs and cats.', link: '/products?category=grooming' },
-              { name: 'Pet Travel Accessories', desc: 'Carriers, car seats, and travel bowls for pets on the go.', link: '/products?category=travel' },
+              { name: 'Pet Grooming Essentials', desc: 'Brushes, nail trimmers, and grooming kits for dogs and cats.', link: '/collections/best-dog-grooming-kits' },
+              { name: 'Pet Travel Accessories', desc: 'Carriers, car seats, and travel bowls for pets on the go.', link: '/collections/dog-travel-accessories' },
               { name: 'All Pet Products', desc: 'Browse our full catalog of 600+ curated pet supplies.', link: '/products' },
             ].map((cat) => (
               <Link key={cat.name} to={cat.link} className="flex items-start gap-3 bg-card border rounded-xl p-4 hover:shadow-md transition-shadow group">
