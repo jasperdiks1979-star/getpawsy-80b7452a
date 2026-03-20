@@ -11,7 +11,7 @@ const CURATED_SLUGS = [
   'memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner',
   'tactical-service-dog-harness-strap-set-car-seat-belt-collapsible-bowl-biodegradable-trash-bag-set-fo',
   'dog-booster-car-seat-pet-car-seat-for-small-medium-dog-up-to-40-lbs-black',
-  'crate-furniture-32small-dog-cage-end-table-with-2-doors-lockable-door-puppy-kennel-indoor-black',
+  '2-in-1-dog-paw-cleaner-cup-soft-pet-dog-foot-cleaning-washer-brush-cup-portable-pet-foot-washer-paw-',
 ];
 
 /** Display-friendly names to override long DB titles */
@@ -19,7 +19,7 @@ const DISPLAY_NAMES: Record<string, string> = {
   'memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner': 'Orthopedic Dog Bed',
   'tactical-service-dog-harness-strap-set-car-seat-belt-collapsible-bowl-biodegradable-trash-bag-set-fo': 'No-Pull Dog Harness',
   'dog-booster-car-seat-pet-car-seat-for-small-medium-dog-up-to-40-lbs-black': 'Dog Car Seat & Travel Kit',
-  'crate-furniture-32small-dog-cage-end-table-with-2-doors-lockable-door-puppy-kennel-indoor-black': 'Furniture Dog Crate',
+  '2-in-1-dog-paw-cleaner-cup-soft-pet-dog-foot-cleaning-washer-brush-cup-portable-pet-foot-washer-paw-': 'Portable Dog Paw Cleaner',
 };
 
 export function TrendingProducts() {
