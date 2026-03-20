@@ -192,6 +192,40 @@ const Index = () => {
         </div>
       </section>
 
+      {/* ═══ WHY PET OWNERS LOVE THIS — focus block ═══ */}
+      <section className="py-8 md:py-10 bg-secondary/20">
+        <div className="container px-4 md:px-6 max-w-2xl mx-auto">
+          <h2 className="text-lg md:text-xl font-display font-bold text-foreground text-center mb-5">
+            Why Pet Owners Love This
+          </h2>
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div className="bg-card rounded-xl border border-border/40 p-5 text-center">
+              <span className="text-2xl block mb-2">🚫</span>
+              <h3 className="text-sm font-semibold text-foreground mb-1">No Scooping Ever</h3>
+              <p className="text-xs text-muted-foreground">Fully automatic self-cleaning cycle handles everything.</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border/40 p-5 text-center">
+              <span className="text-2xl block mb-2">🌿</span>
+              <h3 className="text-sm font-semibold text-foreground mb-1">No Smell Guaranteed</h3>
+              <p className="text-xs text-muted-foreground">Sealed deodorizing design traps odor instantly.</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border/40 p-5 text-center">
+              <span className="text-2xl block mb-2">⏱️</span>
+              <h3 className="text-sm font-semibold text-foreground mb-1">Saves Time Daily</h3>
+              <p className="text-xs text-muted-foreground">Reclaim 15+ minutes every day — it works while you sleep.</p>
+            </div>
+          </div>
+          <div className="text-center mt-5">
+            <Link
+              to="/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
+              className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold bg-[hsl(24,95%,53%)] text-white hover:bg-[hsl(24,95%,47%)] active:scale-[0.97] transition-all duration-200"
+            >
+              Get Yours Now →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ 2. TRUST BAR ═══ */}
       <section className="py-4 border-y border-border/40 bg-card/50" aria-label="Trust signals">
         <div className="container px-4 md:px-6">
