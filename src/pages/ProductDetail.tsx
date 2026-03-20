@@ -45,8 +45,6 @@ import { CompleteTheLook } from '@/components/products/CompleteTheLook';
 import { useRelatedProducts } from '@/hooks/useRelatedProducts';
 import { useCompleteTheLook } from '@/hooks/useCompleteTheLook';
 import { RelatedGuides } from '@/components/guides/RelatedGuides';
-import { BuyingGuideBlock } from '@/components/seo/BuyingGuideBlock';
-import { PopularGuidesBlock } from '@/components/seo/PopularGuidesBlock';
 import { HeroProductBoost } from '@/components/products/HeroProductBoost';
 import { ProductBundleUpsell } from '@/components/products/ProductBundleUpsell';
 import { ExploreMoreCategory } from '@/components/seo/ExploreMoreCategory';
