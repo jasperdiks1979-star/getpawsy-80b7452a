@@ -63,12 +63,12 @@ const Index = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Dog Training Supplies – Free US Shipping | GetPawsy</title>
-        <meta name="description" content="Premium dog training tools with free US shipping on orders $35+. Potty training, leash control, anti-bark solutions. 30-day returns, 3–7 day delivery." />
+        <title>Smart Pet Care — Premium Dog & Cat Essentials | GetPawsy</title>
+        <meta name="description" content="Upgrade your pet's comfort, hygiene & safety with proven essentials. Self-cleaning litter boxes, no-pull harnesses, car seats & more. Free US shipping $35+." />
         <link rel="canonical" href="https://getpawsy.pet/" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-        <meta property="og:title" content="Dog Training Supplies – Free US Shipping | GetPawsy" />
-        <meta property="og:description" content="Premium dog training tools. Free shipping $35+, 30-day returns." />
+        <meta property="og:title" content="Smart Pet Care — Premium Dog & Cat Essentials | GetPawsy" />
+        <meta property="og:description" content="Proven pet essentials for comfort, hygiene & safety. Free US shipping $35+, 30-day returns." />
         <meta property="og:url" content="https://getpawsy.pet/" />
         <meta property="og:type" content="website" />
       </Helmet>
