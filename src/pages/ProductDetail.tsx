@@ -55,8 +55,6 @@ import { ProductProblemSolution } from '@/components/products/ProductProblemSolu
 import { FinalCtaBlock } from '@/components/products/FinalCtaBlock';
 
 import { ProductFeatureGrid } from '@/components/products/ProductFeatureGrid';
-import { ProductSpecsTable } from '@/components/products/ProductSpecsTable';
-import { SimilarProductsCompare } from '@/components/products/SimilarProductsCompare';
 import { LowStockBadge } from '@/components/products/LowStockBadge';
 import { useGuidesList } from '@/hooks/useGuides';
 import {
